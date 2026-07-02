@@ -41,13 +41,27 @@ powershell -ExecutionPolicy Bypass -File scripts/run_server.ps1
 
 The server endpoint defaults to `http://127.0.0.1:9292/v1`.
 
+## Verify the runtime
+
+With the server running in another terminal:
+
+```powershell
+python scripts/baseline_harness.py
+python scripts/baseline_harness.py --tool-test --output lab/tool-test.local.json
+```
+
+The harness verifies health, model identity, incremental SSE streaming, reasoning fields, and optional OpenAI-compatible tool calls. Local result files are ignored by Git.
+
+The fixed measurement and acceptance procedure is in `lab/BASELINE_PROTOCOL.md`.
+
 ## Repository map
 
 - `NEO3000.md`: architecture and research direction
 - `AGENTS.md`: operating law for Agents-A1 and other coding agents
 - `lab/GOAL.md`: the active objective
 - `lab/CHECKPOINT.md`: acceptance gates and current boundary
+- `lab/BASELINE_PROTOCOL.md`: frozen verification and comparison protocol
 - `upstream/`: pinned source identity and import manifest
-- `scripts/`: reproducible import, build, and launch commands
+- `scripts/`: reproducible import, build, launch, and verification commands
 
 The imported runtime source is intentionally absent from the initial commit. `scripts/import_upstream.py` materializes it from the exact pinned commit.
