@@ -44,7 +44,7 @@ function Find-CudaToolkitRoot {
 
     $pathNvcc = Get-Command nvcc.exe -ErrorAction SilentlyContinue
     if ($pathNvcc) {
-        return (Resolve-Path (Join-Path $pathNvcc.Source "../.."))).Path
+        return (Resolve-Path (Join-Path $pathNvcc.Source "../..")).Path
     }
 
     return $null

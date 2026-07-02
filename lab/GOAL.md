@@ -58,4 +58,14 @@ Neo3000 either matches or exceeds the current LM Studio runtime, or produces a s
 
 ## Current boundary
 
-The repository contains only the clean foundation. The imported source has not yet been materialized or built on the target machine.
+The imported source has been materialized and built. The CUDA-enabled server is running and accessible to Pi. The foundation endpoints (/health, /v1/models, /v1/chat/completions) are verified. Streaming works. Reasoning content is preserved. At 4K context, decode speed matches the LM Studio baseline (~8 tps).
+
+Remaining before Checkpoint 0 closure:
+- Pi request round-trip verification (Pi sends to Neo3000, receives stream)
+- Tool-call parsing verification
+- Cancellation behavior
+- Full context scaling: 8K, 16K, 32K, 40K, max stable
+- LM Studio comparison benchmarks at each context length
+- Context degradation ratio calculation
+
+Next exact action: Run a Pi session targeting Neo3000, verify the round-trip, then scale context upward stepwise.
