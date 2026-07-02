@@ -2,55 +2,56 @@
 
 ## Purpose
 
-This document is the durable navigation spine for Neo3000. Any agent should be able to enter the repository, identify the current boundary, preserve the stable daily driver, and continue from the last proven result without reconstructing the project from chat history.
+This is the durable navigation spine for Neo3000. Any agent should be able to enter the repository, identify the current boundary, preserve the stable daily driver, and continue without reconstructing the project from chat history.
 
-Neo3000 is a performance-first local inference engine for Agents-A1. It begins from a pinned `llama.cpp` source import and evolves the compute path toward catalytic, phase-native, recursively reusable inference.
+Neo3000 is a performance-first local inference engine for Agents-A1. It begins from a pinned `llama.cpp` runtime and evolves toward catalytic, phase-native, recursively reusable inference.
 
-The objective is not to wrap an ordinary runtime in governance or produce ceremonial restoration reports. The objective is to reduce the amount of fresh computation required per useful token while preserving model capability, Pi compatibility, and daily-driver stability.
+The objective is not to wrap ordinary inference in governance or produce ceremonial reports. The objective is to reduce fresh computation per useful token while preserving model capability, Pi compatibility, reproducibility, and daily-driver stability.
 
 ---
 
-# 1. Read order and sources of truth
+# 1. Read order and authority
 
-Every new agent must read these files in this order:
+Every agent must read:
 
 ```text
 1. AGENTS.md
-2. ROADMAP.md
-3. lab/GOAL.md
-4. lab/CHECKPOINT.md
-5. lab/BASELINE_PROTOCOL.md
-6. lab/results.jsonl
-7. NEO3000.md
-8. README.md
+2. TASKS.md
+3. ROADMAP.md
+4. lab/GOAL.md
+5. lab/CHECKPOINT.md
+6. lab/BASELINE_PROTOCOL.md
+7. lab/results.jsonl
+8. NEO3000.md
+9. README.md
 ```
-
-Their roles are different:
 
 | File | Authority |
 |---|---|
 | `AGENTS.md` | Operating law, non-collapse protocol, engineering rules, stop conditions |
-| `ROADMAP.md` | Long-range phase order, handoff cursor, entry and exit gates |
-| `lab/GOAL.md` | The one active bounded objective |
+| `TASKS.md` | Executable queue and exact next action |
+| `ROADMAP.md` | Phase order, unlock gates, long-range architecture |
+| `lab/GOAL.md` | One active bounded objective |
 | `lab/CHECKPOINT.md` | Evidence ledger for the active checkpoint |
-| `lab/BASELINE_PROTOCOL.md` | Frozen measurement procedure that candidates may not rewrite |
+| `lab/BASELINE_PROTOCOL.md` | Frozen evaluation procedure |
 | `lab/results.jsonl` | Compact experiment history |
 | `NEO3000.md` | Architecture and hypothesis space |
-| `README.md` | Bootstrap and normal user commands |
+| `README.md` | Normal build, launch, and verification commands |
 
 When documents disagree:
 
 1. executed evidence outranks prose
-2. `lab/CHECKPOINT.md` outranks an old status summary
-3. `lab/GOAL.md` defines the current task
-4. this roadmap defines phase order
-5. architecture documents do not prove implementation status
+2. `TASKS.md` determines the next operation
+3. `lab/CHECKPOINT.md` determines what is proven
+4. `lab/GOAL.md` determines the current bounded objective
+5. this roadmap determines phase order and RSI unlock level
+6. architecture documents do not prove implementation status
 
 ---
 
 # 2. Resume protocol
 
-Before editing anything, run:
+Before editing:
 
 ```powershell
 git status --short
@@ -61,7 +62,7 @@ git fetch origin
 git log --oneline --left-right --graph HEAD...origin/main
 ```
 
-Then establish:
+Establish:
 
 ```text
 current branch
@@ -72,52 +73,90 @@ active checkpoint
 last accepted experiment
 stable server command
 candidate worktree state
-next exact boundary
+next unchecked task
 ```
 
-Never assume `main` is synchronized merely because the working tree is clean.
+Never assume `main` is synchronized because the working tree is clean.
 
-If local and remote have diverged, preserve local work and rebase or merge deliberately. Do not reset, force-push, or discard a working runtime without explicit authorization.
+Never reset, force-push, or discard a functioning stable runtime without explicit authorization.
 
 ---
 
-# 3. Standing architecture
+# 3. Current boundary
+
+## Proven foundation
+
+The repository has demonstrated:
+
+```text
+CUDA 12.6 build on RTX 3060
+Agents-A1 GGUF identity and full hash
+OpenAI-compatible health, model, and chat endpoints
+incremental SSE streaming
+reasoning_content preservation
+tool-call probe validity
+cancellation and immediate API recovery
+server allocation through 65,536 context capacity
+deterministic occupied-context inference through 32,768 raw content tokens
+```
+
+## Current evidence limit
+
+A server configured with `--ctx-size 65536` is not proof that 65,536 prompt tokens were occupied during measured decoding.
+
+The current supported long-context statement is:
+
+```text
+Agents-A1 allocates a 65,536-token context successfully, and measured decode throughput remains approximately flat through 32,768 occupied raw content tokens.
+```
+
+The 40,960-token matrix target failed during tokenization and must be localized before stronger long-context claims are made.
+
+## Current exact boundary
+
+```text
+finish real Pi UI verification
+-> localize the 40,960 tokenizer failure
+-> measure genuinely occupied 40K and 60K prompts or map a precise blocker
+-> run matched LM Studio comparisons
+-> separate allocation capacity from occupied-context performance
+-> close Checkpoint 0
+-> establish RSI-0 substrate
+```
+
+No catalytic inference change should enter the stable path before Checkpoint 0 closes.
+
+---
+
+# 4. Standing architecture
 
 ## Stable daily-driver path
 
 ```text
 Pi
--> OpenAI-compatible endpoint
--> Neo3000 stable server
+-> http://127.0.0.1:9292/v1
+-> stable Neo3000 server
 -> Agents-A1 GGUF
--> streamed reasoning, content, and tool calls
+-> streamed reasoning, content, and tools
 ```
 
-Default endpoint:
+The stable server is the control intelligence for candidate work. It must remain available while candidates are built and tested.
+
+## Candidate path
 
 ```text
-http://127.0.0.1:9292/v1
-```
-
-Default model alias:
-
-```text
-agents-a1
-```
-
-## Experimental path
-
-```text
-stable source and binary
--> isolated candidate branch or worktree
+stable source identity
+-> isolated candidate worktree
 -> one causal intervention
--> candidate build
--> frozen benchmark
--> quality and stability gates
--> accept, reject, or remain inconclusive
+-> candidate build directory
+-> candidate server on separate port
+-> immutable evaluator
+-> quality, stability, memory, and performance gates
+-> reject, accept for review, or remain inconclusive
+-> candidate teardown
 ```
 
-The stable server remains available while a candidate is built and tested. A candidate never replaces the active daily driver merely because it compiles.
+A candidate never replaces the stable runtime merely because it compiles or runs faster once.
 
 ## Catalytic compute primitive
 
@@ -129,121 +168,72 @@ borrow existing compute state
 -> retain only lawful durable state
 ```
 
-Algorithms are local traces through a larger process-object. Do not reduce phase-native, topological, spectral, recurrent, or relational proposals to scalar candidate selection unless that reduction is the declared experiment.
+Algorithms are local traces through a larger process-object. Do not collapse phase-native, topological, spectral, recurrent, or relational proposals into scalar candidate ranking unless that reduction is the declared experiment.
 
 ---
 
-# 4. Current handoff cursor
+# 5. RSI levels
 
-## Remote repository state
+Neo3000 uses three distinct meanings that must not be conflated.
 
-At the time this roadmap was created, GitHub `main` contained the foundation, runtime harness, baseline protocol, and context-matrix runner through:
+## Level 0: Pi-assisted development
 
-```text
-83194dc99d018222f0410afd3d201f95a939d578
-```
+Pi can inspect files, write code, build, and run commands, but the human still defines and supervises every development step.
 
-## Reported local state, pending remote audit
+This is available now.
 
-A local agent reported the following completed work:
+It is not yet RSI because the system does not own a closed modify, evaluate, preserve, and continue cycle.
 
-```text
-CUDA Toolkit:
-C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6
+## Level 1: Supervised bounded RSI
 
-nvcc:
-12.6, V12.6.85
-
-GPU:
-NVIDIA GeForce RTX 3060, 12 GB, SM 8.6
-
-Build:
-Visual Studio 2022 Build Tools
-MSVC 19.44
-llama-server and llama-bench built successfully
-
-Model:
-Agents-A1 GGUF
-architecture: qwen35moe
-quantization: Q4_K Medium
-40 layers
-256 experts, 8 active
-Gated Delta Net hybrid state
-SHA-256 reported as 31AEFA25B7...77C2
-
-Stable server:
-ctx-size 4096
-gpu-layers auto
-cpu-moe enabled
-flash attention auto
-f16 KV
-
-Smoke result:
-approximately 8.2 decode tokens/sec
-approximately 45 prompt tokens/sec
-approximately 11,653 MiB of 12,288 MiB VRAM
-
-API:
-health passed
-model listing passed
-non-streaming completion passed
-SSE streaming passed
-reasoning_content passed
-second request passed
-
-Pi:
-neo3000 provider added
-neo3000 selected as default
-lmstudio provider preserved
-```
-
-The local agent reported commit `4ab05fa`, but that commit was not visible on GitHub when checked. Therefore the work is **reported and locally demonstrated, but not yet remotely auditable**.
-
-## Exact next action
+Agents-A1 may improve a candidate Neo3000 through a deterministic loop, but:
 
 ```text
-safely synchronize the local setup commit with current origin/main
--> rebuild after synchronization
--> push the resulting commit
--> verify Pi round trip and tool call
--> verify cancellation recovery
--> characterize 8K through maximum stable context
--> freeze the LM Studio comparison
--> close or precisely map Checkpoint 0
+stable server remains untouched
+one candidate mechanism is tested at a time
+benchmark and controller hashes are immutable
+failed candidates are automatically torn down
+promotion requires human review
+cycle count is bounded
 ```
 
-No catalytic inference modification should begin before this cursor advances.
+This level unlocks when **Checkpoint RSI-0** closes.
+
+## Level 2: Autonomous bounded RSI
+
+Agents-A1 may execute several candidate cycles from a declared goal without manual command execution. It may revise or stop based on measured results, but may not automatically replace stable.
+
+This level unlocks when **Checkpoint 5** closes.
+
+## Level 3: Recursive compute amplification
+
+Useful computation survives as executable state and reduces equivalent future compute, rather than only improving source code between runs.
+
+This is the long-range target of Checkpoint 7.
 
 ---
 
-# 5. Phase roadmap
+# 6. Phase roadmap
 
-## Checkpoint 0: Baseline parity and context characterization
+## Checkpoint 0: Baseline parity and occupied-context characterization
 
 ### Objective
 
 Establish a correct, reproducible, directly Pi-compatible Agents-A1 runtime and locate the real performance boundary.
 
-### Entrance state
-
-- pinned upstream source identity exists
-- importer exists
-- CUDA build path exists
-- no claim of catalytic compute
-
 ### Required work
 
-1. synchronize local and remote repository state
-2. reproduce the CUDA build after synchronization
-3. prove the exact model identity
-4. prove direct Pi routing to Neo3000
-5. prove reasoning, content, and tool-call streaming
-6. prove cancellation and immediate recovery
-7. freeze the working 4K runtime configuration
-8. test 8K, 16K, 32K, 40K, and 65,536 allocation
-9. record prompt TPS, decode TPS, TTFT, RAM, VRAM, placement, and cached tokens
-10. compare Neo3000 and LM Studio under matched conditions
-11. determine source-custody strategy for the imported engine
+- synchronize local and remote state
+- reproduce the CUDA build
+- prove model identity
+- prove real Pi UI text and tool round trips
+- prove cancellation and immediate recovery from Pi
+- freeze the stable runtime configuration
+- separate configured context capacity from occupied prompt length
+- measure occupied-context behavior through the maximum stable target or map a precise blocker
+- compare Neo3000 and LM Studio under matched conditions
+- record rolling minimum decode speed
+- choose an engine source-custody model
 
 ### Exit gate
 
@@ -252,11 +242,13 @@ Agents-A1 runs through Pi on Neo3000
 and
 streaming, tools, cancellation, and repeated turns are stable
 and
-context scaling is measured through the maximum stable point
+occupied-context behavior is reproducibly characterized
 and
-Neo3000 versus LM Studio is reproducibly characterized
+Neo3000 versus LM Studio is reproducibly compared
 and
-the dominant remaining performance loss is localized enough to choose instrumentation targets
+allocation capacity is documented separately from occupied context
+and
+source custody is selected
 ```
 
 ### Claim ceiling
@@ -275,7 +267,7 @@ NEO3000_BASELINE_OPERATIONAL
 
 ### Forbidden work
 
-- inference-kernel modifications
+- stable inference-kernel modification
 - speculative decoding experiments
 - KV compression experiments
 - Delta Net state modification
@@ -285,21 +277,202 @@ NEO3000_BASELINE_OPERATIONAL
 
 ---
 
+## Checkpoint RSI-0: Self-improvement substrate
+
+### Objective
+
+Create the minimum safe substrate required for Pi to perform supervised recursive self-improvement on Neo3000.
+
+This checkpoint comes immediately after Checkpoint 0. It does not require the compute map or a successful catalytic mechanism. It creates the machinery through which those later checkpoints can be investigated recursively.
+
+### Source custody
+
+The engine must be Git-diffable before Agents-A1 modifies it.
+
+Choose and implement one model:
+
+#### Model A: Track the pinned imported runtime
+
+```text
+one deliberate source-baseline commit
+ordinary branches and worktrees
+native Git diffs and rollback
+explicit future upstream-refresh commits
+```
+
+#### Model B: Generated source plus tracked patch materialization
+
+```text
+exact deterministic import
+tracked patch layer
+candidate materialization from pin plus patch
+verified clean reconstruction before every cycle
+```
+
+The selected model must support reliable branching, diffing, rollback, worktrees, and candidate reconstruction. Repository aesthetics are secondary.
+
+### Stable and candidate isolation
+
+Required structure:
+
+```text
+stable worktree
+stable build directory
+stable server port 9292
+
+candidate worktree
+candidate build directory
+candidate server on a separate port, default 9393
+
+immutable evaluator and controller outside candidate-editable paths
+```
+
+The running stable model must never edit or overwrite the executable producing its current turn.
+
+### Immutable evaluator
+
+Create a tracked benchmark manifest that records hashes for:
+
+```text
+benchmark prompts
+expected protocol checks
+quality gates
+performance metrics
+controller scripts
+model identity
+baseline commit
+stable launch configuration
+```
+
+Before and after every candidate cycle, `neo-loop` verifies those hashes. Mutation invalidates the candidate.
+
+Candidate-editable paths must be explicitly declared. The evaluator, task ledger, stable worktree, stable build, and promotion logic are outside that set.
+
+### Deterministic candidate lifecycle
+
+`neo-loop` must perform:
+
+```text
+read TASKS, GOAL, and CHECKPOINT
+-> verify stable health
+-> verify clean candidate worktree
+-> record baseline commit and benchmark hashes
+-> receive one causal hypothesis
+-> permit one bounded intervention
+-> build candidate separately
+-> launch candidate on separate port
+-> wait for health with timeout
+-> run immutable quality gates
+-> run immutable performance gates
+-> record all results
+-> stop candidate
+-> remove candidate runtime state
+-> verify stable health again
+-> classify reject, reviewable accept, or inconclusive
+```
+
+### Mandatory safety gates
+
+- stable worktree cannot be modified by the candidate cycle
+- stable server cannot be stopped by the candidate cycle
+- stable and candidate ports cannot collide
+- stable and candidate build directories cannot overlap
+- candidate cannot rewrite evaluator or controller files
+- candidate cannot change model weights or model identity
+- candidate cannot push or promote itself
+- process timeout is enforced
+- memory ceiling is enforced
+- repeated crash ceiling is enforced
+- benchmark mutation causes immediate rejection
+- malformed text, reasoning, or tools causes rejection
+- cancellation or repeated-turn regression causes rejection
+- unexplained memory growth causes rejection
+- candidate process is torn down after every result
+- stable health is checked before and after every cycle
+
+### Required proof cycles
+
+#### Supervised rejection cycle
+
+Agents-A1 makes one bounded candidate change that deliberately or naturally fails a declared gate.
+
+Pass conditions:
+
+```text
+candidate is rejected
+candidate process is removed
+stable server remains healthy
+stable files remain unchanged
+failure is recorded accurately
+next task remains resumable
+```
+
+#### Supervised acceptance cycle
+
+Agents-A1 makes one bounded candidate change that passes all declared gates.
+
+Pass conditions:
+
+```text
+candidate is marked reviewable
+stable is not automatically replaced
+human can inspect exact diff and evidence
+stable server remains healthy
+accepted result is recorded
+```
+
+The acceptance cycle may use a small non-performance change if no safe performance intervention is ready, but it must exercise the complete source, build, launch, evaluate, and teardown path.
+
+### Exit gate
+
+```text
+engine source is Git-diffable
+and
+stable and candidate are isolated
+and
+benchmark and controller immutability are enforced
+and
+one supervised rejection cycle succeeds safely
+and
+one supervised acceptance cycle succeeds safely
+and
+stable survives both cycles
+and
+results and handoffs remain accurate
+```
+
+### Unlock
+
+After exit:
+
+```text
+SUPERVISED_BOUNDED_RSI_AVAILABLE
+```
+
+Pi may then be prompted to run one or a small bounded number of candidate cycles with human promotion review.
+
+Automatic stable promotion remains forbidden.
+
+---
+
 ## Checkpoint 1: Compute map
 
 ### Objective
 
-Measure where time, bandwidth, memory, and state growth actually occur in Agents-A1.
+Measure where time, bandwidth, memory, and state growth occur in Agents-A1.
 
-Agents-A1 is a hybrid `qwen35moe` model. The compute map must distinguish at least:
+Checkpoint 1 may be performed through the supervised RSI substrate. Agents-A1 can propose and implement instrumentation candidates while stable remains intact.
+
+The compute map must distinguish:
 
 ```text
 attention and KV traffic
 Gated Delta Net recurrent state
 MoE expert routing
-expert weight residency and transfer
+expert residency and transfer
 CPU-MoE execution
-GPU layer or tensor displacement caused by context allocation
+GPU placement changes caused by configured context capacity
+occupied-context state growth
 prompt-cache reuse
 CUDA kernel occupancy
 CPU and GPU synchronization
@@ -308,7 +481,7 @@ sampling and server overhead
 
 ### Design rule
 
-Tracing must be optional and removable from release builds. Normal daily-driver performance must remain measurable without tracing overhead.
+Tracing must be optional and absent from normal release cost when disabled.
 
 ### Required instrumentation
 
@@ -317,26 +490,25 @@ Tracing must be optional and removable from release builds. Normal daily-driver 
 - attention versus recurrent-block timing
 - expert IDs selected per layer and token
 - expert residency and transfer bytes
-- CPU/GPU execution placement
-- KV and recurrent-state allocation by context
+- CPU and GPU execution placement
+- KV and recurrent-state allocation by occupied context
 - prompt-cache hit and reused-token counts
 - CUDA synchronization and transfer events
 - peak RAM and VRAM
-- stable server-level timings
+- stable server timings
 
 ### Deliverables
 
 ```text
-neo/trace/ or the narrowest viable upstream hooks
 one fixed trace schema
 one trace-disabled release build
 one trace-enabled diagnostic build
-one bottleneck report stored as a compact checkpoint update
+one causal bottleneck map
 ```
 
 ### Exit gate
 
-The top one or two causes of short-context cost and long-context degradation are causally localized, not merely correlated with context length.
+The top one or two causes of short-context cost and long-context degradation are causally localized rather than inferred from correlation.
 
 ### Claim ceiling
 
@@ -352,43 +524,33 @@ NEO3000_COMPUTE_PATH_MAPPED
 
 Remove or reuse one measured source of fresh computation while preserving Pi compatibility and model behavior.
 
-The mechanism is selected from Checkpoint 1 evidence. Do not choose by fashion or prior roadmap order.
+The mechanism is selected from Checkpoint 1 evidence.
 
 ### Candidate families
 
-#### A. Catalytic expert residency
+#### Catalytic expert residency
 
-Use repeated MoE routing structure to retain, prefetch, rotate, or share expert state rather than repeatedly transferring the same active experts.
+Retain, prefetch, rotate, or share repeatedly selected expert state when measured expert movement dominates.
 
-Best fit when the map shows CPU-MoE bandwidth or expert movement dominates.
-
-#### B. Recurrent-state catalysis
+#### Recurrent-state catalysis
 
 Treat Gated Delta Net state as an executable carrier that can be borrowed, forked, projected, or compacted without replaying equivalent history.
 
-Best fit when recurrent-state update or context-state traffic dominates.
+#### Single-model catalytic speculation
 
-#### C. Single-model catalytic speculation
+Use reduced-depth or alternate-path trajectories of Agents-A1 to draft future tokens, then verify several positions with the full model.
 
-Use reduced-depth or alternate-path traversals of Agents-A1 to draft future tokens, then verify multiple tokens with the full model.
+#### Holographic long-context side channel
 
-Best fit when serial full-model decode dominates and useful draft acceptance is plausible.
+Keep recent context exact while distant history remains an executable relational carrier queried by the current token.
 
-#### D. Holographic long-context side channel
+#### Layer-orbit closure
 
-Keep recent context exact while distant history is represented as an executable relational carrier queried by the current token.
+Detect relational stabilization before the final layer and skip or cheaply verify the remaining trajectory.
 
-Best fit when attention/KV cost or state displacement drives the long-context slope.
+### Experiment declaration
 
-#### E. Layer-orbit closure
-
-Detect relational stabilization before the final layer and skip or cheaply verify the remaining path.
-
-Best fit when later layers often preserve an already stable token relation.
-
-### Experiment requirements
-
-Every intervention must declare:
+Every intervention must name:
 
 ```text
 expensive operation
@@ -403,11 +565,9 @@ measurement that rejects the hypothesis
 
 ### Exit gate
 
-One bounded mechanism produces a repeatable improvement in the declared target metric without violating daily-driver quality, tools, stability, or memory limits.
+One bounded mechanism produces a repeatable improvement without violating daily-driver quality, tools, stability, or memory limits.
 
-### Claim ceiling
-
-Use a mechanism-specific claim. Do not claim general catalytic inference from one local intervention.
+Do not claim general catalytic inference from one local intervention.
 
 ---
 
@@ -415,34 +575,27 @@ Use a mechanism-specific claim. Do not claim general catalytic inference from on
 
 ### Objective
 
-Flatten the decline in decode speed as context grows.
-
-### Initial structure
+Flatten occupied-context cost while preserving executable relational structure.
 
 ```text
-recent context
-= exact token-level state
-
-middle context
-= structured relational blocks
-
-distant context
-= compressed executable phase, spectral, recurrent, or topological state
+recent context = exact token-level state
+middle context = structured relational blocks
+distant context = executable phase, spectral, recurrent, or topological state
 ```
 
-The distant representation must be executable, not a dead summary. A current query must be able to illuminate and reconstruct relevant relations.
+The distant representation must be executable, not a dead summary.
 
-### Required comparisons
+### Required controls
 
 - full exact context
 - exact recent window plus side channel
 - side channel disabled
-- random or shuffled side channel
-- equivalent memory-budget baseline
+- side channel shuffled
+- equivalent-memory baseline
 
 ### Exit gate
 
-The context degradation ratio improves at one or more long-context points while declared retrieval, reasoning, and tool-use gates remain within tolerance.
+Occupied-context degradation improves while retrieval, reasoning, tools, and stability remain within declared tolerance.
 
 ---
 
@@ -452,7 +605,7 @@ The context degradation ratio improves at one or more long-context points while 
 
 Determine whether hidden-state evolution becomes predictively closed before the final layer.
 
-### Candidate observables
+Candidate observables:
 
 - top-k relational ordering
 - residual-direction rotation
@@ -465,64 +618,53 @@ Confidence alone is not a closure law.
 
 ### Exit gate
 
-A declared relational closure condition permits measurable layer work to be skipped or replaced by a cheaper verification tail without unacceptable output divergence.
+A declared relational closure condition permits measurable layer work to be skipped or replaced by a cheaper verification tail without unacceptable divergence.
 
 ---
 
-## Checkpoint 5: Bounded autonomous candidate loop
+## Checkpoint 5: Autonomous bounded RSI
 
 ### Objective
 
-Allow Agents-A1, running through stable Neo3000, to improve a candidate Neo3000 build through goals and checkpoints.
+Advance from supervised candidate cycles to several autonomous candidate cycles from one declared goal.
 
 ### Runtime structure
 
 ```text
-stable server
-serves the active Pi session
-
-candidate worktree
-receives one bounded source intervention
-
-neo-loop
-builds, launches, benchmarks, records, and tears down candidates
+stable Agents-A1 through Neo3000
+-> reads TASKS, GOAL, and CHECKPOINT
+-> formulates one causal hypothesis
+-> modifies only the candidate worktree
+-> invokes deterministic neo-loop
+-> receives measured result
+-> revises, stops, or tries the next bounded intervention
 ```
 
-`neo-loop` is deterministic machinery. Agents-A1 remains the sole reasoning model.
+`neo-loop` remains deterministic machinery. Agents-A1 remains the sole reasoning model.
 
-### Minimal loop
+### Additional gates beyond RSI-0
 
-```text
-read GOAL and CHECKPOINT
--> inspect hot path
--> state one causal hypothesis
--> edit one mechanism
--> build candidate
--> run frozen benchmark
--> compare with stable
--> record result
--> revise or stop
-```
-
-### Mandatory stop conditions
-
-- stable server mutation
-- benchmark mutation
-- output corruption
-- malformed tools
-- unexplained memory growth
-- repeated crash
-- branch-state contamination
-- restoration or isolation failure
-- three consecutive non-improving interventions unless the goal explicitly permits exploration
+- several cycles complete without manual command execution
+- cycle budget and wall-clock budget are enforced
+- three consecutive non-improving interventions stop the run unless exploration is explicitly authorized
+- false success reporting is detected by evaluator evidence
+- branch and result state remain resumable after interruption
+- candidate crashes do not interrupt stable inference
+- the model does not modify its own goal, evaluator, controller, or promotion law during a run
 
 ### Promotion
 
-Automatic promotion remains disabled initially. Accepted candidates require explicit review and a meaningful architectural commit.
+Automatic promotion remains disabled. Reviewable candidates require explicit human approval and a meaningful architectural commit.
 
 ### Exit gate
 
-Agents-A1 completes several bounded candidate cycles without manual command execution, benchmark drift, stable-server loss, or false success reporting.
+Agents-A1 completes several bounded candidate cycles without benchmark drift, stable-server loss, branch contamination, or false success reporting.
+
+### Unlock
+
+```text
+AUTONOMOUS_BOUNDED_RSI_AVAILABLE
+```
 
 ---
 
@@ -530,9 +672,9 @@ Agents-A1 completes several bounded candidate cycles without manual command exec
 
 ### Objective
 
-Move selected hot-path state transitions into exact borrow, transform, extract, and restore form.
+Move selected hot-path transitions into exact borrow, transform, extract, and restore form.
 
-Begin with operations where the inverse is exact and performance-relevant:
+Start with operations whose inverse or closure is exact and performance-relevant:
 
 - permutations
 - routing tables
@@ -544,7 +686,7 @@ Begin with operations where the inverse is exact and performance-relevant:
 - speculative branch bookkeeping
 - reusable dirty scratch arenas
 
-Do not begin by claiming matrix multiplication or the complete transformer is thermodynamically reversible.
+Do not begin by claiming matrix multiplication or the whole transformer is thermodynamically reversible.
 
 ### Exit gate
 
@@ -556,7 +698,7 @@ At least one native kernel reduces allocation, copying, bandwidth, or fresh oper
 
 ### Objective
 
-Allow useful computational structure to return as substrate or operator for subsequent inference.
+Allow useful computational structure to return as substrate or operator for later inference.
 
 ```text
 compute
@@ -576,52 +718,38 @@ This metric must be grounded in removed or reused operator work. Wall-clock spee
 
 ### Long-range target
 
-Neo3000 should progressively make additional reasoning depth cheaper because prior computation survives as executable structure rather than being flattened into text and recomputed.
+Additional reasoning depth becomes cheaper because prior computation survives as executable structure rather than being flattened into text and recomputed.
 
 ---
 
-# 6. Source custody
+# 7. Source custody law
 
-The initial importer materializes pinned llama.cpp source locally. Before autonomous source modification begins, the project must choose and document one custody model:
+The engine must not remain untracked once Agents-A1 begins modifying it.
 
-## Option A: Track the imported runtime
+The custody decision must prioritize:
 
-Advantages:
+```text
+reliable Git diffs
+candidate worktrees
+clean rollback
+exact reconstruction
+upstream identity
+licensing
+agent comprehension
+```
 
-- ordinary Git diffs
-- candidate worktrees function naturally
-- exact source history lives in Neo3000
-
-Costs:
-
-- large initial source commit
-- future upstream refreshes produce broad diffs
-
-## Option B: Preserve a generated import plus a tracked patch layer
-
-Advantages:
-
-- smaller repository
-- clear upstream boundary
-
-Costs:
-
-- more complex candidate worktrees
-- every experiment must reliably materialize the same source before patching
-- agents may reason poorly across generated versus tracked code
-
-The decision must prioritize reliable recursive source editing, not repository aesthetics. Do not leave the engine untracked once Agents-A1 begins modifying it.
+A large deliberate source-baseline commit is preferable to a smaller repository that cannot safely express candidate changes.
 
 ---
 
-# 7. Bloat boundary
+# 8. Bloat boundary
 
 Neo3000 earns complexity only when it removes more compute or operational friction than it adds.
 
 Do not add during the early roadmap:
 
 - MCP
-- AGS governance import
+- AGS governance imports
 - databases
 - dashboards
 - general plugin systems
@@ -635,38 +763,43 @@ The minimum durable control surface is:
 ```text
 Git
 AGENTS.md
+TASKS.md
 ROADMAP.md
 lab/GOAL.md
 lab/CHECKPOINT.md
 lab/BASELINE_PROTOCOL.md
 lab/results.jsonl
+stable and candidate worktrees
 stable and candidate builds
-neo-loop when Checkpoint 5 begins
+immutable evaluator manifest
+neo-loop
 ```
 
 ---
 
-# 8. Handoff law
+# 9. Handoff law
 
 Before an agent stops, it must leave the repository resumable.
 
 Update only what changed:
 
-1. `lab/CHECKPOINT.md` with proven gates
-2. `lab/GOAL.md` with the next exact action
-3. `lab/results.jsonl` with one compact record when an experiment ran
-4. this roadmap only when phase order, current cursor, or architecture materially changed
+1. `TASKS.md` so the next unchecked item is real
+2. `lab/CHECKPOINT.md` with proven gates
+3. `lab/GOAL.md` with the next exact action
+4. `lab/results.jsonl` when an experiment ran
+5. this roadmap only when phase order, unlock law, or architecture changed
 
 The final handoff must state:
 
 ```text
 branch
-HEAD commit
+full HEAD commit
 working-tree status
 stable server command
 candidate command, if any
+stable and candidate ports
 model identity
-checkpoint status
+checkpoint and RSI level
 last executed test
 result
 failed or inconclusive mechanisms
@@ -675,11 +808,11 @@ next exact command
 known risks
 ```
 
-Never end with only a narrative report while the tracked checkpoint remains stale.
+Never end with only a narrative report while the task board remains stale.
 
 ---
 
-# 9. Commit law
+# 10. Commit law
 
 Use meaningful architectural commits. Avoid micro-commit pellets.
 
@@ -687,10 +820,12 @@ Examples:
 
 ```text
 Establish CUDA Agents-A1 baseline
-Complete Neo3000 baseline characterization
+Complete occupied-context baseline
+Establish Neo3000 source custody
+Build supervised RSI substrate
 Instrument hybrid inference compute path
 Add catalytic expert residency prototype
-Establish bounded candidate iteration loop
+Enable autonomous bounded candidate cycles
 ```
 
 Never commit:
@@ -704,4 +839,4 @@ Never commit:
 - secrets
 - Pi credentials
 
-A build is not proof of correctness. A faster run is not proof of a mechanism. A negative result is valid when it maps the Wall and leaves the stable runtime intact.
+A build is not proof of correctness. A faster run is not proof of a mechanism. A negative result is valid when it maps the Wall and leaves stable intact.
