@@ -50,7 +50,15 @@ python scripts/baseline_harness.py
 python scripts/baseline_harness.py --tool-test --output lab/tool-test.local.json
 ```
 
-The harness verifies health, model identity, incremental SSE streaming, reasoning fields, and optional OpenAI-compatible tool calls. Local result files are ignored by Git.
+The harness verifies health, model identity, incremental SSE streaming, reasoning fields, authoritative server timings, cached prompt tokens, and optional OpenAI-compatible tool calls. Local result files are ignored by Git.
+
+After smoke verification passes, run the deterministic long-context matrix:
+
+```powershell
+python scripts/context_matrix.py
+```
+
+Its default points are 2K, 8K, 16K, 32K, 40K, and 60K raw content tokens. Prompt-cache reuse is disabled unless `--cache-prompt` is explicitly supplied.
 
 The fixed measurement and acceptance procedure is in `lab/BASELINE_PROTOCOL.md`.
 
