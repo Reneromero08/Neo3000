@@ -24,10 +24,8 @@ slots/
 *.log
 *.trace
 benchmarks/local/
-lab/results.local.json
-lab/results.local.jsonl
-lab/model.local.json
-lab/environment.local.json
+lab/*.local.json
+lab/*.local.jsonl
 
 # Temporary imports and Python
 __pycache__/
