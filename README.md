@@ -4,6 +4,20 @@ Neo3000 is a performance-first local LLM inference engine built to make computat
 
 The immediate objective is simple: replace the current LM Studio path with a fast, inspectable, OpenAI-compatible runtime that serves Agents-A1 to Pi. Once baseline parity is established, Neo3000 will evolve inside its own repository through bounded self-improvement loops.
 
+## Start here
+
+Agents and contributors should read:
+
+```text
+AGENTS.md
+TASKS.md
+ROADMAP.md
+lab/GOAL.md
+lab/CHECKPOINT.md
+```
+
+`TASKS.md` is the executable queue. `ROADMAP.md` explains the longer architecture and checkpoint sequence.
+
 ## Direction
 
 ```text
@@ -64,10 +78,12 @@ The fixed measurement and acceptance procedure is in `lab/BASELINE_PROTOCOL.md`.
 
 ## Repository map
 
-- `NEO3000.md`: architecture and research direction
 - `AGENTS.md`: operating law for Agents-A1 and other coding agents
-- `lab/GOAL.md`: the active objective
-- `lab/CHECKPOINT.md`: acceptance gates and current boundary
+- `TASKS.md`: current checkbox queue and exact handoff cursor
+- `ROADMAP.md`: architecture, checkpoints, and long-range phase order
+- `NEO3000.md`: research direction and catalytic hypothesis space
+- `lab/GOAL.md`: the active bounded objective
+- `lab/CHECKPOINT.md`: evidence ledger and acceptance gates
 - `lab/BASELINE_PROTOCOL.md`: frozen verification and comparison protocol
 - `upstream/`: pinned source identity and import manifest
 - `scripts/`: reproducible import, build, launch, and verification commands
