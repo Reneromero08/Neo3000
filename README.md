@@ -24,8 +24,30 @@ Checkpoint 0 is baseline establishment:
 1. Import the pinned upstream runtime.
 2. Build CUDA release binaries on Windows.
 3. Load the exact Agents-A1 GGUF.
-4. expose the OpenAI-compatible streaming endpoint.
+4. Expose the OpenAI-compatible streaming endpoint.
 5. Connect Pi.
 6. Record short-context and long-context performance.
 
-See `NEO3000.md`, `AGENTS.md`, and `lab/CHECKPOINT.md` after the foundation scaffold is installed.
+No catalytic feature should enter the hot path until this checkpoint is closed.
+
+## Bootstrap
+
+```powershell
+python scripts/import_upstream.py
+powershell -ExecutionPolicy Bypass -File scripts/build_cuda.ps1
+$env:NEO3000_MODEL = "D:\path\to\Agents-A1.gguf"
+powershell -ExecutionPolicy Bypass -File scripts/run_server.ps1
+```
+
+The server endpoint defaults to `http://127.0.0.1:9292/v1`.
+
+## Repository map
+
+- `NEO3000.md`: architecture and research direction
+- `AGENTS.md`: operating law for Agents-A1 and other coding agents
+- `lab/GOAL.md`: the active objective
+- `lab/CHECKPOINT.md`: acceptance gates and current boundary
+- `upstream/`: pinned source identity and import manifest
+- `scripts/`: reproducible import, build, and launch commands
+
+The imported runtime source is intentionally absent from the initial commit. `scripts/import_upstream.py` materializes it from the exact pinned commit.

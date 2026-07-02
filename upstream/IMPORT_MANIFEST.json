@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "source_repository": "https://github.com/ggml-org/llama.cpp.git",
+  "commit": "fdb1db877c526ec90f668eca1b858da5dba85560",
+  "destination_root": ".",
+  "paths": [
+    "CMakeLists.txt",
+    "LICENSE",
+    "AUTHORS",
+    "cmake",
+    "ggml",
+    "include",
+    "src",
+    "common",
+    "tools",
+    "vendor",
+    "scripts"
+  ],
+  "build_policy": {
+    "tests": false,
+    "examples": false,
+    "pocs": false,
+    "web_ui": false,
+    "cuda": true,
+    "server": true,
+    "benchmark": true
+  },
+  "notes": [
+    "This is a source import, not a GitHub fork or submodule.",
+    "The initial import is intentionally broad enough to preserve a reliable upstream build graph.",
+    "Pruning is deferred until Checkpoint 0 proves which paths are actually unnecessary.",
+    "Imported license and attribution files must remain intact."
+  ]
+}
