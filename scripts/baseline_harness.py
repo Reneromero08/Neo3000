@@ -37,6 +37,7 @@ class StreamMeasurement:
     repeat: int
     http_status: int
     time_to_first_event_s: float | None
+    time_to_first_token_s: float | None
     time_to_first_content_s: float | None
     total_time_s: float
     event_count: int
@@ -45,7 +46,9 @@ class StreamMeasurement:
     tool_calls: list[dict[str, Any]]
     completion_tokens: int | None
     prompt_tokens: int | None
+    cached_prompt_tokens: int | None
     reported_tokens_per_second: float | None
+    timings: dict[str, Any]
     finish_reason: str | None
 
 
@@ -156,11 +159,13 @@ def stream_completion(
 
     start = time.perf_counter()
     first_event: float | None = None
+    first_token: float | None = None
     first_content: float | None = None
     content_parts: list[str] = []
     reasoning_parts: list[str] = []
     tool_fragments: dict[int, dict[str, Any]] = {}
     usage: dict[str, Any] = {}
+    timings: dict[str, Any] = {}
     finish_reason: str | None = None
     event_count = 0
 
@@ -175,6 +180,8 @@ def stream_completion(
 
                 if isinstance(event.get("usage"), dict):
                     usage.update(event["usage"])
+                if isinstance(event.get("timings"), dict):
+                    timings.update(event["timings"])
 
                 choices = event.get("choices")
                 if not isinstance(choices, list) or not choices:
@@ -188,16 +195,22 @@ def stream_completion(
 
                 text = delta.get("content")
                 if isinstance(text, str) and text:
+                    if first_token is None:
+                        first_token = now - start
                     if first_content is None:
                         first_content = now - start
                     content_parts.append(text)
 
                 reasoning = delta.get("reasoning_content")
                 if isinstance(reasoning, str) and reasoning:
+                    if first_token is None:
+                        first_token = now - start
                     reasoning_parts.append(reasoning)
 
                 fragments = delta.get("tool_calls")
-                if isinstance(fragments, list):
+                if isinstance(fragments, list) and fragments:
+                    if first_token is None:
+                        first_token = now - start
                     for fragment in fragments:
                         if isinstance(fragment, dict):
                             merge_tool_call(tool_fragments, fragment)
@@ -211,19 +224,29 @@ def stream_completion(
 
     completion_tokens = usage.get("completion_tokens")
     prompt_tokens = usage.get("prompt_tokens")
+    prompt_details = usage.get("prompt_tokens_details")
+    cached_prompt_tokens = prompt_details.get("cached_tokens") if isinstance(prompt_details, dict) else None
+
     if not isinstance(completion_tokens, int):
         completion_tokens = None
     if not isinstance(prompt_tokens, int):
         prompt_tokens = None
+    if not isinstance(cached_prompt_tokens, int):
+        cached_prompt_tokens = None
 
-    tps = None
-    if completion_tokens and first_content is not None and elapsed > first_content:
-        tps = completion_tokens / (elapsed - first_content)
+    server_tps = timings.get("predicted_per_second")
+    if isinstance(server_tps, (int, float)):
+        tps = float(server_tps)
+    elif completion_tokens and first_token is not None and elapsed > first_token:
+        tps = completion_tokens / (elapsed - first_token)
+    else:
+        tps = None
 
     return StreamMeasurement(
         repeat=repeat,
         http_status=status,
         time_to_first_event_s=first_event,
+        time_to_first_token_s=first_token,
         time_to_first_content_s=first_content,
         total_time_s=elapsed,
         event_count=event_count,
@@ -232,7 +255,9 @@ def stream_completion(
         tool_calls=[tool_fragments[key] for key in sorted(tool_fragments)],
         completion_tokens=completion_tokens,
         prompt_tokens=prompt_tokens,
+        cached_prompt_tokens=cached_prompt_tokens,
         reported_tokens_per_second=tps,
+        timings=timings,
         finish_reason=finish_reason,
     )
 
@@ -245,11 +270,16 @@ def summarize(measurements: list[StreamMeasurement]) -> dict[str, Any]:
     return {
         "repeat_count": len(measurements),
         "median_time_to_first_event_s": median([item.time_to_first_event_s for item in measurements]),
+        "median_time_to_first_token_s": median([item.time_to_first_token_s for item in measurements]),
         "median_time_to_first_content_s": median([item.time_to_first_content_s for item in measurements]),
         "median_total_time_s": median([item.total_time_s for item in measurements]),
         "median_reported_tokens_per_second": median(
             [item.reported_tokens_per_second for item in measurements]
         ),
+        "median_cached_prompt_tokens": median([
+            float(item.cached_prompt_tokens) if item.cached_prompt_tokens is not None else None
+            for item in measurements
+        ]),
         "all_http_200": all(item.http_status == 200 for item in measurements),
         "all_streamed_multiple_events": all(item.event_count > 1 for item in measurements),
     }
@@ -288,6 +318,7 @@ def main() -> int:
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--timeout", type=float, default=600.0)
+    parser.add_argument("--cache-prompt", action="store_true")
     parser.add_argument("--tool-test", action="store_true")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
@@ -314,6 +345,7 @@ def main() -> int:
         "max_tokens": args.max_tokens,
         "stream": True,
         "stream_options": {"include_usage": True},
+        "cache_prompt": args.cache_prompt,
     }
     if args.tool_test:
         payload["messages"] = [{
@@ -350,14 +382,15 @@ def main() -> int:
         measurements.append(measurement)
         print(
             f"  events={measurement.event_count} "
+            f"ttft={measurement.time_to_first_token_s!r} "
             f"ttfc={measurement.time_to_first_content_s!r} "
-            f"total={measurement.total_time_s:.3f}s "
-            f"tokens={measurement.completion_tokens!r} "
-            f"tps={measurement.reported_tokens_per_second!r}"
+            f"prompt_tps={measurement.timings.get('prompt_per_second')!r} "
+            f"decode_tps={measurement.reported_tokens_per_second!r} "
+            f"cached={measurement.cached_prompt_tokens!r}"
         )
 
     result: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "captured_at": utc_now(),
         "neo3000_commit": git_head(),
         "machine": {
@@ -378,6 +411,7 @@ def main() -> int:
             "prompt_characters": len(prompt),
             "max_tokens": args.max_tokens,
             "temperature": args.temperature,
+            "cache_prompt": args.cache_prompt,
             "tool_test": args.tool_test,
         },
         "measurements": [asdict(item) for item in measurements],
