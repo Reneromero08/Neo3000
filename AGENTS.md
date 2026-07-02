@@ -4,6 +4,24 @@
 
 Build Neo3000 into the fastest trustworthy daily-driver runtime for Agents-A1, then push its compute architecture toward catalytic, phase-native, recursively reusable inference.
 
+## Mandatory entry sequence
+
+Every agent must begin by reading:
+
+```text
+1. AGENTS.md
+2. TASKS.md
+3. ROADMAP.md
+4. lab/GOAL.md
+5. lab/CHECKPOINT.md
+6. lab/BASELINE_PROTOCOL.md
+7. lab/results.jsonl
+```
+
+`TASKS.md` is the operational queue. The next unchecked item in its current execution queue is the default next task unless it is blocked by newer executed evidence.
+
+An agent must not rely on chat history when the repository task board says something different. Reconcile the repository state first.
+
 ## Current mode
 
 Checkpoint 0 is verification mode.
@@ -51,6 +69,9 @@ The algorithm is a local trace through a larger process-object. Negative results
 10. Keep commits as meaningful architectural chunks. Do not create micro-commit pellets.
 11. Do not generate report farms. Update `lab/CHECKPOINT.md` and append one compact result record.
 12. Never promote a candidate merely because it builds.
+13. Keep `TASKS.md` synchronized with reality. A narrative handoff does not replace the task board.
+14. Check off tasks only from executed or remotely auditable evidence.
+15. Before stopping, ensure the next unchecked task is the actual next action.
 
 ## Repository discipline
 
@@ -96,16 +117,17 @@ Append compact JSON objects to `lab/results.jsonl` only after measurements exist
 
 Once Checkpoint 0 and the benchmark harness are complete, a bounded Agents-A1 loop may:
 
-1. read `lab/GOAL.md`
-2. read `lab/CHECKPOINT.md`
-3. inspect the current hot path
-4. state one causal hypothesis
-5. modify one mechanism in a candidate worktree
-6. build the candidate
-7. run the fixed benchmark
-8. compare it with stable
-9. append one result
-10. update the checkpoint only when an acceptance gate is actually closed
+1. read `TASKS.md`
+2. read `lab/GOAL.md`
+3. read `lab/CHECKPOINT.md`
+4. inspect the current hot path
+5. state one causal hypothesis
+6. modify one mechanism in a candidate worktree
+7. build the candidate
+8. run the fixed benchmark
+9. compare it with stable
+10. append one result
+11. update the checkpoint and task board only when an acceptance gate is actually closed
 
 Stop immediately on:
 
