@@ -1,7 +1,7 @@
 # Neo3000 Task Board
 
 **Active checkpoint:** 0, baseline parity and context characterization  
-**Remote HEAD audited:** `ac5c3b76b24598d41a28e3e691e994c7bf0e96a1`  
+**Remote HEAD audited:** `a5bef72` (occupied-context baseline, auto-fit + CPU-MoE audits)  
 **Claim ceiling:** `NEO3000_FOUNDATION_INITIALIZED`  
 **Next exact boundary:** user completes Pi UI verification and LM Studio comparison, then close Checkpoint 0
 
@@ -126,7 +126,7 @@ PARTIAL. CHECKPOINT and GOAL updated. Pi and LM Studio still need user action.
 - [x] Experiment record `neo-exp-0003` appended to `lab/results.jsonl`.
 - [x] Source custody: Option A recommended (track imported runtime).
 - [x] Stable daily-driver 4K command confirmed working.
-- [ ] Commit and push one meaningful Checkpoint 0 closure chunk.
+- [x] Commit and push one meaningful Checkpoint 0 closure chunk (`a5bef72`).
 - [ ] Mark Pi UI gates after user verification.
 - [ ] Change claim ceiling to `NEO3000_BASELINE_OPERATIONAL` only after all exit gates.
 
