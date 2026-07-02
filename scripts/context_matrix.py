@@ -140,10 +140,19 @@ def median(values: list[float | None]) -> float | None:
     return statistics.median(present) if present else None
 
 
+def timing_value(measurement: Any, key: str) -> float | None:
+    value = measurement.timings.get(key)
+    return float(value) if isinstance(value, (int, float)) else None
+
+
 def point_summary(measurements: list[Any]) -> dict[str, Any]:
     return {
         "median_prompt_tokens": median([
             float(item.prompt_tokens) if item.prompt_tokens is not None else None
+            for item in measurements
+        ]),
+        "median_cached_prompt_tokens": median([
+            float(item.cached_prompt_tokens) if item.cached_prompt_tokens is not None else None
             for item in measurements
         ]),
         "median_completion_tokens": median([
@@ -151,8 +160,12 @@ def point_summary(measurements: list[Any]) -> dict[str, Any]:
             for item in measurements
         ]),
         "median_time_to_first_event_s": median([item.time_to_first_event_s for item in measurements]),
+        "median_time_to_first_token_s": median([item.time_to_first_token_s for item in measurements]),
         "median_time_to_first_content_s": median([item.time_to_first_content_s for item in measurements]),
         "median_total_time_s": median([item.total_time_s for item in measurements]),
+        "median_prompt_tokens_per_second": median([
+            timing_value(item, "prompt_per_second") for item in measurements
+        ]),
         "median_decode_tokens_per_second": median([
             item.reported_tokens_per_second for item in measurements
         ]),
@@ -194,7 +207,7 @@ def main() -> int:
         raise HarnessError(f"model {args.model!r} not found; server reported {model_ids}")
 
     result: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "captured_at": utc_now(),
         "neo3000_commit": git_head(),
         "server": {"base_url": api_url, "model": args.model, "model_ids": model_ids},
@@ -253,7 +266,9 @@ def main() -> int:
                 measurements.append(measurement)
                 print(
                     f"  actual_prompt={measurement.prompt_tokens!r} "
-                    f"ttfc={measurement.time_to_first_content_s!r} "
+                    f"cached={measurement.cached_prompt_tokens!r} "
+                    f"ttft={measurement.time_to_first_token_s!r} "
+                    f"prompt_tps={measurement.timings.get('prompt_per_second')!r} "
                     f"decode_tps={measurement.reported_tokens_per_second!r}"
                 )
 
