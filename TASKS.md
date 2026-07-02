@@ -1,263 +1,200 @@
 # Neo3000 Task Board
 
 **Active checkpoint:** 0, baseline parity and context characterization  
-**Current state:** local baseline work was reported complete at 4K, but the reported local commit is not yet visible on GitHub  
+**Remote HEAD audited:** `120ae2af23a4a8b396ab5251174228835054de0c`  
 **Claim ceiling:** `NEO3000_FOUNDATION_INITIALIZED`  
-**Next exact boundary:** reconcile the local baseline commit with `origin/main`, rebuild, push it, then finish Pi and context verification
+**Next exact boundary:** prove occupied-context behavior beyond 32K, complete the Pi UI and LM Studio comparisons, then close Checkpoint 0
 
-This is the operational queue. `ROADMAP.md` explains the architecture and phase order. This file says what to do next.
+`ROADMAP.md` defines the architecture and phase order. This file is the executable queue.
 
 ## Status law
 
-- `[x]` means the result is present in the repository or supported by pushed evidence.
-- `[ ]` means incomplete, unverified, or only reported from an unpushed local state.
-- A task reported by an agent remains unchecked until its evidence is pushed and inspected.
+- `[x]` means supported by pushed repository evidence.
+- `[ ]` means incomplete, ambiguous, or unsupported by the current evidence.
+- A server allocation size is not the same as the number of tokens actually occupying the context.
+- Do not select a causal bottleneck from correlation alone.
 - Work from top to bottom unless a task is explicitly blocked.
-- Do not begin a later checkpoint while an earlier exit gate remains open.
+
+---
+
+# Proven foundation
+
+- [x] Local and remote history reconciled and pushed.
+- [x] CUDA 12.6 build succeeds with MSVC 19.44 and SM 8.6.
+- [x] `llama-server.exe` and `llama-bench.exe` build successfully.
+- [x] RTX 3060 is detected as a CUDA device.
+- [x] Agents-A1 model identity and full SHA-256 are recorded.
+- [x] OpenAI-compatible health, models, chat, and SSE endpoints pass.
+- [x] Reasoning is preserved in `reasoning_content`.
+- [x] `neo3000_probe` tool calls pass 3 of 3 with valid JSON arguments.
+- [x] Cancellation followed by immediate API recovery passes.
+- [x] Repeated API turns remain stable.
+- [x] Server allocation succeeds at 4K, 8K, 16K, 32K, 40K, and 65,536 context sizes.
+- [x] Deterministic occupied-context measurements succeed at 2,048, 8,192, 16,384, and 32,768 raw content tokens.
+- [x] The deterministic matrix shows approximately flat decode throughput through 32,768 occupied tokens.
+- [x] Imported source remains reproducible from the pinned upstream commit.
+
+## Important evidence boundary
+
+The following statement is **not yet proven**:
+
+```text
+decode speed drops only 5 percent from 4K occupied context to 64K occupied context
+```
+
+The reported 64K row proves that a server configured for 65,536 tokens can load and answer a short request. The deterministic prompt-filled matrix reached 32,768 tokens and then failed during tokenization at 40,960. Keep allocation capacity and occupied-context performance separate in every report.
+
+The current supported long-context statement is:
+
+```text
+Agents-A1 allocates a 65,536-token context successfully, and measured decode throughput remains approximately flat through 32,768 occupied raw content tokens.
+```
 
 ---
 
 # Current execution queue
 
-## 0A. Reconcile the local baseline work with GitHub
+## 0A. Verify the actual Pi user path
 
-The local agent reported commit `4ab05fa`, but GitHub could not resolve that commit. The remote also advanced while the local build was being completed.
-
-- [ ] Run `git status --short` and preserve all local modifications.
-- [ ] Run `git show --stat --oneline 4ab05fa` and confirm whether the reported commit exists locally.
-- [ ] Run `git fetch origin`.
-- [ ] Run `git log --oneline --left-right --graph HEAD...origin/main`.
-- [ ] Rebase the local baseline commit onto current `origin/main`.
-- [ ] Resolve `scripts/build_cuda.ps1` without losing either the local syntax fix or remote CUDA discovery support.
-- [ ] Run `git diff --check`.
-- [ ] Rebuild with `powershell -ExecutionPolicy Bypass -File scripts/build_cuda.ps1 -Clean`.
-- [ ] Confirm `llama-server.exe --list-devices` reports the RTX 3060 CUDA device.
-- [ ] Push the synchronized commit to `origin/main`.
-- [ ] Record the resulting full commit SHA in `lab/CHECKPOINT.md`.
-- [ ] Confirm the pushed commit can be fetched from GitHub.
-
-### Reported local evidence to preserve during reconciliation
-
-These results were reported by the local agent but remain unchecked until pushed and audited:
-
-- [ ] CUDA Toolkit root: `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6`.
-- [ ] `nvcc` 12.6, V12.6.85.
-- [ ] Visual Studio 2022 and MSVC 19.44 CUDA build succeeds.
-- [ ] `build/stable/bin/Release/llama-server.exe` exists.
-- [ ] `build/stable/bin/Release/llama-bench.exe` exists.
-- [ ] RTX 3060 is visible as CUDA device 0.
-- [ ] Agents-A1 model identity and complete SHA-256 are recorded.
-- [ ] 4K server starts with CPU MoE and F16 KV.
-- [ ] 4K smoke performance is approximately 8.2 decode tokens/sec and 45 prompt tokens/sec.
-
-## 0B. Close the 4K daily-driver gates
-
-Preserve the working 4K server as the fallback configuration while testing everything else.
-
-Reported working configuration:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/run_server.ps1 `
-  -Context 4096 `
-  -CpuMoe
-```
-
-- [ ] Launch the synchronized 4K stable server.
-- [ ] Confirm `GET /health` returns HTTP 200.
-- [ ] Confirm `GET /v1/models` contains `agents-a1`.
-- [ ] Run `python scripts/baseline_harness.py`.
-- [ ] Confirm normal output streams through multiple SSE events.
-- [ ] Confirm `reasoning_content` remains distinct from final content.
-- [ ] Confirm authoritative server prompt and decode timings are present.
-- [ ] Run `python scripts/baseline_harness.py --tool-test --output lab/tool-test.local.json`.
-- [ ] Confirm the emitted tool name is correct.
-- [ ] Confirm tool arguments parse as valid JSON.
-- [ ] Start Pi with provider `neo3000` selected.
-- [ ] Send `Reply with exactly: NEO3000 PI ONLINE` through Pi.
+- [ ] Launch Pi normally with provider `neo3000` selected.
+- [ ] Send `Reply with exactly: NEO3000 PI ONLINE` from the Pi UI.
+- [ ] Confirm streamed text is visible incrementally in Pi.
 - [ ] Confirm the request appears in the Neo3000 server log.
 - [ ] Confirm LM Studio does not receive the request.
-- [ ] Execute one harmless Pi tool call from model request through tool result and continued model response.
-- [ ] Cancel one long Pi generation while it is streaming.
-- [ ] Immediately send `Reply with exactly: NEO3000 RECOVERED`.
-- [ ] Confirm cancellation does not corrupt the next request or slot state.
-- [ ] Complete at least three repeated Pi turns without restarting the server.
-- [ ] Freeze the exact 4K server arguments in `lab/CHECKPOINT.md` without committing the absolute model path.
+- [ ] Execute one harmless real Pi tool round trip.
+- [ ] Confirm Pi executes the tool, returns its result, and Agents-A1 continues.
+- [ ] Cancel a long generation from Pi and immediately verify `NEO3000 RECOVERED`.
+- [ ] Record the exact Pi command, tool, and visible result in `lab/CHECKPOINT.md`.
 
-## 0C. Characterize context scaling
+## 0B. Reproduce and localize the 40,960-token failure
 
-Change one runtime variable at a time. Stop the previous server cleanly before each new context allocation.
+Do not label this an inference wall until the failing layer is known.
 
-### 8K
+- [ ] Re-run only the 40,960 target and capture the exact client exception.
+- [ ] Capture the server log from immediately before the failure through process exit or recovery.
+- [ ] Record whether the server process exits, returns HTTP error, closes the connection, or remains healthy.
+- [ ] Record system RAM, commit charge, page-file use, and VRAM at failure.
+- [ ] Test direct `/tokenize` requests at 34K, 36K, 38K, 40K, and 40,960 target sizes.
+- [ ] Determine whether failure depends on request body size, returned token-array size, repeated binary-search calls, or model context state.
+- [ ] Confirm `/health` immediately after each failed request.
+- [ ] If the server tokenizer is the problem, build or use a local tokenizer path and keep inference measurement separate from token-count construction.
+- [ ] Repair `scripts/context_matrix.py` only if the harness itself causes the failure.
+- [ ] Add a regression test that reproduces the previous failure without running the full matrix.
 
-- [ ] Launch 8K with CPU MoE and F16 KV.
-- [ ] Record whether auto-fit changes GPU placement.
-- [ ] Record VRAM, RAM, prompt TPS, decode TPS, TTFT, and cached prompt tokens.
-- [ ] Run the normal harness.
-- [ ] Verify one Pi response and one tool call.
-- [ ] If F16 KV fails or displaces too much compute, test Q8 KV as a separate configuration.
-- [ ] Select and record the best stable 8K configuration.
+## 0C. Measure genuinely occupied long context
 
-### 16K
+- [ ] Produce a prompt whose actual chat-completion usage reports approximately 40,000 prompt tokens.
+- [ ] Run one warmup and at least three counted 40K occupied-context completions.
+- [ ] Produce a prompt whose actual usage reports approximately 60,000 prompt tokens.
+- [ ] Run one warmup and at least three counted 60K occupied-context completions.
+- [ ] Record actual prompt tokens, cached tokens, prompt TPS, decode TPS, TTFT, total time, RAM, VRAM, and server placement.
+- [ ] Calculate occupied-context degradation ratios relative to the same 2K workload.
+- [ ] Keep allocation-only results in a separate table.
+- [ ] Measure rolling minimum decode speed for the 2K, 32K, 40K, and 60K runs.
 
-- [ ] Launch 16K using the best 8K configuration.
-- [ ] Record allocation, placement, VRAM, RAM, prompt TPS, decode TPS, and TTFT.
-- [ ] Verify normal Pi response and tool parsing.
-- [ ] Select and record the best stable 16K configuration.
+## 0D. Audit placement before blaming auto-fit
 
-### 32K
+The current evidence shows a large VRAM difference between the 4K and 8K server configurations, but does not yet prove that restoring GPU placement improves performance.
 
-- [ ] Launch 32K using the best prior configuration.
-- [ ] Record allocation, placement, VRAM, RAM, prompt TPS, decode TPS, and TTFT.
-- [ ] Verify normal Pi response and tool parsing.
-- [ ] Select and record the best stable 32K configuration.
+- [ ] Capture the exact `offloaded X/Y layers` or equivalent placement log at each tested context.
+- [ ] Record which tensors or model components remain on GPU.
+- [ ] Confirm whether the reported VRAM figures were sampled at equivalent points in server lifetime.
+- [ ] At one fixed occupied context, compare `gpu-layers=auto` against at least two explicit placement levels that fit safely.
+- [ ] Keep CPU-MoE, KV type, prompt, output length, and cache state fixed.
+- [ ] Record prompt TPS, decode TPS, PCIe activity where available, RAM, and VRAM.
+- [ ] Reject the claim that auto-fit is overly conservative if more GPU placement does not improve the declared metric.
 
-### 40K
+## 0E. Audit CPU-MoE before selecting it as the wall
 
-- [ ] Launch 40K using the best prior configuration.
-- [ ] Reproduce or reject the reported LM Studio slowdown toward approximately 3 tokens/sec.
-- [ ] Record allocation, placement, VRAM, RAM, prompt TPS, decode TPS, and TTFT.
-- [ ] Verify normal Pi response and tool parsing.
-- [ ] Select and record the best stable 40K configuration.
+- [ ] At one fixed context and placement, compare CPU-MoE enabled and disabled when both configurations fit.
+- [ ] If full comparison cannot fit, test bounded `n-cpu-moe` placements where supported.
+- [ ] Record decode TPS, prompt TPS, CPU utilization, memory bandwidth indicators, PCIe activity, RAM, and VRAM.
+- [ ] Distinguish expert compute time from expert-transfer time.
+- [ ] Do not select catalytic expert residency until repeated expert movement is measured.
 
-### 65,536 attempt
+## 0F. Matched LM Studio comparison
 
-- [ ] Attempt a 65,536-token server allocation.
-- [ ] Record whether failure occurs during load, context allocation, prompt processing, or generation.
-- [ ] Record last successful GPU placement, VRAM, RAM, and paging behavior.
-- [ ] If it succeeds, verify normal Pi response and tool parsing.
-- [ ] Record the maximum stable context.
+- [ ] Freeze the exact GGUF bytes in both runtimes.
+- [ ] Match prompt text, actual prompt-token count, output length, sampler, reasoning mode, KV type, and warm or cold state.
+- [ ] Compare 4K occupied context with at least three counted runs.
+- [ ] Compare 8K occupied context with at least three counted runs.
+- [ ] Compare the largest mutually stable occupied context with at least three counted runs.
+- [ ] Record prompt TPS, decode TPS, TTFT, rolling minimum decode speed, RAM, and VRAM.
+- [ ] Explain the earlier 8.2 TPS versus later 17.5 to 23 TPS measurements by identifying the workload or timing difference.
+- [ ] State whether Neo3000 matches, exceeds, or trails LM Studio for each matched workload.
 
-## 0D. Run reproducible context matrices
+## 0G. Correct the repository evidence and close Checkpoint 0
 
-Run only targets that fit inside the server context currently allocated.
-
-- [ ] Run a bounded matrix at 8K.
-- [ ] Run a bounded matrix at 16K.
-- [ ] Run a matrix through 40K or the maximum stable context.
-- [ ] Preserve all three counted repetitions for every point.
-- [ ] Confirm prompt-cache reuse is disabled for uncached comparison runs.
-- [ ] Record medians, not best runs.
-- [ ] Calculate the context degradation ratio relative to the 2K point.
-- [ ] Separate prompt-processing degradation from token-decode degradation.
-- [ ] Record whether GPU displacement changes at the same point as the speed decline.
-
-## 0E. Compare Neo3000 with LM Studio
-
-Use the exact same GGUF and matched settings wherever both runtimes expose them.
-
-- [ ] Freeze the LM Studio model, context, sampler, reasoning, KV, and placement configuration.
-- [ ] Compare 4K using at least three counted repetitions.
-- [ ] Compare 8K using at least three counted repetitions.
-- [ ] Compare the largest mutually stable context using at least three counted repetitions.
-- [ ] Record prompt TPS, decode TPS, TTFT, VRAM, RAM, and cached or warm state.
-- [ ] State whether Neo3000 matches, exceeds, or trails LM Studio at each point.
-- [ ] Do not infer a mechanism from wall-clock speed alone.
-
-## 0F. Close Checkpoint 0
-
-- [ ] Update every proven checkbox in `lab/CHECKPOINT.md`.
-- [ ] Replace the stale boundary in `lab/GOAL.md` with the next exact compute-mapping goal.
-- [ ] Append one compact final Checkpoint 0 record to `lab/results.jsonl`.
-- [ ] Inventory which imported source paths are tracked and which remain generated.
-- [ ] Choose a source-custody model before autonomous code modification begins.
-- [ ] Identify the top one or two likely causes of long-context degradation from evidence.
-- [ ] Confirm the stable 4K daily-driver command still works after all tests.
-- [ ] Commit the completed evidence as one meaningful architectural chunk.
-- [ ] Push the commit and record its full SHA here.
-- [ ] Change the claim ceiling to `NEO3000_BASELINE_OPERATIONAL` only after the exit gate is met.
+- [ ] Update `lab/CHECKPOINT.md` to separate allocated context from occupied context.
+- [ ] Remove or qualify the unsupported 64K over 4K occupied-context ratio.
+- [ ] Mark the Pi UI round trip only after it is visibly demonstrated.
+- [ ] Update `lab/GOAL.md` so the next action matches this task board.
+- [ ] Append one compact correction or closure record to `lab/results.jsonl`.
+- [ ] Choose the imported-source custody model.
+- [ ] Confirm the stable daily-driver command still works.
+- [ ] Commit and push one meaningful Checkpoint 0 closure chunk.
+- [ ] Record the full pushed SHA here.
+- [ ] Change the claim ceiling to `NEO3000_BASELINE_OPERATIONAL` only after every exit gate below is met.
 
 ### Checkpoint 0 exit gate
 
-- [ ] Agents-A1 runs through Pi on Neo3000.
-- [ ] Streaming reasoning and final content are stable.
+- [ ] A real Pi UI text stream succeeds.
 - [ ] A real Pi tool round trip succeeds.
-- [ ] Cancellation followed by immediate recovery succeeds.
-- [ ] Repeated turns remain stable.
-- [ ] Context scaling is measured through the maximum stable point.
-- [ ] Neo3000 and LM Studio are reproducibly compared.
-- [ ] The next instrumentation target is selected from measured evidence.
+- [ ] Pi cancellation and immediate recovery succeed.
+- [ ] Occupied-context behavior is measured through the maximum stable target, or a precise blocker is mapped.
+- [ ] Neo3000 and LM Studio are reproducibly compared under matched workloads.
+- [ ] Rolling minimum decode speed is recorded.
+- [ ] Allocation capacity and occupied-context performance are documented separately.
+- [ ] The next instrumentation target is selected from causal evidence rather than inference.
 
 ---
 
 # Checkpoint 1 queue: Compute map
 
-Do not begin until every Checkpoint 0 exit-gate item above is checked or explicitly marked blocked with evidence.
+Do not begin source instrumentation until Checkpoint 0 closes and source custody is resolved.
 
+- [ ] Put the imported engine under a Git-diffable custody model.
 - [ ] Create an isolated instrumentation branch or worktree.
 - [ ] Define one fixed trace schema.
-- [ ] Add a trace-disabled release configuration.
-- [ ] Add a trace-enabled diagnostic configuration.
+- [ ] Add trace-disabled and trace-enabled build configurations.
 - [ ] Measure per-token and per-layer time.
-- [ ] Separate attention-block time from Gated Delta Net recurrent-block time.
+- [ ] Separate attention time from Gated Delta Net recurrent-block time.
 - [ ] Record active MoE expert IDs per layer and token.
-- [ ] Measure expert transfer and residency behavior.
-- [ ] Measure CPU-MoE execution time and bandwidth.
+- [ ] Measure expert residency and transfer behavior.
+- [ ] Measure CPU-MoE compute and bandwidth.
 - [ ] Measure CPU to GPU transfers and synchronization.
-- [ ] Measure KV allocation and traffic by context.
-- [ ] Measure recurrent-state allocation and traffic by context.
-- [ ] Measure GPU displacement caused by context growth.
-- [ ] Measure prompt-cache hits and reused tokens.
-- [ ] Run the frozen context matrix with tracing disabled.
-- [ ] Run diagnostic points with tracing enabled.
+- [ ] Measure KV and recurrent-state allocation and traffic by occupied context.
+- [ ] Measure placement changes caused by configured context capacity.
 - [ ] Quantify tracing overhead.
 - [ ] Identify the top one or two causal bottlenecks.
-- [ ] Update `lab/GOAL.md` with one selected catalytic mechanism.
-- [ ] Update `lab/CHECKPOINT.md` and `lab/results.jsonl`.
-
-### Checkpoint 1 exit gate
-
-- [ ] The dominant short-context compute cost is causally localized.
-- [ ] The dominant long-context degradation source is causally localized.
-- [ ] The selected first intervention names its carrier, transformation, output, and closure law.
-- [ ] Release performance remains unchanged when tracing is disabled.
+- [ ] Select one first catalytic intervention from those measurements.
 
 ---
 
-# Checkpoint 2 queue: First catalytic intervention
+# Later queues
 
-Select only one family after Checkpoint 1 evidence exists.
+## Checkpoint 2: First catalytic intervention
 
-- [ ] Declare the exact expensive operation.
-- [ ] Declare the borrowed or reusable carrier.
-- [ ] Declare the transformation.
-- [ ] Declare the extracted output or invariant.
-- [ ] Declare the restoration or closure law.
-- [ ] Declare the expected speed mechanism.
-- [ ] Declare quality and stability gates.
-- [ ] Declare the measurement that rejects the hypothesis.
-- [ ] Implement one bounded candidate intervention.
-- [ ] Build stable and candidate separately.
-- [ ] Run the frozen benchmark without changing it.
-- [ ] Run Pi text, reasoning, tool, cancellation, and repeated-turn gates.
-- [ ] Accept, reject, or mark the result inconclusive.
-- [ ] Preserve the stable daily driver.
-- [ ] Record the result in one compact experiment entry.
-
-Possible mechanism families, chosen only from evidence:
-
-- [ ] catalytic expert residency
-- [ ] recurrent-state catalysis
-- [ ] single-model catalytic speculation
-- [ ] holographic long-context side channel
-- [ ] layer-orbit closure
-
----
-
-# Later checkpoint queue
+- [ ] Declare the expensive operation.
+- [ ] Declare the borrowed carrier.
+- [ ] Declare transformation, extracted invariant, and closure law.
+- [ ] Declare rejection criteria and quality gates.
+- [ ] Implement one bounded candidate mechanism.
+- [ ] Compare stable and candidate under the frozen benchmark.
+- [ ] Preserve Pi text, tools, cancellation, and repeated-turn behavior.
+- [ ] Accept, reject, or mark inconclusive.
 
 ## Checkpoint 3: Long-context catalytic state
 
-- [ ] Establish exact recent context plus an experimental distant-state side channel.
-- [ ] Compare full exact context against side-channel variants.
-- [ ] Run shuffled and disabled side-channel controls.
-- [ ] Improve context degradation ratio without violating quality gates.
+- [ ] Establish exact recent context plus an executable distant-state carrier.
+- [ ] Run disabled, shuffled, and equivalent-memory controls.
+- [ ] Improve occupied-context degradation without hidden quality collapse.
 
 ## Checkpoint 4: Layer-orbit closure
 
 - [ ] Define relational closure observables.
-- [ ] Measure stability across layer checkpoints.
-- [ ] Test cheap-tail verification or bounded layer skipping.
-- [ ] Reject confidence-only closure claims.
+- [ ] Measure them across layers.
+- [ ] Test bounded skipping or a cheap verification tail.
 
 ## Checkpoint 5: Bounded autonomous candidate loop
 
@@ -265,22 +202,18 @@ Possible mechanism families, chosen only from evidence:
 - [ ] Implement deterministic `neo-loop` mechanics.
 - [ ] Keep Agents-A1 as the sole reasoning model.
 - [ ] Enforce benchmark immutability and stop conditions.
-- [ ] Complete several candidate cycles without stable-server loss.
-- [ ] Keep promotion manual until explicitly authorized.
 
 ## Checkpoint 6: Native catalytic kernels
 
-- [ ] Select one measured hot-path state transition with an exact inverse or closure.
-- [ ] Implement borrow, transform, extract, and restore semantics.
-- [ ] Prove restoration or closure.
-- [ ] Measure allocation, copying, bandwidth, and operator reduction.
+- [ ] Select one measured reversible or closable hot-path state transition.
+- [ ] Prove borrow, transform, extract, and restore behavior.
+- [ ] Measure removed allocation, copying, bandwidth, or operator work.
 
 ## Checkpoint 7: Recursive compute amplification
 
-- [ ] Preserve useful computational structure as executable state.
-- [ ] Re-enter that state into later inference.
+- [ ] Preserve useful computation as executable state.
+- [ ] Re-enter it into later inference.
 - [ ] Quantify equivalent baseline compute versus fresh compute executed.
-- [ ] Demonstrate repeated amplification without hidden quality collapse.
 
 ---
 
@@ -288,16 +221,12 @@ Possible mechanism families, chosen only from evidence:
 
 Before any agent stops:
 
-- [ ] Update this file so the next unchecked item is the actual next task.
+- [ ] Update this file so the next unchecked item is the actual next action.
 - [ ] Update `lab/CHECKPOINT.md` only from executed evidence.
 - [ ] Update `lab/GOAL.md` with one exact active objective.
-- [ ] Append to `lab/results.jsonl` only if an experiment actually ran.
-- [ ] Record current branch and full HEAD SHA.
-- [ ] Record whether the working tree is clean.
-- [ ] Record the stable server command.
-- [ ] Record the last command executed and its result.
-- [ ] Record failures and inconclusive mechanisms.
-- [ ] Record the next exact command.
+- [ ] Record branch, full HEAD SHA, and working-tree status.
+- [ ] Record stable server command and last executed command.
+- [ ] Record exact failures and inconclusive claims.
 - [ ] Push claim-bearing work or state clearly that it remains local.
 
-A handoff is incomplete when the narrative report and tracked task board disagree.
+A narrative report does not complete a handoff when this task board remains stale.
