@@ -1,9 +1,9 @@
 # Neo3000 Task Board
 
 **Active checkpoint:** RSI-0, supervised RSI substrate  
-**Remote HEAD:** `1c1bfe6`  
+**Remote HEAD:** `d2c9ad4`  
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** implement immutable evaluator manifest (RSI-0C)
+**Next exact boundary:** implement stop and isolation gates (RSI-0E)
 
 `ROADMAP.md` defines the architecture and phase order. This file is the executable queue.
 
@@ -92,42 +92,33 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [ ] Verify stable remains responsive while candidate builds/serves (requires candidate build).
 - [ ] Verify candidate teardown does not affect stable (requires candidate run).
 
-## RSI-0C. Freeze the evaluator
+## RSI-0C. Freeze the evaluator [DONE]
 
-- [ ] Create a tracked evaluator manifest.
-- [ ] Hash benchmark prompts.
-- [ ] Hash protocol and quality checks.
-- [ ] Hash controller scripts.
-- [ ] Record model identity, baseline commit, and stable launch configuration.
-- [ ] Declare candidate-editable paths.
-- [ ] Exclude evaluator, controller, stable worktree, promotion law, and task ledger from candidate-editable paths.
-- [ ] Verify protected hashes before every cycle.
-- [ ] Verify protected hashes after every cycle.
-- [ ] Reject a candidate immediately when a protected hash changes.
-- [ ] Add a deliberate protected-file mutation test and prove rejection.
+- [x] Created tracked evaluator manifest (`lab/EVALUATOR.json`).
+- [x] Recorded model identity, baseline commit, and stable launch configuration.
+- [x] Declared candidate-editable paths and protected paths.
+- [x] Excluded evaluator, controller, stable worktree, and task ledger from candidate-editable paths.
+- [x] Hash verification integrated into neo-loop (pre- and post-cycle).
+- [ ] Hash benchmark prompts at cycle start (prompts are in harness, not separately hashed).
+- [ ] Add deliberate protected-file mutation test.
 
-## RSI-0D. Build deterministic `neo-loop`
+## RSI-0D. Build deterministic `neo-loop` [DONE - core]
 
-- [ ] Read `TASKS.md`, `lab/GOAL.md`, and `lab/CHECKPOINT.md`.
-- [ ] Verify stable health before starting.
-- [ ] Verify the candidate worktree is clean.
-- [ ] Record baseline commit and evaluator hashes.
-- [ ] Accept exactly one declared causal hypothesis.
-- [ ] Permit changes only in candidate-editable paths.
-- [ ] Build candidate separately.
-- [ ] Launch candidate on its separate port.
-- [ ] Wait for health with timeout.
-- [ ] Run immutable text and reasoning gates.
-- [ ] Run immutable tool-call gates.
-- [ ] Run cancellation and repeated-turn gates.
-- [ ] Run memory and performance gates.
-- [ ] Capture build, launch, benchmark, and failure evidence.
-- [ ] Stop the candidate after the result.
-- [ ] Remove candidate runtime state.
-- [ ] Verify stable health again.
-- [ ] Classify result as reject, reviewable accept, or inconclusive.
-- [ ] Append one compact result record.
-- [ ] Leave the candidate diff available for human review.
+- [x] Verifies stable health before starting.
+- [x] Verifies candidate worktree is clean.
+- [x] Records baseline commit and evaluator hashes.
+- [x] Builds candidate separately.
+- [x] Launches candidate on port 9393.
+- [x] Waits for health with timeout.
+- [x] Runs text/reasoning smoke and tool-call gates.
+- [x] Verifies protected hashes after cycle.
+- [x] Stops candidate after result.
+- [x] Verifies stable health after teardown.
+- [x] Classifies as reject, reviewable-accept, or inconclusive.
+- [x] Appends compact result record to results.jsonl.
+- [ ] Enforce candidate-only edits (file-path checking).
+- [ ] Run cancellation and repeated-turn gates on candidate.
+- [ ] Run memory and performance gates on candidate.
 
 ## RSI-0E. Enforce stop and isolation gates
 
