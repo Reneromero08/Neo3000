@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "frozen_at": "2026-07-02T00:00:00Z",
+  "model": {
+    "alias": "agents-a1",
+    "architecture": "qwen35moe",
+    "quantization": "Q4_K_M",
+    "sha256": "31AEFA25B7E1BEDDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+    "size_bytes": 21166757632
+  },
+  "baseline": {
+    "neo3000_commit": "1c1bfe6",
+    "llama_cpp_commit": "fdb1db877c526ec90f668eca1b858da5dba85560",
+    "cuda_version": "12.6.85",
+    "msvc_version": "19.44",
+    "gpu": "NVIDIA RTX 3060 12GB SM 8.6"
+  },
+  "stable_launch": {
+    "port": 9292,
+    "ctx_size": 4096,
+    "gpu_layers": "auto",
+    "cpu_moe": true,
+    "flash_attn": "auto",
+    "cache_kv": "f16",
+    "threads": 12,
+    "batch": 512,
+    "ubatch": 128
+  },
+  "protected_paths": {
+    "description": "These paths must not be modified by candidates. Hash verification runs before and after every cycle.",
+    "files": [
+      "lab/EVALUATOR.json",
+      "lab/BASELINE_PROTOCOL.md",
+      "scripts/baseline_harness.py",
+      "scripts/context_matrix.py",
+      "scripts/rolling_decode.py",
+      "scripts/run_server.ps1",
+      "scripts/run_candidate.ps1",
+      "scripts/build_cuda.ps1",
+      "scripts/build_candidate.ps1",
+      "scripts/neo_loop.py",
+      "TASKS.md",
+      "AGENTS.md",
+      "ROADMAP.md",
+      "lab/GOAL.md",
+      "lab/CHECKPOINT.md"
+    ]
+  },
+  "candidate_editable_paths": {
+    "description": "Candidates may only modify files under these paths.",
+    "paths": [
+      "ggml/src/ggml-cuda/",
+      "ggml/src/ggml.c",
+      "ggml/include/",
+      "src/",
+      "common/"
+    ]
+  },
+  "benchmarks": {
+    "smoke": {
+      "script": "scripts/baseline_harness.py",
+      "hashed": false,
+      "description": "NEO3000 ONLINE probe, 3 streamed runs"
+    },
+    "tool_probe": {
+      "script": "scripts/baseline_harness.py",
+      "args": "--tool-test --output lab/tool-test.local.json",
+      "hashed": false,
+      "description": "neo3000_probe tool call with valid JSON"
+    },
+    "context_gates": {
+      "description": "Minimum acceptable decode TPS and quality per occupied context",
+      "2K": {"min_decode_tps": 10.0, "require_neo3000_online": true},
+      "8K": {"min_decode_tps": 10.0}
+    }
+  },
+  "quality_gates": {
+    "health": "HTTP 200 at /health",
+    "model_list": "agents-a1 in /v1/models",
+    "streaming": "multiple SSE events, [DONE] termination",
+    "reasoning": "reasoning_content preserved in stream",
+    "tool_call": "neo3000_probe with valid JSON arguments",
+    "cancellation": "recovery within 3 subsequent requests",
+    "memory": "VRAM under 12000 MiB, no paging",
+    "repeat": "3 consecutive turns without error"
+  }
+}

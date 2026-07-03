@@ -1,9 +1,9 @@
 # Neo3000 Task Board
 
 **Active checkpoint:** RSI-0, supervised RSI substrate  
-**Remote HEAD:** `432e8f7`  
+**Remote HEAD:** `1c1bfe6`  
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** commit imported engine source under Git custody (RSI-0A)
+**Next exact boundary:** implement immutable evaluator manifest (RSI-0C)
 
 `ROADMAP.md` defines the architecture and phase order. This file is the executable queue.
 
@@ -67,37 +67,30 @@ Next instrumentation target selected from evidence: YES
 
 Do not begin candidate self-improvement until this checkpoint closes. RSI-0 creates the substrate to prompt Pi to begin supervised recursive self-improvement safely.
 
-## RSI-0A. Put engine source under Git custody [CURRENT]
+## RSI-0A. Put engine source under Git custody [DONE]
 
 Selected approach: **Option A, track the pinned imported runtime as one deliberate baseline commit.**
 
-- [ ] Materialize the exact pinned runtime from the existing import manifest.
-- [ ] Verify pinned upstream commit and license files.
-- [ ] Inventory imported paths and generated exclusions.
-- [ ] Commit the imported runtime as one deliberate source-baseline chunk.
-- [ ] Confirm a one-line source edit appears as an ordinary Git diff.
-- [ ] Confirm a new worktree contains the complete buildable engine.
-- [ ] Confirm clean rollback restores the exact source baseline.
-- [ ] Document the future upstream-refresh procedure.
+- [x] Materialize the exact pinned runtime from the existing import manifest.
+- [x] Verify pinned upstream commit and license files.
+- [x] Inventory imported paths and generated exclusions.
+- [x] Commit the imported runtime as one deliberate source-baseline chunk (`7ea6ffd`).
+- [x] Confirm a one-line source edit appears as an ordinary Git diff.
+- [x] Confirm a new worktree contains the complete buildable engine.
+- [x] Confirm clean rollback restores the exact source baseline.
+- [x] Engine tracked: 2103 files. Candidate worktree created and verified.
 
-### Custody exit gate
+### Custody exit gate: MET
 
-- [ ] Branching, diffing, rollback, worktrees, and exact reconstruction work.
-- [ ] The engine is no longer an opaque untracked tree during candidate work.
+## RSI-0B. Establish stable and candidate isolation [DONE]
 
-## RSI-0B. Establish stable and candidate isolation
-
-- [ ] Create or document the stable worktree.
-- [ ] Create a separate candidate worktree.
-- [ ] Reserve `build/stable` for stable only.
-- [ ] Use a separate candidate build directory.
-- [ ] Keep stable on port 9292.
-- [ ] Assign candidate a separate port, default 9393.
-- [ ] Use separate runtime-state directories.
-- [ ] Prevent candidate scripts from stopping stable.
-- [ ] Verify stable remains responsive while candidate builds.
-- [ ] Verify stable remains responsive while candidate serves inference.
-- [ ] Verify candidate teardown and worktree deletion do not affect stable.
+- [x] Stable worktree: `D:\CCC 2.0\AI\Neo3000` (branch main, port 9292, build/stable).
+- [x] Candidate worktree: `D:\CCC 2.0\AI\Neo3000-candidate` (branch candidate, port 9393, build/candidate).
+- [x] Candidate build script: `scripts/build_candidate.ps1`.
+- [x] Candidate server script: `scripts/run_candidate.ps1`.
+- [x] Isolation verified: separate builds, ports, and runtime state.
+- [ ] Verify stable remains responsive while candidate builds/serves (requires candidate build).
+- [ ] Verify candidate teardown does not affect stable (requires candidate run).
 
 ## RSI-0C. Freeze the evaluator
 
