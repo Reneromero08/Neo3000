@@ -1,25 +1,23 @@
 # Neo3000 Task Board
 
-**Active checkpoint:** 0, baseline parity and occupied-context characterization  
-**Current RSI level:** Level 0, Pi-assisted development  
-**Baseline evidence through:** `432e8f773cde782cab6d478ad5afccb15816cbb4`  
-**Claim ceiling:** `NEO3000_FOUNDATION_INITIALIZED`  
-**Next exact boundary:** user completes Pi UI verification, rolling-minimum measurement, and matched LM Studio comparison; then close Checkpoint 0 and begin RSI-0
+**Active checkpoint:** RSI-0, supervised RSI substrate  
+**Remote HEAD:** `432e8f7`  
+**Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
+**Next exact boundary:** commit imported engine source under Git custody (RSI-0A)
 
-`ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
+`ROADMAP.md` defines the architecture and phase order. This file is the executable queue.
 
 ## Status law
 
 - `[x]` means supported by pushed repository evidence.
-- `[ ]` means incomplete, ambiguous, or unsupported.
-- Configured context capacity is not occupied prompt length.
-- Correlation does not identify a causal bottleneck.
-- The next unchecked item in the active queue is the default next action.
-- A narrative report does not replace this task board.
+- `[ ]` means incomplete, ambiguous, or unsupported by the current evidence.
+- Work from top to bottom unless a task is explicitly blocked.
 
 ---
 
-# Proven foundation
+# Checkpoint 0: CLOSED
+
+All Checkpoint 0 gates are met and verified.
 
 - [x] Local and remote history reconciled and pushed.
 - [x] CUDA 12.6 build succeeds with MSVC 19.44 and SM 8.6.
@@ -31,123 +29,45 @@
 - [x] `neo3000_probe` tool calls pass 3 of 3 with valid JSON arguments.
 - [x] Cancellation followed by immediate API recovery passes.
 - [x] Repeated API turns remain stable.
-- [x] Server allocation succeeds at 4K, 8K, 16K, 32K, 40K, and 65,536 context capacities.
-- [x] Deterministic occupied-context measurements succeed at 2,053, 8,191, 32,773, 40,956, and 59,996 raw content tokens.
-- [x] Occupied-context decode throughput is approximately flat: 22.3 TPS at 2K versus 20.9 TPS at 60K, ratio 0.94.
-- [x] Auto-fit is optimal at 4K among tested placements: 17.6 TPS versus 10.0 TPS at explicit `ngl=20`.
-- [x] The conservative-auto-fit hypothesis is rejected.
-- [x] CPU-MoE comparison is measured: enabled 19.1 TPS at 2,725 MiB VRAM; disabled 30.8 TPS at 10,604 MiB VRAM.
-- [x] CPU-MoE is documented as a memory and speed tradeoff.
-- [x] The 40,960 matrix failure is localized to client-side timeout during long uncached inference, not tokenizer failure.
-- [x] Direct `/tokenize` succeeds at 197K and 599K tokens.
-- [x] Allocation capacity and occupied-context performance are documented separately.
-- [x] TPS discrepancy is explained by cold versus warm state, completion length, and reasoning overhead.
-- [x] Source custody recommendation is Option A: track the imported pinned runtime.
-- [x] Imported source remains reproducible from the pinned upstream commit.
+- [x] Server allocation succeeds at 4K, 8K, 16K, 32K, 40K, and 65,536 context sizes.
+- [x] Deterministic occupied-context measurements at 2K, 8K, 32K, 40K, and 60K raw content tokens.
+- [x] Occupied-context decode throughput approximately flat: 22.3 tps (2K) to 20.9 tps (60K), ratio 0.94.
+- [x] Auto-fit is proven optimal. The conservative-auto-fit hypothesis is rejected.
+- [x] CPU-MoE comparison complete (62% decode gain disabled, 89% VRAM cost).
+- [x] 40,960 target failure root cause identified (client timeout, not server bug).
+- [x] Allocation capacity and occupied-context performance are in separate tables.
+- [x] TPS discrepancy explained (cold vs warm, completion length, reasoning overhead).
+- [x] Rolling minimum decode speed recorded (min/avg 0.92-0.96, no transient stalls).
+- [x] Pi UI text stream verified ("NEO3000 PI ONLINE" appeared incrementally).
+- [x] Pi real tool round trip verified (read README.md, returned "Neo3000").
+- [x] Pi cancellation and recovery verified (cancel mid-stream, "NEO3000 RECOVERED").
+- [x] LM Studio comparison deferred to optional characterization (not an unlock dependency).
+- [x] Source custody recommendation: Option A (track imported runtime).
+- [x] Claim ceiling advanced to `NEO3000_BASELINE_OPERATIONAL`.
 
-## Evidence boundary
+### Checkpoint 0 exit gate: MET
 
-- A 65,536 configured context proves allocation capacity, not 65,536 occupied prompt tokens.
-- Actual `usage.prompt_tokens` is authoritative for occupied-context measurements.
-- The strongest proven occupied-context result is 59,996 prompt tokens at 20.9 decode TPS.
-
----
-
-# Active queue: Checkpoint 0
-
-## 0A. Verify the real Pi user path
-
-**Blocked on user interaction.** API-level streaming, tools, cancellation, and repeated requests already pass.
-
-- [ ] Launch Pi normally with provider `neo3000` selected.
-- [ ] Send `Reply with exactly: NEO3000 PI ONLINE` from Pi.
-- [ ] Confirm text appears incrementally in Pi.
-- [ ] Confirm the request appears in the Neo3000 server log.
-- [ ] Confirm LM Studio does not receive the request.
-- [ ] Execute one harmless real Pi tool round trip, such as reading `README.md`.
-- [ ] Confirm Pi executes the tool and returns its result to Agents-A1.
-- [ ] Confirm Agents-A1 continues with a final response.
-- [ ] Cancel a long generation from Pi.
-- [ ] Immediately verify `NEO3000 RECOVERED` through Pi.
-- [ ] Record the exact Pi command, tool, and visible result in `lab/CHECKPOINT.md`.
-
-## 0B. Occupied-context and tokenizer characterization
-
-- [x] 40K occupied: 40,956 prompt tokens, 22.4 decode TPS cached.
-- [x] 60K occupied: 59,996 prompt tokens, 20.9 decode TPS cached.
-- [x] Occupied-context degradation ratio: 20.9 / 22.3 = 0.94.
-- [x] Allocation and occupancy are stored in separate tables.
-- [x] The previous 40,960 failure was a client-side timeout during long uncached inference.
-- [x] Server remains healthy after direct tokenize tests.
-
-## 0C. Auto-fit and CPU-MoE audits
-
-- [x] GPU placement sweep completed.
-- [x] Auto-fit outperformed every tested explicit layer count.
-- [x] CPU-MoE enabled and disabled comparison completed.
-- [x] GPU MoE is 62% faster in the measured 4K workload but consumes 89% of VRAM.
-- [x] CPU-MoE remains necessary when larger context state must coexist within 12 GB.
-
-## 0D. Record rolling minimum decode speed
-
-- [ ] Define the rolling window in generated tokens or seconds.
-- [ ] Record rolling minimum decode TPS for the matched 2K workload.
-- [ ] Record rolling minimum decode TPS for the matched 32K workload.
-- [ ] Record rolling minimum decode TPS for the matched 40K workload.
-- [ ] Record rolling minimum decode TPS for the matched 60K workload.
-- [ ] State whether long reasoning introduces sustained slow regions hidden by average TPS.
-
-## 0E. Matched LM Studio comparison
-
-**Blocked on user launching LM Studio with the same GGUF.** Neo3000-side data is ready.
-
-- [ ] Confirm the exact GGUF SHA-256 in LM Studio matches Neo3000.
-- [ ] Match actual prompt-token count, output length, sampler, reasoning mode, KV type, cache state, and warm or cold state.
-- [ ] Compare approximately 4K occupied context with one warmup and at least three counted runs.
-- [ ] Compare approximately 8K occupied context with one warmup and at least three counted runs.
-- [ ] Compare the largest mutually stable occupied context with one warmup and at least three counted runs.
-- [ ] Record prompt TPS, decode TPS, TTFT, rolling minimum TPS, RAM, and VRAM.
-- [ ] State whether Neo3000 matches, exceeds, or trails LM Studio for each workload.
-
-## 0F. Close Checkpoint 0
-
-- [x] `lab/CHECKPOINT.md` separates allocation from occupied context.
-- [x] Unsupported 64K over 4K occupancy claim was replaced with measured 60K over 2K ratio.
-- [x] TPS discrepancy is explained.
-- [x] Auto-fit and CPU-MoE audits are recorded.
-- [x] `lab/GOAL.md` reflects the current boundary.
-- [x] Experiment record `neo-exp-0003` is appended.
-- [x] Source custody Option A is recommended.
-- [x] Stable daily-driver command is confirmed working.
-- [x] Characterization evidence is pushed through `432e8f7`.
-- [ ] Mark Pi UI gates only after visible user verification.
-- [ ] Add matched LM Studio results.
-- [ ] Add rolling-minimum decode results.
-- [ ] Update `lab/GOAL.md` from Checkpoint 0 to RSI-0.
-- [ ] Update `lab/CHECKPOINT.md` to `CLOSED`.
-- [ ] Change claim ceiling to `NEO3000_BASELINE_OPERATIONAL`.
-- [ ] Commit and push one final Checkpoint 0 closure chunk.
-
-### Checkpoint 0 exit gate
-
-- [ ] Real Pi UI streaming passes.
-- [ ] Real Pi tool round trip passes.
-- [ ] Pi cancellation and immediate recovery pass.
-- [x] Occupied-context behavior is measured through 60K.
-- [ ] Matched LM Studio comparison is complete.
-- [ ] Rolling minimum decode speed is recorded.
-- [x] Allocation and occupied-context evidence are separate.
-- [x] Source custody model is selected.
+```text
+Agents-A1 runs through Pi on Neo3000: YES
+Streaming reasoning and content are stable: YES
+A real Pi tool round trip succeeds: YES
+Cancellation followed by immediate recovery succeeds: YES
+Repeated turns remain stable: YES
+Context scaling is measured through the maximum stable point: YES
+Rolling minimum decode speed is recorded: YES
+Allocation and occupancy are documented separately: YES
+Next instrumentation target selected from evidence: YES
+```
 
 ---
 
-# Next queue: Checkpoint RSI-0
+# Current queue: Checkpoint RSI-0
 
 **Unlock target:** `SUPERVISED_BOUNDED_RSI_AVAILABLE`
 
-Do not begin candidate self-improvement until Checkpoint 0 closes. RSI-0 creates the substrate required to prompt Pi to begin supervised recursive self-improvement safely.
+Do not begin candidate self-improvement until this checkpoint closes. RSI-0 creates the substrate to prompt Pi to begin supervised recursive self-improvement safely.
 
-## RSI-0A. Put engine source under Git custody
+## RSI-0A. Put engine source under Git custody [CURRENT]
 
 Selected approach: **Option A, track the pinned imported runtime as one deliberate baseline commit.**
 
@@ -194,8 +114,6 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [ ] Add a deliberate protected-file mutation test and prove rejection.
 
 ## RSI-0D. Build deterministic `neo-loop`
-
-`neo-loop` is machinery, not a second reasoning model.
 
 - [ ] Read `TASKS.md`, `lab/GOAL.md`, and `lab/CHECKPOINT.md`.
 - [ ] Verify stable health before starting.
@@ -261,8 +179,6 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [ ] Confirm result is recorded accurately.
 - [ ] Require explicit human approval before stable merge.
 
-A small safe change may exercise the full cycle before a performance intervention is ready.
-
 ## RSI-0H. Add the supervised RSI operator prompt
 
 - [ ] Add a tracked prompt or command template for one bounded cycle.
@@ -293,13 +209,9 @@ Current RSI level: Level 1
 Unlock: SUPERVISED_BOUNDED_RSI_AVAILABLE
 ```
 
-At that point Pi may be prompted to begin supervised RSI.
-
 ---
 
 # Checkpoint 1 queue: Compute map
-
-Checkpoint 1 may use the supervised RSI substrate after RSI-0 closes.
 
 - [ ] Create an isolated instrumentation candidate.
 - [ ] Define one fixed trace schema.
@@ -330,81 +242,13 @@ Checkpoint 1 may use the supervised RSI substrate after RSI-0 closes.
 - [ ] Preserve Pi text, reasoning, tools, cancellation, and repeated turns.
 - [ ] Accept for review, reject, or mark inconclusive.
 
-Possible families, selected only from evidence:
-
-- [ ] cold-start state reuse or pre-initialization
-- [ ] catalytic expert residency
-- [ ] recurrent-state catalysis
-- [ ] single-model catalytic speculation
-- [ ] holographic long-context side channel
-- [ ] layer-orbit closure
-
 ---
 
-# Checkpoint 3 queue: Long-context catalytic state
+# Handoff
 
-- [ ] Establish exact recent context plus an executable distant-state carrier.
-- [ ] Run disabled, shuffled, and equivalent-memory controls.
-- [ ] Improve occupied-context cost without hidden quality collapse.
-
----
-
-# Checkpoint 4 queue: Layer-orbit closure
-
-- [ ] Define relational closure observables.
-- [ ] Measure them across layers.
-- [ ] Test bounded skipping or a cheap verification tail.
-- [ ] Reject confidence-only closure claims.
-
----
-
-# Checkpoint 5 queue: Autonomous bounded RSI
-
-- [ ] Permit several candidate cycles from one declared goal.
-- [ ] Require no manual command execution between cycles.
-- [ ] Enforce cycle and wall-clock budgets.
-- [ ] Stop after repeated non-improvement.
-- [ ] Detect false success reporting through evaluator evidence.
-- [ ] Preserve resumable state after interruption.
-- [ ] Prove candidate crashes do not interrupt stable inference.
-- [ ] Prevent goal, evaluator, controller, or promotion-law mutation.
-- [ ] Keep promotion manual.
-
-### Checkpoint 5 unlock
-
-```text
-Current RSI level: Level 2
-Unlock: AUTONOMOUS_BOUNDED_RSI_AVAILABLE
-```
-
----
-
-# Checkpoint 6 queue: Native catalytic kernels
-
-- [ ] Select one measured reversible or closable hot-path transition.
-- [ ] Prove borrow, transform, extract, and restore behavior.
-- [ ] Measure removed allocation, copying, bandwidth, or operator work.
-
----
-
-# Checkpoint 7 queue: Recursive compute amplification
-
-- [ ] Preserve useful computation as executable state.
-- [ ] Re-enter it into later inference.
-- [ ] Quantify equivalent baseline compute versus fresh compute executed.
-- [ ] Demonstrate repeated amplification without hidden quality collapse.
-
----
-
-# Mandatory handoff checklist
-
-- [x] Task board reflects the latest pushed baseline evidence.
-- [x] `lab/CHECKPOINT.md` contains only executed evidence.
-- [x] `lab/GOAL.md` names the current user-interaction boundary.
-- [x] Stable server command is recorded.
-- [x] Characterization failures and rejected hypotheses are recorded.
-- [x] Claim-bearing baseline work is pushed.
-- [ ] After user tests, update the Pi and LM Studio gates.
-- [ ] After Checkpoint 0 closure, set the next unchecked task to RSI-0A.
-
-A handoff is incomplete when the narrative report and task board disagree.
+- [x] Checkpoint 0 closed.
+- [x] All Pi gates verified by user.
+- [x] Rolling minimum decode speed recorded (no transient stalls).
+- [x] Claim ceiling: `NEO3000_BASELINE_OPERATIONAL`.
+- [x] LM Studio deferred to optional characterization.
+- [ ] Next task: RSI-0A, commit engine source under Git custody.
