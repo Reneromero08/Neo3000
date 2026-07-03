@@ -1,0 +1,17 @@
+{
+  "commit": "fdb1db877c526ec90f668eca1b858da5dba85560",
+  "paths": [
+    "CMakeLists.txt",
+    "LICENSE",
+    "AUTHORS",
+    "cmake",
+    "ggml",
+    "include",
+    "src",
+    "common",
+    "tools",
+    "vendor",
+    "scripts"
+  ],
+  "source_repository": "https://github.com/ggml-org/llama.cpp.git"
+}
