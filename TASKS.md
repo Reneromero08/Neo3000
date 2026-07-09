@@ -4,7 +4,7 @@
 **Current RSI level:** Level 0, Pi-assisted development  
 **Baseline evidence through:** `432e8f773cde782cab6d478ad5afccb15816cbb4`  
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** review the corrected Agents-A1 SHA-256, then authorize one fresh RSI-0G acceptance cycle
+**Next exact boundary:** repair candidate health-probe timeout handling, then authorize one fresh RSI-0G acceptance cycle
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -157,12 +157,12 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Confirmed the compact failure record is accurate in `lab/results.jsonl`.
 - [x] Restored the candidate worktree cleanly; the next task is resumable.
 
-## RSI-0G. Prove one supervised acceptance cycle [BLOCKED: stale evaluator model SHA-256]
+## RSI-0G. Prove one supervised acceptance cycle [BLOCKED: candidate health-probe timeout handling]
 
 - [x] Started from a healthy stable server.
 - [x] Applied an inert file only within the allowed candidate path `common/`.
 - [x] Candidate configured and built only in candidate isolation after source-custody repair.
-- [ ] Launch it only on candidate port 9393 (blocked: the refreshed full model hash exposed a stale evaluator identity before launch).
+- [ ] Launch it only on candidate port 9393 (blocked: the candidate health probe propagated a socket timeout during model load instead of continuing its declared health wait).
 - [ ] Confirm every declared gate passes.
 - [ ] Mark it reviewable rather than promoting it.
 - [ ] Confirm exact diff and evidence are inspectable.
@@ -248,4 +248,4 @@ Do not begin until RSI-0 closes.
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: review the corrected Agents-A1 SHA-256, then authorize one fresh RSI-0G acceptance cycle with the same inert allowed-path fixture.
+- [ ] Next task: verify repaired candidate health-probe timeout handling, then authorize one fresh RSI-0G acceptance cycle with the same inert allowed-path fixture.

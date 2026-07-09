@@ -155,7 +155,7 @@ def request_json(url: str, timeout: float = 30) -> tuple[int, Any]:
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             return response.status, json.loads(response.read().decode("utf-8"))
-    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError) as exc:
+    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError, TimeoutError, OSError) as exc:
         raise NeoLoopError(f"request failed for {url}: {exc}") from exc
 
 

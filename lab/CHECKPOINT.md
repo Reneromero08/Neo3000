@@ -156,8 +156,8 @@ Prepare the repository for Pi-supervised recursive self-improvement before modif
 - [x] Candidate teardown tracks only the launched candidate PID; it does not terminate the stable process by name.
 - [x] RSI-0F live rejection cycle: a candidate `TASKS.md` mutation was rejected before build; stable health, listener PID, worktree, and protected hashes were unchanged after cleanup.
 - [x] Candidate CMake generation failure isolated: the broad `models/` ignore pattern omitted 171 source files in `src/models/` and `tools/mtmd/models/`; source custody is repaired and clean candidate configure succeeds.
-- [ ] RSI-0G acceptance attempt: the inert allowed-path candidate built successfully, then correctly rejected the stale evaluator model SHA-256 before launch. Stable survived unchanged; acceptance remains unproven.
-- [ ] Corrected evaluator model SHA-256 must be reviewed, then a newly authorized RSI-0G cycle may run once.
+- [ ] RSI-0G acceptance attempt: the inert allowed-path candidate built successfully, then stopped during candidate model loading because a socket read timeout escaped the health probe. Candidate runtime state was removed; stable health and listener PID remained unchanged; acceptance remains unproven.
+- [ ] The controller must treat socket read timeouts as not-yet-healthy within its declared health wait before a newly authorized RSI-0G cycle may run once.
 
 ## Checkpoint 1: Compute map (RSI-0 required first)
 

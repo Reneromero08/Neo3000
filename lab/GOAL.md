@@ -30,18 +30,18 @@ Stable worktree running Neo3000
 
 ## Current boundary
 
-RSI-0E is implemented and RSI-0F has passed. Candidate source custody is repaired. The next objective is **review the corrected Agents-A1 SHA-256, then authorize one fresh RSI-0G acceptance cycle**.
+RSI-0E is implemented and RSI-0F has passed. Candidate source custody and evaluator model identity are repaired. The next objective is **verify repaired candidate health-probe timeout handling, then authorize one fresh RSI-0G acceptance cycle**.
 
 Do not begin autonomous RSI. Do not modify stable inference logic. Do not promote candidates automatically.
 
 ## Next exact action
 
-The harmless allowed-path acceptance attempt configured and built after source-custody repair, then correctly rejected the stale evaluator SHA-256 before launch. The refreshed full SHA-256 is `31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2`; it replaces the prior transposed recorded value. Do not retry the cycle in this boundary.
+The harmless allowed-path acceptance attempt configured and built after source-custody repair, then stopped during candidate model loading because a socket read timeout escaped the controller health probe. Candidate cleanup completed and stable remained healthy at the same listener PID. Treat a timed-out health request as not-yet-healthy within the declared health wait; do not retry the cycle in this boundary.
 
 Minimum required work:
 
 ```text
-1. Review the measured correction to the evaluator model SHA-256.
+1. Verify the controller catches socket read timeouts as failed health probes rather than uncaught exceptions.
 2. Keep the stable server and stable worktree unchanged.
 3. Reapply only the inert `common/` fixture in the candidate worktree.
 4. Authorize one new `python scripts/neo_loop.py --hypothesis "..."` cycle from stable.
