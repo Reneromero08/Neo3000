@@ -1,0 +1,569 @@
+# Neo3000 Changelog
+
+This changelog records the architectural history of Neo3000: what became operational, what was measured, what hypotheses were rejected, what safety boundaries were added, and which claims are actually supported by pushed evidence.
+
+It is intentionally not a raw dump of every administrative commit. Small documentation and pointer updates are compressed into the milestone they served.
+
+## Current state
+
+Current through stable commit `d911f932be997b764a74235bba8ef2b9279a2c04`.
+
+```text
+Checkpoint 0: CLOSED
+Claim ceiling: NEO3000_BASELINE_OPERATIONAL
+Current RSI level: Level 0, Pi-assisted development
+RSI-0F supervised rejection cycle: PASSED
+RSI-0G supervised acceptance cycle: NOT YET PROVEN
+Automatic promotion: DISABLED
+SUPERVISED_BOUNDED_RSI_AVAILABLE: LOCKED
+Stable server: port 9292
+Candidate server: port 9393
+```
+
+The next boundary is one fresh RSI-0G acceptance cycle using the repaired candidate health probe. The candidate must pass every immutable build, identity, readiness, quality, tool, cancellation, repeated-turn, memory, performance, cleanup, and stable-integrity gate before RSI-0 may close.
+
+---
+
+## Unreleased
+
+### Pending
+
+- Run exactly one fresh RSI-0G acceptance cycle with the inert allowed-path fixture.
+- Prove the candidate becomes healthy on port 9393 while stable remains healthy on port 9292.
+- Execute live text, reasoning, tool, cancellation, repeated-turn, memory, and performance gates.
+- Prove candidate teardown and runtime cleanup after reviewable acceptance.
+- Close RSI-0 only if all gates pass without automatic promotion.
+- Unlock `SUPERVISED_BOUNDED_RSI_AVAILABLE` only after the acceptance proof is complete.
+- Begin Checkpoint 1 with an isolated compute-map candidate, initially targeting cold-start and first-request overhead.
+
+---
+
+## 2026-07-09 — RSI-0 safety enforcement and live proof work
+
+### Repository state aligned
+
+The task board, roadmap, active goal, and checkpoint ledger were reconciled with the actual pushed state.
+
+- Checkpoint 0 was kept closed with claim `NEO3000_BASELINE_OPERATIONAL`.
+- LM Studio was removed as an RSI unlock dependency and retained only as optional historical characterization.
+- The active boundary was advanced from already-completed source custody work to RSI-0 enforcement and proof cycles.
+- `prompts/supervised_rsi_cycle.md` was added as the tracked operator contract for one bounded, non-promoting candidate cycle.
+- The prompt requires one causal hypothesis, candidate-only edits, immutable evaluation, a single cycle limit, exact evidence, and manual promotion.
+
+Representative commits:
+
+- `f55e5116eb27209a69ad3aa065471df238f7dc1c` — add supervised RSI operator prompt.
+- `a186d5911ab3d7ff856fe356019ee7893dc6a9f7` — align roadmap with closed Checkpoint 0 and RSI-0E.
+
+### RSI-0E safety gates implemented
+
+The evaluator and controller were hardened so a candidate cannot rewrite the rules, corrupt stable, or silently pass by changing its own scoreboard.
+
+Added or enforced:
+
+- `lab/EVALUATOR.lock.json` with precomputed hashes for evaluator, controller, benchmark identities, protected documents, launch configuration, and model identity.
+- Candidate path allowlist enforcement against the candidate diff.
+- Protected-path rejection with exact offending paths.
+- Hash verification before and after every cycle.
+- Build timeout.
+- Candidate health timeout.
+- Benchmark timeout.
+- One-crash-per-cycle ceiling.
+- Candidate-only VRAM ceiling of 6000 MiB for the RTX 3060 12GB safety profile.
+- Model size and SHA-256 verification before candidate launch.
+- Port collision rejection.
+- Stable/candidate build-directory separation.
+- Stable/candidate runtime-directory separation.
+- Stable health and listener-PID verification before and after candidate activity.
+- Stable worktree integrity verification.
+- Candidate-owned teardown by tracked PID rather than killing every `llama-server` process.
+- Cleanup on success, rejection, timeout, and interruption.
+- No merge, push, rebase, self-promotion, or automatic replacement operation inside `neo_loop.py`.
+- Compact result recording in `lab/results.jsonl`.
+
+Representative commit:
+
+- `cac80b0e8ce3f323c2beca942b43cef4e0b97f1b` — enforce candidate safety gates.
+
+### RSI-0F supervised rejection cycle proved
+
+A deliberate candidate mutation to protected `TASKS.md` was rejected before build or launch.
+
+Proved:
+
+- Candidate edit allowlist rejected the exact protected path.
+- No candidate process remained.
+- Candidate runtime state was removed.
+- Stable remained healthy on port 9292.
+- Stable listener PID remained unchanged at `31188` during the recorded run.
+- Stable worktree remained unchanged.
+- Protected hashes remained valid.
+- The rejection was accurately recorded.
+- Candidate state was restored cleanly and remained resumable.
+
+Representative commit:
+
+- `9e510795de7ad843bb49c3b32a3a0e23ed6cd027` — prove supervised rejection cycle.
+
+### Candidate CMake blocker isolated and source custody repaired
+
+The first RSI-0G attempt failed during CMake generation. The original compact evidence retained only the generic final line, so build diagnostics were improved to preserve the first causal CMake error block, diagnostic lines, longer stdout/stderr tails, and an ignored local full log.
+
+First causal error:
+
+```text
+tools/mtmd/models/models.h was missing from the candidate worktree
+```
+
+Root cause:
+
+- The broad `.gitignore` rule `models/` ignored every directory named `models` anywhere in the tree.
+- It silently excluded 171 legitimate source files under `src/models/` and `tools/mtmd/models/`.
+- Initial source custody was therefore incomplete even though the imported runtime appeared broadly tracked.
+
+Repair:
+
+- Anchored the weight directory ignore as `/models/`.
+- Added the omitted source files to Git custody.
+- Added `.gitignore` to protected evaluator paths.
+- Improved compact CMake failure evidence in `scripts/neo_loop.py`.
+- Confirmed clean candidate CMake configure succeeds after repair.
+- Confirmed the shared candidate builder and candidate-specific builder had failed for the same missing-source reason; script drift was not causal.
+
+Representative commit:
+
+- `16286951e54ded4de59062f4a85bb3ea134fca4d` — repair candidate source custody and diagnostics.
+
+### Agents-A1 model identity corrected and locked
+
+After the candidate built successfully, the next acceptance attempt stopped before launch because the evaluator contained a transposed SHA-256 sequence.
+
+Correct identity:
+
+```text
+File: Agents-A1-Q4_K_M.gguf
+Size: 21,166,757,632 bytes
+SHA-256: 31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2
+```
+
+The corrected identity was written consistently into:
+
+- `lab/EVALUATOR.json`
+- `lab/EVALUATOR.lock.json`
+- `lab/CHECKPOINT.md`
+- `TASKS.md`
+- active goal evidence
+
+The candidate was not launched during the mismatched-identity run. Stable health, listener identity, and cleanup remained intact.
+
+Representative commit:
+
+- `816f6e978c848a8cd59c5826d7aeaaa8c4d4eb7d` — correct Agents-A1 evaluator identity.
+
+### Candidate health-probe timeout handling repaired
+
+A fresh authorized acceptance cycle then configured and built successfully and began candidate model loading. During loading, a socket read timeout escaped the health probe and aborted the controller before the declared candidate readiness deadline.
+
+Root cause:
+
+- A temporary socket/read timeout during model loading was treated as an uncaught terminal exception.
+- It should have meant only “candidate not healthy yet” while the readiness deadline remained open.
+
+Repair:
+
+- `request_json()` now catches HTTP, URL, JSON, timeout, and OS-level socket errors and converts them to `NeoLoopError`.
+- `health_ok()` converts those request failures to `False`.
+- The existing readiness loop can now continue polling until success, candidate crash, or the declared deadline.
+- A stalled-health local test passed.
+
+The run stopped safely without retry:
+
+- Candidate process removed.
+- Candidate runtime directory removed.
+- Candidate port 9393 free.
+- Stable health passed before and after.
+- Stable listener PID remained `31188`.
+- Stable worktree remained clean.
+- Automatic promotion remained disabled.
+
+Representative commit:
+
+- `d911f932be997b764a74235bba8ef2b9279a2c04` — handle candidate health-probe timeouts.
+
+---
+
+## 2026-07-03 — RSI-0 substrate established
+
+### RSI-0A: engine source placed under Git custody
+
+Neo3000 stopped treating the imported runtime as an opaque local tree and adopted source-custody Option A: track the pinned runtime directly as a deliberate baseline.
+
+Established:
+
+- Pinned upstream repository: `ggml-org/llama.cpp`.
+- Pinned upstream commit: `fdb1db877c526ec90f668eca1b858da5dba85560`.
+- Upstream licenses and attribution preserved.
+- Imported engine placed under ordinary Git diff, branch, rollback, and worktree control.
+- 2103 files initially entered the tracked source baseline.
+- One-line source edits became ordinary inspectable Git diffs.
+- Clean rollback restored the exact baseline.
+- A separate worktree could materialize the complete tracked engine.
+
+Later CMake proof discovered that 171 additional source files had been hidden by the broad `models/` ignore rule; that custody defect was repaired on July 9 in `1628695`.
+
+Representative commit:
+
+- `7ea6ffddc599814dce4a0c2218cac420025739ae` — track imported llama.cpp engine as Git-diffable baseline.
+
+### RSI-0B: stable and candidate worktrees isolated
+
+Established the dual-runtime topology:
+
+```text
+Stable worktree: D:\CCC 2.0\AI\Neo3000
+Stable branch: main
+Stable build: build/stable
+Stable port: 9292
+
+Candidate worktree: D:\CCC 2.0\AI\Neo3000-candidate
+Candidate branch: candidate
+Candidate build: build/candidate
+Candidate port: 9393
+```
+
+Added:
+
+- `scripts/build_candidate.ps1`
+- `scripts/run_candidate.ps1`
+- Separate build paths.
+- Separate ports.
+- Separate runtime-state paths.
+- Candidate model alias.
+- CPU-MoE-compatible candidate launch profile for shared 12GB VRAM constraints.
+
+Representative commit:
+
+- `1c1bfe69ecf08e91b4632552612691b57484a5e8` — establish candidate worktree and isolated build/run scripts.
+
+### RSI-0C and RSI-0D: evaluator and deterministic neo-loop created
+
+Added the first immutable evaluator manifest and deterministic candidate lifecycle.
+
+The initial `lab/EVALUATOR.json` recorded:
+
+- Exact model identity.
+- Baseline Neo3000 and upstream identities.
+- Stable launch configuration.
+- Candidate-editable paths.
+- Protected paths.
+- Smoke, tool, cancellation, memory, repeat, and context gates.
+
+The initial `scripts/neo_loop.py` implemented:
+
+```text
+verify stable
+verify candidate state
+record baseline identity
+build candidate separately
+launch candidate separately
+wait for health
+run immutable probes
+verify protected state
+tear down candidate
+verify stable again
+record reject / reviewable-accept / inconclusive
+never promote automatically
+```
+
+The task board was advanced from substrate construction to RSI-0E enforcement.
+
+Representative commits:
+
+- `d2c9ad4429a137299c2a0b89e809a1e6ef5a1b0d` — implement immutable evaluator and neo-loop machinery.
+- `809932fb0d54fe6934fb7e2cd19d67865be774d0` — update task board with RSI-0 progress.
+
+---
+
+## 2026-07-02 — Checkpoint 0 baseline established and closed
+
+### Standalone Neo3000 runtime foundation
+
+Neo3000 was established as its own tracked repository and runtime rather than a traditional fork dependency or LM Studio wrapper.
+
+Foundation work included:
+
+- Pinned llama.cpp import manifest and upstream identity.
+- Reproducible source import tooling.
+- Windows CUDA build scripts.
+- Stable server launch scripts.
+- Baseline benchmark harness.
+- Context-scaling harness.
+- Rolling decode instrumentation.
+- Task board, roadmap, active goal, checkpoint ledger, baseline protocol, and JSONL experiment log.
+- Ignored local weights, builds, logs, runtime state, and benchmark outputs.
+
+Verified build environment:
+
+```text
+CUDA Toolkit: 12.6
+nvcc: 12.6.85
+MSVC: 19.44.35227
+CMake: 4.3.2
+GPU: NVIDIA RTX 3060 12GB
+CUDA architecture: SM 8.6
+```
+
+Built successfully:
+
+- `build/stable/bin/Release/llama-server.exe`
+- `build/stable/bin/Release/llama-bench.exe`
+
+Stable API topology:
+
+```text
+Pi
+-> http://127.0.0.1:9292/v1
+-> Neo3000 stable server
+-> Agents-A1 GGUF
+```
+
+### Agents-A1 serving and Pi compatibility proved
+
+Verified:
+
+- `/health`
+- `/v1/models`
+- OpenAI-compatible chat completions.
+- Incremental SSE streaming.
+- `reasoning_content` preservation.
+- `neo3000_probe` tool calls with valid JSON arguments.
+- Cancellation followed by immediate API recovery.
+- Repeated turns without server degradation.
+
+User-visible Pi proof completed:
+
+- Exact streamed response: `NEO3000 PI ONLINE`.
+- Real Pi tool round trip: Pi read `README.md`, returned its first heading, and Agents-A1 answered `Neo3000`.
+- Pi-side cancellation during a long generation.
+- Immediate post-cancellation recovery: `NEO3000 RECOVERED`.
+
+### Context allocation and occupied-context behavior separated
+
+Neo3000 established a strict evidence distinction:
+
+```text
+configured context capacity != actual occupied prompt tokens
+```
+
+Served-context allocation succeeded at:
+
+- 4K
+- 8K
+- 16K
+- 32K
+- 40K
+- 65,536 tokens
+
+Measured occupied-context decode:
+
+| Actual prompt tokens | Cached prompt TPS | Decode TPS |
+|---:|---:|---:|
+| 2,053 | 64.6 | 22.3 |
+| 8,191 | 56.0 | 19.9 |
+| 32,773 | 60.3 | 22.4 |
+| 40,956 | 60.6 | 22.4 |
+| 59,996 | 57.0 | 20.9 |
+
+Result:
+
+```text
+60K / 2K decode ratio: 0.94
+Observed degradation across ~60K occupied tokens: about 6%
+```
+
+This established that Agents-A1’s hybrid Qwen 3.5 MoE plus Gated Delta Net architecture maintained approximately flat decode throughput across the measured occupied-context range.
+
+### Rolling minimum decode added
+
+A 384-token decode with a 16-token rolling window showed no hidden sustained stalls:
+
+| Occupied tokens | Average TPS | Minimum 16-token TPS | Min/avg |
+|---:|---:|---:|---:|
+| 2,053 | 19.1 | 18.4 | 0.96 |
+| 32,773 | 18.3 | 16.9 | 0.92 |
+| 59,996 | 18.6 | 17.1 | 0.92 |
+
+The slowest rolling windows were only 4–8% below average, so average decode speed was not concealing severe transient collapse.
+
+### Auto-fit hypothesis tested and rejected
+
+Hypothesis:
+
+```text
+Automatic GPU placement is overly conservative and explicit layer counts can improve throughput.
+```
+
+Measured at 4K:
+
+| Placement | Decode TPS | VRAM MiB |
+|---|---:|---:|
+| auto | 17.6 | 2,785 |
+| explicit 20 layers | 10.0 | 1,892 |
+| CPU only | 6.6 | 858 |
+
+Verdict:
+
+- Auto-fit was best among tested placements.
+- The conservative-auto-fit hypothesis was rejected.
+- Explicit layer forcing was not selected as an optimization direction.
+
+### CPU-MoE tradeoff characterized
+
+Measured at 4K with automatic placement:
+
+| CPU-MoE | Decode TPS | VRAM MiB |
+|---|---:|---:|
+| enabled | 19.1 | 2,725 |
+| disabled | 30.8 | 10,604 |
+
+Result:
+
+- Moving MoE work to GPU improved decode by about 62%.
+- It consumed about 89% of total VRAM.
+- CPU-MoE was retained as a space/speed control, especially when stable and candidate runtimes or larger context state must coexist.
+
+### 40,960-token failure localized
+
+An apparent tokenizer/context failure at the 40,960 target was investigated.
+
+Findings:
+
+- Direct `/tokenize` succeeded at approximately 197K and 599K tokens.
+- The server remained healthy.
+- The earlier matrix failure came from client-side timeout during a long uncached warmup, not a tokenizer or server defect.
+- Rapid repeated binary-search tokenization calls could also exhaust Windows socket resources.
+- The uncached 40K warmup took roughly nine minutes at about 73 prompt tokens per second, exceeding the former five-minute client timeout.
+
+The harness timeout and evidence language were corrected rather than modifying the inference runtime for a nonexistent tokenizer bug.
+
+### Throughput discrepancy explained
+
+Different reported numbers were reconciled:
+
+- About 8.2 TPS: cold first request, long reasoning-heavy completion.
+- About 17.5–19.7 TPS: warm shorter completions.
+- About 21.7–23.2 TPS: warm deterministic benchmark corpus.
+
+The discrepancy was attributed to cold state, completion length, and reasoning-token overhead rather than contradictory runtime behavior.
+
+### Checkpoint 0 closed
+
+Checkpoint 0 closed only after build, model identity, API, Pi UI, tools, cancellation, repeated-turn, context, rolling-minimum, and characterization evidence were complete.
+
+LM Studio was explicitly removed as an unlock gate. It may be used for optional historical comparison, but Neo3000 acceptance decisions compare a candidate against the previous accepted Neo3000 baseline under immutable evaluation.
+
+Claim advanced to:
+
+```text
+NEO3000_BASELINE_OPERATIONAL
+```
+
+No catalytic inference claim was made.
+
+Representative commits:
+
+- `a5bef72de0c7b727abfed0b62cb6753beff8bbf8` — complete occupied-context baseline with auto-fit and CPU-MoE audits.
+- `432e8f773cde782cab6d478ad5afccb15816cbb4` — align task board with the completed characterization head.
+- `82c227037aea78dbaaa0f40ab403787106ac5b91` — close Checkpoint 0 with Pi UI evidence and rolling minimum decode.
+
+---
+
+## Architectural decisions retained
+
+### Neo3000 judges Neo3000
+
+LM Studio is not part of the RSI decision loop. Candidate acceptance is determined against the previous accepted Neo3000 state using the same hardware, model, evaluator, prompts, quality gates, and measurement law.
+
+### Stable is never the experiment surface
+
+Stable remains the daily-driver control intelligence. Every intervention belongs in an isolated candidate worktree, build directory, runtime directory, and port.
+
+### The evaluator is outside candidate control
+
+Candidates may not edit:
+
+- Evaluator manifest.
+- Evaluator lockfile.
+- Controller.
+- Task board.
+- Roadmap.
+- Checkpoint ledger.
+- Active goal.
+- Results ledger.
+- Stable launch scripts.
+- Model files or model identity.
+- Promotion rules.
+
+### Promotion remains human-controlled
+
+A passing candidate may become `reviewable-accept`. It does not merge, push, replace stable, or promote itself.
+
+### Meaningful architectural commits over pellet history
+
+The Git history is intended to preserve Neo3000’s engineering memory. Source custody, isolation, evaluator construction, safety enforcement, proof cycles, and causal repairs are committed as coherent architectural chunks rather than fragmented administrative pellets.
+
+---
+
+## Rejected hypotheses and corrected assumptions
+
+| Hypothesis or assumption | Result |
+|---|---|
+| Auto GPU placement was overly conservative | Rejected; auto-fit outperformed tested explicit layer counts. |
+| The 40,960 target exposed a tokenizer/server limit | Rejected; the causal boundary was client timeout during long uncached inference. |
+| Configuring 65,536 context proves 65,536 occupied prompt tokens | Rejected; allocation and occupancy are separate evidence. |
+| LM Studio parity must gate RSI | Rejected; external comparison is optional characterization. |
+| Initial tracked import contained all required source | Rejected; broad `models/` ignore omitted 171 legitimate source files. |
+| Candidate builder drift caused CMake failure | Rejected; both build routes failed on the same missing source. |
+| Original recorded model SHA-256 was exact | Rejected; a transposed sequence was corrected against measured bytes. |
+| A read timeout during candidate model load means terminal health failure | Rejected; it means not-yet-healthy until the readiness deadline expires. |
+
+---
+
+## Milestone commit index
+
+| Commit | Milestone |
+|---|---|
+| `a5bef72` | Occupied-context baseline, auto-fit audit, CPU-MoE audit, timeout localization. |
+| `432e8f7` | Characterization head reconciled in task board. |
+| `82c2270` | Checkpoint 0 closed with Pi UI and rolling-minimum evidence. |
+| `7ea6ffd` | Imported llama.cpp runtime entered direct Git custody. |
+| `1c1bfe6` | Stable/candidate worktree and build/run isolation created. |
+| `d2c9ad4` | Evaluator manifest and deterministic neo-loop core created. |
+| `809932f` | RSI-0 progress recorded and RSI-0E opened. |
+| `f55e511` | Tracked supervised RSI operator prompt added. |
+| `a186d59` | Roadmap, task board, and active boundary aligned. |
+| `cac80b0` | Candidate safety, lock, allowlist, timeout, memory, and isolation gates enforced. |
+| `9e51079` | Live supervised rejection cycle proved. |
+| `1628695` | Source-custody omission repaired; CMake diagnostics improved. |
+| `816f6e9` | Agents-A1 evaluator identity corrected and locked. |
+| `d911f93` | Candidate health-probe timeout handling repaired. |
+
+---
+
+## Changelog maintenance law
+
+Add an entry when pushed evidence changes one of the following:
+
+- Supported claim ceiling.
+- Checkpoint state.
+- Runtime architecture.
+- Evaluator or promotion law.
+- Stable/candidate isolation.
+- Model or source identity.
+- Reproducible performance evidence.
+- Accepted or rejected causal hypothesis.
+- Safety boundary.
+- Proven rejection or acceptance cycle.
+- Exact next boundary.
+
+Do not record an item as completed merely because it was proposed, described, or attempted. Failed cycles belong here when they expose and repair a real architectural boundary.
