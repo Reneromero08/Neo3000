@@ -314,6 +314,7 @@ def main() -> int:
     parser.add_argument("--model", default="agents-a1")
     parser.add_argument("--prompt", default=DEFAULT_PROMPT)
     parser.add_argument("--prompt-file", type=Path)
+    parser.add_argument("--expect-content", help="required substring in each streamed final-content response")
     parser.add_argument("--max-tokens", type=int, default=64)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--repeat", type=int, default=3)
@@ -424,10 +425,11 @@ def main() -> int:
             item["passed"] for item in result["tool_call_validation"]
         )
     else:
-        expected = DEFAULT_PROMPT.split(":", 1)[-1].strip()
+        expected = args.expect_content or (DEFAULT_PROMPT.split(":", 1)[-1].strip() if prompt == DEFAULT_PROMPT else None)
+        result["expected_content"] = expected
         result["exact_response_passed"] = all(
             expected in item.content for item in measurements
-        ) if prompt == DEFAULT_PROMPT else None
+        ) if expected else None
 
     write_result(args.output, result)
     print(f"wrote {args.output}")

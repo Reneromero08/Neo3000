@@ -9,7 +9,7 @@
     "size_bytes": 21166757632
   },
   "baseline": {
-    "neo3000_commit": "1c1bfe6",
+    "neo3000_commit": "a186d5911ab3d7ff856fe356019ee7893dc6a9f7",
     "llama_cpp_commit": "fdb1db877c526ec90f668eca1b858da5dba85560",
     "cuda_version": "12.6.85",
     "msvc_version": "19.44",
@@ -26,6 +26,32 @@
     "batch": 512,
     "ubatch": 128
   },
+  "candidate_launch": {
+    "port": 9393,
+    "model_alias": "agents-a1-candidate",
+    "ctx_size": 4096,
+    "cpu_moe": true,
+    "threads": 12,
+    "batch": 512,
+    "ubatch": 128
+  },
+  "isolation": {
+    "stable_build_directory": "build/stable",
+    "candidate_build_directory": "build/candidate",
+    "stable_runtime_directory": "runtime/stable",
+    "candidate_runtime_directory": "runtime/candidate"
+  },
+  "timeouts": {
+    "stable_health_seconds": 15,
+    "build_seconds": 1800,
+    "candidate_health_seconds": 180,
+    "benchmark_seconds": 300
+  },
+  "memory": {
+    "candidate_vram_mib_ceiling": 6000,
+    "description": "Candidate-only VRAM ceiling for an RTX 3060 12GB while stable remains resident."
+  },
+  "crash_ceiling_per_cycle": 1,
   "protected_paths": {
     "description": "These paths must not be modified by candidates. Hash verification runs before and after every cycle.",
     "files": [
@@ -43,9 +69,27 @@
       "AGENTS.md",
       "ROADMAP.md",
       "lab/GOAL.md",
-      "lab/CHECKPOINT.md"
+      "lab/CHECKPOINT.md",
+      "lab/EVALUATOR.lock.json",
+      "lab/results.jsonl"
     ]
   },
+  "controller_files": [
+    "scripts/neo_loop.py"
+  ],
+  "benchmark_prompt_sources": [
+    "scripts/baseline_harness.py"
+  ],
+  "inline_prompt_sources": [
+    {
+      "id": "smoke-exact-response-v1",
+      "text": "Reply with exactly: NEO3000 ONLINE"
+    },
+    {
+      "id": "tool-call-v1",
+      "text": "Call the neo3000_probe tool exactly once with status set to ok. Do not answer in plain text."
+    }
+  ],
   "candidate_editable_paths": {
     "description": "Candidates may only modify files under these paths.",
     "paths": [
@@ -81,7 +125,7 @@
     "reasoning": "reasoning_content preserved in stream",
     "tool_call": "neo3000_probe with valid JSON arguments",
     "cancellation": "recovery within 3 subsequent requests",
-    "memory": "VRAM under 12000 MiB, no paging",
+    "memory": "candidate-only VRAM under 6000 MiB, no paging",
     "repeat": "3 consecutive turns without error"
   }
 }

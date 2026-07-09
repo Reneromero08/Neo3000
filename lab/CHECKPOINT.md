@@ -145,6 +145,19 @@ Option A: Track the imported pinned runtime as one deliberate baseline commit.
 
 Prepare the repository for Pi-supervised recursive self-improvement before modifying inference kernels.
 
+### RSI-0E stop and isolation gates
+
+**Status:** IMPLEMENTED, awaiting live candidate-cycle proof
+
+- [x] Evaluator lockfile records hashes for the evaluator, controller, quality scripts, and fixed prompt identities without local model paths.
+- [x] Candidate diff allowlist rejects paths outside the declared experiment surface.
+- [x] A deliberate candidate edit to `TASKS.md` was rejected before build or launch; the exact path was recorded in `lab/results.jsonl`.
+- [x] Candidate build, health, benchmark, VRAM, crash, port, build/runtime separation, model-identity, and stable-integrity gates are implemented in `scripts/neo_loop.py`.
+- [x] Candidate teardown tracks only the launched candidate PID; it does not terminate the stable process by name.
+- [ ] Stable health during candidate build/run/teardown is not yet demonstrated in this session because port 9292 is offline and `NEO3000_MODEL` is unset.
+- [ ] RSI-0F live rejection cycle remains required.
+- [ ] RSI-0G live acceptance cycle remains required.
+
 ## Checkpoint 1: Compute map (RSI-0 required first)
 
 Cold-start performance (first-request TPS ~50% of warm) and reasoning token overhead (~70% of output) are the identified targets. The SSM architecture shows flat decode through 60K, lowering the priority of long-context catalytic mechanisms.

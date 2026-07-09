@@ -4,7 +4,7 @@
 **Current RSI level:** Level 0, Pi-assisted development  
 **Baseline evidence through:** `432e8f773cde782cab6d478ad5afccb15816cbb4`  
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** implement RSI-0E stop and isolation gates, then prove rejection and acceptance cycles
+**Next exact boundary:** prove RSI-0F against a live stable server using the implemented RSI-0E gates
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -104,9 +104,9 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Declared candidate-editable paths and protected paths.
 - [x] Excluded evaluator, controller, stable worktree, and task ledger from candidate-editable paths.
 - [x] Hash verification integrated into neo-loop before and after a cycle.
-- [ ] Add `lab/EVALUATOR.lock.json` with precomputed protected hashes.
-- [ ] Hash benchmark prompts as separate immutable inputs.
-- [ ] Add deliberate protected-file mutation test.
+- [x] Added `lab/EVALUATOR.lock.json` with precomputed hashes for the evaluator, controller, quality-gate scripts, and prompt identities.
+- [x] Hashed benchmark prompt identities as immutable inputs.
+- [x] Deliberate protected-file mutation preflight rejects the exact path (`TASKS.md`) before build or launch.
 
 ## RSI-0D. Build deterministic `neo-loop` [CORE DONE]
 
@@ -122,28 +122,27 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Verifies stable health after teardown.
 - [x] Classifies as reject, reviewable-accept, or inconclusive.
 - [x] Appends compact result record to `lab/results.jsonl`.
-- [ ] Enforce candidate-only edits with path allowlist checking.
-- [ ] Run cancellation and repeated-turn gates on candidate.
-- [ ] Run memory and performance gates on candidate.
-- [ ] Verify cleanup after success, failure, timeout, and interruption.
+- [x] Enforce candidate-only edits with path allowlist checking.
+- [x] Implement cancellation, repeated-turn, memory, and performance gates for candidate runs; live proof remains RSI-0G.
+- [x] Implement candidate-owned cleanup in a `finally` path; live proof remains RSI-0F/G.
 
-## RSI-0E. Enforce stop and isolation gates [NEXT]
+## RSI-0E. Enforce stop and isolation gates [IMPLEMENTED; live proof pending]
 
-- [ ] Enforce build timeout.
-- [ ] Enforce server-health timeout.
-- [ ] Enforce benchmark timeout.
-- [ ] Enforce memory ceiling.
-- [ ] Enforce repeated-crash ceiling.
-- [ ] Reject malformed text, reasoning, or tools.
-- [ ] Reject cancellation or repeated-turn regression.
-- [ ] Reject benchmark mutation.
-- [ ] Reject model-weight or model-identity changes.
-- [ ] Reject stable worktree mutation.
-- [ ] Reject stable process termination.
-- [ ] Reject port collision.
-- [ ] Reject overlapping build or runtime directories.
-- [ ] Prevent candidate push or self-promotion.
-- [ ] Confirm cleanup on success, failure, timeout, and interruption.
+- [x] Enforce build timeout.
+- [x] Enforce server-health timeout.
+- [x] Enforce benchmark timeout.
+- [x] Enforce a 6000 MiB candidate-only VRAM ceiling for the RTX 3060 12GB safe profile.
+- [x] Enforce a one-crash-per-cycle ceiling.
+- [x] Reject malformed text, reasoning, or tools through immutable stream and tool probes.
+- [x] Reject cancellation or repeated-turn regression.
+- [x] Reject benchmark mutation through lockfile hashes.
+- [x] Reject model-weight or model-identity changes through the locked model identity and fixed candidate launch profile.
+- [x] Reject stable worktree mutation and stable listener replacement after every live cycle.
+- [x] Candidate teardown targets only its tracked process, never every `llama-server` process.
+- [x] Reject port collision.
+- [x] Reject overlapping build or runtime directories.
+- [x] The controller contains no push, merge, rebase, or promotion operation; reviewable acceptance remains non-promoting.
+- [x] Implement cleanup on success, failure, timeout, and interruption; live execution evidence remains pending.
 
 ## RSI-0F. Prove one supervised rejection cycle
 
@@ -248,4 +247,4 @@ Do not begin until RSI-0 closes.
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: RSI-0E stop and isolation gates, especially candidate edit allowlist, evaluator lockfile, memory/timeouts, and mutation test.
+- [ ] Next task: RSI-0F live supervised rejection cycle with stable health before and after teardown.

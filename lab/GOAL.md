@@ -9,8 +9,8 @@ RSI-0A through RSI-0D are partially or fully complete:
 ```text
 RSI-0A source custody: done
 RSI-0B stable/candidate worktrees: design done, live isolation proof still needed
-RSI-0C evaluator manifest: core done, lockfile and mutation test still needed
-RSI-0D neo-loop machinery: core done, enforcement gates still needed
+RSI-0C evaluator lockfile and protected mutation preflight: done
+RSI-0D neo-loop machinery and enforcement gates: implemented; live cycle evidence still needed
 ```
 
 ## Required result
@@ -29,26 +29,23 @@ Stable worktree running Neo3000
 
 ## Current boundary
 
-The next objective is **RSI-0E: enforce stop and isolation gates**.
+RSI-0E is implemented. The next objective is **RSI-0F: prove a live supervised rejection cycle**.
 
 Do not begin autonomous RSI. Do not modify stable inference logic. Do not promote candidates automatically.
 
 ## Next exact action
 
-Harden `neo-loop` so a candidate cannot corrupt the evaluator, task board, stable worktree, stable server, model identity, build directories, runtime directories, or promotion rules.
+With the stable server running on port 9292 and `NEO3000_MODEL` set to the verified Agents-A1 GGUF, run one protected-path rejection cycle through `neo-loop`. Confirm stable health before and after candidate cleanup, then proceed to the harmless acceptance cycle.
 
 Minimum required work:
 
 ```text
-1. Add evaluator lockfile or equivalent precomputed protected-hash manifest.
-2. Enforce candidate diff allowlist.
-3. Enforce protected-path rejection.
-4. Enforce build, health, benchmark, and process timeouts.
-5. Enforce memory ceiling for candidate runs.
-6. Enforce port and build-directory separation.
-7. Enforce candidate cleanup on success, failure, timeout, and interruption.
-8. Add deliberate protected-file mutation test.
-9. Prove stable health before and after a rejected candidate.
+1. Start the known stable launch profile on port 9292.
+2. Set `NEO3000_MODEL` to the verified Agents-A1 GGUF.
+3. Make one deliberate protected-path change only in the candidate worktree.
+4. Run `python scripts/neo_loop.py --hypothesis "..."` from stable.
+5. Confirm the rejection record, candidate cleanup, and unchanged stable health/hashes.
+6. Restore the candidate worktree, then perform the harmless allowed-path acceptance cycle.
 ```
 
 ## Unlock target
