@@ -30,22 +30,22 @@ Stable worktree running Neo3000
 
 ## Current boundary
 
-RSI-0E is implemented and RSI-0F has passed. Candidate source custody and evaluator model identity are repaired. The next objective is **verify repaired candidate health-probe timeout handling, then authorize one fresh RSI-0G acceptance cycle**.
+RSI-0E is implemented and RSI-0F has passed. Candidate source custody, evaluator model identity, and health-probe handling are repaired. The next objective is **establish a Windows-safe candidate VRAM measurement before authorizing another RSI-0G acceptance cycle**.
 
 Do not begin autonomous RSI. Do not modify stable inference logic. Do not promote candidates automatically.
 
 ## Next exact action
 
-The harmless allowed-path acceptance attempt configured and built after source-custody repair, then stopped during candidate model loading because a socket read timeout escaped the controller health probe. Candidate cleanup completed and stable remained healthy at the same listener PID. Treat a timed-out health request as not-yet-healthy within the declared health wait; do not retry the cycle in this boundary.
+The harmless allowed-path acceptance attempt configured, built, loaded the candidate model, and reached port 9393. It then stopped at the VRAM gate because Windows NVIDIA per-process telemetry returned `[N/A]` for every process. Do not bypass the 6000 MiB candidate ceiling: establish a trustworthy Windows-safe measurement before another cycle.
 
 Minimum required work:
 
 ```text
-1. Verify the controller catches socket read timeouts as failed health probes rather than uncaught exceptions.
+1. Identify a Windows-safe, candidate-specific VRAM measurement or declare the memory gate blocked.
 2. Keep the stable server and stable worktree unchanged.
-3. Reapply only the inert `common/` fixture in the candidate worktree.
-4. Authorize one new `python scripts/neo_loop.py --hypothesis "..."` cycle from stable.
-5. Require every text, reasoning, tool, cancellation, repeat, memory, performance, cleanup, and stable-integrity gate before reviewable acceptance.
+3. Do not reduce the 6000 MiB ceiling or substitute unverified system-wide memory for candidate memory.
+4. Reapply only the inert `common/` fixture after the memory gate is trustworthy.
+5. Authorize one new `python scripts/neo_loop.py --hypothesis "..."` cycle only then.
 ```
 
 ## Unlock target

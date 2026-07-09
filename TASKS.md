@@ -4,7 +4,7 @@
 **Current RSI level:** Level 0, Pi-assisted development  
 **Baseline evidence through:** `432e8f773cde782cab6d478ad5afccb15816cbb4`  
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** repair candidate health-probe timeout handling, then authorize one fresh RSI-0G acceptance cycle
+**Next exact boundary:** establish a Windows-safe candidate VRAM measurement before authorizing another RSI-0G cycle
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -157,12 +157,13 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Confirmed the compact failure record is accurate in `lab/results.jsonl`.
 - [x] Restored the candidate worktree cleanly; the next task is resumable.
 
-## RSI-0G. Prove one supervised acceptance cycle [BLOCKED: candidate health-probe timeout handling]
+## RSI-0G. Prove one supervised acceptance cycle [BLOCKED: candidate VRAM telemetry unavailable]
 
 - [x] Started from a healthy stable server.
 - [x] Applied an inert file only within the allowed candidate path `common/`.
 - [x] Candidate configured and built only in candidate isolation after source-custody repair.
-- [ ] Launch it only on candidate port 9393 (blocked: the candidate health probe propagated a socket timeout during model load instead of continuing its declared health wait).
+- [x] Candidate process launched and model loaded only on port 9393; health readiness passed after the timeout-handling repair.
+- [ ] Enforce the 6000 MiB candidate VRAM ceiling (blocked: Windows NVIDIA per-process telemetry reports `[N/A]` for all processes).
 - [ ] Confirm every declared gate passes.
 - [ ] Mark it reviewable rather than promoting it.
 - [ ] Confirm exact diff and evidence are inspectable.
@@ -248,4 +249,4 @@ Do not begin until RSI-0 closes.
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: verify repaired candidate health-probe timeout handling, then authorize one fresh RSI-0G acceptance cycle with the same inert allowed-path fixture.
+- [ ] Next task: establish a Windows-safe candidate VRAM measurement that preserves the 6000 MiB gate, then authorize one fresh RSI-0G acceptance cycle with the same inert allowed-path fixture.

@@ -285,7 +285,10 @@ def candidate_vram_mib(pid: int) -> int | None:
         for line in completed.stdout.splitlines():
             parts = [part.strip() for part in line.split(",")]
             if len(parts) == 2 and parts[0].isdigit() and int(parts[0]) == pid:
-                return int(parts[1])
+                try:
+                    return int(parts[1])
+                except ValueError:
+                    return None
     except (OSError, subprocess.TimeoutExpired):
         pass
     return None
@@ -399,7 +402,9 @@ def cycle(declared_hypothesis: str) -> CycleResult:
             return CycleResult("reject", "candidate-health-timeout", candidate_commit, evidence)
         memory = candidate_vram_mib(process.pid)
         evidence["candidate_vram_mib"] = memory
-        if memory is not None and memory > evaluator["memory"]["candidate_vram_mib_ceiling"]:
+        if memory is None:
+            return CycleResult("reject", "candidate-vram-telemetry-unavailable", candidate_commit, evidence)
+        if memory > evaluator["memory"]["candidate_vram_mib_ceiling"]:
             return CycleResult("reject", "candidate-memory-ceiling", candidate_commit, evidence)
 
         smoke_file = candidate_runtime / "smoke.json"
