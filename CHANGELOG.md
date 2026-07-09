@@ -13,14 +13,14 @@ Checkpoint 0: CLOSED
 Claim ceiling: NEO3000_BASELINE_OPERATIONAL
 Current RSI level: Level 0, Pi-assisted development
 RSI-0F supervised rejection cycle: PASSED
-RSI-0G supervised acceptance cycle: REJECTED AT TEXT QUALITY GATE
+RSI-0G supervised acceptance cycle: BLOCKED BY SHARED REASONING BUDGET
 Automatic promotion: DISABLED
 SUPERVISED_BOUNDED_RSI_AVAILABLE: LOCKED
 Stable server: port 9292
 Candidate server: port 9393
 ```
 
-The fresh inert-fixture RSI-0G cycle built and became healthy with candidate PID/listener PID `45840`; PID-filtered WDDM recorded 17 samples, no telemetry failures, and a 2,194.88 MiB peak below the 6000 MiB ceiling. It rejected at the first text-quality boundary because the exact-response probe streamed 67 events of reasoning but no assistant content within 64 tokens. Teardown, counter retirement, stable health/listener identity, worktree integrity, and protected hashes passed. The next boundary is to localize that reasoning-only response without weakening the evaluator.
+The fresh inert-fixture RSI-0G cycle built and became healthy with candidate PID/listener PID `45840`; PID-filtered WDDM recorded 17 samples, no telemetry failures, and a 2,194.88 MiB peak below the 6000 MiB ceiling. Matched stable and clean-candidate diagnostics then showed the exact-response failure is shared: both use 64–192 total completion tokens for reasoning and produce final content at 256. Stable supports documented request-level `chat_template_kwargs.enable_thinking=false`, which returned exact final content at 64 tokens; a future repair must retain a separate auto-reasoning gate. The next boundary is review and proof of that two-gate repair, not another cycle.
 
 ---
 
@@ -28,8 +28,8 @@ The fresh inert-fixture RSI-0G cycle built and became healthy with candidate PID
 
 ### Pending
 
-- Localize why the locked exact-text probe produces reasoning only and no assistant content within 64 tokens.
-- Preserve the exact-response, WDDM, performance, isolation, and no-promotion gates before authorizing one further RSI-0G cycle.
+- Review a narrow exact-content transport probe using documented request-level reasoning disable while retaining the mandatory auto-reasoning probe.
+- Prove the two-gate repair on stable and clean candidate before authorizing one further RSI-0G cycle.
 - Close RSI-0 only if all gates pass without automatic promotion.
 - Unlock `SUPERVISED_BOUNDED_RSI_AVAILABLE` only after the acceptance proof is complete.
 - Begin Checkpoint 1 with an isolated compute-map candidate, initially targeting cold-start and first-request overhead.

@@ -4,7 +4,7 @@
 **Current RSI level:** Level 0, Pi-assisted development  
 **Baseline evidence through:** `432e8f773cde782cab6d478ad5afccb15816cbb4`  
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** localize why the locked exact-text probe emits reasoning only and no assistant content before authorizing another RSI-0G cycle
+**Next exact boundary:** review and authorize a transport-versus-reasoning evaluator repair that preserves both gates before another RSI-0G cycle
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -157,7 +157,7 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Confirmed the compact failure record is accurate in `lab/results.jsonl`.
 - [x] Restored the candidate worktree cleanly; the next task is resumable.
 
-## RSI-0G. Prove one supervised acceptance cycle [BLOCKED: text quality gate]
+## RSI-0G. Prove one supervised acceptance cycle [BLOCKED: shared reasoning budget]
 
 - [x] Started from a healthy stable server.
 - [x] Applied an inert file only within the allowed candidate path `common/`.
@@ -166,6 +166,9 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Enforce the unchanged 6000 MiB ceiling with PID-filtered Windows WDDM dedicated-memory peak sampling; unavailable or lost telemetry rejects.
 - [x] Fresh inert-fixture cycle configured, built, loaded, and listened with candidate PID/listener PID `45840`; WDDM sampled 17 times with a 2,301,497,344-byte (2,194.88 MiB) peak, then candidate teardown and stable-integrity checks passed.
 - [x] First causal boundary recorded: the exact-text smoke request streamed 67 events but emitted no assistant content (`NEO3000 ONLINE`) within 64 tokens because it remained in reasoning; the text quality gate rejected the cycle before later gates.
+- [x] Matched stable and clean-candidate diagnostics classify the text failure as shared completion-budget exhaustion: under `--reasoning auto`, both stop at 64/96/128/192 tokens with reasoning only and emit `NEO3000 ONLINE` at 256 tokens without a source or server change.
+- [x] The pinned runtime documents request-level `chat_template_kwargs.enable_thinking=false`; stable returned exact final content in 8 completion tokens at the same 64-token cap. The final-content transport probe can disable thinking only if a separate auto-reasoning gate remains mandatory.
+- [x] Matched candidate first/warm decode measurements (15.84, 16.23, 15.58 TPS) and stable repeated measurements (16.61, 16.11, 15.41 TPS) are above 10 TPS; the prior 9.509 TPS observation does not establish that the locked floor is a cold-performance threshold.
 - [ ] Confirm every declared gate passes.
 - [ ] Mark it reviewable rather than promoting it.
 - [ ] Confirm exact diff and evidence are inspectable.
@@ -251,4 +254,4 @@ Do not begin until RSI-0 closes.
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: localize the locked exact-text probe's reasoning-only, zero-content output without weakening the evaluator, then authorize one fresh RSI-0G cycle if the causal boundary is resolved.
+- [ ] Next task: obtain review for a narrow evaluator repair that makes the exact-content transport probe request-level reasoning-off while retaining a separate reasoning-auto gate, then prove the repair on stable and clean candidate before authorizing one RSI-0G cycle.

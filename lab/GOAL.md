@@ -30,21 +30,21 @@ Stable worktree running Neo3000
 
 ## Current boundary
 
-RSI-0E is implemented and RSI-0F has passed. The fresh RSI-0G inert-fixture cycle reached the locked WDDM gate successfully, then rejected at the first text-quality boundary: the exact response streamed reasoning only and no assistant content within 64 tokens. The next objective is **localize that behavior without weakening the evaluator before authorizing another RSI-0G cycle**.
+RSI-0E is implemented and RSI-0F has passed. The fresh RSI-0G inert-fixture cycle reached the locked WDDM gate successfully, then rejected at the first text-quality boundary. Matched stable and clean-candidate diagnostics show that `max_tokens` is a shared completion budget under reasoning auto: both emit reasoning only through 192 tokens and final content at 256. The next objective is **review a narrow transport-versus-reasoning evaluator repair before authorizing another RSI-0G cycle**.
 
 Do not begin autonomous RSI. Do not modify stable inference logic. Do not promote candidates automatically.
 
 ## Next exact action
 
-The recorded RSI-0G run used candidate PID/listener PID `45840` and only `pid_45840_luid_0x00000000_0x000115ae_phys_0`, with 17 valid WDDM samples, no telemetry failures, and a 2,301,497,344-byte (2,194.88 MiB) peak below the unchanged 6000 MiB ceiling. It built and became healthy, then the smoke request streamed 67 events but left assistant content empty while reasoning consumed the 64-token budget. The controller rejected before reasoning, tool, cancellation, repeated-turn, or performance gates; PID instances disappeared after teardown and stable PID `31188` remained healthy.
+The stable control and clean manual candidate both stop at 64/96/128/192 completion tokens with `finish_reason=length`, reasoning present, and empty final content; both produce `NEO3000 ONLINE` at 256 with `finish_reason=stop`. The runtime documents request-level `chat_template_kwargs: {"enable_thinking": false}`, and a stable 64-token diagnostic using that field returned final content in 8 completion tokens with no reasoning. This proves final-content transport can be isolated without discarding the separate auto-reasoning requirement. Matched candidate first/warm decode was 15.84/16.23/15.58 TPS and stable repeated decode was 16.61/16.11/15.41 TPS, so the 10 TPS floor is not presently shown to be cold-state invalid.
 
 Minimum required work:
 
 ```text
 1. Keep the stable server and stable worktree unchanged.
-2. Diagnose the exact-text probe's reasoning-only, zero-content response under the locked configuration.
-3. Do not weaken the exact-response, 64-token, WDDM, or performance thresholds to obtain a pass.
-4. Authorize exactly one new RSI-0G cycle only after a causal remedy is separately evidenced.
+2. Review a narrow evaluator repair: the exact-content transport request may use documented request-level `enable_thinking=false`, while the separate reasoning request remains auto and requires nonempty `reasoning_content`.
+3. Prove that repair against stable and a clean candidate; do not reduce the exact-content, WDDM, or warm-performance requirements.
+4. Authorize exactly one new RSI-0G cycle only after the repaired two-gate behavior is independently evidenced.
 ```
 
 ## Unlock target
