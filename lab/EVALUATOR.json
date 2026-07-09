@@ -49,7 +49,10 @@
   },
   "memory": {
     "candidate_vram_mib_ceiling": 6000,
-    "description": "Candidate-only VRAM ceiling for an RTX 3060 12GB while stable remains resident."
+    "measurement_source": "Windows GPU Process Memory(*)\\Dedicated Usage, summed only across exact pid_<candidate PID>_ instances",
+    "sample_interval_seconds": 1.0,
+    "telemetry_grace_seconds": 60.0,
+    "description": "Candidate-only WDDM dedicated-memory attribution for an RTX 3060 12GB while stable remains resident. It may conservatively include shared allocations attributed to the candidate PID; unavailable or lost telemetry rejects the cycle."
   },
   "crash_ceiling_per_cycle": 1,
   "protected_paths": {

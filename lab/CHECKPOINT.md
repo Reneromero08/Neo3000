@@ -156,8 +156,9 @@ Prepare the repository for Pi-supervised recursive self-improvement before modif
 - [x] Candidate teardown tracks only the launched candidate PID; it does not terminate the stable process by name.
 - [x] RSI-0F live rejection cycle: a candidate `TASKS.md` mutation was rejected before build; stable health, listener PID, worktree, and protected hashes were unchanged after cleanup.
 - [x] Candidate CMake generation failure isolated: the broad `models/` ignore pattern omitted 171 source files in `src/models/` and `tools/mtmd/models/`; source custody is repaired and clean candidate configure succeeds.
-- [ ] RSI-0G acceptance attempt: the inert allowed-path candidate built, loaded, and listened on port 9393, then stopped at the VRAM gate because Windows NVIDIA per-process memory telemetry returned `[N/A]`. Candidate runtime state was removed; stable health and listener PID remained unchanged; acceptance remains unproven.
-- [ ] A trustworthy Windows-safe candidate VRAM measurement must enforce the existing 6000 MiB ceiling before a newly authorized RSI-0G cycle may run once.
+- [x] Windows WDDM telemetry proof: `GPU Process Memory(*)\\Dedicated Usage`, filtered only by exact `pid_<candidate PID>_` instance names, measured candidate PID/listener PID `36216` at a 2,288,914,432-byte (2,182.88 MiB) five-sample peak while stable PID `31188` stayed separate at 2,305,691,648 bytes. Candidate instances disappeared after teardown.
+- [x] Controller samples PID-filtered WDDM dedicated usage from launch through teardown, retains a compact peak, enforces the existing 6000 MiB ceiling, and rejects unavailable or lost telemetry.
+- [ ] RSI-0G acceptance remains required under the locked WDDM VRAM gate.
 
 ## Checkpoint 1: Compute map (RSI-0 required first)
 

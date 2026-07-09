@@ -30,22 +30,22 @@ Stable worktree running Neo3000
 
 ## Current boundary
 
-RSI-0E is implemented and RSI-0F has passed. Candidate source custody, evaluator model identity, and health-probe handling are repaired. The next objective is **establish a Windows-safe candidate VRAM measurement before authorizing another RSI-0G acceptance cycle**.
+RSI-0E is implemented and RSI-0F has passed. Candidate source custody, evaluator model identity, health-probe handling, and Windows WDDM VRAM accounting are repaired. The next objective is **run one fresh RSI-0G acceptance cycle under the locked WDDM VRAM gate**.
 
 Do not begin autonomous RSI. Do not modify stable inference logic. Do not promote candidates automatically.
 
 ## Next exact action
 
-The harmless allowed-path acceptance attempt configured, built, loaded the candidate model, and reached port 9393. It then stopped at the VRAM gate because Windows NVIDIA per-process telemetry returned `[N/A]` for every process. Do not bypass the 6000 MiB candidate ceiling: establish a trustworthy Windows-safe measurement before another cycle.
+Windows WDDM `GPU Process Memory(*)\\Dedicated Usage` now supplies candidate-PID-specific dedicated-memory attribution. The manual lifecycle proof observed candidate PID `36216`, listener PID `36216`, and only `pid_36216_luid_0x00000000_0x000115ae_phys_0` at a 2,288,914,432-byte peak across five samples. The value may conservatively include allocations shared with other processes; that is safe because it remains tied to the candidate PID and can only cause safe rejection.
 
 Minimum required work:
 
 ```text
-1. Identify a Windows-safe, candidate-specific VRAM measurement or declare the memory gate blocked.
-2. Keep the stable server and stable worktree unchanged.
-3. Do not reduce the 6000 MiB ceiling or substitute unverified system-wide memory for candidate memory.
-4. Reapply only the inert `common/` fixture after the memory gate is trustworthy.
-5. Authorize one new `python scripts/neo_loop.py --hypothesis "..."` cycle only then.
+1. Keep the stable server and stable worktree unchanged.
+2. Reapply only the inert `common/` fixture in the candidate worktree.
+3. Verify preflight and the locked WDDM memory gate.
+4. Authorize exactly one new `python scripts/neo_loop.py --hypothesis "..."` cycle.
+5. Require every quality, WDDM peak-memory, cleanup, and stable-integrity gate before reviewable acceptance.
 ```
 
 ## Unlock target

@@ -4,7 +4,7 @@
 **Current RSI level:** Level 0, Pi-assisted development  
 **Baseline evidence through:** `432e8f773cde782cab6d478ad5afccb15816cbb4`  
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** establish a Windows-safe candidate VRAM measurement before authorizing another RSI-0G cycle
+**Next exact boundary:** authorize one fresh RSI-0G acceptance cycle under the locked Windows WDDM VRAM gate
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -163,7 +163,7 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Applied an inert file only within the allowed candidate path `common/`.
 - [x] Candidate configured and built only in candidate isolation after source-custody repair.
 - [x] Candidate process launched and model loaded only on port 9393; health readiness passed after the timeout-handling repair.
-- [ ] Enforce the 6000 MiB candidate VRAM ceiling (blocked: Windows NVIDIA per-process telemetry reports `[N/A]` for all processes).
+- [x] Enforce the unchanged 6000 MiB ceiling with PID-filtered Windows WDDM dedicated-memory peak sampling; unavailable or lost telemetry rejects.
 - [ ] Confirm every declared gate passes.
 - [ ] Mark it reviewable rather than promoting it.
 - [ ] Confirm exact diff and evidence are inspectable.
@@ -249,4 +249,4 @@ Do not begin until RSI-0 closes.
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: establish a Windows-safe candidate VRAM measurement that preserves the 6000 MiB gate, then authorize one fresh RSI-0G acceptance cycle with the same inert allowed-path fixture.
+- [ ] Next task: run one fresh RSI-0G acceptance cycle with the same inert allowed-path fixture under the locked WDDM VRAM gate.

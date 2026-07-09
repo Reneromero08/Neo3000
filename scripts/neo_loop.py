@@ -12,12 +12,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import shutil
 import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -33,6 +35,7 @@ LOCK_PATH = ROOT / "lab" / "EVALUATOR.lock.json"
 RESULTS_PATH = ROOT / "lab" / "results.jsonl"
 LOCK_DYNAMIC_PATHS = {"lab/EVALUATOR.lock.json", "lab/results.jsonl"}
 CANDIDATE_BUILD_DIR = CANDIDATE_ROOT / "build" / "candidate"
+WDDM_DEDICATED_COUNTER = r"\GPU Process Memory(*)\Dedicated Usage"
 
 
 class NeoLoopError(RuntimeError):
@@ -45,6 +48,14 @@ class CycleResult:
     reason: str
     commit: str
     evidence: dict[str, Any]
+
+
+@dataclass
+class ProcessVramSample:
+    available: bool
+    bytes: int | None
+    instances: list[str]
+    error: str | None = None
 
 
 def utc_now() -> str:
@@ -278,22 +289,141 @@ def stop_candidate(process: subprocess.Popen[str] | None) -> dict[str, Any]:
     return {"candidate_process_stopped": process.poll() is not None, "pid": process.pid}
 
 
-def candidate_vram_mib(pid: int) -> int | None:
-    command = "nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader,nounits"
+def select_wddm_pid_memory(samples: list[dict[str, Any]], pid: int) -> ProcessVramSample:
+    """Select only WDDM dedicated-memory rows owned by one exact PID."""
+    marker = f"pid_{pid}_"
+    matches = [
+        sample for sample in samples
+        if str(sample.get("instance", "")).lower().startswith(marker.lower())
+    ]
+    if not matches:
+        return ProcessVramSample(False, None, [], "no-matching-pid-instance")
+    values: list[float] = []
+    instances: list[str] = []
+    for sample in matches:
+        if sample.get("status") != 0:
+            return ProcessVramSample(False, None, instances, "counter-status-error")
+        try:
+            value = float(sample.get("value"))
+        except (TypeError, ValueError):
+            return ProcessVramSample(False, None, instances, "nonnumeric-counter-value")
+        if not math.isfinite(value) or value < 0:
+            return ProcessVramSample(False, None, instances, "invalid-counter-value")
+        values.append(value)
+        instances.append(str(sample["instance"]))
+    return ProcessVramSample(True, int(sum(values)), instances)
+
+
+def wddm_pid_memory_sample(pid: int) -> ProcessVramSample:
+    """Read one Windows WDDM dedicated-memory sample for an exact process PID."""
+    script = rf'''
+$Counter = Get-Counter '{WDDM_DEDICATED_COUNTER}'
+$Rows = @($Counter.CounterSamples | ForEach-Object {{
+    [pscustomobject]@{{
+        instance = $_.InstanceName
+        status = [int] $_.Status
+        value = [string] $_.CookedValue
+    }}
+}})
+[pscustomobject]@{{ samples = $Rows }} | ConvertTo-Json -Compress -Depth 3
+'''
     try:
-        completed = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=10)
-        for line in completed.stdout.splitlines():
-            parts = [part.strip() for part in line.split(",")]
-            if len(parts) == 2 and parts[0].isdigit() and int(parts[0]) == pid:
-                try:
-                    return int(parts[1])
-                except ValueError:
-                    return None
-    except (OSError, subprocess.TimeoutExpired):
-        pass
-    return None
+        completed = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return ProcessVramSample(False, None, [], f"counter-query-failed: {exc}")
+    if completed.returncode:
+        return ProcessVramSample(False, None, [], f"counter-query-failed: {completed.stderr.strip()[:200]}")
+    try:
+        payload = json.loads(completed.stdout)
+        rows = payload.get("samples", [])
+        if isinstance(rows, dict):
+            rows = [rows]
+        if not isinstance(rows, list):
+            raise ValueError("samples was not a list")
+        return select_wddm_pid_memory(rows, pid)
+    except (ValueError, TypeError, json.JSONDecodeError) as exc:
+        return ProcessVramSample(False, None, [], f"counter-parse-failed: {exc}")
 
 
+class CandidateVramSampler:
+    """PID-filtered WDDM sampler retaining a compact peak, never raw streams."""
+
+    def __init__(self, pid: int, ceiling_mib: int, interval_seconds: float, grace_seconds: float, sample_fn=wddm_pid_memory_sample):
+        self.pid = pid
+        self.ceiling_bytes = ceiling_mib * 1024 * 1024
+        self.interval_seconds = interval_seconds
+        self.grace_seconds = grace_seconds
+        self.sample_fn = sample_fn
+        self.started_at = time.monotonic()
+        self.first_valid_at: float | None = None
+        self.peak_bytes = 0
+        self.sample_count = 0
+        self.instances: set[str] = set()
+        self.failures: list[str] = []
+        self._failure_reason: str | None = None
+        self._stop = threading.Event()
+        self._lock = threading.Lock()
+        self._thread: threading.Thread | None = None
+
+    def start(self) -> None:
+        self._thread = threading.Thread(target=self._run, name=f"neo-vram-{self.pid}", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread:
+            self._thread.join(timeout=max(5.0, self.interval_seconds * 2))
+
+    def sample_once(self) -> None:
+        sample = self.sample_fn(self.pid)
+        now = time.monotonic()
+        with self._lock:
+            if sample.available and sample.bytes is not None:
+                self.sample_count += 1
+                self.peak_bytes = max(self.peak_bytes, sample.bytes)
+                self.instances.update(sample.instances)
+                if self.first_valid_at is None:
+                    self.first_valid_at = now
+                if sample.bytes > self.ceiling_bytes:
+                    self._failure_reason = "candidate-memory-ceiling"
+            else:
+                self.failures.append(sample.error or "telemetry-unavailable")
+                if self.first_valid_at is not None:
+                    self._failure_reason = "candidate-vram-telemetry-lost"
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            self.sample_once()
+            self._stop.wait(self.interval_seconds)
+
+    def failure_reason(self) -> str | None:
+        with self._lock:
+            if self._failure_reason:
+                return self._failure_reason
+            if self.first_valid_at is None and time.monotonic() - self.started_at >= self.grace_seconds:
+                return "candidate-vram-telemetry-unavailable"
+            return None
+
+    def has_valid_sample(self) -> bool:
+        with self._lock:
+            return self.first_valid_at is not None
+
+    def evidence(self, ceiling_mib: int) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "source": "Windows GPU Process Memory Dedicated Usage (PID-filtered)",
+                "candidate_pid": self.pid,
+                "counter_instances": sorted(self.instances),
+                "sample_count": self.sample_count,
+                "first_valid_sample_seconds": round(self.first_valid_at - self.started_at, 3) if self.first_valid_at else None,
+                "peak_dedicated_bytes": self.peak_bytes if self.sample_count else None,
+                "peak_dedicated_mib": round(self.peak_bytes / (1024 * 1024), 2) if self.sample_count else None,
+                "ceiling_mib": ceiling_mib,
+                "telemetry_failures": self.failures[-8:],
+            }
 def verify_model_identity(model: Path, evaluator: dict[str, Any]) -> None:
     expected = evaluator["model"]
     if model.stat().st_size != expected["size_bytes"]:
@@ -307,16 +437,36 @@ def verify_model_identity(model: Path, evaluator: dict[str, Any]) -> None:
         )
 
 
-def run_harness(port: int, model: str, output: Path, args: list[str], timeout: int) -> tuple[int, dict[str, Any]]:
+def run_harness(port: int, model: str, output: Path, args: list[str], timeout: int, abort_check=None) -> tuple[int, dict[str, Any]]:
     command = [sys.executable, str(ROOT / "scripts" / "baseline_harness.py"), f"--base-url=http://127.0.0.1:{port}/v1", f"--model={model}", "--output", str(output), *args]
+    process = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    deadline = time.monotonic() + timeout
+    abort_reason: str | None = None
+    while process.poll() is None:
+        if abort_check:
+            abort_reason = abort_check()
+            if abort_reason:
+                process.terminate()
+                break
+        if time.monotonic() >= deadline:
+            process.terminate()
+            try:
+                process.communicate(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+            raise NeoLoopError(f"benchmark timeout after {timeout}s")
+        time.sleep(0.25)
     try:
-        completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=timeout)
-    except subprocess.TimeoutExpired as exc:
-        raise NeoLoopError(f"benchmark timeout after {timeout}s") from exc
-    result: dict[str, Any] = {"exit": completed.returncode, "stdout_tail": completed.stdout.splitlines()[-8:], "stderr_tail": completed.stderr.splitlines()[-8:]}
+        stdout, stderr = process.communicate(timeout=10)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        stdout, stderr = process.communicate()
+    if abort_reason:
+        return 125, {"exit": 125, "aborted_reason": abort_reason, "stdout_tail": stdout.splitlines()[-8:], "stderr_tail": stderr.splitlines()[-8:]}
+    result: dict[str, Any] = {"exit": process.returncode, "stdout_tail": stdout.splitlines()[-8:], "stderr_tail": stderr.splitlines()[-8:]}
     if output.is_file():
         result["report"] = load_json(output)
-    return completed.returncode, result
+    return process.returncode, result
 
 
 def validate_smoke(report: dict[str, Any], require_reasoning: bool, min_tps: float) -> tuple[bool, str]:
@@ -362,6 +512,7 @@ def cycle(declared_hypothesis: str) -> CycleResult:
     candidate_commit = git(CANDIDATE_ROOT, "rev-parse", "HEAD")
     candidate_runtime = CANDIDATE_ROOT / evaluator["isolation"]["candidate_runtime_directory"]
     process: subprocess.Popen[str] | None = None
+    sampler: CandidateVramSampler | None = None
     evidence: dict[str, Any] = {"stable_health_before": True, "stable_listener_pids_before": sorted(stable_pids_before)}
     try:
         try:
@@ -389,9 +540,28 @@ def cycle(declared_hypothesis: str) -> CycleResult:
         environment = os.environ.copy()
         environment.update({"TMP": str(candidate_runtime), "TEMP": str(candidate_runtime), "TMPDIR": str(candidate_runtime)})
         process = subprocess.Popen(args, cwd=CANDIDATE_ROOT, env=environment, text=True)
+        memory_config = evaluator["memory"]
+        sampler = CandidateVramSampler(
+            process.pid,
+            memory_config["candidate_vram_mib_ceiling"],
+            memory_config["sample_interval_seconds"],
+            memory_config["telemetry_grace_seconds"],
+        )
+        sampler.start()
+
+        def memory_gate() -> str | None:
+            assert sampler is not None
+            reason = sampler.failure_reason()
+            if reason and process and process.poll() is None:
+                process.terminate()
+            return reason
+
         deadline = time.monotonic() + timeouts["candidate_health_seconds"]
         crashes = 0
         while time.monotonic() < deadline and not health_ok(candidate_port, timeout=3):
+            if memory_gate():
+                evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
+                return CycleResult("reject", memory_gate() or "candidate-vram-telemetry-unavailable", candidate_commit, evidence)
             if process.poll() is not None:
                 crashes += 1
                 break
@@ -400,16 +570,30 @@ def cycle(declared_hypothesis: str) -> CycleResult:
             if crashes >= evaluator["crash_ceiling_per_cycle"]:
                 return CycleResult("reject", "candidate-crash-ceiling", candidate_commit, evidence)
             return CycleResult("reject", "candidate-health-timeout", candidate_commit, evidence)
-        memory = candidate_vram_mib(process.pid)
-        evidence["candidate_vram_mib"] = memory
-        if memory is None:
+        telemetry_deadline = min(deadline, time.monotonic() + memory_config["telemetry_grace_seconds"])
+        while not sampler.has_valid_sample() and time.monotonic() < telemetry_deadline:
+            if memory_gate():
+                evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
+                return CycleResult("reject", memory_gate() or "candidate-vram-telemetry-unavailable", candidate_commit, evidence)
+            time.sleep(0.25)
+        if not sampler.has_valid_sample():
+            evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
             return CycleResult("reject", "candidate-vram-telemetry-unavailable", candidate_commit, evidence)
-        if memory > evaluator["memory"]["candidate_vram_mib_ceiling"]:
-            return CycleResult("reject", "candidate-memory-ceiling", candidate_commit, evidence)
+        candidate_listener_pids = listener_pids(candidate_port)
+        evidence["candidate_process_pid"] = process.pid
+        evidence["candidate_listener_pids"] = sorted(candidate_listener_pids)
+        if candidate_listener_pids != {process.pid}:
+            return CycleResult("reject", "candidate-listener-pid-mismatch", candidate_commit, evidence)
+        if memory_gate():
+            evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
+            return CycleResult("reject", memory_gate() or "candidate-memory-ceiling", candidate_commit, evidence)
 
         smoke_file = candidate_runtime / "smoke.json"
-        smoke_rc, smoke = run_harness(candidate_port, launch["model_alias"], smoke_file, ["--repeat=1", "--max-tokens=64", f"--timeout={timeouts['benchmark_seconds']}"], timeouts["benchmark_seconds"])
+        smoke_rc, smoke = run_harness(candidate_port, launch["model_alias"], smoke_file, ["--repeat=1", "--max-tokens=64", f"--timeout={timeouts['benchmark_seconds']}"], timeouts["benchmark_seconds"], memory_gate)
         evidence["smoke"] = smoke
+        if memory_gate():
+            evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
+            return CycleResult("reject", memory_gate() or "candidate-memory-ceiling", candidate_commit, evidence)
         smoke_ok, smoke_reason = validate_smoke(smoke.get("report", {}), False, evaluator["performance"]["min_decode_tps"])
         if smoke_rc or not smoke_ok:
             return CycleResult("reject", smoke_reason, candidate_commit, evidence)
@@ -427,8 +611,12 @@ def cycle(declared_hypothesis: str) -> CycleResult:
                 f"--timeout={timeouts['benchmark_seconds']}",
             ],
             timeouts["benchmark_seconds"],
+            memory_gate,
         )
         evidence["reasoning"] = reasoning
+        if memory_gate():
+            evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
+            return CycleResult("reject", memory_gate() or "candidate-memory-ceiling", candidate_commit, evidence)
         reasoning_ok, reasoning_reason = validate_smoke(
             reasoning.get("report", {}), True, evaluator["performance"]["min_decode_tps"]
         )
@@ -436,21 +624,30 @@ def cycle(declared_hypothesis: str) -> CycleResult:
             return CycleResult("reject", reasoning_reason, candidate_commit, evidence)
 
         tool_file = candidate_runtime / "tool.json"
-        tool_rc, tool = run_harness(candidate_port, launch["model_alias"], tool_file, ["--tool-test", "--repeat=1", "--max-tokens=512", f"--timeout={timeouts['benchmark_seconds']}"], timeouts["benchmark_seconds"])
+        tool_rc, tool = run_harness(candidate_port, launch["model_alias"], tool_file, ["--tool-test", "--repeat=1", "--max-tokens=512", f"--timeout={timeouts['benchmark_seconds']}"], timeouts["benchmark_seconds"], memory_gate)
         evidence["tool"] = tool
+        if memory_gate():
+            evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
+            return CycleResult("reject", memory_gate() or "candidate-memory-ceiling", candidate_commit, evidence)
         if tool_rc or not tool.get("report", {}).get("tool_call_passed"):
             return CycleResult("reject", "malformed-tool-call", candidate_commit, evidence)
 
         if not cancellation_gate(candidate_port, launch["model_alias"], timeouts["benchmark_seconds"]):
             return CycleResult("reject", "cancellation-regression", candidate_commit, evidence)
         repeat_file = candidate_runtime / "repeat.json"
-        repeat_rc, repeat = run_harness(candidate_port, launch["model_alias"], repeat_file, ["--repeat=3", "--max-tokens=64", f"--timeout={timeouts['benchmark_seconds']}"], timeouts["benchmark_seconds"])
+        repeat_rc, repeat = run_harness(candidate_port, launch["model_alias"], repeat_file, ["--repeat=3", "--max-tokens=64", f"--timeout={timeouts['benchmark_seconds']}"], timeouts["benchmark_seconds"], memory_gate)
         evidence["repeat"] = repeat
+        if memory_gate():
+            evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
+            return CycleResult("reject", memory_gate() or "candidate-memory-ceiling", candidate_commit, evidence)
         repeat_ok, repeat_reason = validate_smoke(repeat.get("report", {}), False, evaluator["performance"]["min_decode_tps"])
         if repeat_rc or not repeat_ok:
             return CycleResult("reject", f"repeated-turn-regression: {repeat_reason}", candidate_commit, evidence)
         return CycleResult("reviewable-accept", "all-safety-and-quality-gates-passed", candidate_commit, evidence)
     finally:
+        if sampler:
+            sampler.stop()
+            evidence["candidate_memory"] = sampler.evidence(evaluator["memory"]["candidate_vram_mib_ceiling"])
         evidence["cleanup"] = stop_candidate(process)
         shutil.rmtree(candidate_runtime, ignore_errors=True)
         evidence["candidate_runtime_removed"] = not candidate_runtime.exists()

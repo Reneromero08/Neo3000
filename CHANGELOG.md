@@ -526,6 +526,7 @@ The Git history is intended to preserve Neo3000’s engineering memory. Source c
 | Candidate builder drift caused CMake failure | Rejected; both build routes failed on the same missing source. |
 | Original recorded model SHA-256 was exact | Rejected; a transposed sequence was corrected against measured bytes. |
 | A read timeout during candidate model load means terminal health failure | Rejected; it means not-yet-healthy until the readiness deadline expires. |
+| NVIDIA per-process memory telemetry is usable under this Windows WDDM driver | Rejected; NVML returns `[N/A]`, while PID-filtered WDDM dedicated-memory counters provide the required safety attribution. |
 
 ---
 
@@ -547,6 +548,7 @@ The Git history is intended to preserve Neo3000’s engineering memory. Source c
 | `1628695` | Source-custody omission repaired; CMake diagnostics improved. |
 | `816f6e9` | Agents-A1 evaluator identity corrected and locked. |
 | `d911f93` | Candidate health-probe timeout handling repaired. |
+| `a94d973` | Unavailable NVML telemetry became an explicit hard rejection. |
 
 ---
 
