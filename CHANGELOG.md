@@ -13,14 +13,14 @@ Checkpoint 0: CLOSED
 Claim ceiling: NEO3000_BASELINE_OPERATIONAL
 Current RSI level: Level 0, Pi-assisted development
 RSI-0F supervised rejection cycle: PASSED
-RSI-0G supervised acceptance cycle: NOT YET PROVEN
+RSI-0G supervised acceptance cycle: REJECTED AT TEXT QUALITY GATE
 Automatic promotion: DISABLED
 SUPERVISED_BOUNDED_RSI_AVAILABLE: LOCKED
 Stable server: port 9292
 Candidate server: port 9393
 ```
 
-The next boundary is one fresh RSI-0G acceptance cycle using the repaired candidate health probe. The candidate must pass every immutable build, identity, readiness, quality, tool, cancellation, repeated-turn, memory, performance, cleanup, and stable-integrity gate before RSI-0 may close.
+The fresh inert-fixture RSI-0G cycle built and became healthy with candidate PID/listener PID `45840`; PID-filtered WDDM recorded 17 samples, no telemetry failures, and a 2,194.88 MiB peak below the 6000 MiB ceiling. It rejected at the first text-quality boundary because the exact-response probe streamed 67 events of reasoning but no assistant content within 64 tokens. Teardown, counter retirement, stable health/listener identity, worktree integrity, and protected hashes passed. The next boundary is to localize that reasoning-only response without weakening the evaluator.
 
 ---
 
@@ -28,10 +28,8 @@ The next boundary is one fresh RSI-0G acceptance cycle using the repaired candid
 
 ### Pending
 
-- Run exactly one fresh RSI-0G acceptance cycle with the inert allowed-path fixture.
-- Prove the candidate becomes healthy on port 9393 while stable remains healthy on port 9292.
-- Execute live text, reasoning, tool, cancellation, repeated-turn, memory, and performance gates.
-- Prove candidate teardown and runtime cleanup after reviewable acceptance.
+- Localize why the locked exact-text probe produces reasoning only and no assistant content within 64 tokens.
+- Preserve the exact-response, WDDM, performance, isolation, and no-promotion gates before authorizing one further RSI-0G cycle.
 - Close RSI-0 only if all gates pass without automatic promotion.
 - Unlock `SUPERVISED_BOUNDED_RSI_AVAILABLE` only after the acceptance proof is complete.
 - Begin Checkpoint 1 with an isolated compute-map candidate, initially targeting cold-start and first-request overhead.

@@ -4,7 +4,7 @@
 **Current RSI level:** Level 0, Pi-assisted development  
 **Baseline evidence through:** `432e8f773cde782cab6d478ad5afccb15816cbb4`  
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** authorize one fresh RSI-0G acceptance cycle under the locked Windows WDDM VRAM gate
+**Next exact boundary:** localize why the locked exact-text probe emits reasoning only and no assistant content before authorizing another RSI-0G cycle
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -157,13 +157,15 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Confirmed the compact failure record is accurate in `lab/results.jsonl`.
 - [x] Restored the candidate worktree cleanly; the next task is resumable.
 
-## RSI-0G. Prove one supervised acceptance cycle [BLOCKED: candidate VRAM telemetry unavailable]
+## RSI-0G. Prove one supervised acceptance cycle [BLOCKED: text quality gate]
 
 - [x] Started from a healthy stable server.
 - [x] Applied an inert file only within the allowed candidate path `common/`.
 - [x] Candidate configured and built only in candidate isolation after source-custody repair.
 - [x] Candidate process launched and model loaded only on port 9393; health readiness passed after the timeout-handling repair.
 - [x] Enforce the unchanged 6000 MiB ceiling with PID-filtered Windows WDDM dedicated-memory peak sampling; unavailable or lost telemetry rejects.
+- [x] Fresh inert-fixture cycle configured, built, loaded, and listened with candidate PID/listener PID `45840`; WDDM sampled 17 times with a 2,301,497,344-byte (2,194.88 MiB) peak, then candidate teardown and stable-integrity checks passed.
+- [x] First causal boundary recorded: the exact-text smoke request streamed 67 events but emitted no assistant content (`NEO3000 ONLINE`) within 64 tokens because it remained in reasoning; the text quality gate rejected the cycle before later gates.
 - [ ] Confirm every declared gate passes.
 - [ ] Mark it reviewable rather than promoting it.
 - [ ] Confirm exact diff and evidence are inspectable.
@@ -249,4 +251,4 @@ Do not begin until RSI-0 closes.
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: run one fresh RSI-0G acceptance cycle with the same inert allowed-path fixture under the locked WDDM VRAM gate.
+- [ ] Next task: localize the locked exact-text probe's reasoning-only, zero-content output without weakening the evaluator, then authorize one fresh RSI-0G cycle if the causal boundary is resolved.

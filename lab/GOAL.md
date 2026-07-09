@@ -30,22 +30,21 @@ Stable worktree running Neo3000
 
 ## Current boundary
 
-RSI-0E is implemented and RSI-0F has passed. Candidate source custody, evaluator model identity, health-probe handling, and Windows WDDM VRAM accounting are repaired. The next objective is **run one fresh RSI-0G acceptance cycle under the locked WDDM VRAM gate**.
+RSI-0E is implemented and RSI-0F has passed. The fresh RSI-0G inert-fixture cycle reached the locked WDDM gate successfully, then rejected at the first text-quality boundary: the exact response streamed reasoning only and no assistant content within 64 tokens. The next objective is **localize that behavior without weakening the evaluator before authorizing another RSI-0G cycle**.
 
 Do not begin autonomous RSI. Do not modify stable inference logic. Do not promote candidates automatically.
 
 ## Next exact action
 
-Windows WDDM `GPU Process Memory(*)\\Dedicated Usage` now supplies candidate-PID-specific dedicated-memory attribution. The manual lifecycle proof observed candidate PID `36216`, listener PID `36216`, and only `pid_36216_luid_0x00000000_0x000115ae_phys_0` at a 2,288,914,432-byte peak across five samples. The value may conservatively include allocations shared with other processes; that is safe because it remains tied to the candidate PID and can only cause safe rejection.
+The recorded RSI-0G run used candidate PID/listener PID `45840` and only `pid_45840_luid_0x00000000_0x000115ae_phys_0`, with 17 valid WDDM samples, no telemetry failures, and a 2,301,497,344-byte (2,194.88 MiB) peak below the unchanged 6000 MiB ceiling. It built and became healthy, then the smoke request streamed 67 events but left assistant content empty while reasoning consumed the 64-token budget. The controller rejected before reasoning, tool, cancellation, repeated-turn, or performance gates; PID instances disappeared after teardown and stable PID `31188` remained healthy.
 
 Minimum required work:
 
 ```text
 1. Keep the stable server and stable worktree unchanged.
-2. Reapply only the inert `common/` fixture in the candidate worktree.
-3. Verify preflight and the locked WDDM memory gate.
-4. Authorize exactly one new `python scripts/neo_loop.py --hypothesis "..."` cycle.
-5. Require every quality, WDDM peak-memory, cleanup, and stable-integrity gate before reviewable acceptance.
+2. Diagnose the exact-text probe's reasoning-only, zero-content response under the locked configuration.
+3. Do not weaken the exact-response, 64-token, WDDM, or performance thresholds to obtain a pass.
+4. Authorize exactly one new RSI-0G cycle only after a causal remedy is separately evidenced.
 ```
 
 ## Unlock target

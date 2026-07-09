@@ -158,7 +158,8 @@ Prepare the repository for Pi-supervised recursive self-improvement before modif
 - [x] Candidate CMake generation failure isolated: the broad `models/` ignore pattern omitted 171 source files in `src/models/` and `tools/mtmd/models/`; source custody is repaired and clean candidate configure succeeds.
 - [x] Windows WDDM telemetry proof: `GPU Process Memory(*)\\Dedicated Usage`, filtered only by exact `pid_<candidate PID>_` instance names, measured candidate PID/listener PID `36216` at a 2,288,914,432-byte (2,182.88 MiB) five-sample peak while stable PID `31188` stayed separate at 2,305,691,648 bytes. Candidate instances disappeared after teardown.
 - [x] Controller samples PID-filtered WDDM dedicated usage from launch through teardown, retains a compact peak, enforces the existing 6000 MiB ceiling, and rejects unavailable or lost telemetry.
-- [ ] RSI-0G acceptance remains required under the locked WDDM VRAM gate.
+- [x] RSI-0G fresh inert-fixture rejection cycle: candidate PID/listener PID `45840` built and became healthy; the WDDM sampler recorded 17 valid samples, no failures, and a 2,301,497,344-byte (2,194.88 MiB) peak below 6000 MiB. The exact-text smoke request streamed 67 events but emitted empty assistant content after using its 64-token budget for reasoning, so the text quality gate rejected before later quality gates. Teardown, runtime removal, counter disappearance, stable health/listener PID, worktree integrity, and protected hashes passed.
+- [ ] RSI-0G acceptance remains required. First localize the reasoning-only exact-text response without changing the locked evaluator.
 
 ## Checkpoint 1: Compute map (RSI-0 required first)
 
