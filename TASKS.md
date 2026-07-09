@@ -1,17 +1,21 @@
 # Neo3000 Task Board
 
 **Active checkpoint:** RSI-0, supervised RSI substrate  
-**Remote HEAD:** `d2c9ad4`  
+**Current RSI level:** Level 0, Pi-assisted development  
+**Baseline evidence through:** `432e8f773cde782cab6d478ad5afccb15816cbb4`  
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** implement stop and isolation gates (RSI-0E)
+**Next exact boundary:** implement RSI-0E stop and isolation gates, then prove rejection and acceptance cycles
 
-`ROADMAP.md` defines the architecture and phase order. This file is the executable queue.
+`ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
 ## Status law
 
 - `[x]` means supported by pushed repository evidence.
-- `[ ]` means incomplete, ambiguous, or unsupported by the current evidence.
-- Work from top to bottom unless a task is explicitly blocked.
+- `[ ]` means incomplete, ambiguous, or unsupported by current evidence.
+- Configured context capacity is not occupied prompt length.
+- Correlation does not identify a causal bottleneck.
+- The next unchecked item in the active queue is the default next action.
+- A narrative report does not replace this task board.
 
 ---
 
@@ -29,21 +33,21 @@ All Checkpoint 0 gates are met and verified.
 - [x] `neo3000_probe` tool calls pass 3 of 3 with valid JSON arguments.
 - [x] Cancellation followed by immediate API recovery passes.
 - [x] Repeated API turns remain stable.
-- [x] Server allocation succeeds at 4K, 8K, 16K, 32K, 40K, and 65,536 context sizes.
+- [x] Server allocation succeeds at 4K, 8K, 16K, 32K, 40K, and 65,536 context capacities.
 - [x] Deterministic occupied-context measurements at 2K, 8K, 32K, 40K, and 60K raw content tokens.
-- [x] Occupied-context decode throughput approximately flat: 22.3 tps (2K) to 20.9 tps (60K), ratio 0.94.
-- [x] Auto-fit is proven optimal. The conservative-auto-fit hypothesis is rejected.
-- [x] CPU-MoE comparison complete (62% decode gain disabled, 89% VRAM cost).
-- [x] 40,960 target failure root cause identified (client timeout, not server bug).
-- [x] Allocation capacity and occupied-context performance are in separate tables.
-- [x] TPS discrepancy explained (cold vs warm, completion length, reasoning overhead).
-- [x] Rolling minimum decode speed recorded (min/avg 0.92-0.96, no transient stalls).
-- [x] Pi UI text stream verified ("NEO3000 PI ONLINE" appeared incrementally).
-- [x] Pi real tool round trip verified (read README.md, returned "Neo3000").
-- [x] Pi cancellation and recovery verified (cancel mid-stream, "NEO3000 RECOVERED").
-- [x] LM Studio comparison deferred to optional characterization (not an unlock dependency).
-- [x] Source custody recommendation: Option A (track imported runtime).
-- [x] Claim ceiling advanced to `NEO3000_BASELINE_OPERATIONAL`.
+- [x] Occupied-context decode throughput is approximately flat: 22.3 TPS at 2K versus 20.9 TPS at 60K, ratio 0.94.
+- [x] Auto-fit is optimal among tested placements. The conservative-auto-fit hypothesis is rejected.
+- [x] CPU-MoE comparison complete: 62% decode gain disabled, 89% VRAM cost.
+- [x] The 40,960 matrix failure root cause is client timeout during long uncached inference, not a server or tokenizer bug.
+- [x] Allocation capacity and occupied-context performance are documented separately.
+- [x] TPS discrepancy is explained by cold versus warm state, completion length, and reasoning overhead.
+- [x] Rolling minimum decode speed recorded: min/avg 0.92-0.96, no significant transient stalls.
+- [x] Pi UI text stream verified: `NEO3000 PI ONLINE` appeared incrementally.
+- [x] Pi real tool round trip verified: read `README.md`, returned `Neo3000`.
+- [x] Pi cancellation and recovery verified: cancel mid-stream, then `NEO3000 RECOVERED`.
+- [x] LM Studio comparison deferred to optional characterization, not an unlock dependency.
+- [x] Source custody recommendation: Option A, track imported runtime.
+- [x] Claim advanced to `NEO3000_BASELINE_OPERATIONAL`.
 
 ### Checkpoint 0 exit gate: MET
 
@@ -74,7 +78,7 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Materialize the exact pinned runtime from the existing import manifest.
 - [x] Verify pinned upstream commit and license files.
 - [x] Inventory imported paths and generated exclusions.
-- [x] Commit the imported runtime as one deliberate source-baseline chunk (`7ea6ffd`).
+- [x] Commit the imported runtime as one deliberate source-baseline chunk: `7ea6ffd`.
 - [x] Confirm a one-line source edit appears as an ordinary Git diff.
 - [x] Confirm a new worktree contains the complete buildable engine.
 - [x] Confirm clean rollback restores the exact source baseline.
@@ -82,27 +86,29 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 
 ### Custody exit gate: MET
 
-## RSI-0B. Establish stable and candidate isolation [DONE]
+## RSI-0B. Establish stable and candidate isolation [PARTIAL]
 
-- [x] Stable worktree: `D:\CCC 2.0\AI\Neo3000` (branch main, port 9292, build/stable).
-- [x] Candidate worktree: `D:\CCC 2.0\AI\Neo3000-candidate` (branch candidate, port 9393, build/candidate).
+- [x] Stable worktree: `D:\CCC 2.0\AI\Neo3000` on branch `main`, port 9292, `build/stable`.
+- [x] Candidate worktree: `D:\CCC 2.0\AI\Neo3000-candidate` on branch `candidate`, port 9393, `build/candidate`.
 - [x] Candidate build script: `scripts/build_candidate.ps1`.
 - [x] Candidate server script: `scripts/run_candidate.ps1`.
-- [x] Isolation verified: separate builds, ports, and runtime state.
-- [ ] Verify stable remains responsive while candidate builds/serves (requires candidate build).
-- [ ] Verify candidate teardown does not affect stable (requires candidate run).
+- [x] Isolation design verified: separate builds, ports, and runtime state.
+- [ ] Verify stable remains responsive while candidate builds.
+- [ ] Verify stable remains responsive while candidate serves inference.
+- [ ] Verify candidate teardown does not affect stable.
 
-## RSI-0C. Freeze the evaluator [DONE]
+## RSI-0C. Freeze the evaluator [PARTIAL]
 
-- [x] Created tracked evaluator manifest (`lab/EVALUATOR.json`).
+- [x] Created tracked evaluator manifest: `lab/EVALUATOR.json`.
 - [x] Recorded model identity, baseline commit, and stable launch configuration.
 - [x] Declared candidate-editable paths and protected paths.
 - [x] Excluded evaluator, controller, stable worktree, and task ledger from candidate-editable paths.
-- [x] Hash verification integrated into neo-loop (pre- and post-cycle).
-- [ ] Hash benchmark prompts at cycle start (prompts are in harness, not separately hashed).
+- [x] Hash verification integrated into neo-loop before and after a cycle.
+- [ ] Add `lab/EVALUATOR.lock.json` with precomputed protected hashes.
+- [ ] Hash benchmark prompts as separate immutable inputs.
 - [ ] Add deliberate protected-file mutation test.
 
-## RSI-0D. Build deterministic `neo-loop` [DONE - core]
+## RSI-0D. Build deterministic `neo-loop` [CORE DONE]
 
 - [x] Verifies stable health before starting.
 - [x] Verifies candidate worktree is clean.
@@ -115,12 +121,13 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Stops candidate after result.
 - [x] Verifies stable health after teardown.
 - [x] Classifies as reject, reviewable-accept, or inconclusive.
-- [x] Appends compact result record to results.jsonl.
-- [ ] Enforce candidate-only edits (file-path checking).
+- [x] Appends compact result record to `lab/results.jsonl`.
+- [ ] Enforce candidate-only edits with path allowlist checking.
 - [ ] Run cancellation and repeated-turn gates on candidate.
 - [ ] Run memory and performance gates on candidate.
+- [ ] Verify cleanup after success, failure, timeout, and interruption.
 
-## RSI-0E. Enforce stop and isolation gates
+## RSI-0E. Enforce stop and isolation gates [NEXT]
 
 - [ ] Enforce build timeout.
 - [ ] Enforce server-health timeout.
@@ -163,28 +170,28 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [ ] Confirm result is recorded accurately.
 - [ ] Require explicit human approval before stable merge.
 
-## RSI-0H. Add the supervised RSI operator prompt
+## RSI-0H. Add the supervised RSI operator prompt [DONE]
 
-- [ ] Add a tracked prompt or command template for one bounded cycle.
-- [ ] Require one causal hypothesis.
-- [ ] Require candidate-only edits.
-- [ ] Require immutable evaluation through `neo-loop`.
-- [ ] Limit cycle count.
-- [ ] Forbid automatic promotion.
-- [ ] Require a final handoff with exact diff, evidence, verdict, and next action.
+- [x] Added tracked prompt template: `prompts/supervised_rsi_cycle.md`.
+- [x] Requires one causal hypothesis.
+- [x] Requires candidate-only edits.
+- [x] Requires immutable evaluation through `neo-loop`.
+- [x] Limits cycle count.
+- [x] Forbids automatic promotion.
+- [x] Requires final handoff with exact diff, evidence, verdict, and next action.
 
 ### RSI-0 exit gate
 
-- [ ] Engine source is Git-diffable.
-- [ ] Stable and candidate worktrees are isolated.
-- [ ] Stable and candidate builds and ports are isolated.
-- [ ] Evaluator and controller immutability are enforced.
-- [ ] Candidate teardown works after every result.
+- [x] Engine source is Git-diffable.
+- [ ] Stable and candidate worktrees are proven isolated during candidate build and run.
+- [ ] Stable and candidate builds and ports are proven isolated during candidate run.
+- [ ] Evaluator and controller immutability are enforced by lockfile and mutation test.
+- [ ] Candidate teardown works after every result type.
 - [ ] One supervised rejection cycle completes safely.
 - [ ] One supervised acceptance cycle completes safely.
 - [ ] Stable survives both cycles.
 - [ ] Results and handoffs remain accurate.
-- [ ] Automatic promotion remains disabled.
+- [x] Automatic promotion remains disabled.
 
 After every item passes:
 
@@ -196,6 +203,8 @@ Unlock: SUPERVISED_BOUNDED_RSI_AVAILABLE
 ---
 
 # Checkpoint 1 queue: Compute map
+
+Do not begin until RSI-0 closes.
 
 - [ ] Create an isolated instrumentation candidate.
 - [ ] Define one fixed trace schema.
@@ -232,7 +241,11 @@ Unlock: SUPERVISED_BOUNDED_RSI_AVAILABLE
 
 - [x] Checkpoint 0 closed.
 - [x] All Pi gates verified by user.
-- [x] Rolling minimum decode speed recorded (no transient stalls).
+- [x] Rolling minimum decode speed recorded with no significant transient stalls.
 - [x] Claim ceiling: `NEO3000_BASELINE_OPERATIONAL`.
 - [x] LM Studio deferred to optional characterization.
-- [ ] Next task: RSI-0A, commit engine source under Git custody.
+- [x] Engine source custody baseline committed.
+- [x] Stable/candidate worktree design created.
+- [x] Evaluator manifest and neo-loop core created.
+- [x] Supervised RSI prompt template added.
+- [ ] Next task: RSI-0E stop and isolation gates, especially candidate edit allowlist, evaluator lockfile, memory/timeouts, and mutation test.
