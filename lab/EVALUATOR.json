@@ -65,6 +65,7 @@
       "scripts/build_cuda.ps1",
       "scripts/build_candidate.ps1",
       "scripts/neo_loop.py",
+      ".gitignore",
       "TASKS.md",
       "AGENTS.md",
       "ROADMAP.md",
@@ -117,6 +118,10 @@
       "2K": {"min_decode_tps": 10.0, "require_neo3000_online": true},
       "8K": {"min_decode_tps": 10.0}
     }
+  },
+  "performance": {
+    "min_decode_tps": 10.0,
+    "description": "Minimum candidate decode speed for every smoke, reasoning, and repeated-turn gate."
   },
   "quality_gates": {
     "health": "HTTP 200 at /health",

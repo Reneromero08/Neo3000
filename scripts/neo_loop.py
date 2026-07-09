@@ -32,6 +32,7 @@ EVALUATOR_PATH = ROOT / "lab" / "EVALUATOR.json"
 LOCK_PATH = ROOT / "lab" / "EVALUATOR.lock.json"
 RESULTS_PATH = ROOT / "lab" / "results.jsonl"
 LOCK_DYNAMIC_PATHS = {"lab/EVALUATOR.lock.json", "lab/results.jsonl"}
+CANDIDATE_BUILD_DIR = CANDIDATE_ROOT / "build" / "candidate"
 
 
 class NeoLoopError(RuntimeError):
@@ -238,6 +239,34 @@ def run_powershell(script: Path, workdir: Path, timeout: int) -> tuple[int, str,
         raise NeoLoopError(f"build timeout after {timeout}s") from exc
 
 
+def build_failure_evidence(exit_code: int, stdout: str, stderr: str) -> dict[str, Any]:
+    """Keep causal CMake diagnostics without embedding an unbounded build log."""
+    combined = stdout + ("\n" if stdout and stderr else "") + stderr
+    lines = combined.splitlines()
+    first_block: list[str] = []
+    for index, line in enumerate(lines):
+        if "CMake Error" in line:
+            first_block = [candidate for candidate in lines[index:index + 16] if candidate.strip()]
+            break
+    needles = ("cannot find", "no sources", "duplicate target")
+    diagnostics = [line.strip() for line in lines if any(needle in line.lower() for needle in needles)]
+    log_path = CANDIDATE_BUILD_DIR / "neo-loop-build.local.log"
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text(combined, encoding="utf-8", errors="replace")
+        local_log = str(log_path.relative_to(CANDIDATE_ROOT)).replace("\\", "/")
+    except OSError:
+        local_log = None
+    return {
+        "exit": exit_code,
+        "first_cmake_error_block": first_block,
+        "diagnostic_lines": diagnostics[:32],
+        "stdout_tail": stdout.splitlines()[-20:],
+        "stderr_tail": stderr.splitlines()[-20:],
+        "candidate_build_log": local_log,
+    }
+
+
 def stop_candidate(process: subprocess.Popen[str] | None) -> dict[str, Any]:
     if process is None or process.poll() is not None:
         return {"candidate_process_stopped": True, "pid": process.pid if process else None}
@@ -341,13 +370,13 @@ def cycle(declared_hypothesis: str) -> CycleResult:
         candidate_port = evaluator["candidate_launch"]["port"]
         build_script = CANDIDATE_ROOT / "scripts" / "build_candidate.ps1"
         build_rc, build_out, build_err = run_powershell(build_script, CANDIDATE_ROOT, timeouts["build_seconds"])
-        evidence["build"] = {"exit": build_rc, "stdout_tail": build_out.splitlines()[-8:], "stderr_tail": build_err.splitlines()[-8:]}
+        evidence["build"] = build_failure_evidence(build_rc, build_out, build_err)
         if build_rc:
             return CycleResult("reject", "build-failure", candidate_commit, evidence)
         if not health_ok(stable_port, timeout=timeouts["stable_health_seconds"]):
             raise NeoLoopError("stable server died during candidate build")
 
-        binary = CANDIDATE_ROOT / evaluator["isolation"]["candidate_build_directory"] / "bin" / "Release" / "llama-server.exe"
+        binary = CANDIDATE_BUILD_DIR / "bin" / "Release" / "llama-server.exe"
         model = os.environ.get("NEO3000_MODEL", "")
         if not binary.is_file() or not model or not Path(model).is_file():
             raise NeoLoopError("candidate binary or NEO3000_MODEL is unavailable")

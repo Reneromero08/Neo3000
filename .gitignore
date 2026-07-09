@@ -15,7 +15,7 @@ lib/
 # Models and runtime state
 *.gguf
 *.safetensors
-models/
+/models/
 model-cache/
 runtime/
 slots/
