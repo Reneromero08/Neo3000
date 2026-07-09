@@ -2,31 +2,54 @@
 
 ## RSI-0: Supervised recursive self-improvement substrate
 
-Checkpoint 0 is closed. Neo3000 is baseline-operational. The runtime serves Agents-A1 to Pi correctly, context scales through 60K occupied tokens with 0.94 degradation ratio, rolling minimum decode is smooth, tools and cancellation are verified.
+Checkpoint 0 is closed. Neo3000 is baseline-operational. The runtime serves Agents-A1 to Pi correctly, context scales through 60K occupied tokens with a 0.94 degradation ratio, rolling minimum decode is smooth, tools and cancellation are verified, and LM Studio is no longer an unlock dependency.
 
-The next objective is to build the infrastructure that allows Pi to perform supervised recursive self-improvement on Neo3000 safely. No autonomous modifications yet. No inference kernel changes yet.
+RSI-0A through RSI-0D are partially or fully complete:
+
+```text
+RSI-0A source custody: done
+RSI-0B stable/candidate worktrees: design done, live isolation proof still needed
+RSI-0C evaluator manifest: core done, lockfile and mutation test still needed
+RSI-0D neo-loop machinery: core done, enforcement gates still needed
+```
 
 ## Required result
 
 ```text
 Stable worktree running Neo3000
 + isolated candidate worktree
-+ immutable evaluator with hashed benchmarks
++ immutable evaluator with lockfile-protected hashes
 + deterministic neo-loop machinery
-+ supervised rejection and acceptance cycle demonstrated
++ enforced candidate edit allowlist
++ enforced stop, timeout, memory, port, and cleanup gates
++ supervised rejection cycle demonstrated
++ supervised acceptance cycle demonstrated
 + stable survives all candidate activity
 ```
 
-## RSI-0 work order
+## Current boundary
 
-1. RSI-0A: Put engine source under Git custody (track imported runtime)
-2. RSI-0B: Establish stable and candidate worktrees with isolated builds and ports
-3. RSI-0C: Freeze the evaluator with hashed benchmarks and quality gates
-4. RSI-0D: Build deterministic neo-loop (machinery, not a second model)
-5. RSI-0E: Enforce stop and isolation gates
-6. RSI-0F: Prove one supervised rejection cycle
-7. RSI-0G: Prove one supervised acceptance cycle
-8. RSI-0H: Add the supervised RSI operator prompt
+The next objective is **RSI-0E: enforce stop and isolation gates**.
+
+Do not begin autonomous RSI. Do not modify stable inference logic. Do not promote candidates automatically.
+
+## Next exact action
+
+Harden `neo-loop` so a candidate cannot corrupt the evaluator, task board, stable worktree, stable server, model identity, build directories, runtime directories, or promotion rules.
+
+Minimum required work:
+
+```text
+1. Add evaluator lockfile or equivalent precomputed protected-hash manifest.
+2. Enforce candidate diff allowlist.
+3. Enforce protected-path rejection.
+4. Enforce build, health, benchmark, and process timeouts.
+5. Enforce memory ceiling for candidate runs.
+6. Enforce port and build-directory separation.
+7. Enforce candidate cleanup on success, failure, timeout, and interruption.
+8. Add deliberate protected-file mutation test.
+9. Prove stable health before and after a rejected candidate.
+```
 
 ## Unlock target
 
@@ -34,10 +57,4 @@ Stable worktree running Neo3000
 SUPERVISED_BOUNDED_RSI_AVAILABLE
 ```
 
-## Current boundary
-
-Checkpoint 0 just closed. RSI-0 begins immediately with source custody (RSI-0A).
-
-## Next exact action
-
-Commit the imported pinned runtime as one deliberate baseline commit, then verify branching, diffing, and worktree creation work normally.
+This unlock is not available until RSI-0E, RSI-0F, and RSI-0G all pass.
