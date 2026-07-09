@@ -4,7 +4,7 @@
 **Current RSI level:** Level 0, Pi-assisted development  
 **Baseline evidence through:** `432e8f773cde782cab6d478ad5afccb15816cbb4`  
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** prove RSI-0F against a live stable server using the implemented RSI-0E gates
+**Next exact boundary:** resolve the candidate CMake-generation failure, then rerun RSI-0G acceptance
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -93,7 +93,7 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Candidate build script: `scripts/build_candidate.ps1`.
 - [x] Candidate server script: `scripts/run_candidate.ps1`.
 - [x] Isolation design verified: separate builds, ports, and runtime state.
-- [ ] Verify stable remains responsive while candidate builds.
+- [x] Verify stable remains responsive during a candidate configure/build attempt and rejected preflight.
 - [ ] Verify stable remains responsive while candidate serves inference.
 - [ ] Verify candidate teardown does not affect stable.
 
@@ -146,22 +146,22 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 
 ## RSI-0F. Prove one supervised rejection cycle
 
-- [ ] Start from a healthy stable server.
-- [ ] Have Agents-A1 propose one bounded candidate change.
-- [ ] Build and launch it only in candidate isolation.
-- [ ] Cause or observe failure of one declared gate.
-- [ ] Confirm the candidate is rejected.
-- [ ] Confirm candidate process and runtime state are removed.
-- [ ] Confirm stable remains healthy.
-- [ ] Confirm stable files and evaluator hashes are unchanged.
-- [ ] Confirm failure is recorded accurately.
-- [ ] Confirm the next task remains resumable.
+- [x] Started from a healthy stable server on port 9292.
+- [x] Applied one deliberate protected-path candidate change.
+- [x] Kept the rejection entirely inside candidate isolation; preflight correctly prevented build and launch.
+- [x] Observed the candidate-edit allowlist gate fail on `TASKS.md`.
+- [x] Confirmed the candidate is rejected.
+- [x] Confirmed no candidate process remained and candidate runtime state was removed.
+- [x] Confirmed stable health and listener PID remain unchanged.
+- [x] Confirmed stable worktree and protected hashes remain unchanged.
+- [x] Confirmed the compact failure record is accurate in `lab/results.jsonl`.
+- [x] Restored the candidate worktree cleanly; the next task is resumable.
 
-## RSI-0G. Prove one supervised acceptance cycle
+## RSI-0G. Prove one supervised acceptance cycle [BLOCKED: candidate CMake generation]
 
-- [ ] Start from a healthy stable server.
-- [ ] Have Agents-A1 propose one bounded candidate change.
-- [ ] Build and launch it only in candidate isolation.
+- [x] Started from a healthy stable server.
+- [x] Applied an inert file only within the allowed candidate path `common/`.
+- [ ] Build and launch it only in candidate isolation (blocked: candidate CMake configure/generate failed before build).
 - [ ] Confirm every declared gate passes.
 - [ ] Mark it reviewable rather than promoting it.
 - [ ] Confirm exact diff and evidence are inspectable.
@@ -247,4 +247,4 @@ Do not begin until RSI-0 closes.
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: RSI-0F live supervised rejection cycle with stable health before and after teardown.
+- [ ] Next task: isolate the candidate CMake generation failure, then retry RSI-0G with the same inert allowed-path fixture.

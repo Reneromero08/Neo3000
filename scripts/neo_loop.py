@@ -318,9 +318,7 @@ def cancellation_gate(port: int, model: str, timeout: int) -> bool:
 
 def cycle(declared_hypothesis: str) -> CycleResult:
     evaluator = load_json(EVALUATOR_PATH)
-    preflight_result = preflight(evaluator)
     stable_port = evaluator["stable_launch"]["port"]
-    candidate_port = evaluator["candidate_launch"]["port"]
     timeouts = evaluator["timeouts"]
     if not health_ok(stable_port, timeout=timeouts["stable_health_seconds"]):
         raise NeoLoopError("stable server not healthy at cycle start")
@@ -331,10 +329,16 @@ def cycle(declared_hypothesis: str) -> CycleResult:
     stable_status_before = git(ROOT, "status", "--porcelain")
     candidate_commit = git(CANDIDATE_ROOT, "rev-parse", "HEAD")
     candidate_runtime = CANDIDATE_ROOT / evaluator["isolation"]["candidate_runtime_directory"]
-    candidate_runtime.mkdir(parents=True, exist_ok=True)
     process: subprocess.Popen[str] | None = None
-    evidence: dict[str, Any] = {"preflight": {key: value for key, value in preflight_result.items() if key != "lock"}}
+    evidence: dict[str, Any] = {"stable_health_before": True, "stable_listener_pids_before": sorted(stable_pids_before)}
     try:
+        try:
+            preflight_result = preflight(evaluator)
+        except NeoLoopError as exc:
+            return CycleResult("reject", str(exc), candidate_commit, evidence)
+        evidence["preflight"] = {key: value for key, value in preflight_result.items() if key != "lock"}
+        candidate_runtime.mkdir(parents=True, exist_ok=True)
+        candidate_port = evaluator["candidate_launch"]["port"]
         build_script = CANDIDATE_ROOT / "scripts" / "build_candidate.ps1"
         build_rc, build_out, build_err = run_powershell(build_script, CANDIDATE_ROOT, timeouts["build_seconds"])
         evidence["build"] = {"exit": build_rc, "stdout_tail": build_out.splitlines()[-8:], "stderr_tail": build_err.splitlines()[-8:]}
@@ -418,11 +422,15 @@ def cycle(declared_hypothesis: str) -> CycleResult:
         evidence["candidate_runtime_removed"] = not candidate_runtime.exists()
         if not health_ok(stable_port, timeout=timeouts["stable_health_seconds"]):
             raise NeoLoopError("stable server died after candidate teardown")
+        evidence["stable_health_after"] = True
         if listener_pids(stable_port) != stable_pids_before:
             raise NeoLoopError("stable listener changed during candidate cycle")
+        evidence["stable_listener_unchanged"] = True
         if git(ROOT, "rev-parse", "HEAD") != stable_head_before or git(ROOT, "status", "--porcelain") != stable_status_before:
             raise NeoLoopError("stable worktree changed during candidate cycle")
+        evidence["stable_worktree_unchanged"] = True
         verify_lock(evaluator)
+        evidence["protected_hashes_after"] = True
 
 
 def main() -> int:

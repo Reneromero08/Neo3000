@@ -154,9 +154,9 @@ Prepare the repository for Pi-supervised recursive self-improvement before modif
 - [x] A deliberate candidate edit to `TASKS.md` was rejected before build or launch; the exact path was recorded in `lab/results.jsonl`.
 - [x] Candidate build, health, benchmark, VRAM, crash, port, build/runtime separation, model-identity, and stable-integrity gates are implemented in `scripts/neo_loop.py`.
 - [x] Candidate teardown tracks only the launched candidate PID; it does not terminate the stable process by name.
-- [ ] Stable health during candidate build/run/teardown is not yet demonstrated in this session because port 9292 is offline and `NEO3000_MODEL` is unset.
-- [ ] RSI-0F live rejection cycle remains required.
-- [ ] RSI-0G live acceptance cycle remains required.
+- [x] RSI-0F live rejection cycle: a candidate `TASKS.md` mutation was rejected before build; stable health, listener PID, worktree, and protected hashes were unchanged after cleanup.
+- [ ] RSI-0G acceptance attempt: an inert allowed-path fixture reached candidate CMake configure/generate, which failed before launch. Stable survived unchanged; acceptance remains unproven.
+- [ ] Candidate CMake generation must be isolated as a separate build-system boundary before retrying RSI-0G.
 
 ## Checkpoint 1: Compute map (RSI-0 required first)
 

@@ -10,7 +10,8 @@ RSI-0A through RSI-0D are partially or fully complete:
 RSI-0A source custody: done
 RSI-0B stable/candidate worktrees: design done, live isolation proof still needed
 RSI-0C evaluator lockfile and protected mutation preflight: done
-RSI-0D neo-loop machinery and enforcement gates: implemented; live cycle evidence still needed
+RSI-0D neo-loop machinery and enforcement gates: implemented
+RSI-0F live rejection cycle: passed
 ```
 
 ## Required result
@@ -29,23 +30,22 @@ Stable worktree running Neo3000
 
 ## Current boundary
 
-RSI-0E is implemented. The next objective is **RSI-0F: prove a live supervised rejection cycle**.
+RSI-0E is implemented and RSI-0F has passed. The next objective is **resolve the candidate CMake generation failure, then rerun RSI-0G acceptance**.
 
 Do not begin autonomous RSI. Do not modify stable inference logic. Do not promote candidates automatically.
 
 ## Next exact action
 
-With the stable server running on port 9292 and `NEO3000_MODEL` set to the verified Agents-A1 GGUF, run one protected-path rejection cycle through `neo-loop`. Confirm stable health before and after candidate cleanup, then proceed to the harmless acceptance cycle.
+The harmless allowed-path acceptance attempt was rejected at candidate CMake configure/generate before launch. This is unrelated build-system drift, so do not change inference behavior or claim acceptance. Isolate the build-generation cause, restore the inert candidate fixture, and rerun the immutable acceptance cycle only after that separate boundary is resolved.
 
 Minimum required work:
 
 ```text
-1. Start the known stable launch profile on port 9292.
-2. Set `NEO3000_MODEL` to the verified Agents-A1 GGUF.
-3. Make one deliberate protected-path change only in the candidate worktree.
+1. Inspect the candidate CMake generation failure as a separate build-environment boundary.
+2. Keep the stable server and stable worktree unchanged.
+3. Once candidate configuration succeeds, restore the inert `common/` fixture in the candidate worktree.
 4. Run `python scripts/neo_loop.py --hypothesis "..."` from stable.
-5. Confirm the rejection record, candidate cleanup, and unchanged stable health/hashes.
-6. Restore the candidate worktree, then perform the harmless allowed-path acceptance cycle.
+5. Require every text, reasoning, tool, cancellation, repeat, memory, performance, cleanup, and stable-integrity gate before reviewable acceptance.
 ```
 
 ## Unlock target

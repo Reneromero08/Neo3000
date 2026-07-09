@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "a186d5911ab3d7ff856fe356019ee7893dc6a9f7",
+  "baseline_source_commit": "cac80b0e8ce3f323c2beca942b43cef4e0b97f1b",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -24,7 +24,7 @@
     "scripts/neo_loop.py"
   ],
   "evaluator_sha256": "b4f2cd7cff3ec86c6c3c45967bff66a799c07db0db9937c7b38c87e87e29b5d7",
-  "generated_at": "2026-07-09T20:57:54.678528+00:00",
+  "generated_at": "2026-07-09T21:11:03.104347+00:00",
   "model_identity": {
     "alias": "agents-a1",
     "architecture": "qwen35moe",
@@ -35,16 +35,16 @@
   "protected_file_hashes": {
     "AGENTS.md": "d0c4f2292f8e89f94ff79fe7b1a3b678307781f83fdbbab398abc7fbfd79b8e5",
     "ROADMAP.md": "421f2271cdc91d5a48b77518775001afd57858b2248056ac078a87e1678eead0",
-    "TASKS.md": "11d447fb5917c5fd8ffdbe279b248b7f26bcd4332c13faf9f9888779ac15d500",
+    "TASKS.md": "a2d03e28f5103d31f1fe5ec74351bdb90d56d22c89590b573b34314d56f152cd",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "61db2eec5056db3dd25256acc1f16e00f990cb2c5684e2396e1b432a74fd2ac1",
+    "lab/CHECKPOINT.md": "64c1555b019a8f4782ec306bf03435085fb302cc8133746e966ff19764022ca2",
     "lab/EVALUATOR.json": "b4f2cd7cff3ec86c6c3c45967bff66a799c07db0db9937c7b38c87e87e29b5d7",
-    "lab/GOAL.md": "cbc64e7edb38ad4f9310c896b46eb9a633b6361d95c2a18de82d532f26f7ef69",
+    "lab/GOAL.md": "e5dbbdd258ac971cf316ccad3f1fc406a1e3b8695147058bdee5843b4c91fad6",
     "scripts/baseline_harness.py": "555158a325e091c90f8af845f4a81966a5e8cda56da456e325eb2095a7902fbf",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "7b45a9d194962484c4b41b243928eb053386cea2467ff929735d0634f0ba0600",
     "scripts/context_matrix.py": "92ee85869afc2b87d98cd70f06b5e0ddfdb481ae89eb65561154dfcab0cae1ed",
-    "scripts/neo_loop.py": "7ee3f3531739309417aa6f5459bbb65a0b7daba74b2d47977cb320d43227c5ab",
+    "scripts/neo_loop.py": "173dedbc1b5fa2a3eab567a6489701580fc9a57273e303330aee3224b3e45486",
     "scripts/rolling_decode.py": "29c6e23e226a13cebbb3eedaec9339765db86a69893898ff4ea86971916e290a",
     "scripts/run_candidate.ps1": "04b28fca1d2aae754bb3bca0f1efcb3f8166a8b2fd38da2a37252affb70394a0",
     "scripts/run_server.ps1": "831913a346668b82c58205742b5e45840571c96dde1dbf28d93807726617f0a4"
