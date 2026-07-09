@@ -45,7 +45,7 @@ Build details:
 - [x] Model loads without silent fallback
 
 Model: Agents-A1-Q4_K_M.gguf, Qwen 3.5 MoE + Gated Delta Net SSM, 256x2.6B, 40 layers.
-SHA-256: `31AEFA25B7E1BEDDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2`
+SHA-256: `31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2`
 
 ### Pi runtime (all verified)
 
@@ -155,8 +155,9 @@ Prepare the repository for Pi-supervised recursive self-improvement before modif
 - [x] Candidate build, health, benchmark, VRAM, crash, port, build/runtime separation, model-identity, and stable-integrity gates are implemented in `scripts/neo_loop.py`.
 - [x] Candidate teardown tracks only the launched candidate PID; it does not terminate the stable process by name.
 - [x] RSI-0F live rejection cycle: a candidate `TASKS.md` mutation was rejected before build; stable health, listener PID, worktree, and protected hashes were unchanged after cleanup.
-- [ ] RSI-0G acceptance attempt: an inert allowed-path fixture reached candidate CMake configure/generate, which failed before launch. Stable survived unchanged; acceptance remains unproven.
-- [ ] Candidate CMake generation must be isolated as a separate build-system boundary before retrying RSI-0G.
+- [x] Candidate CMake generation failure isolated: the broad `models/` ignore pattern omitted 171 source files in `src/models/` and `tools/mtmd/models/`; source custody is repaired and clean candidate configure succeeds.
+- [ ] RSI-0G acceptance attempt: the inert allowed-path candidate built successfully, then correctly rejected the stale evaluator model SHA-256 before launch. Stable survived unchanged; acceptance remains unproven.
+- [ ] Corrected evaluator model SHA-256 must be reviewed, then a newly authorized RSI-0G cycle may run once.
 
 ## Checkpoint 1: Compute map (RSI-0 required first)
 

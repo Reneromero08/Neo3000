@@ -5,7 +5,7 @@
     "alias": "agents-a1",
     "architecture": "qwen35moe",
     "quantization": "Q4_K_M",
-    "sha256": "31AEFA25B7E1BEDDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+    "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
     "size_bytes": 21166757632
   },
   "baseline": {

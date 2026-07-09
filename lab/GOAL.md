@@ -30,21 +30,21 @@ Stable worktree running Neo3000
 
 ## Current boundary
 
-RSI-0E is implemented and RSI-0F has passed. The next objective is **resolve the candidate CMake generation failure, then rerun RSI-0G acceptance**.
+RSI-0E is implemented and RSI-0F has passed. Candidate source custody is repaired. The next objective is **review the corrected Agents-A1 SHA-256, then authorize one fresh RSI-0G acceptance cycle**.
 
 Do not begin autonomous RSI. Do not modify stable inference logic. Do not promote candidates automatically.
 
 ## Next exact action
 
-The harmless allowed-path acceptance attempt was rejected at candidate CMake configure/generate before launch. This is unrelated build-system drift, so do not change inference behavior or claim acceptance. Isolate the build-generation cause, restore the inert candidate fixture, and rerun the immutable acceptance cycle only after that separate boundary is resolved.
+The harmless allowed-path acceptance attempt configured and built after source-custody repair, then correctly rejected the stale evaluator SHA-256 before launch. The refreshed full SHA-256 is `31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2`; it replaces the prior transposed recorded value. Do not retry the cycle in this boundary.
 
 Minimum required work:
 
 ```text
-1. Inspect the candidate CMake generation failure as a separate build-environment boundary.
+1. Review the measured correction to the evaluator model SHA-256.
 2. Keep the stable server and stable worktree unchanged.
-3. Once candidate configuration succeeds, restore the inert `common/` fixture in the candidate worktree.
-4. Run `python scripts/neo_loop.py --hypothesis "..."` from stable.
+3. Reapply only the inert `common/` fixture in the candidate worktree.
+4. Authorize one new `python scripts/neo_loop.py --hypothesis "..."` cycle from stable.
 5. Require every text, reasoning, tool, cancellation, repeat, memory, performance, cleanup, and stable-integrity gate before reviewable acceptance.
 ```
 
