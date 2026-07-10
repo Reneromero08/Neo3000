@@ -2,11 +2,11 @@
 
 **Active checkpoint:** Checkpoint 2, First catalytic compute intervention
 **Current RSI level:** Level 1, supervised bounded RSI available
-**Baseline evidence through:** `65317fd15d5ad269df60ef187996aa07c78fa8ec`
+**Baseline evidence through:** `7a2019c50e84e58f14860f4e5db2e956506f5cdc`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. Checkpoint 2 remains active; the one-shot HoloState-v1 reasoning-budget qualification is complete with no sufficient budget through 2048.
-**Next exact action:** stop this task at the executed boundary; do not rotate the selected budget or run validation-v2. A future task must separately authorize any prompt, budget-range, or mechanism intervention from the preserved qualification evidence.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. Checkpoint 2 is preparing the protected HoloState-v1.1 message-boundary protocol; its one-shot chat audit has not run.
+**Next exact action:** review, commit, and push the protected pre-audit protocol as one architectural chunk, then reconfirm every preclaim gate and run its one-shot audit exactly once. Do not retry old qualification or run validation-v2.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -243,7 +243,7 @@ Checkpoint 1A remains open but is paused at this boundary. Proven: trace-disable
 - [x] Case A confirmed: current binary and source expose checkpoints, bounded RAM cache, cache reuse controls, and slot save/restore; no rebuild or source import was required.
 - [x] Ran one isolated sidecar plus the single conditional restart-persistence launch on port 9494 with exact-PID WDDM control.
 - [x] Audited 7,500-token canonical content / 7,519-token rendered prompts across full replay, identical A, branch B, A/B/A/B, save/erase/restore, and restart restore.
-- [x] Process-local RAM/checkpoint reuse is exact: 7,387 tokens reused, 132 fresh, identical cleaned greedy token IDs and reasoning/final hashes, and correct A/B multiplexing.
+- [x] Process-local RAM/checkpoint reuse is exact: 7,387 tokens reused, 132 fresh, identical cleaned greedy token IDs and raw pre-final/final hashes, and correct A/B multiplexing. The legacy pre-final hash is not `reasoning_content` channel proof.
 - [x] Slot file saved/restored 8,069 tokens and 231,311,464 bytes; in-process behavior remained exact but is confounded by the live RAM/checkpoint cache. Restart restore read the file yet processed all 7,519 prompt tokens, so restart reuse failed.
 - [x] Do not nominate a restart-persistent durable capsule; retain the exact process-local RAM/checkpoint result as the lawful carrier for HoloState-v1 Live Prefix Lattice.
 
@@ -305,11 +305,30 @@ retained lawful state: model/configuration/prefix-identity-bound live cache entr
 - [x] Run the one declared validation under immutable evaluation. It warmed 7,150-token A and 4,879-token B roots, then stopped on the first A1 deterministic-output failure without retry.
 - [ ] Quality gate remains incomplete and is not authorized for retry in this task: preserve Pi text, reasoning, tools, cancellation, and repeated turns.
 - [x] Classify HoloState-v1 Live as `inconclusive`: A1 reused an inferred 7,017 of 7,165 logical prompt tokens and evaluated 148 fresh tokens in 3,685.92 ms, but consumed the full 768-token completion allowance without closing the deterministic gate. The remaining interleaving and extended proof did not run.
-- [x] Separate mechanism from operational quality: HoloState-v1 process-local reuse succeeded; its operational quality gate is blocked by an unqualified shared reasoning budget.
+- [x] Separate mechanism from operational quality: HoloState-v1 process-local reuse succeeded; its legacy raw-output gate exhausted the tested range without the literal marker.
 - [x] Protect the repaired boundary with a complete-object evaluator hash, atomic versioned markers, persisted completion classifications, sidecar-compatible tool/cancellation probes, and 40 focused HoloState tests; all protected regression suites and preflight pass.
-- [x] Qualify exactly one ascending budget sequence `1024, 1280, 1536, 2048` on Root A/A1. Every request reused 7,878 of 8,026 logical prompt tokens, retained nonempty reasoning, consumed its exact configured limit, and ended `completion-budget-exhausted` without the final marker.
+- [x] Qualify exactly one ascending budget sequence `1024, 1280, 1536, 2048` on Root A/A1. Every raw `/completion` stream reused 7,878 of 8,026 logical prompt tokens, consumed its exact configured limit, and ended without the final marker. The legacy endpoint/parser did not prove `reasoning_content` channel attribution.
 - [x] Reach the declared no-pass stop after 2048. No selected budget was written, no prompt or quality gate was changed, and no qualification retry occurred.
 - [x] Correctly skip the conditional locked-budget rotation and validation-v2 because qualification did not pass; their versioned v2 marker/result remain absent.
+
+### HoloState-v1.1 message-boundary protocol [PRE-AUDIT]
+
+Evidence correction:
+
+```text
+Proven: raw /completion exhausted each configured limit without the literal marker.
+Not proven: every raw token belonged to reasoning_content.
+```
+
+The legacy endpoint exposed one raw content stream, and `parse_final_structure` labeled the whole raw string as reasoning when the marker was absent. Historical evidence remains byte-identical.
+
+- [ ] Review and publish the evaluator-locked `holostate_worker_protocol_v1`, Chat Completions controller path, focused tests, and planning updates as one pre-audit commit.
+- [ ] Confirm the versioned attempt/result paths remain absent before the one-shot claim.
+- [ ] Run exactly one audit in the fixed sequence `warm A, fast A1, fast A2, warm B, fast B1, fast B2, deep A1`, then stop.
+- [ ] Classify fast and deep lanes independently. Fast failure stops; deep failure cannot erase a completed fast proof.
+- [ ] Unlock only `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` if the complete fast proof and all isolation/cleanup gates pass.
+
+Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 768 tokens. Both use separate system/reference and user-assignment messages through `/v1/chat/completions`; old budget qualification, validation-v2, extended proof, persistence, and automatic promotion remain forbidden here.
 
 Integration evidence:
 
@@ -332,4 +351,4 @@ Integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: from the preserved no-pass evidence, separately authorize one causal investigation of why A1 remains in reasoning past 2048 without changing the prompt, budget range, or quality gate in this completed task. HoloState-v2 Durable Capsule remains a separate future durability track.
+- [ ] Next task: review and publish the protected HoloState-v1.1 pre-audit protocol commit, then run its authorized one-shot Chat Completions audit exactly once. The old qualification range, validation-v2, and HoloState-v2 durability track remain unchanged.

@@ -17,7 +17,9 @@ Checkpoint 2: ACTIVE
 First catalytic intervention: HoloState-v1 Live Prefix Lattice
 HoloState-v1 integration verdict: INCONCLUSIVE
 HoloState-v1 budget qualification: NO PASS THROUGH 2048
+HoloState-v1.1 message-boundary protocol: PRE-AUDIT
 Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
+PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 RSI-0F supervised rejection cycle: PASSED
@@ -38,9 +40,20 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 
 - Checkpoint 1A remains active but paused. Compile-out, bounded aggregation, protected exact-PID control, and explicit truncation/drop detection are proven; overhead, a completed workload map, and model-runtime bottleneck selection remain unproven.
 - Checkpoint 2 is active for HoloState-v1 Live Prefix Lattice, the protected operational integration of exact process-local executable-prefix reuse already proven by HoloState-0.
-- The one-shot HoloState-v1 reasoning-budget qualification is complete: `1024, 1280, 1536, 2048` all exhausted with reasoning present and the exact final absent. No budget was selected and validation-v2 remains unattempted.
+- The one-shot HoloState-v1 raw `/completion` qualification is complete: `1024, 1280, 1536, 2048` all exhausted without the exact final marker. This does not prove `reasoning_content` attribution. No budget was selected and validation-v2 remains unattempted.
+- HoloState-v1.1 prepares a separately protected Chat Completions message hierarchy with 64-token thinking-disabled fast workers and one 768-token reasoning-auto deep probe. Its one-shot marker remains unclaimed.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
+
+### HoloState-v1.1 message-boundary protocol prepared
+
+- Corrected the historical claim boundary: legacy `/completion` supplied one raw content stream, and `parse_final_structure` treated the entire raw string as reasoning when the literal final marker was absent. The old runs prove limit exhaustion and missing final markers, not `reasoning_content` attribution; their files and hashes remain unchanged.
+- Added evaluator-locked `holostate_worker_protocol_v1` with exact binary/model/template identities, unchanged A/B source order, a hash-bound immutable-reference system envelope, separate user assignments, one-shot paths, memory ceilings, stable isolation, and independent fast/deep verdict law.
+- Added a protected, non-executed `audit-worker-protocol` controller path through `/v1/chat/completions`. The fixed sequence stops after `deep A1`; fast failure stops immediately, while deep failure preserves a completed fast proof.
+- Lane F is thinking-disabled at 64 tokens and requires exact visible A/B content, an empty reasoning channel, normal stop, and cache reuse. Lane D is reasoning-auto at 768 tokens and requires nonempty reasoning metadata, exact deep-A content, normal stop, and cache reuse.
+- Extended the shared `baseline_harness.stream_completion` parser to retain server-returned generated-token arrays and prompt-progress events while preserving its separate reasoning, visible-content, and tool-call channels. Worker results store reasoning only as presence, length, and SHA-256.
+- Pre-audit verification passed 60 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus protected preflight. Template/tokenizer-only rendering measured Root A at 7,806 tokens and Root B at 4,630, inside the unchanged 4K-8K bounds without generating output or claiming the audit.
+- The one-shot audit, old qualification, validation-v2, extended proof, and persistence work were not executed by the pre-audit protocol change.
 
 ### Checkpoint 2 activated: HoloState-v1 Live Prefix Lattice
 
@@ -76,7 +89,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - One sidecar, one Root A warm, and exactly four ascending A1 requests ran. Root B, fixed interleaving, tool/cancellation probes, extended proof, validation-v2, and retries did not run.
 - Root A identity was `holostate-27f565ae760cdf96aa958ec9`; it contained 8,010 rendered tokens and warmed in 172,069.162 ms.
 - Every A1 request exposed 8,026 logical prompt tokens and 7,878 cached tokens, yielding an inferred 148-token fresh delta. The raw server field `processed=8026` is cumulative when cache is present; the controller now records that raw field separately and derives fresh as `logical - cache` for future requests. The completed one-shot result was not rewritten or rerun.
-- Budgets 1024, 1280, 1536, and 2048 produced exactly 1024, 1280, 1536, and 2048 completion tokens respectively, each with nonempty reasoning, `stop_type=limit`, no final marker, and classification `completion-budget-exhausted`.
+- Budgets 1024, 1280, 1536, and 2048 produced exactly 1024, 1280, 1536, and 2048 raw completion tokens respectively, each with `stop_type=limit`, no final marker, and classification `completion-budget-exhausted`. Channel attribution was not available from this endpoint.
 - Qualification result SHA-256 is `1AE79511E6C0E3C928989912A24CCDC64C5B918D6B74B1A364ACDB0A34044D94`. No minimum budget passed, so `selected_max_tokens` remains null and no locked-budget commit exists.
 - Sidecar PID/listener `44652` recorded 239 exact-PID WDDM samples at a 2,252.88 MiB peak with no telemetry loss. Full cleanup, five empty retirement samples, stable PID `31188`, free port 9494, and preservation of the original v1 evidence all passed.
 
@@ -85,7 +98,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Authorized one isolated port-9494 sidecar audit using the exact locked model, one slot, bounded host RAM, and protected exact-PID WDDM control.
 - The audit separates repeated-prefix RAM reuse, branch multiplexing, in-process slot restore, and restart restore. Deterministic output plus prompt-token reuse evidence is required for an exact classification.
 - Ordinary KV save/restore cannot establish Gated DeltaNet hybrid-state persistence by itself. Stable, CUDA, inference kernels, model files, and the archived trace candidate remain outside scope.
-- Case A was present in the existing binary/source. A 7,519-token rendered prompt replayed fully once, then exact process-local A/B branches reused 7,387 tokens and evaluated only a 132-token checkpoint gap with identical per-branch greedy token and reasoning/output hashes.
+- Case A was present in the existing binary/source. A 7,519-token rendered prompt replayed fully once, then exact process-local A/B branches reused 7,387 tokens and evaluated only a 132-token checkpoint gap with identical per-branch greedy token and raw pre-final/output hashes. The legacy pre-final hash is not channel attribution.
 - A 231,311,464-byte slot file saved and restored 8,069 tokens. In-process behavior stayed exact but cannot be attributed to the file separately from live RAM/checkpoint entries. After the declared restart, the same file restored successfully at the endpoint but the model reevaluated all 7,519 prompt tokens.
 - At the HoloState-0 audit boundary, the retained result was exact process-local RAM/checkpoint reuse, not a restart-persistent hybrid capsule. No 40K audit, source integration, stable change, Checkpoint 2 activation, or automatic promotion occurred in that audit.
 

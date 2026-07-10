@@ -96,6 +96,7 @@ RSI-0: CLOSED
 -> Checkpoint 1A: trace substrate remains active and paused
 -> Checkpoint 2: ACTIVE
 -> First catalytic intervention: HoloState-v1 Live Prefix Lattice
+-> Current bounded work: HoloState-v1.1 message-boundary protocol, pre-audit
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -507,7 +508,7 @@ HoloState-0 asks whether already-available server facilities can preserve and re
 
 If deterministic output agreement and measured prompt-token reuse prove exact executable hybrid-state reuse, HoloState-0 may nominate HoloState-v1 Live Prefix Lattice as the first Checkpoint 2 intervention. Otherwise it records the narrower capability or failure boundary without changing the claim ceiling.
 
-HoloState-0 result: the existing hybrid runtime exactly reused 7,387 of 7,519 rendered prompt tokens across identical and A/B/A/B process-local branches, with identical greedy token IDs and reasoning/final output per branch. A 231,311,464-byte slot file restored 8,069 tokens in-process, but live RAM/checkpoint state confounds attribution to the file. After process restart the same file was read successfully yet all 7,519 prompt tokens were reevaluated. Therefore exact process-local RAM/checkpoint reuse is proven and may be operationalized as HoloState-v1 Live Prefix Lattice.
+HoloState-0 result: the existing hybrid runtime exactly reused 7,387 of 7,519 rendered prompt tokens across identical and A/B/A/B process-local branches, with identical greedy token IDs and raw pre-final/final output per branch. The legacy pre-final hash is not `reasoning_content` channel proof. A 231,311,464-byte slot file restored 8,069 tokens in-process, but live RAM/checkpoint state confounds attribution to the file. After process restart the same file was read successfully yet all 7,519 prompt tokens were reevaluated. Therefore exact process-local RAM/checkpoint reuse is proven and may be operationalized as HoloState-v1 Live Prefix Lattice.
 
 Restart-persistent executable-state reuse remains unproven and is separated as HoloState-v2 Durable Capsule.
 
@@ -560,7 +561,13 @@ The protected controller warmed two immutable roots on one exact sidecar: A at 7
 
 The A1 request then consumed all 768 allowed completion tokens without closing the declared deterministic output gate. Stop-on-first-failure ended the sequence before B1/A2/B2, same-branch hash comparison, eviction observation, or the extended proof. No retry occurred. HoloState-v1 Live is therefore `inconclusive`, `PROCESS_LOCAL_HOLOSTATE_AVAILABLE` remains locked, and the HoloState-0 mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` remains the narrower supported claim.
 
-The causal boundary is split correctly: the HoloState-v1 reuse mechanism succeeded, while the HoloState-v1 operational quality gate is blocked by the tested shared reasoning-budget range. The one-shot qualification tested `1024, 1280, 1536, 2048` in ascending order on one Root A/A1 sidecar. Every request reused 7,878 of 8,026 logical prompt tokens and retained reasoning, but every request consumed its exact limit without reaching `HOLOSTATE A1 EXACT`. No budget qualified, so no budget was selected or locked and the newly authorized validation-v2 did not run. Any larger budget, prompt change, or mechanism change requires a separate future authorization.
+The causal boundary is split correctly: the HoloState-v1 reuse mechanism succeeded, while the legacy raw-output quality gate did not close. The one-shot qualification tested `1024, 1280, 1536, 2048` in ascending order on one Root A/A1 sidecar. Every raw `/completion` stream reused 7,878 of 8,026 logical prompt tokens, consumed its exact limit, and ended without `HOLOSTATE A1 EXACT`. Because `/completion` exposed one raw content stream and the legacy parser labeled all raw output as reasoning when the marker was absent, those runs do not prove that every token belonged to `reasoning_content`. No budget qualified, no budget was selected, and validation-v2 did not run.
+
+### HoloState-v1.1 message-boundary protocol: PRE-AUDIT
+
+The next bounded protocol uses `/v1/chat/completions` with the canonical root in a locked system/reference message and only the current assignment in a separate user message. Lane F is thinking-disabled, capped at 64 tokens, and must return exact A/B assistant content with an empty reasoning channel. Lane D remains reasoning-auto at 768 tokens and must return exact deep-A assistant content with nonempty reasoning-channel metadata. The shared Chat Completions stream parser separates content, reasoning, and tools and now captures server-returned generated-token arrays plus prompt-progress events; the controller persists reasoning only as presence, length, and SHA-256.
+
+The authorized one-shot sequence is `warm A, fast A1, fast A2, warm B, fast B1, fast B2, deep A1`, then stop. Fast failure stops the audit; deep failure does not erase a completed fast proof. A complete fast pass may unlock only `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`. The broader process-local lock, restart-persistent lock, validation-v2 prohibition, no-retry law, and automatic-promotion prohibition remain intact. The pre-audit protocol must be reviewed, committed, pushed, and preflight-clean before its versioned marker can be claimed.
 
 ### HoloState-v2 persistence boundary
 

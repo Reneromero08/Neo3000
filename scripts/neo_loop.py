@@ -90,6 +90,14 @@ def holostate_contract_hash(evaluator: dict[str, Any]) -> str:
     return sha256_bytes(canonical_json_bytes(contract))
 
 
+def holostate_worker_protocol_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the complete claim-bearing HoloState worker protocol as one object."""
+    protocol = evaluator.get("holostate_worker_protocol_v1")
+    if not isinstance(protocol, dict):
+        raise NeoLoopError("evaluator is missing holostate_worker_protocol_v1")
+    return sha256_bytes(canonical_json_bytes(protocol))
+
+
 def load_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise NeoLoopError(f"missing required file: {path}")
@@ -130,8 +138,19 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         for root in evaluator["holostate_live_contract"]["roots"].values()
         for source in root["sources"]
     ]
+    worker_protocol_sources = [
+        source
+        for root in evaluator["holostate_worker_protocol_v1"]["roots"].values()
+        for source in root["sources"]
+    ]
     hashed_files = sorted(
-        path for path in set(protected_files + controller_files + benchmark_files + holostate_sources)
+        path for path in set(
+            protected_files
+            + controller_files
+            + benchmark_files
+            + holostate_sources
+            + worker_protocol_sources
+        )
         if path not in LOCK_DYNAMIC_PATHS
     )
     return {
@@ -145,6 +164,7 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         },
         "gate_definition_hashes": gate_definition_hashes(evaluator),
         "holostate_contract_sha256": holostate_contract_hash(evaluator),
+        "holostate_worker_protocol_sha256": holostate_worker_protocol_hash(evaluator),
         "model_identity": evaluator["model"],
         "baseline_source_commit": git(ROOT, "rev-parse", "HEAD"),
         "stable_launch": evaluator["stable_launch"],
@@ -195,6 +215,10 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     actual_holostate = holostate_contract_hash(evaluator)
     if expected_holostate != actual_holostate:
         raise NeoLoopError("HoloState contract differs from its locked complete-object hash")
+    expected_worker_protocol = lock.get("holostate_worker_protocol_sha256")
+    actual_worker_protocol = holostate_worker_protocol_hash(evaluator)
+    if expected_worker_protocol != actual_worker_protocol:
+        raise NeoLoopError("HoloState worker protocol differs from its locked complete-object hash")
     return lock
 
 

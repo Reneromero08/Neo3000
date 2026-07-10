@@ -15,6 +15,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 import holostate_live as holo
+import baseline_harness as harness
 import neo_loop
 
 
@@ -125,7 +126,10 @@ class StaticCapabilityTests(unittest.TestCase):
         subparsers = next(action for action in parser._actions if action.dest == "command")
         self.assertEqual(
             set(subparsers.choices),
-            {"start", "stop", "status", "warm", "branch", "list", "evict", "validate", "qualify-budget", "validate-v2"},
+            {
+                "start", "stop", "status", "warm", "branch", "list", "evict",
+                "validate", "qualify-budget", "validate-v2", "audit-worker-protocol",
+            },
         )
 
     def test_subprocess_git_calls_are_read_only(self) -> None:
@@ -240,6 +244,237 @@ class ContractTests(unittest.TestCase):
                     neo_loop.verify_lock(mutated)
 
 
+class WorkerProtocolTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.evaluator = holo.load_json(holo.EVALUATOR_PATH)
+        cls.protocol = holo.validate_worker_protocol(
+            cls.evaluator["holostate_worker_protocol_v1"]
+        )
+
+    def test_reference_envelope_hash_is_exact(self) -> None:
+        envelope = self.protocol["reference_envelope"]
+        self.assertEqual(envelope["text"], holo.WORKER_REFERENCE_ENVELOPE)
+        self.assertEqual(
+            hashlib.sha256(envelope["text"].encode("utf-8")).hexdigest().upper(),
+            envelope["sha256"],
+        )
+
+    def test_root_and_assignment_are_separate_messages(self) -> None:
+        lane = self.protocol["lanes"]["F"]
+        assignment = lane["assignments"]["A1"]
+        payload = holo.build_worker_chat_payload(
+            self.protocol, "SYSTEM ROOT", assignment["user_message"], lane
+        )
+        self.assertEqual([item["role"] for item in payload["messages"]], ["system", "user"])
+        self.assertEqual(payload["messages"][0]["content"], "SYSTEM ROOT")
+        self.assertEqual(payload["messages"][1]["content"], assignment["user_message"])
+        self.assertTrue(payload["return_tokens"])
+        self.assertTrue(payload["return_progress"])
+        self.assertTrue(payload["verbose"])
+
+    def test_fast_lane_always_disables_thinking(self) -> None:
+        lane = self.protocol["lanes"]["F"]
+        payload = holo.build_worker_chat_payload(self.protocol, "SYSTEM", "USER", lane)
+        self.assertEqual(payload["chat_template_kwargs"], {"enable_thinking": False})
+        self.assertEqual(payload["max_tokens"], 64)
+
+    def test_deep_lane_retains_reasoning_auto_at_768(self) -> None:
+        lane = self.protocol["lanes"]["D"]
+        payload = holo.build_worker_chat_payload(self.protocol, "SYSTEM", "USER", lane)
+        self.assertNotIn("chat_template_kwargs", payload)
+        self.assertEqual(payload["max_tokens"], 768)
+        self.assertNotIn("reasoning steps", lane["assignments"]["A1"]["user_message"])
+
+    def test_chat_stream_extracts_exact_server_token_array(self) -> None:
+        self.assertEqual(
+            harness.extract_generated_token_ids({"__verbose": {"tokens": [1, "2", 3]}}),
+            [1, 2, 3],
+        )
+
+    def measurement(self, *, content: str, reasoning: str) -> SimpleNamespace:
+        return SimpleNamespace(
+            prompt_tokens=100,
+            cached_prompt_tokens=80,
+            completion_tokens=3,
+            reported_tokens_per_second=20.0,
+            total_time_s=1.0,
+            content=content,
+            reasoning_content=reasoning,
+            tool_calls=[],
+            finish_reason="stop",
+            time_to_first_event_s=0.1,
+            time_to_first_token_s=0.2,
+            time_to_first_content_s=0.3,
+            timings={"prompt_ms": 100.0, "prompt_per_second": 1000.0},
+            http_status=200,
+            event_count=5,
+            generated_token_ids=[1, 2, 3],
+            prompt_progress=[{"total": 100, "cache": 80, "processed": 100, "time_ms": 10.0}],
+        )
+
+    def test_reasoning_and_content_are_captured_separately(self) -> None:
+        identity = {
+            "system_message_characters": 6,
+            "system_message_sha256": "A" * 64,
+            "reference_envelope_sha256": "B" * 64,
+        }
+        with mock.patch.object(holo, "tokenize", return_value=[1, 2, 3]):
+            result = holo.compact_worker_measurement(
+                self.measurement(content="HOLOSTATE FAST A", reasoning="opaque payload"),
+                root_name="A",
+                assignment_name="A1",
+                lane_name="F",
+                expected_content="HOLOSTATE FAST A",
+                system_identity=identity,
+                user_message="Return exactly: HOLOSTATE FAST A",
+                configured_max_tokens=64,
+            )
+        self.assertEqual(result["assistant_content"]["text"], "HOLOSTATE FAST A")
+        self.assertTrue(result["reasoning_content"]["present"])
+        self.assertEqual(result["reasoning_content"]["characters"], len("opaque payload"))
+        self.assertNotIn("text", result["reasoning_content"])
+        self.assertNotIn("first_256", result["reasoning_content"])
+        self.assertTrue(result["completion_token_ids"]["complete"])
+        self.assertNotIn("ids", result["completion_token_ids"])
+        self.assertEqual(result["reported_processed_prompt_tokens"], 100)
+
+    def test_complete_token_array_is_retained_only_when_reasoning_is_empty(self) -> None:
+        identity = {
+            "system_message_characters": 6,
+            "system_message_sha256": "A" * 64,
+            "reference_envelope_sha256": "B" * 64,
+        }
+        with mock.patch.object(holo, "tokenize", return_value=[4, 5]):
+            result = holo.compact_worker_measurement(
+                self.measurement(content="HOLOSTATE FAST A", reasoning=""),
+                root_name="A",
+                assignment_name="A1",
+                lane_name="F",
+                expected_content="HOLOSTATE FAST A",
+                system_identity=identity,
+                user_message="Return exactly: HOLOSTATE FAST A",
+                configured_max_tokens=64,
+            )
+        self.assertEqual(result["completion_token_ids"]["ids"], [1, 2, 3])
+
+    def worker_result(self, *, content: str, reasoning: bool, cached: int = 80) -> dict:
+        return {
+            "assistant_content": {"text": content},
+            "reasoning_content": {"present": reasoning},
+            "expected_content": content,
+            "http_status": 200,
+            "finish_reason": "stop",
+            "prompt_token_identity_matches": True,
+            "completion_token_ids": {"complete": True, "sha256": "C" * 64},
+            "logical_prompt_tokens": 100,
+            "cached_prompt_tokens": cached,
+            "fresh_prompt_tokens": 100 - cached,
+        }
+
+    def test_fast_lane_requires_empty_reasoning_content(self) -> None:
+        item = self.worker_result(content="HOLOSTATE FAST A", reasoning=True)
+        self.assertEqual(
+            holo.classify_worker_measurement(item, self.protocol["lanes"]["F"]),
+            "unexpected-reasoning-content",
+        )
+
+    def test_visible_content_match_is_byte_exact(self) -> None:
+        item = self.worker_result(content=" HOLOSTATE FAST A", reasoning=False)
+        item["expected_content"] = "HOLOSTATE FAST A"
+        self.assertEqual(
+            holo.classify_worker_measurement(item, self.protocol["lanes"]["F"]),
+            "wrong-assistant-content",
+        )
+
+    def test_deep_lane_requires_nonempty_reasoning_content(self) -> None:
+        item = self.worker_result(content="HOLOSTATE DEEP A", reasoning=False)
+        self.assertEqual(
+            holo.classify_worker_measurement(item, self.protocol["lanes"]["D"]),
+            "reasoning-content-missing",
+        )
+
+    def test_cache_reuse_remains_mandatory(self) -> None:
+        item = self.worker_result(content="HOLOSTATE FAST A", reasoning=False, cached=0)
+        self.assertEqual(
+            holo.classify_worker_measurement(item, self.protocol["lanes"]["F"]),
+            "reuse-failed",
+        )
+
+    def test_complete_generated_token_evidence_is_mandatory(self) -> None:
+        item = self.worker_result(content="HOLOSTATE FAST A", reasoning=False)
+        item["completion_token_ids"]["complete"] = False
+        self.assertEqual(
+            holo.classify_worker_measurement(item, self.protocol["lanes"]["F"]),
+            "completion-token-evidence-missing",
+        )
+
+    def test_fast_lane_failure_stops_the_audit_path(self) -> None:
+        with self.assertRaises(holo.NeoLoopError):
+            holo.require_fast_worker_acceptance({
+                "assignment_name": "A1",
+                "accepted": False,
+                "finish_classification": "wrong-assistant-content",
+            })
+
+    def test_deep_failure_does_not_erase_fast_availability(self) -> None:
+        state = holo.worker_availability_state("reviewable-accept", safety_passed=True)
+        self.assertEqual(state["PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE"], "UNLOCKED")
+        self.assertEqual(state["PROCESS_LOCAL_HOLOSTATE_AVAILABLE"], "LOCKED")
+        self.assertEqual(state["RESTART_PERSISTENT_HOLOSTATE_AVAILABLE"], "LOCKED")
+
+    def test_A_and_B_identities_cannot_cross_select(self) -> None:
+        def item(name: str, root: str, content: str, system_hash: str) -> dict:
+            digest = hashlib.sha256(content.encode()).hexdigest().upper()
+            return {
+                "assignment_name": name,
+                "root_name": root,
+                "accepted": True,
+                "assistant_content": {"text": content, "sha256": digest},
+                "assistant_content_token_ids_sha256": digest,
+                "completion_token_ids": {"complete": True, "sha256": digest},
+                "system_message_sha256": system_hash,
+            }
+
+        results = [
+            item("A1", "B", "HOLOSTATE FAST A", "A" * 64),
+            item("A2", "A", "HOLOSTATE FAST A", "A" * 64),
+            item("B1", "B", "HOLOSTATE FAST B", "B" * 64),
+            item("B2", "B", "HOLOSTATE FAST B", "B" * 64),
+        ]
+        gate = holo.fast_worker_determinism_gate(results, self.protocol)
+        self.assertFalse(gate["passed"])
+        self.assertIn("A1-root-cross-selection", gate["reasons"])
+
+    def test_every_worker_protocol_mutation_changes_complete_hash(self) -> None:
+        baseline = neo_loop.holostate_worker_protocol_hash(self.evaluator)
+        for path, value in [
+            (("reference_envelope", "text"), "changed"),
+            (("lanes", "F", "max_tokens"), 65),
+            (("lanes", "D", "max_tokens"), 769),
+            (("one_shot", "retry_allowed"), True),
+        ]:
+            evaluator = copy.deepcopy(self.evaluator)
+            target = evaluator["holostate_worker_protocol_v1"]
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] = value
+            self.assertNotEqual(baseline, neo_loop.holostate_worker_protocol_hash(evaluator))
+
+    def test_worker_sources_and_complete_hash_are_lock_protected(self) -> None:
+        lock = neo_loop.make_lock(self.evaluator)
+        expected_sources = {
+            source
+            for root in self.protocol["roots"].values()
+            for source in root["sources"]
+        }
+        self.assertTrue(expected_sources.issubset(lock["protected_file_hashes"]))
+        self.assertEqual(
+            lock["holostate_worker_protocol_sha256"],
+            neo_loop.holostate_worker_protocol_hash(self.evaluator),
+        )
+
+
 class CompletionClassificationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -344,7 +579,44 @@ class OneShotWorkflowTests(unittest.TestCase):
                     holo.run_validation_v2(SimpleNamespace(extended_requests=20, binary="x", model="y"))
 
     def test_versioned_paths_do_not_alias_v1_evidence(self) -> None:
-        self.assertEqual(len({holo.ATTEMPT_PATH, holo.RESULT_PATH, holo.QUALIFICATION_PATH, holo.V2_ATTEMPT_PATH, holo.V2_RESULT_PATH}), 5)
+        self.assertEqual(
+            len({
+                holo.ATTEMPT_PATH,
+                holo.RESULT_PATH,
+                holo.QUALIFICATION_PATH,
+                holo.V2_ATTEMPT_PATH,
+                holo.V2_RESULT_PATH,
+                holo.WORKER_PROTOCOL_ATTEMPT_PATH,
+                holo.WORKER_PROTOCOL_RESULT_PATH,
+            }),
+            7,
+        )
+
+    def test_worker_protocol_cannot_run_twice(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            result = root / "worker-protocol-result-v1.json"
+            result.write_text("{}", encoding="utf-8")
+            with mock.patch.object(holo, "STATE_ROOT", root), mock.patch.object(
+                holo, "WORKER_PROTOCOL_ATTEMPT_PATH", root / "worker-protocol-attempt-v1.json"
+            ), mock.patch.object(holo, "WORKER_PROTOCOL_RESULT_PATH", result):
+                with self.assertRaises(holo.NeoLoopError):
+                    holo.run_worker_protocol_audit(SimpleNamespace(binary="x", model="y"))
+
+    def test_failed_preclaim_does_not_consume_worker_attempt(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            marker = root / "worker-protocol-attempt-v1.json"
+            result = root / "worker-protocol-result-v1.json"
+            with mock.patch.object(holo, "STATE_ROOT", root), mock.patch.object(
+                holo, "WORKER_PROTOCOL_ATTEMPT_PATH", marker
+            ), mock.patch.object(holo, "WORKER_PROTOCOL_RESULT_PATH", result), mock.patch.object(
+                holo, "prepare_worker_audit_claim", side_effect=holo.NeoLoopError("preclaim failed")
+            ):
+                with self.assertRaises(holo.NeoLoopError):
+                    holo.run_worker_protocol_audit(SimpleNamespace(binary="x", model="y"))
+            self.assertFalse(marker.exists())
+            self.assertFalse(result.exists())
 
     def test_preserved_v1_evidence_is_byte_exact(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -362,6 +634,31 @@ class OneShotWorkflowTests(unittest.TestCase):
                 after = (attempt.read_bytes(), result.read_bytes())
             self.assertEqual(before, after)
             self.assertEqual(evidence["attempt_sha256"], attempt_hash)
+
+    def test_prior_qualification_and_validation_evidence_remain_byte_exact(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            files = {
+                "state/holostate/validation-attempt.json": b"attempt",
+                "state/holostate/validation-result.json": b"result",
+                "state/holostate/reasoning-budget-qualification-v1.json": b"qualification",
+            }
+            expected: dict[str, str] = {}
+            for relative, raw in files.items():
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(raw)
+                expected[relative] = hashlib.sha256(raw).hexdigest().upper()
+            protocol = copy.deepcopy(
+                holo.load_json(holo.EVALUATOR_PATH)["holostate_worker_protocol_v1"]
+            )
+            protocol["prior_evidence"]["files"] = expected
+            before = {relative: (root / relative).read_bytes() for relative in files}
+            with mock.patch.object(holo, "ROOT", root):
+                evidence = holo.preserved_worker_prior_evidence(protocol)
+            after = {relative: (root / relative).read_bytes() for relative in files}
+            self.assertEqual(before, after)
+            self.assertEqual(set(evidence), set(files))
 
     def test_failed_branch_payload_is_checkpointed_with_hashes_and_metrics(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

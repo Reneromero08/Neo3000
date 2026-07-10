@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "65317fd15d5ad269df60ef187996aa07c78fa8ec",
+  "baseline_source_commit": "7a2019c50e84e58f14860f4e5db2e956506f5cdc",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -26,15 +26,16 @@
     "scripts/holostate_live.py",
     "scripts/test_holostate_live.py"
   ],
-  "evaluator_sha256": "45fa8927070d7898f6a3a326f0e7de7f1fea74e685cf23cb23ef73bcb0ca70e1",
+  "evaluator_sha256": "73d7be3d516b7dc058924909a5e97f110225f945b2e6749352f70e4d4e23657f",
   "gate_definition_hashes": {
     "reasoning-preservation-v1": "750a7b0041c13b4407f5d373069f6bcb3fe1d0701504f7bae5bb7c64fbc5d5fe",
     "repeat-final-content-v1": "2737d28ec7947d841bf6c5e07221f6ac453f98150a83b9a9c29c43da1a4b7460",
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-10T06:18:22.394669+00:00",
+  "generated_at": "2026-07-10T20:24:04.610276+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
+  "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
   "model_identity": {
     "alias": "agents-a1",
     "architecture": "qwen35moe",
@@ -45,25 +46,26 @@
   "protected_file_hashes": {
     ".gitignore": "677277200afe5e3d225c83584902476116bfd1d501f81d3d64ba4381b1ef2aac",
     "AGENTS.md": "d0c4f2292f8e89f94ff79fe7b1a3b678307781f83fdbbab398abc7fbfd79b8e5",
+    "CHANGELOG.md": "137ad36cfb9e202d171c59e763a5ce7dff5af2eb0312a0bab01f9a8ca7d1cbc3",
     "NEO3000.md": "b7ba87065f942d47abed19330197a843577bbd6b2fd58057a6df9de9cd7d2905",
     "README.md": "2a03600bf337aa3adf14d4c1e375b2f080d8d0bee0ae77676cf7dce3f32bf638",
-    "ROADMAP.md": "a9a8cb80e16c7f300ce1db7e84952be5b0827288356ed55a9f6dd9e9d7382943",
-    "TASKS.md": "83b40ba3262ad71d2df0a3a64bb23cd991392f8470c37056cb2ccd6ebbf74757",
+    "ROADMAP.md": "47ecb09e627dbfc02563fd7d79f8228d544f0cc2a61ed88399eea15683f48bfb",
+    "TASKS.md": "73d1e3bffe969653e3dbadb6fde4f475a1188b6e7237abf67da6fa2dffc5e44b",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "3f911d01e5980afd155feb9c282a45caf36d9cb027ee8a36e5889fab073f231a",
-    "lab/EVALUATOR.json": "45fa8927070d7898f6a3a326f0e7de7f1fea74e685cf23cb23ef73bcb0ca70e1",
-    "lab/GOAL.md": "ada589c4576e39aa9f17bcc79a762c8226cf3c62013b13357b13a4028d2e55fa",
-    "scripts/baseline_harness.py": "78416aac1c35cc001f2481e4814342ed9bce8393c240c87986442173ee8c31dc",
+    "lab/CHECKPOINT.md": "b43bf8c439515dc12973441dc4d01102df796b01b77418b049db61c11a73fec9",
+    "lab/EVALUATOR.json": "73d7be3d516b7dc058924909a5e97f110225f945b2e6749352f70e4d4e23657f",
+    "lab/GOAL.md": "aa301574962856265d29a83f0b3ca17bcbf2593dc1d4e8be13cce6cc61e7e9c9",
+    "scripts/baseline_harness.py": "002ad6dde5f174b76ac50d01909fa2761f1196ae891fd22cc31252af4ea6066a",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "7b45a9d194962484c4b41b243928eb053386cea2467ff929735d0634f0ba0600",
     "scripts/context_matrix.py": "92ee85869afc2b87d98cd70f06b5e0ddfdb481ae89eb65561154dfcab0cae1ed",
-    "scripts/holostate_live.py": "a6929e31266add79e577057855cbc8a5083e5c38fe3281e3e485722ccba209d3",
-    "scripts/neo_loop.py": "d44c01a6f694b38ef226bbe012bce9ee688b527bfcbb5ec918702481feb9dc43",
+    "scripts/holostate_live.py": "377d9064f6e7764b5d4820dbca87f7144737909b813f7e61c1e2fc8381dded62",
+    "scripts/neo_loop.py": "db20dc5082a9ea748a32d8d865dd56c67d2aae7f4c021af81aa03b0532bb19f7",
     "scripts/neo_trace_diagnostic.py": "179dd2e0877a745301998d3de79ad5d5f098a3ea5a4636f356d2e8aa3d71945e",
     "scripts/rolling_decode.py": "29c6e23e226a13cebbb3eedaec9339765db86a69893898ff4ea86971916e290a",
     "scripts/run_candidate.ps1": "04b28fca1d2aae754bb3bca0f1efcb3f8166a8b2fd38da2a37252affb70394a0",
     "scripts/run_server.ps1": "831913a346668b82c58205742b5e45840571c96dde1dbf28d93807726617f0a4",
-    "scripts/test_holostate_live.py": "941361e40bc190f6acfcb8d5645acc4c31760a47ff936a62929be67059396dd2",
+    "scripts/test_holostate_live.py": "b22e52b67b3eb708aba129488a256ab3b3aab2940dca82ba8ed2880e4a8af5fc",
     "scripts/test_trace_diagnostic.py": "4359240c665d149157bea5c811e3011edeee9ff12fa56b100a3464e32de50a8d"
   },
   "protected_paths": [
@@ -84,6 +86,7 @@
     ".gitignore",
     "README.md",
     "NEO3000.md",
+    "CHANGELOG.md",
     "TASKS.md",
     "AGENTS.md",
     "ROADMAP.md",

@@ -50,6 +50,8 @@ class StreamMeasurement:
     reported_tokens_per_second: float | None
     timings: dict[str, Any]
     finish_reason: str | None
+    generated_token_ids: list[int]
+    prompt_progress: list[dict[str, Any]]
 
 
 def utc_now() -> str:
@@ -143,6 +145,18 @@ def iter_sse(response: Any) -> Iterable[dict[str, Any]]:
             yield event
 
 
+def extract_generated_token_ids(event: dict[str, Any]) -> list[int] | None:
+    """Return the complete server-reported token array when one is present."""
+    verbose = event.get("__verbose")
+    tokens = verbose.get("tokens") if isinstance(verbose, dict) else event.get("tokens")
+    if not isinstance(tokens, list):
+        return None
+    try:
+        return [int(value) for value in tokens]
+    except (TypeError, ValueError) as exc:
+        raise HarnessError("stream returned a malformed generated-token array") from exc
+
+
 def stream_completion(
     endpoint: str,
     payload: dict[str, Any],
@@ -168,6 +182,8 @@ def stream_completion(
     timings: dict[str, Any] = {}
     finish_reason: str | None = None
     event_count = 0
+    generated_token_ids: list[int] = []
+    prompt_progress: list[dict[str, Any]] = []
 
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
@@ -182,6 +198,11 @@ def stream_completion(
                     usage.update(event["usage"])
                 if isinstance(event.get("timings"), dict):
                     timings.update(event["timings"])
+                if isinstance(event.get("prompt_progress"), dict):
+                    prompt_progress.append(dict(event["prompt_progress"]))
+                event_token_ids = extract_generated_token_ids(event)
+                if event_token_ids is not None:
+                    generated_token_ids = event_token_ids
 
                 choices = event.get("choices")
                 if not isinstance(choices, list) or not choices:
@@ -259,6 +280,8 @@ def stream_completion(
         reported_tokens_per_second=tps,
         timings=timings,
         finish_reason=finish_reason,
+        generated_token_ids=generated_token_ids,
+        prompt_progress=prompt_progress,
     )
 
 

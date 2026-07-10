@@ -226,7 +226,7 @@ HoloState-0 is authorized to inspect existing `llama-server` capabilities and ru
 - Case A: stable binary version `13 (417e1d6)`, SHA-256 `5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B`, and tracked source contain `ctx-checkpoints`, `checkpoint-min-step`, bounded `cache-ram`, `cache-idle-slots`, `cache-reuse`, and `slot-save-path`/restore. The hybrid context reported `cache_reuse is not supported` and disabled that specific KV-shift feature; checkpoint/RAM reuse remained available.
 - Canonical content combined `ROADMAP.md`, `AGENTS.md`, `lab/GOAL.md`, and `README.md`: 33,695 bytes, SHA-256 `8D0C83AFF791E7D6F077F2A2F9BB8B393D0E14C5AA7F5FFE42F638814FB04A68`, 7,500 content tokens, token-ID SHA-256 `69D9D993B4376037F7206266C899F2CEED858D3B89973CDE36CAAD1A521E3910`, and 7,519 rendered prompt tokens. Chat-template SHA-256 was `A4AEE8AFCF2E0711942CF848899BE66016F8D14A889FF9EDE07BCA099C28F715`.
 - Full replay processed all 7,519 tokens in 206,932.648 ms at 36.335 TPS; total time was 248.026 seconds and decode was 14.567 TPS. Reuse processed 132 fresh tokens and reported 7,387 cached tokens in 2,603.962-3,207.468 ms. Identical A amplification was 74.843x; mean across seven correct reuse requests was 72.653x, with a 1.756% fresh fraction.
-- All A trajectories had the same 598 cleaned greedy token IDs (`0F23FD3C...AEF5`), raw output hash, reasoning hash, and exact `HOLOSTATE BRANCH A`. All B trajectories had the same 551 tokens (`A08485E8...1A72`) and exact `HOLOSTATE BRANCH B`. Prompt-progress zero sentinels were excluded from generation-token identity. Direct client TTFT fields were contaminated by those progress frames; reconstructed pre-generation times were 206.973 seconds full replay and 2.822 seconds identical reuse.
+- All A trajectories had the same 598 cleaned greedy token IDs (`0F23FD3C...AEF5`), raw output hash, legacy pre-final-segment hash, and exact `HOLOSTATE BRANCH A`. All B trajectories had the same 551 tokens (`A08485E8...1A72`) and exact `HOLOSTATE BRANCH B`. The pre-final hash does not prove a `reasoning_content` channel. Prompt-progress zero sentinels were excluded from generation-token identity. Direct client TTFT fields were contaminated by those progress frames; reconstructed pre-generation times were 206.973 seconds full replay and 2.822 seconds identical reuse.
 - Interleaved A/B/A/B served every correct branch with 7,387 cached and 132 fresh tokens. Carrier reuse count was 7 including identical, branch, multiplexed, and post-restore requests.
 - Slot save wrote 8,069 tokens / 231,311,464 bytes in 296.004 ms (745.246 MiB/s), SHA-256 `A81509419942EED3C57647E7C0BDE64880EBF6AF9391CC62A25D1124F22D0870`. In-process restore read/restored the same bytes/tokens in 104.682 ms and the following A remained exact with 7,387 cached tokens. Because process-local RAM/checkpoint entries remained live, attribution to the slot file alone is inconclusive.
 - Restart restore used the same binary, model, configuration, prefix, and slot hash; it reported 8,069 restored tokens / 231,311,464 bytes in 485.950 ms, but prompt progress then reported cache 0 and reevaluated all 7,519 tokens in 165,385.384 ms. Output remained exact, but process-restart state reuse failed.
@@ -265,7 +265,7 @@ retained lawful state: model/configuration/prefix-identity-bound live cache entr
 - [x] The original protected controller could not commit, push, merge, promote, terminate stable, modify stable source, or mutate the model; its CPU-only safety suite passed 15 tests.
 - [x] Two immutable canonical root identities warmed within the 4K-8K band. Root A: 32,164 bytes, SHA-256 `F28DB3E15EA34510432B7367C621ABE15B5A9DA9B0A1F8189556F4ACE86FDBAA`, token-ID SHA-256 `71363A1309DC5692AF1DB8BE99E3F0EE031C966A58A8BAE49F6CE7096E7C7CC2`, 7,150 rendered tokens. Root B: 21,714 bytes, SHA-256 `0EF151D9DD57D176E92E393686A548FBED01967AF6E4F0B5070F5B6F002D7CB8`, token-ID SHA-256 `CE5A629803ACA104F2C2FE869422E34554FE1663B724496EA4B15EA92526C728`, 4,879 rendered tokens. Both used chat-template SHA-256 `A4AEE8AFCF2E0711942CF848899BE66016F8D14A889FF9EDE07BCA099C28F715`.
 - [ ] The fixed `A1, B1, A2, B2, A1, B1` sequence did not complete. A1 stopped the sequence on its deterministic output gate; B1/A2/B2 were not attempted.
-- [ ] Exact same-branch greedy-token/reasoning hashes and cross-root isolation were not established. The failed A1 stream hashes were not retained by the local result.
+- [ ] Exact same-branch greedy-token/pre-final raw-segment hashes and cross-root isolation were not established. The failed A1 stream hashes were not retained by the local result.
 - [x] A1 demonstrated performance reuse before the quality stop. Server log: 7,165 logical prompt tokens, 148 fresh, inferred 7,017 reused, 3,685.92 ms prompt time at 40.15 prompt TPS, 768 completion tokens at 13.91 decode TPS, and 58,884.30 ms total. Against Root A's 159,051.535 ms warm, observed prompt-time amplification was 43.151x and fresh prompt ratio was 2.066%.
 - [ ] A1 did not become an accepted catalytic branch. It consumed all 768 allowed completion tokens and failed the combined exact-final/reasoning gate, so accepted cumulative avoided evaluations remain zero. The 7,017 avoided evaluations are performance-only evidence with the quality gate open.
 - [x] Sidecar PID, listener PID, and exact WDDM PID were all `42076`; 139 valid samples peaked at 2,362,318,848 bytes (2,252.88 MiB) with no telemetry failure. Warm private-memory deltas were 194,699,264 bytes for A and 287,465,472 bytes for B, below the 4,096 MiB host-cache bound.
@@ -289,12 +289,12 @@ No literal infinity claim is made. Accepted cumulative avoided evaluations, acce
 
 ```text
 HoloState-v1 reuse mechanism: succeeded
-HoloState-v1 operational quality gate: no sufficient tested budget through 2048
-Current action: stop without retry, budget selection, or validation-v2
+HoloState-v1 raw /completion gate: no literal final marker through 2048
+Current action: prepare separated HoloState-v1.1 chat-message protocol without running it
 HoloState-v2 persistence: separate future intervention
 ```
 
-The prior 768-token failure is executed lower-bound evidence and was not rerun. The one-shot protected qualification then tested ascending candidates `1024, 1280, 1536, 2048` with reasoning `auto`, nonempty reasoning, exact-final, normal-stop, and process-local-reuse gates unchanged. All four candidates exhausted their exact limits without the A1 final marker. The declared no-pass stop condition closed the run, so the selected budget remains unset and validation-v2 remains unattempted.
+The prior 768-token failure is executed lower-bound evidence and was not rerun. The one-shot protected qualification then tested ascending candidates `1024, 1280, 1536, 2048` through legacy `/completion`. All four raw streams exhausted their exact limits without the A1 final marker. `/completion` exposed one raw content stream; when the marker was absent, `parse_final_structure` labeled the whole stream as reasoning. Therefore limit exhaustion and missing final are proven, while `reasoning_content` attribution is not. The selected budget remains unset and validation-v2 remains unattempted.
 
 The repaired controller/contract and post-run prompt-progress interpretation repair passed Python compilation, 40 focused HoloState tests, 11 trace-controller tests, 9 evaluator-gate tests, and 5 WDDM tests. Complete-object contract hashing, ordered root-source hashing, stale-lock rejection, atomic one-shot claims, persisted failed-result fields, bounded worker settlement, cleanup integrity, and cached/fresh derivation are covered. Protected preflight passed before and after the live qualification.
 
@@ -302,7 +302,7 @@ The repaired controller/contract and post-run prompt-progress interpretation rep
 
 Root A warmed once as state `holostate-27f565ae760cdf96aa958ec9`: canonical prefix SHA-256 `58EAB1360FD2B56B86F12A903BB5C9AE081E8A437FB5B8AE04C40C8D1B663CEF`, token-ID SHA-256 `C8A5DA13ED1C396AA4F6BA756EEA2865AFD379E8BF8E4A950FCBABB6EC43C087`, chat-template SHA-256 `A4AEE8AFCF2E0711942CF848899BE66016F8D14A889FF9EDE07BCA099C28F715`, 8,010 rendered tokens, and 172,069.162 ms warm prompt time.
 
-| Budget | Completion | Stop | Exact final | Reasoning | Logical / cached / inferred fresh | Prompt ms | Decode TPS | Total s | Classification |
+| Budget | Completion | Stop | Exact final | Raw stream nonempty | Logical / cached / inferred fresh | Prompt ms | Decode TPS | Total s | Classification |
 |---:|---:|---|---|---|---:|---:|---:|---:|---|
 | 1024 | 1024 | limit | no | yes | 8026 / 7878 / 148 | 3598.417 | 14.544 | 74.029 | completion-budget-exhausted |
 | 1280 | 1280 | limit | no | yes | 8026 / 7878 / 148 | 4043.371 | 14.650 | 91.433 | completion-budget-exhausted |
@@ -312,6 +312,17 @@ Root A warmed once as state `holostate-27f565ae760cdf96aa958ec9`: canonical pref
 The versioned qualification result SHA-256 is `1AE79511E6C0E3C928989912A24CCDC64C5B918D6B74B1A364ACDB0A34044D94`. Its raw prompt-progress records expose `cache=7878`, `processed=8026`, and `total=8026`; because this server reports `processed` cumulatively when cache is present, the reusable fresh delta is `total - cache = 148`. This interpretation repair was tested without changing or rerunning the completed one-shot evidence.
 
 Qualification sidecar PID/listener `44652` produced 239 exact-PID WDDM samples, peaked at 2,362,318,848 bytes / 2,252.88 MiB, and had no telemetry loss. The process stopped, runtime was removed, port 9494 became free, five retirement samples were empty, stable PID `31188` was unchanged, and the original v1 marker/result hashes remained exact. No Root B, tool, cancellation, fixed, extended, or v2 request ran.
+
+### HoloState-v1.1 message-boundary protocol [PRE-AUDIT]
+
+- The evaluator now carries a separately hashed complete `holostate_worker_protocol_v1` object covering binary/model/template identities, unchanged ordered A/B sources, exact system/reference envelope text, separate user assignments, Chat Completions endpoint, cache/sampling settings, worker lanes, expected visible outputs, versioned one-shot paths, memory ceilings, isolation law, and unlock limits.
+- The controller has a non-executed `audit-worker-protocol` path for the exact sequence `warm A, fast A1, fast A2, warm B, fast B1, fast B2, deep A1` on one port-9494 sidecar. No extended proof or retry path is present.
+- Lane F sends `chat_template_kwargs.enable_thinking=false`, `max_tokens=64`, and requires exact assistant content, empty `reasoning_content`, normal stop, and measured cache reuse. Any fast failure stops.
+- Lane D sends reasoning auto at `max_tokens=768` and requires nonempty reasoning metadata, exact assistant content, normal stop, and cache reuse. Its verdict is independent and cannot erase a completed fast proof.
+- `scripts/baseline_harness.py` keeps its separate parsing of `delta.reasoning_content`, `delta.content`, and tool-call fragments and now also captures exact server-returned generated-token arrays plus prompt-progress events. The worker controller retains reasoning only as opaque presence/length/SHA-256; visible content and operational metrics remain auditable.
+- Historical validation, result, and qualification files are verified by exact SHA-256 without parsing or rewriting. The new attempt/result paths are versioned and remain unclaimed before the audit.
+- Focused pre-audit verification passes: 60 HoloState tests, 11 trace-controller tests, 9 evaluator-gate tests, 5 WDDM tests, Python compilation, and protected preflight. A template/tokenizer-only stable-server check rendered Root A at 7,806 tokens and Root B at 4,630, both inside the locked 4K-8K bounds; it generated no model output and claimed no audit marker.
+- A fast pass may unlock only `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`. `PROCESS_LOCAL_HOLOSTATE_AVAILABLE` and `RESTART_PERSISTENT_HOLOSTATE_AVAILABLE` remain locked. Automatic promotion remains disabled.
 
 ### Durable persistence boundary
 
