@@ -4,8 +4,8 @@
 **Current RSI level:** Level 1, supervised bounded RSI available
 **Baseline evidence through:** `ff2f5e3da97680dc9a0b27196a91d29afc14918e`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
-**Active bounded objective:** Checkpoint 1A tracing remains active but paused; run one parallel HoloState-0 capability audit of exact executable-prefix reuse without activating Checkpoint 2.
-**Next exact action:** inspect the existing stable binary and tracked source for context checkpoints, bounded host-RAM prefix caching, cache reuse, and slot save/restore before selecting one isolated HoloState sidecar
+**Active bounded objective:** Checkpoint 1A tracing remains active but paused; HoloState-0 proved exact process-local prefix reuse but not restart-persistent executable state.
+**Next exact action:** design one future bounded audit that isolates slot-file restore from the still-live process-local RAM/checkpoint cache and maps why restart restore reports 8,069 tokens restored yet reevaluates all 7,519 prompt tokens
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -239,11 +239,12 @@ Checkpoint 1A remains open but is paused at this boundary. Proven: trace-disable
 
 ## Immediate parallel boundary: HoloState-0 capability audit
 
-- [ ] Inspect the current binary and source for exact-prefix reuse and slot persistence capabilities.
-- [ ] Launch at most one isolated sidecar implementation on port 9494 with exact-PID WDDM control.
-- [ ] Audit 8K full replay, identical-prefix RAM reuse, branch reuse, A/B/A/B multiplexing, in-process slot restore, and conditional restart restore.
-- [ ] Classify RAM reuse, in-process restore, and restart restore separately from deterministic output and prompt-token reuse evidence.
-- [ ] Nominate `HoloState-v1 exact canonical-prefix capsule` only if exact executable hybrid-state reuse is proven.
+- [x] Case A confirmed: current binary and source expose checkpoints, bounded RAM cache, cache reuse controls, and slot save/restore; no rebuild or source import was required.
+- [x] Ran one isolated sidecar plus the single conditional restart-persistence launch on port 9494 with exact-PID WDDM control.
+- [x] Audited 7,500-token canonical content / 7,519-token rendered prompts across full replay, identical A, branch B, A/B/A/B, save/erase/restore, and restart restore.
+- [x] Process-local RAM/checkpoint reuse is exact: 7,387 tokens reused, 132 fresh, identical cleaned greedy token IDs and reasoning/final hashes, and correct A/B multiplexing.
+- [x] Slot file saved/restored 8,069 tokens and 231,311,464 bytes; in-process behavior remained exact but is confounded by the live RAM/checkpoint cache. Restart restore read the file yet processed all 7,519 prompt tokens, so restart reuse failed.
+- [x] Do not nominate `HoloState-v1 exact canonical-prefix capsule`; retain the narrower exact process-local RAM/checkpoint result until the persistence carrier is isolated.
 
 HoloState-0 is a capability audit, not a source-integration candidate. It may nominate the first Checkpoint 2 catalytic intervention, but Checkpoint 2 is not active or complete.
 

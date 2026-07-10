@@ -36,15 +36,15 @@ The protected in-process control repair succeeded. Telemetry-only established ex
 
 Checkpoint 1A preserves proven trace-disabled compile-out, bounded aggregation, exact-PID protected launch control, and explicit truncation/drop detection. Trace overhead, a completed workload compute map, and model-runtime bottleneck selection remain unproven.
 
-The immediate parallel boundary is HoloState-0: inspect existing binary/source capability, then use at most one isolated sidecar launch to audit bounded RAM prefix reuse and slot persistence. This audit may nominate `HoloState-v1 exact canonical-prefix capsule` as the first Checkpoint 2 intervention only if deterministic evidence proves exact executable hybrid-state reuse. Checkpoint 2 remains inactive, and ordinary KV restoration must not be described as Gated DeltaNet hybrid-state restoration without exact evidence.
+HoloState-0 completed with a narrower result. Process-local RAM/checkpoint reuse avoided 7,387 of 7,519 rendered prompt evaluations while preserving exact cleaned greedy token IDs, reasoning hashes, final content, and A/B/A/B branch behavior. Save/erase/restore remained exact in-process, but the live RAM/checkpoint cache makes the slot-file carrier ambiguous. Across restart, the same identity-bound 231,311,464-byte file reported 8,069 restored tokens but avoided zero prompt evaluations. A restart-persistent Gated DeltaNet hybrid capsule is not proven, and `HoloState-v1 exact canonical-prefix capsule` is not nominated. Checkpoint 2 remains inactive.
 
 Minimum required work:
 
 ```text
-1. Keep stable and the archived trace candidate unchanged.
-2. Inspect capabilities before selecting a sidecar implementation.
-3. Use exact model identity, one slot, bounded RAM, exact-PID WDDM control, and port 9494.
-4. Classify RAM reuse, in-process restore, and restart restore separately; do not inflate the claim ceiling.
+1. Keep stable, model files, CUDA, and the archived trace candidate unchanged.
+2. Preserve the exact process-local RAM/checkpoint result without calling it a persistent capsule.
+3. Isolate slot-file behavior from live RAM cache before another persistence claim.
+4. Explain the restart boundary where restore reads 8,069 tokens but prompt progress reports cache 0 and processes 7,519.
 ```
 
 ## Unlock state

@@ -503,6 +503,8 @@ HoloState-0 asks whether already-available server facilities can preserve and re
 
 If deterministic output agreement and measured prompt-token reuse prove exact executable hybrid-state reuse, HoloState-0 may nominate `HoloState-v1 exact canonical-prefix capsule` as the first Checkpoint 2 candidate. Otherwise it records the narrower capability or failure boundary without changing the claim ceiling.
 
+HoloState-0 result: the existing hybrid runtime exactly reused 7,387 of 7,519 rendered prompt tokens across identical and A/B/A/B process-local branches, with identical greedy token IDs and reasoning/final output per branch. A 231,311,464-byte slot file restored 8,069 tokens in-process, but live RAM/checkpoint state confounds attribution to the file. After process restart the same file was read successfully yet all 7,519 prompt tokens were reevaluated. Therefore only exact process-local RAM/checkpoint reuse is proven; a restart-persistent hybrid capsule is not, and Checkpoint 2 remains inactive.
+
 ### External architecture leads, not dependencies
 
 Source: `alesha-pro/llama.cpp`, `ds4-longctx` branch. Use: provenance and candidate hypotheses only. Prohibition: no wholesale merge, source replacement, or DeepSeek-specific code assumption.

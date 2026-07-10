@@ -37,6 +37,9 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Authorized one isolated port-9494 sidecar audit using the exact locked model, one slot, bounded host RAM, and protected exact-PID WDDM control.
 - The audit separates repeated-prefix RAM reuse, branch multiplexing, in-process slot restore, and restart restore. Deterministic output plus prompt-token reuse evidence is required for an exact classification.
 - Ordinary KV save/restore cannot establish Gated DeltaNet hybrid-state persistence by itself. Stable, CUDA, inference kernels, model files, and the archived trace candidate remain outside scope.
+- Case A was present in the existing binary/source. A 7,519-token rendered prompt replayed fully once, then exact process-local A/B branches reused 7,387 tokens and evaluated only a 132-token checkpoint gap with identical per-branch greedy token and reasoning/output hashes.
+- A 231,311,464-byte slot file saved and restored 8,069 tokens. In-process behavior stayed exact but cannot be attributed to the file separately from live RAM/checkpoint entries. After the declared restart, the same file restored successfully at the endpoint but the model reevaluated all 7,519 prompt tokens.
+- The retained result is exact process-local RAM/checkpoint reuse, not a restart-persistent hybrid capsule. No 40K audit, source integration, stable change, Checkpoint 2 activation, or automatic promotion occurred.
 
 ### Checkpoint 1A first instrumentation candidate
 
