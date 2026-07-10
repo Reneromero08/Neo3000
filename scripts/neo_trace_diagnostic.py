@@ -11,6 +11,7 @@ import argparse
 import json
 import os
 import shutil
+import statistics
 import subprocess
 import sys
 import time
@@ -281,16 +282,27 @@ def active_failure(process: Any, sampler: CandidateVramSampler, candidate_port: 
 def report_summary(report: dict[str, Any]) -> dict[str, Any]:
     summary = report.get("summary", {})
     measurements = report.get("measurements", [])
+    prompt_rates = [item.get("timings", {}).get("prompt_per_second") for item in measurements]
+    prompt_rates = [float(value) for value in prompt_rates if isinstance(value, (int, float))]
+    summary = {**summary, "median_prompt_tokens_per_second": statistics.median(prompt_rates) if prompt_rates else None}
     return {
         "summary": summary,
         "exact_response_passed": report.get("exact_response_passed"),
         "measurement_count": len(measurements),
         "measurements": [{
-            "status": item.get("status"),
+            "http_status": item.get("http_status"),
             "content": item.get("content"),
             "reasoning_present": bool(item.get("reasoning_content")),
+            "completion_tokens": item.get("completion_tokens"),
+            "prompt_tokens": item.get("prompt_tokens"),
+            "cached_prompt_tokens": item.get("cached_prompt_tokens"),
             "reported_tokens_per_second": item.get("reported_tokens_per_second"),
-            "time_to_first_token_ms": item.get("time_to_first_token_ms"),
+            "prompt_tokens_per_second": item.get("timings", {}).get("prompt_per_second"),
+            "time_to_first_event_s": item.get("time_to_first_event_s"),
+            "time_to_first_token_s": item.get("time_to_first_token_s"),
+            "time_to_first_content_s": item.get("time_to_first_content_s"),
+            "total_time_s": item.get("total_time_s"),
+            "finish_reason": item.get("finish_reason"),
         } for item in measurements],
     }
 
