@@ -68,6 +68,8 @@
       "scripts/build_cuda.ps1",
       "scripts/build_candidate.ps1",
       "scripts/neo_loop.py",
+      "scripts/neo_trace_diagnostic.py",
+      "scripts/test_trace_diagnostic.py",
       ".gitignore",
       "TASKS.md",
       "AGENTS.md",
@@ -79,7 +81,8 @@
     ]
   },
   "controller_files": [
-    "scripts/neo_loop.py"
+    "scripts/neo_loop.py",
+    "scripts/neo_trace_diagnostic.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"

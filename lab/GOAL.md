@@ -34,14 +34,14 @@ The schema-v1 candidate is archived at `evidence/checkpoint1a-trace-v1` commit `
 
 The schema-v2 diagnostic stopped before inference because no exact candidate-PID WDDM attribution row was available after model readiness. Its initialization artifact was bounded and explicit, but no matched cold or warm workload ran; overhead and model-runtime bottleneck selection remain unmeasured. Do not rerun this candidate in the current task.
 
-The next future supervised objective is to integrate a proven in-process exact-PID sampler into diagnostic launch control and reject launch completion until candidate PID, listener PID, and attributed WDDM instances agree. This is not authorization for optimization, speculative or catalytic inference, autonomous RSI, merging, or automatic promotion.
+The stable-side diagnostic controller now reuses the proven in-process exact-PID sampler and rejects readiness unless candidate process, health, listener PID, attributed WDDM instances, and the 6000 MiB ceiling agree. Its controller and CPU-only safety suite are protected by the evaluator lock. The next action is one telemetry-only trace-binary launch; matched workloads remain conditional on that launch passing. This is not authorization for optimization, speculative or catalytic inference, autonomous RSI, merging, or automatic promotion.
 
 Minimum required work:
 
 ```text
 1. Keep the stable server and stable worktree unchanged.
 2. Preserve schema-v2 bounded aggregation, explicit placement reasons, and proven trace-disabled compile-out behavior.
-3. Reuse a proven exact-PID sampler in the diagnostic control process rather than an unverified detached monitor.
+3. Use the protected diagnostic controller and require its telemetry-only trace-binary launch to pass before inference.
 4. Complete matched cold and warm workloads only after exact attribution is live and stable.
 ```
 

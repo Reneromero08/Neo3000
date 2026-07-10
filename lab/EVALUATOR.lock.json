@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "ff2f5e3da97680dc9a0b27196a91d29afc14918e",
+  "baseline_source_commit": "50df4f3a512c0419d207751a80d79c84da4efbce",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -21,16 +21,17 @@
     "ubatch": 128
   },
   "controller_files": [
-    "scripts/neo_loop.py"
+    "scripts/neo_loop.py",
+    "scripts/neo_trace_diagnostic.py"
   ],
-  "evaluator_sha256": "6031e8622e882df21c3abab77d383b790fd7f7d14da4d9f915e96c9d6293ba47",
+  "evaluator_sha256": "f93655f9b1c53cb3a28b49380c981d511a6cd1012832c99462e7123743c6b5a8",
   "gate_definition_hashes": {
     "reasoning-preservation-v1": "750a7b0041c13b4407f5d373069f6bcb3fe1d0701504f7bae5bb7c64fbc5d5fe",
     "repeat-final-content-v1": "2737d28ec7947d841bf6c5e07221f6ac453f98150a83b9a9c29c43da1a4b7460",
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-10T02:26:34.483216+00:00",
+  "generated_at": "2026-07-10T02:53:43.206748+00:00",
   "model_identity": {
     "alias": "agents-a1",
     "architecture": "qwen35moe",
@@ -42,19 +43,21 @@
     ".gitignore": "9af6447e5ed5e79e7ce3f4374aab3ef5694ff38376e5a3df080378817f5e206c",
     "AGENTS.md": "d0c4f2292f8e89f94ff79fe7b1a3b678307781f83fdbbab398abc7fbfd79b8e5",
     "ROADMAP.md": "1949cc00b732941e1421a6bca1880587eac16934b8f6f4e3e6f043761ede7f74",
-    "TASKS.md": "bd9cbf33256828245d7691502059e2c56d9cbc43ea58d0a85b271fb2ec9e8094",
+    "TASKS.md": "fa053778decaf3d14562b4e3345e5cf9f0f512f1ed130b2d2ecd19c8c64e83c3",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "872fb8b7f8e6845b47bbae3bc56f9d1290718289bb42c7367ea3e0fc9c64eac2",
-    "lab/EVALUATOR.json": "6031e8622e882df21c3abab77d383b790fd7f7d14da4d9f915e96c9d6293ba47",
-    "lab/GOAL.md": "52acf327128366bce8337bbee1975f081427b335654d627a04df35882514c9ed",
+    "lab/CHECKPOINT.md": "5da5e904d027399f472693f1e4eaaaee86a97868afc07c6ad888cc186762b027",
+    "lab/EVALUATOR.json": "f93655f9b1c53cb3a28b49380c981d511a6cd1012832c99462e7123743c6b5a8",
+    "lab/GOAL.md": "9377d2f94a7f02c67333538da372da01e159c2578cb370a92d4b20a537a0cc7a",
     "scripts/baseline_harness.py": "78416aac1c35cc001f2481e4814342ed9bce8393c240c87986442173ee8c31dc",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "7b45a9d194962484c4b41b243928eb053386cea2467ff929735d0634f0ba0600",
     "scripts/context_matrix.py": "92ee85869afc2b87d98cd70f06b5e0ddfdb481ae89eb65561154dfcab0cae1ed",
     "scripts/neo_loop.py": "ca52cc8d850e178a55a5b750da6d5a75ba67b92296e576f10cde1fd11ed39d08",
+    "scripts/neo_trace_diagnostic.py": "aa0a0739472f926917ec91bdab89663e7adb6d91dd036595ebc9bb45ac03f19c",
     "scripts/rolling_decode.py": "29c6e23e226a13cebbb3eedaec9339765db86a69893898ff4ea86971916e290a",
     "scripts/run_candidate.ps1": "04b28fca1d2aae754bb3bca0f1efcb3f8166a8b2fd38da2a37252affb70394a0",
-    "scripts/run_server.ps1": "831913a346668b82c58205742b5e45840571c96dde1dbf28d93807726617f0a4"
+    "scripts/run_server.ps1": "831913a346668b82c58205742b5e45840571c96dde1dbf28d93807726617f0a4",
+    "scripts/test_trace_diagnostic.py": "4f4aa6f24befa73add79729b014176e6df12a638fb3f418d5e8b70c7e0eb6ba0"
   },
   "protected_paths": [
     "lab/EVALUATOR.json",
@@ -67,6 +70,8 @@
     "scripts/build_cuda.ps1",
     "scripts/build_candidate.ps1",
     "scripts/neo_loop.py",
+    "scripts/neo_trace_diagnostic.py",
+    "scripts/test_trace_diagnostic.py",
     ".gitignore",
     "TASKS.md",
     "AGENTS.md",

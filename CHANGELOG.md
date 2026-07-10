@@ -28,7 +28,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 
 ### Pending
 
-- Checkpoint 1A remains active: a future supervised candidate must integrate a proven in-process exact-PID sampler into diagnostic launch control before matched cold/warm diagnostics.
+- Checkpoint 1A remains active: run the protected telemetry-only trace-binary launch before any matched cold/warm diagnostic.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
 ### Checkpoint 1A first instrumentation candidate
@@ -47,6 +47,13 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - The single normal cycle `neo-loop-20260710T021421` returned `reviewable-accept`; every immutable gate passed, warm median was 12.823 TPS, exact-PID WDDM peak was 2,196.88 MiB, and normal binaries contained no trace-writer strings.
 - The trace-enabled launch used candidate/listener PID `47792`, but produced no accepted exact-PID WDDM row before inference. The diagnostic stopped before cold or warm workloads and was not rerun. Its 2.75 MB initialization-only artifact was bounded, valid, untruncated, and reported no drops, but it cannot measure overhead or support a runtime bottleneck claim.
 - Candidate and telemetry retirement checks passed; stable PID `31188` remained healthy. No merge or promotion occurred.
+
+### Checkpoint 1A protected diagnostic control
+
+- Added a stable-side controller that can write only ignored candidate-local diagnostic artifacts and can stop only the exact candidate process object it launches.
+- Candidate readiness is the conjunction of process liveness, health, exact listener ownership, exact-PID WDDM attribution, and the existing 6000 MiB ceiling; sampling begins immediately after launch and remains active through teardown.
+- Added monotonic, non-overlapping startup/workload/teardown windows, candidate CPU-time capture, incremental schema-v2 trace bounds, and post-teardown stable/listener/telemetry retirement evidence.
+- Protected the controller and its CPU-only safety suite in `lab/EVALUATOR.json` and the evaluator lock. No candidate source, stable inference logic, promotion path, or evaluator gate value changed.
 
 ### Level 1 architecture integrated
 

@@ -174,6 +174,7 @@ Claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. Level 1 is an operational 
 - [x] Trace-disabled normal build compiles calls out under undefined `NEO_COMPUTE_TRACE` and preserves behavior: the only supervised cycle, `neo-loop-20260710T012311`, returned `reviewable-accept` at candidate `3e3023fc389a608ec5a5806eb8e1a50a801486d5`.
 - [x] Separate `build/candidate-trace` diagnostic build emitted monotonic schema-v1 events to ignored local artifacts.
 - [x] Exactly one supervised candidate cycle ran; transport, reasoning, tool, cancellation, repeat, warm-performance, WDDM, cleanup, stable listener, and protected-hash gates passed. Trace-disabled warm median was 16.978 TPS and exact-PID WDDM peak was 2,196.88 MiB across 84 samples.
+- [x] Stable-side diagnostic control is protected: exact-PID WDDM sampling starts immediately after launch, readiness is a strict process/health/listener/attribution/memory conjunction, phase windows are monotonic, and cleanup can target only the launched candidate PID. CPU-only safety tests cover delayed attribution, misses, grace expiry, listener mismatch, process exit, telemetry loss, memory ceiling, cleanup ownership, stable mismatch, and phase ordering.
 - [ ] Matched cold and warm diagnostics quantify trace overhead and produce an observed/inferred/not-yet-instrumented compute map.
 
 #### First trace diagnostic: STOPPED / INCONCLUSIVE

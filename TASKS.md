@@ -5,7 +5,7 @@
 **Baseline evidence through:** `ff2f5e3da97680dc9a0b27196a91d29afc14918e`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Active bounded objective:** Checkpoint 1A: Create and validate one optional compute-map trace substrate, then use it to localize actual backend placement and the first measurable execution costs.
-**Next exact action:** prepare one future supervised Checkpoint 1A diagnostic-control candidate that reuses a proven in-process exact-PID sampler and refuses server launch completion until candidate PID, listener PID, and attributed WDDM instances agree
+**Next exact action:** use the protected in-process diagnostic controller for one telemetry-only trace-binary launch; proceed to matched trace-disabled and trace-enabled workloads only if exact candidate PID, listener PID, WDDM attribution, memory, cleanup, and stable-integrity gates all pass
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -226,6 +226,7 @@ Use the unlocked supervised substrate; stable remains untouched while instrument
 - [x] Implement bounded schema-v2 aggregation and explicit placement reasons at candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, archived at `evidence/checkpoint1a-trace-v2`.
 - [x] Focused aggregation, compile-out, limit, truncation, placement-reason, exact-PID, prefix-collision, listener-mismatch, grace, and telemetry-loss tests pass.
 - [x] The single v2 trace-disabled cycle `neo-loop-20260710T021421` returned `reviewable-accept`; all immutable gates passed, normal binaries contained no trace-writer strings, and no promotion occurred.
+- [x] Protect `scripts/neo_trace_diagnostic.py` and its CPU-only safety suite in the evaluator lock; the controller starts exact-PID WDDM sampling immediately after candidate launch and makes readiness depend on process, health, listener, attribution, and memory agreement.
 - [ ] Measure instrumentation overhead.
 
 First diagnostic evidence: the cold trace produced 2,407,857 events and 895,639,047 bytes over 449.13 seconds, reached only approximately 1.60 decode TPS versus 14.878 TPS trace-disabled, and did not complete the 768-token request. Overhead is classified `too high`, so matched warm measurements remain incomplete. PID telemetry was invalid because the sampler pattern matched 31-33 GPU-process instances instead of the exact candidate PID; no trace-enabled WDDM peak is claimable. The diagnostic stopped without a rerun.
@@ -287,4 +288,4 @@ Second diagnostic evidence: bounded schema-v2 initialization emitted 2,796 aggre
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: in a future supervised cycle, integrate a proven in-process exact-PID WDDM monitor into diagnostic launch control and prove attribution before any inference workload.
+- [ ] Next task: run the protected telemetry-only trace-binary launch and stop without inference if any attribution, memory, listener, cleanup, or stable-integrity condition rejects.
