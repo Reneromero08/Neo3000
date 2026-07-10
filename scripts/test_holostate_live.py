@@ -128,7 +128,7 @@ class StaticCapabilityTests(unittest.TestCase):
             set(subparsers.choices),
             {
                 "start", "stop", "status", "warm", "branch", "list", "evict",
-                "validate", "qualify-budget", "validate-v2", "audit-worker-protocol",
+                "audit-worker-protocol-v2",
             },
         )
 
@@ -310,6 +310,12 @@ class WorkerProtocolTests(unittest.TestCase):
             http_status=200,
             event_count=5,
             generated_token_ids=[1, 2, 3],
+            generated_token_count=3,
+            nonempty_token_array_event_count=3,
+            empty_token_array_event_count=1,
+            token_merge_modes={"initial": 1, "delta-append": 2, "ignored-empty": 1},
+            completion_token_count_match=True,
+            generated_token_sha256=harness.token_array_sha256([1, 2, 3]),
             prompt_progress=[{"total": 100, "cache": 80, "processed": 100, "time_ms": 10.0}],
         )
 
@@ -362,11 +368,17 @@ class WorkerProtocolTests(unittest.TestCase):
         return {
             "assistant_content": {"text": content},
             "reasoning_content": {"present": reasoning},
+            "tool_calls": [],
             "expected_content": content,
             "http_status": 200,
             "finish_reason": "stop",
             "prompt_token_identity_matches": True,
-            "completion_token_ids": {"complete": True, "sha256": "C" * 64},
+            "completion_token_ids": {
+                "complete": True,
+                "count": 3,
+                "completion_token_count_match": True,
+                "sha256": "C" * 64,
+            },
             "logical_prompt_tokens": 100,
             "cached_prompt_tokens": cached,
             "fresh_prompt_tokens": 100 - cached,
@@ -399,6 +411,21 @@ class WorkerProtocolTests(unittest.TestCase):
         self.assertEqual(
             holo.classify_worker_measurement(item, self.protocol["lanes"]["F"]),
             "reuse-failed",
+        )
+
+    def test_missing_prompt_usage_is_instrumentation_not_capability_reject(self) -> None:
+        item = self.worker_result(content="HOLOSTATE FAST A", reasoning=False)
+        item["logical_prompt_tokens"] = None
+        classification = holo.classify_worker_measurement(item, self.protocol["lanes"]["F"])
+        self.assertEqual(classification, "prompt-usage-missing")
+        self.assertTrue(holo.is_worker_instrumentation_failure(classification))
+
+    def test_unexpected_tool_calls_reject_exact_content_gate(self) -> None:
+        item = self.worker_result(content="HOLOSTATE FAST A", reasoning=False)
+        item["tool_calls"] = [{"function": {"name": "unexpected"}}]
+        self.assertEqual(
+            holo.classify_worker_measurement(item, self.protocol["lanes"]["F"]),
+            "unexpected-tool-calls",
         )
 
     def test_complete_generated_token_evidence_is_mandatory(self) -> None:
@@ -482,6 +509,360 @@ class WorkerProtocolTests(unittest.TestCase):
             baseline,
             neo_loop.holostate_worker_protocol_evidence_hash(evaluator),
         )
+
+
+class WorkerProtocolV2ParserTests(unittest.TestCase):
+    def merge_sequence(self, incoming: list[list[int] | None]) -> tuple[list[int], list[str]]:
+        accumulated: list[int] = []
+        modes: list[str] = []
+        for item in incoming:
+            accumulated, mode = harness.merge_generated_token_ids(accumulated, item)
+            modes.append(mode)
+        return accumulated, modes
+
+    def test_delta_arrays_accumulate_and_final_empty_is_ignored(self) -> None:
+        tokens, modes = self.merge_sequence([[11], [12], [], [13]])
+        self.assertEqual(tokens, [11, 12, 13])
+        self.assertEqual(modes[-2], "ignored-empty")
+
+    def test_cumulative_arrays_replace_only_with_extensions(self) -> None:
+        tokens, modes = self.merge_sequence([[11], [11, 12], [11, 12, 13], []])
+        self.assertEqual(tokens, [11, 12, 13])
+        self.assertEqual(modes[1:3], ["cumulative-extension", "cumulative-extension"])
+
+    def test_duplicate_or_shorter_cumulative_snapshot_does_not_duplicate(self) -> None:
+        tokens, modes = self.merge_sequence([[11, 12], [11], [11, 12]])
+        self.assertEqual(tokens, [11, 12])
+        self.assertEqual(modes[1], "duplicate-or-shorter-snapshot")
+        self.assertEqual(modes[2], "cumulative-extension")
+
+    def test_multi_token_delta_arrays_append(self) -> None:
+        tokens, _ = self.merge_sequence([[11, 12], [13, 14], []])
+        self.assertEqual(tokens, [11, 12, 13, 14])
+
+    def test_absent_array_preserves_evidence(self) -> None:
+        tokens, mode = harness.merge_generated_token_ids([11, 12], None)
+        self.assertEqual(tokens, [11, 12])
+        self.assertEqual(mode, "absent")
+
+    def test_ambiguous_repeated_delta_cannot_silently_pass_completion_count(self) -> None:
+        tokens, _ = self.merge_sequence([[42], [42]])
+        self.assertEqual(tokens, [42])
+        self.assertNotEqual(len(tokens), 2)
+
+    def test_malformed_token_array_rejects(self) -> None:
+        with self.assertRaises(harness.HarnessError):
+            harness.extract_generated_token_ids({"__verbose": {"tokens": [11, {"bad": 12}]}})
+        with self.assertRaises(harness.HarnessError):
+            harness.extract_generated_token_ids({"__verbose": {"tokens": "11"}})
+        with self.assertRaises(harness.HarnessError):
+            harness.extract_generated_token_ids({"__verbose": {"tokens": [True]}})
+        with self.assertRaises(harness.HarnessError):
+            harness.extract_generated_token_ids({"__verbose": {"tokens": [11.5]}})
+
+    def test_stream_ledger_metadata_never_contains_reasoning_text(self) -> None:
+        secret = "hidden reasoning must not persist"
+        record = harness.stream_ledger_record(
+            {
+                "__verbose": {"tokens": [11]},
+                "usage": {"unexpected_text": secret, "completion_tokens": 1},
+                "prompt_progress": {"unexpected_text": secret, "processed": 1},
+                "choices": [{"delta": {"content": "visible", "reasoning_content": secret}}],
+            },
+            event_index=1,
+            request_label="test",
+            event_token_ids=[11],
+            merge_mode="initial",
+        )
+        encoded = json.dumps(record, sort_keys=True)
+        self.assertNotIn(secret, encoded)
+        self.assertEqual(record["reasoning_fragment_length"], len(secret))
+        self.assertEqual(len(record["reasoning_fragment_sha256"]), 64)
+        self.assertTrue(record["usage"]["unexpected_text"]["text_redacted"])
+
+    def test_bounded_ledger_rejects_before_crossing_record_ceiling(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            with mock.patch.object(holo, "STATE_ROOT", root):
+                ledger = holo.BoundedStreamLedger(root / "stream.jsonl", max_bytes=4096, max_records=1)
+                recorder = ledger.recorder("canary", 1)
+                recorder({"event_index": 1})
+                with self.assertRaises(holo.NeoLoopError):
+                    recorder({"event_index": 2})
+                ledger.close()
+            self.assertEqual(ledger.record_count, 1)
+            self.assertEqual(ledger.failure, "stream-ledger-ceiling-exceeded")
+
+
+class WorkerProtocolV2ContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.evaluator = holo.load_json(holo.EVALUATOR_PATH)
+        cls.protocol = holo.validate_worker_protocol_v2(
+            cls.evaluator["holostate_worker_protocol_v2"]
+        )
+
+    def measurement(self, *, count_match: bool = True) -> SimpleNamespace:
+        token_ids = [11, 12, 13]
+        return SimpleNamespace(
+            prompt_tokens=10,
+            cached_prompt_tokens=0,
+            completion_tokens=3,
+            reported_tokens_per_second=20.0,
+            total_time_s=1.0,
+            content="TOKEN ARRAY CANARY",
+            reasoning_content="",
+            tool_calls=[],
+            finish_reason="stop",
+            time_to_first_event_s=0.1,
+            time_to_first_token_s=0.2,
+            time_to_first_content_s=0.3,
+            timings={"prompt_ms": 100.0, "prompt_per_second": 100.0},
+            http_status=200,
+            event_count=4,
+            generated_token_ids=token_ids,
+            generated_token_count=3,
+            nonempty_token_array_event_count=3,
+            empty_token_array_event_count=1,
+            token_merge_modes={"initial": 1, "delta-append": 2, "ignored-empty": 1},
+            completion_token_count_match=count_match,
+            generated_token_sha256=harness.token_array_sha256(token_ids),
+            prompt_progress=[],
+        )
+
+    def run_canary(self, measurement: SimpleNamespace) -> dict:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            with mock.patch.object(holo, "STATE_ROOT", root):
+                ledger = holo.BoundedStreamLedger(root / "stream.jsonl", max_bytes=8192, max_records=10)
+
+                def fake_stream(*args, **kwargs):
+                    kwargs["event_recorder"]({
+                        "event_index": 1,
+                        "request_label": "parser-canary",
+                        "token_array_length": 1,
+                        "token_array_sha256": "A" * 64,
+                        "token_array_empty": False,
+                        "merge_mode": "initial",
+                        "content_fragment_length": 0,
+                        "content_fragment_sha256": "B" * 64,
+                        "reasoning_fragment_length": 0,
+                        "reasoning_fragment_sha256": "C" * 64,
+                        "tool_fragment_present": False,
+                    })
+                    return measurement
+
+                with mock.patch.object(holo, "render_messages", return_value="rendered"), mock.patch.object(
+                    holo, "tokenize", return_value=list(range(10))
+                ), mock.patch.object(holo, "stream_completion", side_effect=fake_stream):
+                    result = holo.run_parser_canary(self.protocol, ledger, request_sequence_index=1)
+                ledger.close()
+                return result
+
+    def test_parser_canary_passes_only_with_complete_token_evidence(self) -> None:
+        result = self.run_canary(self.measurement())
+        self.assertTrue(result["accepted"])
+        self.assertTrue(result["completion_token_count_match"])
+        self.assertEqual(result["generated_token_count"], 3)
+
+    def test_completion_count_mismatch_is_instrumentation_failure(self) -> None:
+        result = self.run_canary(self.measurement(count_match=False))
+        self.assertFalse(result["accepted"])
+        self.assertEqual(result["finish_classification"], "stream-token-count-mismatch")
+
+    def test_failed_canary_does_not_persist_reasoning_token_ids(self) -> None:
+        measurement = self.measurement()
+        measurement.reasoning_content = "hidden"
+        result = self.run_canary(measurement)
+        self.assertFalse(result["accepted"])
+        self.assertIsNone(result["generated_token_ids"])
+        self.assertNotIn("text", result["reasoning_content"])
+
+    def test_v2_assignments_are_distinct_with_repeat_only_sequence(self) -> None:
+        assignments = self.protocol["lanes"]["F"]["assignments"]
+        self.assertNotEqual(assignments["A1"]["expected_content"], assignments["A2"]["expected_content"])
+        self.assertNotEqual(assignments["B1"]["expected_content"], assignments["B2"]["expected_content"])
+        self.assertEqual(
+            self.protocol["one_shot"]["sequence"],
+            [
+                "parser-canary", "warm-A", "warm-B", "fast-A1", "fast-B1",
+                "fast-A2", "fast-B2", "fast-A1-repeat", "fast-B1-repeat",
+                "deep-A1", "stop",
+            ],
+        )
+
+    def test_warm_instrumentation_failure_never_rejects_fast_capability(self) -> None:
+        item = {
+            "finish_classification": "stream-token-count-mismatch",
+            "resource_gate": {"passed": True},
+        }
+        self.assertEqual(holo.classify_warm_failure(item), "warm-token-instrumentation-failed")
+
+    def test_v2_complete_object_hash_changes_on_parser_law_mutation(self) -> None:
+        baseline = neo_loop.holostate_worker_protocol_v2_hash(self.evaluator)
+        evaluator = copy.deepcopy(self.evaluator)
+        evaluator["holostate_worker_protocol_v2"]["token_accumulation"][
+            "empty_arrays_preserve_accumulated_evidence"
+        ] = False
+        self.assertNotEqual(baseline, neo_loop.holostate_worker_protocol_v2_hash(evaluator))
+
+    def test_fast_v2_repeat_determinism_compares_repeats_not_distinct_branches(self) -> None:
+        def item(label: str, assignment: str, root: str, content: str, tokens: list[int]) -> dict:
+            content_hash = hashlib.sha256(content.encode()).hexdigest().upper()
+            token_hash = harness.token_array_sha256(tokens)
+            return {
+                "request_label": label,
+                "assignment_name": assignment,
+                "root_name": root,
+                "state_id": f"state-{root}",
+                "accepted": True,
+                "assistant_content": {"text": content, "sha256": content_hash},
+                "reasoning_content": {"present": False},
+                "finish_reason": "stop",
+                "completion_token_ids": {"ids": tokens, "sha256": token_hash},
+                "system_message_sha256": root * 64,
+            }
+
+        results = [
+            item("fast-A1", "A1", "A", "HOLOSTATE FAST A1", [1]),
+            item("fast-B1", "B1", "B", "HOLOSTATE FAST B1", [2]),
+            item("fast-A2", "A2", "A", "HOLOSTATE FAST A2", [3]),
+            item("fast-B2", "B2", "B", "HOLOSTATE FAST B2", [4]),
+            item("fast-A1-repeat", "A1", "A", "HOLOSTATE FAST A1", [1]),
+            item("fast-B1-repeat", "B1", "B", "HOLOSTATE FAST B1", [2]),
+        ]
+        gate = holo.fast_worker_v2_determinism_gate(results, self.protocol)
+        self.assertTrue(gate["passed"], gate["reasons"])
+        self.assertTrue(gate["repeat_determinism"]["A1"]["exact"])
+        self.assertTrue(gate["distinct_branches"]["A"]["passed"])
+
+    def test_v1_later_adjudication_does_not_rewrite_locked_result(self) -> None:
+        original = self.evaluator["holostate_worker_protocol_v1_evidence"]
+        adjudication = self.evaluator["holostate_worker_protocol_v1_adjudication"]
+        self.assertEqual(original["fast_verdict"], "reject")
+        self.assertEqual(adjudication["worker_protocol_v1"], "instrumentation-reject")
+        self.assertEqual(adjudication["fast_worker_capability"], "untested-inconclusive")
+        self.assertEqual(adjudication["deep_worker_capability"], "untested-inconclusive")
+
+    def test_v2_collision_refuses_before_preclaim_work(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            marker = root / "worker-protocol-attempt-v2.json"
+            marker.write_text("{}", encoding="utf-8")
+            with mock.patch.object(holo, "WORKER_PROTOCOL_V2_ATTEMPT_PATH", marker), mock.patch.object(
+                holo, "WORKER_PROTOCOL_V2_RESULT_PATH", root / "result.json"
+            ), mock.patch.object(holo, "WORKER_PROTOCOL_V2_STREAM_PATH", root / "stream.jsonl"):
+                with self.assertRaises(holo.NeoLoopError):
+                    holo.prepare_worker_v2_audit_claim(SimpleNamespace(binary="x", model="y"))
+
+    def test_global_ledger_or_resource_failure_locks_fast_availability(self) -> None:
+        base = {
+            "cleanup_gate": {"passed": True},
+            "parser_canary": {"request_label": "parser-canary", "resource_gate": {"passed": True}},
+            "warm_results": {},
+            "fast_results": [],
+            "deep_result": None,
+            "stream_ledger": {
+                "sha256": "A" * 64,
+                "failure": None,
+                "within_limits": True,
+            },
+        }
+        self.assertTrue(holo.worker_protocol_v2_final_safety(base, [])["passed"])
+        ledger_failed = copy.deepcopy(base)
+        ledger_failed["stream_ledger"]["failure"] = "stream-ledger-ceiling-exceeded"
+        self.assertFalse(holo.worker_protocol_v2_final_safety(ledger_failed, [])["passed"])
+        deep_resource_failed = copy.deepcopy(base)
+        deep_resource_failed["deep_result"] = {
+            "request_label": "deep-A1",
+            "resource_gate": {"passed": False},
+        }
+        self.assertFalse(holo.worker_protocol_v2_final_safety(deep_resource_failed, [])["passed"])
+        availability = holo.worker_availability_state("reviewable-accept", safety_passed=False)
+        self.assertEqual(availability["PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE"], "LOCKED")
+
+    def test_runner_canary_failure_claims_once_and_never_warms_root(self) -> None:
+        class FakeSidecar:
+            def __init__(self, *args, **kwargs) -> None:
+                self.process = SimpleNamespace(pid=99)
+
+            def launch(self) -> dict:
+                return {"pid": 99, "listener_pid": 99}
+
+            def guarded(self, label, operation, timeout=1200):
+                return operation()
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            attempt_path = root / "worker-protocol-attempt-v2.json"
+            result_path = root / "worker-protocol-result-v2.json"
+            stream_path = root / "worker-protocol-v2-stream.jsonl"
+            prior = {"historical": {"sha256": "A" * 64, "size_bytes": 1}}
+            preclaim = {
+                "protocol": self.protocol,
+                "lock": {
+                    "holostate_worker_protocol_v2_sha256": "B" * 64,
+                    "evaluator_sha256": "C" * 64,
+                },
+                "stable_head": "HEAD",
+                "stable_before": {42},
+                "stable_status": "",
+                "candidate_root": root,
+                "candidate_head": "CANDIDATE",
+                "candidate_status": "",
+                "binary_identity": {"sha256": holo.EXPECTED_BINARY_SHA256},
+                "model_identity": {"sha256": holo.EXPECTED_MODEL_SHA256},
+                "stable_template_sha256": self.protocol["chat_template_identity"]["sha256"],
+                "prior_before": prior,
+                "evaluator": self.evaluator,
+                "live_contract": self.evaluator["holostate_live_contract"],
+            }
+
+            def fake_git_read(path, *args):
+                if args[:2] == ("rev-parse", "HEAD"):
+                    return "HEAD" if Path(path) == holo.ROOT else "CANDIDATE"
+                if args and args[0] == "status":
+                    return ""
+                raise AssertionError(args)
+
+            canary_failure = {
+                "request_label": "parser-canary",
+                "accepted": False,
+                "finish_classification": "stream-token-count-mismatch",
+                "resource_gate": {"passed": True},
+            }
+            cleanup = {
+                "process_stopped": True,
+                "port_free": True,
+                "runtime_removed": True,
+                "wddm": {},
+                "retirement_samples": [
+                    {"available": False, "bytes": None} for _ in range(5)
+                ],
+                "stable_after": {"healthy": True, "listener_pids": [42]},
+            }
+            with mock.patch.object(holo, "STATE_ROOT", root), mock.patch.object(
+                holo, "WORKER_PROTOCOL_V2_ATTEMPT_PATH", attempt_path
+            ), mock.patch.object(holo, "WORKER_PROTOCOL_V2_RESULT_PATH", result_path), mock.patch.object(
+                holo, "WORKER_PROTOCOL_V2_STREAM_PATH", stream_path
+            ), mock.patch.object(holo, "prepare_worker_v2_audit_claim", return_value=preclaim), mock.patch.object(
+                holo, "LiveSidecar", FakeSidecar
+            ), mock.patch.object(holo, "run_parser_canary", return_value=canary_failure), mock.patch.object(
+                holo, "worker_resource_gate", return_value={"passed": True}
+            ), mock.patch.object(holo, "prepare_worker_root") as prepare_root, mock.patch.object(
+                holo, "safe_sidecar_cleanup", return_value=cleanup
+            ), mock.patch.object(holo, "git_read", side_effect=fake_git_read), mock.patch.object(
+                holo, "require_stable", return_value={42}
+            ), mock.patch.object(holo, "preserved_worker_prior_evidence", return_value=prior):
+                result = holo.run_worker_protocol_v2_audit(SimpleNamespace(binary="x", model="y"))
+            prepare_root.assert_not_called()
+            self.assertEqual(result["worker_protocol_v2"], "instrumentation-reject")
+            self.assertEqual(result["fast_requests_attempted"], 0)
+            self.assertEqual(result["fast_requests_executed"], 0)
+            self.assertEqual(result["warm_results"], {})
+            self.assertTrue(attempt_path.is_file())
+            self.assertTrue(result_path.is_file())
+            self.assertTrue(stream_path.is_file())
 
 
 class CompletionClassificationTests(unittest.TestCase):
@@ -576,6 +957,23 @@ class OneShotWorkflowTests(unittest.TestCase):
                 with self.assertRaises(holo.NeoLoopError):
                     holo.claim_runtime_json_once(marker, {"status": "running"})
 
+    def test_retired_qualification_and_validation_v2_create_no_markers(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            qualification = root / "qualification.json"
+            validation_attempt = root / "validation-attempt-v2.json"
+            validation_result = root / "validation-result-v2.json"
+            with mock.patch.object(holo, "QUALIFICATION_PATH", qualification), mock.patch.object(
+                holo, "V2_ATTEMPT_PATH", validation_attempt
+            ), mock.patch.object(holo, "V2_RESULT_PATH", validation_result):
+                with self.assertRaises(holo.NeoLoopError):
+                    holo.run_budget_qualification(SimpleNamespace(binary="x", model="y"))
+                with self.assertRaises(holo.NeoLoopError):
+                    holo.run_validation_v2(SimpleNamespace(binary="x", model="y"))
+            self.assertFalse(qualification.exists())
+            self.assertFalse(validation_attempt.exists())
+            self.assertFalse(validation_result.exists())
+
     def test_validation_v2_cannot_run_twice(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -597,8 +995,11 @@ class OneShotWorkflowTests(unittest.TestCase):
                 holo.V2_RESULT_PATH,
                 holo.WORKER_PROTOCOL_ATTEMPT_PATH,
                 holo.WORKER_PROTOCOL_RESULT_PATH,
+                holo.WORKER_PROTOCOL_V2_ATTEMPT_PATH,
+                holo.WORKER_PROTOCOL_V2_RESULT_PATH,
+                holo.WORKER_PROTOCOL_V2_STREAM_PATH,
             }),
-            7,
+            10,
         )
 
     def test_worker_protocol_cannot_run_twice(self) -> None:
@@ -708,6 +1109,27 @@ class TimeoutTests(unittest.TestCase):
 
 
 class CleanupGateTests(unittest.TestCase):
+    def test_cleanup_fallback_terminates_exact_sidecar_after_stop_error(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            runtime = Path(temp) / "runtime"
+            runtime.mkdir()
+            process = mock.Mock(pid=123)
+            process.poll.side_effect = [None, 0]
+            sidecar = SimpleNamespace(
+                stop=mock.Mock(side_effect=RuntimeError("telemetry failed")),
+                process=process,
+                log_handle=None,
+                runtime=runtime,
+            )
+            with mock.patch.object(holo, "listener_pids", return_value=set()), mock.patch.object(
+                holo, "stable_snapshot", return_value={"healthy": True, "listener_pids": [42]}
+            ):
+                cleanup = holo.safe_sidecar_cleanup(sidecar)
+            process.terminate.assert_called_once()
+            self.assertTrue(cleanup["process_stopped"])
+            self.assertTrue(cleanup["runtime_removed"])
+            self.assertIn("telemetry failed", cleanup["cleanup_error"])
+
     def valid_cleanup(self) -> dict:
         return {
             "process_stopped": True,

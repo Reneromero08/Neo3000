@@ -5,8 +5,8 @@
 **Baseline evidence through:** protocol commit `3fb00fe93d0fb22e203d8e26d86173f5e3d2ee32`; ignored worker result `72F4BA4FA256836456B5ACA47FBD4CD5DE7789EB59F222B687B677010B7869A2`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. The HoloState-v1.1 worker audit executed once and stopped at Root A warm on its complete generated-token evidence gate; Fast is `reject` and Deep is `inconclusive`.
-**Next exact action:** preserve the no-retry boundary. Any future worker-protocol version must be separately authorized and must accumulate streaming per-token arrays instead of replacing them with the final empty streaming array before claiming a new versioned marker.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. Separately authorized `holostate_worker_protocol_v2` is the current bounded Checkpoint 2 action; its only intervention is token-array accumulation plus bounded stream provenance.
+**Next exact action:** finish protected v2 tests and preflight, commit and push the locked protocol, then execute its canary-first audit exactly once without retry.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -325,10 +325,19 @@ The legacy endpoint exposed one raw content stream, and `parse_final_structure` 
 - [x] Published evaluator-locked protocol commit `3fb00fe93d0fb22e203d8e26d86173f5e3d2ee32` before claiming the marker.
 - [x] Confirmed both versioned worker paths and both validation-v2 paths were absent before the atomic one-shot claim.
 - [x] Executed the audit exactly once. It stopped at `warm A` on `completion-token-evidence-missing`; no Fast, Root B, or Deep request ran.
-- [x] Classified lanes independently: `FAST_PROCESS_LOCAL_HOLOSTATE=reject`; `DEEP_PROCESS_LOCAL_HOLOSTATE=inconclusive`.
+- [x] Preserved the ignored v1 result's original locked fields: `FAST_PROCESS_LOCAL_HOLOSTATE=reject`; `DEEP_PROCESS_LOCAL_HOLOSTATE=inconclusive`.
+- [x] Added a later adjudication: protocol v1 is an instrumentation reject; Fast capability is untested/inconclusive because no Fast request ran; Deep capability is untested/inconclusive because no Deep request ran.
 - [x] Kept `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`, broader process-local, restart-persistent, and CatalyticSwarm-0 states locked.
 
 Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 768 tokens. Both use separate system/reference and user-assignment messages through `/v1/chat/completions`; old budget qualification, validation-v2, extended proof, persistence, and automatic promotion remain forbidden here.
+
+### HoloState worker protocol v2 [AUTHORIZED / NOT YET EXECUTED]
+
+- [x] Version the parser/ledger/canary contract and bind all five historical evidence hashes.
+- [x] Accumulate delta- and cumulative-style token arrays without allowing a final empty array to erase prior evidence.
+- [x] Add an 8 MiB / 50,000-record reasoning-redacted stream ledger and a thinking-disabled token-array canary.
+- [x] Pass 85 HoloState, 11 trace, 9 evaluator, and 5 WDDM tests plus compilation, root bounds, and protected preflight.
+- [ ] Commit and push the exact protected protocol, then run the fixed canary/warm/Fast-repeat/Deep sequence once. No automatic retry.
 
 Executed boundary:
 
@@ -359,4 +368,4 @@ Integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: preserve the completed no-retry result. A future separately authorized worker-protocol version may repair streaming token-array accumulation and claim a new versioned marker; the current v1 attempt must not be rerun. Validation-v2 and HoloState-v2 durability remain unchanged.
+- [ ] Next task: close the protected v2 preflight, push its protocol commit, then execute `audit-worker-protocol-v2` exactly once. V1, qualification, validation-v2, and durability remain closed.

@@ -91,10 +91,26 @@ def holostate_contract_hash(evaluator: dict[str, Any]) -> str:
 
 
 def holostate_worker_protocol_hash(evaluator: dict[str, Any]) -> str:
-    """Hash the complete claim-bearing HoloState worker protocol as one object."""
+    """Hash the preserved complete HoloState worker protocol v1 object."""
     protocol = evaluator.get("holostate_worker_protocol_v1")
     if not isinstance(protocol, dict):
         raise NeoLoopError("evaluator is missing holostate_worker_protocol_v1")
+    return sha256_bytes(canonical_json_bytes(protocol))
+
+
+def holostate_worker_protocol_v1_adjudication_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the later interpretation without changing the executed v1 record."""
+    adjudication = evaluator.get("holostate_worker_protocol_v1_adjudication")
+    if not isinstance(adjudication, dict):
+        raise NeoLoopError("evaluator is missing holostate_worker_protocol_v1_adjudication")
+    return sha256_bytes(canonical_json_bytes(adjudication))
+
+
+def holostate_worker_protocol_v2_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the complete claim-bearing HoloState worker protocol v2 object."""
+    protocol = evaluator.get("holostate_worker_protocol_v2")
+    if not isinstance(protocol, dict):
+        raise NeoLoopError("evaluator is missing holostate_worker_protocol_v2")
     return sha256_bytes(canonical_json_bytes(protocol))
 
 
@@ -103,6 +119,14 @@ def holostate_worker_protocol_evidence_hash(evaluator: dict[str, Any]) -> str:
     evidence = evaluator.get("holostate_worker_protocol_v1_evidence")
     if not isinstance(evidence, dict):
         raise NeoLoopError("evaluator is missing holostate_worker_protocol_v1_evidence")
+    return sha256_bytes(canonical_json_bytes(evidence))
+
+
+def holostate_worker_protocol_v2_evidence_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the tracked v2 adjudication after the ignored one-shot evidence exists."""
+    evidence = evaluator.get("holostate_worker_protocol_v2_evidence")
+    if not isinstance(evidence, dict):
+        raise NeoLoopError("evaluator is missing holostate_worker_protocol_v2_evidence")
     return sha256_bytes(canonical_json_bytes(evidence))
 
 
@@ -146,9 +170,14 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         for root in evaluator["holostate_live_contract"]["roots"].values()
         for source in root["sources"]
     ]
-    worker_protocol_sources = [
+    worker_protocol_v1_sources = [
         source
         for root in evaluator["holostate_worker_protocol_v1"]["roots"].values()
+        for source in root["sources"]
+    ]
+    worker_protocol_v2_sources = [
+        source
+        for root in evaluator["holostate_worker_protocol_v2"]["roots"].values()
         for source in root["sources"]
     ]
     hashed_files = sorted(
@@ -157,11 +186,12 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
             + controller_files
             + benchmark_files
             + holostate_sources
-            + worker_protocol_sources
+            + worker_protocol_v1_sources
+            + worker_protocol_v2_sources
         )
         if path not in LOCK_DYNAMIC_PATHS
     )
-    return {
+    lock = {
         "schema_version": 2,
         "generated_at": utc_now(),
         "evaluator_sha256": sha256_file(EVALUATOR_PATH),
@@ -174,6 +204,8 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         "holostate_contract_sha256": holostate_contract_hash(evaluator),
         "holostate_worker_protocol_sha256": holostate_worker_protocol_hash(evaluator),
         "holostate_worker_protocol_evidence_sha256": holostate_worker_protocol_evidence_hash(evaluator),
+        "holostate_worker_protocol_v1_adjudication_sha256": holostate_worker_protocol_v1_adjudication_hash(evaluator),
+        "holostate_worker_protocol_v2_sha256": holostate_worker_protocol_v2_hash(evaluator),
         "model_identity": evaluator["model"],
         "baseline_source_commit": git(ROOT, "rev-parse", "HEAD"),
         "stable_launch": evaluator["stable_launch"],
@@ -182,6 +214,11 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         "candidate_editable_paths": evaluator["candidate_editable_paths"]["paths"],
         "controller_files": controller_files,
     }
+    if "holostate_worker_protocol_v2_evidence" in evaluator:
+        lock["holostate_worker_protocol_v2_evidence_sha256"] = (
+            holostate_worker_protocol_v2_evidence_hash(evaluator)
+        )
+    return lock
 
 
 def write_lock() -> None:
@@ -232,6 +269,23 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     actual_worker_evidence = holostate_worker_protocol_evidence_hash(evaluator)
     if expected_worker_evidence != actual_worker_evidence:
         raise NeoLoopError("HoloState worker evidence differs from its locked complete-object hash")
+    expected_v1_adjudication = lock.get("holostate_worker_protocol_v1_adjudication_sha256")
+    actual_v1_adjudication = holostate_worker_protocol_v1_adjudication_hash(evaluator)
+    if expected_v1_adjudication != actual_v1_adjudication:
+        raise NeoLoopError("HoloState worker v1 adjudication differs from its locked complete-object hash")
+    expected_worker_v2 = lock.get("holostate_worker_protocol_v2_sha256")
+    actual_worker_v2 = holostate_worker_protocol_v2_hash(evaluator)
+    if expected_worker_v2 != actual_worker_v2:
+        raise NeoLoopError("HoloState worker protocol v2 differs from its locked complete-object hash")
+    has_v2_evidence = "holostate_worker_protocol_v2_evidence" in evaluator
+    has_v2_evidence_lock = "holostate_worker_protocol_v2_evidence_sha256" in lock
+    if has_v2_evidence != has_v2_evidence_lock:
+        raise NeoLoopError("HoloState worker v2 evidence and lock must appear together")
+    if has_v2_evidence:
+        expected_worker_v2_evidence = lock["holostate_worker_protocol_v2_evidence_sha256"]
+        actual_worker_v2_evidence = holostate_worker_protocol_v2_evidence_hash(evaluator)
+        if expected_worker_v2_evidence != actual_worker_v2_evidence:
+            raise NeoLoopError("HoloState worker v2 evidence differs from its locked complete-object hash")
     return lock
 
 

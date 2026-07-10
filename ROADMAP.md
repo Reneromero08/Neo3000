@@ -96,7 +96,8 @@ RSI-0: CLOSED
 -> Checkpoint 1A: trace substrate remains active and paused
 -> Checkpoint 2: ACTIVE
 -> First catalytic intervention: HoloState-v1 Live Prefix Lattice
--> HoloState-v1.1 worker audit: FAST REJECT, DEEP INCONCLUSIVE, NO RETRY
+-> HoloState worker v1: instrumentation reject; Fast/Deep capability untested
+-> HoloState worker v2: separately authorized, canary-first, one shot
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -571,9 +572,9 @@ The authorized one-shot audit ran once and stopped at Root A warm. Root A render
 
 Pinned source establishes the instrumentation diagnosis: streaming partial results carry token IDs, while the final streaming result carries an empty array. The executed parser replaced each observed array, so the final empty value erased prior token evidence. Raw SSE events were not persisted; this is therefore a source-based diagnosis, not direct event replay. Result SHA-256 is `72F4BA4FA256836456B5ACA47FBD4CD5DE7789EB59F222B687B677010B7869A2`.
 
-The lane verdicts are `FAST_PROCESS_LOCAL_HOLOSTATE=reject` and `DEEP_PROCESS_LOCAL_HOLOSTATE=inconclusive`. Sidecar PID `34580` peaked at 2,252.88 MiB over 73 exact-PID samples and retired cleanly. Stable PID `32684`, the archived candidate, isolation, cleanup, and all historical evidence hashes remained exact. All availability locks and the automatic-promotion prohibition remain intact.
+The ignored result preserves its original locked fields (`FAST=reject`, `DEEP=inconclusive`). Later adjudication classifies v1 itself as an instrumentation reject; Fast capability is untested/inconclusive and Deep capability is untested/inconclusive because neither lane ran. Sidecar PID `34580` peaked at 2,252.88 MiB over 73 exact-PID samples and retired cleanly. All availability locks remain intact.
 
-Do not retry worker protocol v1. A future separately authorized protocol version must accumulate partial streaming token arrays and use a new versioned marker before any new live claim.
+Do not retry v1. Separately authorized v2 changes only token-array accumulation and bounded stream provenance, runs a parser canary before warming roots, and uses new attempt/result/ledger paths. Its fixed sequence is canary, warm A/B, A1/B1/A2/B2, A1/B1 repeats, Deep A1, stop; no automatic retry or extended proof.
 
 ### HoloState-v2 persistence boundary
 

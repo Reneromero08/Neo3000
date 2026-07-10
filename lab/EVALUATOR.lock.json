@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "3fb00fe93d0fb22e203d8e26d86173f5e3d2ee32",
+  "baseline_source_commit": "c9f650f9a4142cfe52c5c03f2fd427f75ccaa652",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -26,17 +26,19 @@
     "scripts/holostate_live.py",
     "scripts/test_holostate_live.py"
   ],
-  "evaluator_sha256": "2a82f616700a72d28809202ad14d405f8e9240dc6b99b683cf5c70feeb302527",
+  "evaluator_sha256": "e2df0a293f153b284e54475965829bb7fb83ca377c242bf2962a520ea8567abc",
   "gate_definition_hashes": {
     "reasoning-preservation-v1": "750a7b0041c13b4407f5d373069f6bcb3fe1d0701504f7bae5bb7c64fbc5d5fe",
     "repeat-final-content-v1": "2737d28ec7947d841bf6c5e07221f6ac453f98150a83b9a9c29c43da1a4b7460",
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-10T20:38:55.536922+00:00",
+  "generated_at": "2026-07-10T21:40:55.764123+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
+  "holostate_worker_protocol_v1_adjudication_sha256": "89eaf99720a54436f9e299e67900bcb7ec3ebf244898e5e9e969a1ae07f19cd8",
+  "holostate_worker_protocol_v2_sha256": "c043d3084efefcbc9b369e1b770d36aef0dafcf89896d6105586564b204a0379",
   "model_identity": {
     "alias": "agents-a1",
     "architecture": "qwen35moe",
@@ -47,26 +49,26 @@
   "protected_file_hashes": {
     ".gitignore": "677277200afe5e3d225c83584902476116bfd1d501f81d3d64ba4381b1ef2aac",
     "AGENTS.md": "d0c4f2292f8e89f94ff79fe7b1a3b678307781f83fdbbab398abc7fbfd79b8e5",
-    "CHANGELOG.md": "4d69dfeed0651baa1754e3b15125dff803beb8aac9b99bc793b45575d1ca3e22",
+    "CHANGELOG.md": "1ddbb9e7e7dd081e20fb71608d2e6e4829e0e774d79af44f6441fa2e0cad730d",
     "NEO3000.md": "b7ba87065f942d47abed19330197a843577bbd6b2fd58057a6df9de9cd7d2905",
     "README.md": "2a03600bf337aa3adf14d4c1e375b2f080d8d0bee0ae77676cf7dce3f32bf638",
-    "ROADMAP.md": "60b5c827eacc8e4c33636f120e3347adb9b321d805ad9a71752ce8efe0b90cb0",
-    "TASKS.md": "f6f7d0650d831fd0a8537fd9dac4c356c40fcc76f1836ca6f4eae3082db71c0a",
+    "ROADMAP.md": "37976e276c40555623cfc563991619377a9b96ab0fc25ae5740e2d488f179402",
+    "TASKS.md": "91959d70e61b88bcb1f32bd9c30796d85484bdd77d303ec17b580deed625b789",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "823094928162d4eaa06470df91f145e76f841dbf73c44f11c50cd36769b8270e",
-    "lab/EVALUATOR.json": "2a82f616700a72d28809202ad14d405f8e9240dc6b99b683cf5c70feeb302527",
-    "lab/GOAL.md": "2128bad52ee8db3f47c04bdb9152332dd4eb93d0e99f4ef8f7ba4a6a3c89381c",
-    "scripts/baseline_harness.py": "002ad6dde5f174b76ac50d01909fa2761f1196ae891fd22cc31252af4ea6066a",
+    "lab/CHECKPOINT.md": "4b3a24600dfe2b08f1fe6fe2653346fc218ed7bb7eba678223f5e17a0e29f7ff",
+    "lab/EVALUATOR.json": "e2df0a293f153b284e54475965829bb7fb83ca377c242bf2962a520ea8567abc",
+    "lab/GOAL.md": "45c11f36b23562dd75d7aa1e48ec313c4e55beec68726d9dc51f9351c47de2bc",
+    "scripts/baseline_harness.py": "3d8e5b19a49ebf246d7683d2bebd8f4b633eb1c555587f8c044022dc32b82585",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "7b45a9d194962484c4b41b243928eb053386cea2467ff929735d0634f0ba0600",
     "scripts/context_matrix.py": "92ee85869afc2b87d98cd70f06b5e0ddfdb481ae89eb65561154dfcab0cae1ed",
-    "scripts/holostate_live.py": "377d9064f6e7764b5d4820dbca87f7144737909b813f7e61c1e2fc8381dded62",
-    "scripts/neo_loop.py": "ff6ef6136ad358c9d82d0e85033dd5b85c29017ef8dec5ef675d72fdebae305a",
+    "scripts/holostate_live.py": "451b7078e953986b981fff0f88490be0e3cd273149489143e6d0d1b2ef912279",
+    "scripts/neo_loop.py": "c4b15e65a8b4a5597b2fda95256f7a9fa05b01985234b2cfbe68a2a294aeff7d",
     "scripts/neo_trace_diagnostic.py": "179dd2e0877a745301998d3de79ad5d5f098a3ea5a4636f356d2e8aa3d71945e",
     "scripts/rolling_decode.py": "29c6e23e226a13cebbb3eedaec9339765db86a69893898ff4ea86971916e290a",
     "scripts/run_candidate.ps1": "04b28fca1d2aae754bb3bca0f1efcb3f8166a8b2fd38da2a37252affb70394a0",
     "scripts/run_server.ps1": "831913a346668b82c58205742b5e45840571c96dde1dbf28d93807726617f0a4",
-    "scripts/test_holostate_live.py": "f1ced8c5bb769c3af21fb54563b85882db8f6fc70b2b04c25c2559ea1d735d71",
+    "scripts/test_holostate_live.py": "667df6b4995bec8e991acc1e0c70a28e0020f6a43878a47993a1e27e37084c15",
     "scripts/test_trace_diagnostic.py": "4359240c665d149157bea5c811e3011edeee9ff12fa56b100a3464e32de50a8d"
   },
   "protected_paths": [

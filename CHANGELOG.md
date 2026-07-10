@@ -17,7 +17,8 @@ Checkpoint 2: ACTIVE
 First catalytic intervention: HoloState-v1 Live Prefix Lattice
 HoloState-v1 integration verdict: INCONCLUSIVE
 HoloState-v1 budget qualification: NO PASS THROUGH 2048
-HoloState-v1.1 worker audit: FAST REJECT / DEEP INCONCLUSIVE / NO RETRY
+HoloState worker v1: INSTRUMENTATION REJECT; FAST/DEEP CAPABILITY UNTESTED
+HoloState worker v2: AUTHORIZED / NOT YET EXECUTED
 Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
@@ -41,7 +42,8 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Checkpoint 1A remains active but paused. Compile-out, bounded aggregation, protected exact-PID control, and explicit truncation/drop detection are proven; overhead, a completed workload map, and model-runtime bottleneck selection remain unproven.
 - Checkpoint 2 is active for HoloState-v1 Live Prefix Lattice, the protected operational integration of exact process-local executable-prefix reuse already proven by HoloState-0.
 - The one-shot HoloState-v1 raw `/completion` qualification is complete: `1024, 1280, 1536, 2048` all exhausted without the exact final marker. This does not prove `reasoning_content` attribution. No budget was selected and validation-v2 remains unattempted.
-- HoloState-v1.1 executed its protected Chat Completions audit once and stopped at Root A warm on missing complete generated-token evidence. Fast is `reject`; Deep is `inconclusive`; no retry is authorized.
+- HoloState-v1.1 executed once and stopped at Root A warm on missing token instrumentation. Its original result fields remain Fast=`reject` / Deep=`inconclusive`; later adjudication is protocol instrumentation-reject with both capabilities untested/inconclusive. V1 cannot be retried.
+- Worker protocol v2 is separately authorized for token-array accumulation, bounded stream provenance, and one canary-first audit. No v2 evidence exists yet.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
@@ -54,6 +56,13 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Extended the shared `baseline_harness.stream_completion` parser to retain server-returned generated-token arrays and prompt-progress events while preserving its separate reasoning, visible-content, and tool-call channels. Worker results store reasoning only as presence, length, and SHA-256.
 - Pre-audit verification passed 60 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus protected preflight. Template/tokenizer-only rendering measured Root A at 7,806 tokens and Root B at 4,630, inside the unchanged 4K-8K bounds without generating output or claiming the audit.
 - The one-shot audit, old qualification, validation-v2, extended proof, and persistence work were not executed by the pre-audit protocol change.
+
+### HoloState worker protocol v2 prepared
+
+- Added request-local delta/cumulative token-array merging, completion-count agreement, and an ignored 8 MiB/50,000-record stream ledger that stores fragment lengths/hashes but never reasoning text.
+- Added a thinking-disabled parser canary before root warming, distinct A1/A2/B1/B2 Fast assignments, A1/B1 repeat determinism, independent Deep classification, and exclusive v2 attempt/result/ledger paths.
+- Added a separate v1 adjudication object without changing the v1 protocol, evidence object, ignored evidence bytes, or `neo-exp-0015`.
+- Pre-audit protection passed 85 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus compilation, root-bound checks, and protected preflight.
 
 ### HoloState-v1.1 worker audit executed once
 

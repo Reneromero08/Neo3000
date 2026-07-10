@@ -9,6 +9,7 @@ JSON result. It does not benchmark model quality or authorize Checkpoint 0.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import platform
 import statistics
@@ -20,7 +21,7 @@ import urllib.request
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "lab" / "results.local.json"
@@ -51,6 +52,12 @@ class StreamMeasurement:
     timings: dict[str, Any]
     finish_reason: str | None
     generated_token_ids: list[int]
+    generated_token_count: int
+    nonempty_token_array_event_count: int
+    empty_token_array_event_count: int
+    token_merge_modes: dict[str, int]
+    completion_token_count_match: bool | None
+    generated_token_sha256: str
     prompt_progress: list[dict[str, Any]]
 
 
@@ -140,7 +147,10 @@ def iter_sse(response: Any) -> Iterable[dict[str, Any]]:
         try:
             event = json.loads(data)
         except json.JSONDecodeError as exc:
-            raise HarnessError(f"invalid SSE JSON: {data[:300]}") from exc
+            digest = hashlib.sha256(data.encode("utf-8")).hexdigest().upper()
+            raise HarnessError(
+                f"invalid SSE JSON (characters={len(data)}, sha256={digest})"
+            ) from exc
         if isinstance(event, dict):
             yield event
 
@@ -148,13 +158,109 @@ def iter_sse(response: Any) -> Iterable[dict[str, Any]]:
 def extract_generated_token_ids(event: dict[str, Any]) -> list[int] | None:
     """Return the complete server-reported token array when one is present."""
     verbose = event.get("__verbose")
-    tokens = verbose.get("tokens") if isinstance(verbose, dict) else event.get("tokens")
-    if not isinstance(tokens, list):
+    if isinstance(verbose, dict) and "tokens" in verbose:
+        tokens = verbose["tokens"]
+    elif "tokens" in event:
+        tokens = event["tokens"]
+    else:
         return None
-    try:
-        return [int(value) for value in tokens]
-    except (TypeError, ValueError) as exc:
-        raise HarnessError("stream returned a malformed generated-token array") from exc
+    if not isinstance(tokens, list):
+        raise HarnessError("stream returned a malformed generated-token array")
+    parsed: list[int] = []
+    for value in tokens:
+        if isinstance(value, bool) or not isinstance(value, (int, str)):
+            raise HarnessError("stream returned a malformed generated-token array")
+        try:
+            parsed.append(int(value))
+        except ValueError as exc:
+            raise HarnessError("stream returned a malformed generated-token array") from exc
+    return parsed
+
+
+def merge_generated_token_ids(
+    accumulated: list[int],
+    incoming: list[int] | None,
+) -> tuple[list[int], str]:
+    """Apply the locked delta/cumulative merge law; completion counts fail closed on ambiguity."""
+    if incoming is None:
+        return accumulated, "absent"
+    if not incoming:
+        return accumulated, "ignored-empty"
+    if not accumulated:
+        return list(incoming), "initial"
+    if len(incoming) >= len(accumulated) and incoming[: len(accumulated)] == accumulated:
+        return list(incoming), "cumulative-extension"
+    if len(accumulated) >= len(incoming) and accumulated[: len(incoming)] == incoming:
+        return accumulated, "duplicate-or-shorter-snapshot"
+    return [*accumulated, *incoming], "delta-append"
+
+
+def token_array_sha256(tokens: list[int]) -> str:
+    encoded = json.dumps(tokens, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest().upper()
+
+
+def redact_stream_metadata(value: Any) -> Any:
+    """Retain numeric structure while replacing any unexpected text with metadata."""
+    if isinstance(value, dict):
+        return {str(key): redact_stream_metadata(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [redact_stream_metadata(item) for item in value]
+    if isinstance(value, str):
+        return {
+            "text_redacted": True,
+            "characters": len(value),
+            "sha256": hashlib.sha256(value.encode("utf-8")).hexdigest().upper(),
+        }
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    rendered = repr(type(value).__name__)
+    return {
+        "value_redacted": True,
+        "type_sha256": hashlib.sha256(rendered.encode("utf-8")).hexdigest().upper(),
+    }
+
+
+def stream_ledger_record(
+    event: dict[str, Any],
+    *,
+    event_index: int,
+    request_label: str | None,
+    event_token_ids: list[int] | None,
+    merge_mode: str,
+) -> dict[str, Any]:
+    """Reduce one SSE event to bounded provenance without retaining reasoning text."""
+    choices = event.get("choices")
+    choice = choices[0] if isinstance(choices, list) and choices and isinstance(choices[0], dict) else {}
+    delta = choice.get("delta") if isinstance(choice.get("delta"), dict) else {}
+    content = delta.get("content") if isinstance(delta.get("content"), str) else ""
+    reasoning = (
+        delta.get("reasoning_content")
+        if isinstance(delta.get("reasoning_content"), str)
+        else ""
+    )
+    record: dict[str, Any] = {
+        "request_label": request_label,
+        "event_index": event_index,
+        "token_array_length": len(event_token_ids) if event_token_ids is not None else None,
+        "token_array_sha256": (
+            token_array_sha256(event_token_ids) if event_token_ids is not None else None
+        ),
+        "token_array_empty": None if event_token_ids is None else not event_token_ids,
+        "merge_mode": merge_mode,
+        "content_fragment_length": len(content),
+        "content_fragment_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest().upper(),
+        "reasoning_fragment_length": len(reasoning),
+        "reasoning_fragment_sha256": hashlib.sha256(reasoning.encode("utf-8")).hexdigest().upper(),
+        "tool_fragment_present": bool(delta.get("tool_calls")),
+    }
+    if choice.get("finish_reason") is not None:
+        record["finish_reason"] = str(choice["finish_reason"])
+    if isinstance(event.get("usage"), dict):
+        record["usage"] = redact_stream_metadata(event["usage"])
+    if isinstance(event.get("prompt_progress"), dict):
+        record["prompt_progress"] = redact_stream_metadata(event["prompt_progress"])
+    return record
 
 
 def stream_completion(
@@ -162,6 +268,9 @@ def stream_completion(
     payload: dict[str, Any],
     repeat: int,
     timeout: float,
+    *,
+    event_recorder: Callable[[dict[str, Any]], None] | None = None,
+    request_label: str | None = None,
 ) -> StreamMeasurement:
     encoded = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(
@@ -183,6 +292,9 @@ def stream_completion(
     finish_reason: str | None = None
     event_count = 0
     generated_token_ids: list[int] = []
+    nonempty_token_array_event_count = 0
+    empty_token_array_event_count = 0
+    token_merge_modes: dict[str, int] = {}
     prompt_progress: list[dict[str, Any]] = []
 
     try:
@@ -202,7 +314,22 @@ def stream_completion(
                     prompt_progress.append(dict(event["prompt_progress"]))
                 event_token_ids = extract_generated_token_ids(event)
                 if event_token_ids is not None:
-                    generated_token_ids = event_token_ids
+                    if event_token_ids:
+                        nonempty_token_array_event_count += 1
+                    else:
+                        empty_token_array_event_count += 1
+                generated_token_ids, merge_mode = merge_generated_token_ids(
+                    generated_token_ids, event_token_ids
+                )
+                token_merge_modes[merge_mode] = token_merge_modes.get(merge_mode, 0) + 1
+                if event_recorder is not None:
+                    event_recorder(stream_ledger_record(
+                        event,
+                        event_index=event_count,
+                        request_label=request_label,
+                        event_token_ids=event_token_ids,
+                        merge_mode=merge_mode,
+                    ))
 
                 choices = event.get("choices")
                 if not isinstance(choices, list) or not choices:
@@ -239,7 +366,11 @@ def stream_completion(
             elapsed = time.perf_counter() - start
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
-        raise HarnessError(f"stream request returned HTTP {exc.code}: {body}") from exc
+        digest = hashlib.sha256(body.encode("utf-8")).hexdigest().upper()
+        raise HarnessError(
+            f"stream request returned HTTP {exc.code} "
+            f"(body_characters={len(body)}, body_sha256={digest})"
+        ) from exc
     except urllib.error.URLError as exc:
         raise HarnessError(f"stream request failed: {exc.reason}") from exc
 
@@ -254,6 +385,11 @@ def stream_completion(
         prompt_tokens = None
     if not isinstance(cached_prompt_tokens, int):
         cached_prompt_tokens = None
+    completion_token_count_match = (
+        len(generated_token_ids) == completion_tokens
+        if isinstance(completion_tokens, int)
+        else None
+    )
 
     server_tps = timings.get("predicted_per_second")
     if isinstance(server_tps, (int, float)):
@@ -281,6 +417,12 @@ def stream_completion(
         timings=timings,
         finish_reason=finish_reason,
         generated_token_ids=generated_token_ids,
+        generated_token_count=len(generated_token_ids),
+        nonempty_token_array_event_count=nonempty_token_array_event_count,
+        empty_token_array_event_count=empty_token_array_event_count,
+        token_merge_modes=token_merge_modes,
+        completion_token_count_match=completion_token_count_match,
+        generated_token_sha256=token_array_sha256(generated_token_ids),
         prompt_progress=prompt_progress,
     )
 

@@ -327,6 +327,19 @@ Qualification sidecar PID/listener `44652` produced 239 exact-PID WDDM samples, 
 - A future separately authorized protocol version may accumulate partial token arrays and use new versioned evidence paths. No repair is promoted from this rejected audit.
 - Post-audit evidence binding passed 61 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus compilation and protected preflight.
 
+#### Later v1 adjudication
+
+The ignored v1 result and its original Fast=`reject` / Deep=`inconclusive` fields remain byte-identical. The later evidence interpretation is narrower: worker protocol v1 is an `instrumentation-reject`; Fast capability is untested/inconclusive because zero Fast requests ran; Deep capability is untested/inconclusive because zero Deep requests ran.
+
+### HoloState worker protocol v2 [AUTHORIZED / PRE-AUDIT]
+
+- The only causal intervention is request-local merging of delta/cumulative token arrays plus bounded stream provenance; a final empty array cannot clear prior evidence.
+- The v2 contract binds all five historical hashes, exact binary/model/template/envelope/root identities, unchanged Fast/Deep lane budgets, an 8 MiB/50,000-record reasoning-redacted ledger, and new v2 paths.
+- A thinking-disabled `TOKEN ARRAY CANARY` must prove exact visible content, empty reasoning, normal stop, nonempty generated IDs, completion-count agreement, and a valid ledger before Root A warm.
+- The one-shot sequence is canary, warm A, warm B, A1, B1, A2, B2, A1 repeat, B1 repeat, Deep A1, stop. Warm failures never reject Fast capability; Deep is independent of a completed Fast proof.
+- Pre-audit protection passed 85 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus compilation; stable tokenization measured Root A/B at 7,715/4,302 rendered warm tokens.
+- Protocol v1, qualification, validation-v2, persistence, extended proof, automatic retry, and automatic promotion remain forbidden.
+
 ### Durable persistence boundary
 
 The built-in slot file persists active KV/recurrent state and token history, but does not persist the server prompt-checkpoint list required for hybrid recurrent prefix selection after restart.
