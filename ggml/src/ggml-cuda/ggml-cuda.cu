@@ -1,6 +1,7 @@
 #include "ggml-cuda.h"
 #include "ggml-impl.h"
 #include "ggml-backend-impl.h"
+#include "neo-compute-trace.h"
 
 #include "ggml-cuda/allreduce.cuh"
 #include "ggml-cuda/common.cuh"
@@ -2651,11 +2652,19 @@ static void ggml_cuda_mul_mat_id(ggml_backend_cuda_context & ctx, ggml_tensor * 
                 const int mmvq_mmid_max = get_mmvq_mmid_max_batch(src0->type, cc);
                 if (ne2 <= mmvq_mmid_max) {
                     ggml_cuda_mul_mat_vec_q(ctx, src0, src1, ids, dst);
+                    NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+                        "neo.compute.moe.geometry.v1", "execution", "MUL_MAT_ID:mmvq",
+                        "CUDA", "CUDA", ctx.device
+                    }));
                     return;
                 }
             } else {
                 if (GGML_CUDA_CC_IS_AMD(cc)) {
                     ggml_cuda_mul_mat_vec_f(ctx, src0, src1, ids, dst);
+                    NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+                        "neo.compute.moe.geometry.v1", "execution", "MUL_MAT_ID:mmvf",
+                        "CUDA", "CUDA", ctx.device
+                    }));
                     return;
                 }
             }
@@ -2663,11 +2672,19 @@ static void ggml_cuda_mul_mat_id(ggml_backend_cuda_context & ctx, ggml_tensor * 
 
         if (ggml_cuda_should_use_mmq(src0->type, cc, ne12, /*n_experts=*/ne02)) {
             ggml_cuda_mul_mat_q(ctx, src0, src1, ids, dst);
+            NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+                "neo.compute.moe.geometry.v1", "execution", "MUL_MAT_ID:mmq",
+                "CUDA", "CUDA", ctx.device
+            }));
             return;
         }
 
         if (ggml_cuda_should_use_mmf(src0->type, cc, WARP_SIZE, src0->ne, src0->nb, src1->ne[2], /*mul_mat_id=*/true)) {
             ggml_cuda_mul_mat_f(ctx, src0, src1, ids, dst);
+            NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+                "neo.compute.moe.geometry.v1", "execution", "MUL_MAT_ID:mmf",
+                "CUDA", "CUDA", ctx.device
+            }));
             return;
         }
     }
@@ -2702,6 +2719,13 @@ static void ggml_cuda_mul_mat_id(ggml_backend_cuda_context & ctx, ggml_tensor * 
     std::vector<char> ids_host(ggml_nbytes(ids));
     CUDA_CHECK(cudaMemcpyAsync(ids_host.data(), ids->data, ggml_nbytes(ids), cudaMemcpyDeviceToHost, stream));
     CUDA_CHECK(cudaStreamSynchronize(stream));
+    NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+        "neo.compute.sync.cuda.v1", "synchronization", "MUL_MAT_ID:route_readback",
+        "CUDA", "host", ctx.device, neo_compute_trace::unknown_u64,
+        -1, -1, nullptr,
+        neo_compute_trace::unknown_u64, static_cast<uint64_t>(ggml_nbytes(ids)), neo_compute_trace::unknown_u64,
+        "mul_mat_id_stream", "device_to_host"
+    }));
 
     for (int64_t i02 = 0; i02 < ne02; ++i02) { // expert matrices
         for (int64_t i12 = 0; i12 < ne12; ++i12) { // tokens
@@ -2719,10 +2743,31 @@ static void ggml_cuda_mul_mat_id(ggml_backend_cuda_context & ctx, ggml_tensor * 
     }
     GGML_ASSERT(ids_to_sorted_host.size() == size_t(ne_get_rows));
 
+#ifdef NEO_COMPUTE_TRACE
+    const int32_t trace_bucket_max = *std::max_element(tokens_per_expert.begin(), tokens_per_expert.end());
+    for (int32_t expert = 0; expert < static_cast<int32_t>(tokens_per_expert.size()); ++expert) {
+        neo_compute_trace::event trace_event {
+            "neo.compute.moe.geometry.v1", "execution", "MUL_MAT_ID:sorted_fallback",
+            "CUDA", "CUDA", ctx.device
+        };
+        trace_event.expert_id = expert;
+        trace_event.expert_bucket_tokens = tokens_per_expert[expert];
+        trace_event.expert_bucket_max = trace_bucket_max;
+        NEO_COMPUTE_TRACE_EMIT(trace_event);
+    }
+#endif
+
     ids_to_sorted_host.insert(ids_to_sorted_host.end(), ids_from_sorted_host.begin(), ids_from_sorted_host.end());
 
     CUDA_CHECK(cudaMemcpyAsync(ids_buf_dev.ptr, ids_to_sorted_host.data(), 2*ne_get_rows*sizeof(int32_t), cudaMemcpyHostToDevice, stream));
     CUDA_CHECK(cudaStreamSynchronize(stream));
+    NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+        "neo.compute.sync.cuda.v1", "synchronization", "MUL_MAT_ID:route_upload",
+        "host", "CUDA", ctx.device, neo_compute_trace::unknown_u64,
+        -1, -1, nullptr,
+        static_cast<uint64_t>(2*ne_get_rows*sizeof(int32_t)), neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64,
+        "mul_mat_id_stream", "host_to_device"
+    }));
 
     const int32_t * ids_to_sorted   = ids_buf_dev.ptr + 0*ne_get_rows;
     const int32_t * ids_from_sorted = ids_buf_dev.ptr + 1*ne_get_rows;
@@ -3155,6 +3200,13 @@ static void ggml_backend_cuda_set_tensor_async(ggml_backend_t backend, ggml_tens
     GGML_ASSERT(buf->buft == ggml_backend_cuda_buffer_type(cuda_ctx->device) && "unsupported buffer type");
 
     CUDA_CHECK(cudaMemcpyAsync((char *) tensor->data + offset, data, size, cudaMemcpyHostToDevice, cuda_ctx->stream()));
+    NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+        "neo.compute.transfer.v1", "transfer", "cudaMemcpyAsync",
+        "host", "CUDA", cuda_ctx->device, neo_compute_trace::unknown_u64,
+        -1, -1, nullptr, static_cast<uint64_t>(size),
+        neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64,
+        "backend_stream"
+    }));
 }
 
 static void ggml_backend_cuda_get_tensor_async(ggml_backend_t backend, const ggml_tensor * tensor, void * data, size_t offset, size_t size) {
@@ -3164,6 +3216,13 @@ static void ggml_backend_cuda_get_tensor_async(ggml_backend_t backend, const ggm
     GGML_ASSERT(buf->buft == ggml_backend_cuda_buffer_type(cuda_ctx->device) && "unsupported buffer type");
 
     CUDA_CHECK(cudaMemcpyAsync(data, (const char *) tensor->data + offset, size, cudaMemcpyDeviceToHost, cuda_ctx->stream()));
+    NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+        "neo.compute.transfer.v1", "transfer", "cudaMemcpyAsync",
+        "CUDA", "host", cuda_ctx->device, neo_compute_trace::unknown_u64,
+        -1, -1, nullptr, neo_compute_trace::unknown_u64,
+        static_cast<uint64_t>(size), neo_compute_trace::unknown_u64,
+        "backend_stream"
+    }));
 }
 
 static void ggml_backend_cuda_set_tensor_2d_async(ggml_backend_t backend, struct ggml_tensor * tensor, const void * data,
@@ -3240,13 +3299,31 @@ static bool ggml_backend_cuda_cpy_tensor_async(ggml_backend_t backend_src, ggml_
         // src and dst are on the same backend
         CUDA_CHECK(cudaMemcpyAsync(dst->data, src->data, ggml_nbytes(dst), cudaMemcpyDeviceToDevice, cuda_ctx_src->stream()));
     }
+    NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+        "neo.compute.transfer.v1", "transfer", "cudaMemcpyDeviceToDevice",
+        "CUDA", "CUDA", cuda_ctx_dst->device, neo_compute_trace::unknown_u64,
+        -1, -1, nullptr,
+        neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64,
+        static_cast<uint64_t>(ggml_nbytes(dst)), "copy_stream"
+    }));
     return true;
 }
 
 static void ggml_backend_cuda_synchronize(ggml_backend_t backend) {
     ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *)backend->context;
 
+#ifdef NEO_COMPUTE_TRACE
+    const uint64_t trace_sync_start_ns = neo_compute_trace::monotonic_timestamp_ns();
+#endif
     CUDA_CHECK(cudaStreamSynchronize(cuda_ctx->stream()));
+    NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+        "neo.compute.sync.cuda.v1", "synchronization", "cudaStreamSynchronize",
+        "CUDA", "CUDA", cuda_ctx->device,
+        neo_compute_trace::monotonic_timestamp_ns() - trace_sync_start_ns,
+        -1, -1, nullptr,
+        neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64,
+        "backend_stream", "stream_wait"
+    }));
 
     GGML_UNUSED(backend);
 }
@@ -3363,6 +3440,13 @@ static void ggml_cuda_graph_update_executable(ggml_backend_cuda_context * cuda_c
         CUDA_CHECK(cudaGraphExecDestroy(graph->instance));
         graph->instance = nullptr;
         CUDA_CHECK(cudaGraphInstantiate(&graph->instance, graph->graph, NULL, NULL, 0));
+        NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+            "neo.compute.cuda-graph.lifecycle.v1", "graph", "cudaGraphInstantiate",
+            "CUDA", "CUDA", cuda_ctx->device, neo_compute_trace::unknown_u64,
+            -1, -1, nullptr,
+            neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64,
+            "backend_stream", nullptr, nullptr, "rebuild"
+        }));
     } else {
         GGML_ASSERT(stat == cudaSuccess);
     }
@@ -4420,6 +4504,13 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
             }
 
             CUDA_CHECK(cudaStreamEndCapture(cuda_ctx->stream(), &graph->graph));
+            NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+                "neo.compute.cuda-graph.lifecycle.v1", "graph", "cudaStreamEndCapture",
+                "CUDA", "CUDA", cuda_ctx->device, neo_compute_trace::unknown_u64,
+                -1, -1, nullptr,
+                neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64,
+                "backend_stream", nullptr, nullptr, "capture"
+            }));
             graph_evaluated_or_captured = true; // CUDA graph has been captured
 
             std::lock_guard<std::mutex> lock(ggml_cuda_lock);
@@ -4441,6 +4532,13 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
         }
         // Launch graph
         CUDA_CHECK(cudaGraphLaunch(graph->instance, cuda_ctx->stream()));
+        NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+            "neo.compute.cuda-graph.lifecycle.v1", "graph", "cudaGraphLaunch",
+            "CUDA", "CUDA", cuda_ctx->device, neo_compute_trace::unknown_u64,
+            -1, -1, nullptr,
+            neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64,
+            "backend_stream", nullptr, nullptr, "replay"
+        }));
 #else
         GGML_UNUSED(graph_key);
         graph_evaluated_or_captured = true;
@@ -4517,6 +4615,13 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend, 
         }
 
         CUDA_CHECK(cudaStreamBeginCapture(cuda_ctx->stream(), cudaStreamCaptureModeRelaxed));
+        NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+            "neo.compute.cuda-graph.lifecycle.v1", "graph", "cudaStreamBeginCapture",
+            "CUDA", "CUDA", cuda_ctx->device, neo_compute_trace::unknown_u64,
+            -1, -1, nullptr,
+            neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64,
+            "backend_stream", nullptr, nullptr, "capture_begin"
+        }));
     }
 
     ggml_cuda_graph_evaluate_and_capture(cuda_ctx, cgraph, use_cuda_graph, cuda_graph_update_required, graph_key);

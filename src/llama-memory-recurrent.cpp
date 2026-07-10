@@ -5,6 +5,7 @@
 #include "llama-io.h"
 #include "llama-batch.h"
 #include "llama-model.h"
+#include "neo-compute-trace.h"
 
 #include <algorithm>
 #include <cassert>
@@ -103,6 +104,16 @@ llama_memory_recurrent::llama_memory_recurrent(
         ggml_format_name(s, "cache_s_l%d", i);
         r_l[i] = r;
         s_l[i] = s;
+        NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+            "neo.compute.recurrent.state.v1", "initialization", "gated_delta_net_state",
+            offload ? dev_name : "CPU", dev_name, -1, neo_compute_trace::unknown_u64,
+            -1, i, nullptr,
+            neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64,
+            nullptr, nullptr, nullptr, nullptr, nullptr,
+            -1, -1, -1, -1, -1, -1, -1,
+            static_cast<uint64_t>(ggml_nbytes(r) + ggml_nbytes(s)),
+            neo_compute_trace::unknown_u64, "allocate"
+        }));
     }
 
     // allocate tensors and initialize the buffers to avoid NaNs in the padding
