@@ -426,6 +426,59 @@
       "restart_persistent_holostate_remains_locked": true
     }
   },
+  "holostate_worker_protocol_v1_evidence": {
+    "protocol_commit": "3fb00fe93d0fb22e203d8e26d86173f5e3d2ee32",
+    "protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
+    "attempt_path": "state/holostate/worker-protocol-attempt-v1.json",
+    "attempt_sha256": "F634CA2732CEBBE424D4634F8EFAD035C6E11EAABB0D34E40A0F1EC09A2DF975",
+    "result_path": "state/holostate/worker-protocol-result-v1.json",
+    "result_sha256": "72F4BA4FA256836456B5ACA47FBD4CD5DE7789EB59F222B687B677010B7869A2",
+    "started_at": "2026-07-10T20:26:25.259392+00:00",
+    "finished_at": "2026-07-10T20:30:57.584456+00:00",
+    "fast_verdict": "reject",
+    "deep_verdict": "inconclusive",
+    "stopped_at": "warm-A",
+    "finish_classification": "completion-token-evidence-missing",
+    "root_A_warm": {
+      "rendered_prompt_tokens": 7806,
+      "logical_prompt_tokens": 7806,
+      "cached_prompt_tokens": 0,
+      "fresh_prompt_tokens": 7806,
+      "prompt_ms": 145519.789,
+      "prompt_tps": 53.6421888297268,
+      "completion_tokens": 7,
+      "assistant_content": "HOLOSTATE ROOT WARM",
+      "assistant_content_sha256": "84C0CFD85D4774E2BD67BC8FAE1C756ECB15C0E3CF58DD69891DD6B69FCD649B",
+      "reasoning_content_present": false,
+      "reasoning_content_characters": 0,
+      "finish_reason": "stop",
+      "server_token_ids_observed_by_parser": 0
+    },
+    "diagnosis": {
+      "classification": "instrumentation-defect",
+      "basis": "Pinned source inspection after the run; raw SSE events were not persisted.",
+      "finding": "Streaming partial responses carry one token ID, while the final streaming response carries an empty token array; the executed parser replaced rather than accumulated arrays, so the final empty array erased prior token evidence."
+    },
+    "resources": {
+      "sidecar_pid": 34580,
+      "wddm_samples": 73,
+      "wddm_peak_bytes": 2362318848,
+      "wddm_peak_mib": 2252.88,
+      "cleanup_passed": true,
+      "isolation_passed": true,
+      "stable_pid_before": 32684,
+      "stable_pid_after": 32684,
+      "prior_evidence_preserved": true
+    },
+    "availability": {
+      "PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE": "LOCKED",
+      "PROCESS_LOCAL_HOLOSTATE_AVAILABLE": "LOCKED",
+      "RESTART_PERSISTENT_HOLOSTATE_AVAILABLE": "LOCKED",
+      "CatalyticSwarm-0": "LOCKED",
+      "automatic_promotion": false
+    },
+    "no_retry": true
+  },
   "candidate_editable_paths": {
     "description": "Candidates may only modify files under these paths.",
     "paths": [

@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: HoloState-v1.1 message-boundary protocol audit
+## Checkpoint 2: HoloState-v1.1 executed no-retry boundary
 
 Checkpoint 0 and RSI-0 are closed. Checkpoint 1A remains active and paused at its executed trace boundary. Checkpoint 2 remains active with exact process-local prefix reuse proven as a mechanism, while operational availability remains locked.
 
@@ -22,7 +22,7 @@ The legacy controller used `/completion`, which exposed one raw content stream. 
 
 ## Active bounded objective
 
-Publish one protected, versioned `holostate_worker_protocol_v1`, then execute its one-shot `/v1/chat/completions` audit exactly once.
+Preserve the completed `holostate_worker_protocol_v1` attempt and its exact result without retry. Keep every availability lock closed.
 
 ```text
 Lane F:
@@ -42,33 +42,29 @@ The canonical A/B source sets and order remain unchanged. Each request uses a lo
 
 Reasoning-channel text is opaque transport data. The controller may retain only presence, length, and SHA-256 for `reasoning_content`. The deep prompt does not request a step-by-step trace. Visible assistant content, tool calls, finish reason, token counts, cache counts, latency, throughput, and memory/isolation evidence remain auditable.
 
-## Pre-audit boundary
+## Executed worker audit
 
-- The protected evaluator contract, controller path, shared Chat Completions parser, and CPU-only tests are prepared for the pre-audit protocol commit.
-- `scripts/baseline_harness.py` separates reasoning, visible content, and tools and captures server-returned generated-token arrays plus prompt-progress events. Deep reasoning text and its decodable token array are not persisted.
-- Versioned paths are reserved as `state/holostate/worker-protocol-attempt-v1.json` and `state/holostate/worker-protocol-result-v1.json`.
-- Neither versioned file may be claimed before the protocol commit is reviewed, pushed, clean, and exact against `origin/main`.
-- All non-generative identity, evidence, stable, worktree, template, and port checks must pass before the atomic one-shot claim.
-- Do not run `qualify-budget`, validation-v2, any old validation, or an extended proof.
-- Do not increase the old qualification range, increase Lane D above 768, retry the worker audit, or implement HoloState-v2 persistence.
+- Protocol commit `3fb00fe93d0fb22e203d8e26d86173f5e3d2ee32` was pushed and exact before the atomic claim.
+- The audit ran once and stopped at Root A warm on `completion-token-evidence-missing`; Fast A1/A2, Root B, and Deep A1 did not run.
+- Root A rendered 7,806 tokens and returned exact visible content `HOLOSTATE ROOT WARM`, empty reasoning metadata, `finish_reason=stop`, and matching prompt identity.
+- The parser retained zero generated-token IDs. Pinned source shows that partial streaming results carry per-token arrays while the final streaming result carries an empty array; the executed parser replaced rather than accumulated them. Raw SSE events were not persisted, so this diagnosis is source-based.
+- `FAST_PROCESS_LOCAL_HOLOSTATE=reject`; `DEEP_PROCESS_LOCAL_HOLOSTATE=inconclusive`.
+- Result SHA-256 is `72F4BA4FA256836456B5ACA47FBD4CD5DE7789EB59F222B687B677010B7869A2`; attempt SHA-256 is `F634CA2732CEBBE424D4634F8EFAD035C6E11EAABB0D34E40A0F1EC09A2DF975`.
+- Sidecar PID `34580` peaked at 2,252.88 MiB over 73 exact-PID WDDM samples. Cleanup, stable PID `32684`, isolation, and prior evidence preservation passed.
+- `qualify-budget`, validation-v2, old validation, extended proof, persistence work, and automatic promotion did not run.
 - HoloState-v2 Durable Capsule remains a separate future persistence track.
 
 ## Next exact action
 
-Review the complete protected diff and preflight evidence, then create and push the single pre-audit protocol commit. Reconfirm the clean pushed identity and execute:
+Do not retry worker protocol v1. A future task may separately authorize a new protocol version whose parser accumulates partial streaming token arrays and whose one-shot evidence uses new versioned paths. Until then:
 
 ```text
-warm A
-fast A1
-fast A2
-warm B
-fast B1
-fast B2
-deep A1
-stop
+PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
+PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
+RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
+CatalyticSwarm-0: LOCKED
+automatic promotion: disabled
 ```
-
-Fast failure stops the audit. Deep output failure does not erase a completed fast proof. A complete fast pass may unlock only `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` and set `CatalyticSwarm-0` to `AUTHORIZED_NOT_EXECUTED`; the broader process-local and restart-persistent locks remain closed.
 
 ## Unlock state
 
@@ -77,4 +73,4 @@ SUPERVISED_BOUNDED_RSI_AVAILABLE
 EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 ```
 
-The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. Automatic promotion remains disabled. `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`, `PROCESS_LOCAL_HOLOSTATE_AVAILABLE`, and `RESTART_PERSISTENT_HOLOSTATE_AVAILABLE` are locked pending executed evidence.
+The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. Automatic promotion remains disabled. `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`, `PROCESS_LOCAL_HOLOSTATE_AVAILABLE`, and `RESTART_PERSISTENT_HOLOSTATE_AVAILABLE` remain locked by executed evidence.

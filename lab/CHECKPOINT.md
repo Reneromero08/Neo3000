@@ -290,7 +290,7 @@ No literal infinity claim is made. Accepted cumulative avoided evaluations, acce
 ```text
 HoloState-v1 reuse mechanism: succeeded
 HoloState-v1 raw /completion gate: no literal final marker through 2048
-Current action: prepare separated HoloState-v1.1 chat-message protocol without running it
+Current action: preserve the executed HoloState-v1.1 no-retry boundary
 HoloState-v2 persistence: separate future intervention
 ```
 
@@ -313,16 +313,19 @@ The versioned qualification result SHA-256 is `1AE79511E6C0E3C928989912A24CCDC64
 
 Qualification sidecar PID/listener `44652` produced 239 exact-PID WDDM samples, peaked at 2,362,318,848 bytes / 2,252.88 MiB, and had no telemetry loss. The process stopped, runtime was removed, port 9494 became free, five retirement samples were empty, stable PID `31188` was unchanged, and the original v1 marker/result hashes remained exact. No Root B, tool, cancellation, fixed, extended, or v2 request ran.
 
-### HoloState-v1.1 message-boundary protocol [PRE-AUDIT]
+### HoloState-v1.1 message-boundary protocol [EXECUTED]
 
-- The evaluator now carries a separately hashed complete `holostate_worker_protocol_v1` object covering binary/model/template identities, unchanged ordered A/B sources, exact system/reference envelope text, separate user assignments, Chat Completions endpoint, cache/sampling settings, worker lanes, expected visible outputs, versioned one-shot paths, memory ceilings, isolation law, and unlock limits.
-- The controller has a non-executed `audit-worker-protocol` path for the exact sequence `warm A, fast A1, fast A2, warm B, fast B1, fast B2, deep A1` on one port-9494 sidecar. No extended proof or retry path is present.
-- Lane F sends `chat_template_kwargs.enable_thinking=false`, `max_tokens=64`, and requires exact assistant content, empty `reasoning_content`, normal stop, and measured cache reuse. Any fast failure stops.
-- Lane D sends reasoning auto at `max_tokens=768` and requires nonempty reasoning metadata, exact assistant content, normal stop, and cache reuse. Its verdict is independent and cannot erase a completed fast proof.
-- `scripts/baseline_harness.py` keeps its separate parsing of `delta.reasoning_content`, `delta.content`, and tool-call fragments and now also captures exact server-returned generated-token arrays plus prompt-progress events. The worker controller retains reasoning only as opaque presence/length/SHA-256; visible content and operational metrics remain auditable.
-- Historical validation, result, and qualification files are verified by exact SHA-256 without parsing or rewriting. The new attempt/result paths are versioned and remain unclaimed before the audit.
-- Focused pre-audit verification passes: 60 HoloState tests, 11 trace-controller tests, 9 evaluator-gate tests, 5 WDDM tests, Python compilation, and protected preflight. A template/tokenizer-only stable-server check rendered Root A at 7,806 tokens and Root B at 4,630, both inside the locked 4K-8K bounds; it generated no model output and claimed no audit marker.
-- A fast pass may unlock only `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`. `PROCESS_LOCAL_HOLOSTATE_AVAILABLE` and `RESTART_PERSISTENT_HOLOSTATE_AVAILABLE` remain locked. Automatic promotion remains disabled.
+- Protocol commit `3fb00fe93d0fb22e203d8e26d86173f5e3d2ee32` passed 60 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus compilation and protected preflight before push. The complete protocol SHA-256 was `767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b`.
+- The one-shot marker was claimed only after clean `HEAD = main = origin/main`, exact binary/model/template identities, stable PID `32684`, free port 9494, absent v2 files, and all three historical hashes passed.
+- Sidecar PID/listener `34580` launched on port 9494. Root A identity was `holostate-worker-6ff8940c6c7d72ae0a39eb78`, canonical prefix SHA-256 `93B508DC5B2028DFF04158A3CE26FD8D80F5B00711D3A5BF1FF2C7131CA096F8`, system-message SHA-256 `1D5A88F572F5C06C75CF179018FFFD656D66267EF2519B01A60FDA670DCEC172`, and 7,806 rendered warm tokens.
+- Root A warm returned byte-exact `HOLOSTATE ROOT WARM` (SHA-256 `84C0CFD85D4774E2BD67BC8FAE1C756ECB15C0E3CF58DD69891DD6B69FCD649B`), empty reasoning metadata, `finish_reason=stop`, 7 completion tokens, and exact prompt-token identity. Prompt processing was 145,519.789 ms at 53.642 TPS; decode was 18.981 TPS and total time 145.939 seconds.
+- The parser observed zero complete generated-token IDs and classified the warm `completion-token-evidence-missing`. The fast-failure law stopped the audit before Fast A1/A2, Root B, or Deep A1.
+- Pinned source inspection diagnoses an instrumentation defect: partial streaming responses assign one token ID, while the final streaming response assigns an empty token array. The executed parser replaced its array on every event, so the final empty array erased the preceding token evidence. Raw SSE events were not persisted, so the run itself proves only that the parser retained zero IDs; the overwrite explanation is source-based.
+- `FAST_PROCESS_LOCAL_HOLOSTATE=reject`; `DEEP_PROCESS_LOCAL_HOLOSTATE=inconclusive`. `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`, broader process-local, restart-persistent, and CatalyticSwarm-0 states remain locked. Automatic promotion remains disabled.
+- Sidecar PID `34580` produced 73 exact-PID WDDM samples with a 2,362,318,848-byte / 2,252.88 MiB peak. Cleanup, runtime removal, free port 9494, five empty retirement samples, stable PID `32684`, archived-candidate isolation, and prior evidence preservation all passed.
+- Attempt SHA-256 is `F634CA2732CEBBE424D4634F8EFAD035C6E11EAABB0D34E40A0F1EC09A2DF975`; result SHA-256 is `72F4BA4FA256836456B5ACA47FBD4CD5DE7789EB59F222B687B677010B7869A2`. This attempt must not be rerun.
+- A future separately authorized protocol version may accumulate partial token arrays and use new versioned evidence paths. No repair is promoted from this rejected audit.
+- Post-audit evidence binding passed 61 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus compilation and protected preflight.
 
 ### Durable persistence boundary
 

@@ -474,6 +474,15 @@ class WorkerProtocolTests(unittest.TestCase):
             neo_loop.holostate_worker_protocol_hash(self.evaluator),
         )
 
+    def test_worker_evidence_is_complete_object_hash_protected(self) -> None:
+        baseline = neo_loop.holostate_worker_protocol_evidence_hash(self.evaluator)
+        evaluator = copy.deepcopy(self.evaluator)
+        evaluator["holostate_worker_protocol_v1_evidence"]["fast_verdict"] = "inconclusive"
+        self.assertNotEqual(
+            baseline,
+            neo_loop.holostate_worker_protocol_evidence_hash(evaluator),
+        )
+
 
 class CompletionClassificationTests(unittest.TestCase):
     @classmethod

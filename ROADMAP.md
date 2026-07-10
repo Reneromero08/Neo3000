@@ -96,7 +96,7 @@ RSI-0: CLOSED
 -> Checkpoint 1A: trace substrate remains active and paused
 -> Checkpoint 2: ACTIVE
 -> First catalytic intervention: HoloState-v1 Live Prefix Lattice
--> Current bounded work: HoloState-v1.1 message-boundary protocol, pre-audit
+-> HoloState-v1.1 worker audit: FAST REJECT, DEEP INCONCLUSIVE, NO RETRY
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -563,11 +563,17 @@ The A1 request then consumed all 768 allowed completion tokens without closing t
 
 The causal boundary is split correctly: the HoloState-v1 reuse mechanism succeeded, while the legacy raw-output quality gate did not close. The one-shot qualification tested `1024, 1280, 1536, 2048` in ascending order on one Root A/A1 sidecar. Every raw `/completion` stream reused 7,878 of 8,026 logical prompt tokens, consumed its exact limit, and ended without `HOLOSTATE A1 EXACT`. Because `/completion` exposed one raw content stream and the legacy parser labeled all raw output as reasoning when the marker was absent, those runs do not prove that every token belonged to `reasoning_content`. No budget qualified, no budget was selected, and validation-v2 did not run.
 
-### HoloState-v1.1 message-boundary protocol: PRE-AUDIT
+### HoloState-v1.1 message-boundary protocol: EXECUTED
 
-The next bounded protocol uses `/v1/chat/completions` with the canonical root in a locked system/reference message and only the current assignment in a separate user message. Lane F is thinking-disabled, capped at 64 tokens, and must return exact A/B assistant content with an empty reasoning channel. Lane D remains reasoning-auto at 768 tokens and must return exact deep-A assistant content with nonempty reasoning-channel metadata. The shared Chat Completions stream parser separates content, reasoning, and tools and now captures server-returned generated-token arrays plus prompt-progress events; the controller persists reasoning only as presence, length, and SHA-256.
+Protocol commit `3fb00fe93d0fb22e203d8e26d86173f5e3d2ee32` locked `/v1/chat/completions`, a canonical system/reference root plus separate user assignment, 64-token thinking-disabled Fast workers, and one 768-token reasoning-auto Deep probe. Internal reasoning remained opaque.
 
-The authorized one-shot sequence is `warm A, fast A1, fast A2, warm B, fast B1, fast B2, deep A1`, then stop. Fast failure stops the audit; deep failure does not erase a completed fast proof. A complete fast pass may unlock only `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`. The broader process-local lock, restart-persistent lock, validation-v2 prohibition, no-retry law, and automatic-promotion prohibition remain intact. The pre-audit protocol must be reviewed, committed, pushed, and preflight-clean before its versioned marker can be claimed.
+The authorized one-shot audit ran once and stopped at Root A warm. Root A rendered 7,806 tokens and returned exact visible content `HOLOSTATE ROOT WARM`, empty reasoning metadata, `finish_reason=stop`, and matching prompt identity. The required complete generated-token array was not retained by the parser, so `completion-token-evidence-missing` rejected the warm before Fast A1. Root B and Deep were not attempted.
+
+Pinned source establishes the instrumentation diagnosis: streaming partial results carry token IDs, while the final streaming result carries an empty array. The executed parser replaced each observed array, so the final empty value erased prior token evidence. Raw SSE events were not persisted; this is therefore a source-based diagnosis, not direct event replay. Result SHA-256 is `72F4BA4FA256836456B5ACA47FBD4CD5DE7789EB59F222B687B677010B7869A2`.
+
+The lane verdicts are `FAST_PROCESS_LOCAL_HOLOSTATE=reject` and `DEEP_PROCESS_LOCAL_HOLOSTATE=inconclusive`. Sidecar PID `34580` peaked at 2,252.88 MiB over 73 exact-PID samples and retired cleanly. Stable PID `32684`, the archived candidate, isolation, cleanup, and all historical evidence hashes remained exact. All availability locks and the automatic-promotion prohibition remain intact.
+
+Do not retry worker protocol v1. A future separately authorized protocol version must accumulate partial streaming token arrays and use a new versioned marker before any new live claim.
 
 ### HoloState-v2 persistence boundary
 

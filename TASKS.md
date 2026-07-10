@@ -2,11 +2,11 @@
 
 **Active checkpoint:** Checkpoint 2, First catalytic compute intervention
 **Current RSI level:** Level 1, supervised bounded RSI available
-**Baseline evidence through:** `7a2019c50e84e58f14860f4e5db2e956506f5cdc`
+**Baseline evidence through:** protocol commit `3fb00fe93d0fb22e203d8e26d86173f5e3d2ee32`; ignored worker result `72F4BA4FA256836456B5ACA47FBD4CD5DE7789EB59F222B687B677010B7869A2`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. Checkpoint 2 is preparing the protected HoloState-v1.1 message-boundary protocol; its one-shot chat audit has not run.
-**Next exact action:** review, commit, and push the protected pre-audit protocol as one architectural chunk, then reconfirm every preclaim gate and run its one-shot audit exactly once. Do not retry old qualification or run validation-v2.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. The HoloState-v1.1 worker audit executed once and stopped at Root A warm on its complete generated-token evidence gate; Fast is `reject` and Deep is `inconclusive`.
+**Next exact action:** preserve the no-retry boundary. Any future worker-protocol version must be separately authorized and must accumulate streaming per-token arrays instead of replacing them with the final empty streaming array before claiming a new versioned marker.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -311,7 +311,7 @@ retained lawful state: model/configuration/prefix-identity-bound live cache entr
 - [x] Reach the declared no-pass stop after 2048. No selected budget was written, no prompt or quality gate was changed, and no qualification retry occurred.
 - [x] Correctly skip the conditional locked-budget rotation and validation-v2 because qualification did not pass; their versioned v2 marker/result remain absent.
 
-### HoloState-v1.1 message-boundary protocol [PRE-AUDIT]
+### HoloState-v1.1 message-boundary protocol [EXECUTED]
 
 Evidence correction:
 
@@ -322,13 +322,21 @@ Not proven: every raw token belonged to reasoning_content.
 
 The legacy endpoint exposed one raw content stream, and `parse_final_structure` labeled the whole raw string as reasoning when the marker was absent. Historical evidence remains byte-identical.
 
-- [ ] Review and publish the evaluator-locked `holostate_worker_protocol_v1`, Chat Completions controller path, focused tests, and planning updates as one pre-audit commit.
-- [ ] Confirm the versioned attempt/result paths remain absent before the one-shot claim.
-- [ ] Run exactly one audit in the fixed sequence `warm A, fast A1, fast A2, warm B, fast B1, fast B2, deep A1`, then stop.
-- [ ] Classify fast and deep lanes independently. Fast failure stops; deep failure cannot erase a completed fast proof.
-- [ ] Unlock only `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` if the complete fast proof and all isolation/cleanup gates pass.
+- [x] Published evaluator-locked protocol commit `3fb00fe93d0fb22e203d8e26d86173f5e3d2ee32` before claiming the marker.
+- [x] Confirmed both versioned worker paths and both validation-v2 paths were absent before the atomic one-shot claim.
+- [x] Executed the audit exactly once. It stopped at `warm A` on `completion-token-evidence-missing`; no Fast, Root B, or Deep request ran.
+- [x] Classified lanes independently: `FAST_PROCESS_LOCAL_HOLOSTATE=reject`; `DEEP_PROCESS_LOCAL_HOLOSTATE=inconclusive`.
+- [x] Kept `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`, broader process-local, restart-persistent, and CatalyticSwarm-0 states locked.
 
 Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 768 tokens. Both use separate system/reference and user-assignment messages through `/v1/chat/completions`; old budget qualification, validation-v2, extended proof, persistence, and automatic promotion remain forbidden here.
+
+Executed boundary:
+
+- Root A rendered 7,806 tokens and returned exact visible content `HOLOSTATE ROOT WARM`, empty reasoning metadata, `finish_reason=stop`, and 7 completion tokens. Prompt processing was 145,519.789 ms at 53.642 TPS.
+- The parser recorded zero complete generated-token IDs, so the locked token-evidence gate rejected the warm before reuse could be measured.
+- Pinned-source inspection explains the instrumentation defect: partial streaming responses carry per-token arrays, the final streaming response carries an empty array, and the executed parser replaced rather than accumulated arrays. Raw SSE events were not persisted, so this diagnosis is source-based rather than direct event replay.
+- Result SHA-256 is `72F4BA4FA256836456B5ACA47FBD4CD5DE7789EB59F222B687B677010B7869A2`; attempt SHA-256 is `F634CA2732CEBBE424D4634F8EFAD035C6E11EAABB0D34E40A0F1EC09A2DF975`.
+- Sidecar PID `34580` peaked at 2,252.88 MiB over 73 exact-PID WDDM samples. Cleanup, five retirement samples, stable PID `32684`, isolation, and all three historical evidence hashes passed.
 
 Integration evidence:
 
@@ -351,4 +359,4 @@ Integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: review and publish the protected HoloState-v1.1 pre-audit protocol commit, then run its authorized one-shot Chat Completions audit exactly once. The old qualification range, validation-v2, and HoloState-v2 durability track remain unchanged.
+- [ ] Next task: preserve the completed no-retry result. A future separately authorized worker-protocol version may repair streaming token-array accumulation and claim a new versioned marker; the current v1 attempt must not be rerun. Validation-v2 and HoloState-v2 durability remain unchanged.

@@ -98,6 +98,14 @@ def holostate_worker_protocol_hash(evaluator: dict[str, Any]) -> str:
     return sha256_bytes(canonical_json_bytes(protocol))
 
 
+def holostate_worker_protocol_evidence_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the complete tracked adjudication of the ignored one-shot evidence."""
+    evidence = evaluator.get("holostate_worker_protocol_v1_evidence")
+    if not isinstance(evidence, dict):
+        raise NeoLoopError("evaluator is missing holostate_worker_protocol_v1_evidence")
+    return sha256_bytes(canonical_json_bytes(evidence))
+
+
 def load_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise NeoLoopError(f"missing required file: {path}")
@@ -165,6 +173,7 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         "gate_definition_hashes": gate_definition_hashes(evaluator),
         "holostate_contract_sha256": holostate_contract_hash(evaluator),
         "holostate_worker_protocol_sha256": holostate_worker_protocol_hash(evaluator),
+        "holostate_worker_protocol_evidence_sha256": holostate_worker_protocol_evidence_hash(evaluator),
         "model_identity": evaluator["model"],
         "baseline_source_commit": git(ROOT, "rev-parse", "HEAD"),
         "stable_launch": evaluator["stable_launch"],
@@ -219,6 +228,10 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     actual_worker_protocol = holostate_worker_protocol_hash(evaluator)
     if expected_worker_protocol != actual_worker_protocol:
         raise NeoLoopError("HoloState worker protocol differs from its locked complete-object hash")
+    expected_worker_evidence = lock.get("holostate_worker_protocol_evidence_sha256")
+    actual_worker_evidence = holostate_worker_protocol_evidence_hash(evaluator)
+    if expected_worker_evidence != actual_worker_evidence:
+        raise NeoLoopError("HoloState worker evidence differs from its locked complete-object hash")
     return lock
 
 

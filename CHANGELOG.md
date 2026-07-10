@@ -17,7 +17,7 @@ Checkpoint 2: ACTIVE
 First catalytic intervention: HoloState-v1 Live Prefix Lattice
 HoloState-v1 integration verdict: INCONCLUSIVE
 HoloState-v1 budget qualification: NO PASS THROUGH 2048
-HoloState-v1.1 message-boundary protocol: PRE-AUDIT
+HoloState-v1.1 worker audit: FAST REJECT / DEEP INCONCLUSIVE / NO RETRY
 Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
@@ -41,7 +41,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Checkpoint 1A remains active but paused. Compile-out, bounded aggregation, protected exact-PID control, and explicit truncation/drop detection are proven; overhead, a completed workload map, and model-runtime bottleneck selection remain unproven.
 - Checkpoint 2 is active for HoloState-v1 Live Prefix Lattice, the protected operational integration of exact process-local executable-prefix reuse already proven by HoloState-0.
 - The one-shot HoloState-v1 raw `/completion` qualification is complete: `1024, 1280, 1536, 2048` all exhausted without the exact final marker. This does not prove `reasoning_content` attribution. No budget was selected and validation-v2 remains unattempted.
-- HoloState-v1.1 prepares a separately protected Chat Completions message hierarchy with 64-token thinking-disabled fast workers and one 768-token reasoning-auto deep probe. Its one-shot marker remains unclaimed.
+- HoloState-v1.1 executed its protected Chat Completions audit once and stopped at Root A warm on missing complete generated-token evidence. Fast is `reject`; Deep is `inconclusive`; no retry is authorized.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
@@ -54,6 +54,17 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Extended the shared `baseline_harness.stream_completion` parser to retain server-returned generated-token arrays and prompt-progress events while preserving its separate reasoning, visible-content, and tool-call channels. Worker results store reasoning only as presence, length, and SHA-256.
 - Pre-audit verification passed 60 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus protected preflight. Template/tokenizer-only rendering measured Root A at 7,806 tokens and Root B at 4,630, inside the unchanged 4K-8K bounds without generating output or claiming the audit.
 - The one-shot audit, old qualification, validation-v2, extended proof, and persistence work were not executed by the pre-audit protocol change.
+
+### HoloState-v1.1 worker audit executed once
+
+- Protocol commit `3fb00fe93d0fb22e203d8e26d86173f5e3d2ee32` was clean, pushed, and preflight-exact before the one-shot marker was claimed.
+- Root A rendered 7,806 tokens and returned exact `HOLOSTATE ROOT WARM`, empty reasoning metadata, `finish_reason=stop`, and matching prompt identity. Prompt time was 145,519.789 ms at 53.642 TPS; 7 completion tokens decoded at 18.981 TPS.
+- The parser retained zero generated-token IDs and rejected the warm as `completion-token-evidence-missing`, stopping before Fast A1/A2, Root B, or Deep A1.
+- Pinned-source inspection diagnoses the instrumentation defect: partial streaming results carry per-token arrays, the final streaming result carries an empty array, and the executed parser replaced rather than accumulated arrays. Raw SSE events were not persisted, so this explanation is source-based rather than direct event replay.
+- `FAST_PROCESS_LOCAL_HOLOSTATE=reject`; `DEEP_PROCESS_LOCAL_HOLOSTATE=inconclusive`. All HoloState availability states, CatalyticSwarm-0, and automatic promotion remain locked.
+- Sidecar PID `34580` recorded 73 exact-PID WDDM samples at a 2,252.88 MiB peak and retired cleanly. Stable PID `32684`, archived-candidate isolation, cleanup, and all historical evidence hashes passed.
+- Attempt SHA-256 is `F634CA2732CEBBE424D4634F8EFAD035C6E11EAABB0D34E40A0F1EC09A2DF975`; result SHA-256 is `72F4BA4FA256836456B5ACA47FBD4CD5DE7789EB59F222B687B677010B7869A2`. Worker protocol v1 must not be retried.
+- Post-audit evidence binding passed 61 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus compilation and protected preflight.
 
 ### Checkpoint 2 activated: HoloState-v1 Live Prefix Lattice
 
