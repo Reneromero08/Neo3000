@@ -465,10 +465,13 @@ def main() -> int:
             recorder.end(recorder.windows[-1], process_cpu_seconds(process.pid) if process else None,
                          {"error": error or result.get("error") or "phase-incomplete"})
         teardown = recorder.start("teardown", process_cpu_seconds(process.pid) if process else None)
-        result["cleanup"] = cleanup_candidate(process, runtime) if process else {"runtime_removed": False}
         if sampler:
             sampler.stop()
             result["telemetry"] = sampler_details(sampler, evaluator["memory"]["candidate_vram_mib_ceiling"], pre_miss_count)
+            if sampler.failure_reason():
+                result["verdict"] = "reject"
+                result["error"] = result.get("error") or sampler.failure_reason()
+        result["cleanup"] = cleanup_candidate(process, runtime) if process else {"runtime_removed": False}
         if trace:
             trace.poll(final=True)
             result["trace"] = trace.evidence()
