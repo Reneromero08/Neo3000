@@ -743,6 +743,13 @@ def render_prompt(content: str) -> str:
     return prompt
 
 
+def derive_fresh_prompt_tokens(logical: int, cached: int, reported_processed: int) -> tuple[int, str]:
+    """Interpret prompt progress where `processed` is cumulative when cache is present."""
+    if cached > 0 and logical >= cached:
+        return logical - cached, "logical-minus-cache"
+    return reported_processed, "reported-processed"
+
+
 def completion_request(
     rendered_prompt: str,
     configured_max_tokens: int,
@@ -805,12 +812,17 @@ def completion_request(
     last_progress = progress[-1] if progress else {}
     logical_prompt_tokens = int(last_progress.get("total") or final.get("tokens_evaluated") or 0)
     cached_prompt_tokens = int(last_progress.get("cache") or 0)
-    fresh_prompt_tokens = int(last_progress.get("processed") or timings.get("prompt_n") or 0)
+    reported_processed_prompt_tokens = int(last_progress.get("processed") or timings.get("prompt_n") or 0)
+    fresh_prompt_tokens, fresh_prompt_tokens_method = derive_fresh_prompt_tokens(
+        logical_prompt_tokens, cached_prompt_tokens, reported_processed_prompt_tokens
+    )
     result = {
         "configured_max_tokens": configured_max_tokens,
         "logical_prompt_tokens": logical_prompt_tokens,
         "cached_prompt_tokens": cached_prompt_tokens,
         "fresh_prompt_tokens": fresh_prompt_tokens,
+        "reported_processed_prompt_tokens": reported_processed_prompt_tokens,
+        "fresh_prompt_tokens_method": fresh_prompt_tokens_method,
         "prompt_ms": timings.get("prompt_ms"),
         "prompt_tps": timings.get("prompt_per_second"),
         "ttft_seconds": first_generated,

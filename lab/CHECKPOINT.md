@@ -289,14 +289,29 @@ No literal infinity claim is made. Accepted cumulative avoided evaluations, acce
 
 ```text
 HoloState-v1 reuse mechanism: succeeded
-HoloState-v1 operational quality gate: blocked by unqualified shared reasoning budget
-Current action: qualify the minimum passing A1 budget, then run one immutable-budget validation-v2 if qualification passes
+HoloState-v1 operational quality gate: no sufficient tested budget through 2048
+Current action: stop without retry, budget selection, or validation-v2
 HoloState-v2 persistence: separate future intervention
 ```
 
-The prior 768-token failure is executed lower-bound evidence and will not be rerun. The protected contract declares ascending candidates `1024, 1280, 1536, 2048`, keeps reasoning `auto`, requires nonempty reasoning, exact branch finals, normal generation stop, and process-local reuse, and permits only one versioned qualification plus one versioned validation-v2. The global claim ceiling and both availability locks remain unchanged until executed evidence closes every gate.
+The prior 768-token failure is executed lower-bound evidence and was not rerun. The one-shot protected qualification then tested ascending candidates `1024, 1280, 1536, 2048` with reasoning `auto`, nonempty reasoning, exact-final, normal-stop, and process-local-reuse gates unchanged. All four candidates exhausted their exact limits without the A1 final marker. The declared no-pass stop condition closed the run, so the selected budget remains unset and validation-v2 remains unattempted.
 
-The repaired controller/contract passed Python compilation, 38 focused HoloState tests, 11 trace-controller tests, 9 evaluator-gate tests, and 5 WDDM tests. Complete-object contract hashing, ordered root-source hashing, stale-lock rejection, atomic one-shot claims, persisted failed-result fields, bounded worker settlement, and cleanup integrity are covered. Protected preflight passed before any live qualification launch.
+The repaired controller/contract and post-run prompt-progress interpretation repair passed Python compilation, 40 focused HoloState tests, 11 trace-controller tests, 9 evaluator-gate tests, and 5 WDDM tests. Complete-object contract hashing, ordered root-source hashing, stale-lock rejection, atomic one-shot claims, persisted failed-result fields, bounded worker settlement, cleanup integrity, and cached/fresh derivation are covered. Protected preflight passed before and after the live qualification.
+
+### Reasoning-budget qualification result [NO PASS THROUGH 2048]
+
+Root A warmed once as state `holostate-27f565ae760cdf96aa958ec9`: canonical prefix SHA-256 `58EAB1360FD2B56B86F12A903BB5C9AE081E8A437FB5B8AE04C40C8D1B663CEF`, token-ID SHA-256 `C8A5DA13ED1C396AA4F6BA756EEA2865AFD379E8BF8E4A950FCBABB6EC43C087`, chat-template SHA-256 `A4AEE8AFCF2E0711942CF848899BE66016F8D14A889FF9EDE07BCA099C28F715`, 8,010 rendered tokens, and 172,069.162 ms warm prompt time.
+
+| Budget | Completion | Stop | Exact final | Reasoning | Logical / cached / inferred fresh | Prompt ms | Decode TPS | Total s | Classification |
+|---:|---:|---|---|---|---:|---:|---:|---:|---|
+| 1024 | 1024 | limit | no | yes | 8026 / 7878 / 148 | 3598.417 | 14.544 | 74.029 | completion-budget-exhausted |
+| 1280 | 1280 | limit | no | yes | 8026 / 7878 / 148 | 4043.371 | 14.650 | 91.433 | completion-budget-exhausted |
+| 1536 | 1536 | limit | no | yes | 8026 / 7878 / 148 | 3465.535 | 14.414 | 110.051 | completion-budget-exhausted |
+| 2048 | 2048 | limit | no | yes | 8026 / 7878 / 148 | 3072.167 | 15.092 | 138.788 | completion-budget-exhausted |
+
+The versioned qualification result SHA-256 is `1AE79511E6C0E3C928989912A24CCDC64C5B918D6B74B1A364ACDB0A34044D94`. Its raw prompt-progress records expose `cache=7878`, `processed=8026`, and `total=8026`; because this server reports `processed` cumulatively when cache is present, the reusable fresh delta is `total - cache = 148`. This interpretation repair was tested without changing or rerunning the completed one-shot evidence.
+
+Qualification sidecar PID/listener `44652` produced 239 exact-PID WDDM samples, peaked at 2,362,318,848 bytes / 2,252.88 MiB, and had no telemetry loss. The process stopped, runtime was removed, port 9494 became free, five retirement samples were empty, stable PID `31188` was unchanged, and the original v1 marker/result hashes remained exact. No Root B, tool, cancellation, fixed, extended, or v2 request ran.
 
 ### Durable persistence boundary
 

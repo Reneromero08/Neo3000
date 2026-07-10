@@ -16,6 +16,7 @@ Checkpoint 1A: ACTIVE / PAUSED
 Checkpoint 2: ACTIVE
 First catalytic intervention: HoloState-v1 Live Prefix Lattice
 HoloState-v1 integration verdict: INCONCLUSIVE
+HoloState-v1 budget qualification: NO PASS THROUGH 2048
 Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
@@ -37,7 +38,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 
 - Checkpoint 1A remains active but paused. Compile-out, bounded aggregation, protected exact-PID control, and explicit truncation/drop detection are proven; overhead, a completed workload map, and model-runtime bottleneck selection remain unproven.
 - Checkpoint 2 is active for HoloState-v1 Live Prefix Lattice, the protected operational integration of exact process-local executable-prefix reuse already proven by HoloState-0.
-- The immediate HoloState-v1 boundary is reasoning-budget qualification: preserve the executed 768-token exhaustion as the lower bound, test `1024, 1280, 1536, 2048` once in ascending order, and lock the smallest passing value before one newly authorized validation-v2.
+- The one-shot HoloState-v1 reasoning-budget qualification is complete: `1024, 1280, 1536, 2048` all exhausted with reasoning present and the exact final absent. No budget was selected and validation-v2 remains unattempted.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
@@ -67,8 +68,17 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - The original ignored attempt/result remain immutable lower-bound evidence; new one-shot qualification and validation-v2 files are versioned separately.
 - A complete evaluator-locked HoloState contract now owns roots, ordered source sets, branches, prompts, exact finals, reasoning/reuse requirements, candidate and selected budgets, sequences, request limits, memory ceilings, and binary/model/template identity.
 - Completion budget exhaustion, wrong final content, missing reasoning, reuse failure, and acceptance are distinct persisted classifications.
-- The repair passed 38 focused HoloState tests plus the protected trace, evaluator, and WDDM regression suites; evaluator preflight passed before any live launch.
+- The repair and post-run prompt-progress interpretation fix passed 40 focused HoloState tests plus the protected trace, evaluator, and WDDM regression suites; evaluator preflight passed before and after the live launch.
 - HoloState-v2 persistence remains a separate future intervention; the global claim ceiling and both availability locks are unchanged pending executed evidence.
+
+### HoloState-v1 reasoning-budget qualification: no pass through 2048
+
+- One sidecar, one Root A warm, and exactly four ascending A1 requests ran. Root B, fixed interleaving, tool/cancellation probes, extended proof, validation-v2, and retries did not run.
+- Root A identity was `holostate-27f565ae760cdf96aa958ec9`; it contained 8,010 rendered tokens and warmed in 172,069.162 ms.
+- Every A1 request exposed 8,026 logical prompt tokens and 7,878 cached tokens, yielding an inferred 148-token fresh delta. The raw server field `processed=8026` is cumulative when cache is present; the controller now records that raw field separately and derives fresh as `logical - cache` for future requests. The completed one-shot result was not rewritten or rerun.
+- Budgets 1024, 1280, 1536, and 2048 produced exactly 1024, 1280, 1536, and 2048 completion tokens respectively, each with nonempty reasoning, `stop_type=limit`, no final marker, and classification `completion-budget-exhausted`.
+- Qualification result SHA-256 is `1AE79511E6C0E3C928989912A24CCDC64C5B918D6B74B1A364ACDB0A34044D94`. No minimum budget passed, so `selected_max_tokens` remains null and no locked-budget commit exists.
+- Sidecar PID/listener `44652` recorded 239 exact-PID WDDM samples at a 2,252.88 MiB peak with no telemetry loss. Full cleanup, five empty retirement samples, stable PID `31188`, free port 9494, and preservation of the original v1 evidence all passed.
 
 ### HoloState-0 capability boundary opened
 

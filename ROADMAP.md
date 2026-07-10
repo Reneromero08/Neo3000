@@ -560,7 +560,7 @@ The protected controller warmed two immutable roots on one exact sidecar: A at 7
 
 The A1 request then consumed all 768 allowed completion tokens without closing the declared deterministic output gate. Stop-on-first-failure ended the sequence before B1/A2/B2, same-branch hash comparison, eviction observation, or the extended proof. No retry occurred. HoloState-v1 Live is therefore `inconclusive`, `PROCESS_LOCAL_HOLOSTATE_AVAILABLE` remains locked, and the HoloState-0 mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` remains the narrower supported claim.
 
-The causal boundary is now split correctly: the HoloState-v1 reuse mechanism succeeded, while the HoloState-v1 operational quality gate is blocked by an unqualified shared reasoning budget. The next bounded intervention is to qualify the smallest passing A1 budget from `1024, 1280, 1536, 2048`, lock it immutably, and only then run one newly authorized versioned two-root validation. This is a causal contract repair, not an automatic retry.
+The causal boundary is split correctly: the HoloState-v1 reuse mechanism succeeded, while the HoloState-v1 operational quality gate is blocked by the tested shared reasoning-budget range. The one-shot qualification tested `1024, 1280, 1536, 2048` in ascending order on one Root A/A1 sidecar. Every request reused 7,878 of 8,026 logical prompt tokens and retained reasoning, but every request consumed its exact limit without reaching `HOLOSTATE A1 EXACT`. No budget qualified, so no budget was selected or locked and the newly authorized validation-v2 did not run. Any larger budget, prompt change, or mechanism change requires a separate future authorization.
 
 ### HoloState-v2 persistence boundary
 

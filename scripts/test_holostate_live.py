@@ -110,6 +110,14 @@ class OutputTests(unittest.TestCase):
         gate = holo.deterministic_group_gate([dict(base), dict(base)])
         self.assertTrue(gate["A1"]["exact"])
 
+    def test_cached_progress_derives_fresh_delta_from_logical_minus_cache(self) -> None:
+        fresh, method = holo.derive_fresh_prompt_tokens(8026, 7878, 8026)
+        self.assertEqual((fresh, method), (148, "logical-minus-cache"))
+
+    def test_uncached_progress_retains_reported_processed_count(self) -> None:
+        fresh, method = holo.derive_fresh_prompt_tokens(8010, 0, 8010)
+        self.assertEqual((fresh, method), (8010, "reported-processed"))
+
 
 class StaticCapabilityTests(unittest.TestCase):
     def test_controller_has_only_declared_commands(self) -> None:

@@ -2,11 +2,11 @@
 
 **Active checkpoint:** Checkpoint 2, First catalytic compute intervention
 **Current RSI level:** Level 1, supervised bounded RSI available
-**Baseline evidence through:** `dca929d3d6039e9355c95d34ae5d161309a67e80`
+**Baseline evidence through:** `65317fd15d5ad269df60ef187996aa07c78fa8ec`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. Checkpoint 2 remains active; qualify the minimum sufficient HoloState-v1 reasoning budget, then run one newly authorized two-root validation under that immutable budget.
-**Next exact action:** run the one-shot `qualify-budget` operation only after the protected controller, complete HoloState contract, focused tests, evaluator lock, and preflight are committed and pushed
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. Checkpoint 2 remains active; the one-shot HoloState-v1 reasoning-budget qualification is complete with no sufficient budget through 2048.
+**Next exact action:** stop this task at the executed boundary; do not rotate the selected budget or run validation-v2. A future task must separately authorize any prompt, budget-range, or mechanism intervention from the preserved qualification evidence.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -306,10 +306,10 @@ retained lawful state: model/configuration/prefix-identity-bound live cache entr
 - [ ] Quality gate remains incomplete and is not authorized for retry in this task: preserve Pi text, reasoning, tools, cancellation, and repeated turns.
 - [x] Classify HoloState-v1 Live as `inconclusive`: A1 reused an inferred 7,017 of 7,165 logical prompt tokens and evaluated 148 fresh tokens in 3,685.92 ms, but consumed the full 768-token completion allowance without closing the deterministic gate. The remaining interleaving and extended proof did not run.
 - [x] Separate mechanism from operational quality: HoloState-v1 process-local reuse succeeded; its operational quality gate is blocked by an unqualified shared reasoning budget.
-- [x] Protect the repaired boundary with a complete-object evaluator hash, atomic versioned markers, persisted completion classifications, sidecar-compatible tool/cancellation probes, and 38 focused HoloState tests; all protected regression suites and preflight pass.
-- [ ] Qualify exactly one ascending budget sequence `1024, 1280, 1536, 2048` on Root A/A1, stop at the first accepted result, and preserve every result without retry.
-- [ ] If qualification passes, lock the smallest passing budget into the complete evaluator contract and push the regenerated lock before validation.
-- [ ] Run exactly one versioned HoloState-v1 validation-v2 with two roots, the fixed interleaving, tool and cancellation/recovery probes, and 20 extended requests.
+- [x] Protect the repaired boundary with a complete-object evaluator hash, atomic versioned markers, persisted completion classifications, sidecar-compatible tool/cancellation probes, and 40 focused HoloState tests; all protected regression suites and preflight pass.
+- [x] Qualify exactly one ascending budget sequence `1024, 1280, 1536, 2048` on Root A/A1. Every request reused 7,878 of 8,026 logical prompt tokens, retained nonempty reasoning, consumed its exact configured limit, and ended `completion-budget-exhausted` without the final marker.
+- [x] Reach the declared no-pass stop after 2048. No selected budget was written, no prompt or quality gate was changed, and no qualification retry occurred.
+- [x] Correctly skip the conditional locked-budget rotation and validation-v2 because qualification did not pass; their versioned v2 marker/result remain absent.
 
 Integration evidence:
 
@@ -332,4 +332,4 @@ Integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: execute the protected one-shot HoloState reasoning-budget qualification. HoloState-v2 Durable Capsule remains a separate future durability intervention and is not the current action.
+- [ ] Next task: from the preserved no-pass evidence, separately authorize one causal investigation of why A1 remains in reasoning past 2048 without changing the prompt, budget range, or quality gate in this completed task. HoloState-v2 Durable Capsule remains a separate future durability track.
