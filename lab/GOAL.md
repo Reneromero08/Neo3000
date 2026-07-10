@@ -30,15 +30,17 @@ Do not begin autonomous RSI. Do not modify stable inference logic. Do not promot
 
 ## Next exact action
 
-Run exactly one supervised instrumentation candidate using the fixed optional trace schema. Evaluate the normal trace-disabled build once through `neo-loop`, then run one matched trace-enabled diagnostic after safe teardown. This is not authorization for optimization, speculative or catalytic inference, autonomous RSI, merging, or automatic promotion.
+The first Checkpoint 1A candidate is retained for review at `3e3023fc389a608ec5a5806eb8e1a50a801486d5`. Its trace-disabled normal cycle passed every immutable gate, but its trace-enabled diagnostic stopped: synchronous per-node writes generated 2.41 million events and about 896 MB before the cold request could complete, and the local telemetry sampler failed exact-PID attribution. Do not rerun this candidate in the current task.
+
+The next future supervised objective is to replace per-node synchronous writes with bounded aggregation, tag intentional CPU-MoE separately from fallback, and validate exact-PID telemetry before any matched diagnostic. This is not authorization for optimization, speculative or catalytic inference, autonomous RSI, merging, or automatic promotion.
 
 Minimum required work:
 
 ```text
 1. Keep the stable server and stable worktree unchanged.
-2. Define one fixed trace schema and a trace-disabled versus trace-enabled candidate comparison.
-3. Keep tracing optional and compiled out in normal builds.
-4. Measure first-request and per-token placement/synchronization costs without modifying stable inference.
+2. Preserve trace schema v1 and the proven trace-disabled compile-out behavior.
+3. Bound trace volume and I/O sufficiently to complete matched cold and warm workloads.
+4. Add explicit placement reasons and exact-PID telemetry validation without modifying stable inference.
 ```
 
 ## Unlock state

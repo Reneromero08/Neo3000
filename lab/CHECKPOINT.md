@@ -170,10 +170,25 @@ Claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. Level 1 is an operational 
 
 ### Checkpoint 1A: Trace substrate [ACTIVE]
 
-- [ ] Fixed, versioned trace schema exists in an allowed candidate path.
-- [ ] Trace-disabled normal build compiles trace calls out and preserves behavior.
-- [ ] Separate trace-enabled diagnostic build emits monotonic, stable-ID local events.
-- [ ] Exactly one supervised candidate cycle passes or records its immutable-gate verdict.
+- [x] Fixed schema v1 exists in allowed path `ggml/include/neo-compute-trace.h`; required envelope fields are always present and unknown optional semantics remain null/omitted.
+- [x] Trace-disabled normal build compiles calls out under undefined `NEO_COMPUTE_TRACE` and preserves behavior: the only supervised cycle, `neo-loop-20260710T012311`, returned `reviewable-accept` at candidate `3e3023fc389a608ec5a5806eb8e1a50a801486d5`.
+- [x] Separate `build/candidate-trace` diagnostic build emitted monotonic schema-v1 events to ignored local artifacts.
+- [x] Exactly one supervised candidate cycle ran; transport, reasoning, tool, cancellation, repeat, warm-performance, WDDM, cleanup, stable listener, and protected-hash gates passed. Trace-disabled warm median was 16.978 TPS and exact-PID WDDM peak was 2,196.88 MiB across 84 samples.
 - [ ] Matched cold and warm diagnostics quantify trace overhead and produce an observed/inferred/not-yet-instrumented compute map.
+
+#### First trace diagnostic: STOPPED / INCONCLUSIVE
+
+The trace-enabled cold reasoning request did not complete its 768-token budget. At teardown it had reached 602 decoded tokens at approximately 1.60 TPS, versus 14.878 TPS for the complete trace-disabled reasoning gate. The partial trace contains 2,407,857 valid JSON events, 895,639,047 bytes, and 449.13 seconds of monotonic coverage. Per-node synchronous file opens/writes are a causally supported instrumentation bottleneck; they are not evidence of a Neo3000 inference bottleneck. Warm transport, warm reasoning, and warm-performance diagnostics were not run after the stop condition.
+
+Observed in the partial cold trace:
+
+- CUDA operators: `ADD`, `ARGSORT`, `CLAMP`, `CONCAT`, `CONT`, `CPY`, `DIV`, `FLASH_ATTN_EXT`, `GATED_DELTA_NET`, `GET_ROWS`, `GLU`, `L2_NORM`, `MUL`, `MUL_MAT`, `PERMUTE`, `RESHAPE`, `RMS_NORM`, `ROPE`, `SCALE`, `SET_ROWS`, `SOFT_MAX`, `SSM_CONV`, `SUM_ROWS`, `TRANSPOSE`, `UNARY`, and `VIEW`.
+- CPU operators: `GET_ROWS`, `GLU`, `MUL_MAT_ID`, and `VIEW`. `MUL_MAT_ID` remained on CPU under the declared CPU-MoE profile. The schema did not yet tag placement reasons, so the accompanying CPU `GLU`/`VIEW` operations cannot be classified confidently as intentional continuation versus accidental fallback.
+- Host graph lifecycle: 6 rebuilds and 603 reuses. CUDA graph lifecycle: 102 capture starts, 102 completed captures, and 24,751 replays; no CUDA executable rebuild event was observed.
+- Synchronization: 107,642 CUDA stream waits averaging 0.495 ms and 3,633 scheduler waits averaging 2.625 ms. Observed device-to-host transfer volume was 602,920,960 bytes; other transfer hooks were incomplete.
+- Gated Delta Net recurrent state: 60 CUDA-resident layers, 8,781,824 bytes per layer, 526,909,440 bytes (502.50 MiB) total. Update, copy, snapshot, and restore cost remain uninstrumented.
+- MoE bucket distribution and MMQ tile geometry were not observed because the declared CPU-MoE path did not enter the instrumented CUDA fallback bucket path.
+
+Trace-enabled WDDM telemetry is invalid: the sampler interpolated `pid_` without bracing the PID before `_`, matched 31-33 process instances, and therefore lost candidate-only attribution. The apparent aggregate values are not candidate peaks and must not be used. Candidate PID `41688` was stopped, port 9393 retired, runtime absent, five exact-PID retirement samples were empty, and stable PID `31188` remained healthy. No rerun, merge, or promotion occurred.
 
 Later subphases map backend placement/fallback, CUDA graph lifecycle and synchronization, MoE geometry, Gated Delta Net recurrent state, and finally causal bottleneck selection. No bottleneck or optimization is claimed from correlation alone.

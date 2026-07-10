@@ -28,8 +28,16 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 
 ### Pending
 
-- Checkpoint 1A: create and validate one optional compute-map trace substrate, run exactly one trace-disabled candidate cycle, and use one matched trace-enabled diagnostic to localize actual placement and first measurable execution costs.
+- Checkpoint 1A remains active: a future supervised candidate must bound trace volume/I/O, explicitly distinguish CPU-MoE from fallback, and validate exact-PID telemetry before matched cold/warm diagnostics.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
+
+### Checkpoint 1A first instrumentation candidate
+
+- Candidate `3e3023fc389a608ec5a5806eb8e1a50a801486d5` added schema-v1 optional compute tracing under `NEO_COMPUTE_TRACE`; normal builds compile trace calls out.
+- The only trace-disabled cycle, `neo-loop-20260710T012311`, returned `reviewable-accept`. All immutable gates passed, warm median was 16.978 TPS, exact-PID WDDM peak was 2,196.88 MiB, cleanup passed, and stable PID `31188` remained healthy.
+- The separate trace-enabled cold diagnostic stopped before completion. Synchronous per-node writes produced 2,407,857 events and 895,639,047 bytes over 449.13 seconds; partial decode was approximately 1.60 TPS versus 14.878 TPS trace-disabled. Overhead is `too high` and matched warm measurements were not run.
+- The partial compute map observed CUDA/CPU placement, graph capture/replay, synchronization, transfers, and 502.50 MiB of CUDA-resident recurrent state. Explicit fallback reasons, fast-path MoE buckets, MMQ tiles, recurrent update/copy cost, and matched warm structure remain unresolved.
+- Trace-enabled WDDM attribution was invalid because the local sampler matched 31-33 GPU process instances instead of the exact candidate PID. Aggregate values are discarded; cleanup and five exact-PID retirement checks passed. No rerun, merge, or promotion occurred.
 
 ### Level 1 architecture integrated
 

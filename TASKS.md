@@ -5,7 +5,7 @@
 **Baseline evidence through:** `5c78d287e547d707ee0bf1afacb521cda8373e65`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Active bounded objective:** Checkpoint 1A: Create and validate one optional compute-map trace substrate, then use it to localize actual backend placement and the first measurable execution costs.
-**Next exact action:** run exactly one supervised instrumentation candidate using the fixed optional trace schema, evaluate its trace-disabled normal build once, then run one matched trace-enabled diagnostic without promotion or stable modification
+**Next exact action:** prepare one future supervised Checkpoint 1A candidate that replaces per-node synchronous trace writes with bounded aggregation, explicitly tags intentional CPU-MoE versus fallback, and validates exact-PID telemetry before any matched diagnostic
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -218,11 +218,13 @@ Use the unlocked supervised substrate; stable remains untouched while instrument
 
 ## Checkpoint 1A: Trace substrate [ACTIVE]
 
-- [ ] Create an isolated instrumentation candidate.
-- [ ] Define one fixed, versioned trace schema with monotonic timestamps and stable event IDs.
-- [ ] Keep trace disabled by default and compiled out of normal builds.
-- [ ] Build the trace-enabled diagnostic separately and keep raw local traces ignored.
+- [x] Create an isolated instrumentation candidate: candidate commit `3e3023fc389a608ec5a5806eb8e1a50a801486d5`.
+- [x] Define fixed trace schema v1 with monotonic timestamps and stable event IDs in `ggml/include/neo-compute-trace.h`.
+- [x] Keep trace disabled by default and compiled out of normal builds under `NEO_COMPUTE_TRACE`; the single locked normal cycle returned `reviewable-accept`.
+- [x] Build the trace-enabled diagnostic separately in `build/candidate-trace` and keep raw local traces ignored.
 - [ ] Measure instrumentation overhead.
+
+First diagnostic evidence: the cold trace produced 2,407,857 events and 895,639,047 bytes over 449.13 seconds, reached only approximately 1.60 decode TPS versus 14.878 TPS trace-disabled, and did not complete the 768-token request. Overhead is classified `too high`, so matched warm measurements remain incomplete. PID telemetry was invalid because the sampler pattern matched 31-33 GPU-process instances instead of the exact candidate PID; no trace-enabled WDDM peak is claimable. The diagnostic stopped without a rerun.
 
 ## Checkpoint 1B: Backend placement and fallback
 
@@ -279,4 +281,4 @@ Use the unlocked supervised substrate; stable remains untouched while instrument
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: run exactly one Checkpoint 1A optional-trace instrumentation candidate and one matched trace diagnostic while stable remains untouched.
+- [ ] Next task: in a future supervised cycle, bound trace volume and I/O, add explicit CPU-MoE/fallback reason tags, and validate exact-PID WDDM sampling before rerunning a matched trace diagnostic.
