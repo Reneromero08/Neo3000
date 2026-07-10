@@ -30,17 +30,19 @@ Do not begin autonomous RSI. Do not modify stable inference logic. Do not promot
 
 ## Next exact action
 
-The first Checkpoint 1A candidate is retained for review at `3e3023fc389a608ec5a5806eb8e1a50a801486d5`. Its trace-disabled normal cycle passed every immutable gate, but its trace-enabled diagnostic stopped: synchronous per-node writes generated 2.41 million events and about 896 MB before the cold request could complete, and the local telemetry sampler failed exact-PID attribution. Do not rerun this candidate in the current task.
+The schema-v1 candidate is archived at `evidence/checkpoint1a-trace-v1` commit `3e3023fc389a608ec5a5806eb8e1a50a801486d5`. The bounded schema-v2 repair is archived at `evidence/checkpoint1a-trace-v2` commit `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`. Its only trace-disabled cycle returned `reviewable-accept` with every immutable gate passing and normal binaries free of trace-writer strings.
 
-The next future supervised objective is to replace per-node synchronous writes with bounded aggregation, tag intentional CPU-MoE separately from fallback, and validate exact-PID telemetry before any matched diagnostic. This is not authorization for optimization, speculative or catalytic inference, autonomous RSI, merging, or automatic promotion.
+The schema-v2 diagnostic stopped before inference because no exact candidate-PID WDDM attribution row was available after model readiness. Its initialization artifact was bounded and explicit, but no matched cold or warm workload ran; overhead and model-runtime bottleneck selection remain unmeasured. Do not rerun this candidate in the current task.
+
+The next future supervised objective is to integrate a proven in-process exact-PID sampler into diagnostic launch control and reject launch completion until candidate PID, listener PID, and attributed WDDM instances agree. This is not authorization for optimization, speculative or catalytic inference, autonomous RSI, merging, or automatic promotion.
 
 Minimum required work:
 
 ```text
 1. Keep the stable server and stable worktree unchanged.
-2. Preserve trace schema v1 and the proven trace-disabled compile-out behavior.
-3. Bound trace volume and I/O sufficiently to complete matched cold and warm workloads.
-4. Add explicit placement reasons and exact-PID telemetry validation without modifying stable inference.
+2. Preserve schema-v2 bounded aggregation, explicit placement reasons, and proven trace-disabled compile-out behavior.
+3. Reuse a proven exact-PID sampler in the diagnostic control process rather than an unverified detached monitor.
+4. Complete matched cold and warm workloads only after exact attribution is live and stable.
 ```
 
 ## Unlock state

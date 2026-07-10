@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "1fc24e9d764520e2775289ef23097afdb9482b0b",
+  "baseline_source_commit": "ff2f5e3da97680dc9a0b27196a91d29afc14918e",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -30,7 +30,7 @@
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-10T01:45:05.446729+00:00",
+  "generated_at": "2026-07-10T02:26:34.483216+00:00",
   "model_identity": {
     "alias": "agents-a1",
     "architecture": "qwen35moe",
@@ -42,11 +42,11 @@
     ".gitignore": "9af6447e5ed5e79e7ce3f4374aab3ef5694ff38376e5a3df080378817f5e206c",
     "AGENTS.md": "d0c4f2292f8e89f94ff79fe7b1a3b678307781f83fdbbab398abc7fbfd79b8e5",
     "ROADMAP.md": "1949cc00b732941e1421a6bca1880587eac16934b8f6f4e3e6f043761ede7f74",
-    "TASKS.md": "c924d44a6a8fb44af129b58c387dbdc53d5501379138827df504d60bb8f256b4",
+    "TASKS.md": "bd9cbf33256828245d7691502059e2c56d9cbc43ea58d0a85b271fb2ec9e8094",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "1d4f3d6683cf3d3cb83f4bab764d1c661a55fd585289dcaabdece1e393281e08",
+    "lab/CHECKPOINT.md": "872fb8b7f8e6845b47bbae3bc56f9d1290718289bb42c7367ea3e0fc9c64eac2",
     "lab/EVALUATOR.json": "6031e8622e882df21c3abab77d383b790fd7f7d14da4d9f915e96c9d6293ba47",
-    "lab/GOAL.md": "a3b00a776da14576af2ab464eec5382b5a1ffacfa860caab735aa154cd66debf",
+    "lab/GOAL.md": "52acf327128366bce8337bbee1975f081427b335654d627a04df35882514c9ed",
     "scripts/baseline_harness.py": "78416aac1c35cc001f2481e4814342ed9bce8393c240c87986442173ee8c31dc",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "7b45a9d194962484c4b41b243928eb053386cea2467ff929735d0634f0ba0600",

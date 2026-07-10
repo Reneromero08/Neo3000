@@ -2,10 +2,10 @@
 
 **Active checkpoint:** Checkpoint 1, Compute map
 **Current RSI level:** Level 1, supervised bounded RSI available
-**Baseline evidence through:** `5c78d287e547d707ee0bf1afacb521cda8373e65`
+**Baseline evidence through:** `ff2f5e3da97680dc9a0b27196a91d29afc14918e`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Active bounded objective:** Checkpoint 1A: Create and validate one optional compute-map trace substrate, then use it to localize actual backend placement and the first measurable execution costs.
-**Next exact action:** prepare one future supervised Checkpoint 1A candidate that replaces per-node synchronous trace writes with bounded aggregation, explicitly tags intentional CPU-MoE versus fallback, and validates exact-PID telemetry before any matched diagnostic
+**Next exact action:** prepare one future supervised Checkpoint 1A diagnostic-control candidate that reuses a proven in-process exact-PID sampler and refuses server launch completion until candidate PID, listener PID, and attributed WDDM instances agree
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -222,9 +222,15 @@ Use the unlocked supervised substrate; stable remains untouched while instrument
 - [x] Define fixed trace schema v1 with monotonic timestamps and stable event IDs in `ggml/include/neo-compute-trace.h`.
 - [x] Keep trace disabled by default and compiled out of normal builds under `NEO_COMPUTE_TRACE`; the single locked normal cycle returned `reviewable-accept`.
 - [x] Build the trace-enabled diagnostic separately in `build/candidate-trace` and keep raw local traces ignored.
+- [x] Archive schema-v1 candidate provenance at remote `evidence/checkpoint1a-trace-v1` commit `3e3023fc389a608ec5a5806eb8e1a50a801486d5`.
+- [x] Implement bounded schema-v2 aggregation and explicit placement reasons at candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, archived at `evidence/checkpoint1a-trace-v2`.
+- [x] Focused aggregation, compile-out, limit, truncation, placement-reason, exact-PID, prefix-collision, listener-mismatch, grace, and telemetry-loss tests pass.
+- [x] The single v2 trace-disabled cycle `neo-loop-20260710T021421` returned `reviewable-accept`; all immutable gates passed, normal binaries contained no trace-writer strings, and no promotion occurred.
 - [ ] Measure instrumentation overhead.
 
 First diagnostic evidence: the cold trace produced 2,407,857 events and 895,639,047 bytes over 449.13 seconds, reached only approximately 1.60 decode TPS versus 14.878 TPS trace-disabled, and did not complete the 768-token request. Overhead is classified `too high`, so matched warm measurements remain incomplete. PID telemetry was invalid because the sampler pattern matched 31-33 GPU-process instances instead of the exact candidate PID; no trace-enabled WDDM peak is claimable. The diagnostic stopped without a rerun.
+
+Second diagnostic evidence: bounded schema-v2 initialization emitted 2,796 aggregate-delta records in 2,745,102 bytes with valid JSON, no truncation, no reported drops, and one writer open per module. Exact-PID telemetry produced no accepted row before inference, so the required pre-workload gate rejected candidate PID/listener `47792`. No cold or warm request ran, no trace-enabled WDDM peak or overhead is claimable, cleanup passed, and the diagnostic was not rerun.
 
 ## Checkpoint 1B: Backend placement and fallback
 
@@ -281,4 +287,4 @@ First diagnostic evidence: the cold trace produced 2,407,857 events and 895,639,
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: in a future supervised cycle, bound trace volume and I/O, add explicit CPU-MoE/fallback reason tags, and validate exact-PID WDDM sampling before rerunning a matched trace diagnostic.
+- [ ] Next task: in a future supervised cycle, integrate a proven in-process exact-PID WDDM monitor into diagnostic launch control and prove attribution before any inference workload.

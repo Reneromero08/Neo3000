@@ -191,4 +191,16 @@ Observed in the partial cold trace:
 
 Trace-enabled WDDM telemetry is invalid: the sampler interpolated `pid_` without bracing the PID before `_`, matched 31-33 process instances, and therefore lost candidate-only attribution. The apparent aggregate values are not candidate peaks and must not be used. Candidate PID `41688` was stopped, port 9393 retired, runtime absent, five exact-PID retirement samples were empty, and stable PID `31188` remained healthy. No rerun, merge, or promotion occurred.
 
+#### Bounded schema-v2 candidate: NORMAL ACCEPT / DIAGNOSTIC STOPPED
+
+- Original v1 provenance is preserved remotely at `evidence/checkpoint1a-trace-v1` → `3e3023fc389a608ec5a5806eb8e1a50a801486d5`.
+- Bounded v2 candidate is preserved remotely at `evidence/checkpoint1a-trace-v2` → `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`.
+- Schema v2 uses a 4,096-slot fixed-capacity thread-local aggregate table, bounded merge points, one persistent writer per instrumented module, batched/periodic output, 64 MiB and 200,000-record session ceilings, stricter per-module ceilings, explicit truncation, and dropped-event accounting.
+- Placement reason is enumerated as `declared_cpu_moe`, `unsupported_cuda`, `host_only_operator`, `scheduler_policy`, `explicit_user_placement`, or `unknown`. The implementation emits only reasons proven by the declared CPU-MoE profile or backend support/scheduler decisions; unknown remains explicit.
+- Candidate-local C++/Python and PowerShell tests passed for compile-out, aggregation, distinct keys, exact totals, flush boundaries, hard limits, truncation/drops, single writer open, explicit/unknown placement, exact PID, PID-prefix collisions, listener mismatch, grace expiry, and telemetry loss.
+- Normal cycle `neo-loop-20260710T021421` returned `reviewable-accept`: all immutable quality, performance, exact-PID WDDM, cleanup, stable-listener, worktree, and protected-hash gates passed. Candidate PID `25412` peaked at 2,196.88 MiB over 99 exact-PID samples; warm median was 12.823 TPS. Binary scanning found no active trace-writer strings in the normal build.
+- Trace-enabled candidate PID and listener PID were both `47792`. The pre-inference controller found no accepted exact-PID telemetry row, rejected the diagnostic before any workload, and did not relaunch it.
+- The initialization-only artifact contained 2,796 aggregate-delta records, 2,745,102 bytes, valid schema-v2 JSON, no truncation, no reported drops, and one writer open per module. It is not a completed workload trace and supports no placement, overhead, or model-runtime bottleneck claim.
+- Candidate cleanup passed: PID `47792` exited, port 9393 is free, runtime is absent, five exact-PID retirement samples were empty, and stable PID `31188` remained healthy. No merge or promotion occurred.
+
 Later subphases map backend placement/fallback, CUDA graph lifecycle and synchronization, MoE geometry, Gated Delta Net recurrent state, and finally causal bottleneck selection. No bottleneck or optimization is claimed from correlation alone.

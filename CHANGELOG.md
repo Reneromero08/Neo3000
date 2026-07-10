@@ -28,7 +28,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 
 ### Pending
 
-- Checkpoint 1A remains active: a future supervised candidate must bound trace volume/I/O, explicitly distinguish CPU-MoE from fallback, and validate exact-PID telemetry before matched cold/warm diagnostics.
+- Checkpoint 1A remains active: a future supervised candidate must integrate a proven in-process exact-PID sampler into diagnostic launch control before matched cold/warm diagnostics.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
 ### Checkpoint 1A first instrumentation candidate
@@ -38,6 +38,15 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - The separate trace-enabled cold diagnostic stopped before completion. Synchronous per-node writes produced 2,407,857 events and 895,639,047 bytes over 449.13 seconds; partial decode was approximately 1.60 TPS versus 14.878 TPS trace-disabled. Overhead is `too high` and matched warm measurements were not run.
 - The partial compute map observed CUDA/CPU placement, graph capture/replay, synchronization, transfers, and 502.50 MiB of CUDA-resident recurrent state. Explicit fallback reasons, fast-path MoE buckets, MMQ tiles, recurrent update/copy cost, and matched warm structure remain unresolved.
 - Trace-enabled WDDM attribution was invalid because the local sampler matched 31-33 GPU process instances instead of the exact candidate PID. Aggregate values are discarded; cleanup and five exact-PID retirement checks passed. No rerun, merge, or promotion occurred.
+
+### Checkpoint 1A bounded aggregation candidate
+
+- Archived v1 and v2 evidence refs resolve exactly to `3e3023fc389a608ec5a5806eb8e1a50a801486d5` and `14de9c71593e5aea4fcfcadeda47ba5c623fadcf` respectively; neither is a merge proposal.
+- Schema v2 replaces synchronous per-event file operations with fixed-capacity thread-local aggregation, bounded batched merges, persistent writers, explicit limits/truncation/drop accounting, and enumerated placement reasons.
+- Focused compile-out, aggregation, totals, limit, writer, placement, exact-PID, collision, and telemetry-loss tests passed.
+- The single normal cycle `neo-loop-20260710T021421` returned `reviewable-accept`; every immutable gate passed, warm median was 12.823 TPS, exact-PID WDDM peak was 2,196.88 MiB, and normal binaries contained no trace-writer strings.
+- The trace-enabled launch used candidate/listener PID `47792`, but produced no accepted exact-PID WDDM row before inference. The diagnostic stopped before cold or warm workloads and was not rerun. Its 2.75 MB initialization-only artifact was bounded, valid, untruncated, and reported no drops, but it cannot measure overhead or support a runtime bottleneck claim.
+- Candidate and telemetry retirement checks passed; stable PID `31188` remained healthy. No merge or promotion occurred.
 
 ### Level 1 architecture integrated
 
