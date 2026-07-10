@@ -15,7 +15,10 @@ Current RSI level: Level 1, supervised bounded RSI available
 Checkpoint 1A: ACTIVE / PAUSED
 Checkpoint 2: ACTIVE
 First catalytic intervention: HoloState-v1 Live Prefix Lattice
+HoloState-v1 integration verdict: INCONCLUSIVE
 Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
+PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
+RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 RSI-0F supervised rejection cycle: PASSED
 RSI-0G supervised acceptance cycle: REVIEWABLE ACCEPT
 Automatic promotion: DISABLED
@@ -46,6 +49,17 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - HoloState-v1 is process-local and uses the Live Prefix Lattice name.
 - HoloState-v2 Durable Capsule is reserved for future restart-persistent state work.
 
+### HoloState-v1 live integration attempt: inconclusive
+
+- Added protected `scripts/holostate_live.py` and its CPU-only safety suite. The controller exposes only the declared live-state operations, confines writes to ignored runtime state, binds roots to exact binary/model/template/prefix/token identities, and treats registry entries as metadata until reusable cached tokens and exact output are observed.
+- The single allowed validation used exact sidecar PID/listener `42076`, stable PID `31188`, the locked Agents-A1 model, and binary version `13 (417e1d6)` / SHA-256 `5D0C...541B`.
+- Root A warmed at 7,150 rendered tokens in 159,051.535 ms; Root B warmed at 4,879 tokens in 101,519.304 ms. Both immutable identities were inside the declared 4K-8K band.
+- A1 reused an inferred 7,017 of 7,165 logical prompt tokens, evaluated 148 fresh tokens in 3,685.92 ms, and produced an observed 43.151x warm/reuse prompt-time ratio.
+- A1 then consumed all 768 completion tokens and failed the combined deterministic output gate. The controller stopped immediately; B1/A2/B2, same-branch hash equality, eviction observation, and the 20-request/60-minute-bounded extended proof were not run. No retry occurred.
+- Exact-PID WDDM produced 139 valid samples with a 2,252.88 MiB peak and no telemetry loss. Cleanup removed the exact sidecar and runtime; port 9494 and all five retirement samples were empty; stable remained unchanged.
+- `HoloState-v1 Live Prefix Lattice` is `inconclusive`. `PROCESS_LOCAL_HOLOSTATE_AVAILABLE` and `RESTART_PERSISTENT_HOLOSTATE_AVAILABLE` remain locked. The narrower HoloState-0 status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` remains valid.
+- After the stopped run, the controller was narrowed to preserve future failed-branch metrics and prefer prompt-progress cache counts over ambiguous zero-generation completion totals. This was a non-runtime evidence repair; the validation was not rerun.
+
 ### HoloState-0 capability boundary opened
 
 - Authorized one isolated port-9494 sidecar audit using the exact locked model, one slot, bounded host RAM, and protected exact-PID WDDM control.
@@ -53,7 +67,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Ordinary KV save/restore cannot establish Gated DeltaNet hybrid-state persistence by itself. Stable, CUDA, inference kernels, model files, and the archived trace candidate remain outside scope.
 - Case A was present in the existing binary/source. A 7,519-token rendered prompt replayed fully once, then exact process-local A/B branches reused 7,387 tokens and evaluated only a 132-token checkpoint gap with identical per-branch greedy token and reasoning/output hashes.
 - A 231,311,464-byte slot file saved and restored 8,069 tokens. In-process behavior stayed exact but cannot be attributed to the file separately from live RAM/checkpoint entries. After the declared restart, the same file restored successfully at the endpoint but the model reevaluated all 7,519 prompt tokens.
-- The retained result is exact process-local RAM/checkpoint reuse, not a restart-persistent hybrid capsule. No 40K audit, source integration, stable change, Checkpoint 2 activation, or automatic promotion occurred.
+- At the HoloState-0 audit boundary, the retained result was exact process-local RAM/checkpoint reuse, not a restart-persistent hybrid capsule. No 40K audit, source integration, stable change, Checkpoint 2 activation, or automatic promotion occurred in that audit.
 
 ### Checkpoint 1A first instrumentation candidate
 

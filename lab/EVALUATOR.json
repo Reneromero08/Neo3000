@@ -70,6 +70,8 @@
       "scripts/neo_loop.py",
       "scripts/neo_trace_diagnostic.py",
       "scripts/test_trace_diagnostic.py",
+      "scripts/holostate_live.py",
+      "scripts/test_holostate_live.py",
       ".gitignore",
       "TASKS.md",
       "AGENTS.md",
@@ -82,7 +84,9 @@
   },
   "controller_files": [
     "scripts/neo_loop.py",
-    "scripts/neo_trace_diagnostic.py"
+    "scripts/neo_trace_diagnostic.py",
+    "scripts/holostate_live.py",
+    "scripts/test_holostate_live.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"

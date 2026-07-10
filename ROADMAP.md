@@ -554,6 +554,33 @@ HoloState-v1 is the current process-local integration. It keeps multiple immutab
 
 HoloState-v2 Durable Capsule is the future restart-persistence intervention. Its carrier and recovery law remain unproven.
 
+### HoloState-v1 integration result: INCONCLUSIVE
+
+The protected controller warmed two immutable roots on one exact sidecar: A at 7,150 rendered tokens and B at 4,879. The first A1 branch evaluated only 148 fresh tokens in 3,685.92 ms after its 159,051.535 ms full warm, an observed 43.151x prompt-time amplification. The server log supports 7,165 logical prompt tokens and 7,017 reused tokens for that request.
+
+The A1 request then consumed all 768 allowed completion tokens without closing the declared deterministic output gate. Stop-on-first-failure ended the sequence before B1/A2/B2, same-branch hash comparison, eviction observation, or the extended proof. No retry occurred. HoloState-v1 Live is therefore `inconclusive`, `PROCESS_LOCAL_HOLOSTATE_AVAILABLE` remains locked, and the HoloState-0 mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` remains the narrower supported claim.
+
+### HoloState-v2 persistence boundary
+
+The built-in slot file persists active KV/recurrent state and token history, but does not persist the server prompt-checkpoint list required for hybrid recurrent prefix selection after restart.
+
+Upstream provenance is recorded without cherry-pick or port:
+
+```text
+ggml-org/llama.cpp PR 20819
+ggml-org/llama.cpp PR 20955
+ggml-org/llama.cpp PR 24028
+```
+
+The next persistence candidate should combine:
+
+```text
+checkpoint-list sidecar persistence
+identity/version checks
+nearest-checkpoint recovery when recurrent truncation is unsupported
+exact restart A/B validation
+```
+
 Remove or reuse one measured source of fresh computation while preserving Pi compatibility and model behavior.
 
 Checkpoint 2 remains the first catalytic intervention checkpoint. Conventional instrumentation and CUDA substrate improvements may be accepted during Checkpoint 1, but a conventional speedup does not close Checkpoint 2 without a declared borrow, transform, extract, and restoration law.

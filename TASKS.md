@@ -5,8 +5,8 @@
 **Baseline evidence through:** `dca929d3d6039e9355c95d34ae5d161309a67e80`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. Checkpoint 2 is active for exactly one intervention: HoloState-v1 Live Prefix Lattice.
-**Next exact action:** implement the protected process-local HoloState controller, then run the one declared two-root validation and bounded live-process proof without restarting or replacing stable
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. Checkpoint 2 remains active; the single HoloState-v1 Live Prefix Lattice integration attempt is complete and inconclusive.
+**Next exact action:** do not rerun HoloState-v1 automatically; design a separately authorized HoloState-v2 persistence candidate that persists the prompt-checkpoint list with identity/version checks, nearest-checkpoint recovery, and exact restart A/B validation
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -301,10 +301,18 @@ retained lawful state: model/configuration/prefix-identity-bound live cache entr
 - [x] Declare the borrowed carrier.
 - [x] Declare transformation, extracted invariant, and closure law.
 - [x] Declare rejection criteria and quality gates: immutable root identities, exact same-branch output, measured reuse, bounded RAM/WDDM, stable isolation, and no automatic promotion.
-- [ ] Implement one bounded candidate mechanism.
-- [ ] Compare stable and candidate under immutable evaluation.
-- [ ] Preserve Pi text, reasoning, tools, cancellation, and repeated turns.
-- [ ] Accept for review, reject, or mark inconclusive.
+- [x] Implement one bounded candidate mechanism: protected `holostate_live.py` controller with immutable roots, metadata-only registry, exact process protection, and explicit admission/eviction policy.
+- [x] Run the one declared validation under immutable evaluation. It warmed 7,150-token A and 4,879-token B roots, then stopped on the first A1 deterministic-output failure without retry.
+- [ ] Quality gate remains incomplete and is not authorized for retry in this task: preserve Pi text, reasoning, tools, cancellation, and repeated turns.
+- [x] Classify HoloState-v1 Live as `inconclusive`: A1 reused an inferred 7,017 of 7,165 logical prompt tokens and evaluated 148 fresh tokens in 3,685.92 ms, but consumed the full 768-token completion allowance without closing the deterministic gate. The remaining interleaving and extended proof did not run.
+
+Integration evidence:
+
+- [x] Exact binary/model/template identities passed; sidecar PID/listener `42076` had 139 exact-PID WDDM samples and a 2,252.88 MiB peak.
+- [x] Stable PID `31188`, health, source status, and the archived trace candidate remained unchanged.
+- [x] Cleanup passed: sidecar stopped, runtime removed, port 9494 free, and five WDDM retirement samples empty.
+- [x] Confirm `PROCESS_LOCAL_HOLOSTATE_AVAILABLE` remains locked because two-root exact branch behavior and the extended proof did not complete.
+- [x] Confirm `RESTART_PERSISTENT_HOLOSTATE_AVAILABLE` remains locked; no restart persistence work ran.
 
 ---
 
@@ -319,4 +327,4 @@ retained lawful state: model/configuration/prefix-identity-bound live cache entr
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: implement and test `scripts/holostate_live.py` and `scripts/test_holostate_live.py`, protect them in the evaluator, and run the single declared HoloState-v1 live validation sequence.
+- [ ] Next task: specify HoloState-v2 Durable Capsule around checkpoint-list sidecar persistence, identity/version checks, nearest-checkpoint recovery when recurrent truncation is unsupported, and exact restart A/B validation; do not port upstream patches or rerun HoloState-v1 in this task.

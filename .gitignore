@@ -19,6 +19,7 @@ lib/
 model-cache/
 runtime/
 slots/
+state/holostate/
 
 # Benchmarks and logs
 *.log

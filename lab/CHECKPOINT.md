@@ -260,13 +260,41 @@ restoration or closure: preserve the canonical checkpoint lattice for later bran
 retained lawful state: model/configuration/prefix-identity-bound live cache entries
 ```
 
-### Integration gates [OPEN]
+### HoloState-v1 integration attempt [INCONCLUSIVE]
 
-- [ ] Protected controller cannot commit, push, merge, promote, terminate stable, modify stable source, or mutate the model.
-- [ ] Two immutable canonical root identities are warmed and proven reusable.
-- [ ] The fixed `A1, B1, A2, B2, A1, B1` sequence preserves exact branch outputs and same-branch reasoning/greedy-token hashes without cross-root selection.
-- [ ] Every returning branch reports cached prompt tokens greater than zero and fewer fresh than logical prompt tokens.
-- [ ] Sidecar PID, listener PID, and exact WDDM PID agree under the 6000 MiB ceiling; host cache remains bounded at 4096 MiB.
-- [ ] Stable PID and health remain unchanged.
-- [ ] One non-restarted extended proof runs for at most 60 minutes and 20 requests over roots A/B only.
-- [ ] Automatic promotion remains disabled.
+- [x] Protected controller cannot commit, push, merge, promote, terminate stable, modify stable source, or mutate the model. It exposes only `start`, `stop`, `status`, `warm`, `branch`, `list`, `evict`, and `validate`; its CPU-only safety suite passes 15 tests.
+- [x] Two immutable canonical root identities warmed within the 4K-8K band. Root A: 32,164 bytes, SHA-256 `F28DB3E15EA34510432B7367C621ABE15B5A9DA9B0A1F8189556F4ACE86FDBAA`, token-ID SHA-256 `71363A1309DC5692AF1DB8BE99E3F0EE031C966A58A8BAE49F6CE7096E7C7CC2`, 7,150 rendered tokens. Root B: 21,714 bytes, SHA-256 `0EF151D9DD57D176E92E393686A548FBED01967AF6E4F0B5070F5B6F002D7CB8`, token-ID SHA-256 `CE5A629803ACA104F2C2FE869422E34554FE1663B724496EA4B15EA92526C728`, 4,879 rendered tokens. Both used chat-template SHA-256 `A4AEE8AFCF2E0711942CF848899BE66016F8D14A889FF9EDE07BCA099C28F715`.
+- [ ] The fixed `A1, B1, A2, B2, A1, B1` sequence did not complete. A1 stopped the sequence on its deterministic output gate; B1/A2/B2 were not attempted.
+- [ ] Exact same-branch greedy-token/reasoning hashes and cross-root isolation were not established. The failed A1 stream hashes were not retained by the local result.
+- [x] A1 demonstrated performance reuse before the quality stop. Server log: 7,165 logical prompt tokens, 148 fresh, inferred 7,017 reused, 3,685.92 ms prompt time at 40.15 prompt TPS, 768 completion tokens at 13.91 decode TPS, and 58,884.30 ms total. Against Root A's 159,051.535 ms warm, observed prompt-time amplification was 43.151x and fresh prompt ratio was 2.066%.
+- [ ] A1 did not become an accepted catalytic branch. It consumed all 768 allowed completion tokens and failed the combined exact-final/reasoning gate, so accepted cumulative avoided evaluations remain zero. The 7,017 avoided evaluations are performance-only evidence with the quality gate open.
+- [x] Sidecar PID, listener PID, and exact WDDM PID were all `42076`; 139 valid samples peaked at 2,362,318,848 bytes (2,252.88 MiB) with no telemetry failure. Warm private-memory deltas were 194,699,264 bytes for A and 287,465,472 bytes for B, below the 4,096 MiB host-cache bound.
+- [x] Stable PID `31188` and health remained unchanged. The archived trace candidate stayed clean at `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`.
+- [ ] The non-restarted extended proof did not run because the fixed sequence failed first. Duration and request count are both zero.
+- [x] Cleanup passed: sidecar stopped, runtime removed, port 9494 free, and five exact-PID WDDM retirement samples were empty.
+- [x] Automatic promotion remained disabled. No stable, Pi, model, CUDA, kernel, candidate, or upstream source change occurred.
+
+### Classification
+
+```text
+HoloState-v1 Live Prefix Lattice: inconclusive
+EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN: retained from HoloState-0
+PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
+RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
+```
+
+No literal infinity claim is made. Accepted cumulative avoided evaluations, accepted state reuse yield, and accepted holographic branch density are all zero because no branch closed the deterministic gate. The A1 performance-only observation corresponds to 7,017 avoided evaluations, 2.882 avoided tokens per MiB of Root A's conservative 2,552,915,136-byte cache-budget estimate, and 43.151x prompt-time amplification.
+
+### Durable persistence boundary
+
+The built-in slot file persists active KV/recurrent state and token history, but does not persist the server prompt-checkpoint list required for hybrid recurrent prefix selection after restart.
+
+Upstream provenance only; no patch was ported:
+
+```text
+ggml-org/llama.cpp PR 20819
+ggml-org/llama.cpp PR 20955
+ggml-org/llama.cpp PR 24028
+```
+
+The next exact persistence candidate combines checkpoint-list sidecar persistence, identity/version checks, nearest-checkpoint recovery when recurrent truncation is unsupported, and exact restart A/B validation.
