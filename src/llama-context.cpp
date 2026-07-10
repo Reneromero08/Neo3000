@@ -2483,21 +2483,62 @@ ggml_status llama_context::graph_compute(
         ggml_tensor * node = ggml_graph_node(gf, i);
         ggml_backend_t actual_backend = ggml_backend_sched_get_tensor_backend(sched.get(), node);
         const char * actual_name = actual_backend ? ggml_backend_name(actual_backend) : "unassigned";
-        const char * expected_name = "not-declared";
-        if (node->src[0] && node->src[0]->buffer) {
-            auto * expected_dev = ggml_backend_buft_get_device(ggml_backend_buffer_get_type(node->src[0]->buffer));
-            if (expected_dev) {
-                expected_name = ggml_backend_dev_name(expected_dev);
+        ggml_backend_dev_t actual_dev = actual_backend ? ggml_backend_get_device(actual_backend) : nullptr;
+        ggml_backend_dev_t expected_dev = nullptr;
+        const char * expected_name = nullptr;
+        if (node->src[0]) {
+            ggml_backend_buffer_t source_buffer = node->src[0]->view_src ? node->src[0]->view_src->buffer : node->src[0]->buffer;
+            if (source_buffer) {
+                expected_dev = ggml_backend_buft_get_device(ggml_backend_buffer_get_type(source_buffer));
+                expected_name = expected_dev ? ggml_backend_dev_name(expected_dev) : nullptr;
+            }
+        }
+
+        const bool actual_cpu = actual_dev && ggml_backend_dev_type(actual_dev) == GGML_BACKEND_DEVICE_TYPE_CPU;
+        const char * placement_reason = "unknown";
+        if (actual_cpu && node->op == GGML_OP_MUL_MAT_ID) {
+            const char * declared_cpu_moe = std::getenv("NEO_COMPUTE_TRACE_CPU_MOE");
+            if (declared_cpu_moe && std::strcmp(declared_cpu_moe, "1") == 0) {
+                placement_reason = "declared_cpu_moe";
+            }
+        }
+        if (actual_cpu && std::strcmp(placement_reason, "unknown") == 0) {
+            bool saw_gpu_backend = false;
+            bool gpu_supports_operator = false;
+            for (const auto & backend : backends) {
+                auto * dev = ggml_backend_get_device(backend.get());
+                if (dev && ggml_backend_dev_type(dev) == GGML_BACKEND_DEVICE_TYPE_GPU) {
+                    saw_gpu_backend = true;
+                    gpu_supports_operator = gpu_supports_operator || ggml_backend_supports_op(backend.get(), node);
+                }
+            }
+            if (saw_gpu_backend && !gpu_supports_operator) {
+                placement_reason = "unsupported_cuda";
+            } else if (gpu_supports_operator) {
+                placement_reason = "scheduler_policy";
+            }
+        } else if (!actual_cpu && actual_dev && expected_dev && actual_dev == expected_dev) {
+            placement_reason = "scheduler_policy";
+        }
+
+        int layer_index = -1;
+        if (const char * suffix = std::strrchr(node->name, '-')) {
+            char * end = nullptr;
+            const long parsed = std::strtol(suffix + 1, &end, 10);
+            if (end && end != suffix + 1 && *end == '\0' && parsed >= 0 && parsed <= std::numeric_limits<int>::max()) {
+                layer_index = static_cast<int>(parsed);
             }
         }
         char trace_shape[128];
         std::snprintf(trace_shape, sizeof(trace_shape), "[%lld,%lld,%lld,%lld]",
             static_cast<long long>(node->ne[0]), static_cast<long long>(node->ne[1]),
             static_cast<long long>(node->ne[2]), static_cast<long long>(node->ne[3]));
-        NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+        neo_compute_trace::event trace_event {
             "neo.compute.operator.backend.v1", "execution-plan", ggml_op_name(node->op),
-            expected_name, actual_name, -1, neo_compute_trace::unknown_u64, -1, -1, trace_shape
-        }));
+            expected_name, actual_name, -1, neo_compute_trace::unknown_u64, -1, layer_index, trace_shape
+        };
+        trace_event.placement_reason = placement_reason;
+        NEO_COMPUTE_TRACE_EMIT(trace_event);
     }
     const uint64_t trace_submit_start_ns = neo_compute_trace::monotonic_timestamp_ns();
 #endif
