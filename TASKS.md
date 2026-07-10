@@ -2,11 +2,11 @@
 
 **Active checkpoint:** Checkpoint 2, First catalytic compute intervention
 **Current RSI level:** Level 1, supervised bounded RSI available
-**Baseline evidence through:** protocol commit `3fb00fe93d0fb22e203d8e26d86173f5e3d2ee32`; ignored worker result `72F4BA4FA256836456B5ACA47FBD4CD5DE7789EB59F222B687B677010B7869A2`
+**Baseline evidence through:** protocol commit `b2559f7c0c06e35a3e360b71ed13b69c4eb1eb7c`; ignored worker-v2 result `D08C4638179D6A2F0BFABE22DA2C8879377BDC6306E41ED22816FB95F45A84A7`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. Separately authorized `holostate_worker_protocol_v2` is the current bounded Checkpoint 2 action; its only intervention is token-array accumulation plus bounded stream provenance.
-**Next exact action:** finish protected v2 tests and preflight, commit and push the locked protocol, then execute its canary-first audit exactly once without retry.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. The separately authorized `holostate_worker_protocol_v2` ran exactly once and is closed as inconclusive at sidecar readiness before its parser canary.
+**Next exact action:** preserve the v2 no-retry boundary. No further worker audit is authorized; a future version requires a separate scope that keeps the v2 parser/provenance law and isolates readiness resilience.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -228,7 +228,7 @@ Use the unlocked supervised substrate; stable remains untouched while instrument
 - [x] Focused aggregation, compile-out, limit, truncation, placement-reason, exact-PID, prefix-collision, listener-mismatch, grace, and telemetry-loss tests pass.
 - [x] The single v2 trace-disabled cycle `neo-loop-20260710T021421` returned `reviewable-accept`; all immutable gates passed, normal binaries contained no trace-writer strings, and no promotion occurred.
 - [x] Protect `scripts/neo_trace_diagnostic.py` and its CPU-only safety suite in the evaluator lock; the controller starts exact-PID WDDM sampling immediately after candidate launch and makes readiness depend on process, health, listener, attribution, and memory agreement.
-- [ ] Measure instrumentation overhead.
+- **Paused:** Measure instrumentation overhead.
 
 First diagnostic evidence: the cold trace produced 2,407,857 events and 895,639,047 bytes over 449.13 seconds, reached only approximately 1.60 decode TPS versus 14.878 TPS trace-disabled, and did not complete the 768-token request. Overhead is classified `too high`, so matched warm measurements remain incomplete. PID telemetry was invalid because the sampler pattern matched 31-33 GPU-process instances instead of the exact candidate PID; no trace-enabled WDDM peak is claimable. The diagnostic stopped without a rerun.
 
@@ -251,32 +251,32 @@ HoloState-0 is a completed capability audit, not a source-integration candidate.
 
 ## Checkpoint 1B: Backend placement and fallback
 
-- [ ] Measure expected/actual backend, device, operator, tensor shape, and available CUDA rejection reason.
-- [ ] Distinguish intentional CPU-MoE from accidental CPU fallback.
-- [ ] Measure transfers caused by fallback.
+- **Paused:** Measure expected/actual backend, device, operator, tensor shape, and available CUDA rejection reason.
+- **Paused:** Distinguish intentional CPU-MoE from accidental CPU fallback.
+- **Paused:** Measure transfers caused by fallback.
 
 ## Checkpoint 1C: CUDA graph lifecycle and synchronization
 
-- [ ] Measure capture, replay, reconstruction, shape signature, allocator growth, and stream identity.
-- [ ] Measure explicit and device-to-host synchronization.
-- [ ] Separate first-request initialization from warm steady state.
+- **Paused:** Measure capture, replay, reconstruction, shape signature, allocator growth, and stream identity.
+- **Paused:** Measure explicit and device-to-host synchronization.
+- **Paused:** Separate first-request initialization from warm steady state.
 
 ## Checkpoint 1D: MoE geometry
 
-- [ ] Record active expert IDs, route rank, tokens per expert, and bucket-size distribution.
-- [ ] Record `MUL_MAT_ID` backend and observable MMQ tile geometry.
-- [ ] Estimate inactive/padded work, activation quantization cost, expert residency, and transfer.
+- **Paused:** Record active expert IDs, route rank, tokens per expert, and bucket-size distribution.
+- **Paused:** Record `MUL_MAT_ID` backend and observable MMQ tile geometry.
+- **Paused:** Estimate inactive/padded work, activation quantization cost, expert residency, and transfer.
 
 ## Checkpoint 1E: Gated Delta Net recurrent state
 
-- [ ] Measure per-layer state bytes, allocation, update/copy duration, residence, transfers, and synchronization.
-- [ ] Measure per-token recurrent cost and exact snapshot/restore cost.
+- **Paused:** Measure per-layer state bytes, allocation, update/copy duration, residence, transfers, and synchronization.
+- **Paused:** Measure per-token recurrent cost and exact snapshot/restore cost.
 
 ## Checkpoint 1F: Causal bottleneck selection
 
-- [ ] Identify one or two dominant short-context costs and one or two dominant long-context costs.
-- [ ] Establish a measured causal mechanism rather than correlation alone.
-- [ ] Select one bounded first intervention from evidence.
+- **Paused:** Identify one or two dominant short-context costs and one or two dominant long-context costs.
+- **Paused:** Establish a measured causal mechanism rather than correlation alone.
+- **Paused:** Select one bounded first intervention from evidence.
 
 ---
 
@@ -303,7 +303,7 @@ retained lawful state: model/configuration/prefix-identity-bound live cache entr
 - [x] Declare rejection criteria and quality gates: immutable root identities, exact same-branch output, measured reuse, bounded RAM/WDDM, stable isolation, and no automatic promotion.
 - [x] Implement one bounded candidate mechanism: protected `holostate_live.py` controller with immutable roots, metadata-only registry, exact process protection, and explicit admission/eviction policy.
 - [x] Run the one declared validation under immutable evaluation. It warmed 7,150-token A and 4,879-token B roots, then stopped on the first A1 deterministic-output failure without retry.
-- [ ] Quality gate remains incomplete and is not authorized for retry in this task: preserve Pi text, reasoning, tools, cancellation, and repeated turns.
+- **Locked:** Quality gate remains incomplete and is not authorized for retry in this task: preserve Pi text, reasoning, tools, cancellation, and repeated turns.
 - [x] Classify HoloState-v1 Live as `inconclusive`: A1 reused an inferred 7,017 of 7,165 logical prompt tokens and evaluated 148 fresh tokens in 3,685.92 ms, but consumed the full 768-token completion allowance without closing the deterministic gate. The remaining interleaving and extended proof did not run.
 - [x] Separate mechanism from operational quality: HoloState-v1 process-local reuse succeeded; its legacy raw-output gate exhausted the tested range without the literal marker.
 - [x] Protect the repaired boundary with a complete-object evaluator hash, atomic versioned markers, persisted completion classifications, sidecar-compatible tool/cancellation probes, and 40 focused HoloState tests; all protected regression suites and preflight pass.
@@ -331,15 +331,17 @@ The legacy endpoint exposed one raw content stream, and `parse_final_structure` 
 
 Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 768 tokens. Both use separate system/reference and user-assignment messages through `/v1/chat/completions`; old budget qualification, validation-v2, extended proof, persistence, and automatic promotion remain forbidden here.
 
-### HoloState worker protocol v2 [AUTHORIZED / NOT YET EXECUTED]
+### HoloState worker protocol v2 [EXECUTED / INCONCLUSIVE]
 
 - [x] Version the parser/ledger/canary contract and bind all five historical evidence hashes.
 - [x] Accumulate delta- and cumulative-style token arrays without allowing a final empty array to erase prior evidence.
 - [x] Add an 8 MiB / 50,000-record reasoning-redacted stream ledger and a thinking-disabled token-array canary.
 - [x] Pass 85 HoloState, 11 trace, 9 evaluator, and 5 WDDM tests plus compilation, root bounds, and protected preflight.
-- [ ] Commit and push the exact protected protocol, then run the fixed canary/warm/Fast-repeat/Deep sequence once. No automatic retry.
+- [x] Committed and pushed exact protected protocol `b2559f7c0c06e35a3e360b71ed13b69c4eb1eb7c`, then invoked the fixed audit exactly once with no retry.
+- [x] Classified the stop as `stable-listener-query-timeout` during sidecar readiness before the parser canary. No warm, Fast, or Deep request was attempted.
+- [x] Preserved cleanup, stable PID `32684`, candidate isolation, all five historical hashes, every availability lock, and the automatic-promotion prohibition.
 
-Executed boundary:
+Preserved v1 executed boundary:
 
 - Root A rendered 7,806 tokens and returned exact visible content `HOLOSTATE ROOT WARM`, empty reasoning metadata, `finish_reason=stop`, and 7 completion tokens. Prompt processing was 145,519.789 ms at 53.642 TPS.
 - The parser recorded zero complete generated-token IDs, so the locked token-evidence gate rejected the warm before reuse could be measured.
@@ -347,7 +349,7 @@ Executed boundary:
 - Result SHA-256 is `72F4BA4FA256836456B5ACA47FBD4CD5DE7789EB59F222B687B677010B7869A2`; attempt SHA-256 is `F634CA2732CEBBE424D4634F8EFAD035C6E11EAABB0D34E40A0F1EC09A2DF975`.
 - Sidecar PID `34580` peaked at 2,252.88 MiB over 73 exact-PID WDDM samples. Cleanup, five retirement samples, stable PID `32684`, isolation, and all three historical evidence hashes passed.
 
-Integration evidence:
+Preserved HoloState-v1 integration evidence:
 
 - [x] Exact binary/model/template identities passed; sidecar PID/listener `42076` had 139 exact-PID WDDM samples and a 2,252.88 MiB peak.
 - [x] Stable PID `31188`, health, source status, and the archived trace candidate remained unchanged.
@@ -368,4 +370,4 @@ Integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: close the protected v2 preflight, push its protocol commit, then execute `audit-worker-protocol-v2` exactly once. V1, qualification, validation-v2, and durability remain closed.
+- [ ] Next task: preserve the executed v2 no-retry boundary pending separate authorization. Do not run v1, v2, qualification, validation-v2, or durability work.

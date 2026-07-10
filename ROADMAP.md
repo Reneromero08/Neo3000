@@ -97,7 +97,7 @@ RSI-0: CLOSED
 -> Checkpoint 2: ACTIVE
 -> First catalytic intervention: HoloState-v1 Live Prefix Lattice
 -> HoloState worker v1: instrumentation reject; Fast/Deep capability untested
--> HoloState worker v2: separately authorized, canary-first, one shot
+-> HoloState worker v2: executed once; inconclusive at readiness before canary
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -574,7 +574,13 @@ Pinned source establishes the instrumentation diagnosis: streaming partial resul
 
 The ignored result preserves its original locked fields (`FAST=reject`, `DEEP=inconclusive`). Later adjudication classifies v1 itself as an instrumentation reject; Fast capability is untested/inconclusive and Deep capability is untested/inconclusive because neither lane ran. Sidecar PID `34580` peaked at 2,252.88 MiB over 73 exact-PID samples and retired cleanly. All availability locks remain intact.
 
-Do not retry v1. Separately authorized v2 changes only token-array accumulation and bounded stream provenance, runs a parser canary before warming roots, and uses new attempt/result/ledger paths. Its fixed sequence is canary, warm A/B, A1/B1/A2/B2, A1/B1 repeats, Deep A1, stop; no automatic retry or extended proof.
+Do not retry v1. Separately authorized v2 changed only token-array accumulation and bounded stream provenance, placed a parser canary before warming roots, and used new attempt/result/ledger paths. Its fixed sequence was canary, warm A/B, A1/B1/A2/B2, A1/B1 repeats, Deep A1, stop; no automatic retry or extended proof.
+
+### HoloState worker protocol v2: EXECUTED / INCONCLUSIVE
+
+Protocol commit `b2559f7c0c06e35a3e360b71ed13b69c4eb1eb7c` passed the protected pre-audit suite and was pushed before the one-shot marker was claimed. The live controller launched sidecar PID `37804`, then a protected query for stable listener ownership timed out during readiness. Admission failed before the parser canary, so no root warm and no Fast or Deep request was attempted. This is a readiness-control boundary, not evidence about the repaired parser or model capability.
+
+The empty stream ledger is itself bounded evidence: 0 records, 0 bytes, SHA-256 `E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855`. Cleanup passed, port 9494 retired, five exact-PID WDDM retirement samples were empty, stable PID `32684` remained healthy, and all historical evidence remained exact. V2 is no-retry. Every HoloState availability state, CatalyticSwarm-0, and automatic promotion remain locked.
 
 ### HoloState-v2 persistence boundary
 

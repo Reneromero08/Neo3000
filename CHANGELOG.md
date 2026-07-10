@@ -18,7 +18,7 @@ First catalytic intervention: HoloState-v1 Live Prefix Lattice
 HoloState-v1 integration verdict: INCONCLUSIVE
 HoloState-v1 budget qualification: NO PASS THROUGH 2048
 HoloState worker v1: INSTRUMENTATION REJECT; FAST/DEEP CAPABILITY UNTESTED
-HoloState worker v2: AUTHORIZED / NOT YET EXECUTED
+HoloState worker v2: EXECUTED ONCE / INCONCLUSIVE BEFORE CANARY
 Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
@@ -43,7 +43,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Checkpoint 2 is active for HoloState-v1 Live Prefix Lattice, the protected operational integration of exact process-local executable-prefix reuse already proven by HoloState-0.
 - The one-shot HoloState-v1 raw `/completion` qualification is complete: `1024, 1280, 1536, 2048` all exhausted without the exact final marker. This does not prove `reasoning_content` attribution. No budget was selected and validation-v2 remains unattempted.
 - HoloState-v1.1 executed once and stopped at Root A warm on missing token instrumentation. Its original result fields remain Fast=`reject` / Deep=`inconclusive`; later adjudication is protocol instrumentation-reject with both capabilities untested/inconclusive. V1 cannot be retried.
-- Worker protocol v2 is separately authorized for token-array accumulation, bounded stream provenance, and one canary-first audit. No v2 evidence exists yet.
+- Worker protocol v2 ran exactly once and stopped during sidecar readiness on `stable-listener-query-timeout`, before its canary. It cannot be retried; no parser or model-capability conclusion is supported.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
@@ -63,6 +63,15 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Added a thinking-disabled parser canary before root warming, distinct A1/A2/B1/B2 Fast assignments, A1/B1 repeat determinism, independent Deep classification, and exclusive v2 attempt/result/ledger paths.
 - Added a separate v1 adjudication object without changing the v1 protocol, evidence object, ignored evidence bytes, or `neo-exp-0015`.
 - Pre-audit protection passed 85 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus compilation, root-bound checks, and protected preflight.
+
+### HoloState worker protocol v2 executed once
+
+- Protocol commit `b2559f7c0c06e35a3e360b71ed13b69c4eb1eb7c` was pushed before the one-shot v2 marker was claimed; complete protocol SHA-256 is `c043d3084efefcbc9b369e1b770d36aef0dafcf89896d6105586564b204a0379`.
+- Sidecar PID `37804` launched, but the protected stable-listener ownership query timed out during readiness. Admission stopped before the parser canary; no root warm, Fast, repeat, or Deep request ran.
+- The exclusive stream ledger is empty: 0 records, 0 bytes, SHA-256 `E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855`. No merge mode or completion-count agreement was observed.
+- Seven exact-PID WDDM samples peaked at 92.84 MiB. Cleanup, free port 9494, five empty retirement samples, stable PID `32684`, candidate isolation, and all five historical hashes passed.
+- Attempt SHA-256 is `09A849AC35692A49DCC349110426FBD5ED9EF4BD146E723C8E750445916DE8F9`; result SHA-256 is `D08C4638179D6A2F0BFABE22DA2C8879377BDC6306E41ED22816FB95F45A84A7`. V2 is no-retry; Fast and Deep are untested/inconclusive, all availability states remain locked, and automatic promotion remains disabled.
+- Post-audit evidence binding passed 86 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus Python compilation and protected preflight.
 
 ### HoloState-v1.1 worker audit executed once
 

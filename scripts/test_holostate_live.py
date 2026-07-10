@@ -744,6 +744,17 @@ class WorkerProtocolV2ContractTests(unittest.TestCase):
         self.assertEqual(adjudication["fast_worker_capability"], "untested-inconclusive")
         self.assertEqual(adjudication["deep_worker_capability"], "untested-inconclusive")
 
+    def test_v2_evidence_is_optional_paired_and_complete_object_hashed(self) -> None:
+        baseline = neo_loop.holostate_worker_protocol_v2_evidence_hash(self.evaluator)
+        lock = neo_loop.make_lock(self.evaluator)
+        self.assertEqual(lock["holostate_worker_protocol_v2_evidence_sha256"], baseline)
+        evaluator = copy.deepcopy(self.evaluator)
+        evaluator["holostate_worker_protocol_v2_evidence"]["worker_protocol_v2"] = "reviewable-accept"
+        self.assertNotEqual(
+            baseline,
+            neo_loop.holostate_worker_protocol_v2_evidence_hash(evaluator),
+        )
+
     def test_v2_collision_refuses_before_preclaim_work(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

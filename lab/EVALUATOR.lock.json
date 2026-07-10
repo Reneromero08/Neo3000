@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "c9f650f9a4142cfe52c5c03f2fd427f75ccaa652",
+  "baseline_source_commit": "b2559f7c0c06e35a3e360b71ed13b69c4eb1eb7c",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -26,18 +26,19 @@
     "scripts/holostate_live.py",
     "scripts/test_holostate_live.py"
   ],
-  "evaluator_sha256": "e2df0a293f153b284e54475965829bb7fb83ca377c242bf2962a520ea8567abc",
+  "evaluator_sha256": "a4164a26103e4aa589f68c863e052718baea4f547db7035de36397e9349f0c0a",
   "gate_definition_hashes": {
     "reasoning-preservation-v1": "750a7b0041c13b4407f5d373069f6bcb3fe1d0701504f7bae5bb7c64fbc5d5fe",
     "repeat-final-content-v1": "2737d28ec7947d841bf6c5e07221f6ac453f98150a83b9a9c29c43da1a4b7460",
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-10T21:40:55.764123+00:00",
+  "generated_at": "2026-07-10T21:58:31.141747+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
   "holostate_worker_protocol_v1_adjudication_sha256": "89eaf99720a54436f9e299e67900bcb7ec3ebf244898e5e9e969a1ae07f19cd8",
+  "holostate_worker_protocol_v2_evidence_sha256": "1e752cfd3a644944521c93b9cbbaf6f466e17288b314178e1d7d520af963e923",
   "holostate_worker_protocol_v2_sha256": "c043d3084efefcbc9b369e1b770d36aef0dafcf89896d6105586564b204a0379",
   "model_identity": {
     "alias": "agents-a1",
@@ -49,15 +50,15 @@
   "protected_file_hashes": {
     ".gitignore": "677277200afe5e3d225c83584902476116bfd1d501f81d3d64ba4381b1ef2aac",
     "AGENTS.md": "d0c4f2292f8e89f94ff79fe7b1a3b678307781f83fdbbab398abc7fbfd79b8e5",
-    "CHANGELOG.md": "1ddbb9e7e7dd081e20fb71608d2e6e4829e0e774d79af44f6441fa2e0cad730d",
+    "CHANGELOG.md": "ed47395e40a9ef991dec779b76e8ede544e0a805a05aa3a07bf98b685966d869",
     "NEO3000.md": "b7ba87065f942d47abed19330197a843577bbd6b2fd58057a6df9de9cd7d2905",
     "README.md": "2a03600bf337aa3adf14d4c1e375b2f080d8d0bee0ae77676cf7dce3f32bf638",
-    "ROADMAP.md": "37976e276c40555623cfc563991619377a9b96ab0fc25ae5740e2d488f179402",
-    "TASKS.md": "91959d70e61b88bcb1f32bd9c30796d85484bdd77d303ec17b580deed625b789",
+    "ROADMAP.md": "644096fcfff644d76fa34f56d49984492fd298000781237b0ad99e8fbe669036",
+    "TASKS.md": "f11d0f4942eac832c99c0b4a85dbdfd4d35f892bcc45342ff410c9de0379005d",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "4b3a24600dfe2b08f1fe6fe2653346fc218ed7bb7eba678223f5e17a0e29f7ff",
-    "lab/EVALUATOR.json": "e2df0a293f153b284e54475965829bb7fb83ca377c242bf2962a520ea8567abc",
-    "lab/GOAL.md": "45c11f36b23562dd75d7aa1e48ec313c4e55beec68726d9dc51f9351c47de2bc",
+    "lab/CHECKPOINT.md": "eb3a725f526d529d1468e164d8359504ab710346636fc340e72bea27ec31c1d0",
+    "lab/EVALUATOR.json": "a4164a26103e4aa589f68c863e052718baea4f547db7035de36397e9349f0c0a",
+    "lab/GOAL.md": "4625359dbb12f624cbbb74ab950b8c458e7cc2d09fff68d6da3ebf0ddc39d4ef",
     "scripts/baseline_harness.py": "3d8e5b19a49ebf246d7683d2bebd8f4b633eb1c555587f8c044022dc32b82585",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "7b45a9d194962484c4b41b243928eb053386cea2467ff929735d0634f0ba0600",
@@ -68,7 +69,7 @@
     "scripts/rolling_decode.py": "29c6e23e226a13cebbb3eedaec9339765db86a69893898ff4ea86971916e290a",
     "scripts/run_candidate.ps1": "04b28fca1d2aae754bb3bca0f1efcb3f8166a8b2fd38da2a37252affb70394a0",
     "scripts/run_server.ps1": "831913a346668b82c58205742b5e45840571c96dde1dbf28d93807726617f0a4",
-    "scripts/test_holostate_live.py": "667df6b4995bec8e991acc1e0c70a28e0020f6a43878a47993a1e27e37084c15",
+    "scripts/test_holostate_live.py": "8e94be404f13f67c9b168496fdf1eb3a3992a7fcee897caca2dbfebae98548c3",
     "scripts/test_trace_diagnostic.py": "4359240c665d149157bea5c811e3011edeee9ff12fa56b100a3464e32de50a8d"
   },
   "protected_paths": [

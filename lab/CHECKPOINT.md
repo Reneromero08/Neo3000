@@ -290,7 +290,7 @@ No literal infinity claim is made. Accepted cumulative avoided evaluations, acce
 ```text
 HoloState-v1 reuse mechanism: succeeded
 HoloState-v1 raw /completion gate: no literal final marker through 2048
-Current action: preserve the executed HoloState-v1.1 no-retry boundary
+Current action: preserve the executed HoloState worker-v2 no-retry boundary
 HoloState-v2 persistence: separate future intervention
 ```
 
@@ -331,7 +331,7 @@ Qualification sidecar PID/listener `44652` produced 239 exact-PID WDDM samples, 
 
 The ignored v1 result and its original Fast=`reject` / Deep=`inconclusive` fields remain byte-identical. The later evidence interpretation is narrower: worker protocol v1 is an `instrumentation-reject`; Fast capability is untested/inconclusive because zero Fast requests ran; Deep capability is untested/inconclusive because zero Deep requests ran.
 
-### HoloState worker protocol v2 [AUTHORIZED / PRE-AUDIT]
+### HoloState worker protocol v2 [EXECUTED / INCONCLUSIVE]
 
 - The only causal intervention is request-local merging of delta/cumulative token arrays plus bounded stream provenance; a final empty array cannot clear prior evidence.
 - The v2 contract binds all five historical hashes, exact binary/model/template/envelope/root identities, unchanged Fast/Deep lane budgets, an 8 MiB/50,000-record reasoning-redacted ledger, and new v2 paths.
@@ -339,6 +339,12 @@ The ignored v1 result and its original Fast=`reject` / Deep=`inconclusive` field
 - The one-shot sequence is canary, warm A, warm B, A1, B1, A2, B2, A1 repeat, B1 repeat, Deep A1, stop. Warm failures never reject Fast capability; Deep is independent of a completed Fast proof.
 - Pre-audit protection passed 85 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus compilation; stable tokenization measured Root A/B at 7,715/4,302 rendered warm tokens.
 - Protocol v1, qualification, validation-v2, persistence, extended proof, automatic retry, and automatic promotion remain forbidden.
+- Protocol commit `b2559f7c0c06e35a3e360b71ed13b69c4eb1eb7c` was clean, pushed, and exact before the single v2 marker was claimed. Complete protocol SHA-256 was `c043d3084efefcbc9b369e1b770d36aef0dafcf89896d6105586564b204a0379`.
+- The one authorized invocation launched sidecar PID `37804` but stopped during readiness when the protected stable-listener ownership query timed out. No listener was admitted, the parser canary was not attempted, and root warm, Fast, repeat, and Deep request counts all remained zero.
+- No streaming token array was observed. The exclusive ledger contains 0 records and 0 bytes; its empty SHA-256 is `E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855`. No token merge mode or completion-count agreement is claimable.
+- Exact-PID WDDM captured 7 samples with a 97,349,632-byte / 92.84 MiB peak before cleanup. Sidecar retirement, runtime removal, free port 9494, five empty retirement samples, stable PID `32684`, candidate isolation, and all five historical hashes passed.
+- Attempt SHA-256 is `09A849AC35692A49DCC349110426FBD5ED9EF4BD146E723C8E750445916DE8F9`; result SHA-256 is `D08C4638179D6A2F0BFABE22DA2C8879377BDC6306E41ED22816FB95F45A84A7`. Fast and Deep are untested/inconclusive, all availability states remain locked, and v2 must not be retried.
+- Post-audit evidence binding passed 86 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus Python compilation.
 
 ### Durable persistence boundary
 

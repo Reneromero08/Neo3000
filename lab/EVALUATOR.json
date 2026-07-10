@@ -689,6 +689,63 @@
     "deep_requests_executed": 0,
     "basis": "The v1 audit stopped during Root A warm before either capability lane ran; its missing complete token evidence was an instrumentation failure, not a Fast or Deep model observation."
   },
+  "holostate_worker_protocol_v2_evidence": {
+    "protocol_commit": "b2559f7c0c06e35a3e360b71ed13b69c4eb1eb7c",
+    "protocol_sha256": "c043d3084efefcbc9b369e1b770d36aef0dafcf89896d6105586564b204a0379",
+    "attempt_path": "state/holostate/worker-protocol-attempt-v2.json",
+    "attempt_sha256": "09A849AC35692A49DCC349110426FBD5ED9EF4BD146E723C8E750445916DE8F9",
+    "attempt_size_bytes": 2954,
+    "result_path": "state/holostate/worker-protocol-result-v2.json",
+    "result_sha256": "D08C4638179D6A2F0BFABE22DA2C8879377BDC6306E41ED22816FB95F45A84A7",
+    "result_size_bytes": 7319,
+    "stream_path": "state/holostate/worker-protocol-v2-stream.jsonl",
+    "stream_sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "stream_size_bytes": 0,
+    "stream_record_count": 0,
+    "started_at": "2026-07-10T21:44:15.723254+00:00",
+    "finished_at": "2026-07-10T21:46:07.304192+00:00",
+    "worker_protocol_v2": "inconclusive",
+    "fast_verdict": "inconclusive",
+    "deep_verdict": "inconclusive",
+    "stopped_at": "sidecar-readiness-before-parser-canary",
+    "failure_classification": "stable-listener-query-timeout",
+    "failure": "The protected 10-second stable-listener query timed out during sidecar readiness.",
+    "parser_canary_attempted": false,
+    "warm_requests_executed": 0,
+    "fast_requests_attempted": 0,
+    "fast_requests_executed": 0,
+    "deep_requests_attempted": 0,
+    "deep_requests_executed": 0,
+    "token_array_evidence": {
+      "merge_modes_observed": {},
+      "nonempty_token_array_events": 0,
+      "empty_token_array_events": 0,
+      "completion_count_agreements": 0
+    },
+    "resources": {
+      "sidecar_pid": 37804,
+      "listener_pid": null,
+      "sidecar_admitted_ready": false,
+      "wddm_samples": 7,
+      "wddm_peak_bytes": 97349632,
+      "wddm_peak_mib": 92.84,
+      "wddm_transient_query_failures": 1,
+      "host_cache_growth_bytes": null,
+      "cleanup_passed": true,
+      "isolation_passed": true,
+      "stable_pid_before": 32684,
+      "stable_pid_after": 32684,
+      "prior_evidence_preserved": true
+    },
+    "availability": {
+      "PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE": "LOCKED",
+      "PROCESS_LOCAL_HOLOSTATE_AVAILABLE": "LOCKED",
+      "RESTART_PERSISTENT_HOLOSTATE_AVAILABLE": "LOCKED",
+      "CatalyticSwarm-0": "LOCKED",
+      "automatic_promotion": false
+    },
+    "no_retry": true
+  },
   "candidate_editable_paths": {
     "description": "Candidates may only modify files under these paths.",
     "paths": [
