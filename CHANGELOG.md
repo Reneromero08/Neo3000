@@ -28,7 +28,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 
 ### Pending
 
-- Checkpoint 1A remains active: run the protected telemetry-only trace-binary launch before any matched cold/warm diagnostic.
+- Checkpoint 1A remains active: the protected control is proven, but a future bounded trace-output candidate must avoid the per-module 24 MiB truncation boundary before matched overhead can be measured.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
 ### Checkpoint 1A first instrumentation candidate
@@ -54,6 +54,9 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Candidate readiness is the conjunction of process liveness, health, exact listener ownership, exact-PID WDDM attribution, and the existing 6000 MiB ceiling; sampling begins immediately after launch and remains active through teardown.
 - Added monotonic, non-overlapping startup/workload/teardown windows, candidate CPU-time capture, incremental schema-v2 trace bounds, and post-teardown stable/listener/telemetry retirement evidence.
 - Protected the controller and its CPU-only safety suite in `lab/EVALUATOR.json` and the evaluator lock. No candidate source, stable inference logic, promotion path, or evaluator gate value changed.
+- Telemetry-only passed with exact candidate PID/listener/WDDM agreement. The trace-disabled control completed every fixed phase, but the single trace-enabled run stopped during cold reasoning when an unchanged v2 module reported truncation and up to 28,062 dropped events at its 24 MiB ceiling.
+- The final stopped artifact contained 25,554 valid JSON records and 25,199,004 bytes, below the combined session ceilings. Because cold reasoning was incomplete, no matched trace-enabled workload phase or overhead ratio is claimable; no model-runtime bottleneck was selected.
+- Candidate and port retirement, five exact-PID WDDM retirement checks, protected preflight, and stable PID `31188` passed. The trace launch was not retried, and no merge or promotion occurred.
 
 ### Level 1 architecture integrated
 

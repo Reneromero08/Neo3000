@@ -5,7 +5,7 @@
 **Baseline evidence through:** `ff2f5e3da97680dc9a0b27196a91d29afc14918e`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Active bounded objective:** Checkpoint 1A: Create and validate one optional compute-map trace substrate, then use it to localize actual backend placement and the first measurable execution costs.
-**Next exact action:** use the protected in-process diagnostic controller for one telemetry-only trace-binary launch; proceed to matched trace-disabled and trace-enabled workloads only if exact candidate PID, listener PID, WDDM attribution, memory, cleanup, and stable-integrity gates all pass
+**Next exact action:** prepare one future supervised trace-output candidate that prevents the unchanged v2 per-module 24 MiB ceiling from truncating cold reasoning while preserving schema v2, the 64 MiB/200,000-record session ceilings, trace-disabled compile-out, and all protected runtime gates
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -233,6 +233,8 @@ First diagnostic evidence: the cold trace produced 2,407,857 events and 895,639,
 
 Second diagnostic evidence: bounded schema-v2 initialization emitted 2,796 aggregate-delta records in 2,745,102 bytes with valid JSON, no truncation, no reported drops, and one writer open per module. Exact-PID telemetry produced no accepted row before inference, so the required pre-workload gate rejected candidate PID/listener `47792`. No cold or warm request ran, no trace-enabled WDDM peak or overhead is claimable, cleanup passed, and the diagnostic was not rerun.
 
+Protected-controller diagnostic evidence: telemetry-only passed at PID/listener `7128` with exact `pid_7128_` WDDM attribution and a 2,168.88 MiB peak. The trace-disabled matched control completed every fixed phase at PID/listener `28696`, with 103 valid samples, a 2,194.88 MiB peak, and 12.747/18.624/15.745/16.097/15.783 TPS for cold reasoning, warm transport, warm reasoning, performance warmup, and counted performance. The single trace-enabled launch used PID/listener `9112`, retained exact attribution with a 2,194.88 MiB peak, then stopped during incomplete cold reasoning when one module reported truncation and up to 28,062 dropped events at its 24 MiB limit. The final artifact was 25,199,004 bytes and 25,554 valid JSON records, below the combined session ceilings; no trace workload phase completed, so overhead remains unmeasured. No retry, merge, or promotion occurred.
+
 ## Checkpoint 1B: Backend placement and fallback
 
 - [ ] Measure expected/actual backend, device, operator, tensor shape, and available CUDA rejection reason.
@@ -288,4 +290,4 @@ Second diagnostic evidence: bounded schema-v2 initialization emitted 2,796 aggre
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: run the protected telemetry-only trace-binary launch and stop without inference if any attribution, memory, listener, cleanup, or stable-integrity condition rejects.
+- [ ] Next task: bound per-module trace output below its 24 MiB ceiling long enough to complete cold reasoning, without weakening the combined session ceilings or changing model execution.

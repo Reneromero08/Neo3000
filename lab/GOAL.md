@@ -32,17 +32,17 @@ Do not begin autonomous RSI. Do not modify stable inference logic. Do not promot
 
 The schema-v1 candidate is archived at `evidence/checkpoint1a-trace-v1` commit `3e3023fc389a608ec5a5806eb8e1a50a801486d5`. The bounded schema-v2 repair is archived at `evidence/checkpoint1a-trace-v2` commit `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`. Its only trace-disabled cycle returned `reviewable-accept` with every immutable gate passing and normal binaries free of trace-writer strings.
 
-The schema-v2 diagnostic stopped before inference because no exact candidate-PID WDDM attribution row was available after model readiness. Its initialization artifact was bounded and explicit, but no matched cold or warm workload ran; overhead and model-runtime bottleneck selection remain unmeasured. Do not rerun this candidate in the current task.
+The protected in-process control repair succeeded. Telemetry-only established exact PID/listener/WDDM agreement, and the trace-disabled matched control completed all fixed phases. The single trace-enabled launch then stopped during incomplete cold reasoning when the unchanged v2 candidate explicitly reported truncation/drops at a per-module 24 MiB ceiling. The final artifact remained below the 64 MiB/200,000-record combined ceilings, but no trace-enabled workload phase completed; overhead and model-runtime bottleneck selection therefore remain unmeasured. Do not rerun this candidate in the current task.
 
-The stable-side diagnostic controller now reuses the proven in-process exact-PID sampler and rejects readiness unless candidate process, health, listener PID, attributed WDDM instances, and the 6000 MiB ceiling agree. Its controller and CPU-only safety suite are protected by the evaluator lock. The next action is one telemetry-only trace-binary launch; matched workloads remain conditional on that launch passing. This is not authorization for optimization, speculative or catalytic inference, autonomous RSI, merging, or automatic promotion.
+The next future supervised objective is one bounded trace-output candidate that prevents per-module limit pressure from truncating cold reasoning while preserving schema v2, explicit drop accounting, trace-disabled compile-out, combined session ceilings, exact-PID control, and all immutable model/runtime gates. This is not authorization for a model optimization, speculative or catalytic inference, autonomous RSI, merging, or automatic promotion.
 
 Minimum required work:
 
 ```text
 1. Keep the stable server and stable worktree unchanged.
 2. Preserve schema-v2 bounded aggregation, explicit placement reasons, and proven trace-disabled compile-out behavior.
-3. Use the protected diagnostic controller and require its telemetry-only trace-binary launch to pass before inference.
-4. Complete matched cold and warm workloads only after exact attribution is live and stable.
+3. Keep the protected in-process exact-PID diagnostic controller unchanged as the launch authority.
+4. Complete matched cold and warm workloads only after exact attribution is live and trace output remains untruncated with zero drops.
 ```
 
 ## Unlock state
