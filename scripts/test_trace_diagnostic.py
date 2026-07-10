@@ -149,7 +149,7 @@ class TraceDiagnosticTests(unittest.TestCase):
         second = recorder.start("cold_reasoning")
         clock.advance(2)
         recorder.end(second)
-        self.assertLessEqual(first.end_monotonic, second.start_monotonic)
+        self.assertLessEqual(first.end_monotonic_ns, second.start_monotonic_ns)
         with self.assertRaisesRegex(Exception, "still open"):
             recorder.start("warm_transport")
             recorder.start("warm_reasoning")

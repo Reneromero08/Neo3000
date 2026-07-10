@@ -56,8 +56,8 @@ class ReadinessState:
 @dataclass
 class PhaseWindow:
     name: str
-    start_monotonic: float
-    end_monotonic: float | None = None
+    start_monotonic_ns: int
+    end_monotonic_ns: int | None = None
     candidate_cpu_seconds_before: float | None = None
     candidate_cpu_seconds_after: float | None = None
     candidate_cpu_seconds_delta: float | None = None
@@ -67,27 +67,27 @@ class PhaseWindow:
 class PhaseRecorder:
     """Records strictly ordered, non-overlapping controller phase windows."""
 
-    def __init__(self, clock: Callable[[], float] = time.monotonic):
+    def __init__(self, clock: Callable[[], int] = time.monotonic_ns):
         self.clock = clock
         self.windows: list[PhaseWindow] = []
 
     def start(self, name: str, cpu_before: float | None = None) -> PhaseWindow:
         now = self.clock()
-        if self.windows and self.windows[-1].end_monotonic is None:
+        if self.windows and self.windows[-1].end_monotonic_ns is None:
             raise NeoLoopError(f"phase {self.windows[-1].name} is still open")
-        if self.windows and now < float(self.windows[-1].end_monotonic):
+        if self.windows and now < int(self.windows[-1].end_monotonic_ns):
             raise NeoLoopError("phase clock moved backwards")
         window = PhaseWindow(name, now, candidate_cpu_seconds_before=cpu_before)
         self.windows.append(window)
         return window
 
     def end(self, window: PhaseWindow, cpu_after: float | None = None, result: dict[str, Any] | None = None) -> None:
-        if not self.windows or self.windows[-1] is not window or window.end_monotonic is not None:
+        if not self.windows or self.windows[-1] is not window or window.end_monotonic_ns is not None:
             raise NeoLoopError("phase window close order violation")
         now = self.clock()
-        if now < window.start_monotonic:
+        if now < window.start_monotonic_ns:
             raise NeoLoopError("phase end precedes phase start")
-        window.end_monotonic = now
+        window.end_monotonic_ns = now
         window.candidate_cpu_seconds_after = cpu_after
         if cpu_after is not None and window.candidate_cpu_seconds_before is not None:
             window.candidate_cpu_seconds_delta = round(cpu_after - window.candidate_cpu_seconds_before, 6)
@@ -300,10 +300,10 @@ def median_decode(result: dict[str, Any]) -> float | None:
     return float(value) if isinstance(value, (int, float)) else None
 
 
-def phase_evidence(window: PhaseWindow) -> dict[str, Any]:
+def phase_evidence(window: PhaseWindow, binary_mode: str, candidate_pid: int | None) -> dict[str, Any]:
     evidence = asdict(window)
-    evidence["start_monotonic_ns"] = int(window.start_monotonic * 1_000_000_000)
-    evidence["end_monotonic_ns"] = int(window.end_monotonic * 1_000_000_000) if window.end_monotonic is not None else None
+    evidence["binary_mode"] = binary_mode
+    evidence["candidate_pid"] = candidate_pid
     return evidence
 
 
@@ -437,7 +437,7 @@ def main() -> int:
             pre_miss_count = len(sampler.failures)
         recorder.end(startup, process_cpu_seconds(process.pid), {"readiness": asdict(ready)})
         result["candidate_pid"] = process.pid
-        result["readiness"] = {**asdict(ready), "readiness_seconds": round(startup.end_monotonic - startup.start_monotonic, 3)}
+        result["readiness"] = {**asdict(ready), "readiness_seconds": round((startup.end_monotonic_ns - startup.start_monotonic_ns) / 1_000_000_000, 3)}
         if not args.telemetry_only:
             baseline = load_json(require_local_path(args.baseline_result)) if args.baseline_result else None
             baseline_phases = {item["name"]: item.get("result", {}) for item in baseline.get("phases", [])} if baseline else {}
@@ -461,7 +461,7 @@ def main() -> int:
         error = str(exc)
         result["error"] = error
     finally:
-        if recorder.windows and recorder.windows[-1].end_monotonic is None:
+        if recorder.windows and recorder.windows[-1].end_monotonic_ns is None:
             recorder.end(recorder.windows[-1], process_cpu_seconds(process.pid) if process else None,
                          {"error": error or result.get("error") or "phase-incomplete"})
         teardown = recorder.start("teardown", process_cpu_seconds(process.pid) if process else None)
@@ -499,12 +499,12 @@ def main() -> int:
             result["protected_lock_verified_after"] = False
             result["verdict"] = "reject"
             result["error"] = result.get("error") or str(exc)
-        result["phases"] = [phase_evidence(window) for window in recorder.windows]
+        result["phases"] = [phase_evidence(window, args.binary_mode, process.pid if process else None) for window in recorder.windows]
         result["trace_timestamp_partition"] = {
-            "clock": "system monotonic clock; controller seconds converted to integer nanoseconds",
+            "clock": "time.monotonic_ns",
             "windows": [{"name": window.name,
-                         "start_monotonic_ns": int(window.start_monotonic * 1_000_000_000),
-                         "end_monotonic_ns": int(window.end_monotonic * 1_000_000_000) if window.end_monotonic is not None else None}
+                         "start_monotonic_ns": window.start_monotonic_ns,
+                         "end_monotonic_ns": window.end_monotonic_ns}
                         for window in recorder.windows],
         }
         output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
