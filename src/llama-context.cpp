@@ -11,6 +11,7 @@
 #include "llama-model.h"
 #include "llama-ext.h"
 #include "llama.h"
+#include "neo-compute-trace.h"
 
 #include <cinttypes>
 #include <cmath>
@@ -686,7 +687,18 @@ void llama_context::synchronize() {
         return;
     }
 
+#ifdef NEO_COMPUTE_TRACE
+    const uint64_t trace_sync_start_ns = neo_compute_trace::monotonic_timestamp_ns();
+#endif
     ggml_backend_sched_synchronize(sched.get());
+    NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+        "neo.compute.sync.scheduler.v1", "synchronization", "ggml_backend_sched_synchronize",
+        "scheduler", "scheduler", -1,
+        neo_compute_trace::monotonic_timestamp_ns() - trace_sync_start_ns,
+        -1, -1, nullptr,
+        neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64,
+        nullptr, "scheduler_wait"
+    }));
 
     // FIXME: if multiple single tokens are evaluated without a synchronization,
     // the stats will be added to the prompt evaluation stats
@@ -1326,7 +1338,20 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
         }
 
         n_reused++;
+#ifdef NEO_COMPUTE_TRACE
+        char trace_shape[96];
+        std::snprintf(trace_shape, sizeof(trace_shape), "tokens=%u;seqs=%u;outputs=%u", ubatch.n_tokens, ubatch.n_seqs, n_outputs);
+        NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+            "neo.compute.graph.host-lifecycle.v1", "graph", "llama_graph",
+            "scheduler", "scheduler", -1, neo_compute_trace::unknown_u64, -1, -1,
+            nullptr, neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64,
+            nullptr, nullptr, nullptr, "reuse", trace_shape
+        }));
+#endif
     } else {
+#ifdef NEO_COMPUTE_TRACE
+        const uint64_t trace_graph_start_ns = neo_compute_trace::monotonic_timestamp_ns();
+#endif
         res->reset();
 
         ggml_backend_sched_reset(sched.get());
@@ -1349,6 +1374,18 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
             ret = GGML_STATUS_ALLOC_FAILED;
             return nullptr;
         }
+#ifdef NEO_COMPUTE_TRACE
+        char trace_shape[96];
+        std::snprintf(trace_shape, sizeof(trace_shape), "tokens=%u;seqs=%u;outputs=%u", ubatch.n_tokens, ubatch.n_seqs, n_outputs);
+        NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+            "neo.compute.graph.host-lifecycle.v1", "graph", "llama_graph",
+            "scheduler", "scheduler", -1,
+            neo_compute_trace::monotonic_timestamp_ns() - trace_graph_start_ns,
+            -1, -1, nullptr,
+            neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64, neo_compute_trace::unknown_u64,
+            nullptr, nullptr, nullptr, "rebuild", trace_shape
+        }));
+#endif
     }
 
     // set the input data for the input tensors
@@ -2441,7 +2478,35 @@ ggml_status llama_context::graph_compute(
         set_n_threads_fn.second(set_n_threads_fn.first, n_threads);
     }
 
+#ifdef NEO_COMPUTE_TRACE
+    for (int i = 0; i < ggml_graph_n_nodes(gf); ++i) {
+        ggml_tensor * node = ggml_graph_node(gf, i);
+        ggml_backend_t actual_backend = ggml_backend_sched_get_tensor_backend(sched.get(), node);
+        const char * actual_name = actual_backend ? ggml_backend_name(actual_backend) : "unassigned";
+        const char * expected_name = "not-declared";
+        if (node->src[0] && node->src[0]->buffer) {
+            auto * expected_dev = ggml_backend_buft_get_device(ggml_backend_buffer_get_type(node->src[0]->buffer));
+            if (expected_dev) {
+                expected_name = ggml_backend_dev_name(expected_dev);
+            }
+        }
+        char trace_shape[128];
+        std::snprintf(trace_shape, sizeof(trace_shape), "[%lld,%lld,%lld,%lld]",
+            static_cast<long long>(node->ne[0]), static_cast<long long>(node->ne[1]),
+            static_cast<long long>(node->ne[2]), static_cast<long long>(node->ne[3]));
+        NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+            "neo.compute.operator.backend.v1", "execution-plan", ggml_op_name(node->op),
+            expected_name, actual_name, -1, neo_compute_trace::unknown_u64, -1, -1, trace_shape
+        }));
+    }
+    const uint64_t trace_submit_start_ns = neo_compute_trace::monotonic_timestamp_ns();
+#endif
     auto status = ggml_backend_sched_graph_compute_async(sched.get(), gf);
+    NEO_COMPUTE_TRACE_EMIT((neo_compute_trace::event {
+        "neo.compute.graph.submit.v1", "execution", "ggml_backend_sched_graph_compute_async",
+        "scheduler", "scheduler", -1,
+        neo_compute_trace::monotonic_timestamp_ns() - trace_submit_start_ns
+    }));
     if (status != GGML_STATUS_SUCCESS) {
         LLAMA_LOG_ERROR("%s: ggml_backend_sched_graph_compute_async failed with error %d\n", __func__, status);
     }
