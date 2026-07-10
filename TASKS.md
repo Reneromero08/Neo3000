@@ -2,9 +2,10 @@
 
 **Active checkpoint:** Checkpoint 1, Compute map
 **Current RSI level:** Level 1, supervised bounded RSI available
-**Baseline evidence through:** `432e8f773cde782cab6d478ad5afccb15816cbb4`  
-**Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** create one supervised instrumentation candidate that maps actual CUDA/CPU backend placement, silent CPU fallback, CUDA graph capture/replay, synchronization, MoE expert bucket geometry, and Gated Delta Net recurrent-state cost while stable remains untouched
+**Baseline evidence through:** `5c78d287e547d707ee0bf1afacb521cda8373e65`
+**Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
+**Active bounded objective:** Checkpoint 1A: Create and validate one optional compute-map trace substrate, then use it to localize actual backend placement and the first measurable execution costs.
+**Next exact action:** run exactly one supervised instrumentation candidate using the fixed optional trace schema, evaluate its trace-disabled normal build once, then run one matched trace-enabled diagnostic without promotion or stable modification
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -67,7 +68,7 @@ Next instrumentation target selected from evidence: YES
 
 # Current queue: Checkpoint 1
 
-**Unlock target:** `SUPERVISED_BOUNDED_RSI_AVAILABLE`
+**Unlock achieved:** `SUPERVISED_BOUNDED_RSI_AVAILABLE`
 
 RSI-0 is closed. Level 1 permits bounded supervised candidates with human promotion review; automatic promotion remains forbidden.
 
@@ -215,21 +216,42 @@ Unlock: SUPERVISED_BOUNDED_RSI_AVAILABLE
 
 Use the unlocked supervised substrate; stable remains untouched while instrumentation candidates are isolated and reviewable.
 
+## Checkpoint 1A: Trace substrate [ACTIVE]
+
 - [ ] Create an isolated instrumentation candidate.
-- [ ] Define one fixed trace schema.
-- [ ] Add trace-disabled and trace-enabled builds.
-- [ ] Measure per-token and per-layer time.
-- [ ] Separate attention from Gated Delta Net recurrent-block time.
-- [ ] Record active expert IDs per layer and token.
-- [ ] Measure expert residency and transfer.
-- [ ] Measure CPU-MoE compute and bandwidth.
-- [ ] Measure CPU and GPU transfer and synchronization.
-- [ ] Measure KV and recurrent-state allocation by occupied context.
-- [ ] Measure placement changes caused by configured context capacity.
-- [ ] Measure cold-start CUDA initialization, graph construction, and first-request overhead.
-- [ ] Quantify tracing overhead.
-- [ ] Identify one or two causal bottlenecks.
-- [ ] Select the first catalytic intervention from evidence.
+- [ ] Define one fixed, versioned trace schema with monotonic timestamps and stable event IDs.
+- [ ] Keep trace disabled by default and compiled out of normal builds.
+- [ ] Build the trace-enabled diagnostic separately and keep raw local traces ignored.
+- [ ] Measure instrumentation overhead.
+
+## Checkpoint 1B: Backend placement and fallback
+
+- [ ] Measure expected/actual backend, device, operator, tensor shape, and available CUDA rejection reason.
+- [ ] Distinguish intentional CPU-MoE from accidental CPU fallback.
+- [ ] Measure transfers caused by fallback.
+
+## Checkpoint 1C: CUDA graph lifecycle and synchronization
+
+- [ ] Measure capture, replay, reconstruction, shape signature, allocator growth, and stream identity.
+- [ ] Measure explicit and device-to-host synchronization.
+- [ ] Separate first-request initialization from warm steady state.
+
+## Checkpoint 1D: MoE geometry
+
+- [ ] Record active expert IDs, route rank, tokens per expert, and bucket-size distribution.
+- [ ] Record `MUL_MAT_ID` backend and observable MMQ tile geometry.
+- [ ] Estimate inactive/padded work, activation quantization cost, expert residency, and transfer.
+
+## Checkpoint 1E: Gated Delta Net recurrent state
+
+- [ ] Measure per-layer state bytes, allocation, update/copy duration, residence, transfers, and synchronization.
+- [ ] Measure per-token recurrent cost and exact snapshot/restore cost.
+
+## Checkpoint 1F: Causal bottleneck selection
+
+- [ ] Identify one or two dominant short-context costs and one or two dominant long-context costs.
+- [ ] Establish a measured causal mechanism rather than correlation alone.
+- [ ] Select one bounded first intervention from evidence.
 
 ---
 
@@ -257,4 +279,4 @@ Use the unlocked supervised substrate; stable remains untouched while instrument
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: create one supervised instrumentation candidate that maps actual CUDA/CPU backend placement, silent CPU fallback, CUDA graph capture/replay, synchronization, MoE expert bucket geometry, and Gated Delta Net recurrent-state cost while stable remains untouched.
+- [ ] Next task: run exactly one Checkpoint 1A optional-trace instrumentation candidate and one matched trace diagnostic while stable remains untouched.

@@ -166,4 +166,14 @@ The repository now supports bounded supervised candidates with human promotion r
 
 ## Checkpoint 1: Compute map [ACTIVE]
 
-Cold-start performance (first-request TPS ~50% of warm) and reasoning token overhead (~70% of output) are the identified targets. The SSM architecture shows flat decode through 60K, lowering the priority of long-context catalytic mechanisms.
+Claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. Level 1 is an operational capability unlock, not evidence of faster or catalytic inference.
+
+### Checkpoint 1A: Trace substrate [ACTIVE]
+
+- [ ] Fixed, versioned trace schema exists in an allowed candidate path.
+- [ ] Trace-disabled normal build compiles trace calls out and preserves behavior.
+- [ ] Separate trace-enabled diagnostic build emits monotonic, stable-ID local events.
+- [ ] Exactly one supervised candidate cycle passes or records its immutable-gate verdict.
+- [ ] Matched cold and warm diagnostics quantify trace overhead and produce an observed/inferred/not-yet-instrumented compute map.
+
+Later subphases map backend placement/fallback, CUDA graph lifecycle and synchronization, MoE geometry, Gated Delta Net recurrent state, and finally causal bottleneck selection. No bottleneck or optimization is claimed from correlation alone.

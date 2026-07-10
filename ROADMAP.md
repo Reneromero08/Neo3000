@@ -143,19 +143,53 @@ borrow existing compute state
 
 Algorithms are local traces through a larger process-object. Do not collapse phase-native, topological, spectral, recurrent, or relational proposals into scalar candidate ranking unless that reduction is the declared experiment.
 
+## Performance substrate and catalytic compute
+
+Both lanes belong to Neo3000, but they prove different things:
+
+```text
+Performance substrate:
+  reduce the cost of ordinary inference
+
+Catalytic compute:
+  reduce how much fresh ordinary inference is required
+```
+
+A conventional CUDA optimization may be accepted during Level 1 when it passes the immutable evaluator. It does not satisfy a catalytic checkpoint unless it explicitly implements `borrow`, `transform`, `extract`, `restore or close`, and retention of only lawful durable state.
+
+## Future runtime profiles
+
+These profiles are architectural directions, not implemented or measured claims.
+
+### Fast profile
+
+Purpose: maximum short-context interactive speed.
+
+Direction: one active server, GPU-heavy MoE placement, context sized to available VRAM, and no reserved candidate capacity. The maximum stable context for this profile is unknown until measured.
+
+### Long profile
+
+Purpose: large occupied context.
+
+Direction: CPU-MoE or mixed expert placement, a larger context-state allowance, and lower VRAM pressure.
+
+### RSI profile
+
+Purpose: stable and candidate coexistence.
+
+Direction: stable remains resident, candidate stays below the locked WDDM ceiling, CPU-MoE placement remains conservative, and ports, builds, and runtime state remain isolated.
+
 ---
 
 # 4. RSI levels
 
-## Level 0: Pi-assisted development
+## Level 0: Pi-assisted development [COMPLETED OPERATING LEVEL]
 
 Pi can inspect files, write code, build, and run commands, but the human still defines and supervises each development step.
 
-This is the current level.
+This operating level is complete. Its baseline and Pi gates remain protected foundations for later work.
 
-It is not yet RSI because the system does not own a closed modify, evaluate, preserve, and continue cycle.
-
-## Level 1: Supervised bounded RSI
+## Level 1: Supervised bounded RSI [CURRENT OPERATING LEVEL]
 
 Agents-A1 may improve a candidate Neo3000 through a deterministic loop, but:
 
@@ -169,15 +203,15 @@ promotion requires human review
 cycle count is bounded
 ```
 
-This level unlocks when Checkpoint RSI-0 closes.
+This level is unlocked because Checkpoint RSI-0 is closed.
 
-## Level 2: Autonomous bounded RSI
+## Level 2: Autonomous bounded RSI [LOCKED]
 
 Agents-A1 may execute several candidate cycles from a declared goal without manual command execution. It may revise or stop based on measured results, but may not automatically replace stable.
 
 This level unlocks when Checkpoint 5 closes.
 
-## Level 3: Recursive compute amplification
+## Level 3: Recursive compute amplification [LONG-RANGE TARGET]
 
 Useful computation survives as executable state and reduces equivalent future compute, rather than only improving source code between runs.
 
@@ -390,9 +424,9 @@ and
 results and handoffs remain accurate
 ```
 
-### Unlock
+### Unlock [ACHIEVED]
 
-After exit:
+Closed RSI-0 evidence unlocked:
 
 ```text
 SUPERVISED_BOUNDED_RSI_AVAILABLE
@@ -406,7 +440,16 @@ Automatic stable promotion remains forbidden.
 
 ## Checkpoint 1: Compute map
 
-Checkpoint 1 may use the supervised RSI substrate after RSI-0 closes.
+Status: **ACTIVE**
+
+Active bounded objective:
+
+```text
+Checkpoint 1A:
+Create and validate one optional compute-map trace substrate, then use it to localize actual backend placement and the first measurable execution costs.
+```
+
+Checkpoint 1 uses the unlocked supervised RSI substrate while stable remains untouched.
 
 The compute map must distinguish:
 
@@ -428,11 +471,48 @@ sampling and server overhead
 
 Exit gate: the top one or two causes of short-context cost and long-context cost are causally localized rather than inferred from correlation.
 
+### Checkpoint 1A: Trace substrate
+
+Create one fixed, versioned trace schema. Trace is disabled by default, normal builds compile trace calls out, the trace-enabled build is separate, local trace artifacts remain ignored, timestamps are monotonic, event IDs are stable, and instrumentation overhead is measured.
+
+### Checkpoint 1B: Backend placement and fallback
+
+Measure expected and actual backend, device ID, operator identity, tensor shape, any available CUDA-rejection reason, intentional CPU-MoE versus accidental CPU fallback, and host/device transfer caused by fallback.
+
+### Checkpoint 1C: CUDA graph lifecycle and synchronization
+
+Measure graph capture, replay, reconstruction, shape signature, allocator growth, CUDA stream, explicit and device-to-host synchronization, first-request initialization, and steady-state execution.
+
+### Checkpoint 1D: MoE geometry
+
+Measure active expert IDs, route rank, tokens per expert, largest/mean/distribution of expert buckets, `MUL_MAT_ID` backend, selected MMQ tile geometry, estimated inactive or padded MAC work, activation quantization cost, and expert-weight residency and transfer.
+
+### Checkpoint 1E: Gated Delta Net recurrent state
+
+Measure state bytes per layer, allocation, update and copy duration, CPU/GPU residence, host/device transfers, synchronization, cost per token, and exact snapshot/restore cost.
+
+### Checkpoint 1F: Causal bottleneck selection
+
+Exit only after identifying one or two dominant short-context costs, one or two dominant long-context costs, a measured causal mechanism, and one bounded first intervention. Correlation alone cannot select the intervention.
+
+### External architecture leads, not dependencies
+
+Source: `alesha-pro/llama.cpp`, `ds4-longctx` branch. Use: provenance and candidate hypotheses only. Prohibition: no wholesale merge, source replacement, or DeepSeek-specific code assumption.
+
+- **Actual-bucket MoE MMQ sizing:** worst-case expert tile sizing may execute padded or inactive CUDA work. Measure expert bucket geometry and selected tiles before any port.
+- **Silent CPU fallback detection:** an unsupported tensor shape may silently move a hot operator to CPU. Expose intentional and accidental CPU execution separately.
+- **Constant-shape CUDA graph replay:** some reconstruction may be removable when exact state growth can be separated from executable graph shape. Do not change fidelity or truncate effective context.
+- **Mixed-quant expert residency:** lower-bit experts may allow more MoE compute to remain on GPU while preserving higher precision for attention and recurrent state. This requires full tool, reasoning, quality, and model-behavior evaluation.
+- **Recurrent-state shadows and speculation:** future catalytic form is `borrow` an exact Gated Delta Net snapshot; `transform` through draft and verification trajectories; `extract` accepted tokens or an invariant; `restore` exact recurrent state after rejection; `retain` only accepted state transitions. This remains locked until state size, copy cost, location, and restoration feasibility are measured.
+- **Fused MoE operations:** lower priority until profiling shows grouping, quantization, or repeated activation work is material.
+
 ---
 
 ## Checkpoint 2: First catalytic compute intervention
 
 Remove or reuse one measured source of fresh computation while preserving Pi compatibility and model behavior.
+
+Checkpoint 2 remains the first catalytic intervention checkpoint. Conventional instrumentation and CUDA substrate improvements may be accepted during Checkpoint 1, but a conventional speedup does not close Checkpoint 2 without a declared borrow, transform, extract, and restoration law.
 
 Every intervention must name:
 

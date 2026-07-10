@@ -6,7 +6,7 @@ It is intentionally not a raw dump of every administrative commit. Small documen
 
 ## Current state
 
-Current through stable commit `d911f932be997b764a74235bba8ef2b9279a2c04`.
+Current state is defined by the pushed task board, checkpoint ledger, evaluator lock, and evidence records rather than a fragile changelog commit pointer.
 
 ```text
 Checkpoint 0: CLOSED
@@ -28,8 +28,17 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 
 ### Pending
 
-- Create one supervised instrumentation candidate that maps actual CUDA/CPU backend placement, silent CPU fallback, CUDA graph capture/replay, synchronization, MoE expert bucket geometry, and Gated Delta Net recurrent-state cost while stable remains untouched.
+- Checkpoint 1A: create and validate one optional compute-map trace substrate, run exactly one trace-disabled candidate cycle, and use one matched trace-enabled diagnostic to localize actual placement and first measurable execution costs.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
+
+### Level 1 architecture integrated
+
+- Level 0 is the completed operating level; Level 1 is current; Level 2 remains locked; Level 3 remains the long-range target.
+- `SUPERVISED_BOUNDED_RSI_AVAILABLE` is achieved. The claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`.
+- Performance substrate and catalytic compute are separate standing lanes. Conventional CUDA improvements do not satisfy a catalytic checkpoint without borrow, transform, extract, restore/close, and lawful retained state.
+- Fast, Long, and RSI future runtime profiles are recorded without implementation or unmeasured capacity claims.
+- Checkpoint 1 is divided into trace substrate, backend/fallback, CUDA graph/synchronization, MoE geometry, recurrent-state, and causal-selection subphases.
+- External CUDA leads are provenance and hypotheses only; no external fork merge or source replacement is authorized.
 
 ---
 

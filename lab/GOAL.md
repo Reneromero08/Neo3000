@@ -15,18 +15,11 @@ RSI-0F live rejection cycle: passed
 RSI-0G live reviewable acceptance cycle: passed
 ```
 
-## Required result
+## Active bounded objective
 
 ```text
-Stable worktree running Neo3000
-+ isolated candidate worktree
-+ immutable evaluator with lockfile-protected hashes
-+ deterministic neo-loop machinery
-+ enforced candidate edit allowlist
-+ enforced stop, timeout, memory, port, and cleanup gates
-+ supervised rejection cycle demonstrated
-+ supervised acceptance cycle demonstrated
-+ stable survives all candidate activity
+Checkpoint 1A:
+Create and validate one optional compute-map trace substrate, then use it to localize actual backend placement and the first measurable execution costs.
 ```
 
 ## Current boundary
@@ -37,7 +30,7 @@ Do not begin autonomous RSI. Do not modify stable inference logic. Do not promot
 
 ## Next exact action
 
-The next objective is one supervised instrumentation candidate that maps actual CUDA/CPU backend placement, silent CPU fallback, CUDA graph capture/replay, synchronization, MoE expert bucket geometry, and Gated Delta Net recurrent-state cost while stable remains untouched. This is not authorization for autonomous RSI or automatic promotion.
+Run exactly one supervised instrumentation candidate using the fixed optional trace schema. Evaluate the normal trace-disabled build once through `neo-loop`, then run one matched trace-enabled diagnostic after safe teardown. This is not authorization for optimization, speculative or catalytic inference, autonomous RSI, merging, or automatic promotion.
 
 Minimum required work:
 
@@ -48,7 +41,7 @@ Minimum required work:
 4. Measure first-request and per-token placement/synchronization costs without modifying stable inference.
 ```
 
-## Unlock target
+## Unlock state
 
 ```text
 SUPERVISED_BOUNDED_RSI_AVAILABLE
