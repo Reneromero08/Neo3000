@@ -168,7 +168,7 @@ The repository now supports bounded supervised candidates with human promotion r
 
 Claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. Level 1 is an operational capability unlock, not evidence of faster or catalytic inference.
 
-### Checkpoint 1A: Trace substrate [ACTIVE]
+### Checkpoint 1A: Trace substrate [ACTIVE / PAUSED]
 
 - [x] Fixed schema v1 exists in allowed path `ggml/include/neo-compute-trace.h`; required envelope fields are always present and unknown optional semantics remain null/omitted.
 - [x] Trace-disabled normal build compiles calls out under undefined `NEO_COMPUTE_TRACE` and preserves behavior: the only supervised cycle, `neo-loop-20260710T012311`, returned `reviewable-accept` at candidate `3e3023fc389a608ec5a5806eb8e1a50a801486d5`.
@@ -214,3 +214,9 @@ Trace-enabled WDDM telemetry is invalid: the sampler interpolated `pid_` without
 - No trace-enabled workload phase completed, so no phase overhead ratio is valid and Checkpoint 1A overhead remains unmeasured. Startup counts do not support a model-runtime bottleneck claim. Candidate/runtime/port retirement, five empty exact-PID WDDM checks, protected preflight, stable health/PID, and both worktree identities passed. No merge or promotion occurred.
 
 Later subphases map backend placement/fallback, CUDA graph lifecycle and synchronization, MoE geometry, Gated Delta Net recurrent state, and finally causal bottleneck selection. No bottleneck or optimization is claimed from correlation alone.
+
+### Immediate parallel boundary: HoloState-0 [CAPABILITY AUDIT]
+
+Checkpoint 1A is not closed. Proven trace properties are trace-disabled compile-out, bounded aggregation, exact-PID protected launch control, and explicit truncation/drop detection. Trace overhead, a completed workload compute map, and a model-runtime bottleneck remain unproven.
+
+HoloState-0 is authorized to inspect existing `llama-server` capabilities and run at most one isolated sidecar launch on port 9494. It will test whether a frozen canonical prefix can avoid reevaluation through bounded RAM cache/checkpoint reuse and slot save/restore while preserving deterministic Agents-A1 output. Exact RAM reuse, in-process restore, and process-restart restore must be classified separately. This audit may nominate a first Checkpoint 2 catalytic candidate; it does not activate or complete Checkpoint 2 and does not prove recurrent hybrid-state persistence from ordinary KV restoration.

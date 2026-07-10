@@ -18,8 +18,8 @@ RSI-0G live reviewable acceptance cycle: passed
 ## Active bounded objective
 
 ```text
-Checkpoint 1A:
-Create and validate one optional compute-map trace substrate, then use it to localize actual backend placement and the first measurable execution costs.
+Checkpoint 1A remains active but paused.
+Run one parallel HoloState-0 capability audit to determine whether exact Agents-A1 executable-prefix state can be reused without full replay.
 ```
 
 ## Current boundary
@@ -34,15 +34,17 @@ The schema-v1 candidate is archived at `evidence/checkpoint1a-trace-v1` commit `
 
 The protected in-process control repair succeeded. Telemetry-only established exact PID/listener/WDDM agreement, and the trace-disabled matched control completed all fixed phases. The single trace-enabled launch then stopped during incomplete cold reasoning when the unchanged v2 candidate explicitly reported truncation/drops at a per-module 24 MiB ceiling. The final artifact remained below the 64 MiB/200,000-record combined ceilings, but no trace-enabled workload phase completed; overhead and model-runtime bottleneck selection therefore remain unmeasured. Do not rerun this candidate in the current task.
 
-The next future supervised objective is one bounded trace-output candidate that prevents per-module limit pressure from truncating cold reasoning while preserving schema v2, explicit drop accounting, trace-disabled compile-out, combined session ceilings, exact-PID control, and all immutable model/runtime gates. This is not authorization for a model optimization, speculative or catalytic inference, autonomous RSI, merging, or automatic promotion.
+Checkpoint 1A preserves proven trace-disabled compile-out, bounded aggregation, exact-PID protected launch control, and explicit truncation/drop detection. Trace overhead, a completed workload compute map, and model-runtime bottleneck selection remain unproven.
+
+The immediate parallel boundary is HoloState-0: inspect existing binary/source capability, then use at most one isolated sidecar launch to audit bounded RAM prefix reuse and slot persistence. This audit may nominate `HoloState-v1 exact canonical-prefix capsule` as the first Checkpoint 2 intervention only if deterministic evidence proves exact executable hybrid-state reuse. Checkpoint 2 remains inactive, and ordinary KV restoration must not be described as Gated DeltaNet hybrid-state restoration without exact evidence.
 
 Minimum required work:
 
 ```text
-1. Keep the stable server and stable worktree unchanged.
-2. Preserve schema-v2 bounded aggregation, explicit placement reasons, and proven trace-disabled compile-out behavior.
-3. Keep the protected in-process exact-PID diagnostic controller unchanged as the launch authority.
-4. Complete matched cold and warm workloads only after exact attribution is live and trace output remains untruncated with zero drops.
+1. Keep stable and the archived trace candidate unchanged.
+2. Inspect capabilities before selecting a sidecar implementation.
+3. Use exact model identity, one slot, bounded RAM, exact-PID WDDM control, and port 9494.
+4. Classify RAM reuse, in-process restore, and restart restore separately; do not inflate the claim ceiling.
 ```
 
 ## Unlock state

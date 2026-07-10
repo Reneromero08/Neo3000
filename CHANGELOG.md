@@ -28,8 +28,15 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 
 ### Pending
 
-- Checkpoint 1A remains active: the protected control is proven, but a future bounded trace-output candidate must avoid the per-module 24 MiB truncation boundary before matched overhead can be measured.
+- Checkpoint 1A remains active but paused. Compile-out, bounded aggregation, protected exact-PID control, and explicit truncation/drop detection are proven; overhead, a completed workload map, and model-runtime bottleneck selection remain unproven.
+- HoloState-0 is open as one parallel capability audit of exact executable-prefix RAM reuse and slot persistence. It may nominate, but does not activate, the first Checkpoint 2 catalytic intervention.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
+
+### HoloState-0 capability boundary opened
+
+- Authorized one isolated port-9494 sidecar audit using the exact locked model, one slot, bounded host RAM, and protected exact-PID WDDM control.
+- The audit separates repeated-prefix RAM reuse, branch multiplexing, in-process slot restore, and restart restore. Deterministic output plus prompt-token reuse evidence is required for an exact classification.
+- Ordinary KV save/restore cannot establish Gated DeltaNet hybrid-state persistence by itself. Stable, CUDA, inference kernels, model files, and the archived trace candidate remain outside scope.
 
 ### Checkpoint 1A first instrumentation candidate
 

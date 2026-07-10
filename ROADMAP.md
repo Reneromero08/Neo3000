@@ -471,9 +471,11 @@ sampling and server overhead
 
 Exit gate: the top one or two causes of short-context cost and long-context cost are causally localized rather than inferred from correlation.
 
-### Checkpoint 1A: Trace substrate
+### Checkpoint 1A: Trace substrate [ACTIVE / PAUSED]
 
 Create one fixed, versioned trace schema. Trace is disabled by default, normal builds compile trace calls out, the trace-enabled build is separate, local trace artifacts remain ignored, timestamps are monotonic, event IDs are stable, and instrumentation overhead is measured.
+
+The current pause preserves proven trace-disabled compile-out, bounded aggregation, protected exact-PID launch control, and explicit truncation/drop detection. Trace overhead, a completed workload compute map, and causal model-runtime bottleneck selection remain unproven.
 
 ### Checkpoint 1B: Backend placement and fallback
 
@@ -494,6 +496,12 @@ Measure state bytes per layer, allocation, update and copy duration, CPU/GPU res
 ### Checkpoint 1F: Causal bottleneck selection
 
 Exit only after identifying one or two dominant short-context costs, one or two dominant long-context costs, a measured causal mechanism, and one bounded first intervention. Correlation alone cannot select the intervention.
+
+### Immediate parallel boundary: HoloState-0 capability audit
+
+HoloState-0 asks whether already-available server facilities can preserve and reuse an exact Agents-A1 executable prefix without reevaluating the full prefix. It audits bounded host-RAM reuse, context checkpoints, branch multiplexing, slot save/restore, and conditional process-restart restore through one isolated sidecar. It does not integrate upstream source, alter stable, activate Checkpoint 2, or prove Gated DeltaNet hybrid-state persistence from KV behavior alone.
+
+If deterministic output agreement and measured prompt-token reuse prove exact executable hybrid-state reuse, HoloState-0 may nominate `HoloState-v1 exact canonical-prefix capsule` as the first Checkpoint 2 candidate. Otherwise it records the narrower capability or failure boundary without changing the claim ceiling.
 
 ### External architecture leads, not dependencies
 

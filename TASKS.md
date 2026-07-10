@@ -4,8 +4,8 @@
 **Current RSI level:** Level 1, supervised bounded RSI available
 **Baseline evidence through:** `ff2f5e3da97680dc9a0b27196a91d29afc14918e`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
-**Active bounded objective:** Checkpoint 1A: Create and validate one optional compute-map trace substrate, then use it to localize actual backend placement and the first measurable execution costs.
-**Next exact action:** prepare one future supervised trace-output candidate that prevents the unchanged v2 per-module 24 MiB ceiling from truncating cold reasoning while preserving schema v2, the 64 MiB/200,000-record session ceilings, trace-disabled compile-out, and all protected runtime gates
+**Active bounded objective:** Checkpoint 1A tracing remains active but paused; run one parallel HoloState-0 capability audit of exact executable-prefix reuse without activating Checkpoint 2.
+**Next exact action:** inspect the existing stable binary and tracked source for context checkpoints, bounded host-RAM prefix caching, cache reuse, and slot save/restore before selecting one isolated HoloState sidecar
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -216,7 +216,7 @@ Unlock: SUPERVISED_BOUNDED_RSI_AVAILABLE
 
 Use the unlocked supervised substrate; stable remains untouched while instrumentation candidates are isolated and reviewable.
 
-## Checkpoint 1A: Trace substrate [ACTIVE]
+## Checkpoint 1A: Trace substrate [ACTIVE / PAUSED]
 
 - [x] Create an isolated instrumentation candidate: candidate commit `3e3023fc389a608ec5a5806eb8e1a50a801486d5`.
 - [x] Define fixed trace schema v1 with monotonic timestamps and stable event IDs in `ggml/include/neo-compute-trace.h`.
@@ -234,6 +234,18 @@ First diagnostic evidence: the cold trace produced 2,407,857 events and 895,639,
 Second diagnostic evidence: bounded schema-v2 initialization emitted 2,796 aggregate-delta records in 2,745,102 bytes with valid JSON, no truncation, no reported drops, and one writer open per module. Exact-PID telemetry produced no accepted row before inference, so the required pre-workload gate rejected candidate PID/listener `47792`. No cold or warm request ran, no trace-enabled WDDM peak or overhead is claimable, cleanup passed, and the diagnostic was not rerun.
 
 Protected-controller diagnostic evidence: telemetry-only passed at PID/listener `7128` with exact `pid_7128_` WDDM attribution and a 2,168.88 MiB peak. The trace-disabled matched control completed every fixed phase at PID/listener `28696`, with 103 valid samples, a 2,194.88 MiB peak, and 12.747/18.624/15.745/16.097/15.783 TPS for cold reasoning, warm transport, warm reasoning, performance warmup, and counted performance. The single trace-enabled launch used PID/listener `9112`, retained exact attribution with a 2,194.88 MiB peak, then stopped during incomplete cold reasoning when one module reported truncation and up to 28,062 dropped events at its 24 MiB limit. The final artifact was 25,199,004 bytes and 25,554 valid JSON records, below the combined session ceilings; no trace workload phase completed, so overhead remains unmeasured. No retry, merge, or promotion occurred.
+
+Checkpoint 1A remains open but is paused at this boundary. Proven: trace-disabled compile-out, bounded aggregation, exact-PID protected launch control, and explicit truncation/drop detection. Unproven: trace overhead, a completed workload compute map, and a model-runtime bottleneck.
+
+## Immediate parallel boundary: HoloState-0 capability audit
+
+- [ ] Inspect the current binary and source for exact-prefix reuse and slot persistence capabilities.
+- [ ] Launch at most one isolated sidecar implementation on port 9494 with exact-PID WDDM control.
+- [ ] Audit 8K full replay, identical-prefix RAM reuse, branch reuse, A/B/A/B multiplexing, in-process slot restore, and conditional restart restore.
+- [ ] Classify RAM reuse, in-process restore, and restart restore separately from deterministic output and prompt-token reuse evidence.
+- [ ] Nominate `HoloState-v1 exact canonical-prefix capsule` only if exact executable hybrid-state reuse is proven.
+
+HoloState-0 is a capability audit, not a source-integration candidate. It may nominate the first Checkpoint 2 catalytic intervention, but Checkpoint 2 is not active or complete.
 
 ## Checkpoint 1B: Backend placement and fallback
 
