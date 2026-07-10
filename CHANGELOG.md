@@ -12,6 +12,10 @@ Current state is defined by the pushed task board, checkpoint ledger, evaluator 
 Checkpoint 0: CLOSED
 Claim ceiling: NEO3000_BASELINE_OPERATIONAL
 Current RSI level: Level 1, supervised bounded RSI available
+Checkpoint 1A: ACTIVE / PAUSED
+Checkpoint 2: ACTIVE
+First catalytic intervention: HoloState-v1 Live Prefix Lattice
+Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 RSI-0F supervised rejection cycle: PASSED
 RSI-0G supervised acceptance cycle: REVIEWABLE ACCEPT
 Automatic promotion: DISABLED
@@ -29,8 +33,18 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 ### Pending
 
 - Checkpoint 1A remains active but paused. Compile-out, bounded aggregation, protected exact-PID control, and explicit truncation/drop detection are proven; overhead, a completed workload map, and model-runtime bottleneck selection remain unproven.
-- HoloState-0 is open as one parallel capability audit of exact executable-prefix RAM reuse and slot persistence. It may nominate, but does not activate, the first Checkpoint 2 catalytic intervention.
+- Checkpoint 2 is active for HoloState-v1 Live Prefix Lattice, the protected operational integration of exact process-local executable-prefix reuse already proven by HoloState-0.
+- HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
+
+### Checkpoint 2 activated: HoloState-v1 Live Prefix Lattice
+
+- The expensive operation is canonical-prefix prompt evaluation; the borrowed carrier is exact process-local hybrid prefix state.
+- Each transformation evaluates one divergent suffix or branch and extracts deterministic reasoning, final content, or a tool call.
+- Closure preserves the canonical checkpoint lattice, retaining only model/configuration/prefix-identity-bound live cache entries.
+- The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`; `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` is recorded separately.
+- HoloState-v1 is process-local and uses the Live Prefix Lattice name.
+- HoloState-v2 Durable Capsule is reserved for future restart-persistent state work.
 
 ### HoloState-0 capability boundary opened
 

@@ -1,11 +1,12 @@
 # Neo3000 Task Board
 
-**Active checkpoint:** Checkpoint 1, Compute map
+**Active checkpoint:** Checkpoint 2, First catalytic compute intervention
 **Current RSI level:** Level 1, supervised bounded RSI available
-**Baseline evidence through:** `ff2f5e3da97680dc9a0b27196a91d29afc14918e`
+**Baseline evidence through:** `dca929d3d6039e9355c95d34ae5d161309a67e80`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
-**Active bounded objective:** Checkpoint 1A tracing remains active but paused; HoloState-0 proved exact process-local prefix reuse but not restart-persistent executable state.
-**Next exact action:** design one future bounded audit that isolates slot-file restore from the still-live process-local RAM/checkpoint cache and maps why restart restore reports 8,069 tokens restored yet reevaluates all 7,519 prompt tokens
+**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. Checkpoint 2 is active for exactly one intervention: HoloState-v1 Live Prefix Lattice.
+**Next exact action:** implement the protected process-local HoloState controller, then run the one declared two-root validation and bounded live-process proof without restarting or replacing stable
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -244,9 +245,9 @@ Checkpoint 1A remains open but is paused at this boundary. Proven: trace-disable
 - [x] Audited 7,500-token canonical content / 7,519-token rendered prompts across full replay, identical A, branch B, A/B/A/B, save/erase/restore, and restart restore.
 - [x] Process-local RAM/checkpoint reuse is exact: 7,387 tokens reused, 132 fresh, identical cleaned greedy token IDs and reasoning/final hashes, and correct A/B multiplexing.
 - [x] Slot file saved/restored 8,069 tokens and 231,311,464 bytes; in-process behavior remained exact but is confounded by the live RAM/checkpoint cache. Restart restore read the file yet processed all 7,519 prompt tokens, so restart reuse failed.
-- [x] Do not nominate `HoloState-v1 exact canonical-prefix capsule`; retain the narrower exact process-local RAM/checkpoint result until the persistence carrier is isolated.
+- [x] Do not nominate a restart-persistent durable capsule; retain the exact process-local RAM/checkpoint result as the lawful carrier for HoloState-v1 Live Prefix Lattice.
 
-HoloState-0 is a capability audit, not a source-integration candidate. It may nominate the first Checkpoint 2 catalytic intervention, but Checkpoint 2 is not active or complete.
+HoloState-0 is a completed capability audit, not a source-integration candidate. Its exact process-local result supports the now-active Checkpoint 2 integration; its failed restart result does not support HoloState-v2.
 
 ## Checkpoint 1B: Backend placement and fallback
 
@@ -279,12 +280,27 @@ HoloState-0 is a capability audit, not a source-integration candidate. It may no
 
 ---
 
-# Checkpoint 2 queue: First catalytic intervention
+# Checkpoint 2 queue: First catalytic intervention [ACTIVE]
 
-- [ ] Declare the expensive operation.
-- [ ] Declare the borrowed carrier.
-- [ ] Declare transformation, extracted invariant, and closure law.
-- [ ] Declare rejection criteria and quality gates.
+Current intervention: **HoloState-v1 Live Prefix Lattice**. This is exact process-local executable-prefix reuse, proven as a capability by HoloState-0 and now bounded for operational integration. It is not restart persistence.
+
+Future intervention: **HoloState-v2 Durable Capsule**. Restart-persistent executable-state reuse remains unproven and outside the current task.
+
+Catalytic declaration:
+
+```text
+expensive operation: canonical-prefix prompt evaluation
+borrowed carrier: exact process-local hybrid prefix state
+transformation: evaluate one divergent suffix or branch
+extracted result: deterministic reasoning, final content, or tool call
+restoration or closure: preserve the canonical checkpoint lattice for later branches
+retained lawful state: model/configuration/prefix-identity-bound live cache entries
+```
+
+- [x] Declare the expensive operation.
+- [x] Declare the borrowed carrier.
+- [x] Declare transformation, extracted invariant, and closure law.
+- [x] Declare rejection criteria and quality gates: immutable root identities, exact same-branch output, measured reuse, bounded RAM/WDDM, stable isolation, and no automatic promotion.
 - [ ] Implement one bounded candidate mechanism.
 - [ ] Compare stable and candidate under immutable evaluation.
 - [ ] Preserve Pi text, reasoning, tools, cancellation, and repeated turns.
@@ -303,4 +319,4 @@ HoloState-0 is a capability audit, not a source-integration candidate. It may no
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: bound per-module trace output below its 24 MiB ceiling long enough to complete cold reasoning, without weakening the combined session ceilings or changing model execution.
+- [ ] Next task: implement and test `scripts/holostate_live.py` and `scripts/test_holostate_live.py`, protect them in the evaluator, and run the single declared HoloState-v1 live validation sequence.

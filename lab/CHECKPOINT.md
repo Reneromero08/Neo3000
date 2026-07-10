@@ -164,7 +164,7 @@ The repository now supports bounded supervised candidates with human promotion r
 - [x] Evaluator split proof: the immutable transport gate uses documented request-level reasoning-off and passed stable 3/3 plus clean candidate; the immutable auto-reasoning gate uses the matched 768-token allowance and passed both with nonempty reasoning plus exact final content; the separate warm-performance gate excludes one warmup, retains 10 TPS, and passed stable 16.33/17.03 TPS and candidate 17.23/17.76 TPS. Candidate PID/listener `29180` remained at 2,194.88 MiB across 67 WDDM samples and tore down cleanly.
 - [x] RSI-0G reviewable acceptance: inert candidate fixture passed the locked transport, reasoning, tool, cancellation, repeat, and warm-performance gates; candidate PID/listener `38952` used exact-PID WDDM at a 2,301,497,344-byte (2,194.88 MiB) peak with valid telemetry, then tore down. Stable PID `31188`, health, protected hashes, worktree, and independent five-sample counter retirement checks remained valid. No promotion or merge occurred.
 
-## Checkpoint 1: Compute map [ACTIVE]
+## Checkpoint 1: Compute map [ACTIVE / CHECKPOINT 1A PAUSED]
 
 Claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. Level 1 is an operational capability unlock, not evidence of faster or catalytic inference.
 
@@ -232,4 +232,41 @@ HoloState-0 is authorized to inspect existing `llama-server` capabilities and ru
 - Restart restore used the same binary, model, configuration, prefix, and slot hash; it reported 8,069 restored tokens / 231,311,464 bytes in 485.950 ms, but prompt progress then reported cache 0 and reevaluated all 7,519 tokens in 165,385.384 ms. Output remained exact, but process-restart state reuse failed.
 - Catalytic metrics: 7,387 avoided tokens, 132 fresh, 72.653x mean prompt compute amplification, 33.487 avoided tokens per MiB of slot file, and 0.196% in-process save-plus-restore closure cost relative to avoided replay. Configured RAM-cache ceiling was 4,096 MiB; measured sidecar private-memory growth was 206,774,272 bytes. Working-set growth was 15,671,939,072 bytes and includes mapped model residency, not just cache.
 - Initial/restart sidecar PIDs were `34500`/`36404`; exact WDDM peaks were 2,252.88 MiB with zero telemetry failures. Both launches retired, port 9494 is free, five retirement samples per launch were empty, stable PID `31188` remained healthy, and both worktrees remained clean. The identity-bound slot file is retained only in ignored runtime state.
-- Classification: process-local RAM/checkpoint reuse `exact`; in-process slot restore `inconclusive` as a file-specific carrier; process-restart slot restore `failed`. The 40K optional test was not authorized because every 8K persistence mode did not succeed exactly. Exact restart-persistent Gated DeltaNet hybrid state is not proven, `HoloState-v1 exact canonical-prefix capsule` is not nominated, and Checkpoint 2 remains inactive.
+- Classification: process-local RAM/checkpoint reuse `exact`; in-process slot restore `inconclusive` as a file-specific carrier; process-restart slot restore `failed`. The 40K optional test was not authorized because every 8K persistence mode did not succeed exactly. Exact restart-persistent Gated DeltaNet hybrid state is not proven, so no durable capsule is nominated. The exact process-local carrier is now the basis for the separately bounded HoloState-v1 Live Prefix Lattice integration below.
+
+## Checkpoint 2: First catalytic compute intervention [ACTIVE]
+
+The phase classification is corrected from capability audit to operational integration without raising the global claim ceiling.
+
+```text
+Global claim ceiling: NEO3000_BASELINE_OPERATIONAL
+Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
+Current intervention: HoloState-v1 Live Prefix Lattice
+Future intervention: HoloState-v2 Durable Capsule
+```
+
+HoloState-v1 is exact process-local executable-prefix reuse. HoloState-0 directly proved its carrier through repeated and interleaved deterministic branch reuse. Checkpoint 2 now tests a protected, identity-bound, long-lived multi-root integration of that carrier.
+
+HoloState-v2 is restart-persistent executable-state reuse. It is unproven and outside the current intervention.
+
+### Catalytic declaration
+
+```text
+expensive operation: canonical-prefix prompt evaluation
+borrowed carrier: exact process-local hybrid prefix state
+transformation: evaluate one divergent suffix or branch
+extracted result: deterministic reasoning, final content, or tool call
+restoration or closure: preserve the canonical checkpoint lattice for later branches
+retained lawful state: model/configuration/prefix-identity-bound live cache entries
+```
+
+### Integration gates [OPEN]
+
+- [ ] Protected controller cannot commit, push, merge, promote, terminate stable, modify stable source, or mutate the model.
+- [ ] Two immutable canonical root identities are warmed and proven reusable.
+- [ ] The fixed `A1, B1, A2, B2, A1, B1` sequence preserves exact branch outputs and same-branch reasoning/greedy-token hashes without cross-root selection.
+- [ ] Every returning branch reports cached prompt tokens greater than zero and fewer fresh than logical prompt tokens.
+- [ ] Sidecar PID, listener PID, and exact WDDM PID agree under the 6000 MiB ceiling; host cache remains bounded at 4096 MiB.
+- [ ] Stable PID and health remain unchanged.
+- [ ] One non-restarted extended proof runs for at most 60 minutes and 20 requests over roots A/B only.
+- [ ] Automatic promotion remains disabled.

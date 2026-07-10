@@ -93,8 +93,12 @@ LM Studio is **not** an unlock dependency. It may be used as optional historical
 ```text
 RSI-0: CLOSED
 -> SUPERVISED_BOUNDED_RSI_AVAILABLE unlocked for Level 1 supervised work
--> Checkpoint 1: compute map is active
+-> Checkpoint 1A: trace substrate remains active and paused
+-> Checkpoint 2: ACTIVE
+-> First catalytic intervention: HoloState-v1 Live Prefix Lattice
 ```
+
+The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
 
 No autonomous RSI. No automatic promotion. No stable inference modification outside declared candidate cycles.
 
@@ -501,9 +505,11 @@ Exit only after identifying one or two dominant short-context costs, one or two 
 
 HoloState-0 asks whether already-available server facilities can preserve and reuse an exact Agents-A1 executable prefix without reevaluating the full prefix. It audits bounded host-RAM reuse, context checkpoints, branch multiplexing, slot save/restore, and conditional process-restart restore through one isolated sidecar. It does not integrate upstream source, alter stable, activate Checkpoint 2, or prove Gated DeltaNet hybrid-state persistence from KV behavior alone.
 
-If deterministic output agreement and measured prompt-token reuse prove exact executable hybrid-state reuse, HoloState-0 may nominate `HoloState-v1 exact canonical-prefix capsule` as the first Checkpoint 2 candidate. Otherwise it records the narrower capability or failure boundary without changing the claim ceiling.
+If deterministic output agreement and measured prompt-token reuse prove exact executable hybrid-state reuse, HoloState-0 may nominate HoloState-v1 Live Prefix Lattice as the first Checkpoint 2 intervention. Otherwise it records the narrower capability or failure boundary without changing the claim ceiling.
 
-HoloState-0 result: the existing hybrid runtime exactly reused 7,387 of 7,519 rendered prompt tokens across identical and A/B/A/B process-local branches, with identical greedy token IDs and reasoning/final output per branch. A 231,311,464-byte slot file restored 8,069 tokens in-process, but live RAM/checkpoint state confounds attribution to the file. After process restart the same file was read successfully yet all 7,519 prompt tokens were reevaluated. Therefore only exact process-local RAM/checkpoint reuse is proven; a restart-persistent hybrid capsule is not, and Checkpoint 2 remains inactive.
+HoloState-0 result: the existing hybrid runtime exactly reused 7,387 of 7,519 rendered prompt tokens across identical and A/B/A/B process-local branches, with identical greedy token IDs and reasoning/final output per branch. A 231,311,464-byte slot file restored 8,069 tokens in-process, but live RAM/checkpoint state confounds attribution to the file. After process restart the same file was read successfully yet all 7,519 prompt tokens were reevaluated. Therefore exact process-local RAM/checkpoint reuse is proven and may be operationalized as HoloState-v1 Live Prefix Lattice.
+
+Restart-persistent executable-state reuse remains unproven and is separated as HoloState-v2 Durable Capsule.
 
 ### External architecture leads, not dependencies
 
@@ -519,6 +525,34 @@ Source: `alesha-pro/llama.cpp`, `ds4-longctx` branch. Use: provenance and candid
 ---
 
 ## Checkpoint 2: First catalytic compute intervention
+
+Status: **ACTIVE**
+
+First intervention: **HoloState-v1 Live Prefix Lattice**
+
+```text
+expensive operation:
+  canonical-prefix prompt evaluation
+
+borrowed carrier:
+  exact process-local hybrid prefix state
+
+transformation:
+  evaluate one divergent suffix or branch
+
+extracted result:
+  deterministic reasoning, final content, or tool call
+
+restoration or closure:
+  preserve the canonical checkpoint lattice for later branches
+
+retained lawful state:
+  model/configuration/prefix-identity-bound live cache entries
+```
+
+HoloState-v1 is the current process-local integration. It keeps multiple immutable canonical roots available inside one exact long-lived sidecar and revisits them through identity-bound checkpoint/RAM reuse. It does not modify llama.cpp inference kernels and does not claim survival across a process restart.
+
+HoloState-v2 Durable Capsule is the future restart-persistence intervention. Its carrier and recovery law remain unproven.
 
 Remove or reuse one measured source of fresh computation while preserving Pi compatibility and model behavior.
 

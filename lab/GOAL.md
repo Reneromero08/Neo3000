@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 1: Compute map
+## Checkpoint 2: HoloState-v1 Live Prefix Lattice
 
 Checkpoint 0 is closed. Neo3000 is baseline-operational. The runtime serves Agents-A1 to Pi correctly, context scales through 60K occupied tokens with a 0.94 degradation ratio, rolling minimum decode is smooth, tools and cancellation are verified, and LM Studio is no longer an unlock dependency.
 
@@ -15,11 +15,16 @@ RSI-0F live rejection cycle: passed
 RSI-0G live reviewable acceptance cycle: passed
 ```
 
+Checkpoint 1A remains active and paused. Its proven trace-disabled compile-out, bounded aggregation, exact-PID control, and drop detection are preserved; overhead, a completed workload map, and causal bottleneck selection remain unproven.
+
+Checkpoint 2 is active for exactly one bounded catalytic integration.
+
 ## Active bounded objective
 
 ```text
-Checkpoint 1A remains active but paused.
-Run one parallel HoloState-0 capability audit to determine whether exact Agents-A1 executable-prefix state can be reused without full replay.
+HoloState-v1 Live Prefix Lattice
+Operationalize the exact process-local carrier already proven by HoloState-0.
+Do not implement or claim restart persistence.
 ```
 
 ## Current boundary
@@ -36,21 +41,37 @@ The protected in-process control repair succeeded. Telemetry-only established ex
 
 Checkpoint 1A preserves proven trace-disabled compile-out, bounded aggregation, exact-PID protected launch control, and explicit truncation/drop detection. Trace overhead, a completed workload compute map, and model-runtime bottleneck selection remain unproven.
 
-HoloState-0 completed with a narrower result. Process-local RAM/checkpoint reuse avoided 7,387 of 7,519 rendered prompt evaluations while preserving exact cleaned greedy token IDs, reasoning hashes, final content, and A/B/A/B branch behavior. Save/erase/restore remained exact in-process, but the live RAM/checkpoint cache makes the slot-file carrier ambiguous. Across restart, the same identity-bound 231,311,464-byte file reported 8,069 restored tokens but avoided zero prompt evaluations. A restart-persistent Gated DeltaNet hybrid capsule is not proven, and `HoloState-v1 exact canonical-prefix capsule` is not nominated. Checkpoint 2 remains inactive.
+HoloState-0 proved the current carrier. Process-local RAM/checkpoint reuse avoided 7,387 of 7,519 rendered prompt evaluations while preserving exact cleaned greedy token IDs, reasoning hashes, final content, and A/B/A/B branch behavior. That capability is now the first Checkpoint 2 intervention under the name **HoloState-v1 Live Prefix Lattice**.
+
+Restart persistence remains separate. Save/erase/restore stayed exact in-process, but the live RAM/checkpoint cache makes the slot-file carrier ambiguous. Across restart, the same identity-bound 231,311,464-byte file reported 8,069 restored tokens but avoided zero prompt evaluations. The future restart-persistence intervention is **HoloState-v2 Durable Capsule**, and it remains unproven.
+
+Catalytic declaration:
+
+```text
+expensive operation: canonical-prefix prompt evaluation
+borrowed carrier: exact process-local hybrid prefix state
+transformation: evaluate one divergent suffix or branch
+extracted result: deterministic reasoning, final content, or tool call
+restoration or closure: preserve the canonical checkpoint lattice for later branches
+retained lawful state: model/configuration/prefix-identity-bound live cache entries
+```
 
 Minimum required work:
 
 ```text
-1. Keep stable, model files, CUDA, and the archived trace candidate unchanged.
-2. Preserve the exact process-local RAM/checkpoint result without calling it a persistent capsule.
-3. Isolate slot-file behavior from live RAM cache before another persistence claim.
-4. Explain the restart boundary where restore reads 8,069 tokens but prompt progress reports cache 0 and processes 7,519.
+1. Add a protected controller without changing llama.cpp source, CUDA, kernels, model weights, stable, Pi configuration, or the archived trace candidate.
+2. Bind live registry entries to exact binary, model, template, prefix, and token identities; metadata alone never proves residency.
+3. Warm two immutable 4K-8K roots and run exactly A1, B1, A2, B2, A1, B1.
+4. Require exact same-branch output and reasoning/token hashes, measured cached-token reuse, exact PID/WDDM attribution, bounded RAM, and stable isolation.
+5. If that sequence succeeds, keep the same sidecar alive for one bounded proof of at most 60 minutes and 20 requests over A and B only.
+6. Stop on first failure and never retry automatically.
 ```
 
 ## Unlock state
 
 ```text
 SUPERVISED_BOUNDED_RSI_AVAILABLE
+EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 ```
 
-Unlocked: RSI-0E, RSI-0F, and RSI-0G are all supported by executed evidence. Automatic promotion remains disabled.
+The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. Automatic promotion remains disabled. `PROCESS_LOCAL_HOLOSTATE_AVAILABLE` remains locked until the integration validation passes; `RESTART_PERSISTENT_HOLOSTATE_AVAILABLE` remains locked.
