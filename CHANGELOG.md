@@ -37,6 +37,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 
 - Checkpoint 1A remains active but paused. Compile-out, bounded aggregation, protected exact-PID control, and explicit truncation/drop detection are proven; overhead, a completed workload map, and model-runtime bottleneck selection remain unproven.
 - Checkpoint 2 is active for HoloState-v1 Live Prefix Lattice, the protected operational integration of exact process-local executable-prefix reuse already proven by HoloState-0.
+- The immediate HoloState-v1 boundary is reasoning-budget qualification: preserve the executed 768-token exhaustion as the lower bound, test `1024, 1280, 1536, 2048` once in ascending order, and lock the smallest passing value before one newly authorized validation-v2.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
@@ -59,6 +60,15 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Exact-PID WDDM produced 139 valid samples with a 2,252.88 MiB peak and no telemetry loss. Cleanup removed the exact sidecar and runtime; port 9494 and all five retirement samples were empty; stable remained unchanged.
 - `HoloState-v1 Live Prefix Lattice` is `inconclusive`. `PROCESS_LOCAL_HOLOSTATE_AVAILABLE` and `RESTART_PERSISTENT_HOLOSTATE_AVAILABLE` remain locked. The narrower HoloState-0 status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` remains valid.
 - After the stopped run, the controller was narrowed to preserve future failed-branch metrics and prefer prompt-progress cache counts over ambiguous zero-generation completion totals. This was a non-runtime evidence repair; the validation was not rerun.
+
+### HoloState-v1 reasoning-budget contract repair
+
+- The causal boundary is explicit: process-local prefix reuse succeeded, while the operational quality proof was blocked by an unqualified shared reasoning budget.
+- The original ignored attempt/result remain immutable lower-bound evidence; new one-shot qualification and validation-v2 files are versioned separately.
+- A complete evaluator-locked HoloState contract now owns roots, ordered source sets, branches, prompts, exact finals, reasoning/reuse requirements, candidate and selected budgets, sequences, request limits, memory ceilings, and binary/model/template identity.
+- Completion budget exhaustion, wrong final content, missing reasoning, reuse failure, and acceptance are distinct persisted classifications.
+- The repair passed 38 focused HoloState tests plus the protected trace, evaluator, and WDDM regression suites; evaluator preflight passed before any live launch.
+- HoloState-v2 persistence remains a separate future intervention; the global claim ceiling and both availability locks are unchanged pending executed evidence.
 
 ### HoloState-0 capability boundary opened
 

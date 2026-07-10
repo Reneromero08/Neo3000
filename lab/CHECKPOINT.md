@@ -262,7 +262,7 @@ retained lawful state: model/configuration/prefix-identity-bound live cache entr
 
 ### HoloState-v1 integration attempt [INCONCLUSIVE]
 
-- [x] Protected controller cannot commit, push, merge, promote, terminate stable, modify stable source, or mutate the model. It exposes only `start`, `stop`, `status`, `warm`, `branch`, `list`, `evict`, and `validate`; its CPU-only safety suite passes 15 tests.
+- [x] The original protected controller could not commit, push, merge, promote, terminate stable, modify stable source, or mutate the model; its CPU-only safety suite passed 15 tests.
 - [x] Two immutable canonical root identities warmed within the 4K-8K band. Root A: 32,164 bytes, SHA-256 `F28DB3E15EA34510432B7367C621ABE15B5A9DA9B0A1F8189556F4ACE86FDBAA`, token-ID SHA-256 `71363A1309DC5692AF1DB8BE99E3F0EE031C966A58A8BAE49F6CE7096E7C7CC2`, 7,150 rendered tokens. Root B: 21,714 bytes, SHA-256 `0EF151D9DD57D176E92E393686A548FBED01967AF6E4F0B5070F5B6F002D7CB8`, token-ID SHA-256 `CE5A629803ACA104F2C2FE869422E34554FE1663B724496EA4B15EA92526C728`, 4,879 rendered tokens. Both used chat-template SHA-256 `A4AEE8AFCF2E0711942CF848899BE66016F8D14A889FF9EDE07BCA099C28F715`.
 - [ ] The fixed `A1, B1, A2, B2, A1, B1` sequence did not complete. A1 stopped the sequence on its deterministic output gate; B1/A2/B2 were not attempted.
 - [ ] Exact same-branch greedy-token/reasoning hashes and cross-root isolation were not established. The failed A1 stream hashes were not retained by the local result.
@@ -285,6 +285,19 @@ RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 
 No literal infinity claim is made. Accepted cumulative avoided evaluations, accepted state reuse yield, and accepted holographic branch density are all zero because no branch closed the deterministic gate. The A1 performance-only observation corresponds to 7,017 avoided evaluations, 2.882 avoided tokens per MiB of Root A's conservative 2,552,915,136-byte cache-budget estimate, and 43.151x prompt-time amplification.
 
+### Active repaired-contract boundary
+
+```text
+HoloState-v1 reuse mechanism: succeeded
+HoloState-v1 operational quality gate: blocked by unqualified shared reasoning budget
+Current action: qualify the minimum passing A1 budget, then run one immutable-budget validation-v2 if qualification passes
+HoloState-v2 persistence: separate future intervention
+```
+
+The prior 768-token failure is executed lower-bound evidence and will not be rerun. The protected contract declares ascending candidates `1024, 1280, 1536, 2048`, keeps reasoning `auto`, requires nonempty reasoning, exact branch finals, normal generation stop, and process-local reuse, and permits only one versioned qualification plus one versioned validation-v2. The global claim ceiling and both availability locks remain unchanged until executed evidence closes every gate.
+
+The repaired controller/contract passed Python compilation, 38 focused HoloState tests, 11 trace-controller tests, 9 evaluator-gate tests, and 5 WDDM tests. Complete-object contract hashing, ordered root-source hashing, stale-lock rejection, atomic one-shot claims, persisted failed-result fields, bounded worker settlement, and cleanup integrity are covered. Protected preflight passed before any live qualification launch.
+
 ### Durable persistence boundary
 
 The built-in slot file persists active KV/recurrent state and token history, but does not persist the server prompt-checkpoint list required for hybrid recurrent prefix selection after restart.
@@ -297,4 +310,4 @@ ggml-org/llama.cpp PR 20955
 ggml-org/llama.cpp PR 24028
 ```
 
-The next exact persistence candidate combines checkpoint-list sidecar persistence, identity/version checks, nearest-checkpoint recovery when recurrent truncation is unsupported, and exact restart A/B validation.
+The future persistence candidate combines checkpoint-list sidecar persistence, identity/version checks, nearest-checkpoint recovery when recurrent truncation is unsupported, and exact restart A/B validation. It is not the current next action.

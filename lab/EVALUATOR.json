@@ -73,6 +73,8 @@
       "scripts/holostate_live.py",
       "scripts/test_holostate_live.py",
       ".gitignore",
+      "README.md",
+      "NEO3000.md",
       "TASKS.md",
       "AGENTS.md",
       "ROADMAP.md",
@@ -161,6 +163,114 @@
       "warmup_count": 0,
       "counted_run_count": 3,
       "min_decode_tps": null
+    }
+  },
+  "holostate_live_contract": {
+    "id": "holostate-live-v2",
+    "attempt_version": 2,
+    "prior_lower_bound_evidence": {
+      "configured_max_tokens": 768,
+      "classification": "completion-budget-exhausted",
+      "attempt_path": "state/holostate/validation-attempt.json",
+      "attempt_sha256": "E2A85B79C6719F8C4D61CB0E78498C9C5016A56519D99190F5DAACFD81EFF231",
+      "result_path": "state/holostate/validation-result.json",
+      "result_sha256": "7C5C69B8564722A43E92754841B5B5CE3225A460737BA097B1666EE5DAE868E6"
+    },
+    "roots": {
+      "A": {
+        "display_name": "Root A",
+        "identity": {
+          "canonical_prefix": "SHA-256 over ordered SOURCE header plus exact source bytes",
+          "source_hash_authority": "lab/EVALUATOR.lock.json protected_file_hashes",
+          "runtime_bindings": ["binary_sha256", "model_sha256", "chat_template_sha256", "token_id_sha256", "rendered_token_count"]
+        },
+        "sources": ["ROADMAP.md", "lab/GOAL.md", "README.md"],
+        "rendered_token_bounds": {"minimum": 4000, "maximum": 8192}
+      },
+      "B": {
+        "display_name": "Root B",
+        "identity": {
+          "canonical_prefix": "SHA-256 over ordered SOURCE header plus exact source bytes",
+          "source_hash_authority": "lab/EVALUATOR.lock.json protected_file_hashes",
+          "runtime_bindings": ["binary_sha256", "model_sha256", "chat_template_sha256", "token_id_sha256", "rendered_token_count"]
+        },
+        "sources": ["AGENTS.md", "NEO3000.md", "lab/BASELINE_PROTOCOL.md", "lab/GOAL.md"],
+        "rendered_token_bounds": {"minimum": 4000, "maximum": 8192}
+      }
+    },
+    "branches": {
+      "A1": {
+        "root": "A",
+        "suffix": "Reason carefully, then finish with exactly: HOLOSTATE A1 EXACT",
+        "expected_final": "HOLOSTATE A1 EXACT"
+      },
+      "A2": {
+        "root": "A",
+        "suffix": "Reason briefly, then finish with exactly: HOLOSTATE A2 EXACT",
+        "expected_final": "HOLOSTATE A2 EXACT"
+      },
+      "B1": {
+        "root": "B",
+        "suffix": "Reason carefully, then finish with exactly: HOLOSTATE B1 EXACT",
+        "expected_final": "HOLOSTATE B1 EXACT"
+      },
+      "B2": {
+        "root": "B",
+        "suffix": "Reason briefly, then finish with exactly: HOLOSTATE B2 EXACT",
+        "expected_final": "HOLOSTATE B2 EXACT"
+      }
+    },
+    "sampling": {
+      "temperature": 0.0,
+      "seed": 0,
+      "reasoning_mode": "auto",
+      "reasoning_required": true,
+      "exact_final_required": true,
+      "cache_reuse_required": true,
+      "normal_generation_stop_required": true
+    },
+    "reasoning_budget": {
+      "qualification_branch": "A1",
+      "qualification_candidates": [1024, 1280, 1536, 2048],
+      "selected_max_tokens": null,
+      "qualification_result_sha256": null,
+      "stop_at_first_accepted": true
+    },
+    "fixed_interleaving_sequence": ["A1", "B1", "A2", "B2", "A1", "B1"],
+    "extended_cycle": ["A2", "B2", "A1", "B1"],
+    "extended_request_count": 20,
+    "extended_duration_seconds": 3600,
+    "host_cache_mib_ceiling": 4096,
+    "wddm_mib_ceiling": 6000,
+    "binary_identity": {
+      "runtime_version": "13 (417e1d6)",
+      "sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
+    },
+    "model_identity": {
+      "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+      "size_bytes": 21166757632
+    },
+    "chat_template_identity": {
+      "required": true,
+      "sha256": "A4AEE8AFCF2E0711942CF848899BE66016F8D14A889FF9EDE07BCA099C28F715"
+    },
+    "tool_probe": {
+      "required": true,
+      "model_alias": "agents-a1-holostate",
+      "prompt": "Call the neo3000_probe tool exactly once with status set to ok. Do not answer in plain text.",
+      "max_tokens": 512,
+      "timeout_seconds": 1200
+    },
+    "cancellation_recovery_probe": {
+      "required": true,
+      "model_alias": "agents-a1-holostate",
+      "cancellation_prompt": "Count upward slowly and do not stop until cancelled.",
+      "cancellation_max_tokens": 2048,
+      "recovery_prompt": "Reply with exactly: HOLOSTATE CANCEL RECOVERED",
+      "expected_recovery": "HOLOSTATE CANCEL RECOVERED",
+      "recovery_max_tokens": 128,
+      "recovery_deadline_seconds": 30,
+      "timeout_seconds": 1200
     }
   },
   "candidate_editable_paths": {

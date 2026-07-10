@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "6271f1c5b890da1eff22b50cc15656adb417d6b8",
+  "baseline_source_commit": "8d3891236fac364afb9354cc4c7e3ad15a1e8126",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -26,14 +26,15 @@
     "scripts/holostate_live.py",
     "scripts/test_holostate_live.py"
   ],
-  "evaluator_sha256": "774dff577be0619a1ddd47b65df9330879b245c15156403b004f3daabcb88555",
+  "evaluator_sha256": "45fa8927070d7898f6a3a326f0e7de7f1fea74e685cf23cb23ef73bcb0ca70e1",
   "gate_definition_hashes": {
     "reasoning-preservation-v1": "750a7b0041c13b4407f5d373069f6bcb3fe1d0701504f7bae5bb7c64fbc5d5fe",
     "repeat-final-content-v1": "2737d28ec7947d841bf6c5e07221f6ac453f98150a83b9a9c29c43da1a4b7460",
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-10T05:08:18.443058+00:00",
+  "generated_at": "2026-07-10T05:57:08.824212+00:00",
+  "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "model_identity": {
     "alias": "agents-a1",
     "architecture": "qwen35moe",
@@ -44,23 +45,25 @@
   "protected_file_hashes": {
     ".gitignore": "677277200afe5e3d225c83584902476116bfd1d501f81d3d64ba4381b1ef2aac",
     "AGENTS.md": "d0c4f2292f8e89f94ff79fe7b1a3b678307781f83fdbbab398abc7fbfd79b8e5",
-    "ROADMAP.md": "4c9e9891c89062b49b630e1fb09475bcb7d6e648eef69be9672311ce2568beb6",
-    "TASKS.md": "51dc4f2aca81b8be432692a040a802f39a626f70c51239e6dd172cb64c2540d6",
+    "NEO3000.md": "b7ba87065f942d47abed19330197a843577bbd6b2fd58057a6df9de9cd7d2905",
+    "README.md": "2a03600bf337aa3adf14d4c1e375b2f080d8d0bee0ae77676cf7dce3f32bf638",
+    "ROADMAP.md": "0a7522fd813f07808b8d4fb4bacfa9e14a9e799109fcb7a5125b9d684e1d4602",
+    "TASKS.md": "040f707179f00971b1d0cfe3da2bdb84eb8184474945592df97b6cbf21d08f21",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "c3de29bb8d41e8511432f775826872a934cb679f69ff2caed54d7ac2f226b044",
-    "lab/EVALUATOR.json": "774dff577be0619a1ddd47b65df9330879b245c15156403b004f3daabcb88555",
-    "lab/GOAL.md": "93b6df4e49de4c04b92b0a0b8733a69ce93635fb4f214379173578bb32212c9a",
+    "lab/CHECKPOINT.md": "9cf02214a43eb3f0db1ab926469451dd18d22df70f4f0220b7214256e02b3158",
+    "lab/EVALUATOR.json": "45fa8927070d7898f6a3a326f0e7de7f1fea74e685cf23cb23ef73bcb0ca70e1",
+    "lab/GOAL.md": "bd81cc2c420959c0ee94e8bea1618bc229e022c21b83a1b3845b0a858e87f89d",
     "scripts/baseline_harness.py": "78416aac1c35cc001f2481e4814342ed9bce8393c240c87986442173ee8c31dc",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "7b45a9d194962484c4b41b243928eb053386cea2467ff929735d0634f0ba0600",
     "scripts/context_matrix.py": "92ee85869afc2b87d98cd70f06b5e0ddfdb481ae89eb65561154dfcab0cae1ed",
-    "scripts/holostate_live.py": "94b8ad31ae006bb79fa4767f10bbbc52be54982d8278a2be8153d969e99196db",
-    "scripts/neo_loop.py": "ca52cc8d850e178a55a5b750da6d5a75ba67b92296e576f10cde1fd11ed39d08",
+    "scripts/holostate_live.py": "cbab0bccf6e5bca692c9b82a54c72604e6a732dd369d0fdfa9a49e46e808cfc5",
+    "scripts/neo_loop.py": "d44c01a6f694b38ef226bbe012bce9ee688b527bfcbb5ec918702481feb9dc43",
     "scripts/neo_trace_diagnostic.py": "179dd2e0877a745301998d3de79ad5d5f098a3ea5a4636f356d2e8aa3d71945e",
     "scripts/rolling_decode.py": "29c6e23e226a13cebbb3eedaec9339765db86a69893898ff4ea86971916e290a",
     "scripts/run_candidate.ps1": "04b28fca1d2aae754bb3bca0f1efcb3f8166a8b2fd38da2a37252affb70394a0",
     "scripts/run_server.ps1": "831913a346668b82c58205742b5e45840571c96dde1dbf28d93807726617f0a4",
-    "scripts/test_holostate_live.py": "a572d88dae2050730b6c4576a1d23ef8590af3fcce1b931fb78389abbc070063",
+    "scripts/test_holostate_live.py": "3f84fd3ca38747870890f4089d4336518b2590da6c8c383fb026ca3164d0623d",
     "scripts/test_trace_diagnostic.py": "4359240c665d149157bea5c811e3011edeee9ff12fa56b100a3464e32de50a8d"
   },
   "protected_paths": [
@@ -79,6 +82,8 @@
     "scripts/holostate_live.py",
     "scripts/test_holostate_live.py",
     ".gitignore",
+    "README.md",
+    "NEO3000.md",
     "TASKS.md",
     "AGENTS.md",
     "ROADMAP.md",

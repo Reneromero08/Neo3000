@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: HoloState-v1 Live Prefix Lattice boundary
+## Checkpoint 2: HoloState-v1 reasoning-budget qualification boundary
 
 Checkpoint 0 is closed. Neo3000 is baseline-operational. The runtime serves Agents-A1 to Pi correctly, context scales through 60K occupied tokens with a 0.94 degradation ratio, rolling minimum decode is smooth, tools and cancellation are verified, and LM Studio is no longer an unlock dependency.
 
@@ -17,13 +17,13 @@ RSI-0G live reviewable acceptance cycle: passed
 
 Checkpoint 1A remains active and paused. Its proven trace-disabled compile-out, bounded aggregation, exact-PID control, and drop detection are preserved; overhead, a completed workload map, and causal bottleneck selection remain unproven.
 
-Checkpoint 2 remains active. Its single authorized HoloState-v1 integration attempt is complete and inconclusive.
+Checkpoint 2 remains active. Its original HoloState-v1 integration attempt is complete and inconclusive: process-local reuse succeeded, while the operational quality gate stopped at the unqualified shared 768-token reasoning budget.
 
 ## Active bounded objective
 
 ```text
-Do not rerun HoloState-v1 automatically.
-Specify the next exact HoloState-v2 persistence candidate without porting upstream code in this task.
+Qualify the minimum sufficient HoloState-v1 reasoning budget from 1024, 1280, 1536, and 2048.
+If qualification passes, lock the smallest passing budget and run one newly authorized two-root validation under that immutable contract.
 ```
 
 ## Current boundary
@@ -34,7 +34,7 @@ Do not begin autonomous RSI. Do not modify stable inference logic. Do not promot
 
 ## Next exact action
 
-Design only the next HoloState-v2 persistence candidate: checkpoint-list sidecar persistence, exact identity/version checks, nearest-checkpoint recovery when recurrent truncation is unsupported, and exact restart A/B validation. Do not port upstream patches or rerun HoloState-v1 in this task.
+Commit and push the protected controller/contract repair, then run the one-shot `qualify-budget` operation. Do not retry qualification. Do not begin HoloState-v2 persistence, port upstream patches, weaken reasoning, or alter the exact-final/reuse gates.
 
 The schema-v1 candidate is archived at `evidence/checkpoint1a-trace-v1` commit `3e3023fc389a608ec5a5806eb8e1a50a801486d5`. The bounded schema-v2 repair is archived at `evidence/checkpoint1a-trace-v2` commit `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`. Its only trace-disabled cycle returned `reviewable-accept` with every immutable gate passing and normal binaries free of trace-writer strings.
 
@@ -60,11 +60,11 @@ retained lawful state: model/configuration/prefix-identity-bound live cache entr
 Minimum required work:
 
 ```text
-1. Preserve the completed single-attempt marker and do not rerun HoloState-v1 automatically.
-2. Preserve HoloState-0's exact process-local mechanism claim without unlocking the operational availability claim.
-3. Specify checkpoint-list sidecar persistence with model/binary/template/prefix/version identity checks.
-4. Specify nearest-checkpoint recovery when recurrent truncation is unsupported.
-5. Require exact restart A/B validation in a separately authorized future task.
+1. Preserve the original 768-token attempt marker/result byte-for-byte as lower-bound evidence.
+2. Qualify Root A/A1 once in ascending order and stop at the first accepted budget or after 2048.
+3. If a budget passes, lock the smallest passing value in the complete evaluator contract before validation.
+4. Run exactly one versioned two-root validation only after qualification, with tool and cancellation/recovery probes and 20 extended requests.
+5. Keep HoloState-v2 Durable Capsule as a separate future durability intervention.
 ```
 
 ## Executed HoloState-v1 boundary

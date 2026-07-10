@@ -560,6 +560,8 @@ The protected controller warmed two immutable roots on one exact sidecar: A at 7
 
 The A1 request then consumed all 768 allowed completion tokens without closing the declared deterministic output gate. Stop-on-first-failure ended the sequence before B1/A2/B2, same-branch hash comparison, eviction observation, or the extended proof. No retry occurred. HoloState-v1 Live is therefore `inconclusive`, `PROCESS_LOCAL_HOLOSTATE_AVAILABLE` remains locked, and the HoloState-0 mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` remains the narrower supported claim.
 
+The causal boundary is now split correctly: the HoloState-v1 reuse mechanism succeeded, while the HoloState-v1 operational quality gate is blocked by an unqualified shared reasoning budget. The next bounded intervention is to qualify the smallest passing A1 budget from `1024, 1280, 1536, 2048`, lock it immutably, and only then run one newly authorized versioned two-root validation. This is a causal contract repair, not an automatic retry.
+
 ### HoloState-v2 persistence boundary
 
 The built-in slot file persists active KV/recurrent state and token history, but does not persist the server prompt-checkpoint list required for hybrid recurrent prefix selection after restart.
@@ -572,7 +574,7 @@ ggml-org/llama.cpp PR 20955
 ggml-org/llama.cpp PR 24028
 ```
 
-The next persistence candidate should combine:
+The future persistence candidate should combine:
 
 ```text
 checkpoint-list sidecar persistence
@@ -580,6 +582,8 @@ identity/version checks
 nearest-checkpoint recovery when recurrent truncation is unsupported
 exact restart A/B validation
 ```
+
+HoloState-v2 persistence remains a separate future intervention. It is not the current next action and is not a prerequisite for the repaired HoloState-v1 quality proof.
 
 Remove or reuse one measured source of fresh computation while preserving Pi compatibility and model behavior.
 

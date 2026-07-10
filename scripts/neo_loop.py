@@ -82,6 +82,14 @@ def gate_definition_hashes(evaluator: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def holostate_contract_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the complete claim-bearing HoloState contract as one object."""
+    contract = evaluator.get("holostate_live_contract")
+    if not isinstance(contract, dict):
+        raise NeoLoopError("evaluator is missing holostate_live_contract")
+    return sha256_bytes(canonical_json_bytes(contract))
+
+
 def load_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise NeoLoopError(f"missing required file: {path}")
@@ -117,8 +125,13 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     protected_files = evaluator["protected_paths"]["files"]
     controller_files = evaluator["controller_files"]
     benchmark_files = evaluator["benchmark_prompt_sources"]
+    holostate_sources = [
+        source
+        for root in evaluator["holostate_live_contract"]["roots"].values()
+        for source in root["sources"]
+    ]
     hashed_files = sorted(
-        path for path in set(protected_files + controller_files + benchmark_files)
+        path for path in set(protected_files + controller_files + benchmark_files + holostate_sources)
         if path not in LOCK_DYNAMIC_PATHS
     )
     return {
@@ -131,6 +144,7 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
             for prompt in evaluator["inline_prompt_sources"]
         },
         "gate_definition_hashes": gate_definition_hashes(evaluator),
+        "holostate_contract_sha256": holostate_contract_hash(evaluator),
         "model_identity": evaluator["model"],
         "baseline_source_commit": git(ROOT, "rev-parse", "HEAD"),
         "stable_launch": evaluator["stable_launch"],
@@ -177,6 +191,10 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     actual_gates = gate_definition_hashes(evaluator)
     if expected_gates != actual_gates:
         raise NeoLoopError("evaluator gate definitions differ from their lockfile")
+    expected_holostate = lock.get("holostate_contract_sha256")
+    actual_holostate = holostate_contract_hash(evaluator)
+    if expected_holostate != actual_holostate:
+        raise NeoLoopError("HoloState contract differs from its locked complete-object hash")
     return lock
 
 

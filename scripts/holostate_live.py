@@ -36,10 +36,17 @@ from neo_loop import (  # noqa: E402
     CandidateVramSampler,
     NeoLoopError,
     health_ok,
+    holostate_contract_hash,
     listener_pids,
     load_json,
+    verify_lock,
     verify_model_identity,
     wddm_pid_memory_sample,
+)
+from baseline_harness import (  # noqa: E402
+    build_request_payload,
+    stream_completion,
+    validate_tool_call,
 )
 
 PORT = 9494
@@ -53,6 +60,9 @@ LOG_ROOT = STATE_ROOT / "logs"
 REGISTRY_PATH = STATE_ROOT / "live-registry.json"
 ATTEMPT_PATH = STATE_ROOT / "validation-attempt.json"
 RESULT_PATH = STATE_ROOT / "validation-result.json"
+QUALIFICATION_PATH = STATE_ROOT / "reasoning-budget-qualification-v1.json"
+V2_ATTEMPT_PATH = STATE_ROOT / "validation-attempt-v2.json"
+V2_RESULT_PATH = STATE_ROOT / "validation-result-v2.json"
 EVALUATOR_PATH = ROOT / "lab" / "EVALUATOR.json"
 DEFAULT_BINARY = ROOT / "build" / "stable" / "bin" / "Release" / "llama-server.exe"
 EXPECTED_BINARY_SHA256 = "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
@@ -65,38 +75,8 @@ CTX_CHECKPOINTS = 8
 CHECKPOINT_MIN_STEP = 512
 VRAM_CEILING_MIB = 6_000
 MAX_EXTENDED_REQUESTS = 20
-MAX_EXTENDED_SECONDS = 60 * 60
-
-ROOT_SOURCES = {
-    "A": ["ROADMAP.md", "lab/GOAL.md", "README.md"],
-    "B": ["AGENTS.md", "NEO3000.md", "lab/BASELINE_PROTOCOL.md", "lab/GOAL.md"],
-}
-
-BRANCHES = {
-    "A1": {
-        "root": "A",
-        "suffix": "Reason carefully, then finish with exactly: HOLOSTATE A1 EXACT",
-        "expected": "HOLOSTATE A1 EXACT",
-    },
-    "A2": {
-        "root": "A",
-        "suffix": "Reason briefly, then finish with exactly: HOLOSTATE A2 EXACT",
-        "expected": "HOLOSTATE A2 EXACT",
-    },
-    "B1": {
-        "root": "B",
-        "suffix": "Reason carefully, then finish with exactly: HOLOSTATE B1 EXACT",
-        "expected": "HOLOSTATE B1 EXACT",
-    },
-    "B2": {
-        "root": "B",
-        "suffix": "Reason briefly, then finish with exactly: HOLOSTATE B2 EXACT",
-        "expected": "HOLOSTATE B2 EXACT",
-    },
-}
-
-FIXED_SEQUENCE = ["A1", "B1", "A2", "B2", "A1", "B1"]
-EXTENDED_CYCLE = ["A2", "B2", "A1", "B1"]
+PRIOR_V1_ATTEMPT_SHA256 = "E2A85B79C6719F8C4D61CB0E78498C9C5016A56519D99190F5DAACFD81EFF231"
+PRIOR_V1_RESULT_SHA256 = "7C5C69B8564722A43E92754841B5B5CE3225A460737BA097B1666EE5DAE868E6"
 
 
 def utc_now() -> str:
@@ -134,6 +114,139 @@ def write_runtime_json(path: Path, value: Any) -> None:
     temporary = path.with_name(path.name + f".{os.getpid()}.tmp")
     temporary.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     os.replace(temporary, path)
+
+
+def claim_runtime_json_once(path: Path, value: Any) -> None:
+    """Create a one-shot marker without an exists/create race."""
+    path = require_runtime_path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+    except FileExistsError as exc:
+        raise NeoLoopError(f"one-shot operation already claimed: {path.name}") from exc
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(value, indent=2, sort_keys=True) + "\n")
+    except Exception:
+        path.unlink(missing_ok=True)
+        raise
+
+
+def validate_holostate_contract(contract: dict[str, Any]) -> dict[str, Any]:
+    required = {
+        "id", "attempt_version", "prior_lower_bound_evidence", "roots", "branches",
+        "sampling", "reasoning_budget", "fixed_interleaving_sequence", "extended_cycle",
+        "extended_request_count", "extended_duration_seconds", "host_cache_mib_ceiling", "wddm_mib_ceiling",
+        "binary_identity", "model_identity", "chat_template_identity",
+        "tool_probe", "cancellation_recovery_probe",
+    }
+    missing = sorted(required - set(contract))
+    if missing:
+        raise NeoLoopError(f"HoloState contract missing fields: {missing}")
+    candidates = contract["reasoning_budget"].get("qualification_candidates")
+    if candidates != sorted(set(candidates or [])) or candidates != [1024, 1280, 1536, 2048]:
+        raise NeoLoopError("HoloState reasoning-budget candidates are not the locked ascending set")
+    prior = contract["prior_lower_bound_evidence"]
+    if prior.get("configured_max_tokens") != 768 or prior.get("classification") != "completion-budget-exhausted":
+        raise NeoLoopError("HoloState contract lost the executed 768-token lower-bound evidence")
+    if (
+        prior.get("attempt_path") != "state/holostate/validation-attempt.json"
+        or prior.get("result_path") != "state/holostate/validation-result.json"
+        or prior.get("attempt_sha256") != PRIOR_V1_ATTEMPT_SHA256
+        or prior.get("result_sha256") != PRIOR_V1_RESULT_SHA256
+    ):
+        raise NeoLoopError("HoloState prior lower-bound evidence identity changed")
+    sampling = contract["sampling"]
+    if sampling.get("reasoning_mode") != "auto" or sampling.get("reasoning_required") is not True:
+        raise NeoLoopError("HoloState principal proof must retain reasoning auto and require reasoning")
+    if sampling.get("exact_final_required") is not True or sampling.get("cache_reuse_required") is not True:
+        raise NeoLoopError("HoloState exact-final and cache-reuse gates must remain required")
+    if sampling.get("normal_generation_stop_required") is not True:
+        raise NeoLoopError("HoloState normal generation stop must remain required")
+    if set(contract["roots"]) != {"A", "B"}:
+        raise NeoLoopError("HoloState must retain exactly roots A and B")
+    for name, root in contract["roots"].items():
+        identity = root.get("identity", {})
+        if (
+            not root.get("sources")
+            or identity.get("canonical_prefix") != "SHA-256 over ordered SOURCE header plus exact source bytes"
+            or identity.get("source_hash_authority") != "lab/EVALUATOR.lock.json protected_file_hashes"
+        ):
+            raise NeoLoopError(f"HoloState root {name} lacks a concrete locked identity law")
+    branches = contract["branches"]
+    if set(branches) != {"A1", "A2", "B1", "B2"}:
+        raise NeoLoopError("HoloState branch set changed")
+    for name, branch in branches.items():
+        if branch.get("root") not in contract["roots"] or not branch.get("suffix") or not branch.get("expected_final"):
+            raise NeoLoopError(f"malformed HoloState branch contract: {name}")
+    fixed = contract["fixed_interleaving_sequence"]
+    if fixed != ["A1", "B1", "A2", "B2", "A1", "B1"]:
+        raise NeoLoopError("HoloState fixed interleaving sequence changed")
+    if contract["reasoning_budget"].get("qualification_branch") != "A1" or contract["reasoning_budget"].get("stop_at_first_accepted") is not True:
+        raise NeoLoopError("HoloState budget qualification policy changed")
+    selected = contract["reasoning_budget"].get("selected_max_tokens")
+    if selected is not None and selected not in candidates:
+        raise NeoLoopError("HoloState selected budget is not a declared candidate")
+    qualification_hash = contract["reasoning_budget"].get("qualification_result_sha256")
+    if selected is None and qualification_hash is not None:
+        raise NeoLoopError("unselected HoloState contract cannot bind qualification evidence")
+    if selected is not None and (not isinstance(qualification_hash, str) or len(qualification_hash) != 64):
+        raise NeoLoopError("selected HoloState budget lacks an exact qualification-result hash")
+    if contract["extended_request_count"] != MAX_EXTENDED_REQUESTS:
+        raise NeoLoopError("HoloState extended request count must remain 20")
+    if contract["host_cache_mib_ceiling"] != CACHE_RAM_MIB or contract["wddm_mib_ceiling"] != VRAM_CEILING_MIB:
+        raise NeoLoopError("HoloState memory ceilings differ from the protected runtime")
+    if contract["attempt_version"] != 2:
+        raise NeoLoopError("HoloState attempt version must be 2")
+    if contract["tool_probe"].get("required") is not True or contract["cancellation_recovery_probe"].get("required") is not True:
+        raise NeoLoopError("HoloState tool and cancellation/recovery probes must remain required")
+    binary = contract["binary_identity"]
+    model = contract["model_identity"]
+    template = contract["chat_template_identity"]
+    if binary.get("sha256") != EXPECTED_BINARY_SHA256 or binary.get("runtime_version") != EXPECTED_RUNTIME_VERSION:
+        raise NeoLoopError("HoloState binary identity differs from the proven runtime")
+    if model.get("sha256") != EXPECTED_MODEL_SHA256 or model.get("size_bytes") != EXPECTED_MODEL_SIZE:
+        raise NeoLoopError("HoloState model identity differs from Agents-A1")
+    if template.get("required") is not True or not template.get("sha256"):
+        raise NeoLoopError("HoloState chat-template identity is not exact and required")
+    return contract
+
+
+def load_locked_holostate_contract() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    evaluator = load_json(EVALUATOR_PATH)
+    lock = verify_lock(evaluator)
+    contract = validate_holostate_contract(evaluator.get("holostate_live_contract", {}))
+    actual = holostate_contract_hash(evaluator)
+    if lock.get("holostate_contract_sha256") != actual:
+        raise NeoLoopError("HoloState contract is not the complete object locked by the evaluator")
+    return evaluator, contract, lock
+
+
+def selected_reasoning_budget(contract: dict[str, Any]) -> int:
+    selected = contract["reasoning_budget"].get("selected_max_tokens")
+    candidates = contract["reasoning_budget"]["qualification_candidates"]
+    if not isinstance(selected, int) or selected not in candidates:
+        raise NeoLoopError("no qualified reasoning budget is selected in the locked HoloState contract")
+    return selected
+
+
+def preserved_v1_evidence() -> dict[str, Any]:
+    if not ATTEMPT_PATH.is_file() or not RESULT_PATH.is_file():
+        raise NeoLoopError("preserved HoloState-v1 attempt marker or result is missing")
+    evidence = {
+        "attempt_path": str(ATTEMPT_PATH),
+        "attempt_sha256": sha256_file(ATTEMPT_PATH),
+        "result_path": str(RESULT_PATH),
+        "result_sha256": sha256_file(RESULT_PATH),
+    }
+    if evidence["attempt_sha256"] != PRIOR_V1_ATTEMPT_SHA256 or evidence["result_sha256"] != PRIOR_V1_RESULT_SHA256:
+        raise NeoLoopError("preserved HoloState-v1 evidence bytes changed")
+    return evidence
+
+
+def checkpoint_result(path: Path, result: dict[str, Any]) -> None:
+    result["last_persisted_at"] = utc_now()
+    write_runtime_json(path, result)
 
 
 def default_registry() -> dict[str, Any]:
@@ -271,17 +384,24 @@ def git_read(root: Path, *args: str) -> str:
     return completed.stdout.strip()
 
 
-def compose_prefix(root_name: str) -> tuple[bytes, list[dict[str, Any]]]:
+def compose_prefix(root_name: str, contract: dict[str, Any]) -> tuple[bytes, list[dict[str, Any]]]:
     chunks: list[bytes] = []
     sources: list[dict[str, Any]] = []
-    for relative in ROOT_SOURCES[root_name]:
+    root_contract = contract["roots"].get(root_name)
+    if not isinstance(root_contract, dict):
+        raise NeoLoopError(f"unknown HoloState root: {root_name}")
+    for relative in root_contract["sources"]:
         path = ROOT / relative
         raw = path.read_bytes()
         raw.decode("utf-8")
         header = f"\n\n===== SOURCE: {relative} =====\n\n".encode("utf-8")
         chunks.extend([header, raw])
         sources.append({"path": relative, "bytes": len(raw), "sha256": sha256_bytes(raw)})
-    return b"".join(chunks), sources
+    composed = b"".join(chunks)
+    expected = root_contract.get("canonical_prefix_sha256")
+    if expected and sha256_bytes(composed) != expected:
+        raise NeoLoopError(f"root {root_name} canonical prefix differs from the locked identity")
+    return composed, sources
 
 
 def store_prefix(raw: bytes) -> tuple[Path, str]:
@@ -334,10 +454,11 @@ def mark_all_states_non_live(registry: dict[str, Any], reason: str) -> None:
 
 
 class LiveSidecar:
-    def __init__(self, binary: Path, model: Path, evaluator: dict[str, Any], detached: bool):
+    def __init__(self, binary: Path, model: Path, evaluator: dict[str, Any], contract: dict[str, Any], detached: bool):
         self.binary = binary.resolve()
         self.model = model.resolve()
         self.evaluator = evaluator
+        self.contract = contract
         self.detached = detached
         self.session_id = str(uuid.uuid4())
         self.stable_pids = require_stable()
@@ -377,7 +498,7 @@ class LiveSidecar:
             "--cache-prompt",
             "--metrics",
             "--no-webui",
-            "--reasoning", "auto",
+            "--reasoning", self.contract["sampling"]["reasoning_mode"],
             "--ctx-checkpoints", str(CTX_CHECKPOINTS),
             "--checkpoint-min-step", str(CHECKPOINT_MIN_STEP),
             "--cache-ram", str(CACHE_RAM_MIB),
@@ -448,6 +569,8 @@ class LiveSidecar:
             "stable_pids": sorted(self.stable_pids),
             "log_path": str(log_path),
         }
+        if self.readiness["chat_template_sha256"] != self.contract["chat_template_identity"]["sha256"]:
+            raise NeoLoopError("sidecar chat-template identity differs from the locked HoloState contract")
         return self.readiness
 
     def require_active(self, require_health: bool = True, require_listener: bool = True) -> None:
@@ -465,17 +588,36 @@ class LiveSidecar:
 
     def guarded(self, name: str, call: Callable[[], Any], timeout: float = 1_200) -> Any:
         self.require_active()
-        with ThreadPoolExecutor(max_workers=1) as executor:
+        executor = ThreadPoolExecutor(max_workers=1)
+        try:
             future = executor.submit(call)
             deadline = time.monotonic() + timeout
             while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise NeoLoopError(f"{name} timed out")
                 try:
-                    value = future.result(timeout=0.25)
+                    value = future.result(timeout=min(0.25, remaining))
                     break
                 except FutureTimeout:
                     self.require_active()
                     if time.monotonic() >= deadline:
                         raise NeoLoopError(f"{name} timed out")
+        except Exception:
+            if self.process and self.process.poll() is None:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait(timeout=10)
+            try:
+                future.result(timeout=10)
+            except Exception:
+                pass
+            raise
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
         self.require_active()
         return value
 
@@ -483,9 +625,11 @@ class LiveSidecar:
         return self.sampler.evidence(VRAM_CEILING_MIB) if self.sampler else {}
 
     def stop(self) -> dict[str, Any]:
+        telemetry_failure_reason = self.sampler.failure_reason() if self.sampler else None
         if self.sampler:
             self.sampler.stop()
         telemetry = self.telemetry()
+        telemetry["failure_reason"] = telemetry_failure_reason
         pid = self.process.pid if self.process else None
         if self.process and self.process.poll() is None:
             self.process.terminate()
@@ -599,12 +743,19 @@ def render_prompt(content: str) -> str:
     return prompt
 
 
-def completion_request(rendered_prompt: str, n_predict: int, expected: str | None, timeout: float = 1_200) -> dict[str, Any]:
+def completion_request(
+    rendered_prompt: str,
+    configured_max_tokens: int,
+    expected: str | None,
+    temperature: float = 0.0,
+    seed: int = 0,
+    timeout: float = 1_200,
+) -> dict[str, Any]:
     payload = {
         "prompt": rendered_prompt,
-        "n_predict": n_predict,
-        "temperature": 0.0,
-        "seed": 0,
+        "n_predict": configured_max_tokens,
+        "temperature": temperature,
+        "seed": seed,
         "stream": True,
         "cache_prompt": True,
         "id_slot": 0,
@@ -635,13 +786,13 @@ def completion_request(rendered_prompt: str, n_predict: int, expected: str | Non
             prompt_progress = event.get("prompt_progress")
             if isinstance(prompt_progress, dict):
                 progress.append(prompt_progress)
+            if not isinstance(prompt_progress, dict) and isinstance(event.get("tokens"), list):
+                generated_tokens.extend(int(value) for value in event["tokens"])
             content = event.get("content")
             if isinstance(content, str) and content:
                 if first_generated is None:
                     first_generated = time.perf_counter() - started
                 raw_parts.append(content)
-                if not isinstance(prompt_progress, dict) and isinstance(event.get("tokens"), list):
-                    generated_tokens.extend(int(value) for value in event["tokens"])
             if event.get("stop") is True:
                 final = event
     elapsed = time.perf_counter() - started
@@ -655,7 +806,8 @@ def completion_request(rendered_prompt: str, n_predict: int, expected: str | Non
     logical_prompt_tokens = int(last_progress.get("total") or final.get("tokens_evaluated") or 0)
     cached_prompt_tokens = int(last_progress.get("cache") or 0)
     fresh_prompt_tokens = int(last_progress.get("processed") or timings.get("prompt_n") or 0)
-    return {
+    result = {
+        "configured_max_tokens": configured_max_tokens,
         "logical_prompt_tokens": logical_prompt_tokens,
         "cached_prompt_tokens": cached_prompt_tokens,
         "fresh_prompt_tokens": fresh_prompt_tokens,
@@ -671,8 +823,45 @@ def completion_request(rendered_prompt: str, n_predict: int, expected: str | Non
         "prompt_progress_last": last_progress or None,
         "stop_type": final.get("stop_type"),
         "stopping_word": final.get("stopping_word"),
+        "stop_event_received": bool(final),
         "structure": structure,
     }
+    if structure is not None:
+        result.update({
+            "raw_output_sha256": structure["raw_output_sha256"],
+            "reasoning_sha256": structure["reasoning_sha256"],
+            "final_content_sha256": structure["final_content_sha256"],
+            "reasoning_present": structure["reasoning_present"],
+            "exact_final_reached": structure["exact_final"],
+        })
+    return result
+
+
+def classify_completion(result: dict[str, Any], contract: dict[str, Any]) -> str:
+    structure = result.get("structure") or {}
+    configured = int(result.get("configured_max_tokens") or 0)
+    completion = int(result.get("completion_tokens") or 0)
+    exact = bool(structure.get("exact_final"))
+    reasoning = bool(structure.get("reasoning_present"))
+    stop_type = str(result.get("stop_type") or "").lower()
+    normal = bool(result.get("stop_event_received")) and 0 < completion < configured and stop_type not in {
+        "limit", "length", "max_tokens",
+    }
+    result["normal_generation_stop"] = normal
+    if completion == configured and not exact:
+        return "completion-budget-exhausted"
+    if not exact:
+        return "wrong-final-content" if normal else "non-normal-stop"
+    if contract["sampling"]["reasoning_required"] and not reasoning:
+        return "reasoning-missing"
+    if not normal:
+        return "non-normal-stop"
+    logical = int(result.get("logical_prompt_tokens") or 0)
+    cached = int(result.get("cached_prompt_tokens") or 0)
+    fresh = int(result.get("fresh_prompt_tokens") or 0)
+    if contract["sampling"]["cache_reuse_required"] and (cached <= 0 or fresh >= logical):
+        return "reuse-failed"
+    return "accepted"
 
 
 def set_active_request(registry: dict[str, Any], value: dict[str, Any] | None) -> None:
@@ -811,7 +1000,16 @@ def verify_state_identity(state: dict[str, Any], registry: dict[str, Any]) -> tu
     return text, content_tokens
 
 
-def branch_state(state_id: str, branch_name: str, suffix: str, expected: str, sampler: CandidateVramSampler | None = None) -> dict[str, Any]:
+def branch_state(
+    state_id: str,
+    branch_name: str,
+    suffix: str,
+    expected: str,
+    configured_max_tokens: int,
+    contract: dict[str, Any],
+    sampler: CandidateVramSampler | None = None,
+    persist_callback: Callable[[dict[str, Any]], None] | None = None,
+) -> dict[str, Any]:
     registry = load_registry()
     status = attach_registered_sidecar(registry, rehash_model=sampler is None)
     state = registry["states"].get(state_id)
@@ -824,12 +1022,25 @@ def branch_state(state_id: str, branch_name: str, suffix: str, expected: str, sa
     rendered = render_prompt(logical)
     logical_tokens = tokenize(rendered)
     set_active_request(registry, {"operation": "branch", "state_id": state_id, "branch_name": branch_name, "started_at": utc_now()})
+    request_clear_error: str | None = None
     try:
-        result = completion_request(rendered, 768, expected)
+        result = completion_request(
+            rendered,
+            configured_max_tokens,
+            expected,
+            temperature=float(contract["sampling"]["temperature"]),
+            seed=int(contract["sampling"]["seed"]),
+        )
     finally:
-        registry = load_registry()
-        registry["active_request"] = None
-        save_registry(registry)
+        try:
+            registry = load_registry()
+            registry["active_request"] = None
+            save_registry(registry)
+        except Exception as exc:
+            if "result" not in locals():
+                raise
+            request_clear_error = str(exc)
+            registry["active_request"] = None
     result["branch_name"] = branch_name
     result["state_id"] = state_id
     result["selected_state_id"] = state_id
@@ -842,52 +1053,79 @@ def branch_state(state_id: str, branch_name: str, suffix: str, expected: str, sa
     warm_ms = state.get("warm_result", {}).get("prompt_ms")
     result["compute_amplification"] = warm_ms / result["prompt_ms"] if warm_ms and result.get("prompt_ms") else None
     result["catalytic"] = cached > 0 and fresh < len(logical_tokens)
+    safety_errors: list[str] = []
+    if request_clear_error:
+        result["registry_request_clear_error"] = request_clear_error
+        safety_errors.append("active-request registry clear failed")
     if sampler:
-        result["wddm_peak_mib"] = sampler.evidence(VRAM_CEILING_MIB).get("peak_dedicated_mib")
+        try:
+            telemetry = sampler.evidence(VRAM_CEILING_MIB)
+            result["wddm_peak_mib"] = telemetry.get("peak_dedicated_mib")
+            if sampler.failure_reason():
+                safety_errors.append(sampler.failure_reason() or "WDDM telemetry failure")
+        except Exception as exc:
+            result["wddm_peak_mib"] = None
+            result["wddm_evidence_error"] = str(exc)
+            safety_errors.append("WDDM evidence unavailable after branch")
     else:
-        sample = wddm_pid_memory_sample(status["pid"])
-        if not sample.available or sample.bytes is None or sample.bytes > VRAM_CEILING_MIB * MIB:
-            raise NeoLoopError("exact-PID WDDM sample unavailable or over ceiling")
-        result["wddm_peak_mib"] = round(sample.bytes / MIB, 2)
-    info = process_info(status["pid"])
+        try:
+            sample = wddm_pid_memory_sample(status["pid"])
+            if not sample.available or sample.bytes is None or sample.bytes > VRAM_CEILING_MIB * MIB:
+                safety_errors.append("exact-PID WDDM sample unavailable or over ceiling")
+                result["wddm_peak_mib"] = round(sample.bytes / MIB, 2) if sample.bytes is not None else None
+            else:
+                result["wddm_peak_mib"] = round(sample.bytes / MIB, 2)
+        except Exception as exc:
+            result["wddm_peak_mib"] = None
+            result["wddm_evidence_error"] = str(exc)
+            safety_errors.append("exact-PID WDDM sample failed")
+    try:
+        info = process_info(status["pid"])
+    except Exception as exc:
+        info = None
+        result["host_memory_error"] = str(exc)
     sidecar = registry["sidecar"]
     if not info:
-        raise NeoLoopError("host memory unavailable after branch")
-    host_growth = max(0, int(info["private_bytes"]) - int(sidecar["private_at_readiness_bytes"]))
-    if host_growth > CACHE_RAM_MIB * MIB:
-        raise NeoLoopError("host cache/private-memory growth exceeded 4096 MiB")
+        safety_errors.append("host memory unavailable after branch")
+        host_growth = None
+    else:
+        host_growth = max(0, int(info["private_bytes"]) - int(sidecar["private_at_readiness_bytes"]))
+        if host_growth > CACHE_RAM_MIB * MIB:
+            safety_errors.append("host cache/private-memory growth exceeded 4096 MiB")
     result["host_private_growth_bytes"] = host_growth
+    result["finish_classification"] = classify_completion(result, contract)
+    result["safety_gate_errors"] = safety_errors
+    result["accepted"] = result["finish_classification"] == "accepted" and not safety_errors
+    if persist_callback:
+        persist_callback(result)
     state = registry["states"][state_id]
-    output_exact = result["structure"]["exact_final"] and result["structure"]["reasoning_present"]
-    if not output_exact or not result["catalytic"]:
+    if not result["accepted"]:
         state["last_observed_cached_tokens"] = cached
         state["last_observed_fresh_tokens"] = fresh
         state["last_observed_prompt_time_ms"] = result["prompt_ms"]
-        state["exactness_status"] = "branch-output-failed" if not output_exact else "branch-reuse-failed"
+        state["exactness_status"] = "safety-gate-failed" if safety_errors else result["finish_classification"]
         registry["history"].append({"event": "branch-failed", "state_id": state_id, "at": utc_now(), "result": result})
         save_registry(registry)
-        if not output_exact:
-            raise NeoLoopError(f"{branch_name} deterministic output gate failed")
-        raise NeoLoopError(f"{branch_name} did not demonstrate process-local cache reuse")
-    state["last_use_timestamp"] = utc_now()
-    state["reuse_count"] = int(state.get("reuse_count", 0)) + 1
-    state["last_observed_cached_tokens"] = cached
-    state["last_observed_fresh_tokens"] = fresh
-    state["last_observed_prompt_time_ms"] = result["prompt_ms"]
-    state["exactness_status"] = "exact-process-local-reuse"
-    state["live"] = True
-    state["live_session_id"] = registry["sidecar"]["session_id"]
-    state["non_live_reason"] = None
-    state["cumulative_avoided_token_evaluations"] += result["avoided_prefix_tokens"]
-    state["cumulative_logical_token_evaluations"] += len(logical_tokens)
-    state["cumulative_fresh_prompt_evaluations"] += fresh
-    registry["history"].append({"event": "branch", "state_id": state_id, "at": utc_now(), "result": result})
-    registry["active_request"] = None
-    save_registry(registry)
+    else:
+        state["last_use_timestamp"] = utc_now()
+        state["reuse_count"] = int(state.get("reuse_count", 0)) + 1
+        state["last_observed_cached_tokens"] = cached
+        state["last_observed_fresh_tokens"] = fresh
+        state["last_observed_prompt_time_ms"] = result["prompt_ms"]
+        state["exactness_status"] = "exact-process-local-reuse"
+        state["live"] = True
+        state["live_session_id"] = registry["sidecar"]["session_id"]
+        state["non_live_reason"] = None
+        state["cumulative_avoided_token_evaluations"] += result["avoided_prefix_tokens"]
+        state["cumulative_logical_token_evaluations"] += len(logical_tokens)
+        state["cumulative_fresh_prompt_evaluations"] += fresh
+        registry["history"].append({"event": "branch", "state_id": state_id, "at": utc_now(), "result": result})
+        registry["active_request"] = None
+        save_registry(registry)
     return result
 
 
-def deterministic_group_gate(results: list[dict[str, Any]]) -> dict[str, Any]:
+def deterministic_group_gate(results: list[dict[str, Any]], minimum_observations: int = 1) -> dict[str, Any]:
     groups: dict[str, list[dict[str, Any]]] = {}
     for item in results:
         groups.setdefault(item["branch_name"], []).append(item)
@@ -896,13 +1134,17 @@ def deterministic_group_gate(results: list[dict[str, Any]]) -> dict[str, Any]:
         token_hashes = {item["cleaned_greedy_token_sha256"] for item in items}
         reasoning_hashes = {item["structure"]["reasoning_sha256"] for item in items}
         final_hashes = {item["structure"]["final_content_sha256"] for item in items}
-        exact = all(item["structure"]["exact_final"] and item["catalytic"] for item in items)
+        exact = all(item.get("accepted") is True for item in items)
         evidence[branch_name] = {
             "request_count": len(items),
             "token_hashes": sorted(token_hashes),
             "reasoning_hashes": sorted(reasoning_hashes),
             "final_hashes": sorted(final_hashes),
-            "exact": exact and len(token_hashes) == len(reasoning_hashes) == len(final_hashes) == 1,
+            "exact": (
+                exact
+                and len(items) >= minimum_observations
+                and len(token_hashes) == len(reasoning_hashes) == len(final_hashes) == 1
+            ),
         }
     return evidence
 
@@ -957,8 +1199,8 @@ def command_start(args: argparse.Namespace) -> dict[str, Any]:
     mark_all_states_non_live(registry, "new-sidecar-session")
     registry["sidecar"] = None
     save_registry(registry)
-    evaluator = load_json(EVALUATOR_PATH)
-    sidecar = LiveSidecar(Path(args.binary), Path(args.model), evaluator, detached=True)
+    evaluator, contract, _ = load_locked_holostate_contract()
+    sidecar = LiveSidecar(Path(args.binary), Path(args.model), evaluator, contract, detached=True)
     try:
         readiness = sidecar.launch()
         readiness_record = registry_sidecar_record(readiness)
@@ -1056,9 +1298,20 @@ def resolve_state(registry: dict[str, Any], value: str) -> str:
 
 
 def command_branch(args: argparse.Namespace) -> dict[str, Any]:
+    _, contract, _ = load_locked_holostate_contract()
     registry = load_registry()
     state_id = resolve_state(registry, args.state)
-    return branch_state(state_id, args.branch_name, args.suffix, args.expected)
+    branch = contract["branches"].get(args.branch_name)
+    if not branch:
+        raise NeoLoopError(f"unknown locked branch: {args.branch_name}")
+    return branch_state(
+        state_id,
+        args.branch_name,
+        branch["suffix"],
+        branch["expected_final"],
+        selected_reasoning_budget(contract),
+        contract,
+    )
 
 
 def command_list(_: argparse.Namespace) -> dict[str, Any]:
@@ -1109,146 +1362,566 @@ def command_evict(args: argparse.Namespace) -> dict[str, Any]:
     return event
 
 
-def run_validation(args: argparse.Namespace) -> dict[str, Any]:
-    if ATTEMPT_PATH.exists():
-        raise NeoLoopError("the single declared HoloState-v1 validation sequence has already been attempted")
-    if not 0 <= args.extended_requests <= MAX_EXTENDED_REQUESTS:
-        raise NeoLoopError(f"extended request count must be between 0 and {MAX_EXTENDED_REQUESTS}")
-    attempt = {"started_at": utc_now(), "status": "running", "fixed_sequence": FIXED_SEQUENCE, "extended_requests": args.extended_requests}
-    write_runtime_json(ATTEMPT_PATH, attempt)
-    evaluator = load_json(EVALUATOR_PATH)
-    stable_before = require_stable()
-    stable_head = git_read(ROOT, "rev-parse", "HEAD")
-    stable_status = git_read(ROOT, "status", "--porcelain")
-    candidate_root = ROOT.parent / f"{ROOT.name}-candidate"
-    candidate_head = git_read(candidate_root, "rev-parse", "HEAD")
-    candidate_status = git_read(candidate_root, "status", "--porcelain", "--untracked-files=all")
+def first_accepted_budget(
+    candidates: list[int], request_budget: Callable[[int], dict[str, Any]]
+) -> tuple[list[dict[str, Any]], int | None]:
+    attempts: list[dict[str, Any]] = []
+    for budget in candidates:
+        item = request_budget(budget)
+        attempts.append(item)
+        if item.get("finish_classification") == "accepted" and item.get("accepted") is True:
+            return attempts, budget
+    return attempts, None
+
+
+def warm_contract_root(
+    sidecar: LiveSidecar,
+    contract: dict[str, Any],
+    root_name: str,
+) -> dict[str, Any]:
+    raw, sources = compose_prefix(root_name, contract)
+    prefix_path, _ = store_prefix(raw)
+    root_contract = contract["roots"][root_name]
+    state = sidecar.guarded(
+        f"warm-{root_name}",
+        lambda: warm_state(
+            prefix_path,
+            root_contract["display_name"],
+            sources,
+            trusted_session_id=sidecar.session_id,
+        ),
+    )
+    bounds = root_contract["rendered_token_bounds"]
+    if not int(bounds["minimum"]) <= int(state["rendered_token_count"]) <= int(bounds["maximum"]):
+        raise NeoLoopError(
+            f"root {root_name} rendered token count {state['rendered_token_count']} is outside its locked bounds"
+        )
+    return state
+
+
+def compact_warm_result(state: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "state_id": state["state_id"],
+        "canonical_prefix_sha256": state["canonical_prefix_sha256"],
+        "token_id_sha256": state["token_id_sha256"],
+        "chat_template_sha256": state["chat_template_sha256"],
+        "rendered_token_count": state["rendered_token_count"],
+        "canonical_prefix_bytes": state["canonical_prefix_bytes"],
+        "sources": state["prefix_sources"],
+        "warm_result": state["warm_result"],
+    }
+
+
+def run_tool_probe(sidecar: LiveSidecar, contract: dict[str, Any]) -> dict[str, Any]:
+    probe = contract["tool_probe"]
+    payload = build_request_payload(
+        probe["model_alias"],
+        probe["prompt"],
+        float(contract["sampling"]["temperature"]),
+        int(probe["max_tokens"]),
+        False,
+        True,
+        False,
+    )
+    payload["messages"][0]["content"] = probe["prompt"]
+    measurement = stream_completion(
+        f"http://127.0.0.1:{PORT}/v1/chat/completions",
+        payload,
+        repeat=1,
+        timeout=float(probe["timeout_seconds"]),
+    )
+    validation = validate_tool_call(measurement)
+    exact_one_call = len(measurement.tool_calls) == 1
+    return {
+        "required": probe["required"],
+        "passed": validation.get("passed") is True and exact_one_call,
+        "exactly_one_tool_call": exact_one_call,
+        "validation": validation,
+        "measurement": asdict(measurement),
+        "sidecar_pid": sidecar.process.pid if sidecar.process else None,
+    }
+
+
+def run_cancellation_recovery_probe(sidecar: LiveSidecar, contract: dict[str, Any]) -> dict[str, Any]:
+    probe = contract["cancellation_recovery_probe"]
+    cancel_payload = {
+        "model": probe["model_alias"],
+        "messages": [{"role": "user", "content": probe["cancellation_prompt"]}],
+        "max_tokens": int(probe["cancellation_max_tokens"]),
+        "temperature": float(contract["sampling"]["temperature"]),
+        "stream": True,
+    }
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{PORT}/v1/chat/completions",
+        data=canonical_json_bytes(cancel_payload),
+        headers={"Content-Type": "application/json", "Accept": "text/event-stream"},
+        method="POST",
+    )
+    first_line = b""
+    cancel_started = time.perf_counter()
+    with urllib.request.urlopen(request, timeout=float(probe["timeout_seconds"])) as response:
+        while not first_line.startswith(b"data:"):
+            first_line = response.readline()
+            if not first_line:
+                break
+    cancelled_after_seconds = time.perf_counter() - cancel_started
+    deadline = time.monotonic() + float(probe["recovery_deadline_seconds"])
+    health_recovered = False
+    while time.monotonic() < deadline:
+        if health_ok(PORT, timeout=min(2, max(0.1, deadline - time.monotonic()))):
+            health_recovered = True
+            break
+        time.sleep(0.1)
+    if not health_recovered:
+        return {
+            "required": probe["required"],
+            "passed": False,
+            "cancellation_stream_started": first_line.startswith(b"data:"),
+            "client_closed_after_seconds": cancelled_after_seconds,
+            "health_recovered_within_deadline": False,
+            "recovery_deadline_seconds": probe["recovery_deadline_seconds"],
+            "recovery_measurement": None,
+            "sidecar_pid": sidecar.process.pid if sidecar.process else None,
+        }
+    recovery_payload = build_request_payload(
+        probe["model_alias"],
+        probe["recovery_prompt"],
+        0.0,
+        int(probe["recovery_max_tokens"]),
+        False,
+        False,
+        True,
+    )
+    recovery = stream_completion(
+        f"http://127.0.0.1:{PORT}/v1/chat/completions",
+        recovery_payload,
+        repeat=1,
+        timeout=min(float(probe["timeout_seconds"]), max(0.1, deadline - time.monotonic())),
+    )
+    recovery_finished = time.monotonic()
+    expected = probe["expected_recovery"]
+    passed = (
+        first_line.startswith(b"data:")
+        and health_ok(PORT, timeout=3)
+        and recovery_finished <= deadline
+        and recovery.content.strip() == expected
+        and sidecar.process is not None
+        and listener_pids(PORT) == {sidecar.process.pid}
+    )
+    return {
+        "required": probe["required"],
+        "passed": passed,
+        "cancellation_stream_started": first_line.startswith(b"data:"),
+        "client_closed_after_seconds": cancelled_after_seconds,
+        "health_recovered_within_deadline": health_recovered,
+        "recovery_completed_within_deadline": recovery_finished <= deadline,
+        "recovery_deadline_seconds": probe["recovery_deadline_seconds"],
+        "recovery_expected": expected,
+        "recovery_measurement": asdict(recovery),
+        "sidecar_pid": sidecar.process.pid if sidecar.process else None,
+    }
+
+
+def safe_sidecar_cleanup(sidecar: LiveSidecar | None) -> dict[str, Any]:
+    if sidecar is None:
+        return {"not_launched": True, "port_free": not listener_pids(PORT), "stable_after": stable_snapshot()}
+    try:
+        return sidecar.stop()
+    except Exception as exc:
+        return {"cleanup_error": str(exc), "port_free": not listener_pids(PORT), "stable_after": stable_snapshot()}
+
+
+def cleanup_integrity(cleanup: dict[str, Any], expected_stable_pids: set[int] | None) -> dict[str, Any]:
+    reasons: list[str] = []
+    if cleanup.get("cleanup_error"):
+        reasons.append("cleanup-error")
+    if cleanup.get("not_launched") is not True:
+        if cleanup.get("process_stopped") is not True:
+            reasons.append("sidecar-process-not-stopped")
+        if cleanup.get("runtime_removed") is not True:
+            reasons.append("sidecar-runtime-not-removed")
+        retirement = cleanup.get("retirement_samples")
+        if not isinstance(retirement, list) or len(retirement) != 5 or any(
+            sample.get("available") is True or sample.get("bytes") is not None for sample in retirement
+        ):
+            reasons.append("WDDM-retirement-not-empty")
+        telemetry = cleanup.get("wddm") or {}
+        if telemetry.get("failure_reason"):
+            reasons.append("WDDM-telemetry-loss")
+    if cleanup.get("port_free") is not True:
+        reasons.append("sidecar-port-not-free")
+    stable = cleanup.get("stable_after") or {}
+    if stable.get("healthy") is not True:
+        reasons.append("stable-unhealthy-after-cleanup")
+    if expected_stable_pids is not None and set(stable.get("listener_pids", [])) != expected_stable_pids:
+        reasons.append("stable-listener-changed-after-cleanup")
+    return {"passed": not reasons, "reasons": reasons}
+
+
+def run_budget_qualification(args: argparse.Namespace) -> dict[str, Any]:
+    started = utc_now()
+    claim_runtime_json_once(QUALIFICATION_PATH, {
+        "schema_version": 1,
+        "operation": "reasoning-budget-qualification-v1",
+        "started_at": started,
+        "status": "running",
+    })
     result: dict[str, Any] = {
         "schema_version": 1,
-        "id": "neo-exp-0013-local-validation",
-        "started_at": attempt["started_at"],
-        "configuration": default_registry()["configuration"],
-        "stable_before": {"pids": sorted(stable_before), "head": stable_head, "status": stable_status},
-        "candidate_before": {"head": candidate_head, "status": candidate_status},
-        "fixed_sequence": FIXED_SEQUENCE,
-        "extended_request_limit": args.extended_requests,
-        "warm_results": {},
-        "branch_results": [],
-        "extended_results": [],
+        "operation": "reasoning-budget-qualification-v1",
+        "started_at": started,
+        "status": "running",
+        "budget_results": [],
+        "selected_minimum_budget": None,
         "verdict": "inconclusive",
+        "PROCESS_LOCAL_HOLOSTATE_AVAILABLE": "LOCKED",
+        "RESTART_PERSISTENT_HOLOSTATE_AVAILABLE": "LOCKED",
+        "automatic_promotion": False,
     }
-    sidecar = LiveSidecar(Path(args.binary), Path(args.model), evaluator, detached=False)
+    checkpoint_result(QUALIFICATION_PATH, result)
+    sidecar: LiveSidecar | None = None
+    stable_before: set[int] | None = None
+    prior_before: dict[str, Any] | None = None
     try:
+        evaluator, contract, lock = load_locked_holostate_contract()
+        if contract["reasoning_budget"].get("selected_max_tokens") is not None:
+            raise NeoLoopError("qualification requires an unselected locked reasoning budget")
+        prior_before = preserved_v1_evidence()
+        stable_before = require_stable()
+        result.update({
+            "contract_id": contract["id"],
+            "evaluator_sha256": lock["evaluator_sha256"],
+            "holostate_contract_sha256": lock["holostate_contract_sha256"],
+            "protected_source_hashes": {
+                source: lock["protected_file_hashes"][source]
+                for root in contract["roots"].values()
+                for source in root["sources"]
+            },
+            "prior_v1_evidence_before": prior_before,
+            "prior_lower_bound_evidence": contract["prior_lower_bound_evidence"],
+            "qualification_candidates": contract["reasoning_budget"]["qualification_candidates"],
+            "stable_before": stable_snapshot(),
+        })
+        checkpoint_result(QUALIFICATION_PATH, result)
+        sidecar = LiveSidecar(Path(args.binary), Path(args.model), evaluator, contract, detached=False)
         readiness = sidecar.launch()
         record = registry_sidecar_record(readiness)
         record["private_at_readiness_bytes"] = readiness["process_memory"]["private_bytes"]
         registry = default_registry()
         registry["sidecar"] = record
-        registry["history"].append({"event": "validation-start", "at": utc_now(), "sidecar": record})
+        registry["history"].append({"event": "qualification-start", "at": utc_now(), "sidecar": record})
         save_registry(registry)
         result["sidecar"] = readiness
-        root_state_ids: dict[str, str] = {}
-        for root_name in ("A", "B"):
-            raw, sources = compose_prefix(root_name)
-            prefix_path, _ = store_prefix(raw)
-            state = sidecar.guarded(
-                f"warm-{root_name}",
-                lambda p=prefix_path, n=root_name, s=sources: warm_state(
-                    p, f"Root {n}", s, trusted_session_id=sidecar.session_id
+        checkpoint_result(QUALIFICATION_PATH, result)
+        state = warm_contract_root(sidecar, contract, "A")
+        result["warm_result"] = compact_warm_result(state)
+        registry = load_registry()
+        assign_estimated_bytes(registry, [state["state_id"]])
+        save_registry(registry)
+        checkpoint_result(QUALIFICATION_PATH, result)
+        branch = contract["branches"][contract["reasoning_budget"]["qualification_branch"]]
+
+        def request_budget(budget: int) -> dict[str, Any]:
+            def persist(item: dict[str, Any]) -> None:
+                result["budget_results"].append(item)
+                checkpoint_result(QUALIFICATION_PATH, result)
+
+            item = sidecar.guarded(
+                f"qualify-A1-{budget}",
+                lambda: branch_state(
+                    state["state_id"],
+                    contract["reasoning_budget"]["qualification_branch"],
+                    branch["suffix"],
+                    branch["expected_final"],
+                    budget,
+                    contract,
+                    sidecar.sampler,
+                    persist,
                 ),
             )
-            if not 4_000 <= int(state["rendered_token_count"]) <= 8_192:
-                raise NeoLoopError(
-                    f"root {root_name} rendered token count {state['rendered_token_count']} is outside 4K-8K"
-                )
+            if item.get("safety_gate_errors"):
+                raise NeoLoopError(f"qualification safety gate failed: {item['safety_gate_errors']}")
+            return item
+
+        _, selected = first_accepted_budget(
+            contract["reasoning_budget"]["qualification_candidates"], request_budget
+        )
+        result["selected_minimum_budget"] = selected
+        if selected is None:
+            result["status"] = "complete"
+            result["verdict"] = "no-sufficient-budget-through-2048"
+            result["error"] = "no candidate budget passed without weakening the locked quality gate"
+        else:
+            result["status"] = "complete"
+            result["verdict"] = "accepted"
+        require_stable(stable_before)
+    except Exception as exc:
+        result["status"] = "complete"
+        result["error"] = str(exc)
+        if result.get("verdict") == "inconclusive":
+            result["verdict"] = "inconclusive"
+    finally:
+        result["cleanup"] = safe_sidecar_cleanup(sidecar)
+        result["cleanup_gate"] = cleanup_integrity(result["cleanup"], stable_before)
+        if result["cleanup_gate"]["passed"] is not True:
+            result["verdict"] = "inconclusive"
+            result["cleanup_gate_failed"] = True
+        try:
+            registry = load_registry()
+            mark_all_states_non_live(registry, "qualification-sidecar-stopped")
+            registry["sidecar"] = None
+            registry["active_request"] = None
+            save_registry(registry)
+        except Exception as exc:
+            result["registry_cleanup_error"] = str(exc)
+            result["verdict"] = "inconclusive"
+        result["stable_after_cleanup"] = stable_snapshot()
+        if prior_before is not None:
+            try:
+                result["prior_v1_evidence_after"] = preserved_v1_evidence()
+                result["prior_v1_evidence_preserved"] = result["prior_v1_evidence_after"] == prior_before
+                if result["prior_v1_evidence_preserved"] is not True:
+                    result["verdict"] = "inconclusive"
+            except Exception as exc:
+                result["prior_v1_evidence_preserved"] = False
+                result["prior_v1_evidence_error"] = str(exc)
+                result["verdict"] = "inconclusive"
+        result["finished_at"] = utc_now()
+        checkpoint_result(QUALIFICATION_PATH, result)
+    return result
+
+
+def run_validation_v2(args: argparse.Namespace) -> dict[str, Any]:
+    if V2_RESULT_PATH.exists():
+        raise NeoLoopError("HoloState validation-v2 result already exists; refusing a second attempt")
+    started = utc_now()
+    attempt = {
+        "schema_version": 1,
+        "operation": "holostate-live-validation-v2",
+        "attempt_version": 2,
+        "started_at": started,
+        "status": "running",
+    }
+    claim_runtime_json_once(V2_ATTEMPT_PATH, attempt)
+    result: dict[str, Any] = {
+        "schema_version": 1,
+        "operation": "holostate-live-validation-v2",
+        "attempt_version": 2,
+        "started_at": started,
+        "status": "running",
+        "warm_results": {},
+        "branch_results": [],
+        "extended_results": [],
+        "tool_probe": None,
+        "cancellation_recovery_probe": None,
+        "verdict": "inconclusive",
+        "PROCESS_LOCAL_HOLOSTATE_AVAILABLE": "LOCKED",
+        "RESTART_PERSISTENT_HOLOSTATE_AVAILABLE": "LOCKED",
+        "automatic_promotion": False,
+    }
+    checkpoint_result(V2_RESULT_PATH, result)
+    sidecar: LiveSidecar | None = None
+    stable_before: set[int] | None = None
+    prior_before: dict[str, Any] | None = None
+    stable_head = ""
+    stable_status = ""
+    candidate_root = ROOT.parent / f"{ROOT.name}-candidate"
+    candidate_head = ""
+    candidate_status = ""
+    try:
+        evaluator, contract, lock = load_locked_holostate_contract()
+        selected = selected_reasoning_budget(contract)
+        qualification = load_json(QUALIFICATION_PATH)
+        if qualification.get("verdict") != "accepted" or qualification.get("selected_minimum_budget") != selected:
+            raise NeoLoopError("locked selected budget does not match an accepted one-shot qualification result")
+        if sha256_file(QUALIFICATION_PATH) != contract["reasoning_budget"]["qualification_result_sha256"]:
+            raise NeoLoopError("one-shot qualification result differs from the evidence hash bound by the locked contract")
+        if args.extended_requests != contract["extended_request_count"]:
+            raise NeoLoopError("validation-v2 must run the exact locked extended request count")
+        prior_before = preserved_v1_evidence()
+        stable_before = require_stable()
+        stable_head = git_read(ROOT, "rev-parse", "HEAD")
+        stable_status = git_read(ROOT, "status", "--porcelain")
+        candidate_head = git_read(candidate_root, "rev-parse", "HEAD")
+        candidate_status = git_read(candidate_root, "status", "--porcelain", "--untracked-files=all")
+        result.update({
+            "contract_id": contract["id"],
+            "holostate_contract_sha256": lock["holostate_contract_sha256"],
+            "evaluator_sha256": lock["evaluator_sha256"],
+            "protected_source_hashes": {
+                source: lock["protected_file_hashes"][source]
+                for root in contract["roots"].values()
+                for source in root["sources"]
+            },
+            "selected_reasoning_budget": selected,
+            "qualification_evidence": {
+                "path": str(QUALIFICATION_PATH),
+                "sha256": sha256_file(QUALIFICATION_PATH),
+                "selected_minimum_budget": qualification["selected_minimum_budget"],
+            },
+            "prior_v1_evidence_before": prior_before,
+            "fixed_sequence": contract["fixed_interleaving_sequence"],
+            "extended_request_limit": contract["extended_request_count"],
+            "stable_before": {"pids": sorted(stable_before), "head": stable_head, "status": stable_status},
+            "candidate_before": {"head": candidate_head, "status": candidate_status},
+        })
+        checkpoint_result(V2_RESULT_PATH, result)
+        sidecar = LiveSidecar(Path(args.binary), Path(args.model), evaluator, contract, detached=False)
+        readiness = sidecar.launch()
+        record = registry_sidecar_record(readiness)
+        record["private_at_readiness_bytes"] = readiness["process_memory"]["private_bytes"]
+        registry = default_registry()
+        registry["sidecar"] = record
+        registry["history"].append({"event": "validation-v2-start", "at": utc_now(), "sidecar": record})
+        save_registry(registry)
+        result["sidecar"] = readiness
+        checkpoint_result(V2_RESULT_PATH, result)
+        root_state_ids: dict[str, str] = {}
+        for root_name in contract["roots"]:
+            state = warm_contract_root(sidecar, contract, root_name)
             root_state_ids[root_name] = state["state_id"]
-            result["warm_results"][root_name] = {
-                "state_id": state["state_id"],
-                "canonical_prefix_sha256": state["canonical_prefix_sha256"],
-                "token_id_sha256": state["token_id_sha256"],
-                "chat_template_sha256": state["chat_template_sha256"],
-                "rendered_token_count": state["rendered_token_count"],
-                "canonical_prefix_bytes": state["canonical_prefix_bytes"],
-                "sources": state["prefix_sources"],
-                "warm_result": state["warm_result"],
-            }
+            result["warm_results"][root_name] = compact_warm_result(state)
+            checkpoint_result(V2_RESULT_PATH, result)
         registry = load_registry()
         assign_estimated_bytes(registry, list(root_state_ids.values()))
         save_registry(registry)
         result["root_state_ids"] = root_state_ids
-        for branch_name in FIXED_SEQUENCE:
-            branch = BRANCHES[branch_name]
+        proof_pid = sidecar.process.pid if sidecar.process else None
+
+        def execute_branch(
+            branch_name: str,
+            destination: str,
+            index: int | None = None,
+            timeout: float = 1_200,
+        ) -> dict[str, Any]:
+            branch = contract["branches"][branch_name]
+
+            def persist(item: dict[str, Any]) -> None:
+                if index is not None:
+                    item["extended_index"] = index
+                result[destination].append(item)
+                checkpoint_result(V2_RESULT_PATH, result)
+
             item = sidecar.guarded(
-                f"fixed-{branch_name}",
-                lambda b=branch, n=branch_name: branch_state(
-                    root_state_ids[b["root"]], n, b["suffix"], b["expected"], sidecar.sampler
+                f"{destination}-{index or len(result[destination]) + 1}-{branch_name}",
+                lambda: branch_state(
+                    root_state_ids[branch["root"]],
+                    branch_name,
+                    branch["suffix"],
+                    branch["expected_final"],
+                    selected,
+                    contract,
+                    sidecar.sampler,
+                    persist,
                 ),
+                timeout=timeout,
             )
-            result["branch_results"].append(item)
+            if item.get("accepted") is not True:
+                detail = item.get("safety_gate_errors") or item.get("finish_classification")
+                raise NeoLoopError(f"{branch_name} stopped validation: {detail}")
+            return item
+
+        for branch_name in contract["fixed_interleaving_sequence"]:
+            execute_branch(branch_name, "branch_results")
         fixed_gate = deterministic_group_gate(result["branch_results"])
         if not all(item["exact"] for item in fixed_gate.values()):
-            raise NeoLoopError(f"fixed same-branch deterministic gate failed: {fixed_gate}")
-        if sidecar.process is None:
-            raise NeoLoopError("missing tracked sidecar process")
-        proof_pid = sidecar.process.pid
-        extended_started = time.monotonic()
-        for index in range(args.extended_requests):
-            if time.monotonic() - extended_started >= MAX_EXTENDED_SECONDS:
-                raise NeoLoopError("extended proof reached the 60-minute ceiling before its declared request count")
-            branch_name = EXTENDED_CYCLE[index % len(EXTENDED_CYCLE)]
-            branch = BRANCHES[branch_name]
-            item = sidecar.guarded(
-                f"extended-{index + 1}-{branch_name}",
-                lambda b=branch, n=branch_name: branch_state(
-                    root_state_ids[b["root"]], n, b["suffix"], b["expected"], sidecar.sampler
-                ),
+            raise NeoLoopError(f"fixed deterministic gate failed: {fixed_gate}")
+        result["fixed_deterministic_groups"] = fixed_gate
+        checkpoint_result(V2_RESULT_PATH, result)
+
+        try:
+            result["tool_probe"] = sidecar.guarded(
+                "tool-probe", lambda: run_tool_probe(sidecar, contract),
+                timeout=float(contract["tool_probe"]["timeout_seconds"]),
             )
+        except Exception as exc:
+            result["tool_probe"] = {"required": True, "passed": False, "error": str(exc)}
+            checkpoint_result(V2_RESULT_PATH, result)
+            raise
+        checkpoint_result(V2_RESULT_PATH, result)
+        if result["tool_probe"].get("passed") is not True:
+            raise NeoLoopError("sidecar tool-call compatibility probe failed")
+        try:
+            result["cancellation_recovery_probe"] = sidecar.guarded(
+                "cancellation-recovery-probe",
+                lambda: run_cancellation_recovery_probe(sidecar, contract),
+                timeout=float(contract["cancellation_recovery_probe"]["timeout_seconds"]) * 2,
+            )
+        except Exception as exc:
+            result["cancellation_recovery_probe"] = {"required": True, "passed": False, "error": str(exc)}
+            checkpoint_result(V2_RESULT_PATH, result)
+            raise
+        checkpoint_result(V2_RESULT_PATH, result)
+        if result["cancellation_recovery_probe"].get("passed") is not True:
+            raise NeoLoopError("sidecar cancellation/recovery compatibility probe failed")
+
+        extended_started = time.monotonic()
+        duration_limit = int(contract["extended_duration_seconds"])
+        extended_cycle = contract["extended_cycle"]
+        for index in range(1, contract["extended_request_count"] + 1):
+            remaining = duration_limit - (time.monotonic() - extended_started)
+            if remaining <= 0:
+                raise NeoLoopError("extended proof reached its locked 60-minute ceiling")
+            branch_name = extended_cycle[(index - 1) % len(extended_cycle)]
+            execute_branch(branch_name, "extended_results", index, timeout=remaining)
             if not sidecar.process or sidecar.process.pid != proof_pid:
                 raise NeoLoopError("sidecar PID changed during extended proof")
-            item["extended_index"] = index + 1
-            result["extended_results"].append(item)
         result["extended_proof"] = {
             "duration_seconds": time.monotonic() - extended_started,
             "request_count": len(result["extended_results"]),
-            "request_limit": MAX_EXTENDED_REQUESTS,
-            "duration_limit_seconds": MAX_EXTENDED_SECONDS,
-            "roots": ["A", "B"],
+            "request_limit": contract["extended_request_count"],
+            "duration_limit_seconds": duration_limit,
             "sidecar_pid_unchanged": sidecar.process is not None and sidecar.process.pid == proof_pid,
             "sidecar_restarted": False,
         }
+        if result["extended_proof"]["duration_seconds"] > duration_limit:
+            raise NeoLoopError("extended proof exceeded its locked 60-minute ceiling")
         all_results = result["branch_results"] + result["extended_results"]
-        deterministic = deterministic_group_gate(all_results)
-        if set(deterministic) != set(BRANCHES) or not all(item["exact"] for item in deterministic.values()):
-            raise NeoLoopError(f"extended same-branch deterministic gate failed: {deterministic}")
+        deterministic = deterministic_group_gate(all_results, minimum_observations=2)
+        if set(deterministic) != set(contract["branches"]) or not all(item["exact"] for item in deterministic.values()):
+            raise NeoLoopError(f"full same-branch deterministic gate failed: {deterministic}")
+        cross_root_clean = all(
+            item["state_id"] == root_state_ids[contract["branches"][item["branch_name"]]["root"]]
+            and item["structure"]["final_content"] == contract["branches"][item["branch_name"]]["expected_final"]
+            for item in all_results
+        )
+        if not cross_root_clean:
+            raise NeoLoopError("cross-root branch identity contamination detected")
         registry = load_registry()
-        states = [registry["states"][root_state_ids[root]] for root in ("A", "B")]
+        states = [registry["states"][root_state_ids[root]] for root in contract["roots"]]
         if not all(state.get("live") and state.get("live_session_id") == sidecar.session_id for state in states):
             raise NeoLoopError("both roots were not live in the exact sidecar session")
-        info = process_info(proof_pid)
+        info = process_info(int(proof_pid)) if proof_pid is not None else None
         if not info:
             raise NeoLoopError("sidecar host memory unavailable at final gate")
         host_growth = max(0, int(info["private_bytes"]) - int(record["private_at_readiness_bytes"]))
-        if host_growth > CACHE_RAM_MIB * MIB:
-            raise NeoLoopError("final host cache/private-memory growth exceeded 4096 MiB")
+        if host_growth > contract["host_cache_mib_ceiling"] * MIB:
+            raise NeoLoopError("final host cache/private-memory growth exceeded locked ceiling")
         telemetry = sidecar.telemetry()
-        if telemetry.get("sample_count", 0) <= 0 or telemetry.get("peak_dedicated_mib", VRAM_CEILING_MIB + 1) > VRAM_CEILING_MIB:
-            raise NeoLoopError("final WDDM gate failed")
+        if (
+            telemetry.get("sample_count", 0) <= 0
+            or telemetry.get("peak_dedicated_mib") is None
+            or telemetry["peak_dedicated_mib"] > contract["wddm_mib_ceiling"]
+            or (sidecar.sampler is not None and sidecar.sampler.failure_reason() is not None)
+        ):
+            raise NeoLoopError("final exact-PID WDDM gate failed")
         require_stable(stable_before)
         if git_read(ROOT, "rev-parse", "HEAD") != stable_head or git_read(ROOT, "status", "--porcelain") != stable_status:
-            raise NeoLoopError("stable worktree changed during HoloState validation")
+            raise NeoLoopError("stable worktree changed during HoloState validation-v2")
         if git_read(candidate_root, "rev-parse", "HEAD") != candidate_head or git_read(candidate_root, "status", "--porcelain", "--untracked-files=all") != candidate_status:
-            raise NeoLoopError("archived trace candidate changed during HoloState validation")
+            raise NeoLoopError("archived trace candidate changed during HoloState validation-v2")
         result["deterministic_groups"] = deterministic
         result["metrics"] = catalytic_metrics(registry, all_results)
         result["cache_registry"] = {
             "entry_count": len(registry["states"]),
-            "total_configured_cache_bytes": CACHE_RAM_MIB * MIB,
-            "estimated_bytes_per_entry": {state_id: registry["states"][state_id]["estimated_bytes"] for state_id in root_state_ids.values()},
-            "reuse_counts": {state_id: registry["states"][state_id]["reuse_count"] for state_id in root_state_ids.values()},
-            "last_use_order": [
-                state["state_id"]
-                for state in sorted(states, key=lambda item: item["last_use_timestamp"])
-            ],
+            "total_configured_cache_bytes": contract["host_cache_mib_ceiling"] * MIB,
+            "estimated_bytes_per_entry": {
+                state_id: registry["states"][state_id]["estimated_bytes"] for state_id in root_state_ids.values()
+            },
+            "reuse_counts": {
+                state_id: registry["states"][state_id]["reuse_count"] for state_id in root_state_ids.values()
+            },
+            "last_use_order": [state["state_id"] for state in sorted(states, key=lambda item: item["last_use_timestamp"])],
             "eviction_candidate_if_admission_required": select_eviction_candidate(registry["states"]),
             "observed_server_eviction": False,
             "evicted_state_id": None,
@@ -1258,13 +1931,17 @@ def run_validation(args: argparse.Namespace) -> dict[str, Any]:
         }
         result["quality_gates"] = {
             "two_roots": len(root_state_ids) == 2,
-            "two_branches_per_root": set(deterministic) == set(BRANCHES),
-            "fixed_interleaving": True,
+            "two_branches_per_root": set(deterministic) == set(contract["branches"]),
+            "fixed_interleaving": [item["branch_name"] for item in result["branch_results"]] == contract["fixed_interleaving_sequence"],
             "all_outputs_exact": all(item["structure"]["exact_final"] for item in all_results),
+            "all_reasoning_present": all(item["structure"]["reasoning_present"] for item in all_results),
             "same_branch_tokens_exact": all(len(item["token_hashes"]) == 1 for item in deterministic.values()),
             "same_branch_reasoning_exact": all(len(item["reasoning_hashes"]) == 1 for item in deterministic.values()),
+            "same_branch_finals_exact": all(len(item["final_hashes"]) == 1 for item in deterministic.values()),
             "every_branch_reused": all(item["catalytic"] for item in all_results),
-            "cross_root_contamination": False,
+            "cross_root_contamination": not cross_root_clean,
+            "tool_probe": result["tool_probe"]["passed"],
+            "cancellation_recovery_probe": result["cancellation_recovery_probe"]["passed"],
             "sidecar_pid_unchanged": True,
             "wddm_below_6000_mib": True,
             "host_cache_within_4096_mib": True,
@@ -1274,37 +1951,84 @@ def run_validation(args: argparse.Namespace) -> dict[str, Any]:
         }
         result["wddm"] = telemetry
         result["stable_after_proof"] = stable_snapshot()
+        result["status"] = "complete"
         result["verdict"] = "reviewable-accept"
         result["PROCESS_LOCAL_HOLOSTATE_AVAILABLE"] = "UNLOCKED"
-        result["RESTART_PERSISTENT_HOLOSTATE_AVAILABLE"] = "LOCKED"
     except Exception as exc:
+        result["status"] = "complete"
         result["error"] = str(exc)
         result["verdict"] = "inconclusive"
         result["PROCESS_LOCAL_HOLOSTATE_AVAILABLE"] = "LOCKED"
-        result["RESTART_PERSISTENT_HOLOSTATE_AVAILABLE"] = "LOCKED"
     finally:
-        result["cleanup"] = sidecar.stop()
-        registry = load_registry()
-        mark_all_states_non_live(registry, "validation-sidecar-stopped")
-        registry["sidecar"] = None
-        registry["active_request"] = None
-        registry["history"].append({"event": "validation-cleanup", "at": utc_now(), "verdict": result["verdict"]})
-        save_registry(registry)
-        result["registry_after_cleanup"] = {
-            "entry_count": len(registry["states"]),
-            "live_entry_count": sum(1 for state in registry["states"].values() if state.get("live")),
-            "history_preserved": True,
-        }
+        result["cleanup"] = safe_sidecar_cleanup(sidecar)
+        result["cleanup_gate"] = cleanup_integrity(result["cleanup"], stable_before)
+        if result["cleanup_gate"]["passed"] is not True:
+            result["verdict"] = "inconclusive"
+            result["PROCESS_LOCAL_HOLOSTATE_AVAILABLE"] = "LOCKED"
+            result["cleanup_gate_failed"] = True
+        try:
+            registry = load_registry()
+            mark_all_states_non_live(registry, "validation-v2-sidecar-stopped")
+            registry["sidecar"] = None
+            registry["active_request"] = None
+            save_registry(registry)
+            result["registry_after_cleanup"] = {
+                "entry_count": len(registry["states"]),
+                "live_entry_count": sum(1 for state in registry["states"].values() if state.get("live")),
+                "history_preserved": True,
+            }
+        except Exception as exc:
+            result["registry_cleanup_error"] = str(exc)
+            result["verdict"] = "inconclusive"
+            result["PROCESS_LOCAL_HOLOSTATE_AVAILABLE"] = "LOCKED"
         result["stable_after_cleanup"] = stable_snapshot()
+        if stable_before is not None and set(result["stable_after_cleanup"].get("listener_pids", [])) != stable_before:
+            result["verdict"] = "inconclusive"
+            result["PROCESS_LOCAL_HOLOSTATE_AVAILABLE"] = "LOCKED"
+            result["stable_cleanup_gate_failed"] = True
+        if prior_before is not None:
+            try:
+                prior_after = preserved_v1_evidence()
+                result["prior_v1_evidence_after"] = prior_after
+                result["prior_v1_evidence_preserved"] = prior_after == prior_before
+                if result["prior_v1_evidence_preserved"] is not True:
+                    result["verdict"] = "inconclusive"
+                    result["PROCESS_LOCAL_HOLOSTATE_AVAILABLE"] = "LOCKED"
+            except Exception as exc:
+                result["prior_v1_evidence_preserved"] = False
+                result["prior_v1_evidence_error"] = str(exc)
+                result["verdict"] = "inconclusive"
+                result["PROCESS_LOCAL_HOLOSTATE_AVAILABLE"] = "LOCKED"
         result["finished_at"] = utc_now()
-        write_runtime_json(RESULT_PATH, result)
-        attempt.update({"status": "complete", "finished_at": result["finished_at"], "verdict": result["verdict"], "result_path": str(RESULT_PATH)})
-        write_runtime_json(ATTEMPT_PATH, attempt)
+        checkpoint_result(V2_RESULT_PATH, result)
+        attempt.update({
+            "status": "complete",
+            "finished_at": result["finished_at"],
+            "verdict": result["verdict"],
+            "result_path": str(V2_RESULT_PATH),
+            "result_sha256": sha256_file(V2_RESULT_PATH),
+        })
+        write_runtime_json(V2_ATTEMPT_PATH, attempt)
     return result
+
+
+def run_validation(args: argparse.Namespace) -> dict[str, Any]:
+    del args
+    if ATTEMPT_PATH.exists():
+        raise NeoLoopError("the single declared HoloState-v1 validation sequence has already been attempted")
+    raise NeoLoopError("legacy HoloState-v1 validation is retired and may not be rerun")
 
 
 def command_validate(args: argparse.Namespace) -> dict[str, Any]:
     return run_validation(args)
+
+
+def command_qualify_budget(args: argparse.Namespace) -> dict[str, Any]:
+    return run_budget_qualification(args)
+
+
+def command_validate_v2(args: argparse.Namespace) -> dict[str, Any]:
+    return run_validation_v2(args)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1326,8 +2050,6 @@ def build_parser() -> argparse.ArgumentParser:
     branch = subparsers.add_parser("branch")
     branch.add_argument("--state", required=True)
     branch.add_argument("--branch-name", required=True)
-    branch.add_argument("--suffix", required=True)
-    branch.add_argument("--expected", required=True)
     branch.set_defaults(handler=command_branch)
     listing = subparsers.add_parser("list")
     listing.set_defaults(handler=command_list)
@@ -1337,16 +2059,25 @@ def build_parser() -> argparse.ArgumentParser:
     validate = subparsers.add_parser("validate", parents=[common])
     validate.add_argument("--extended-requests", type=int, default=MAX_EXTENDED_REQUESTS)
     validate.set_defaults(handler=command_validate)
+    qualify = subparsers.add_parser("qualify-budget", parents=[common])
+    qualify.set_defaults(handler=command_qualify_budget)
+    validate_v2 = subparsers.add_parser("validate-v2", parents=[common])
+    validate_v2.add_argument("--extended-requests", type=int, default=MAX_EXTENDED_REQUESTS)
+    validate_v2.set_defaults(handler=command_validate_v2)
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
-    if args.command in {"start", "validate"} and not args.model:
+    if args.command in {"start", "validate", "qualify-budget", "validate-v2"} and not args.model:
         raise SystemExit("set NEO3000_MODEL or pass --model with the exact Agents-A1 GGUF path")
     try:
         result = args.handler(args)
         print(json.dumps(result, indent=2, sort_keys=True))
+        if args.command == "qualify-budget":
+            return 0 if result.get("verdict") == "accepted" else 1
+        if args.command == "validate-v2":
+            return 0 if result.get("verdict") == "reviewable-accept" else 1
         return 0 if result.get("verdict") != "inconclusive" else 1
     except (NeoLoopError, OSError, ValueError, json.JSONDecodeError, subprocess.TimeoutExpired) as exc:
         print(json.dumps({"error": str(exc), "command": args.command}, indent=2), file=sys.stderr)
