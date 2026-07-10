@@ -1,10 +1,10 @@
 # Neo3000 Task Board
 
-**Active checkpoint:** RSI-0, supervised RSI substrate  
-**Current RSI level:** Level 0, Pi-assisted development  
+**Active checkpoint:** Checkpoint 1, Compute map
+**Current RSI level:** Level 1, supervised bounded RSI available
 **Baseline evidence through:** `432e8f773cde782cab6d478ad5afccb15816cbb4`  
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** authorize one fresh RSI-0G acceptance cycle under the repaired, locked transport/reasoning/warm-performance gates
+**Next exact boundary:** create one supervised instrumentation candidate that maps actual CUDA/CPU backend placement, silent CPU fallback, CUDA graph capture/replay, synchronization, MoE expert bucket geometry, and Gated Delta Net recurrent-state cost while stable remains untouched
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -65,11 +65,11 @@ Next instrumentation target selected from evidence: YES
 
 ---
 
-# Current queue: Checkpoint RSI-0
+# Current queue: Checkpoint 1
 
 **Unlock target:** `SUPERVISED_BOUNDED_RSI_AVAILABLE`
 
-Do not begin candidate self-improvement until this checkpoint closes. RSI-0 creates the substrate to prompt Pi to begin supervised recursive self-improvement safely.
+RSI-0 is closed. Level 1 permits bounded supervised candidates with human promotion review; automatic promotion remains forbidden.
 
 ## RSI-0A. Put engine source under Git custody [DONE]
 
@@ -86,7 +86,7 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 
 ### Custody exit gate: MET
 
-## RSI-0B. Establish stable and candidate isolation [PARTIAL]
+## RSI-0B. Establish stable and candidate isolation [DONE]
 
 - [x] Stable worktree: `D:\CCC 2.0\AI\Neo3000` on branch `main`, port 9292, `build/stable`.
 - [x] Candidate worktree: `D:\CCC 2.0\AI\Neo3000-candidate` on branch `candidate`, port 9393, `build/candidate`.
@@ -94,10 +94,10 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Candidate server script: `scripts/run_candidate.ps1`.
 - [x] Isolation design verified: separate builds, ports, and runtime state.
 - [x] Verify stable remains responsive during a candidate configure/build attempt and rejected preflight.
-- [ ] Verify stable remains responsive while candidate serves inference.
-- [ ] Verify candidate teardown does not affect stable.
+- [x] Verify stable remains responsive while candidate serves inference.
+- [x] Verify candidate teardown does not affect stable.
 
-## RSI-0C. Freeze the evaluator [PARTIAL]
+## RSI-0C. Freeze the evaluator [DONE]
 
 - [x] Created tracked evaluator manifest: `lab/EVALUATOR.json`.
 - [x] Recorded model identity, baseline commit, and stable launch configuration.
@@ -126,7 +126,7 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Implement cancellation, repeated-turn, memory, and performance gates for candidate runs; live proof remains RSI-0G.
 - [x] Implement candidate-owned cleanup in a `finally` path; live proof remains RSI-0F/G.
 
-## RSI-0E. Enforce stop and isolation gates [IMPLEMENTED; live proof pending]
+## RSI-0E. Enforce stop and isolation gates [IMPLEMENTED AND LIVE-PROVEN]
 
 - [x] Enforce build timeout.
 - [x] Enforce server-health timeout.
@@ -157,7 +157,7 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Confirmed the compact failure record is accurate in `lab/results.jsonl`.
 - [x] Restored the candidate worktree cleanly; the next task is resumable.
 
-## RSI-0G. Prove one supervised acceptance cycle [READY FOR ONE AUTHORIZED CYCLE]
+## RSI-0G. Prove one supervised acceptance cycle [REVIEWABLE ACCEPT]
 
 - [x] Started from a healthy stable server.
 - [x] Applied an inert file only within the allowed candidate path `common/`.
@@ -172,12 +172,12 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Split evaluator proof: 64-token transport and three-turn repeat use documented request-level reasoning-off with strict exact content; auto-reasoning requires nonempty `reasoning_content` and exact final content at its matched 768-token budget; one warmup is unscored and two 10-TPS counted warm runs are required.
 - [x] Stable proof passed: transport 3/3 exact, reasoning 16.91 TPS, warm counted performance 16.33/17.03 TPS.
 - [x] Clean candidate proof passed: transport exact, reasoning 15.98 TPS, warm counted performance 17.23/17.76 TPS; PID/listener `29180`, 67 valid WDDM samples, 2,194.88 MiB peak, and full teardown/stable-integrity checks passed.
-- [ ] Confirm every declared gate passes.
-- [ ] Mark it reviewable rather than promoting it.
-- [ ] Confirm exact diff and evidence are inspectable.
-- [ ] Confirm stable remains healthy and unchanged.
-- [ ] Confirm result is recorded accurately.
-- [ ] Require explicit human approval before stable merge.
+- [x] Confirm every declared gate passes: transport, reasoning, tool, cancellation, repeat, warm performance, WDDM, cleanup, and stable integrity.
+- [x] Mark it reviewable rather than promoting it; `neo-loop` performed no merge, push, or replacement.
+- [x] Confirm exact inert diff and evidence are inspectable in `lab/results.jsonl`.
+- [x] Confirm stable remains healthy and unchanged; listener PID remained `31188`.
+- [x] Confirm result is recorded accurately with candidate PID/listener `38952` and independent WDDM retirement checks.
+- [x] Preserve explicit human approval before any stable merge; no stable merge occurred.
 
 ## RSI-0H. Add the supervised RSI operator prompt [DONE]
 
@@ -192,14 +192,14 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 ### RSI-0 exit gate
 
 - [x] Engine source is Git-diffable.
-- [ ] Stable and candidate worktrees are proven isolated during candidate build and run.
-- [ ] Stable and candidate builds and ports are proven isolated during candidate run.
-- [ ] Evaluator and controller immutability are enforced by lockfile and mutation test.
-- [ ] Candidate teardown works after every result type.
-- [ ] One supervised rejection cycle completes safely.
-- [ ] One supervised acceptance cycle completes safely.
-- [ ] Stable survives both cycles.
-- [ ] Results and handoffs remain accurate.
+- [x] Stable and candidate worktrees are proven isolated during candidate build and run.
+- [x] Stable and candidate builds and ports are proven isolated during candidate run.
+- [x] Evaluator and controller immutability are enforced by lockfile and mutation test.
+- [x] Candidate teardown works after every result type.
+- [x] One supervised rejection cycle completes safely.
+- [x] One supervised acceptance cycle completes safely.
+- [x] Stable survives both cycles.
+- [x] Results and handoffs remain accurate.
 - [x] Automatic promotion remains disabled.
 
 After every item passes:
@@ -211,9 +211,9 @@ Unlock: SUPERVISED_BOUNDED_RSI_AVAILABLE
 
 ---
 
-# Checkpoint 1 queue: Compute map
+# Checkpoint 1 queue: Compute map [ACTIVE]
 
-Do not begin until RSI-0 closes.
+Use the unlocked supervised substrate; stable remains untouched while instrumentation candidates are isolated and reviewable.
 
 - [ ] Create an isolated instrumentation candidate.
 - [ ] Define one fixed trace schema.
@@ -257,4 +257,4 @@ Do not begin until RSI-0 closes.
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: authorize exactly one fresh RSI-0G acceptance cycle using the inert allowed-path fixture under the locked split transport, reasoning, WDDM, and warm-performance gates.
+- [ ] Next task: create one supervised instrumentation candidate that maps actual CUDA/CPU backend placement, silent CPU fallback, CUDA graph capture/replay, synchronization, MoE expert bucket geometry, and Gated Delta Net recurrent-state cost while stable remains untouched.

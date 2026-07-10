@@ -141,13 +141,13 @@ No catalytic inference claim is allowed.
 
 Option A: Track the imported pinned runtime as one deliberate baseline commit.
 
-## Next checkpoint: RSI-0 (Supervised RSI Substrate)
+## Checkpoint RSI-0: CLOSED (Supervised RSI Substrate)
 
-Prepare the repository for Pi-supervised recursive self-improvement before modifying inference kernels.
+The repository now supports bounded supervised candidates with human promotion review; automatic promotion remains forbidden.
 
 ### RSI-0E stop and isolation gates
 
-**Status:** IMPLEMENTED, awaiting live candidate-cycle proof
+**Status:** IMPLEMENTED AND LIVE-PROVEN
 
 - [x] Evaluator lockfile records hashes for the evaluator, controller, quality scripts, and fixed prompt identities without local model paths.
 - [x] Candidate diff allowlist rejects paths outside the declared experiment surface.
@@ -162,8 +162,8 @@ Prepare the repository for Pi-supervised recursive self-improvement before modif
 - [x] Reasoning-budget diagnostic: stable and a clean candidate each ended 64/96/128/192-token exact-text probes by length with reasoning only, then emitted `NEO3000 ONLINE` at 256 tokens. Stable also returned the same final content at 64 tokens when the documented request-level `chat_template_kwargs.enable_thinking=false` was supplied. This is shared completion-budget exhaustion, not candidate-specific text regression.
 - [x] Matched performance diagnostic: clean candidate first/warm decode measured 15.84/16.23/15.58 TPS; stable repeated decode measured 16.61/16.11/15.41 TPS. The prior 9.509 TPS run does not prove the 10 TPS gate is cold-state invalid.
 - [x] Evaluator split proof: the immutable transport gate uses documented request-level reasoning-off and passed stable 3/3 plus clean candidate; the immutable auto-reasoning gate uses the matched 768-token allowance and passed both with nonempty reasoning plus exact final content; the separate warm-performance gate excludes one warmup, retains 10 TPS, and passed stable 16.33/17.03 TPS and candidate 17.23/17.76 TPS. Candidate PID/listener `29180` remained at 2,194.88 MiB across 67 WDDM samples and tore down cleanly.
-- [ ] RSI-0G acceptance remains required. One fresh inert-fixture cycle may now be explicitly authorized under the repaired locked gates.
+- [x] RSI-0G reviewable acceptance: inert candidate fixture passed the locked transport, reasoning, tool, cancellation, repeat, and warm-performance gates; candidate PID/listener `38952` used exact-PID WDDM at a 2,301,497,344-byte (2,194.88 MiB) peak with valid telemetry, then tore down. Stable PID `31188`, health, protected hashes, worktree, and independent five-sample counter retirement checks remained valid. No promotion or merge occurred.
 
-## Checkpoint 1: Compute map (RSI-0 required first)
+## Checkpoint 1: Compute map [ACTIVE]
 
 Cold-start performance (first-request TPS ~50% of warm) and reasoning token overhead (~70% of output) are the identified targets. The SSM architecture shows flat decode through 60K, lowering the priority of long-context catalytic mechanisms.

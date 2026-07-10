@@ -91,10 +91,9 @@ LM Studio is **not** an unlock dependency. It may be used as optional historical
 ## Current exact boundary
 
 ```text
-RSI-0E: enforce stop and isolation gates
--> RSI-0F: prove one supervised rejection cycle
--> RSI-0G: prove one supervised acceptance cycle
--> unlock SUPERVISED_BOUNDED_RSI_AVAILABLE
+RSI-0: CLOSED
+-> SUPERVISED_BOUNDED_RSI_AVAILABLE unlocked for Level 1 supervised work
+-> Checkpoint 1: compute map is active
 ```
 
 No autonomous RSI. No automatic promotion. No stable inference modification outside declared candidate cycles.
@@ -238,7 +237,7 @@ upstream license preserved
 
 ### RSI-0B: Stable and candidate isolation
 
-Status: **PARTIAL**
+Status: **DONE**
 
 Required structure:
 
@@ -255,11 +254,11 @@ separate runtime-state directories
 immutable evaluator outside candidate-editable paths
 ```
 
-Remaining proof: stable must remain healthy while the candidate builds, runs, fails, passes, and tears down.
+Live rejection and reviewable-acceptance cycles proved stable health through candidate build, run, failure, acceptance, and teardown.
 
 ### RSI-0C: Immutable evaluator
 
-Status: **PARTIAL**
+Status: **DONE**
 
 Required:
 
@@ -280,7 +279,7 @@ Before and after every candidate cycle, `neo-loop` verifies protected hashes. Mu
 
 ### RSI-0D: Deterministic neo-loop
 
-Status: **CORE DONE**
+Status: **DONE**
 
 `neo-loop` must perform:
 
@@ -305,7 +304,7 @@ read TASKS, GOAL, and CHECKPOINT
 
 ### RSI-0E: Stop and isolation gates
 
-Status: **NEXT**
+Status: **DONE**
 
 Required gates:
 
@@ -328,6 +327,8 @@ Required gates:
 
 ### RSI-0F: Supervised rejection cycle
 
+Status: **DONE**
+
 Agents-A1 makes one bounded candidate change that deliberately or naturally fails a declared gate.
 
 Pass conditions:
@@ -342,6 +343,8 @@ next task remains resumable
 ```
 
 ### RSI-0G: Supervised acceptance cycle
+
+Status: **REVIEWABLE ACCEPT**
 
 Agents-A1 makes one bounded candidate change that passes all declared gates.
 
@@ -368,6 +371,8 @@ prompts/supervised_rsi_cycle.md
 ```
 
 ### RSI-0 exit gate
+
+Status: **CLOSED**
 
 ```text
 engine source is Git-diffable

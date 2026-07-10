@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "cffdef68ca8a1cc3f3e55de9ebca54179d20a182",
+  "baseline_source_commit": "66f1cd3b85fe00c6ebf7d708ff4a0ea4915a3a77",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -30,7 +30,7 @@
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-10T00:00:48.399707+00:00",
+  "generated_at": "2026-07-10T00:24:37.507800+00:00",
   "model_identity": {
     "alias": "agents-a1",
     "architecture": "qwen35moe",
@@ -41,12 +41,12 @@
   "protected_file_hashes": {
     ".gitignore": "9af6447e5ed5e79e7ce3f4374aab3ef5694ff38376e5a3df080378817f5e206c",
     "AGENTS.md": "d0c4f2292f8e89f94ff79fe7b1a3b678307781f83fdbbab398abc7fbfd79b8e5",
-    "ROADMAP.md": "421f2271cdc91d5a48b77518775001afd57858b2248056ac078a87e1678eead0",
-    "TASKS.md": "267e0a3c58a9fe43c15786cdc267cfd27701f10ddc0cd21f2f3fe77d9b8f506b",
+    "ROADMAP.md": "694d7f0baed2c34b612f27dbabf83af35c74688f2db8d55d91ca28cc276cad28",
+    "TASKS.md": "4e26a6ffc249e11509375ea429321c644011e4e17559ce4a5409fe70de2705f8",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "79856ad12eac8ab4c0b273936e42162d587d75ea56befcf52a3f55f2ce64f360",
+    "lab/CHECKPOINT.md": "9fc051663bbdcdd293281e27ebc49c6d9f78cbd21230f108307bb2206adc0e96",
     "lab/EVALUATOR.json": "6031e8622e882df21c3abab77d383b790fd7f7d14da4d9f915e96c9d6293ba47",
-    "lab/GOAL.md": "26706f82d6a5812614d4b3542ce11fd49811c3e1872bc2b7e9db35f3a9779e6a",
+    "lab/GOAL.md": "ffc0e316e80fcf990838c1e8ba5ea76ed83678b0f4ae6df1ffd99a24db34ab14",
     "scripts/baseline_harness.py": "78416aac1c35cc001f2481e4814342ed9bce8393c240c87986442173ee8c31dc",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "7b45a9d194962484c4b41b243928eb053386cea2467ff929735d0634f0ba0600",

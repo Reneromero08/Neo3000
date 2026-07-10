@@ -11,16 +11,16 @@ Current through stable commit `d911f932be997b764a74235bba8ef2b9279a2c04`.
 ```text
 Checkpoint 0: CLOSED
 Claim ceiling: NEO3000_BASELINE_OPERATIONAL
-Current RSI level: Level 0, Pi-assisted development
+Current RSI level: Level 1, supervised bounded RSI available
 RSI-0F supervised rejection cycle: PASSED
-RSI-0G supervised acceptance cycle: READY FOR ONE AUTHORIZED REPAIRED-GATE CYCLE
+RSI-0G supervised acceptance cycle: REVIEWABLE ACCEPT
 Automatic promotion: DISABLED
-SUPERVISED_BOUNDED_RSI_AVAILABLE: LOCKED
+SUPERVISED_BOUNDED_RSI_AVAILABLE: UNLOCKED
 Stable server: port 9292
 Candidate server: port 9393
 ```
 
-The fresh inert-fixture RSI-0G cycle built and became healthy with candidate PID/listener PID `45840`; PID-filtered WDDM recorded 17 samples, no telemetry failures, and a 2,194.88 MiB peak below the 6000 MiB ceiling. Matched evidence identified shared reasoning-budget exhaustion, then proved the narrow repair: strict 64-token transport uses documented request-level `enable_thinking=false`; auto reasoning uses a matched 768-token allowance and still requires nonempty reasoning plus exact content; performance uses one unscored warmup and two counted 10-TPS runs. Stable and clean candidate passed every repaired observable. The next boundary is one expressly authorized RSI-0G cycle, not promotion.
+The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidate PID/listener `38952` passed transport, reasoning, tool, cancellation, repeat, and warm-performance gates; PID-filtered WDDM recorded a 2,196.88 MiB peak across 88 valid samples. One pre-first-valid counter miss remained within the locked grace period; telemetry was not lost after attribution began. Candidate teardown, runtime removal, port retirement, and five independent WDDM retirement checks passed. Stable PID `31188`, health, worktree, and protected hashes remained unchanged. No promotion or merge occurred. RSI-0 is closed; Checkpoint 1 is active.
 
 ---
 
@@ -28,11 +28,8 @@ The fresh inert-fixture RSI-0G cycle built and became healthy with candidate PID
 
 ### Pending
 
-- Authorize exactly one fresh RSI-0G cycle with the inert allowed-path fixture under the repaired locked gates.
-- Preserve the separate transport, reasoning, warm-performance, WDDM, isolation, and no-promotion requirements.
-- Close RSI-0 only if all gates pass without automatic promotion.
-- Unlock `SUPERVISED_BOUNDED_RSI_AVAILABLE` only after the acceptance proof is complete.
-- Begin Checkpoint 1 with an isolated compute-map candidate, initially targeting cold-start and first-request overhead.
+- Create one supervised instrumentation candidate that maps actual CUDA/CPU backend placement, silent CPU fallback, CUDA graph capture/replay, synchronization, MoE expert bucket geometry, and Gated Delta Net recurrent-state cost while stable remains untouched.
+- Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
 ---
 

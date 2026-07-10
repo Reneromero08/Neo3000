@@ -1,17 +1,18 @@
 # Active Goal
 
-## RSI-0: Supervised recursive self-improvement substrate
+## Checkpoint 1: Compute map
 
 Checkpoint 0 is closed. Neo3000 is baseline-operational. The runtime serves Agents-A1 to Pi correctly, context scales through 60K occupied tokens with a 0.94 degradation ratio, rolling minimum decode is smooth, tools and cancellation are verified, and LM Studio is no longer an unlock dependency.
 
-RSI-0A through RSI-0D are partially or fully complete:
+RSI-0 is closed with the supervised substrate proven:
 
 ```text
 RSI-0A source custody: done
-RSI-0B stable/candidate worktrees: design done, live isolation proof still needed
-RSI-0C evaluator lockfile and protected mutation preflight: done
-RSI-0D neo-loop machinery and enforcement gates: implemented
+RSI-0B stable/candidate worktrees: live isolation proven
+RSI-0C evaluator lockfile and protected mutation preflight: proven
+RSI-0D neo-loop machinery and enforcement gates: proven
 RSI-0F live rejection cycle: passed
+RSI-0G live reviewable acceptance cycle: passed
 ```
 
 ## Required result
@@ -30,21 +31,21 @@ Stable worktree running Neo3000
 
 ## Current boundary
 
-RSI-0E is implemented and RSI-0F has passed. The shared-budget boundary is repaired in the evaluator without weakening content, reasoning, WDDM, or warm-performance requirements. Stable and a clean candidate proved the split transport, reasoning, and warm-performance gates. The next objective is **authorize one fresh RSI-0G acceptance cycle under the locked repaired gates**.
+The authorized RSI-0G cycle returned `reviewable-accept`: the inert candidate fixture passed transport, reasoning, tool, cancellation, repeat, warm-performance, WDDM, cleanup, and stable-integrity gates. Stable PID `31188` was unchanged; candidate PID/listener `38952` tore down and its WDDM instances retired. **RSI-0 is closed; `SUPERVISED_BOUNDED_RSI_AVAILABLE` is unlocked for Level 1 supervised work.**
 
 Do not begin autonomous RSI. Do not modify stable inference logic. Do not promote candidates automatically.
 
 ## Next exact action
 
-The transport request now uses only documented `chat_template_kwargs: {"enable_thinking": false}` with the unchanged 64-token exact response; stable passed 3/3 and the clean candidate passed, each with eight completion tokens and no reasoning. The auto-reasoning request now has its matched 768-token shared budget and requires both nonempty reasoning plus `NEO3000 REASONING OK`; stable and candidate passed. Warm performance uses that long deterministic request as one unscored warmup plus two counted runs, preserving the 10 TPS floor; stable counted 16.33/17.03 TPS and candidate counted 17.23/17.76 TPS. Candidate PID/listener `29180` remained below the WDDM ceiling at 2,194.88 MiB across 67 valid samples, then tore down cleanly while stable PID `31188` stayed healthy.
+The next objective is one supervised instrumentation candidate that maps actual CUDA/CPU backend placement, silent CPU fallback, CUDA graph capture/replay, synchronization, MoE expert bucket geometry, and Gated Delta Net recurrent-state cost while stable remains untouched. This is not authorization for autonomous RSI or automatic promotion.
 
 Minimum required work:
 
 ```text
 1. Keep the stable server and stable worktree unchanged.
-2. Reapply only the inert `common/` fixture in the candidate worktree.
-3. Verify preflight and every locked split gate, including WDDM and counted warm performance.
-4. Authorize exactly one new RSI-0G cycle; do not retry or promote automatically.
+2. Define one fixed trace schema and a trace-disabled versus trace-enabled candidate comparison.
+3. Keep tracing optional and compiled out in normal builds.
+4. Measure first-request and per-token placement/synchronization costs without modifying stable inference.
 ```
 
 ## Unlock target
@@ -53,4 +54,4 @@ Minimum required work:
 SUPERVISED_BOUNDED_RSI_AVAILABLE
 ```
 
-This unlock is not available until RSI-0E, RSI-0F, and RSI-0G all pass.
+Unlocked: RSI-0E, RSI-0F, and RSI-0G are all supported by executed evidence. Automatic promotion remains disabled.
