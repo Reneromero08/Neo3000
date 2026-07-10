@@ -30,21 +30,21 @@ Stable worktree running Neo3000
 
 ## Current boundary
 
-RSI-0E is implemented and RSI-0F has passed. The fresh RSI-0G inert-fixture cycle reached the locked WDDM gate successfully, then rejected at the first text-quality boundary. Matched stable and clean-candidate diagnostics show that `max_tokens` is a shared completion budget under reasoning auto: both emit reasoning only through 192 tokens and final content at 256. The next objective is **review a narrow transport-versus-reasoning evaluator repair before authorizing another RSI-0G cycle**.
+RSI-0E is implemented and RSI-0F has passed. The shared-budget boundary is repaired in the evaluator without weakening content, reasoning, WDDM, or warm-performance requirements. Stable and a clean candidate proved the split transport, reasoning, and warm-performance gates. The next objective is **authorize one fresh RSI-0G acceptance cycle under the locked repaired gates**.
 
 Do not begin autonomous RSI. Do not modify stable inference logic. Do not promote candidates automatically.
 
 ## Next exact action
 
-The stable control and clean manual candidate both stop at 64/96/128/192 completion tokens with `finish_reason=length`, reasoning present, and empty final content; both produce `NEO3000 ONLINE` at 256 with `finish_reason=stop`. The runtime documents request-level `chat_template_kwargs: {"enable_thinking": false}`, and a stable 64-token diagnostic using that field returned final content in 8 completion tokens with no reasoning. This proves final-content transport can be isolated without discarding the separate auto-reasoning requirement. Matched candidate first/warm decode was 15.84/16.23/15.58 TPS and stable repeated decode was 16.61/16.11/15.41 TPS, so the 10 TPS floor is not presently shown to be cold-state invalid.
+The transport request now uses only documented `chat_template_kwargs: {"enable_thinking": false}` with the unchanged 64-token exact response; stable passed 3/3 and the clean candidate passed, each with eight completion tokens and no reasoning. The auto-reasoning request now has its matched 768-token shared budget and requires both nonempty reasoning plus `NEO3000 REASONING OK`; stable and candidate passed. Warm performance uses that long deterministic request as one unscored warmup plus two counted runs, preserving the 10 TPS floor; stable counted 16.33/17.03 TPS and candidate counted 17.23/17.76 TPS. Candidate PID/listener `29180` remained below the WDDM ceiling at 2,194.88 MiB across 67 valid samples, then tore down cleanly while stable PID `31188` stayed healthy.
 
 Minimum required work:
 
 ```text
 1. Keep the stable server and stable worktree unchanged.
-2. Review a narrow evaluator repair: the exact-content transport request may use documented request-level `enable_thinking=false`, while the separate reasoning request remains auto and requires nonempty `reasoning_content`.
-3. Prove that repair against stable and a clean candidate; do not reduce the exact-content, WDDM, or warm-performance requirements.
-4. Authorize exactly one new RSI-0G cycle only after the repaired two-gate behavior is independently evidenced.
+2. Reapply only the inert `common/` fixture in the candidate worktree.
+3. Verify preflight and every locked split gate, including WDDM and counted warm performance.
+4. Authorize exactly one new RSI-0G cycle; do not retry or promote automatically.
 ```
 
 ## Unlock target

@@ -4,7 +4,7 @@
 **Current RSI level:** Level 0, Pi-assisted development  
 **Baseline evidence through:** `432e8f773cde782cab6d478ad5afccb15816cbb4`  
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`  
-**Next exact boundary:** review and authorize a transport-versus-reasoning evaluator repair that preserves both gates before another RSI-0G cycle
+**Next exact boundary:** authorize one fresh RSI-0G acceptance cycle under the repaired, locked transport/reasoning/warm-performance gates
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -157,7 +157,7 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Confirmed the compact failure record is accurate in `lab/results.jsonl`.
 - [x] Restored the candidate worktree cleanly; the next task is resumable.
 
-## RSI-0G. Prove one supervised acceptance cycle [BLOCKED: shared reasoning budget]
+## RSI-0G. Prove one supervised acceptance cycle [READY FOR ONE AUTHORIZED CYCLE]
 
 - [x] Started from a healthy stable server.
 - [x] Applied an inert file only within the allowed candidate path `common/`.
@@ -169,6 +169,9 @@ Selected approach: **Option A, track the pinned imported runtime as one delibera
 - [x] Matched stable and clean-candidate diagnostics classify the text failure as shared completion-budget exhaustion: under `--reasoning auto`, both stop at 64/96/128/192 tokens with reasoning only and emit `NEO3000 ONLINE` at 256 tokens without a source or server change.
 - [x] The pinned runtime documents request-level `chat_template_kwargs.enable_thinking=false`; stable returned exact final content in 8 completion tokens at the same 64-token cap. The final-content transport probe can disable thinking only if a separate auto-reasoning gate remains mandatory.
 - [x] Matched candidate first/warm decode measurements (15.84, 16.23, 15.58 TPS) and stable repeated measurements (16.61, 16.11, 15.41 TPS) are above 10 TPS; the prior 9.509 TPS observation does not establish that the locked floor is a cold-performance threshold.
+- [x] Split evaluator proof: 64-token transport and three-turn repeat use documented request-level reasoning-off with strict exact content; auto-reasoning requires nonempty `reasoning_content` and exact final content at its matched 768-token budget; one warmup is unscored and two 10-TPS counted warm runs are required.
+- [x] Stable proof passed: transport 3/3 exact, reasoning 16.91 TPS, warm counted performance 16.33/17.03 TPS.
+- [x] Clean candidate proof passed: transport exact, reasoning 15.98 TPS, warm counted performance 17.23/17.76 TPS; PID/listener `29180`, 67 valid WDDM samples, 2,194.88 MiB peak, and full teardown/stable-integrity checks passed.
 - [ ] Confirm every declared gate passes.
 - [ ] Mark it reviewable rather than promoting it.
 - [ ] Confirm exact diff and evidence are inspectable.
@@ -254,4 +257,4 @@ Do not begin until RSI-0 closes.
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: obtain review for a narrow evaluator repair that makes the exact-content transport probe request-level reasoning-off while retaining a separate reasoning-auto gate, then prove the repair on stable and clean candidate before authorizing one RSI-0G cycle.
+- [ ] Next task: authorize exactly one fresh RSI-0G acceptance cycle using the inert allowed-path fixture under the locked split transport, reasoning, WDDM, and warm-performance gates.

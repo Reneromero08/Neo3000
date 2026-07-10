@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "522bce4bca785a626b4a8b7ad393c4e680ea1628",
+  "baseline_source_commit": "cffdef68ca8a1cc3f3e55de9ebca54179d20a182",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -23,8 +23,14 @@
   "controller_files": [
     "scripts/neo_loop.py"
   ],
-  "evaluator_sha256": "a20d938731286cd9a488e8cd11aea7434b96231a7bfb36bdc26742df27b1f850",
-  "generated_at": "2026-07-09T23:22:51.318454+00:00",
+  "evaluator_sha256": "6031e8622e882df21c3abab77d383b790fd7f7d14da4d9f915e96c9d6293ba47",
+  "gate_definition_hashes": {
+    "reasoning-preservation-v1": "750a7b0041c13b4407f5d373069f6bcb3fe1d0701504f7bae5bb7c64fbc5d5fe",
+    "repeat-final-content-v1": "2737d28ec7947d841bf6c5e07221f6ac453f98150a83b9a9c29c43da1a4b7460",
+    "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
+    "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
+  },
+  "generated_at": "2026-07-10T00:00:48.399707+00:00",
   "model_identity": {
     "alias": "agents-a1",
     "architecture": "qwen35moe",
@@ -36,16 +42,16 @@
     ".gitignore": "9af6447e5ed5e79e7ce3f4374aab3ef5694ff38376e5a3df080378817f5e206c",
     "AGENTS.md": "d0c4f2292f8e89f94ff79fe7b1a3b678307781f83fdbbab398abc7fbfd79b8e5",
     "ROADMAP.md": "421f2271cdc91d5a48b77518775001afd57858b2248056ac078a87e1678eead0",
-    "TASKS.md": "d904e13759641e569210f8974db066ebcc0b5a7871a70a43905ba014be14926b",
+    "TASKS.md": "267e0a3c58a9fe43c15786cdc267cfd27701f10ddc0cd21f2f3fe77d9b8f506b",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "6afd4dd7951254d19ca88749f56a35776b8b874ce9267a9da4d538c0172fb936",
-    "lab/EVALUATOR.json": "a20d938731286cd9a488e8cd11aea7434b96231a7bfb36bdc26742df27b1f850",
-    "lab/GOAL.md": "ef83d39dd5c298f16c4d74d0353c926a9cfbe4b95891d68a9242f55e36e7cb82",
-    "scripts/baseline_harness.py": "555158a325e091c90f8af845f4a81966a5e8cda56da456e325eb2095a7902fbf",
+    "lab/CHECKPOINT.md": "79856ad12eac8ab4c0b273936e42162d587d75ea56befcf52a3f55f2ce64f360",
+    "lab/EVALUATOR.json": "6031e8622e882df21c3abab77d383b790fd7f7d14da4d9f915e96c9d6293ba47",
+    "lab/GOAL.md": "26706f82d6a5812614d4b3542ce11fd49811c3e1872bc2b7e9db35f3a9779e6a",
+    "scripts/baseline_harness.py": "78416aac1c35cc001f2481e4814342ed9bce8393c240c87986442173ee8c31dc",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "7b45a9d194962484c4b41b243928eb053386cea2467ff929735d0634f0ba0600",
     "scripts/context_matrix.py": "92ee85869afc2b87d98cd70f06b5e0ddfdb481ae89eb65561154dfcab0cae1ed",
-    "scripts/neo_loop.py": "7c93195002a73bb2c4424253830337135062c247eb67470f29d801953bc06d0e",
+    "scripts/neo_loop.py": "ca52cc8d850e178a55a5b750da6d5a75ba67b92296e576f10cde1fd11ed39d08",
     "scripts/rolling_decode.py": "29c6e23e226a13cebbb3eedaec9339765db86a69893898ff4ea86971916e290a",
     "scripts/run_candidate.ps1": "04b28fca1d2aae754bb3bca0f1efcb3f8166a8b2fd38da2a37252affb70394a0",
     "scripts/run_server.ps1": "831913a346668b82c58205742b5e45840571c96dde1dbf28d93807726617f0a4"
@@ -70,7 +76,7 @@
     "lab/EVALUATOR.lock.json",
     "lab/results.jsonl"
   ],
-  "schema_version": 1,
+  "schema_version": 2,
   "stable_launch": {
     "batch": 512,
     "cache_kv": "f16",

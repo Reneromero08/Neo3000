@@ -308,47 +308,28 @@ def write_result(path: Path, result: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base-url", default="http://127.0.0.1:9292/v1")
-    parser.add_argument("--model", default="agents-a1")
-    parser.add_argument("--prompt", default=DEFAULT_PROMPT)
-    parser.add_argument("--prompt-file", type=Path)
-    parser.add_argument("--expect-content", help="required substring in each streamed final-content response")
-    parser.add_argument("--max-tokens", type=int, default=64)
-    parser.add_argument("--temperature", type=float, default=0.0)
-    parser.add_argument("--repeat", type=int, default=3)
-    parser.add_argument("--timeout", type=float, default=600.0)
-    parser.add_argument("--cache-prompt", action="store_true")
-    parser.add_argument("--tool-test", action="store_true")
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-    args = parser.parse_args()
-
-    if args.repeat < 1:
-        raise HarnessError("--repeat must be at least 1")
-    if args.max_tokens < 1:
-        raise HarnessError("--max-tokens must be at least 1")
-
-    root_url = normalize_base_url(args.base_url)
-    api_url = root_url + "/v1"
-    prompt = args.prompt_file.read_text(encoding="utf-8") if args.prompt_file else args.prompt
-
-    health_status, health = request_json("GET", root_url + "/health", timeout=30.0)
-    models_status, models = request_json("GET", api_url + "/models", timeout=30.0)
-    model_ids = extract_model_ids(models)
-    if args.model not in model_ids:
-        raise HarnessError(f"model {args.model!r} not found; server reported {model_ids}")
-
+def build_request_payload(
+    model: str,
+    prompt: str,
+    temperature: float,
+    max_tokens: int,
+    cache_prompt: bool,
+    tool_test: bool,
+    disable_thinking: bool,
+) -> dict[str, Any]:
+    """Build the narrow locked request surface used by every harness probe."""
     payload: dict[str, Any] = {
-        "model": args.model,
+        "model": model,
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": args.temperature,
-        "max_tokens": args.max_tokens,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
         "stream": True,
         "stream_options": {"include_usage": True},
-        "cache_prompt": args.cache_prompt,
+        "cache_prompt": cache_prompt,
     }
-    if args.tool_test:
+    if disable_thinking:
+        payload["chat_template_kwargs"] = {"enable_thinking": False}
+    if tool_test:
         payload["messages"] = [{
             "role": "user",
             "content": (
@@ -370,6 +351,62 @@ def main() -> int:
             },
         }]
         payload["tool_choice"] = "required"
+    return payload
+
+
+def thinking_metadata(payload: dict[str, Any]) -> dict[str, Any]:
+    kwargs = payload.get("chat_template_kwargs")
+    return {
+        "thinking_mode": "disabled" if kwargs == {"enable_thinking": False} else "auto",
+        "chat_template_kwargs": kwargs,
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--base-url", default="http://127.0.0.1:9292/v1")
+    parser.add_argument("--model", default="agents-a1")
+    parser.add_argument("--prompt", default=DEFAULT_PROMPT)
+    parser.add_argument("--prompt-file", type=Path)
+    parser.add_argument("--expect-content", help="required substring in each streamed final-content response")
+    parser.add_argument("--max-tokens", type=int, default=64)
+    parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--repeat", type=int, default=3)
+    parser.add_argument("--timeout", type=float, default=600.0)
+    parser.add_argument("--cache-prompt", action="store_true")
+    parser.add_argument("--tool-test", action="store_true")
+    parser.add_argument(
+        "--disable-thinking",
+        action="store_true",
+        help="send only chat_template_kwargs.enable_thinking=false for final-content transport probes",
+    )
+    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    args = parser.parse_args()
+
+    if args.repeat < 1:
+        raise HarnessError("--repeat must be at least 1")
+    if args.max_tokens < 1:
+        raise HarnessError("--max-tokens must be at least 1")
+
+    root_url = normalize_base_url(args.base_url)
+    api_url = root_url + "/v1"
+    prompt = args.prompt_file.read_text(encoding="utf-8") if args.prompt_file else args.prompt
+
+    health_status, health = request_json("GET", root_url + "/health", timeout=30.0)
+    models_status, models = request_json("GET", api_url + "/models", timeout=30.0)
+    model_ids = extract_model_ids(models)
+    if args.model not in model_ids:
+        raise HarnessError(f"model {args.model!r} not found; server reported {model_ids}")
+
+    payload = build_request_payload(
+        args.model,
+        prompt,
+        args.temperature,
+        args.max_tokens,
+        args.cache_prompt,
+        args.tool_test,
+        args.disable_thinking,
+    )
 
     measurements: list[StreamMeasurement] = []
     for repeat in range(1, args.repeat + 1):
@@ -391,7 +428,7 @@ def main() -> int:
         )
 
     result: dict[str, Any] = {
-        "schema_version": 2,
+        "schema_version": 3,
         "captured_at": utc_now(),
         "neo3000_commit": git_head(),
         "machine": {
@@ -409,11 +446,13 @@ def main() -> int:
         },
         "request": {
             "prompt_source": str(args.prompt_file) if args.prompt_file else "inline",
+            "prompt": payload["messages"][0]["content"],
             "prompt_characters": len(prompt),
             "max_tokens": args.max_tokens,
             "temperature": args.temperature,
             "cache_prompt": args.cache_prompt,
             "tool_test": args.tool_test,
+            **thinking_metadata(payload),
         },
         "measurements": [asdict(item) for item in measurements],
         "summary": summarize(measurements),
@@ -427,6 +466,7 @@ def main() -> int:
     else:
         expected = args.expect_content or (DEFAULT_PROMPT.split(":", 1)[-1].strip() if prompt == DEFAULT_PROMPT else None)
         result["expected_content"] = expected
+        result["request"]["expected_content"] = expected
         result["exact_response_passed"] = all(
             expected in item.content for item in measurements
         ) if expected else None

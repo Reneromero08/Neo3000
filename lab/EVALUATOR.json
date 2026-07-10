@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "frozen_at": "2026-07-02T00:00:00Z",
   "model": {
     "alias": "agents-a1",
@@ -94,6 +94,68 @@
       "text": "Call the neo3000_probe tool exactly once with status set to ok. Do not answer in plain text."
     }
   ],
+  "gates": {
+    "transport": {
+      "id": "transport-final-content-v1",
+      "prompt": "Reply with exactly: NEO3000 ONLINE",
+      "expected_content": "NEO3000 ONLINE",
+      "max_tokens": 64,
+      "temperature": 0.0,
+      "thinking_mode": "disabled",
+      "chat_template_kwargs": {"enable_thinking": false},
+      "reasoning_required": false,
+      "exact_content_required": true,
+      "performance_scored": false,
+      "warmup_count": 0,
+      "counted_run_count": 1,
+      "min_decode_tps": null
+    },
+    "reasoning": {
+      "id": "reasoning-preservation-v1",
+      "prompt": "Reason briefly, then reply with exactly: NEO3000 REASONING OK",
+      "expected_content": "NEO3000 REASONING OK",
+      "max_tokens": 768,
+      "temperature": 0.0,
+      "thinking_mode": "auto",
+      "chat_template_kwargs": null,
+      "reasoning_required": true,
+      "exact_content_required": true,
+      "performance_scored": false,
+      "warmup_count": 0,
+      "counted_run_count": 1,
+      "min_decode_tps": null
+    },
+    "warm_performance": {
+      "id": "warm-decode-performance-v1",
+      "prompt": "Reason briefly, then reply with exactly: NEO3000 REASONING OK",
+      "expected_content": "NEO3000 REASONING OK",
+      "max_tokens": 768,
+      "temperature": 0.0,
+      "thinking_mode": "auto",
+      "chat_template_kwargs": null,
+      "reasoning_required": true,
+      "exact_content_required": true,
+      "performance_scored": true,
+      "warmup_count": 1,
+      "counted_run_count": 2,
+      "min_decode_tps": 10.0
+    },
+    "repeat": {
+      "id": "repeat-final-content-v1",
+      "prompt": "Reply with exactly: NEO3000 ONLINE",
+      "expected_content": "NEO3000 ONLINE",
+      "max_tokens": 64,
+      "temperature": 0.0,
+      "thinking_mode": "disabled",
+      "chat_template_kwargs": {"enable_thinking": false},
+      "reasoning_required": false,
+      "exact_content_required": true,
+      "performance_scored": false,
+      "warmup_count": 0,
+      "counted_run_count": 3,
+      "min_decode_tps": null
+    }
+  },
   "candidate_editable_paths": {
     "description": "Candidates may only modify files under these paths.",
     "paths": [
@@ -124,7 +186,7 @@
   },
   "performance": {
     "min_decode_tps": 10.0,
-    "description": "Minimum candidate decode speed for every smoke, reasoning, and repeated-turn gate."
+    "description": "Minimum candidate decode speed for declared counted warm-performance runs only."
   },
   "quality_gates": {
     "health": "HTTP 200 at /health",

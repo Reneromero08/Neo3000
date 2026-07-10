@@ -70,6 +70,18 @@ def sha256_file(path: Path) -> str:
     return sha256_bytes(path.read_bytes()) if path.is_file() else "MISSING"
 
 
+def canonical_json_bytes(value: Any) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def gate_definition_hashes(evaluator: dict[str, Any]) -> dict[str, str]:
+    gates = evaluator.get("gates", {})
+    return {
+        gate["id"]: sha256_bytes(canonical_json_bytes(gate))
+        for gate in gates.values()
+    }
+
+
 def load_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise NeoLoopError(f"missing required file: {path}")
@@ -110,7 +122,7 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         if path not in LOCK_DYNAMIC_PATHS
     )
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "generated_at": utc_now(),
         "evaluator_sha256": sha256_file(EVALUATOR_PATH),
         "protected_file_hashes": {path: sha256_file(ROOT / path) for path in hashed_files},
@@ -118,6 +130,7 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
             prompt["id"]: sha256_bytes(prompt["text"].encode("utf-8"))
             for prompt in evaluator["inline_prompt_sources"]
         },
+        "gate_definition_hashes": gate_definition_hashes(evaluator),
         "model_identity": evaluator["model"],
         "baseline_source_commit": git(ROOT, "rev-parse", "HEAD"),
         "stable_launch": evaluator["stable_launch"],
@@ -137,7 +150,7 @@ def write_lock() -> None:
 
 def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     lock = load_json(LOCK_PATH)
-    if lock.get("schema_version") != 1:
+    if lock.get("schema_version") != 2:
         raise NeoLoopError("unsupported evaluator lock schema")
     if lock.get("evaluator_sha256") != sha256_file(EVALUATOR_PATH):
         raise NeoLoopError("evaluator manifest differs from its lockfile")
@@ -158,6 +171,12 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         actual = sha256_bytes(prompt["text"].encode("utf-8"))
         if expected != actual:
             raise NeoLoopError(f"benchmark prompt changed: {prompt['id']} (expected {expected}, actual {actual})")
+    expected_gates = lock.get("gate_definition_hashes")
+    if not isinstance(expected_gates, dict):
+        raise NeoLoopError("lockfile missing gate definition hashes")
+    actual_gates = gate_definition_hashes(evaluator)
+    if expected_gates != actual_gates:
+        raise NeoLoopError("evaluator gate definitions differ from their lockfile")
     return lock
 
 
@@ -469,7 +488,21 @@ def run_harness(port: int, model: str, output: Path, args: list[str], timeout: i
     return process.returncode, result
 
 
-def validate_smoke(report: dict[str, Any], require_reasoning: bool, min_tps: float) -> tuple[bool, str]:
+def gate_harness_args(gate: dict[str, Any], repeat: int, timeout: int) -> list[str]:
+    args = [
+        f"--prompt={gate['prompt']}",
+        f"--expect-content={gate['expected_content']}",
+        f"--max-tokens={gate['max_tokens']}",
+        f"--temperature={gate['temperature']}",
+        f"--repeat={repeat}",
+        f"--timeout={timeout}",
+    ]
+    if gate["thinking_mode"] == "disabled":
+        args.append("--disable-thinking")
+    return args
+
+
+def validate_smoke(report: dict[str, Any], require_reasoning: bool, min_tps: float | None) -> tuple[bool, str]:
     summary = report.get("summary", {})
     measurements = report.get("measurements", [])
     if not summary.get("all_http_200") or not summary.get("all_streamed_multiple_events"):
@@ -480,10 +513,16 @@ def validate_smoke(report: dict[str, Any], require_reasoning: bool, min_tps: flo
         return False, "malformed text payload"
     if require_reasoning and not all(isinstance(item.get("reasoning_content"), str) and item["reasoning_content"] for item in measurements):
         return False, "reasoning content missing or malformed"
-    tps = summary.get("median_reported_tokens_per_second")
-    if not isinstance(tps, (int, float)) or tps < min_tps:
-        return False, f"performance gate failed: {tps!r} TPS < {min_tps}"
+    if min_tps is not None:
+        tps = summary.get("median_reported_tokens_per_second")
+        if not isinstance(tps, (int, float)) or tps < min_tps:
+            return False, f"performance gate failed: {tps!r} TPS < {min_tps}"
     return True, "ok"
+
+
+def validate_gate(report: dict[str, Any], gate: dict[str, Any], score_performance: bool) -> tuple[bool, str]:
+    minimum = gate["min_decode_tps"] if score_performance else None
+    return validate_smoke(report, gate["reasoning_required"], minimum)
 
 
 def cancellation_gate(port: int, model: str, timeout: int) -> bool:
@@ -588,28 +627,32 @@ def cycle(declared_hypothesis: str) -> CycleResult:
             evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
             return CycleResult("reject", memory_gate() or "candidate-memory-ceiling", candidate_commit, evidence)
 
-        smoke_file = candidate_runtime / "smoke.json"
-        smoke_rc, smoke = run_harness(candidate_port, launch["model_alias"], smoke_file, ["--repeat=1", "--max-tokens=64", f"--timeout={timeouts['benchmark_seconds']}"], timeouts["benchmark_seconds"], memory_gate)
-        evidence["smoke"] = smoke
+        gates = evaluator["gates"]
+        transport_gate = gates["transport"]
+        smoke_file = candidate_runtime / "transport.json"
+        smoke_rc, smoke = run_harness(
+            candidate_port,
+            launch["model_alias"],
+            smoke_file,
+            gate_harness_args(transport_gate, transport_gate["counted_run_count"], timeouts["benchmark_seconds"]),
+            timeouts["benchmark_seconds"],
+            memory_gate,
+        )
+        evidence["transport"] = smoke
         if memory_gate():
             evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
             return CycleResult("reject", memory_gate() or "candidate-memory-ceiling", candidate_commit, evidence)
-        smoke_ok, smoke_reason = validate_smoke(smoke.get("report", {}), False, evaluator["performance"]["min_decode_tps"])
+        smoke_ok, smoke_reason = validate_gate(smoke.get("report", {}), transport_gate, False)
         if smoke_rc or not smoke_ok:
             return CycleResult("reject", smoke_reason, candidate_commit, evidence)
 
+        reasoning_gate = gates["reasoning"]
         reasoning_file = candidate_runtime / "reasoning.json"
         reasoning_rc, reasoning = run_harness(
             candidate_port,
             launch["model_alias"],
             reasoning_file,
-            [
-                "--prompt=Reason briefly, then reply with exactly: NEO3000 REASONING OK",
-                "--expect-content=NEO3000 REASONING OK",
-                "--repeat=1",
-                "--max-tokens=128",
-                f"--timeout={timeouts['benchmark_seconds']}",
-            ],
+            gate_harness_args(reasoning_gate, reasoning_gate["counted_run_count"], timeouts["benchmark_seconds"]),
             timeouts["benchmark_seconds"],
             memory_gate,
         )
@@ -617,9 +660,7 @@ def cycle(declared_hypothesis: str) -> CycleResult:
         if memory_gate():
             evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
             return CycleResult("reject", memory_gate() or "candidate-memory-ceiling", candidate_commit, evidence)
-        reasoning_ok, reasoning_reason = validate_smoke(
-            reasoning.get("report", {}), True, evaluator["performance"]["min_decode_tps"]
-        )
+        reasoning_ok, reasoning_reason = validate_gate(reasoning.get("report", {}), reasoning_gate, False)
         if reasoning_rc or not reasoning_ok:
             return CycleResult("reject", reasoning_reason, candidate_commit, evidence)
 
@@ -634,15 +675,56 @@ def cycle(declared_hypothesis: str) -> CycleResult:
 
         if not cancellation_gate(candidate_port, launch["model_alias"], timeouts["benchmark_seconds"]):
             return CycleResult("reject", "cancellation-regression", candidate_commit, evidence)
+        repeat_gate = gates["repeat"]
         repeat_file = candidate_runtime / "repeat.json"
-        repeat_rc, repeat = run_harness(candidate_port, launch["model_alias"], repeat_file, ["--repeat=3", "--max-tokens=64", f"--timeout={timeouts['benchmark_seconds']}"], timeouts["benchmark_seconds"], memory_gate)
+        repeat_rc, repeat = run_harness(
+            candidate_port,
+            launch["model_alias"],
+            repeat_file,
+            gate_harness_args(repeat_gate, repeat_gate["counted_run_count"], timeouts["benchmark_seconds"]),
+            timeouts["benchmark_seconds"],
+            memory_gate,
+        )
         evidence["repeat"] = repeat
         if memory_gate():
             evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
             return CycleResult("reject", memory_gate() or "candidate-memory-ceiling", candidate_commit, evidence)
-        repeat_ok, repeat_reason = validate_smoke(repeat.get("report", {}), False, evaluator["performance"]["min_decode_tps"])
+        repeat_ok, repeat_reason = validate_gate(repeat.get("report", {}), repeat_gate, False)
         if repeat_rc or not repeat_ok:
             return CycleResult("reject", f"repeated-turn-regression: {repeat_reason}", candidate_commit, evidence)
+        performance_gate = gates["warm_performance"]
+        warmup_file = candidate_runtime / "warmup.json"
+        warmup_rc, warmup = run_harness(
+            candidate_port,
+            launch["model_alias"],
+            warmup_file,
+            gate_harness_args(performance_gate, performance_gate["warmup_count"], timeouts["benchmark_seconds"]),
+            timeouts["benchmark_seconds"],
+            memory_gate,
+        )
+        evidence["warm_performance_warmup"] = warmup
+        if memory_gate():
+            evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
+            return CycleResult("reject", memory_gate() or "candidate-memory-ceiling", candidate_commit, evidence)
+        warmup_ok, warmup_reason = validate_gate(warmup.get("report", {}), performance_gate, False)
+        if warmup_rc or not warmup_ok:
+            return CycleResult("reject", f"warmup-regression: {warmup_reason}", candidate_commit, evidence)
+        performance_file = candidate_runtime / "warm-performance.json"
+        performance_rc, performance = run_harness(
+            candidate_port,
+            launch["model_alias"],
+            performance_file,
+            gate_harness_args(performance_gate, performance_gate["counted_run_count"], timeouts["benchmark_seconds"]),
+            timeouts["benchmark_seconds"],
+            memory_gate,
+        )
+        evidence["warm_performance"] = performance
+        if memory_gate():
+            evidence["candidate_memory"] = sampler.evidence(memory_config["candidate_vram_mib_ceiling"])
+            return CycleResult("reject", memory_gate() or "candidate-memory-ceiling", candidate_commit, evidence)
+        performance_ok, performance_reason = validate_gate(performance.get("report", {}), performance_gate, True)
+        if performance_rc or not performance_ok:
+            return CycleResult("reject", performance_reason, candidate_commit, evidence)
         return CycleResult("reviewable-accept", "all-safety-and-quality-gates-passed", candidate_commit, evidence)
     finally:
         if sampler:
