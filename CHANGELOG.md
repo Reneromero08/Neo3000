@@ -19,7 +19,7 @@ HoloState-v1 integration verdict: INCONCLUSIVE
 HoloState-v1 budget qualification: NO PASS THROUGH 2048
 HoloState worker v1: INSTRUMENTATION REJECT; FAST/DEEP CAPABILITY UNTESTED
 HoloState worker v2: EXECUTED ONCE / INCONCLUSIVE BEFORE CANARY
-HoloState worker v3: PROTECTED READINESS INTEGRATION PREPARED / NOT EXECUTED
+HoloState worker v3: READINESS PASS / CANARY INSTRUMENTATION REJECT / FAST-DEEP UNTESTED
 Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
@@ -45,8 +45,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - The one-shot HoloState-v1 raw `/completion` qualification is complete: `1024, 1280, 1536, 2048` all exhausted without the exact final marker. This does not prove `reasoning_content` attribution. No budget was selected and validation-v2 remains unattempted.
 - HoloState-v1.1 executed once and stopped at Root A warm on missing token instrumentation. Its original result fields remain Fast=`reject` / Deep=`inconclusive`; later adjudication is protocol instrumentation-reject with both capabilities untested/inconclusive. V1 cannot be retried.
 - Worker protocol v2 ran exactly once and stopped during sidecar readiness on `stable-listener-query-timeout`, before its canary. It cannot be retried; no parser or model-capability conclusion is supported.
-- Worker protocol v3 is separately authorized to test only listener-readiness resilience while preserving worker-v2 capability semantics and all prior evidence exactly.
-- V3 has distinct one-shot readiness and capability evidence boundaries. It has not executed; all availability locks remain unchanged.
+- Worker protocol v3 ran once: checked readiness passed, then its parser canary instrumentation rejected on missing nonempty token arrays and completion-count mismatch. It cannot be retried; Fast and Deep remain untested/inconclusive.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
@@ -58,6 +57,15 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Readiness failure can create only readiness evidence. Capability attempt/result/ledger creation requires a frozen readiness pass; failed ownership, restoration, ledger, evidence-preservation, or repository-isolation gates cannot unlock availability.
 - Integration protection passes compilation; 18 listener, 10 readiness, 102 HoloState, 11 trace, 9 evaluator, and 5 WDDM tests. Tokenizer-only Root A/B rendering is 8,131/4,408 tokens inside unchanged bounds.
 - No v3 live command ran during integration. No readiness, canary, root, Fast, repeat, Deep, PID, query, memory, or verdict outcome is claimed here.
+
+### HoloState worker protocol v3 executed once
+
+- Exact protocol commit `b45249c6620c2645232883c5035b260683706dcd` passed protected main preflight before the single invocation; complete protocol SHA-256 is `f89c0151d5d27f142ab3caf73f164fa5d9eab6a50ef5e8e65c575d3bca0dcc7c`.
+- Readiness passed in 29.61 seconds after 106 non-listener polls. All 16 checked listener queries passed first attempt in 0.015-0.032 seconds with stable PID `32684`, sidecar PID `42236`, and zero query failures.
+- The canary returned exact `TOKEN ARRAY CANARY`, empty reasoning, normal stop, and five completion tokens. Ten bounded ledger events contained nine absent token arrays and one empty final array, so generated token count was zero and the canary rejected as `stream-token-count-mismatch`.
+- No root warm, Fast, repeat, or Deep request ran. Fast/Deep remain inconclusive; every HoloState availability state and CatalyticSwarm-0 remain locked; automatic promotion is disabled.
+- WDDM recorded 14 exact-PID samples with a 2,250.88 MiB peak and no telemetry loss. All ownership, resource, ledger, cleanup, frozen-evidence, prior-evidence, stable, and candidate-isolation gates passed; five retirement samples were empty and port 9494 retired.
+- Readiness/attempt/result/ledger SHA-256 values are `6C761F40E6EBCD43B608218CC84D0AA1F75D2E1FDCEB15EB9DC103168E6EFCBF`, `4D70D8E53056A2BB2A00320051855B4D612547150A5FC68C068D17DEC66EFBFE`, `387E82B02BA8F6992111722595AEE05055A979A54A8D2EE6D9F5A1EE38C645E3`, and `26D65B9F474EF84B3F9483D6DDB1838280F1D54D476FDF14B5595A624EA5A583`. V3 is no-retry.
 
 ### HoloState-v1.1 message-boundary protocol prepared
 

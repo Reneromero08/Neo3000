@@ -1007,13 +1007,15 @@ class WorkerProtocolV3ContractTests(unittest.TestCase):
                 )
 
     def test_v3_evidence_and_lock_are_optional_but_paired(self) -> None:
-        baseline_lock = neo_loop.make_lock(self.evaluator)
+        without_evidence = copy.deepcopy(self.evaluator)
+        without_evidence.pop("holostate_worker_protocol_v3_evidence", None)
+        baseline_lock = neo_loop.make_lock(without_evidence)
         self.assertNotIn("holostate_worker_protocol_v3_evidence_sha256", baseline_lock)
         evaluator = copy.deepcopy(self.evaluator)
-        evaluator["holostate_worker_protocol_v3_evidence"] = {
-            "schema_version": 3,
-            "readiness_v3": "pass",
-        }
+        evaluator.setdefault(
+            "holostate_worker_protocol_v3_evidence",
+            {"schema_version": 3, "readiness_v3": "pass"},
+        )
         lock = neo_loop.make_lock(evaluator)
         evidence_hash = neo_loop.holostate_worker_protocol_v3_evidence_hash(evaluator)
         self.assertEqual(lock["holostate_worker_protocol_v3_evidence_sha256"], evidence_hash)
@@ -1034,7 +1036,7 @@ class WorkerProtocolV3ContractTests(unittest.TestCase):
         lock_only["holostate_worker_protocol_v3_evidence_sha256"] = "D" * 64
         with mock.patch.object(neo_loop, "load_json", return_value=lock_only):
             with self.assertRaises(neo_loop.NeoLoopError):
-                neo_loop.verify_lock(self.evaluator)
+                neo_loop.verify_lock(without_evidence)
 
     def test_v3_prior_bindings_preserve_all_historical_hashes(self) -> None:
         tracked = self.protocol["prior_evidence"]["tracked_complete_objects"]

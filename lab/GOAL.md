@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: HoloState worker protocol v3 readiness boundary
+## Checkpoint 2: HoloState worker protocol v3 executed boundary
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse is proven, while operational HoloState availability remains locked.
 
@@ -20,9 +20,9 @@ canary -> warm A -> warm B -> A1 -> B1 -> A2 -> B2 -> A1 repeat -> B1 repeat -> 
 
 Fast remains thinking-disabled at 64 tokens; Deep remains reasoning-auto at 768. A1/A2 and B1/B2 remain distinct assignments; determinism compares only A1 and B1 repeats. None of those assignments ran. Reasoning text was never persisted. Do not run v1, v2, `qualify-budget`, validation-v2, persistence, an extended proof, or any automatic retry.
 
-## Authorized bounded objective
+## Executed v3 result
 
-V3 preserves v2; it adds checked readiness and a separate marker. After pushed preflight, invoke once; a non-pass writes only readiness. No retry, persistence, validation-v2, or promotion.
+V3 ran once. Readiness passed; the exact, normal-stop canary exposed zero token IDs against five completion tokens, so instrumentation rejected before all roots and capability lanes. Preserve this no-retry boundary.
 
 ## Claim state
 

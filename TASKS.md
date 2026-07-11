@@ -2,11 +2,11 @@
 
 **Active checkpoint:** Checkpoint 2, First catalytic compute intervention
 **Current RSI level:** Level 1, supervised bounded RSI available
-**Baseline evidence through:** protocol commit `b2559f7c0c06e35a3e360b71ed13b69c4eb1eb7c`; ignored worker-v2 result `D08C4638179D6A2F0BFABE22DA2C8879377BDC6306E41ED22816FB95F45A84A7`
+**Baseline evidence through:** protocol commit `b45249c6620c2645232883c5035b260683706dcd`; ignored worker-v3 result `387E82B02BA8F6992111722595AEE05055A979A54A8D2EE6D9F5A1EE38C645E3`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. The separately authorized `holostate_worker_protocol_v3` integrates checked listener ownership and a no-query-storm readiness boundary while inheriting the complete v2 parser/capability law unchanged.
-**Next exact action:** after the single architectural integration commit is tested, pushed, and exact at `HEAD = main = origin/main`, execute worker protocol v3 exactly once if every static preclaim gate passes. Do not retry it.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. `holostate_worker_protocol_v3` executed once: readiness passed, then the parser canary instrumentation rejected on `stream-token-count-mismatch` before any root or capability request.
+**Next exact action:** preserve the v3 no-retry boundary. A future separately authorized version must causally address absent nonempty server token arrays without changing the tested capability semantics or reinterpreting Fast/Deep as tested.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -341,7 +341,7 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Classified the stop as `stable-listener-query-timeout` during sidecar readiness before the parser canary. No warm, Fast, or Deep request was attempted.
 - [x] Preserved cleanup, stable PID `32684`, candidate isolation, all five historical hashes, every availability lock, and the automatic-promotion prohibition.
 
-### HoloState worker protocol v3 [AUTHORIZED / NOT EXECUTED]
+### HoloState worker protocol v3 [EXECUTED / INSTRUMENTATION REJECT]
 
 - [x] Inspected connector branch `codex/holostate-listener-readiness-v3` at `60defbb2ffd1dfc54d40374fd529554ba0acf287`: exactly four commits ahead of protected main and exactly four new listener/readiness files under draft PR #1.
 - [x] Retained the connector parser, checked query/retry primitive, no-query-storm readiness state machine, and CPU-only tests; repaired only concrete test/review defects in runtime mocking, malformed rows, hard total windows, empty-port qualification, partial failure evidence, and post-query rechecks.
@@ -350,7 +350,13 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Require one marker-to-pass deadline, bounded checked ownership after the readiness claim, no listener subprocesses in the 250 ms model-load loop, fresh pre/post request ownership, checked pre/post teardown, exact-PID WDDM attribution, and fail-closed frozen-evidence/final-safety gates.
 - [x] Hard-retire v1/v2/qualification/validation-v2 command paths; preserve all prior ignored bytes and all five prior complete-object hashes.
 - [x] Pass compilation; 18 listener, 10 readiness, 102 HoloState, 11 trace, 9 evaluator, and 5 WDDM tests; and stable tokenizer-only Root A/B bounds at 8,131/4,408 tokens without generating output.
-- [ ] After the integration commit is pushed and exact on main, run the single authorized `audit-worker-protocol-v3` command only if every preclaim gate passes. No retry, extended proof, persistence, promotion, CUDA/model/Pi change, or stable mutation is authorized.
+- [x] Pushed exact integration commit `b45249c6620c2645232883c5035b260683706dcd`, passed protected main preflight, and invoked `audit-worker-protocol-v3` exactly once with no retry.
+- [x] Readiness passed in 29.61 seconds. Sixteen checked `netstat` queries each passed on the first attempt with zero timeout, unavailable, or wrong-owner samples; stable PID `32684` and sidecar PID `42236` remained exact.
+- [x] Executed the parser canary: exact visible `TOKEN ARRAY CANARY`, empty reasoning, and `finish_reason=stop`, but five reported completion tokens versus zero generated token IDs. Ten ledger events contained nine absent arrays and one ignored empty array, so the canary instrumentation rejected as `stream-token-count-mismatch`.
+- [x] Stopped before Root A/B warm, Fast, repeats, or Deep. All request counts for those stages remain zero and both capability verdicts remain inconclusive.
+- [x] Preserved all ownership boundaries, frozen readiness and prior evidence, clean candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, 14 exact-PID WDDM samples with a 2,250.88 MiB peak, 153,636,864 bytes host growth, clean teardown, five empty retirement samples, stable PID `32684`, and free port 9494.
+- [x] Recorded readiness/attempt/result/ledger SHA-256 values `6C761F40E6EBCD43B608218CC84D0AA1F75D2E1FDCEB15EB9DC103168E6EFCBF`, `4D70D8E53056A2BB2A00320051855B4D612547150A5FC68C068D17DEC66EFBFE`, `387E82B02BA8F6992111722595AEE05055A979A54A8D2EE6D9F5A1EE38C645E3`, and `26D65B9F474EF84B3F9483D6DDB1838280F1D54D476FDF14B5595A624EA5A583`.
+- [ ] Next task: preserve this no-retry instrumentation boundary pending separate authorization. Do not run v1, v2, v3, qualification, validation-v2, persistence, or promotion.
 
 Preserved v1 executed boundary:
 
@@ -381,4 +387,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: publish the tested v3 integration at exact main, then execute its separately versioned one-shot only if all preclaim gates pass. Do not run v1, v2, qualification, validation-v2, persistence, or any retry.
+Next task: preserve the executed v3 no-retry instrumentation boundary. Any successor must use new versioned evidence and separately authorize one causal token-array transport intervention.

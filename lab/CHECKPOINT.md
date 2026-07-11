@@ -290,7 +290,7 @@ No literal infinity claim is made. Accepted cumulative avoided evaluations, acce
 ```text
 HoloState-v1 reuse mechanism: succeeded
 HoloState-v1 raw /completion gate: no literal final marker through 2048
-Current action: integrate the separately authorized worker-v3 readiness control, then run it once only after exact pushed preclaim
+Current action: preserve the executed worker-v3 no-retry instrumentation boundary
 HoloState-v2 persistence: separate future intervention
 ```
 
@@ -346,7 +346,7 @@ The ignored v1 result and its original Fast=`reject` / Deep=`inconclusive` field
 - Attempt SHA-256 is `09A849AC35692A49DCC349110426FBD5ED9EF4BD146E723C8E750445916DE8F9`; result SHA-256 is `D08C4638179D6A2F0BFABE22DA2C8879377BDC6306E41ED22816FB95F45A84A7`. Fast and Deep are untested/inconclusive, all availability states remain locked, and v2 must not be retried.
 - Post-audit evidence binding passed 86 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus Python compilation.
 
-### HoloState worker protocol v3 [AUTHORIZED / PRE-EXECUTION]
+### HoloState worker protocol v3 [EXECUTED / INSTRUMENTATION REJECT]
 
 - Connector branch `codex/holostate-listener-readiness-v3` at `60defbb2ffd1dfc54d40374fd529554ba0acf287` is exactly four commits ahead of protected main and adds only `listener_probe.py`, `holostate_readiness.py`, and their two CPU-only test files. Draft PR #1 remains the connector review context.
 - The integrated architecture retains the connector substrate and corrects only demonstrated defects: runtime-mockable subprocess execution, malformed relevant-row rejection, hard total retry windows, exact empty-port checks, structured failure evidence, a shared stable/sidecar boundary, and non-listener rechecks after ownership queries.
@@ -355,8 +355,14 @@ The ignored v1 result and its original Fast=`reject` / Deep=`inconclusive` field
 - A readiness non-pass creates only readiness-v3 evidence, leaves Fast/Deep untested and inconclusive, and stops without retry. A pass freezes readiness evidence and binds its hash before any capability artifact is claimed.
 - V3 binds the exact v1 protocol/evidence/adjudication objects, v2 protocol/evidence objects, all eight ignored prior files, and the continued absence of validation-v2 paths. Historical files and objects remain immutable.
 - CPU-only protection passes compilation; 18 listener, 10 readiness, 102 HoloState, 11 trace, 9 evaluator, and 5 WDDM tests. Stable tokenizer-only rendering measures Root A/B at 8,131/4,408 tokens inside unchanged bounds; no output was generated.
-- No v3 live invocation has occurred. No readiness, canary, root, Fast, repeat, Deep, PID, listener, memory, or verdict result is claimed by this integration record.
-- All HoloState availability states, CatalyticSwarm-0, and automatic promotion remain locked pending executed evidence.
+- Exact integration commit `b45249c6620c2645232883c5035b260683706dcd` was pushed and passed protected preflight before the one authorized invocation. No retry occurred.
+- Readiness passed in 29.61 seconds after 106 non-listener model-load polls. Sixteen checked listener queries all passed on their first attempt in 0.015-0.032 seconds, with zero timeouts, unavailable samples, wrong owners, or other failures. Stable PID `32684` and sidecar PID `42236` were exact throughout.
+- The parser canary executed and returned exact visible `TOKEN ARRAY CANARY`, empty reasoning, `finish_reason=stop`, 5 completion tokens, and matching prompt identity. Its 10 ledger events exposed no nonempty token arrays: 9 were absent and the final one was empty. Generated token count was therefore 0, and completion-count agreement failed as `stream-token-count-mismatch`.
+- The canary is an instrumentation reject. Root A/B warm, all six Fast requests, repeats, and Deep A1 were not attempted; Fast and Deep capability remain untested/inconclusive.
+- The 5,173-byte ledger contains 10 bounded reasoning-redacted records and passed. Final WDDM evidence contains 14 exact-PID samples, a 2,360,221,696-byte / 2,250.88 MiB peak, no telemetry failure, and 153,636,864 bytes host-private growth.
+- Every required ownership boundary, cleanup, isolation, frozen readiness hash, and prior-evidence check passed. PID `42236` stopped, runtime was removed, port 9494 was empty, five retirement samples were empty, stable PID `32684` remained healthy, and candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf` remained clean.
+- Readiness/attempt/result/ledger SHA-256 values are `6C761F40E6EBCD43B608218CC84D0AA1F75D2E1FDCEB15EB9DC103168E6EFCBF`, `4D70D8E53056A2BB2A00320051855B4D612547150A5FC68C068D17DEC66EFBFE`, `387E82B02BA8F6992111722595AEE05055A979A54A8D2EE6D9F5A1EE38C645E3`, and `26D65B9F474EF84B3F9483D6DDB1838280F1D54D476FDF14B5595A624EA5A583`.
+- `readiness_v3=pass`; `worker_protocol_v3=instrumentation-reject`; Fast/Deep=`inconclusive`. Every HoloState availability state and CatalyticSwarm-0 remain locked; automatic promotion remains disabled.
 
 ### Durable persistence boundary
 
