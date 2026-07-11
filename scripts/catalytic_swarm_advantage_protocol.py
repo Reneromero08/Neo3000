@@ -169,6 +169,16 @@ def build_catalytic_swarm_1_contract() -> dict[str, Any]:
                 "same 16/8/6/2 graph; bounded public-example verifier scores visible"
             ),
         },
+        "task_root_warm": {
+            "one_common_warm_request_per_task": True,
+            "warm_request_count": TASK_COUNT,
+            "occurs_before_any_arm_for_task": True,
+            "same_public_root_for_all_four_arms": True,
+            "hidden_data_visible": False,
+            "warm_cost_excluded_from_arm_comparison_budgets": True,
+            "warm_cost_reported_separately": True,
+            "all_arms_require_observed_root_cache_reuse": True,
+        },
         "execution_order": counterbalanced_arm_order(),
         "counterbalancing": {
             "method": "four-position Latin square repeated across eight tasks",
@@ -177,6 +187,9 @@ def build_catalytic_swarm_1_contract() -> dict[str, Any]:
         "shared_transport": {
             "one_sidecar": True,
             "one_physical_lease": True,
+            "comparison_request_count": TASK_COUNT * len(ARMS) * REQUESTS_PER_ARM,
+            "task_root_warm_request_count": TASK_COUNT,
+            "total_live_request_count": TASK_COUNT * len(ARMS) * REQUESTS_PER_ARM + TASK_COUNT,
             "thinking_disabled": True,
             "deep_requests": 0,
             "temperature": 0,
