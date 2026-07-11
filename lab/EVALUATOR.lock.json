@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "88620a9c53228d794cb815c13d7dc948b681ca79",
+  "baseline_source_commit": "da04c5bf388c3d091da4e2f1aee33bf852377517",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -37,14 +37,14 @@
     "scripts/test_chat_stream_terminal_evidence.py",
     "scripts/test_chat_completion_accounting_source.py"
   ],
-  "evaluator_sha256": "0be960c87e55a3569112040251a0370a99c261980aee9b833cb34a6d6faf2b7a",
+  "evaluator_sha256": "10d506a0f73fe1f1b09e6c8ca253f4415b4e426edee1f4d29e236382d94c7fe0",
   "gate_definition_hashes": {
     "reasoning-preservation-v1": "750a7b0041c13b4407f5d373069f6bcb3fe1d0701504f7bae5bb7c64fbc5d5fe",
     "repeat-final-content-v1": "2737d28ec7947d841bf6c5e07221f6ac453f98150a83b9a9c29c43da1a4b7460",
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-11T05:57:43.875799+00:00",
+  "generated_at": "2026-07-11T06:22:49.564245+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
@@ -53,6 +53,7 @@
   "holostate_worker_protocol_v2_sha256": "c043d3084efefcbc9b369e1b770d36aef0dafcf89896d6105586564b204a0379",
   "holostate_worker_protocol_v3_evidence_sha256": "f492c26970a2e59301a4cdd14ce2fc4f0c3270ffd2a5a8fcb3ca8a7719590aaa",
   "holostate_worker_protocol_v3_sha256": "f89c0151d5d27f142ab3caf73f164fa5d9eab6a50ef5e8e65c575d3bca0dcc7c",
+  "holostate_worker_protocol_v4_evidence_sha256": "fe88a525ad82e3e007c80117d36940b1b8350a1fc2db6a7212da0fd8120823d6",
   "holostate_worker_protocol_v4_sha256": "3d57892f715b6ef4deca8c258264653affab97ccc66f897ce5ae93134164275e",
   "model_identity": {
     "alias": "agents-a1",
@@ -64,15 +65,15 @@
   "protected_file_hashes": {
     ".gitignore": "677277200afe5e3d225c83584902476116bfd1d501f81d3d64ba4381b1ef2aac",
     "AGENTS.md": "d0c4f2292f8e89f94ff79fe7b1a3b678307781f83fdbbab398abc7fbfd79b8e5",
-    "CHANGELOG.md": "8272a4ffd34a4a9f70fbd331590025c7e6c03432790bdd73a66f7b1d0ec686db",
+    "CHANGELOG.md": "5c6d7b7f86666c20668cb0c95123af7605c251ed300c95d0eda687915409ac15",
     "NEO3000.md": "b7ba87065f942d47abed19330197a843577bbd6b2fd58057a6df9de9cd7d2905",
     "README.md": "2a03600bf337aa3adf14d4c1e375b2f080d8d0bee0ae77676cf7dce3f32bf638",
-    "ROADMAP.md": "c1f9c1f232a4c71ca6ab126c8a4a88735a0262c68aef9b77f6807b950471cbed",
-    "TASKS.md": "7fb1333bf162eb41dfdb4be50c8300c3f59cc95e1e9b4ba0bd12996b063ef259",
+    "ROADMAP.md": "99378e538d46f524c70b6fbf6622e0fd816228396c026f3ab8aa76616b039a7e",
+    "TASKS.md": "a12d45a1d486996869c4e8e0c596a062ec08af8ffbd0c1c1f2df05cc2f7abf48",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "74964b0f4b22feec2dafed57127297a28786953b842280d8d71f496de1bbcc5a",
-    "lab/EVALUATOR.json": "0be960c87e55a3569112040251a0370a99c261980aee9b833cb34a6d6faf2b7a",
-    "lab/GOAL.md": "6ef0f6286b6b0abf773fec3ddf1d1380fc4a8a3949bbcbf29da7181694f9f5ce",
+    "lab/CHECKPOINT.md": "f84f3b064b3a9eddf1e01324a51f3c757c060fe5ac7dbac238b950b58c4cb1dd",
+    "lab/EVALUATOR.json": "10d506a0f73fe1f1b09e6c8ca253f4415b4e426edee1f4d29e236382d94c7fe0",
+    "lab/GOAL.md": "24cbe340ebf745b130bfc3fca3c530ece100b945aa2fd303460146d774d6c8ee",
     "scripts/baseline_harness.py": "3924efc2e8f9f8b64929c2e2c6d8453a45a49d17277c2622d293a6cb3350b618",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "7b45a9d194962484c4b41b243928eb053386cea2467ff929735d0634f0ba0600",

@@ -20,11 +20,12 @@ HoloState-v1 budget qualification: NO PASS THROUGH 2048
 HoloState worker v1: INSTRUMENTATION REJECT; FAST/DEEP CAPABILITY UNTESTED
 HoloState worker v2: EXECUTED ONCE / INCONCLUSIVE BEFORE CANARY
 HoloState worker v3: READINESS PASS / CANARY INSTRUMENTATION REJECT / FAST-DEEP UNTESTED
-HoloState worker v4: PREPARED / NOT EXECUTED
+HoloState worker v4: REVIEWABLE ACCEPT / FAST ACCEPT / DEEP REJECT
 Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
-PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
+PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
+CatalyticSwarm-0: AUTHORIZED_NOT_EXECUTED
 RSI-0F supervised rejection cycle: PASSED
 RSI-0G supervised acceptance cycle: REVIEWABLE ACCEPT
 Automatic promotion: DISABLED
@@ -47,17 +48,28 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - HoloState-v1.1 executed once and stopped at Root A warm on missing token instrumentation. Its original result fields remain Fast=`reject` / Deep=`inconclusive`; later adjudication is protocol instrumentation-reject with both capabilities untested/inconclusive. V1 cannot be retried.
 - Worker protocol v2 ran exactly once and stopped during sidecar readiness on `stable-listener-query-timeout`, before its canary. It cannot be retried; no parser or model-capability conclusion is supported.
 - Worker protocol v3 ran once: checked readiness passed, then its parser canary instrumentation rejected on missing nonempty token arrays and completion-count mismatch. It cannot be retried; Fast and Deep remain untested/inconclusive.
-- Worker protocol v4 is prepared but not executed. Its five evidence paths remain absent; Fast and Deep remain untested/inconclusive.
+- Worker protocol v4 ran exactly once with no retry. Readiness, tokenizer, canary, both roots, all Fast requests, repeats, and isolation passed; Deep independently rejected on a 768-token length stop.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
-### HoloState worker protocol v4 terminal-EOS integration prepared
+### HoloState worker protocol v4 terminal-EOS integration prepared (historical snapshot)
 
 - Imported the seven connector files from `codex/holostate-chat-token-evidence-v4` at `168fb4d0e666cbc058a59826ff9e97359889d835` without importing its sixteen intermediate commits.
 - Added fail-closed native-token, deterministic visible-retokenization, and direct terminal-EOS evidence laws. The one-token usage reconciliation never claims the unknown EOS token ID or a complete generated sequence.
 - Added bounded terminal-stop provenance to the shared stream parser, a separate no-generation tokenizer qualification, five versioned v4 evidence paths, and exact prior/source authority bindings.
-- The v3 exact-count gate is preserved as correctly followed. Pinned source subsequently reconciled four visible tokens plus one server-counted terminal EOS token; no worker capability request has executed under v4.
-- Compilation and 232 CPU-only tests pass without live generation. No v4 readiness, tokenizer, attempt, result, or stream artifact exists. All availability locks, CatalyticSwarm-0, and automatic-promotion prohibitions remain unchanged.
+- The v3 exact-count gate was preserved as correctly followed. Pinned source reconciled four visible tokens plus one server-counted terminal EOS token; at this preparation boundary no worker capability request had executed under v4.
+- Before execution, compilation and 232 CPU-only tests passed without live generation. No v4 readiness, tokenizer, attempt, result, or stream artifact existed at that boundary; all availability locks, CatalyticSwarm-0, and automatic-promotion prohibitions were unchanged.
+
+### HoloState worker protocol v4 executed once
+
+- Exact integration commit `da04c5bf388c3d091da4e2f1aee33bf852377517` passed protected main preflight before the single invocation. Readiness and no-generation tokenizer qualification passed before capability artifacts were claimed.
+- The parser canary reconciled exact visible IDs `[60738, 30094, 18916, 8378]` with five completion tokens only through the complete direct terminal-EOS gate. The EOS ID and complete generated sequence remain unknown.
+- Root A/B warmed at 8,173/4,436 tokens. Fast A1/B1/A2/B2 and exact A1/B1 repeats all passed; distinct branches and cross-root isolation passed.
+- Deep A1 retained opaque reasoning evidence but exhausted 768 tokens with `finish_reason=length` and no final content, so Deep is `reject` without invalidating Fast=`reviewable-accept`.
+- The 907-record, 618,838-byte ledger, 136-sample 2,252.88 MiB WDDM evidence, host-memory ceiling, 29 ownership boundaries, cleanup, isolation, frozen evidence/source authority, historical hashes, stable PID `32684`, and candidate integrity all passed.
+- V4 is `reviewable-accept`. `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` is unlocked; broader process-local and restart-persistent availability remain locked. `CatalyticSwarm-0` is authorized but not executed, and automatic promotion remains disabled.
+- Readiness/tokenizer/attempt/result/ledger SHA-256 values are `4B8A44B4CB3DE9355B8A3D4E3FC945DD685EA35B98F5BF0C0160DAA090249BA7`, `EB10127666CDADE0D6A8E7EF59CA7D4310B64B89619800DF245BD769666A587D`, `6197D986FD3ED030340A82300245AE0EF1249229E21162BF6796F7F614A7EA19`, `396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF`, and `CD96EE1F41F15E9953705F7DDA762D1111D60E04C828F9B157D314D789F0F104`.
+- Tracked v4 evidence and `neo-exp-0018` are bound; 232 post-audit CPU-only tests, compilation, and JSON/JSONL validation pass.
 
 ### HoloState worker protocol v3 readiness integration prepared
 

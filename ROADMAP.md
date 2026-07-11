@@ -94,11 +94,12 @@ LM Studio is **not** an unlock dependency. It may be used as optional historical
 RSI-0: CLOSED
 -> SUPERVISED_BOUNDED_RSI_AVAILABLE unlocked for Level 1 supervised work
 -> Checkpoint 1A: trace substrate remains active and paused
--> Checkpoint 2: ACTIVE; v4 prepared, not executed
+-> Checkpoint 2: ACTIVE; v4 executed once, Fast reviewable-accept, Deep reject
 -> First catalytic intervention: HoloState-v1 Live Prefix Lattice
 -> HoloState worker v1: instrumentation reject; Fast/Deep capability untested
 -> HoloState worker v2: executed once; inconclusive at readiness before canary
 -> HoloState worker v3: readiness pass; canary instrumentation reject; Fast/Deep untested
+-> HoloState worker v4: reviewable-accept; process-local micro-worker unlocked
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.

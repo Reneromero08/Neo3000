@@ -2,11 +2,11 @@
 
 **Active checkpoint:** Checkpoint 2, First catalytic compute intervention
 **Current RSI level:** Level 1, supervised bounded RSI available
-**Baseline evidence through:** protocol commit `b45249c6620c2645232883c5035b260683706dcd`; ignored worker-v3 result `387E82B02BA8F6992111722595AEE05055A979A54A8D2EE6D9F5A1EE38C645E3`
+**Baseline evidence through:** protocol commit `da04c5bf388c3d091da4e2f1aee33bf852377517`; ignored worker-v4 result `396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. A separately protected `holostate_worker_protocol_v4` is prepared but has not executed. Its sole causal intervention is source-grounded terminal-EOS accounting for thinking-disabled, text-only Chat Completions responses when native token arrays are unavailable.
-**Next exact action:** make this integration the exact pushed protected `main`, pass protected preflight, then invoke worker protocol v4 exactly once with no retry.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. `holostate_worker_protocol_v4` executed once: readiness, tokenizer, canary, both roots, and all Fast requests passed; Deep A1 rejected independently on a 768-token length stop.
+**Next exact action:** preserve the v4 no-retry boundary. `CatalyticSwarm-0` is authorized but must remain unexecuted until a separately scoped protocol; automatic promotion remains forbidden.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -358,15 +358,24 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Recorded readiness/attempt/result/ledger SHA-256 values `6C761F40E6EBCD43B608218CC84D0AA1F75D2E1FDCEB15EB9DC103168E6EFCBF`, `4D70D8E53056A2BB2A00320051855B4D612547150A5FC68C068D17DEC66EFBFE`, `387E82B02BA8F6992111722595AEE05055A979A54A8D2EE6D9F5A1EE38C645E3`, and `26D65B9F474EF84B3F9483D6DDB1838280F1D54D476FDF14B5595A624EA5A583`.
 - [x] Preserve the v3 no-retry instrumentation boundary under the separately authorized, versioned v4 successor. Do not run v1, v2, v3, qualification, validation-v2, persistence, or promotion.
 
-### HoloState worker protocol v4 [PREPARED / NOT EXECUTED]
+### HoloState worker protocol v4 [EXECUTED / REVIEWABLE ACCEPT]
 
 - [x] Import the seven-file PR #2 connector substrate from `codex/holostate-chat-token-evidence-v4` at `168fb4d0e666cbc058a59826ff9e97359889d835` without importing its sixteen connector commits.
 - [x] Repair the connector fail-closed boundary: native IDs require an available exact completion-count match; visible retokenization is repeated deterministically; and one-terminal-token reconciliation requires complete direct EOS metadata.
 - [x] Capture bounded terminal stop metadata in the shared stream parser without persisting reasoning text, including when terminal metadata precedes a later usage-only event.
 - [x] Add separately protected readiness, no-generation tokenizer, capability-attempt, result, and bounded-ledger v4 paths. Bind all v1/v2/v3 objects and ignored evidence plus pinned source and source-test identities.
 - [x] Preserve the exact v3 boundary and record that its declared exact-count law stopped correctly; pinned source later reconciled four visible tokens plus one server-counted terminal EOS token without establishing the EOS ID or a complete generated sequence.
-- [x] Pass 232 CPU-only tests plus compilation. No live inference endpoint, readiness marker, tokenizer artifact, capability attempt, result, or v4 stream ledger was created.
-- [ ] After this integration is the exact pushed protected `main` and protected preflight passes, invoke `audit-worker-protocol-v4` exactly once. Do not retry it or rerun v1, v2, v3, qualification, validation-v2, persistence, or promotion.
+- [x] Before execution, pass 232 CPU-only tests plus compilation. At that boundary no live inference endpoint, readiness marker, tokenizer artifact, capability attempt, result, or v4 stream ledger had been created.
+- [x] Pushed exact integration commit `da04c5bf388c3d091da4e2f1aee33bf852377517`, passed protected main preflight, and invoked `audit-worker-protocol-v4` exactly once. No retry occurred.
+- [x] Passed readiness in 33.015 seconds and the no-generation tokenizer qualification with repeated exact IDs `[60738, 30094, 18916, 8378]` plus exact detokenization.
+- [x] Passed the parser canary with four visible tokens, five completion tokens, usage delta one, direct terminal `eos` metadata, unknown EOS token ID, and no full-sequence claim.
+- [x] Warmed Root A/B at 8,173/4,436 tokens, then accepted Fast A1/B1/A2/B2 and exact A1/B1 repeats with 8,144/4,407 cached tokens and 21 fresh tokens per Fast request.
+- [x] Passed repeat determinism, distinct-branch, cross-root isolation, resource, ledger, ownership, cleanup, frozen-evidence, source-authority, historical-evidence, stable, and candidate gates.
+- [x] Classified Deep A1 independently as `reject`: reasoning was present, but the request exhausted 768 tokens with `finish_reason=length` and no final assistant content. The completed Fast proof survived.
+- [x] Recorded readiness/tokenizer/attempt/result/ledger SHA-256 values `4B8A44B4CB3DE9355B8A3D4E3FC945DD685EA35B98F5BF0C0160DAA090249BA7`, `EB10127666CDADE0D6A8E7EF59CA7D4310B64B89619800DF245BD769666A587D`, `6197D986FD3ED030340A82300245AE0EF1249229E21162BF6796F7F614A7EA19`, `396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF`, and `CD96EE1F41F15E9953705F7DDA762D1111D60E04C828F9B157D314D789F0F104`.
+- [x] Bind tracked v4 evidence and `neo-exp-0018`; pass 232 post-audit CPU-only tests plus compilation and JSON/JSONL validation.
+- [x] Unlock only `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`; keep broader process-local and restart-persistent availability locked, authorize but do not execute `CatalyticSwarm-0`, and keep automatic promotion disabled.
+- [ ] Next task: preserve this no-retry evidence boundary. Any `CatalyticSwarm-0` execution requires a separately scoped protocol and must not be inferred from authorization alone.
 
 Preserved v1 executed boundary:
 
@@ -397,4 +406,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: make the prepared v4 integration the exact pushed protected `main`, pass protected preflight, then invoke `audit-worker-protocol-v4` exactly once with no retry.
+Next task: preserve the executed v4 no-retry boundary. `CatalyticSwarm-0` is authorized but remains unexecuted pending a separately scoped protocol.

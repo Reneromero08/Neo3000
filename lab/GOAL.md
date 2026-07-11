@@ -1,8 +1,8 @@
 # Active Goal
 
-## Checkpoint 2: protected HoloState worker protocol v4 preparation
+## Checkpoint 2: HoloState worker protocol v4 executed boundary
 
-Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse is proven, while operational HoloState availability remains locked.
+Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse and the bounded process-local HoloState micro-worker are proven; broader process-local and restart-persistent availability remain locked.
 
 ## Preserved boundary
 
@@ -24,17 +24,19 @@ Fast remains thinking-disabled at 64 tokens; Deep remains reasoning-auto at 768.
 
 V3 ran once. Readiness passed; the exact, normal-stop canary exposed zero token IDs against five completion tokens, so instrumentation rejected before all roots and capability lanes. Preserve this no-retry boundary.
 
-V4 is prepared, not executed. After exact pushed `main` and protected preflight, invoke it once without retry.
+## Executed v4 result
+
+V4 ran exactly once with no retry. Readiness, tokenizer, canary, both roots, and all six Fast requests passed; A1/B1 repeats and cross-root isolation were exact. Deep A1 independently rejected on a 768-token length stop, so its failure does not erase the completed Fast proof. Do not rerun v4.
 
 ## Claim state
 
 ```text
 SUPERVISED_BOUNDED_RSI_AVAILABLE
 EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
-PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
+PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
-CatalyticSwarm-0: LOCKED
+CatalyticSwarm-0: AUTHORIZED_NOT_EXECUTED
 automatic promotion: disabled
 global claim ceiling: NEO3000_BASELINE_OPERATIONAL
 ```

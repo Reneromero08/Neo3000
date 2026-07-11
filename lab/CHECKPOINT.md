@@ -364,7 +364,9 @@ The ignored v1 result and its original Fast=`reject` / Deep=`inconclusive` field
 - Readiness/attempt/result/ledger SHA-256 values are `6C761F40E6EBCD43B608218CC84D0AA1F75D2E1FDCEB15EB9DC103168E6EFCBF`, `4D70D8E53056A2BB2A00320051855B4D612547150A5FC68C068D17DEC66EFBFE`, `387E82B02BA8F6992111722595AEE05055A979A54A8D2EE6D9F5A1EE38C645E3`, and `26D65B9F474EF84B3F9483D6DDB1838280F1D54D476FDF14B5595A624EA5A583`.
 - `readiness_v3=pass`; `worker_protocol_v3=instrumentation-reject`; Fast/Deep=`inconclusive`. Every HoloState availability state and CatalyticSwarm-0 remain locked; automatic promotion remains disabled.
 
-### HoloState worker protocol v4 [PREPARED / NOT EXECUTED]
+### HoloState worker protocol v4 [HISTORICAL PRE-EXECUTION SNAPSHOT]
+
+The following preparation boundary is preserved as the state immediately before the single executed invocation recorded below.
 
 The v4 prequalification correctly stopped under its declared exact-count law.
 
@@ -378,9 +380,23 @@ reconciled, but no worker capability request has yet executed.
 - V4 is separately protected and preserves v3 readiness, roots, lanes, budgets, sequence, memory, isolation, cleanup, and availability laws. Its only intervention is bounded terminal-EOS accounting for thinking-disabled, text-only Chat Completions responses when native arrays are unavailable.
 - The no-generation tokenizer qualification requires two exact `[60738, 30094, 18916, 8378]` arrays and exact detokenization to `TOKEN ARRAY CANARY`. Capability artifacts cannot be claimed unless readiness and tokenizer evidence are frozen passes.
 - The terminal EOS token ID remains unknown. The complete generated sequence remains unknown. Deep hidden reasoning and tool-call token sequences are not reconstructed.
-- All five v4 evidence paths are absent. No readiness, tokenizer, parser canary, root warm, Fast, repeat, or Deep request has executed.
+- At that boundary all five v4 evidence paths were absent. No readiness, tokenizer, parser canary, root warm, Fast, repeat, or Deep request had executed.
 - Compilation and 232 CPU-only tests pass without contacting a live inference endpoint. Protected lock/preflight and exact pushed-main admission remain prerequisites to the single authorized invocation.
-- Every HoloState availability state and CatalyticSwarm-0 remain locked; automatic promotion remains disabled.
+- At that boundary every HoloState availability state and CatalyticSwarm-0 remained locked; automatic promotion was disabled.
+
+### HoloState worker protocol v4 [EXECUTED / REVIEWABLE ACCEPT]
+
+- Exact integration commit `da04c5bf388c3d091da4e2f1aee33bf852377517` was pushed as protected `main` and passed preflight before the single invocation. No retry occurred.
+- Readiness passed in 33.015 seconds with stable PID `32684` and sidecar PID `38452`. The tokenizer-v4 artifact records two exact `[60738, 30094, 18916, 8378]` arrays, exact round-trip text, no generation, and a passed resource gate.
+- The canary accepted exact `TOKEN ARRAY CANARY`: four visible tokens, five completion tokens, usage delta one, `finish_reason=stop`, direct `stop=true` / `stop_type=eos` / empty stopping word / empty final verbose array, empty reasoning, and no tools. The terminal EOS ID and complete generated sequence remain unknown.
+- Root A/B warmed at 8,173/4,436 rendered tokens. Fast A1/B1/A2/B2 and A1/B1 repeats all accepted with direct terminal-EOS accounting; A and B retained 8,144/4,407 cached tokens and evaluated 21 fresh tokens per Fast request.
+- A1 and B1 repeat fields were exact, A1/A2 and B1/B2 remained distinct, and cross-root identity isolation passed. The unknown terminal EOS token ID was never compared.
+- Deep A1 evaluated 27 fresh tokens over 8,144 cached tokens and retained opaque reasoning evidence, but exhausted all 768 completion tokens with `finish_reason=length` and no final assistant content. Deep is `reject`; the completed Fast proof remains `reviewable-accept`.
+- The bounded reasoning-redacted ledger contains 907 records and 618,838 bytes. WDDM recorded 136 exact-PID samples with a 2,362,318,848-byte / 2,252.88 MiB peak; maximum observed host-private growth was 1,158,742,016 bytes.
+- All 29 ownership boundaries, resources, ledger limits, cleanup, isolation, frozen readiness/tokenizer/source authority, historical hashes, stable PID, clean candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, runtime removal, free port 9494, and five empty retirement samples passed.
+- Readiness/tokenizer/attempt/result/ledger SHA-256 values are `4B8A44B4CB3DE9355B8A3D4E3FC945DD685EA35B98F5BF0C0160DAA090249BA7`, `EB10127666CDADE0D6A8E7EF59CA7D4310B64B89619800DF245BD769666A587D`, `6197D986FD3ED030340A82300245AE0EF1249229E21162BF6796F7F614A7EA19`, `396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF`, and `CD96EE1F41F15E9953705F7DDA762D1111D60E04C828F9B157D314D789F0F104`.
+- Tracked v4 evidence and `neo-exp-0018` are bound; 232 post-audit CPU-only tests, compilation, and JSON/JSONL validation pass.
+- `worker_protocol_v4=reviewable-accept`; Fast=`reviewable-accept`; Deep=`reject`. `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` is unlocked. Broader process-local and restart-persistent availability remain locked. `CatalyticSwarm-0` is authorized but not executed; automatic promotion remains disabled.
 
 ### Durable persistence boundary
 
