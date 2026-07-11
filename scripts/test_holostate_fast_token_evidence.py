@@ -47,10 +47,7 @@ class FastTokenEvidenceAdapterTests(unittest.TestCase):
 
     def test_v3_canary_accepts_unknown_terminal_control_token(self) -> None:
         result = resolve_fast_token_evidence(
-            self.measurement(
-                content="TOKEN ARRAY CANARY",
-                completion_tokens=5,
-            ),
+            self.measurement(content="TOKEN ARRAY CANARY", completion_tokens=5),
             tokenize_visible_content=self.tokenize,
             thinking_disabled=True,
             allow_terminal_control_accounting=True,
@@ -61,6 +58,7 @@ class FastTokenEvidenceAdapterTests(unittest.TestCase):
         self.assertEqual(result["usage_delta"], 1)
         self.assertEqual(result["terminal_control_token_count"], 1)
         self.assertFalse(result["terminal_control_token_id_known"])
+        self.assertFalse(result["full_generated_sequence_known"])
         self.assertEqual(
             result["claim_scope"],
             "exact-visible-content-tokenization-plus-one-terminal-control-token",
