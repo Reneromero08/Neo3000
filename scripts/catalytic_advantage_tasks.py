@@ -3,22 +3,25 @@
 
 The suite is a deterministic multiple-candidate program-selection benchmark.
 Each task exposes a small integer DSL, public input/output examples, and sixteen
-candidate programs. Hidden examples and the answer key remain in the protected
-task file for the external evaluator only; prompt rendering never includes them.
+candidate programs. Hidden examples and answer keys are generated only inside
+this protected evaluator module; prompt rendering exposes only public material.
 
-This module performs no network, subprocess, Git, or model operations.
+This module performs no network, subprocess, Git, model, or filesystem writes.
 """
 
 from __future__ import annotations
 
 import hashlib
+import itertools
 import json
+import random
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Mapping
 
 SCHEMA_VERSION = 1
 SUITE_ID = "catalytic-swarm-1-dsl-selection-v1"
+GENERATION_SEED = 13001
+EXPECTED_SUITE_SHA256 = "511315F206889D0194ECB7076380A8D6F43170F7D9564BA0DA008ACE538F049C"
 TASK_COUNT = 8
 CANDIDATE_COUNT = 16
 PROGRAM_LENGTH = 3
@@ -122,7 +125,6 @@ class AdvantageTaskSuite:
     schema_version: int
     suite_id: str
     generation_seed: int
-    semantics: Mapping[str, Any]
     tasks: tuple[AdvantageTask, ...]
     suite_sha256: str
 
@@ -142,88 +144,24 @@ class AdvantageTaskSuite:
             "schema_version": self.schema_version,
             "suite_id": self.suite_id,
             "generation_seed": self.generation_seed,
-            "semantics": dict(self.semantics),
+            "semantics": {
+                "input_domain": "signed integers",
+                "instruction_order": "left-to-right",
+                "ADD": "y = y + arg",
+                "MUL": "y = y * arg",
+                "NEG": "y = -y",
+                "ABS": "y = abs(y)",
+                "MOD": "y = y % arg using Python non-negative modulo for positive arg",
+                "program_length": PROGRAM_LENGTH,
+            },
             "tasks": tasks,
         }
-
-
-def _require_exact_keys(value: Mapping[str, Any], expected: set[str], label: str) -> None:
-    actual = set(value)
-    if actual != expected:
-        raise AdvantageTaskError(
-            f"{label} key set mismatch; missing={sorted(expected - actual)}, "
-            f"extra={sorted(actual - expected)}"
-        )
 
 
 def _require_int(value: Any, label: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         raise AdvantageTaskError(f"{label} must be an integer")
     return value
-
-
-def _parse_instruction(value: Any, label: str) -> Instruction:
-    if not isinstance(value, Mapping):
-        raise AdvantageTaskError(f"{label} must be an object")
-    op = value.get("op")
-    if not isinstance(op, str) or op not in ALLOWED_OPS:
-        raise AdvantageTaskError(f"{label} has unsupported op {op!r}")
-    expected = {"op", "arg"} if op in OPS_WITH_ARG else {"op"}
-    _require_exact_keys(value, expected, label)
-    if op in OPS_WITHOUT_ARG:
-        return Instruction(op=op)
-    arg = _require_int(value["arg"], f"{label}.arg")
-    if op == "MOD" and arg <= 0:
-        raise AdvantageTaskError(f"{label}.arg must be positive for MOD")
-    if op in {"ADD", "MUL"} and arg == 0:
-        raise AdvantageTaskError(f"{label}.arg may not be zero")
-    if abs(arg) > 16:
-        raise AdvantageTaskError(f"{label}.arg exceeds the bounded DSL")
-    return Instruction(op=op, arg=arg)
-
-
-def _parse_candidate(value: Any, label: str) -> CandidateProgram:
-    if not isinstance(value, Mapping):
-        raise AdvantageTaskError(f"{label} must be an object")
-    _require_exact_keys(value, {"candidate_id", "instructions", "display"}, label)
-    candidate_id = value["candidate_id"]
-    display = value["display"]
-    instructions = value["instructions"]
-    if not isinstance(candidate_id, str) or not candidate_id:
-        raise AdvantageTaskError(f"{label}.candidate_id is invalid")
-    if not isinstance(display, str) or not display:
-        raise AdvantageTaskError(f"{label}.display is invalid")
-    if not isinstance(instructions, list) or len(instructions) != PROGRAM_LENGTH:
-        raise AdvantageTaskError(
-            f"{label}.instructions must contain exactly {PROGRAM_LENGTH} items"
-        )
-    return CandidateProgram(
-        candidate_id=candidate_id,
-        instructions=tuple(
-            _parse_instruction(item, f"{label}.instructions[{index}]")
-            for index, item in enumerate(instructions)
-        ),
-        display=display,
-    )
-
-
-def _parse_examples(value: Any, *, expected_count: int, label: str) -> tuple[Example, ...]:
-    if not isinstance(value, list) or len(value) != expected_count:
-        raise AdvantageTaskError(f"{label} must contain exactly {expected_count} examples")
-    parsed: list[Example] = []
-    seen_inputs: set[int] = set()
-    for index, item in enumerate(value):
-        item_label = f"{label}[{index}]"
-        if not isinstance(item, Mapping):
-            raise AdvantageTaskError(f"{item_label} must be an object")
-        _require_exact_keys(item, {"x", "y"}, item_label)
-        x = _require_int(item["x"], f"{item_label}.x")
-        y = _require_int(item["y"], f"{item_label}.y")
-        if x in seen_inputs:
-            raise AdvantageTaskError(f"{label} repeats input {x}")
-        seen_inputs.add(x)
-        parsed.append(Example(x=x, y=y))
-    return tuple(parsed)
 
 
 def execute_program(program: CandidateProgram, x: int) -> int:
@@ -262,65 +200,201 @@ def candidate_is_exact(task: AdvantageTask, candidate_id: str, *, hidden: bool) 
     return passed == total
 
 
-def render_public_task(task: AdvantageTask) -> str:
-    """Render a canonical prompt root with no hidden examples or answer key."""
-    projection = task.public_projection()
-    encoded = json.dumps(
-        projection,
-        ensure_ascii=False,
-        allow_nan=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-    if "hidden_examples" in encoded or "answer_candidate_id" in encoded:
-        raise AdvantageTaskError("public task render leaked protected fields")
-    return encoded
+def _instruction_pool() -> tuple[Instruction, ...]:
+    items: list[Instruction] = []
+    for arg in (-9, -7, -5, -3, -2, 2, 3, 5, 7, 9):
+        items.append(Instruction("ADD", arg))
+    for arg in (-3, -2, 2, 3):
+        items.append(Instruction("MUL", arg))
+    items.extend((Instruction("NEG"), Instruction("ABS")))
+    for arg in (5, 7, 9, 11):
+        items.append(Instruction("MOD", arg))
+    return tuple(items)
 
 
-def _parse_task(value: Any, index: int) -> AdvantageTask:
-    label = f"tasks[{index}]"
-    if not isinstance(value, Mapping):
-        raise AdvantageTaskError(f"{label} must be an object")
-    _require_exact_keys(
-        value,
-        {"task_id", "public_examples", "hidden_examples", "candidates", "answer_candidate_id"},
-        label,
-    )
-    task_id = value["task_id"]
-    if task_id != f"{TASK_ID_PREFIX}{index + 1:02d}":
-        raise AdvantageTaskError(f"{label}.task_id is not canonical")
-    public_examples = _parse_examples(
-        value["public_examples"],
-        expected_count=PUBLIC_EXAMPLE_COUNT,
-        label=f"{label}.public_examples",
-    )
-    hidden_examples = _parse_examples(
-        value["hidden_examples"],
-        expected_count=HIDDEN_EXAMPLE_COUNT,
-        label=f"{label}.hidden_examples",
-    )
-    if set(item.x for item in public_examples) & set(item.x for item in hidden_examples):
-        raise AdvantageTaskError(f"{label} public and hidden inputs overlap")
-    candidates_raw = value["candidates"]
-    if not isinstance(candidates_raw, list) or len(candidates_raw) != CANDIDATE_COUNT:
-        raise AdvantageTaskError(
-            f"{label}.candidates must contain exactly {CANDIDATE_COUNT} items"
+def _program_display(program: tuple[Instruction, ...]) -> str:
+    parts: list[str] = []
+    for instruction in program:
+        if instruction.op in OPS_WITHOUT_ARG:
+            parts.append(instruction.op)
+        elif instruction.op in {"ADD", "MUL"}:
+            assert instruction.arg is not None
+            parts.append(f"{instruction.op}:{instruction.arg:+d}")
+        else:
+            assert instruction.arg is not None
+            parts.append(f"{instruction.op}:{instruction.arg}")
+    return "|".join(parts)
+
+
+def _execute_tuple(program: tuple[Instruction, ...], x: int) -> int:
+    return execute_program(CandidateProgram("TMP", program, _program_display(program)), x)
+
+
+def _generate_raw_suite() -> dict[str, Any]:
+    rng = random.Random(GENERATION_SEED)
+    public_pool = list(range(-9, 10))
+    hidden_pool = list(range(-20, 21))
+    programs = tuple(itertools.product(_instruction_pool(), repeat=PROGRAM_LENGTH))
+    used_targets: set[tuple[Instruction, ...]] = set()
+    tasks: list[dict[str, Any]] = []
+
+    for task_index in range(TASK_COUNT):
+        while True:
+            public_inputs = sorted(rng.sample(public_pool, PUBLIC_EXAMPLE_COUNT))
+            if (
+                0 in public_inputs
+                and any(value < 0 for value in public_inputs)
+                and any(value > 0 for value in public_inputs)
+            ):
+                break
+        hidden_inputs = sorted(
+            rng.sample(
+                [value for value in hidden_pool if value not in public_inputs],
+                HIDDEN_EXAMPLE_COUNT,
+            )
         )
-    candidates = tuple(
-        _parse_candidate(item, f"{label}.candidates[{candidate_index}]")
-        for candidate_index, item in enumerate(candidates_raw)
+
+        while True:
+            target = rng.choice(programs)
+            if target in used_targets:
+                continue
+            target_values = [_execute_tuple(target, value) for value in public_inputs]
+            if len(set(target_values)) >= 4 and max(target_values) - min(target_values) >= 5:
+                used_targets.add(target)
+                break
+
+        target_vector = tuple(_execute_tuple(target, value) for value in public_inputs)
+        scored: list[tuple[int, int, int, str, tuple[Instruction, ...], tuple[int, ...]]] = []
+        for program in programs:
+            if program == target:
+                continue
+            vector = tuple(_execute_tuple(program, value) for value in public_inputs)
+            matches = sum(actual == expected for actual, expected in zip(vector, target_vector))
+            distance = sum(abs(actual - expected) for actual, expected in zip(vector, target_vector))
+            instruction_matches = sum(left == right for left, right in zip(program, target))
+            scored.append((-matches, distance, -instruction_matches, _program_display(program), program, vector))
+        scored.sort(key=lambda item: item[:4])
+
+        selected: list[tuple[Instruction, ...]] = []
+        seen_vectors = {target_vector}
+        for _matches, _distance, _ops, _display, program, vector in scored:
+            if vector in seen_vectors:
+                continue
+            selected.append(program)
+            seen_vectors.add(vector)
+            if len(selected) == CANDIDATE_COUNT - 1:
+                break
+        if len(selected) != CANDIDATE_COUNT - 1:
+            raise AdvantageTaskError("could not generate distinct distractors")
+
+        candidates = [target, *selected]
+        rng.shuffle(candidates)
+        answer_index = candidates.index(target)
+        candidate_items = []
+        for candidate_index, program in enumerate(candidates):
+            candidate_items.append(
+                {
+                    "candidate_id": f"C{candidate_index:02d}",
+                    "instructions": [instruction.to_dict() for instruction in program],
+                    "display": _program_display(program),
+                }
+            )
+        tasks.append(
+            {
+                "task_id": f"{TASK_ID_PREFIX}{task_index + 1:02d}",
+                "public_examples": [
+                    {"x": value, "y": _execute_tuple(target, value)}
+                    for value in public_inputs
+                ],
+                "hidden_examples": [
+                    {"x": value, "y": _execute_tuple(target, value)}
+                    for value in hidden_inputs
+                ],
+                "candidates": candidate_items,
+                "answer_candidate_id": f"C{answer_index:02d}",
+            }
+        )
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "suite_id": SUITE_ID,
+        "generation_seed": GENERATION_SEED,
+        "semantics": {
+            "input_domain": "signed integers",
+            "instruction_order": "left-to-right",
+            "ADD": "y = y + arg",
+            "MUL": "y = y * arg",
+            "NEG": "y = -y",
+            "ABS": "y = abs(y)",
+            "MOD": "y = y % arg using Python non-negative modulo for positive arg",
+            "program_length": PROGRAM_LENGTH,
+        },
+        "tasks": tasks,
+    }
+
+
+def _parse_instruction(value: Mapping[str, Any]) -> Instruction:
+    op = value.get("op")
+    if not isinstance(op, str) or op not in ALLOWED_OPS:
+        raise AdvantageTaskError(f"unsupported op {op!r}")
+    expected = {"op", "arg"} if op in OPS_WITH_ARG else {"op"}
+    if set(value) != expected:
+        raise AdvantageTaskError("instruction key set mismatch")
+    if op in OPS_WITHOUT_ARG:
+        return Instruction(op)
+    arg = _require_int(value["arg"], f"{op}.arg")
+    if op == "MOD" and arg <= 0:
+        raise AdvantageTaskError("MOD arg must be positive")
+    if op in {"ADD", "MUL"} and arg == 0:
+        raise AdvantageTaskError(f"{op} arg may not be zero")
+    if abs(arg) > 16:
+        raise AdvantageTaskError("instruction arg exceeds bounded DSL")
+    return Instruction(op, arg)
+
+
+def _parse_raw_task(value: Mapping[str, Any], index: int) -> AdvantageTask:
+    expected_keys = {"task_id", "public_examples", "hidden_examples", "candidates", "answer_candidate_id"}
+    if set(value) != expected_keys:
+        raise AdvantageTaskError("task key set mismatch")
+    if value["task_id"] != f"{TASK_ID_PREFIX}{index + 1:02d}":
+        raise AdvantageTaskError("task identity mismatch")
+    public_examples = tuple(
+        Example(_require_int(item["x"], "public.x"), _require_int(item["y"], "public.y"))
+        for item in value["public_examples"]
     )
+    hidden_examples = tuple(
+        Example(_require_int(item["x"], "hidden.x"), _require_int(item["y"], "hidden.y"))
+        for item in value["hidden_examples"]
+    )
+    if len(public_examples) != PUBLIC_EXAMPLE_COUNT:
+        raise AdvantageTaskError("public example count mismatch")
+    if len(hidden_examples) != HIDDEN_EXAMPLE_COUNT:
+        raise AdvantageTaskError("hidden example count mismatch")
+    if set(item.x for item in public_examples) & set(item.x for item in hidden_examples):
+        raise AdvantageTaskError("public and hidden inputs overlap")
+
+    candidates = tuple(
+        CandidateProgram(
+            candidate_id=item["candidate_id"],
+            instructions=tuple(_parse_instruction(instruction) for instruction in item["instructions"]),
+            display=item["display"],
+        )
+        for item in value["candidates"]
+    )
+    if len(candidates) != CANDIDATE_COUNT:
+        raise AdvantageTaskError("candidate count mismatch")
     expected_ids = tuple(f"C{candidate_index:02d}" for candidate_index in range(CANDIDATE_COUNT))
-    actual_ids = tuple(candidate.candidate_id for candidate in candidates)
-    if actual_ids != expected_ids:
-        raise AdvantageTaskError(f"{label} candidate IDs are not canonical")
-    if len({candidate.instructions for candidate in candidates}) != CANDIDATE_COUNT:
-        raise AdvantageTaskError(f"{label} contains duplicate programs")
+    if tuple(item.candidate_id for item in candidates) != expected_ids:
+        raise AdvantageTaskError("candidate IDs are not canonical")
+    if any(len(item.instructions) != PROGRAM_LENGTH for item in candidates):
+        raise AdvantageTaskError("program length mismatch")
+    if len({item.instructions for item in candidates}) != CANDIDATE_COUNT:
+        raise AdvantageTaskError("duplicate candidate programs")
     answer_candidate_id = value["answer_candidate_id"]
     if answer_candidate_id not in expected_ids:
-        raise AdvantageTaskError(f"{label}.answer_candidate_id is invalid")
+        raise AdvantageTaskError("answer candidate is invalid")
     task = AdvantageTask(
-        task_id=task_id,
+        task_id=value["task_id"],
         public_examples=public_examples,
         hidden_examples=hidden_examples,
         candidates=candidates,
@@ -332,42 +406,41 @@ def _parse_task(value: Any, index: int) -> AdvantageTask:
         if candidate_is_exact(task, candidate.candidate_id, hidden=False)
     ]
     if public_exact != [answer_candidate_id]:
-        raise AdvantageTaskError(f"{label} does not have one unique public-example solution")
+        raise AdvantageTaskError("task lacks one unique public solution")
     if not candidate_is_exact(task, answer_candidate_id, hidden=True):
-        raise AdvantageTaskError(f"{label} answer fails hidden examples")
+        raise AdvantageTaskError("answer fails hidden examples")
     return task
 
 
-def load_task_suite(path: Path) -> AdvantageTaskSuite:
-    if not path.is_file():
-        raise AdvantageTaskError(f"missing task suite: {path}")
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise AdvantageTaskError(f"cannot load task suite: {exc}") from exc
-    if not isinstance(raw, Mapping):
-        raise AdvantageTaskError("task suite must be an object")
-    _require_exact_keys(raw, {"schema_version", "suite_id", "generation_seed", "semantics", "tasks"}, "task suite")
-    if raw["schema_version"] != SCHEMA_VERSION:
-        raise AdvantageTaskError("unsupported task-suite schema version")
-    if raw["suite_id"] != SUITE_ID:
-        raise AdvantageTaskError("unexpected task-suite identity")
-    generation_seed = _require_int(raw["generation_seed"], "generation_seed")
-    if not isinstance(raw["semantics"], Mapping):
-        raise AdvantageTaskError("semantics must be an object")
-    tasks_raw = raw["tasks"]
-    if not isinstance(tasks_raw, list) or len(tasks_raw) != TASK_COUNT:
-        raise AdvantageTaskError(f"task suite must contain exactly {TASK_COUNT} tasks")
-    tasks = tuple(_parse_task(item, index) for index, item in enumerate(tasks_raw))
-    suite_hash = sha256_bytes(canonical_json_bytes(raw))
+def build_frozen_task_suite() -> AdvantageTaskSuite:
+    raw = _generate_raw_suite()
+    digest = sha256_bytes(canonical_json_bytes(raw))
+    if digest != EXPECTED_SUITE_SHA256:
+        raise AdvantageTaskError(
+            f"task suite hash drift: expected {EXPECTED_SUITE_SHA256}, actual {digest}"
+        )
+    tasks = tuple(_parse_raw_task(item, index) for index, item in enumerate(raw["tasks"]))
     return AdvantageTaskSuite(
         schema_version=SCHEMA_VERSION,
         suite_id=SUITE_ID,
-        generation_seed=generation_seed,
-        semantics=dict(raw["semantics"]),
+        generation_seed=GENERATION_SEED,
         tasks=tasks,
-        suite_sha256=suite_hash,
+        suite_sha256=digest,
     )
+
+
+def render_public_task(task: AdvantageTask) -> str:
+    """Render a canonical prompt root with no hidden examples or answer key."""
+    encoded = json.dumps(
+        task.public_projection(),
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    if "hidden_examples" in encoded or "answer_candidate_id" in encoded:
+        raise AdvantageTaskError("public task render leaked protected fields")
+    return encoded
 
 
 def validate_public_projection(task: AdvantageTask, rendered: str) -> None:
@@ -387,13 +460,15 @@ __all__ = [
     "AdvantageTaskError",
     "AdvantageTaskSuite",
     "CANDIDATE_COUNT",
+    "EXPECTED_SUITE_SHA256",
+    "GENERATION_SEED",
     "HIDDEN_EXAMPLE_COUNT",
     "PUBLIC_EXAMPLE_COUNT",
     "SUITE_ID",
     "TASK_COUNT",
+    "build_frozen_task_suite",
     "candidate_is_exact",
     "execute_program",
-    "load_task_suite",
     "render_public_task",
     "score_candidate",
     "validate_public_projection",
