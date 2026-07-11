@@ -11,9 +11,9 @@ This module keeps server-native token arrays authoritative when present.  When
 native arrays are absent, it permits narrowly bounded visible-content
 retokenization only for thinking-disabled, text-only responses.  A one-token
 usage surplus may be reconciled as an unknown terminal control token only when
-the caller explicitly authorizes the pinned server accounting law, the request
-has no configured stop sequences, and the response ends normally with
-``finish_reason == \"stop\"``.
+the caller explicitly authorizes the pinned server accounting law and supplies
+direct final metadata proving ``stop_type == \"eos\"`` with no stopping word or
+request-configured stop sequence.
 
 It never invents the terminal token ID and never reconstructs hidden reasoning
 or tool-call token sequences.
@@ -50,6 +50,8 @@ class ChatTokenEvidence:
     usage_reconciled: bool
     terminal_control_token_count: int
     terminal_control_token_id_known: bool
+    terminal_stop_type: str | None
+    terminal_stopping_word: str | None
     full_generated_sequence_known: bool
     native_array_present: bool
     reconstructed: bool
@@ -82,25 +84,12 @@ def build_chat_token_evidence(
     thinking_disabled: bool,
     tokenize_visible_content: Callable[[str], list[int]],
     finish_reason: str | None = None,
+    terminal_stop_type: str | None = None,
+    terminal_stopping_word: str | None = None,
     stop_sequences_configured: bool = False,
     allow_terminal_control_accounting: bool = False,
 ) -> ChatTokenEvidence:
-    """Return fail-closed token evidence for one Chat Completions response.
-
-    Evidence priority:
-
-    1. A non-empty server-native token array.  If usage is present, its count
-       must match exactly.
-    2. Visible-content retokenization for a thinking-disabled, text-only
-       response.  Exact count equality supports an exact visible-tokenization
-       claim.  A usage delta of exactly one may support a narrower claim that
-       the visible tokenization is exact and one unknown terminal control token
-       was also sampled.
-
-    The one-token terminal allowance is deliberately unavailable unless the
-    caller binds it to the pinned server source semantics and a normal EOS-style
-    stop without request-configured stop sequences.
-    """
+    """Return fail-closed token evidence for one Chat Completions response."""
 
     if completion_tokens is not None:
         if isinstance(completion_tokens, bool) or not isinstance(completion_tokens, int):
@@ -126,17 +115,15 @@ def build_chat_token_evidence(
             usage_reconciled=accepted,
             terminal_control_token_count=0,
             terminal_control_token_id_known=True,
+            terminal_stop_type=terminal_stop_type,
+            terminal_stopping_word=terminal_stopping_word,
             full_generated_sequence_known=accepted,
             native_array_present=True,
             reconstructed=False,
             reason=None if accepted else "native-token-count-mismatch",
         )
 
-    reconstruction_allowed = (
-        thinking_disabled
-        and reasoning_content == ""
-        and not tool_calls
-    )
+    reconstruction_allowed = thinking_disabled and reasoning_content == "" and not tool_calls
     if not reconstruction_allowed:
         return ChatTokenEvidence(
             accepted=False,
@@ -151,6 +138,8 @@ def build_chat_token_evidence(
             usage_reconciled=False,
             terminal_control_token_count=0,
             terminal_control_token_id_known=False,
+            terminal_stop_type=terminal_stop_type,
+            terminal_stopping_word=terminal_stopping_word,
             full_generated_sequence_known=False,
             native_array_present=False,
             reconstructed=False,
@@ -175,6 +164,8 @@ def build_chat_token_evidence(
             usage_reconciled=False,
             terminal_control_token_count=0,
             terminal_control_token_id_known=False,
+            terminal_stop_type=terminal_stop_type,
+            terminal_stopping_word=terminal_stopping_word,
             full_generated_sequence_known=False,
             native_array_present=False,
             reconstructed=True,
@@ -187,6 +178,8 @@ def build_chat_token_evidence(
         usage_delta == 1
         and allow_terminal_control_accounting
         and finish_reason == "stop"
+        and terminal_stop_type == "eos"
+        and terminal_stopping_word == ""
         and not stop_sequences_configured
     )
     accepted = bool(reconstructed_ids or completion_tokens == 0) and (
@@ -200,7 +193,7 @@ def build_chat_token_evidence(
         terminal_count = 0
     elif terminal_control_reconciled:
         source = "visible-content-retokenization-plus-terminal-control"
-        claim_scope = "exact-visible-content-tokenization-plus-one-terminal-control-token"
+        claim_scope = "exact-visible-content-tokenization-plus-one-terminal-eos-token"
         reason = None
         terminal_count = 1
     else:
@@ -208,7 +201,7 @@ def build_chat_token_evidence(
         claim_scope = "none"
         terminal_count = 0
         if usage_delta == 1:
-            reason = "terminal-control-accounting-not-authorized"
+            reason = "terminal-eos-accounting-not-proven"
         else:
             reason = "reconstructed-token-count-mismatch"
 
@@ -225,6 +218,8 @@ def build_chat_token_evidence(
         usage_reconciled=accepted,
         terminal_control_token_count=terminal_count,
         terminal_control_token_id_known=False,
+        terminal_stop_type=terminal_stop_type,
+        terminal_stopping_word=terminal_stopping_word,
         full_generated_sequence_known=False,
         native_array_present=False,
         reconstructed=True,
