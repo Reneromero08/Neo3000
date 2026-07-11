@@ -31,6 +31,8 @@ class ChatTokenEvidenceTests(unittest.TestCase):
             "thinking_disabled": True,
             "tokenize_visible_content": self.tokenize,
             "finish_reason": "stop",
+            "terminal_stop_type": "eos",
+            "terminal_stopping_word": "",
             "stop_sequences_configured": False,
             "allow_terminal_control_accounting": False,
         }
@@ -58,7 +60,7 @@ class ChatTokenEvidenceTests(unittest.TestCase):
         self.assertEqual(result.usage_delta, 0)
         self.assertEqual(result.terminal_control_token_count, 0)
 
-    def test_v3_canary_reconciles_four_visible_plus_one_terminal_control(self) -> None:
+    def test_v3_canary_reconciles_four_visible_plus_one_terminal_eos(self) -> None:
         result = self.build(
             visible_content="TOKEN ARRAY CANARY",
             completion_tokens=5,
@@ -71,9 +73,10 @@ class ChatTokenEvidenceTests(unittest.TestCase):
         self.assertEqual(result.terminal_control_token_count, 1)
         self.assertFalse(result.terminal_control_token_id_known)
         self.assertFalse(result.full_generated_sequence_known)
+        self.assertEqual(result.terminal_stop_type, "eos")
         self.assertEqual(
             result.claim_scope,
-            "exact-visible-content-tokenization-plus-one-terminal-control-token",
+            "exact-visible-content-tokenization-plus-one-terminal-eos-token",
         )
 
     def test_one_token_surplus_requires_explicit_source_authorization(self) -> None:
@@ -82,7 +85,27 @@ class ChatTokenEvidenceTests(unittest.TestCase):
             completion_tokens=5,
         )
         self.assertFalse(result.accepted)
-        self.assertEqual(result.reason, "terminal-control-accounting-not-authorized")
+        self.assertEqual(result.reason, "terminal-eos-accounting-not-proven")
+
+    def test_one_token_surplus_requires_eos_stop_type(self) -> None:
+        result = self.build(
+            visible_content="TOKEN ARRAY CANARY",
+            completion_tokens=5,
+            terminal_stop_type="word",
+            allow_terminal_control_accounting=True,
+        )
+        self.assertFalse(result.accepted)
+        self.assertEqual(result.reason, "terminal-eos-accounting-not-proven")
+
+    def test_one_token_surplus_requires_empty_stopping_word(self) -> None:
+        result = self.build(
+            visible_content="TOKEN ARRAY CANARY",
+            completion_tokens=5,
+            terminal_stopping_word="STOP",
+            allow_terminal_control_accounting=True,
+        )
+        self.assertFalse(result.accepted)
+        self.assertEqual(result.reason, "terminal-eos-accounting-not-proven")
 
     def test_one_token_surplus_requires_normal_stop(self) -> None:
         result = self.build(
@@ -92,7 +115,7 @@ class ChatTokenEvidenceTests(unittest.TestCase):
             allow_terminal_control_accounting=True,
         )
         self.assertFalse(result.accepted)
-        self.assertEqual(result.reason, "terminal-control-accounting-not-authorized")
+        self.assertEqual(result.reason, "terminal-eos-accounting-not-proven")
 
     def test_one_token_surplus_rejects_configured_stop_sequences(self) -> None:
         result = self.build(
@@ -102,7 +125,7 @@ class ChatTokenEvidenceTests(unittest.TestCase):
             allow_terminal_control_accounting=True,
         )
         self.assertFalse(result.accepted)
-        self.assertEqual(result.reason, "terminal-control-accounting-not-authorized")
+        self.assertEqual(result.reason, "terminal-eos-accounting-not-proven")
 
     def test_more_than_one_hidden_token_fails_closed(self) -> None:
         result = self.build(
