@@ -16,7 +16,7 @@ from holostate_fast_token_evidence import (
 class FastTokenEvidenceAdapterTests(unittest.TestCase):
     def tokenize(self, text: str) -> list[int]:
         values = {
-            "TOKEN ARRAY CANARY": [1, 2, 3, 4, 5],
+            "TOKEN ARRAY CANARY": [60738, 30094, 18916, 8378],
             "HOLOSTATE FAST A1": [10, 11, 12, 13, 14, 15],
         }
         return list(values[text])
@@ -45,6 +45,27 @@ class FastTokenEvidenceAdapterTests(unittest.TestCase):
         self.assertEqual(result["source"], "visible-content-retokenization")
         self.assertEqual(result["claim_scope"], "exact-visible-content-tokenization")
 
+    def test_v3_canary_accepts_unknown_terminal_control_token(self) -> None:
+        result = resolve_fast_token_evidence(
+            self.measurement(
+                content="TOKEN ARRAY CANARY",
+                completion_tokens=5,
+            ),
+            tokenize_visible_content=self.tokenize,
+            thinking_disabled=True,
+            allow_terminal_control_accounting=True,
+        )
+        self.assertTrue(result["accepted"])
+        self.assertEqual(result["token_count"], 4)
+        self.assertEqual(result["completion_tokens"], 5)
+        self.assertEqual(result["usage_delta"], 1)
+        self.assertEqual(result["terminal_control_token_count"], 1)
+        self.assertFalse(result["terminal_control_token_id_known"])
+        self.assertEqual(
+            result["claim_scope"],
+            "exact-visible-content-tokenization-plus-one-terminal-control-token",
+        )
+
     def test_native_ids_preserve_generated_sequence_claim(self) -> None:
         result = resolve_fast_token_evidence(
             self.measurement(generated_token_ids=[20, 21, 22, 23, 24, 25]),
@@ -65,12 +86,47 @@ class FastTokenEvidenceAdapterTests(unittest.TestCase):
         self.assertTrue(result["accepted"], result["reasons"])
         self.assertEqual(result["fresh_prompt_tokens"], 10)
 
-    def test_count_mismatch_is_instrumentation_reject(self) -> None:
+    def test_full_fast_gate_accepts_terminal_control_reconciliation(self) -> None:
         result = evaluate_fast_worker(
-            self.measurement(completion_tokens=5),
-            expected_content="HOLOSTATE FAST A1",
+            self.measurement(content="TOKEN ARRAY CANARY", completion_tokens=5),
+            expected_content="TOKEN ARRAY CANARY",
             logical_prompt_tokens=100,
             tokenize_visible_content=self.tokenize,
+            allow_terminal_control_accounting=True,
+        )
+        self.assertTrue(result["accepted"], result["reasons"])
+        self.assertEqual(result["token_evidence"]["terminal_control_token_count"], 1)
+
+    def test_terminal_control_reconciliation_must_be_authorized(self) -> None:
+        result = evaluate_fast_worker(
+            self.measurement(content="TOKEN ARRAY CANARY", completion_tokens=5),
+            expected_content="TOKEN ARRAY CANARY",
+            logical_prompt_tokens=100,
+            tokenize_visible_content=self.tokenize,
+        )
+        self.assertFalse(result["accepted"])
+        self.assertEqual(result["classification"], "instrumentation-reject")
+        self.assertIn("terminal-control-accounting-not-authorized", result["reasons"])
+
+    def test_configured_stop_sequence_disables_terminal_reconciliation(self) -> None:
+        result = evaluate_fast_worker(
+            self.measurement(content="TOKEN ARRAY CANARY", completion_tokens=5),
+            expected_content="TOKEN ARRAY CANARY",
+            logical_prompt_tokens=100,
+            tokenize_visible_content=self.tokenize,
+            allow_terminal_control_accounting=True,
+            stop_sequences_configured=True,
+        )
+        self.assertFalse(result["accepted"])
+        self.assertEqual(result["classification"], "instrumentation-reject")
+
+    def test_count_mismatch_larger_than_one_is_instrumentation_reject(self) -> None:
+        result = evaluate_fast_worker(
+            self.measurement(content="TOKEN ARRAY CANARY", completion_tokens=6),
+            expected_content="TOKEN ARRAY CANARY",
+            logical_prompt_tokens=100,
+            tokenize_visible_content=self.tokenize,
+            allow_terminal_control_accounting=True,
         )
         self.assertFalse(result["accepted"])
         self.assertEqual(result["classification"], "instrumentation-reject")
@@ -78,7 +134,7 @@ class FastTokenEvidenceAdapterTests(unittest.TestCase):
 
     def test_wrong_visible_content_is_capability_reject(self) -> None:
         result = evaluate_fast_worker(
-            self.measurement(content="TOKEN ARRAY CANARY", completion_tokens=5),
+            self.measurement(content="TOKEN ARRAY CANARY", completion_tokens=4),
             expected_content="HOLOSTATE FAST A1",
             logical_prompt_tokens=100,
             tokenize_visible_content=self.tokenize,
