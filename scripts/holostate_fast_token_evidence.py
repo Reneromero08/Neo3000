@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """Fast-lane HoloState token evidence adapter.
 
-This module bridges a Chat Completions measurement to the narrow evidence law
-implemented by :mod:`chat_token_evidence`.  It is intentionally limited to
-thinking-disabled, text-only Fast workers.  Deep/reasoning and tool-call lanes
-must continue to use server-native evidence or remain inconclusive.
+This module bridges a Chat Completions measurement to the evidence law in
+:mod:`chat_token_evidence`.  It is intentionally limited to thinking-disabled,
+text-only Fast workers.  Deep/reasoning and tool-call lanes must continue to use
+server-native evidence or remain explicit about unavailable full sequences.
 """
 
 from __future__ import annotations
 
-from dataclasses import asdict, is_dataclass
 from typing import Any, Callable
 
 from chat_token_evidence import ChatTokenEvidenceError, build_chat_token_evidence
@@ -30,8 +29,10 @@ def resolve_fast_token_evidence(
     *,
     tokenize_visible_content: Callable[[str], list[int]],
     thinking_disabled: bool,
+    allow_terminal_control_accounting: bool = False,
+    stop_sequences_configured: bool = False,
 ) -> dict[str, Any]:
-    """Resolve authoritative or reconstructed token evidence for one response."""
+    """Resolve native or bounded reconstructed evidence for one response."""
 
     try:
         evidence = build_chat_token_evidence(
@@ -42,23 +43,15 @@ def resolve_fast_token_evidence(
             tool_calls=list(_read(measurement, "tool_calls", []) or []),
             thinking_disabled=thinking_disabled,
             tokenize_visible_content=tokenize_visible_content,
+            finish_reason=_read(measurement, "finish_reason"),
+            stop_sequences_configured=stop_sequences_configured,
+            allow_terminal_control_accounting=allow_terminal_control_accounting,
         )
     except ChatTokenEvidenceError as exc:
         raise FastTokenEvidenceError(str(exc)) from exc
 
     result = evidence.to_dict()
-    result["classification"] = (
-        "accepted"
-        if evidence.accepted
-        else "instrumentation-reject"
-    )
-    result["claim_scope"] = (
-        "exact-generated-token-sequence"
-        if evidence.source == "server-native"
-        else "exact-visible-content-tokenization"
-        if evidence.source == "visible-content-retokenization"
-        else "none"
-    )
+    result["classification"] = "accepted" if evidence.accepted else "instrumentation-reject"
     return result
 
 
@@ -69,8 +62,10 @@ def evaluate_fast_worker(
     logical_prompt_tokens: int,
     tokenize_visible_content: Callable[[str], list[int]],
     thinking_disabled: bool = True,
+    allow_terminal_control_accounting: bool = False,
+    stop_sequences_configured: bool = False,
 ) -> dict[str, Any]:
-    """Apply the complete Fast worker gate without overstating token provenance."""
+    """Apply the complete Fast gate without overstating token provenance."""
 
     content = str(_read(measurement, "content", ""))
     reasoning = str(_read(measurement, "reasoning_content", ""))
@@ -83,6 +78,8 @@ def evaluate_fast_worker(
         measurement,
         tokenize_visible_content=tokenize_visible_content,
         thinking_disabled=thinking_disabled,
+        allow_terminal_control_accounting=allow_terminal_control_accounting,
+        stop_sequences_configured=stop_sequences_configured,
     )
 
     reasons: list[str] = []
@@ -106,19 +103,28 @@ def evaluate_fast_worker(
         reasons.append(token_evidence.get("reason") or "token-evidence-failed")
 
     accepted = not reasons
-    return {
-        "accepted": accepted,
-        "classification": "accepted" if accepted else (
+    instrumentation_prefixes = (
+        "token-",
+        "reconstructed-",
+        "native-",
+        "terminal-control-",
+        "completion-count-",
+    )
+    classification = "accepted"
+    if not accepted:
+        classification = (
             "instrumentation-reject"
             if any(
-                reason.startswith("token-")
+                reason.startswith(instrumentation_prefixes)
                 or "token-count" in reason
-                or reason.startswith("reconstructed-")
-                or reason.startswith("native-")
                 for reason in reasons
             )
             else "capability-reject"
-        ),
+        )
+
+    return {
+        "accepted": accepted,
+        "classification": classification,
         "reasons": reasons,
         "expected_content": expected_content,
         "visible_content": content,
