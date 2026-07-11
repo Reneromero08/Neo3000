@@ -5,8 +5,8 @@
 **Baseline evidence through:** protocol commit `b45249c6620c2645232883c5035b260683706dcd`; ignored worker-v3 result `387E82B02BA8F6992111722595AEE05055A979A54A8D2EE6D9F5A1EE38C645E3`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. `holostate_worker_protocol_v3` executed once: readiness passed, then the parser canary instrumentation rejected on `stream-token-count-mismatch` before any root or capability request.
-**Next exact action:** preserve the v3 no-retry boundary. A future separately authorized version must causally address absent nonempty server token arrays without changing the tested capability semantics or reinterpreting Fast/Deep as tested.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. A separately protected `holostate_worker_protocol_v4` is prepared but has not executed. Its sole causal intervention is source-grounded terminal-EOS accounting for thinking-disabled, text-only Chat Completions responses when native token arrays are unavailable.
+**Next exact action:** make this integration the exact pushed protected `main`, pass protected preflight, then invoke worker protocol v4 exactly once with no retry.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -356,7 +356,17 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Stopped before Root A/B warm, Fast, repeats, or Deep. All request counts for those stages remain zero and both capability verdicts remain inconclusive.
 - [x] Preserved all ownership boundaries, frozen readiness and prior evidence, clean candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, 14 exact-PID WDDM samples with a 2,250.88 MiB peak, 153,636,864 bytes host growth, clean teardown, five empty retirement samples, stable PID `32684`, and free port 9494.
 - [x] Recorded readiness/attempt/result/ledger SHA-256 values `6C761F40E6EBCD43B608218CC84D0AA1F75D2E1FDCEB15EB9DC103168E6EFCBF`, `4D70D8E53056A2BB2A00320051855B4D612547150A5FC68C068D17DEC66EFBFE`, `387E82B02BA8F6992111722595AEE05055A979A54A8D2EE6D9F5A1EE38C645E3`, and `26D65B9F474EF84B3F9483D6DDB1838280F1D54D476FDF14B5595A624EA5A583`.
-- [ ] Next task: preserve this no-retry instrumentation boundary pending separate authorization. Do not run v1, v2, v3, qualification, validation-v2, persistence, or promotion.
+- [x] Preserve the v3 no-retry instrumentation boundary under the separately authorized, versioned v4 successor. Do not run v1, v2, v3, qualification, validation-v2, persistence, or promotion.
+
+### HoloState worker protocol v4 [PREPARED / NOT EXECUTED]
+
+- [x] Import the seven-file PR #2 connector substrate from `codex/holostate-chat-token-evidence-v4` at `168fb4d0e666cbc058a59826ff9e97359889d835` without importing its sixteen connector commits.
+- [x] Repair the connector fail-closed boundary: native IDs require an available exact completion-count match; visible retokenization is repeated deterministically; and one-terminal-token reconciliation requires complete direct EOS metadata.
+- [x] Capture bounded terminal stop metadata in the shared stream parser without persisting reasoning text, including when terminal metadata precedes a later usage-only event.
+- [x] Add separately protected readiness, no-generation tokenizer, capability-attempt, result, and bounded-ledger v4 paths. Bind all v1/v2/v3 objects and ignored evidence plus pinned source and source-test identities.
+- [x] Preserve the exact v3 boundary and record that its declared exact-count law stopped correctly; pinned source later reconciled four visible tokens plus one server-counted terminal EOS token without establishing the EOS ID or a complete generated sequence.
+- [x] Pass 232 CPU-only tests plus compilation. No live inference endpoint, readiness marker, tokenizer artifact, capability attempt, result, or v4 stream ledger was created.
+- [ ] After this integration is the exact pushed protected `main` and protected preflight passes, invoke `audit-worker-protocol-v4` exactly once. Do not retry it or rerun v1, v2, v3, qualification, validation-v2, persistence, or promotion.
 
 Preserved v1 executed boundary:
 
@@ -387,4 +397,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: preserve the executed v3 no-retry instrumentation boundary. Any successor must use new versioned evidence and separately authorize one causal token-array transport intervention.
+Next task: make the prepared v4 integration the exact pushed protected `main`, pass protected preflight, then invoke `audit-worker-protocol-v4` exactly once with no retry.

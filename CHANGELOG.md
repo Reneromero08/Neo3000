@@ -20,6 +20,7 @@ HoloState-v1 budget qualification: NO PASS THROUGH 2048
 HoloState worker v1: INSTRUMENTATION REJECT; FAST/DEEP CAPABILITY UNTESTED
 HoloState worker v2: EXECUTED ONCE / INCONCLUSIVE BEFORE CANARY
 HoloState worker v3: READINESS PASS / CANARY INSTRUMENTATION REJECT / FAST-DEEP UNTESTED
+HoloState worker v4: PREPARED / NOT EXECUTED
 Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
@@ -46,8 +47,17 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - HoloState-v1.1 executed once and stopped at Root A warm on missing token instrumentation. Its original result fields remain Fast=`reject` / Deep=`inconclusive`; later adjudication is protocol instrumentation-reject with both capabilities untested/inconclusive. V1 cannot be retried.
 - Worker protocol v2 ran exactly once and stopped during sidecar readiness on `stable-listener-query-timeout`, before its canary. It cannot be retried; no parser or model-capability conclusion is supported.
 - Worker protocol v3 ran once: checked readiness passed, then its parser canary instrumentation rejected on missing nonempty token arrays and completion-count mismatch. It cannot be retried; Fast and Deep remain untested/inconclusive.
+- Worker protocol v4 is prepared but not executed. Its five evidence paths remain absent; Fast and Deep remain untested/inconclusive.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
+
+### HoloState worker protocol v4 terminal-EOS integration prepared
+
+- Imported the seven connector files from `codex/holostate-chat-token-evidence-v4` at `168fb4d0e666cbc058a59826ff9e97359889d835` without importing its sixteen intermediate commits.
+- Added fail-closed native-token, deterministic visible-retokenization, and direct terminal-EOS evidence laws. The one-token usage reconciliation never claims the unknown EOS token ID or a complete generated sequence.
+- Added bounded terminal-stop provenance to the shared stream parser, a separate no-generation tokenizer qualification, five versioned v4 evidence paths, and exact prior/source authority bindings.
+- The v3 exact-count gate is preserved as correctly followed. Pinned source subsequently reconciled four visible tokens plus one server-counted terminal EOS token; no worker capability request has executed under v4.
+- Compilation and 232 CPU-only tests pass without live generation. No v4 readiness, tokenizer, attempt, result, or stream artifact exists. All availability locks, CatalyticSwarm-0, and automatic-promotion prohibitions remain unchanged.
 
 ### HoloState worker protocol v3 readiness integration prepared
 

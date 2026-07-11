@@ -2,14 +2,21 @@
 """Deterministic token evidence for Chat Completions worker lanes.
 
 The pinned Neo3000 Chat Completions stream reports exact visible content and
-usage counts but may omit native generated-token arrays entirely.  This module
-keeps server-native evidence authoritative when present and permits a narrowly
-bounded tokenizer reconstruction only for thinking-disabled, text-only
-responses whose visible content is complete and whose reconstructed token count
-matches the server-reported completion count exactly.
+usage counts but does not serialize per-token IDs for OpenAI-compatible chat
+chunks.  The server also increments ``n_decoded`` before stop handling, so an
+end-of-generation token is included in ``completion_tokens`` even when it
+produces no visible text.
 
-It does not infer or reconstruct hidden reasoning tokens, tool-call tokens, or
-mixed-channel generations.
+This module keeps server-native token arrays authoritative when present.  When
+native arrays are absent, it permits narrowly bounded visible-content
+retokenization only for thinking-disabled, text-only responses.  A one-token
+usage surplus may be reconciled as an unknown terminal control token only when
+the caller explicitly authorizes the pinned server accounting law and supplies
+direct final metadata proving ``stop_type == \"eos\"`` with no stopping word or
+request-configured stop sequence.
+
+It never invents the terminal token ID and never reconstructs hidden reasoning
+or tool-call token sequences.
 """
 
 from __future__ import annotations
@@ -21,7 +28,7 @@ from typing import Any, Callable
 
 
 class ChatTokenEvidenceError(RuntimeError):
-    """The available transport evidence cannot support a token-sequence claim."""
+    """The available transport evidence cannot support the requested claim."""
 
 
 def token_ids_sha256(token_ids: list[int]) -> str:
@@ -33,11 +40,19 @@ def token_ids_sha256(token_ids: list[int]) -> str:
 class ChatTokenEvidence:
     accepted: bool
     source: str
+    claim_scope: str
     token_ids: list[int]
     token_count: int
     token_sha256: str
     completion_tokens: int | None
     count_match: bool | None
+    usage_delta: int | None
+    usage_reconciled: bool
+    terminal_control_token_count: int
+    terminal_control_token_id_known: bool
+    terminal_stop_type: str | None
+    terminal_stopping_word: str | None
+    full_generated_sequence_known: bool
     native_array_present: bool
     reconstructed: bool
     reason: str | None = None
@@ -46,15 +61,15 @@ class ChatTokenEvidence:
         return asdict(self)
 
 
-def _normalize_native_ids(value: Any) -> list[int]:
+def _normalize_ids(value: Any, *, label: str) -> list[int]:
     if value is None:
         return []
     if not isinstance(value, list):
-        raise ChatTokenEvidenceError("native token evidence is not an array")
+        raise ChatTokenEvidenceError(f"{label} token evidence is not an array")
     parsed: list[int] = []
     for item in value:
         if isinstance(item, bool) or not isinstance(item, int):
-            raise ChatTokenEvidenceError("native token evidence contains a non-integer token")
+            raise ChatTokenEvidenceError(f"{label} token evidence contains a non-integer token")
         parsed.append(item)
     return parsed
 
@@ -68,20 +83,13 @@ def build_chat_token_evidence(
     tool_calls: list[dict[str, Any]],
     thinking_disabled: bool,
     tokenize_visible_content: Callable[[str], list[int]],
+    finish_reason: str | None = None,
+    terminal_stop_type: str | None = None,
+    terminal_stopping_word: str | None = None,
+    stop_sequences_configured: bool = False,
+    allow_terminal_control_accounting: bool = False,
 ) -> ChatTokenEvidence:
-    """Return fail-closed token evidence for one Chat Completions response.
-
-    Evidence priority:
-
-    1. A non-empty server-native token array whose length exactly matches usage.
-    2. Exact tokenizer reconstruction of the visible assistant content, but only
-       for thinking-disabled responses with an empty reasoning channel and no
-       tool calls.  The reconstructed length must exactly match usage.
-
-    An empty native array is treated as unavailable, not as proof of an empty
-    generation.  Reconstruction is forbidden for reasoning or tool responses
-    because their hidden/control tokens are not recoverable from visible text.
-    """
+    """Return fail-closed token evidence for one Chat Completions response."""
 
     if completion_tokens is not None:
         if isinstance(completion_tokens, bool) or not isinstance(completion_tokens, int):
@@ -89,75 +97,136 @@ def build_chat_token_evidence(
         if completion_tokens < 0:
             raise ChatTokenEvidenceError("completion token count is negative")
 
-    native_ids = _normalize_native_ids(native_token_ids)
+    native_ids = _normalize_ids(native_token_ids, label="native")
     if native_ids:
-        count_match = (
-            len(native_ids) == completion_tokens
-            if completion_tokens is not None
-            else None
-        )
+        usage_delta = completion_tokens - len(native_ids) if completion_tokens is not None else None
+        count_match = usage_delta == 0 if usage_delta is not None else None
+        accepted = count_match is True
         return ChatTokenEvidence(
-            accepted=count_match is not False,
+            accepted=accepted,
             source="server-native",
+            claim_scope="exact-generated-token-sequence" if accepted else "none",
             token_ids=native_ids,
             token_count=len(native_ids),
             token_sha256=token_ids_sha256(native_ids),
             completion_tokens=completion_tokens,
             count_match=count_match,
+            usage_delta=usage_delta,
+            usage_reconciled=accepted,
+            terminal_control_token_count=0,
+            terminal_control_token_id_known=True,
+            terminal_stop_type=terminal_stop_type,
+            terminal_stopping_word=terminal_stopping_word,
+            full_generated_sequence_known=accepted,
             native_array_present=True,
             reconstructed=False,
-            reason=None if count_match is not False else "native-token-count-mismatch",
+            reason=(
+                None
+                if accepted
+                else "completion-count-unavailable"
+                if completion_tokens is None
+                else "native-token-count-mismatch"
+            ),
         )
 
-    reconstruction_allowed = (
-        thinking_disabled
-        and reasoning_content == ""
-        and not tool_calls
-    )
+    reconstruction_allowed = thinking_disabled and reasoning_content == "" and not tool_calls
     if not reconstruction_allowed:
-        reason = "reconstruction-forbidden-for-reasoning-or-tools"
         return ChatTokenEvidence(
             accepted=False,
             source="unavailable",
+            claim_scope="none",
             token_ids=[],
             token_count=0,
             token_sha256=token_ids_sha256([]),
             completion_tokens=completion_tokens,
             count_match=False if completion_tokens not in (None, 0) else None,
+            usage_delta=completion_tokens if completion_tokens is not None else None,
+            usage_reconciled=False,
+            terminal_control_token_count=0,
+            terminal_control_token_id_known=False,
+            terminal_stop_type=terminal_stop_type,
+            terminal_stopping_word=terminal_stopping_word,
+            full_generated_sequence_known=False,
             native_array_present=False,
             reconstructed=False,
-            reason=reason,
+            reason="reconstruction-forbidden-for-reasoning-or-tools",
         )
 
-    reconstructed_ids = tokenize_visible_content(visible_content)
-    if not isinstance(reconstructed_ids, list):
-        raise ChatTokenEvidenceError("tokenizer reconstruction did not return an array")
-    parsed_reconstructed: list[int] = []
-    for item in reconstructed_ids:
-        if isinstance(item, bool) or not isinstance(item, int):
-            raise ChatTokenEvidenceError("tokenizer reconstruction contains a non-integer token")
-        parsed_reconstructed.append(item)
-
-    count_match = (
-        len(parsed_reconstructed) == completion_tokens
-        if completion_tokens is not None
-        else None
+    reconstructed_ids = _normalize_ids(
+        tokenize_visible_content(visible_content),
+        label="reconstructed",
     )
-    accepted = count_match is not False and bool(parsed_reconstructed or completion_tokens == 0)
-    reason: str | None = None
-    if not accepted:
-        reason = "reconstructed-token-count-mismatch"
-    elif completion_tokens is None:
-        reason = "completion-count-unavailable"
+    if completion_tokens is None:
+        return ChatTokenEvidence(
+            accepted=False,
+            source="visible-content-retokenization",
+            claim_scope="none",
+            token_ids=reconstructed_ids,
+            token_count=len(reconstructed_ids),
+            token_sha256=token_ids_sha256(reconstructed_ids),
+            completion_tokens=None,
+            count_match=None,
+            usage_delta=None,
+            usage_reconciled=False,
+            terminal_control_token_count=0,
+            terminal_control_token_id_known=False,
+            terminal_stop_type=terminal_stop_type,
+            terminal_stopping_word=terminal_stopping_word,
+            full_generated_sequence_known=False,
+            native_array_present=False,
+            reconstructed=True,
+            reason="completion-count-unavailable",
+        )
+
+    usage_delta = completion_tokens - len(reconstructed_ids)
+    exact_visible_only = usage_delta == 0
+    terminal_control_reconciled = (
+        usage_delta == 1
+        and allow_terminal_control_accounting
+        and finish_reason == "stop"
+        and terminal_stop_type == "eos"
+        and terminal_stopping_word == ""
+        and not stop_sequences_configured
+    )
+    accepted = bool(reconstructed_ids or completion_tokens == 0) and (
+        exact_visible_only or terminal_control_reconciled
+    )
+
+    if exact_visible_only:
+        source = "visible-content-retokenization"
+        claim_scope = "exact-visible-content-tokenization"
+        reason = None
+        terminal_count = 0
+    elif terminal_control_reconciled:
+        source = "visible-content-retokenization-plus-terminal-control"
+        claim_scope = "exact-visible-content-tokenization-plus-one-terminal-eos-token"
+        reason = None
+        terminal_count = 1
+    else:
+        source = "visible-content-retokenization"
+        claim_scope = "none"
+        terminal_count = 0
+        if usage_delta == 1:
+            reason = "terminal-eos-accounting-not-proven"
+        else:
+            reason = "reconstructed-token-count-mismatch"
 
     return ChatTokenEvidence(
         accepted=accepted,
-        source="visible-content-retokenization",
-        token_ids=parsed_reconstructed,
-        token_count=len(parsed_reconstructed),
-        token_sha256=token_ids_sha256(parsed_reconstructed),
+        source=source,
+        claim_scope=claim_scope,
+        token_ids=reconstructed_ids,
+        token_count=len(reconstructed_ids),
+        token_sha256=token_ids_sha256(reconstructed_ids),
         completion_tokens=completion_tokens,
-        count_match=count_match,
+        count_match=exact_visible_only,
+        usage_delta=usage_delta,
+        usage_reconciled=accepted,
+        terminal_control_token_count=terminal_count,
+        terminal_control_token_id_known=False,
+        terminal_stop_type=terminal_stop_type,
+        terminal_stopping_word=terminal_stopping_word,
+        full_generated_sequence_known=False,
         native_array_present=False,
         reconstructed=True,
         reason=reason,

@@ -23,6 +23,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
+from chat_stream_terminal_evidence import (
+    TerminalEvidenceError,
+    TerminalStopEvidence,
+    extract_terminal_stop_evidence,
+    merge_terminal_stop_evidence,
+)
+
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "lab" / "results.local.json"
 DEFAULT_PROMPT = "Reply with exactly: NEO3000 ONLINE"
@@ -59,6 +66,9 @@ class StreamMeasurement:
     completion_token_count_match: bool | None
     generated_token_sha256: str
     prompt_progress: list[dict[str, Any]]
+    stop_type: str | None
+    stopping_word: str | None
+    terminal_stop_evidence: dict[str, Any] | None
 
 
 def utc_now() -> str:
@@ -228,6 +238,7 @@ def stream_ledger_record(
     request_label: str | None,
     event_token_ids: list[int] | None,
     merge_mode: str,
+    terminal_stop_evidence: TerminalStopEvidence | None = None,
 ) -> dict[str, Any]:
     """Reduce one SSE event to bounded provenance without retaining reasoning text."""
     choices = event.get("choices")
@@ -253,6 +264,28 @@ def stream_ledger_record(
         "reasoning_fragment_length": len(reasoning),
         "reasoning_fragment_sha256": hashlib.sha256(reasoning.encode("utf-8")).hexdigest().upper(),
         "tool_fragment_present": bool(delta.get("tool_calls")),
+        "terminal_stop_observed": terminal_stop_evidence is not None,
+        "terminal_stop_flag": (
+            terminal_stop_evidence.stop if terminal_stop_evidence is not None else None
+        ),
+        "terminal_stop_type": (
+            terminal_stop_evidence.stop_type if terminal_stop_evidence is not None else None
+        ),
+        "terminal_stopping_word_length": (
+            len(terminal_stop_evidence.stopping_word)
+            if terminal_stop_evidence is not None
+            else None
+        ),
+        "terminal_stopping_word_sha256": (
+            hashlib.sha256(terminal_stop_evidence.stopping_word.encode("utf-8")).hexdigest().upper()
+            if terminal_stop_evidence is not None
+            else None
+        ),
+        "terminal_verbose_token_array_length": (
+            terminal_stop_evidence.verbose_token_array_length
+            if terminal_stop_evidence is not None
+            else None
+        ),
     }
     if choice.get("finish_reason") is not None:
         record["finish_reason"] = str(choice["finish_reason"])
@@ -296,6 +329,7 @@ def stream_completion(
     empty_token_array_event_count = 0
     token_merge_modes: dict[str, int] = {}
     prompt_progress: list[dict[str, Any]] = []
+    terminal: TerminalStopEvidence | None = None
 
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
@@ -312,6 +346,14 @@ def stream_completion(
                     timings.update(event["timings"])
                 if isinstance(event.get("prompt_progress"), dict):
                     prompt_progress.append(dict(event["prompt_progress"]))
+                try:
+                    incoming_terminal = extract_terminal_stop_evidence(
+                        event,
+                        event_index=event_count,
+                    )
+                    terminal = merge_terminal_stop_evidence(terminal, incoming_terminal)
+                except TerminalEvidenceError as exc:
+                    raise HarnessError(f"stream terminal evidence invalid: {exc}") from exc
                 event_token_ids = extract_generated_token_ids(event)
                 if event_token_ids is not None:
                     if event_token_ids:
@@ -329,6 +371,7 @@ def stream_completion(
                         request_label=request_label,
                         event_token_ids=event_token_ids,
                         merge_mode=merge_mode,
+                        terminal_stop_evidence=incoming_terminal,
                     ))
 
                 choices = event.get("choices")
@@ -424,6 +467,9 @@ def stream_completion(
         completion_token_count_match=completion_token_count_match,
         generated_token_sha256=token_array_sha256(generated_token_ids),
         prompt_progress=prompt_progress,
+        stop_type=terminal.stop_type if terminal is not None else None,
+        stopping_word=terminal.stopping_word if terminal is not None else None,
+        terminal_stop_evidence=terminal.to_dict() if terminal is not None else None,
     )
 
 

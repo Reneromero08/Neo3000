@@ -153,6 +153,22 @@ def holostate_worker_protocol_v3_evidence_hash(evaluator: dict[str, Any]) -> str
     return sha256_bytes(canonical_json_bytes(evidence))
 
 
+def holostate_worker_protocol_v4_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the complete claim-bearing HoloState worker protocol v4 object."""
+    protocol = evaluator.get("holostate_worker_protocol_v4")
+    if not isinstance(protocol, dict):
+        raise NeoLoopError("evaluator is missing holostate_worker_protocol_v4")
+    return sha256_bytes(canonical_json_bytes(protocol))
+
+
+def holostate_worker_protocol_v4_evidence_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the tracked v4 adjudication after the one-shot artifacts exist."""
+    evidence = evaluator.get("holostate_worker_protocol_v4_evidence")
+    if not isinstance(evidence, dict):
+        raise NeoLoopError("evaluator is missing holostate_worker_protocol_v4_evidence")
+    return sha256_bytes(canonical_json_bytes(evidence))
+
+
 def load_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise NeoLoopError(f"missing required file: {path}")
@@ -208,6 +224,11 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         for root in evaluator["holostate_worker_protocol_v3"]["roots"].values()
         for source in root["sources"]
     ]
+    worker_protocol_v4_sources = [
+        source
+        for root in evaluator["holostate_worker_protocol_v4"]["roots"].values()
+        for source in root["sources"]
+    ]
     hashed_files = sorted(
         path for path in set(
             protected_files
@@ -217,6 +238,7 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
             + worker_protocol_v1_sources
             + worker_protocol_v2_sources
             + worker_protocol_v3_sources
+            + worker_protocol_v4_sources
         )
         if path not in LOCK_DYNAMIC_PATHS
     )
@@ -236,6 +258,7 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         "holostate_worker_protocol_v1_adjudication_sha256": holostate_worker_protocol_v1_adjudication_hash(evaluator),
         "holostate_worker_protocol_v2_sha256": holostate_worker_protocol_v2_hash(evaluator),
         "holostate_worker_protocol_v3_sha256": holostate_worker_protocol_v3_hash(evaluator),
+        "holostate_worker_protocol_v4_sha256": holostate_worker_protocol_v4_hash(evaluator),
         "model_identity": evaluator["model"],
         "baseline_source_commit": git(ROOT, "rev-parse", "HEAD"),
         "stable_launch": evaluator["stable_launch"],
@@ -251,6 +274,10 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     if "holostate_worker_protocol_v3_evidence" in evaluator:
         lock["holostate_worker_protocol_v3_evidence_sha256"] = (
             holostate_worker_protocol_v3_evidence_hash(evaluator)
+        )
+    if "holostate_worker_protocol_v4_evidence" in evaluator:
+        lock["holostate_worker_protocol_v4_evidence_sha256"] = (
+            holostate_worker_protocol_v4_evidence_hash(evaluator)
         )
     return lock
 
@@ -333,6 +360,19 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         actual_worker_v3_evidence = holostate_worker_protocol_v3_evidence_hash(evaluator)
         if expected_worker_v3_evidence != actual_worker_v3_evidence:
             raise NeoLoopError("HoloState worker v3 evidence differs from its locked complete-object hash")
+    expected_worker_v4 = lock.get("holostate_worker_protocol_v4_sha256")
+    actual_worker_v4 = holostate_worker_protocol_v4_hash(evaluator)
+    if expected_worker_v4 != actual_worker_v4:
+        raise NeoLoopError("HoloState worker protocol v4 differs from its locked complete-object hash")
+    has_v4_evidence = "holostate_worker_protocol_v4_evidence" in evaluator
+    has_v4_evidence_lock = "holostate_worker_protocol_v4_evidence_sha256" in lock
+    if has_v4_evidence != has_v4_evidence_lock:
+        raise NeoLoopError("HoloState worker v4 evidence and lock must appear together")
+    if has_v4_evidence:
+        expected_worker_v4_evidence = lock["holostate_worker_protocol_v4_evidence_sha256"]
+        actual_worker_v4_evidence = holostate_worker_protocol_v4_evidence_hash(evaluator)
+        if expected_worker_v4_evidence != actual_worker_v4_evidence:
+            raise NeoLoopError("HoloState worker v4 evidence differs from its locked complete-object hash")
     return lock
 
 

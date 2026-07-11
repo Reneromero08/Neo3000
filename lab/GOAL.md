@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: HoloState worker protocol v3 executed boundary
+## Checkpoint 2: protected HoloState worker protocol v4 preparation
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse is proven, while operational HoloState availability remains locked.
 
@@ -23,6 +23,8 @@ Fast remains thinking-disabled at 64 tokens; Deep remains reasoning-auto at 768.
 ## Executed v3 result
 
 V3 ran once. Readiness passed; the exact, normal-stop canary exposed zero token IDs against five completion tokens, so instrumentation rejected before all roots and capability lanes. Preserve this no-retry boundary.
+
+V4 is prepared, not executed. After exact pushed `main` and protected preflight, invoke it once without retry.
 
 ## Claim state
 

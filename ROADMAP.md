@@ -94,7 +94,7 @@ LM Studio is **not** an unlock dependency. It may be used as optional historical
 RSI-0: CLOSED
 -> SUPERVISED_BOUNDED_RSI_AVAILABLE unlocked for Level 1 supervised work
 -> Checkpoint 1A: trace substrate remains active and paused
--> Checkpoint 2: ACTIVE
+-> Checkpoint 2: ACTIVE; v4 prepared, not executed
 -> First catalytic intervention: HoloState-v1 Live Prefix Lattice
 -> HoloState worker v1: instrumentation reject; Fast/Deep capability untested
 -> HoloState worker v2: executed once; inconclusive at readiness before canary

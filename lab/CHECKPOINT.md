@@ -364,6 +364,24 @@ The ignored v1 result and its original Fast=`reject` / Deep=`inconclusive` field
 - Readiness/attempt/result/ledger SHA-256 values are `6C761F40E6EBCD43B608218CC84D0AA1F75D2E1FDCEB15EB9DC103168E6EFCBF`, `4D70D8E53056A2BB2A00320051855B4D612547150A5FC68C068D17DEC66EFBFE`, `387E82B02BA8F6992111722595AEE05055A979A54A8D2EE6D9F5A1EE38C645E3`, and `26D65B9F474EF84B3F9483D6DDB1838280F1D54D476FDF14B5595A624EA5A583`.
 - `readiness_v3=pass`; `worker_protocol_v3=instrumentation-reject`; Fast/Deep=`inconclusive`. Every HoloState availability state and CatalyticSwarm-0 remain locked; automatic promotion remains disabled.
 
+### HoloState worker protocol v4 [PREPARED / NOT EXECUTED]
+
+The v4 prequalification correctly stopped under its declared exact-count law.
+
+Subsequent pinned-source inspection demonstrated that the law omitted the
+server-counted terminal EOS token.
+
+The observed 4-visible / 5-completion relationship is therefore causally
+reconciled, but no worker capability request has yet executed.
+
+- Connector substrate is imported from `codex/holostate-chat-token-evidence-v4` at `168fb4d0e666cbc058a59826ff9e97359889d835`; the sixteen connector commits are not imported into final history.
+- V4 is separately protected and preserves v3 readiness, roots, lanes, budgets, sequence, memory, isolation, cleanup, and availability laws. Its only intervention is bounded terminal-EOS accounting for thinking-disabled, text-only Chat Completions responses when native arrays are unavailable.
+- The no-generation tokenizer qualification requires two exact `[60738, 30094, 18916, 8378]` arrays and exact detokenization to `TOKEN ARRAY CANARY`. Capability artifacts cannot be claimed unless readiness and tokenizer evidence are frozen passes.
+- The terminal EOS token ID remains unknown. The complete generated sequence remains unknown. Deep hidden reasoning and tool-call token sequences are not reconstructed.
+- All five v4 evidence paths are absent. No readiness, tokenizer, parser canary, root warm, Fast, repeat, or Deep request has executed.
+- Compilation and 232 CPU-only tests pass without contacting a live inference endpoint. Protected lock/preflight and exact pushed-main admission remain prerequisites to the single authorized invocation.
+- Every HoloState availability state and CatalyticSwarm-0 remain locked; automatic promotion remains disabled.
+
 ### Durable persistence boundary
 
 The built-in slot file persists active KV/recurrent state and token history, but does not persist the server prompt-checkpoint list required for hybrid recurrent prefix selection after restart.
