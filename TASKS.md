@@ -5,8 +5,8 @@
 **Baseline evidence through:** protocol commit `b2559f7c0c06e35a3e360b71ed13b69c4eb1eb7c`; ignored worker-v2 result `D08C4638179D6A2F0BFABE22DA2C8879377BDC6306E41ED22816FB95F45A84A7`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. The separately authorized `holostate_worker_protocol_v2` ran exactly once and is closed as inconclusive at sidecar readiness before its parser canary.
-**Next exact action:** preserve the v2 no-retry boundary. No further worker audit is authorized; a future version requires a separate scope that keeps the v2 parser/provenance law and isolates readiness resilience.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. The separately authorized `holostate_worker_protocol_v3` integrates checked listener ownership and a no-query-storm readiness boundary while inheriting the complete v2 parser/capability law unchanged.
+**Next exact action:** after the single architectural integration commit is tested, pushed, and exact at `HEAD = main = origin/main`, execute worker protocol v3 exactly once if every static preclaim gate passes. Do not retry it.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -341,6 +341,17 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Classified the stop as `stable-listener-query-timeout` during sidecar readiness before the parser canary. No warm, Fast, or Deep request was attempted.
 - [x] Preserved cleanup, stable PID `32684`, candidate isolation, all five historical hashes, every availability lock, and the automatic-promotion prohibition.
 
+### HoloState worker protocol v3 [AUTHORIZED / NOT EXECUTED]
+
+- [x] Inspected connector branch `codex/holostate-listener-readiness-v3` at `60defbb2ffd1dfc54d40374fd529554ba0acf287`: exactly four commits ahead of protected main and exactly four new listener/readiness files under draft PR #1.
+- [x] Retained the connector parser, checked query/retry primitive, no-query-storm readiness state machine, and CPU-only tests; repaired only concrete test/review defects in runtime mocking, malformed rows, hard total windows, empty-port qualification, partial failure evidence, and post-query rechecks.
+- [x] Added complete-object `holostate_worker_protocol_v3` with exact v2 endpoint, identities, roots, parser, ledger, canary, warm/Fast/Deep sequence, capture, memory, isolation, and availability semantics. Only versioned evidence paths, expanded immutable prior bindings, and readiness control differ.
+- [x] Separate the atomic readiness marker from capability attempt/result/ledger creation. A readiness non-pass creates no capability artifact and leaves Fast/Deep untested and inconclusive.
+- [x] Require one marker-to-pass deadline, bounded checked ownership after the readiness claim, no listener subprocesses in the 250 ms model-load loop, fresh pre/post request ownership, checked pre/post teardown, exact-PID WDDM attribution, and fail-closed frozen-evidence/final-safety gates.
+- [x] Hard-retire v1/v2/qualification/validation-v2 command paths; preserve all prior ignored bytes and all five prior complete-object hashes.
+- [x] Pass compilation; 18 listener, 10 readiness, 102 HoloState, 11 trace, 9 evaluator, and 5 WDDM tests; and stable tokenizer-only Root A/B bounds at 8,131/4,408 tokens without generating output.
+- [ ] After the integration commit is pushed and exact on main, run the single authorized `audit-worker-protocol-v3` command only if every preclaim gate passes. No retry, extended proof, persistence, promotion, CUDA/model/Pi change, or stable mutation is authorized.
+
 Preserved v1 executed boundary:
 
 - Root A rendered 7,806 tokens and returned exact visible content `HOLOSTATE ROOT WARM`, empty reasoning metadata, `finish_reason=stop`, and 7 completion tokens. Prompt processing was 145,519.789 ms at 53.642 TPS.
@@ -370,4 +381,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-- [ ] Next task: preserve the executed v2 no-retry boundary pending separate authorization. Do not run v1, v2, qualification, validation-v2, or durability work.
+Next task: publish the tested v3 integration at exact main, then execute its separately versioned one-shot only if all preclaim gates pass. Do not run v1, v2, qualification, validation-v2, persistence, or any retry.

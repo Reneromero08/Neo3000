@@ -290,7 +290,7 @@ No literal infinity claim is made. Accepted cumulative avoided evaluations, acce
 ```text
 HoloState-v1 reuse mechanism: succeeded
 HoloState-v1 raw /completion gate: no literal final marker through 2048
-Current action: preserve the executed HoloState worker-v2 no-retry boundary
+Current action: integrate the separately authorized worker-v3 readiness control, then run it once only after exact pushed preclaim
 HoloState-v2 persistence: separate future intervention
 ```
 
@@ -345,6 +345,18 @@ The ignored v1 result and its original Fast=`reject` / Deep=`inconclusive` field
 - Exact-PID WDDM captured 7 samples with a 97,349,632-byte / 92.84 MiB peak before cleanup. Sidecar retirement, runtime removal, free port 9494, five empty retirement samples, stable PID `32684`, candidate isolation, and all five historical hashes passed.
 - Attempt SHA-256 is `09A849AC35692A49DCC349110426FBD5ED9EF4BD146E723C8E750445916DE8F9`; result SHA-256 is `D08C4638179D6A2F0BFABE22DA2C8879377BDC6306E41ED22816FB95F45A84A7`. Fast and Deep are untested/inconclusive, all availability states remain locked, and v2 must not be retried.
 - Post-audit evidence binding passed 86 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus Python compilation.
+
+### HoloState worker protocol v3 [AUTHORIZED / PRE-EXECUTION]
+
+- Connector branch `codex/holostate-listener-readiness-v3` at `60defbb2ffd1dfc54d40374fd529554ba0acf287` is exactly four commits ahead of protected main and adds only `listener_probe.py`, `holostate_readiness.py`, and their two CPU-only test files. Draft PR #1 remains the connector review context.
+- The integrated architecture retains the connector substrate and corrects only demonstrated defects: runtime-mockable subprocess execution, malformed relevant-row rejection, hard total retry windows, exact empty-port checks, structured failure evidence, a shared stable/sidecar boundary, and non-listener rechecks after ownership queries.
+- V3 inherits the complete v2 endpoint, identities, roots/order, token accumulation, bounded reasoning-redacted ledger, parser canary, warm/Fast/repeat/Deep sequence, capture restrictions, memory ceilings, isolation, verdicts, and availability law.
+- Its only intervention is readiness control: distinct readiness and capability one-shot paths, a single marker-to-pass deadline, no listener query in the 250 ms model-load poll loop, fresh exact ownership at admission and request boundaries, and checked teardown/retirement.
+- A readiness non-pass creates only readiness-v3 evidence, leaves Fast/Deep untested and inconclusive, and stops without retry. A pass freezes readiness evidence and binds its hash before any capability artifact is claimed.
+- V3 binds the exact v1 protocol/evidence/adjudication objects, v2 protocol/evidence objects, all eight ignored prior files, and the continued absence of validation-v2 paths. Historical files and objects remain immutable.
+- CPU-only protection passes compilation; 18 listener, 10 readiness, 102 HoloState, 11 trace, 9 evaluator, and 5 WDDM tests. Stable tokenizer-only rendering measures Root A/B at 8,131/4,408 tokens inside unchanged bounds; no output was generated.
+- No v3 live invocation has occurred. No readiness, canary, root, Fast, repeat, Deep, PID, listener, memory, or verdict result is claimed by this integration record.
+- All HoloState availability states, CatalyticSwarm-0, and automatic promotion remain locked pending executed evidence.
 
 ### Durable persistence boundary
 

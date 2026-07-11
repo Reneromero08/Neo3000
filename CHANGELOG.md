@@ -19,6 +19,7 @@ HoloState-v1 integration verdict: INCONCLUSIVE
 HoloState-v1 budget qualification: NO PASS THROUGH 2048
 HoloState worker v1: INSTRUMENTATION REJECT; FAST/DEEP CAPABILITY UNTESTED
 HoloState worker v2: EXECUTED ONCE / INCONCLUSIVE BEFORE CANARY
+HoloState worker v3: PROTECTED READINESS INTEGRATION PREPARED / NOT EXECUTED
 Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
@@ -44,8 +45,19 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - The one-shot HoloState-v1 raw `/completion` qualification is complete: `1024, 1280, 1536, 2048` all exhausted without the exact final marker. This does not prove `reasoning_content` attribution. No budget was selected and validation-v2 remains unattempted.
 - HoloState-v1.1 executed once and stopped at Root A warm on missing token instrumentation. Its original result fields remain Fast=`reject` / Deep=`inconclusive`; later adjudication is protocol instrumentation-reject with both capabilities untested/inconclusive. V1 cannot be retried.
 - Worker protocol v2 ran exactly once and stopped during sidecar readiness on `stable-listener-query-timeout`, before its canary. It cannot be retried; no parser or model-capability conclusion is supported.
+- Worker protocol v3 is separately authorized to test only listener-readiness resilience while preserving worker-v2 capability semantics and all prior evidence exactly.
+- V3 has distinct one-shot readiness and capability evidence boundaries. It has not executed; all availability locks remain unchanged.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
+
+### HoloState worker protocol v3 readiness integration prepared
+
+- Retained and integrated the connector-authored native listener probe, no-query-storm readiness state machine, and CPU-only tests; corrections are limited to concrete defects demonstrated by tests or direct review.
+- Added checked bounded listener ownership, one marker-to-pass readiness deadline, independent process/health/WDDM polling, fresh pre/post request ownership, and checked teardown/retirement without modifying stable inference.
+- Added complete-object `holostate_worker_protocol_v3`, which inherits v2 capability behavior exactly and introduces only readiness-control fields, expanded immutable prior bindings, and distinct readiness/capability paths.
+- Readiness failure can create only readiness evidence. Capability attempt/result/ledger creation requires a frozen readiness pass; failed ownership, restoration, ledger, evidence-preservation, or repository-isolation gates cannot unlock availability.
+- Integration protection passes compilation; 18 listener, 10 readiness, 102 HoloState, 11 trace, 9 evaluator, and 5 WDDM tests. Tokenizer-only Root A/B rendering is 8,131/4,408 tokens inside unchanged bounds.
+- No v3 live command ran during integration. No readiness, canary, root, Fast, repeat, Deep, PID, query, memory, or verdict outcome is claimed here.
 
 ### HoloState-v1.1 message-boundary protocol prepared
 

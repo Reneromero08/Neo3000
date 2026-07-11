@@ -10,6 +10,7 @@ import json
 import tempfile
 import time
 import unittest
+from contextlib import ExitStack
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -128,9 +129,13 @@ class StaticCapabilityTests(unittest.TestCase):
             set(subparsers.choices),
             {
                 "start", "stop", "status", "warm", "branch", "list", "evict",
-                "audit-worker-protocol-v2",
+                "audit-worker-protocol-v2", "audit-worker-protocol-v3",
             },
         )
+
+    def test_worker_protocol_v2_command_is_hard_retired(self) -> None:
+        with self.assertRaises(holo.NeoLoopError):
+            holo.command_audit_worker_protocol_v2(SimpleNamespace(binary="x", model="y"))
 
     def test_subprocess_git_calls_are_read_only(self) -> None:
         tree = ast.parse(Path(holo.__file__).read_text(encoding="utf-8"))
@@ -876,6 +881,639 @@ class WorkerProtocolV2ContractTests(unittest.TestCase):
             self.assertTrue(stream_path.is_file())
 
 
+class WorkerProtocolV3ContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.evaluator = holo.load_json(holo.EVALUATOR_PATH)
+        cls.protocol_v2 = holo.validate_worker_protocol_v2(
+            cls.evaluator["holostate_worker_protocol_v2"]
+        )
+        cls.protocol = holo.validate_worker_protocol_v3(
+            cls.evaluator["holostate_worker_protocol_v3"],
+            cls.protocol_v2,
+        )
+
+    def patch_v3_paths(self, stack: ExitStack, root: Path) -> dict[str, Path]:
+        paths = {
+            "readiness": root / "worker-protocol-readiness-v3.json",
+            "attempt": root / "worker-protocol-attempt-v3.json",
+            "result": root / "worker-protocol-result-v3.json",
+            "stream": root / "worker-protocol-v3-stream.jsonl",
+        }
+        stack.enter_context(mock.patch.object(holo, "STATE_ROOT", root))
+        for key, attribute in {
+            "readiness": "WORKER_PROTOCOL_V3_READINESS_PATH",
+            "attempt": "WORKER_PROTOCOL_V3_ATTEMPT_PATH",
+            "result": "WORKER_PROTOCOL_V3_RESULT_PATH",
+            "stream": "WORKER_PROTOCOL_V3_STREAM_PATH",
+        }.items():
+            stack.enter_context(mock.patch.object(holo, attribute, paths[key]))
+        return paths
+
+    def preclaim(self, candidate_root: Path) -> dict:
+        prior = {"historical": {"sha256": "A" * 64, "size_bytes": 1}}
+        return {
+            "protocol": self.protocol,
+            "lock": {
+                "holostate_worker_protocol_v3_sha256": "B" * 64,
+                "evaluator_sha256": "C" * 64,
+            },
+            "stable_head": "HEAD",
+            "stable_status": "",
+            "candidate_root": candidate_root,
+            "candidate_head": "CANDIDATE",
+            "candidate_status": "",
+            "binary_identity": {"sha256": holo.EXPECTED_BINARY_SHA256},
+            "model_identity": {"sha256": holo.EXPECTED_MODEL_SHA256},
+            "stable_template_sha256": self.protocol["chat_template_identity"]["sha256"],
+            "prior_before": prior,
+            "evaluator": self.evaluator,
+            "live_contract": self.evaluator["holostate_live_contract"],
+        }
+
+    @staticmethod
+    def query(*, passed: bool, pids: set[int]) -> SimpleNamespace:
+        payload = {
+            "passed": passed,
+            "port": holo.STABLE_PORT,
+            "pids": sorted(pids),
+            "attempt_count": 1,
+            "timeout_count": 0,
+            "unavailable_count": 0 if passed else 1,
+            "latencies_seconds": [0.01],
+            "errors": [] if passed else ["listener-query-unavailable"],
+        }
+        return SimpleNamespace(
+            passed=passed,
+            pids=frozenset(pids),
+            to_dict=lambda: payload,
+        )
+
+    @staticmethod
+    def cleanup(*, stable_pids: set[int] = {42}, admitted: bool = True) -> dict:
+        return {
+            "not_launched": not admitted,
+            "readiness_controlled": True,
+            "readiness_admitted": admitted,
+            "process_stopped": True,
+            "port_free": True,
+            "runtime_removed": True,
+            "wddm": {"failure_reason": None},
+            "retirement_samples": (
+                [{"available": False, "bytes": None} for _ in range(5)]
+                if admitted else []
+            ),
+            "stable_after": {"healthy": True, "listener_pids": sorted(stable_pids)},
+            "pre_teardown_ownership": {"passed": True} if admitted else None,
+            "post_teardown_ownership": {"passed": True},
+            "not_launched_port_state_observed": not admitted,
+        }
+
+    @staticmethod
+    def fake_git_read(path: Path, *args: str) -> str:
+        if args[:2] == ("rev-parse", "HEAD"):
+            return "HEAD" if Path(path) == holo.ROOT else "CANDIDATE"
+        if args and args[0] == "status":
+            return ""
+        raise AssertionError(args)
+
+    def test_v3_exactly_inherits_v2_and_hash_covers_mutations(self) -> None:
+        changed = {
+            "id", "schema_version", "attempt_version", "prior_evidence",
+            "stream_ledger", "one_shot",
+        }
+        self.assertEqual(set(self.protocol), set(self.protocol_v2) | {"readiness_control"})
+        for key in set(self.protocol_v2) - changed:
+            self.assertEqual(
+                holo.canonical_json_bytes(self.protocol[key]),
+                holo.canonical_json_bytes(self.protocol_v2[key]),
+                key,
+            )
+        baseline = neo_loop.holostate_worker_protocol_v3_hash(self.evaluator)
+        for path, value in (
+            (("lanes", "F", "max_tokens"), 65),
+            (("readiness_control", "maximum_retry_attempts"), 5),
+        ):
+            evaluator = copy.deepcopy(self.evaluator)
+            target = evaluator["holostate_worker_protocol_v3"]
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] = value
+            self.assertNotEqual(baseline, neo_loop.holostate_worker_protocol_v3_hash(evaluator))
+            with self.assertRaises(holo.NeoLoopError):
+                holo.validate_worker_protocol_v3(
+                    evaluator["holostate_worker_protocol_v3"],
+                    self.protocol_v2,
+                )
+
+    def test_v3_evidence_and_lock_are_optional_but_paired(self) -> None:
+        baseline_lock = neo_loop.make_lock(self.evaluator)
+        self.assertNotIn("holostate_worker_protocol_v3_evidence_sha256", baseline_lock)
+        evaluator = copy.deepcopy(self.evaluator)
+        evaluator["holostate_worker_protocol_v3_evidence"] = {
+            "schema_version": 3,
+            "readiness_v3": "pass",
+        }
+        lock = neo_loop.make_lock(evaluator)
+        evidence_hash = neo_loop.holostate_worker_protocol_v3_evidence_hash(evaluator)
+        self.assertEqual(lock["holostate_worker_protocol_v3_evidence_sha256"], evidence_hash)
+        mutated = copy.deepcopy(evaluator)
+        mutated["holostate_worker_protocol_v3_evidence"]["readiness_v3"] = "reject"
+        self.assertNotEqual(
+            evidence_hash,
+            neo_loop.holostate_worker_protocol_v3_evidence_hash(mutated),
+        )
+        with mock.patch.object(neo_loop, "load_json", return_value=lock):
+            self.assertEqual(neo_loop.verify_lock(evaluator), lock)
+        evidence_only = copy.deepcopy(lock)
+        evidence_only.pop("holostate_worker_protocol_v3_evidence_sha256")
+        with mock.patch.object(neo_loop, "load_json", return_value=evidence_only):
+            with self.assertRaises(neo_loop.NeoLoopError):
+                neo_loop.verify_lock(evaluator)
+        lock_only = copy.deepcopy(baseline_lock)
+        lock_only["holostate_worker_protocol_v3_evidence_sha256"] = "D" * 64
+        with mock.patch.object(neo_loop, "load_json", return_value=lock_only):
+            with self.assertRaises(neo_loop.NeoLoopError):
+                neo_loop.verify_lock(self.evaluator)
+
+    def test_v3_prior_bindings_preserve_all_historical_hashes(self) -> None:
+        tracked = self.protocol["prior_evidence"]["tracked_complete_objects"]
+        self.assertEqual(tracked, {
+            "holostate_worker_protocol_v1": neo_loop.holostate_worker_protocol_hash(self.evaluator),
+            "holostate_worker_protocol_v1_evidence": neo_loop.holostate_worker_protocol_evidence_hash(self.evaluator),
+            "holostate_worker_protocol_v1_adjudication": neo_loop.holostate_worker_protocol_v1_adjudication_hash(self.evaluator),
+            "holostate_worker_protocol_v2": neo_loop.holostate_worker_protocol_v2_hash(self.evaluator),
+            "holostate_worker_protocol_v2_evidence": neo_loop.holostate_worker_protocol_v2_evidence_hash(self.evaluator),
+        })
+        self.assertEqual(self.protocol["prior_evidence"]["files"], {
+            "state/holostate/validation-attempt.json": holo.PRIOR_V1_ATTEMPT_SHA256,
+            "state/holostate/validation-result.json": holo.PRIOR_V1_RESULT_SHA256,
+            "state/holostate/reasoning-budget-qualification-v1.json": holo.PRIOR_QUALIFICATION_SHA256,
+            "state/holostate/worker-protocol-attempt-v1.json": holo.PRIOR_WORKER_V1_ATTEMPT_SHA256,
+            "state/holostate/worker-protocol-result-v1.json": holo.PRIOR_WORKER_V1_RESULT_SHA256,
+            "state/holostate/worker-protocol-attempt-v2.json": holo.PRIOR_WORKER_V2_ATTEMPT_SHA256,
+            "state/holostate/worker-protocol-result-v2.json": holo.PRIOR_WORKER_V2_RESULT_SHA256,
+            "state/holostate/worker-protocol-v2-stream.jsonl": holo.PRIOR_WORKER_V2_STREAM_SHA256,
+        })
+
+    def test_v3_collision_refuses_before_any_preclaim_work(self) -> None:
+        for collision_name in ("readiness", "attempt", "result", "stream"):
+            with self.subTest(collision_name=collision_name), tempfile.TemporaryDirectory() as temp:
+                with ExitStack() as stack:
+                    paths = self.patch_v3_paths(stack, Path(temp))
+                    paths[collision_name].write_text("{}", encoding="utf-8")
+                    loader = stack.enter_context(mock.patch.object(holo, "load_locked_worker_protocol_v3"))
+                    binary = stack.enter_context(mock.patch.object(holo, "verify_binary_identity"))
+                    model = stack.enter_context(mock.patch.object(holo, "verify_model"))
+                    listener = stack.enter_context(mock.patch.object(holo, "query_listener_pids"))
+                    with self.assertRaises(holo.NeoLoopError):
+                        holo.prepare_worker_v3_audit_claim(SimpleNamespace(binary="x", model="y"))
+                    loader.assert_not_called()
+                    binary.assert_not_called()
+                    model.assert_not_called()
+                    listener.assert_not_called()
+
+    def test_v3_readiness_failure_creates_only_readiness_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            root = Path(temp)
+            paths = self.patch_v3_paths(stack, root)
+            preclaim = self.preclaim(root / "candidate")
+            stack.enter_context(mock.patch.object(holo, "prepare_worker_v3_audit_claim", return_value=preclaim))
+            query = stack.enter_context(mock.patch.object(
+                holo,
+                "query_listener_pids",
+                return_value=self.query(passed=True, pids={42, 43}),
+            ))
+            sidecar = stack.enter_context(mock.patch.object(holo, "LiveSidecar"))
+            sequence = stack.enter_context(mock.patch.object(holo, "execute_worker_v3_capability_sequence"))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "readiness_v3_no_sidecar_cleanup",
+                return_value=self.cleanup(stable_pids={42, 43}, admitted=False),
+            ))
+            stack.enter_context(mock.patch.object(holo, "git_read", side_effect=self.fake_git_read))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "preserved_worker_prior_evidence",
+                return_value=preclaim["prior_before"],
+            ))
+            result = holo.run_worker_protocol_v3_audit(SimpleNamespace(binary="x", model="y"))
+            self.assertEqual(result["readiness_v3"], "reject")
+            self.assertEqual(result["FAST_PROCESS_LOCAL_HOLOSTATE"], "inconclusive")
+            self.assertEqual(result["DEEP_PROCESS_LOCAL_HOLOSTATE"], "inconclusive")
+            self.assertTrue(paths["readiness"].is_file())
+            self.assertFalse(paths["attempt"].exists())
+            self.assertFalse(paths["result"].exists())
+            self.assertFalse(paths["stream"].exists())
+            query.assert_called_once()
+            sidecar.assert_not_called()
+            sequence.assert_not_called()
+
+    def test_v3_readiness_pass_claims_capability_once_and_zero_execution_cannot_reject_fast(self) -> None:
+        constructor_kwargs: dict = {}
+
+        class FakeSidecar:
+            def __init__(self, *args, **kwargs) -> None:
+                constructor_kwargs.update(kwargs)
+                self.process = SimpleNamespace(pid=99)
+                self.readiness_failure_evidence = {}
+                self.ownership_boundaries: list[dict] = []
+
+            def launch(self) -> dict:
+                return {"pid": 99, "process_memory": {"private_bytes": 100}}
+
+            def exact_ownership(self, boundary: str, **kwargs) -> dict:
+                evidence = {"boundary": boundary, "passed": True}
+                self.ownership_boundaries.append(evidence)
+                return evidence
+
+            def require_active(self, **kwargs) -> None:
+                return None
+
+        def execute(_sidecar, _readiness, _protocol, _ledger, result) -> None:
+            result["worker_protocol_v3"] = "capability-reject"
+            result["verdict"] = "capability-reject"
+            result["FAST_PROCESS_LOCAL_HOLOSTATE"] = "reject"
+            result["fast_requests_executed"] = 0
+
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            root = Path(temp)
+            paths = self.patch_v3_paths(stack, root)
+            preclaim = self.preclaim(root / "candidate")
+            stack.enter_context(mock.patch.object(holo, "prepare_worker_v3_audit_claim", return_value=preclaim))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "query_listener_pids",
+                return_value=self.query(passed=True, pids={42}),
+            ))
+            stack.enter_context(mock.patch.object(holo, "health_ok", return_value=True))
+            stack.enter_context(mock.patch.object(holo, "LiveSidecar", FakeSidecar))
+            sequence = stack.enter_context(mock.patch.object(
+                holo,
+                "execute_worker_v3_capability_sequence",
+                side_effect=execute,
+            ))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "safe_sidecar_cleanup",
+                return_value=self.cleanup(),
+            ))
+            stack.enter_context(mock.patch.object(holo, "git_read", side_effect=self.fake_git_read))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "preserved_worker_prior_evidence",
+                return_value=preclaim["prior_before"],
+            ))
+            claim = stack.enter_context(mock.patch.object(
+                holo,
+                "claim_runtime_json_once",
+                wraps=holo.claim_runtime_json_once,
+            ))
+            result = holo.run_worker_protocol_v3_audit(SimpleNamespace(binary="x", model="y"))
+            claimed_paths = [call.args[0] for call in claim.call_args_list]
+            self.assertEqual(claimed_paths.count(paths["readiness"]), 1)
+            self.assertEqual(claimed_paths.count(paths["attempt"]), 1)
+            self.assertEqual(claimed_paths.count(paths["result"]), 1)
+            self.assertTrue(paths["stream"].is_file())
+            sequence.assert_called_once()
+            readiness_hash = holo.sha256_file(paths["readiness"])
+            attempt = json.loads(paths["attempt"].read_text(encoding="utf-8"))
+            recorded = json.loads(paths["result"].read_text(encoding="utf-8"))
+            self.assertEqual(attempt["readiness_sha256"], readiness_hash)
+            self.assertEqual(recorded["readiness_sha256"], readiness_hash)
+            self.assertTrue(result["readiness_evidence_preserved"])
+            self.assertIn("readiness_deadline_at", constructor_kwargs)
+            self.assertEqual(result["FAST_PROCESS_LOCAL_HOLOSTATE"], "inconclusive")
+            self.assertEqual(result["worker_protocol_v3"], "inconclusive")
+            self.assertEqual(result["PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE"], "LOCKED")
+
+    def test_v3_readiness_deadline_clamps_every_listener_window(self) -> None:
+        control = self.protocol["readiness_control"]
+        with mock.patch.object(holo.time, "monotonic", return_value=100.0):
+            options = holo.listener_retry_options(
+                control,
+                shared_boundary=True,
+                deadline_at=101.5,
+            )
+            self.assertEqual(options["timeout_seconds"], 1.5)
+            self.assertEqual(options["max_window_seconds"], 1.5)
+            self.assertEqual(options["maximum_total_query_window_seconds"], 1.5)
+            with self.assertRaises(holo.HoloStateReadinessError):
+                holo.listener_retry_options(control, deadline_at=100.0)
+
+    def test_v3_reuses_preclaim_runtime_identity_without_rehashing_model(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            binary = root / "llama-server.exe"
+            model = root / "model.gguf"
+            binary.write_bytes(b"bin")
+            model.write_bytes(b"gguf")
+            sidecar = object.__new__(holo.LiveSidecar)
+            sidecar.binary = binary.resolve()
+            sidecar.model = model.resolve()
+            sidecar.evaluator = self.evaluator
+            sidecar.readiness_control = self.protocol["readiness_control"]
+            sidecar.preverified_binary_identity = {
+                "path": str(binary.resolve()),
+                "sha256": holo.EXPECTED_BINARY_SHA256,
+                "runtime_version": holo.EXPECTED_RUNTIME_VERSION,
+            }
+            sidecar.preverified_model_identity = {
+                "path": str(model.resolve()),
+                "sha256": holo.EXPECTED_MODEL_SHA256,
+                "size_bytes": 4,
+            }
+            with mock.patch.object(holo, "EXPECTED_MODEL_SIZE", 4), mock.patch.object(
+                holo,
+                "verify_binary_identity",
+            ) as binary_verify, mock.patch.object(holo, "verify_model") as model_verify:
+                binary_identity, model_identity = sidecar.runtime_identities()
+            binary_verify.assert_not_called()
+            model_verify.assert_not_called()
+            self.assertEqual(binary_identity["sha256"], holo.EXPECTED_BINARY_SHA256)
+            self.assertEqual(model_identity["sha256"], holo.EXPECTED_MODEL_SHA256)
+
+    def test_v3_canary_failures_preserve_inherited_instrumentation_verdict(self) -> None:
+        base = {
+            "worker_protocol_v3": "inconclusive",
+            "verdict": "inconclusive",
+            "parser_canary_attempted": False,
+            "parser_canary_executed": False,
+        }
+        sidecar = SimpleNamespace(
+            guarded=mock.Mock(side_effect=RuntimeError("transport failed")),
+        )
+        with mock.patch.object(holo, "checkpoint_result"):
+            with self.assertRaises(holo.NeoLoopError):
+                holo.execute_worker_v3_capability_sequence(
+                    sidecar,
+                    {},
+                    self.protocol,
+                    mock.Mock(),
+                    base,
+                )
+        self.assertEqual(base["worker_protocol_v3"], "instrumentation-reject")
+        self.assertEqual(base["parser_canary"]["finish_classification"], "parser-canary-gate-failed")
+
+        canary = {
+            "request_label": "parser-canary",
+            "accepted": True,
+            "finish_classification": "accepted",
+        }
+        base = {
+            "worker_protocol_v3": "inconclusive",
+            "verdict": "inconclusive",
+            "parser_canary_attempted": False,
+            "parser_canary_executed": False,
+        }
+        sidecar = SimpleNamespace(guarded=mock.Mock(return_value=canary))
+        with mock.patch.object(holo, "checkpoint_result"), mock.patch.object(
+            holo,
+            "worker_resource_gate",
+            return_value={"passed": False},
+        ):
+            with self.assertRaises(holo.NeoLoopError):
+                holo.execute_worker_v3_capability_sequence(
+                    sidecar,
+                    {},
+                    self.protocol,
+                    mock.Mock(),
+                    base,
+                )
+        self.assertEqual(base["worker_protocol_v3"], "instrumentation-reject")
+        self.assertEqual(base["parser_canary"]["finish_classification"], "canary-memory-or-isolation-failed")
+
+    def test_never_started_wrong_sidecar_owner_is_a_restored_hard_reject(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            sidecar = object.__new__(holo.LiveSidecar)
+            sidecar.readiness_control = self.protocol["readiness_control"]
+            sidecar.readiness_deadline_at = None
+            sidecar.admitted = False
+            sidecar.stable_pids = {42}
+            sidecar.process = None
+            sidecar.sampler = None
+            sidecar.log_handle = None
+            sidecar.runtime = Path(temp) / "runtime"
+            sidecar.runtime.mkdir()
+            sidecar.readiness_failure_evidence = {}
+            stable = SimpleNamespace(
+                passed=True,
+                hard_mismatch=False,
+                actual_pids=frozenset({42}),
+                to_dict=lambda: {"passed": True, "actual_pids": [42]},
+            )
+            occupied = SimpleNamespace(
+                passed=True,
+                pids=frozenset({777}),
+                to_dict=lambda: {"passed": True, "pids": [777]},
+            )
+            with mock.patch.object(
+                holo,
+                "qualify_listener_ownership",
+                return_value=stable,
+            ), mock.patch.object(
+                holo,
+                "query_listener_pids",
+                return_value=occupied,
+            ), mock.patch.object(holo, "health_ok", return_value=True):
+                cleanup = sidecar.stop()
+            self.assertTrue(cleanup["not_launched"])
+            self.assertFalse(cleanup["port_free"])
+            self.assertTrue(cleanup["not_launched_port_state_observed"])
+            self.assertTrue(holo.cleanup_integrity(cleanup, {42})["passed"])
+            self.assertEqual(
+                holo.classify_worker_v3_readiness_failure(
+                    holo.HoloStateReadinessError("sidecar-listener-pid-mismatch")
+                ),
+                "reject",
+            )
+
+    def test_v3_attempt_claim_failure_after_readiness_still_cleans_up(self) -> None:
+        class FakeSidecar:
+            def __init__(self, *args, **kwargs) -> None:
+                self.process = SimpleNamespace(pid=99)
+                self.readiness_failure_evidence = {}
+                self.ownership_boundaries = []
+
+            def launch(self) -> dict:
+                return {"pid": 99}
+
+            def exact_ownership(self, boundary: str, **kwargs) -> dict:
+                return {"boundary": boundary, "passed": True}
+
+            def require_active(self, **kwargs) -> None:
+                return None
+
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            root = Path(temp)
+            paths = self.patch_v3_paths(stack, root)
+            paths["attempt"].write_text("{}", encoding="utf-8")
+            preclaim = self.preclaim(root / "candidate")
+            stack.enter_context(mock.patch.object(holo, "prepare_worker_v3_audit_claim", return_value=preclaim))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "query_listener_pids",
+                return_value=self.query(passed=True, pids={42}),
+            ))
+            stack.enter_context(mock.patch.object(holo, "health_ok", return_value=True))
+            stack.enter_context(mock.patch.object(holo, "LiveSidecar", FakeSidecar))
+            cleanup = stack.enter_context(mock.patch.object(
+                holo,
+                "safe_sidecar_cleanup",
+                return_value=self.cleanup(),
+            ))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "preserved_worker_prior_evidence",
+                return_value=preclaim["prior_before"],
+            ))
+            with self.assertRaises(holo.NeoLoopError):
+                holo.run_worker_protocol_v3_audit(SimpleNamespace(binary="x", model="y"))
+            cleanup.assert_called_once()
+            self.assertTrue(paths["readiness"].is_file())
+            self.assertFalse(paths["result"].exists())
+            self.assertFalse(paths["stream"].exists())
+
+    def test_guarded_requires_fresh_pre_and_post_request_ownership(self) -> None:
+        sidecar = object.__new__(holo.LiveSidecar)
+        sidecar.require_active = mock.Mock()
+        sidecar.exact_ownership = mock.Mock(return_value={"passed": True})
+        self.assertEqual(sidecar.guarded("probe", lambda: "ok", timeout=1), "ok")
+        self.assertEqual(
+            [call.args[0] for call in sidecar.exact_ownership.call_args_list],
+            ["pre-request:probe", "post-request:probe"],
+        )
+        blocked = object.__new__(holo.LiveSidecar)
+        blocked.require_active = mock.Mock()
+        blocked.exact_ownership = mock.Mock(side_effect=holo.NeoLoopError("wrong owner"))
+        operation = mock.Mock(return_value="should-not-run")
+        with self.assertRaises(holo.NeoLoopError):
+            blocked.guarded("blocked", operation, timeout=1)
+        operation.assert_not_called()
+
+    def test_v3_stop_checks_pre_and_post_teardown_ownership(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            sidecar = object.__new__(holo.LiveSidecar)
+            sidecar.readiness_control = self.protocol["readiness_control"]
+            sidecar.readiness_deadline_at = None
+            sidecar.admitted = True
+            sidecar.stable_pids = {42}
+            sidecar.process = mock.Mock(pid=99)
+            sidecar.process.poll.side_effect = [None, None, 0]
+            sidecar.sampler = None
+            sidecar.log_handle = None
+            sidecar.runtime = Path(temp) / "runtime"
+            sidecar.runtime.mkdir()
+            sidecar.exact_ownership = mock.Mock(return_value={"boundary": "pre-teardown", "passed": True})
+            stable = SimpleNamespace(
+                passed=True,
+                actual_pids=frozenset({42}),
+                to_dict=lambda: {"passed": True, "actual_pids": [42]},
+            )
+            empty = SimpleNamespace(
+                passed=True,
+                actual_pids=frozenset(),
+                to_dict=lambda: {"passed": True, "actual_pids": []},
+            )
+            with mock.patch.object(
+                holo,
+                "qualify_runtime_ownership",
+                return_value=(stable, empty),
+            ) as post, mock.patch.object(
+                holo,
+                "wddm_pid_memory_sample",
+                return_value=neo_loop.ProcessVramSample(False, None, []),
+            ), mock.patch.object(holo.time, "sleep"), mock.patch.object(
+                holo,
+                "health_ok",
+                return_value=True,
+            ):
+                cleanup = sidecar.stop()
+            sidecar.exact_ownership.assert_called_once_with("pre-teardown")
+            sidecar.process.terminate.assert_called_once()
+            self.assertEqual(post.call_args.kwargs["sidecar_pids"], set())
+            self.assertEqual(len(cleanup["retirement_samples"]), 5)
+            self.assertTrue(holo.cleanup_integrity(cleanup, {42})["passed"])
+
+    def test_failed_ownership_boundary_cannot_unlock_fast(self) -> None:
+        class FakeSidecar:
+            def __init__(self, *args, **kwargs) -> None:
+                self.process = SimpleNamespace(pid=99)
+                self.readiness_failure_evidence = {}
+                self.ownership_boundaries = []
+
+            def launch(self) -> dict:
+                return {"pid": 99}
+
+            def exact_ownership(self, boundary: str, **kwargs) -> dict:
+                evidence = {"boundary": boundary, "passed": True}
+                self.ownership_boundaries.append(evidence)
+                return evidence
+
+            def require_active(self, **kwargs) -> None:
+                return None
+
+        def execute(sidecar, _readiness, _protocol, _ledger, result) -> None:
+            sidecar.ownership_boundaries.append({"boundary": "post-request-error:deep-A1", "passed": False})
+            result["worker_protocol_v3"] = "reviewable-accept"
+            result["verdict"] = "reviewable-accept"
+            result["FAST_PROCESS_LOCAL_HOLOSTATE"] = "reviewable-accept"
+            result["fast_requests_executed"] = 6
+
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            root = Path(temp)
+            self.patch_v3_paths(stack, root)
+            preclaim = self.preclaim(root / "candidate")
+            stack.enter_context(mock.patch.object(holo, "prepare_worker_v3_audit_claim", return_value=preclaim))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "query_listener_pids",
+                return_value=self.query(passed=True, pids={42}),
+            ))
+            stack.enter_context(mock.patch.object(holo, "health_ok", return_value=True))
+            stack.enter_context(mock.patch.object(holo, "LiveSidecar", FakeSidecar))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "execute_worker_v3_capability_sequence",
+                side_effect=execute,
+            ))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "safe_sidecar_cleanup",
+                return_value=self.cleanup(),
+            ))
+            stack.enter_context(mock.patch.object(holo, "git_read", side_effect=self.fake_git_read))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "preserved_worker_prior_evidence",
+                return_value=preclaim["prior_before"],
+            ))
+            result = holo.run_worker_protocol_v3_audit(SimpleNamespace(binary="x", model="y"))
+            self.assertFalse(result["ownership_boundary_gate"]["passed"])
+            self.assertEqual(result["FAST_PROCESS_LOCAL_HOLOSTATE"], "inconclusive")
+            self.assertEqual(result["PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE"], "LOCKED")
+
+    def test_legacy_resource_gate_retains_exact_listener_validation(self) -> None:
+        sidecar = SimpleNamespace(
+            process=SimpleNamespace(pid=99),
+            readiness_control=None,
+            last_exact_ownership=None,
+            sampler=None,
+            require_active=mock.Mock(side_effect=holo.NeoLoopError("listener mismatch")),
+            telemetry=mock.Mock(return_value={"sample_count": 1, "peak_dedicated_mib": 1.0}),
+        )
+        readiness = {"process_memory": {"private_bytes": 100}}
+        with mock.patch.object(
+            holo,
+            "process_info",
+            return_value={"private_bytes": 100},
+        ), mock.patch.object(holo, "listener_pids", return_value={99}):
+            gate = holo.worker_resource_gate(sidecar, readiness, self.protocol_v2)
+        sidecar.require_active.assert_called_once_with(require_listener=True)
+        self.assertFalse(gate["passed"])
+        self.assertTrue(any("listener mismatch" in reason for reason in gate["reasons"]))
+
+
 class CompletionClassificationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -1009,8 +1647,12 @@ class OneShotWorkflowTests(unittest.TestCase):
                 holo.WORKER_PROTOCOL_V2_ATTEMPT_PATH,
                 holo.WORKER_PROTOCOL_V2_RESULT_PATH,
                 holo.WORKER_PROTOCOL_V2_STREAM_PATH,
+                holo.WORKER_PROTOCOL_V3_READINESS_PATH,
+                holo.WORKER_PROTOCOL_V3_ATTEMPT_PATH,
+                holo.WORKER_PROTOCOL_V3_RESULT_PATH,
+                holo.WORKER_PROTOCOL_V3_STREAM_PATH,
             }),
-            10,
+            14,
         )
 
     def test_worker_protocol_cannot_run_twice(self) -> None:
@@ -1110,6 +1752,7 @@ class TimeoutTests(unittest.TestCase):
     def test_guarded_timeout_settles_worker_before_returning(self) -> None:
         sidecar = object.__new__(holo.LiveSidecar)
         sidecar.require_active = mock.Mock()
+        sidecar.exact_ownership = mock.Mock(return_value={"passed": True})
         sidecar.process = None
         started = time.monotonic()
         with self.assertRaises(holo.NeoLoopError):

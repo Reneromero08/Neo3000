@@ -98,6 +98,7 @@ RSI-0: CLOSED
 -> First catalytic intervention: HoloState-v1 Live Prefix Lattice
 -> HoloState worker v1: instrumentation reject; Fast/Deep capability untested
 -> HoloState worker v2: executed once; inconclusive at readiness before canary
+-> HoloState worker v3: authorized readiness integration; not executed
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
