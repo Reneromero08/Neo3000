@@ -44,6 +44,8 @@ def resolve_fast_token_evidence(
             thinking_disabled=thinking_disabled,
             tokenize_visible_content=tokenize_visible_content,
             finish_reason=_read(measurement, "finish_reason"),
+            terminal_stop_type=_read(measurement, "stop_type"),
+            terminal_stopping_word=_read(measurement, "stopping_word"),
             stop_sequences_configured=stop_sequences_configured,
             allow_terminal_control_accounting=allow_terminal_control_accounting,
         )
@@ -108,6 +110,7 @@ def evaluate_fast_worker(
         "reconstructed-",
         "native-",
         "terminal-control-",
+        "terminal-eos-",
         "completion-count-",
     )
     classification = "accepted"
@@ -131,6 +134,8 @@ def evaluate_fast_worker(
         "reasoning_present": bool(reasoning),
         "tool_call_count": len(tool_calls),
         "finish_reason": finish_reason,
+        "stop_type": _read(measurement, "stop_type"),
+        "stopping_word": _read(measurement, "stopping_word"),
         "prompt_tokens": prompt_tokens,
         "cached_prompt_tokens": cached_tokens,
         "fresh_prompt_tokens": (
