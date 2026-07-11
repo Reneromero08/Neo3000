@@ -2,7 +2,7 @@
 """Frozen executable task suite for CatalyticSwarm-1.
 
 The suite is a deterministic multiple-candidate program-selection benchmark.
-Each task exposes a small integer DSL, public input/output examples, and sixteen
+Each task exposes a small integer DSL, public input/output examples, and sixty-four
 candidate programs. Hidden examples and answer keys are generated only inside
 this protected evaluator module; prompt rendering exposes only public material.
 
@@ -16,17 +16,18 @@ import itertools
 import json
 import random
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any, Mapping
 
 SCHEMA_VERSION = 1
 SUITE_ID = "catalytic-swarm-1-dsl-selection-v1"
 GENERATION_SEED = 13001
-EXPECTED_SUITE_SHA256 = "511315F206889D0194ECB7076380A8D6F43170F7D9564BA0DA008ACE538F049C"
+EXPECTED_SUITE_SHA256 = "4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92"
 TASK_COUNT = 8
-CANDIDATE_COUNT = 16
-PROGRAM_LENGTH = 3
-PUBLIC_EXAMPLE_COUNT = 7
-HIDDEN_EXAMPLE_COUNT = 12
+CANDIDATE_COUNT = 64
+PROGRAM_LENGTH = 5
+PUBLIC_EXAMPLE_COUNT = 5
+HIDDEN_EXAMPLE_COUNT = 16
 ALLOWED_OPS = {"ADD", "MUL", "NEG", "ABS", "MOD"}
 OPS_WITH_ARG = {"ADD", "MUL", "MOD"}
 OPS_WITHOUT_ARG = {"NEG", "ABS"}
@@ -227,25 +228,57 @@ def _program_display(program: tuple[Instruction, ...]) -> str:
 
 
 def _execute_tuple(program: tuple[Instruction, ...], x: int) -> int:
-    return execute_program(CandidateProgram("TMP", program, _program_display(program)), x)
+    y = x
+    for instruction in program:
+        if instruction.op == "ADD":
+            assert instruction.arg is not None
+            y += instruction.arg
+        elif instruction.op == "MUL":
+            assert instruction.arg is not None
+            y *= instruction.arg
+        elif instruction.op == "NEG":
+            y = -y
+        elif instruction.op == "ABS":
+            y = abs(y)
+        elif instruction.op == "MOD":
+            assert instruction.arg is not None
+            y %= instruction.arg
+        else:
+            raise AdvantageTaskError(f"unsupported instruction {instruction.op!r}")
+    return y
+
+
+def _candidate_variants(target: tuple[Instruction, ...], pool: tuple[Instruction, ...]):
+    """Yield deterministic near-target programs without enumerating 20**5."""
+    seen: set[tuple[Instruction, ...]] = set()
+    for mutation_count in (1, 2, 3):
+        for positions in itertools.combinations(range(PROGRAM_LENGTH), mutation_count):
+            choices = [
+                tuple(item for item in pool if item != target[position])
+                for position in positions
+            ]
+            for replacements in itertools.product(*choices):
+                program = list(target)
+                for position, replacement in zip(positions, replacements):
+                    program[position] = replacement
+                candidate = tuple(program)
+                if candidate not in seen:
+                    seen.add(candidate)
+                    yield candidate
 
 
 def _generate_raw_suite() -> dict[str, Any]:
     rng = random.Random(GENERATION_SEED)
     public_pool = list(range(-9, 10))
-    hidden_pool = list(range(-20, 21))
-    programs = tuple(itertools.product(_instruction_pool(), repeat=PROGRAM_LENGTH))
+    hidden_pool = list(range(-24, 25))
+    instruction_pool = _instruction_pool()
     used_targets: set[tuple[Instruction, ...]] = set()
     tasks: list[dict[str, Any]] = []
 
     for task_index in range(TASK_COUNT):
         while True:
             public_inputs = sorted(rng.sample(public_pool, PUBLIC_EXAMPLE_COUNT))
-            if (
-                0 in public_inputs
-                and any(value < 0 for value in public_inputs)
-                and any(value > 0 for value in public_inputs)
-            ):
+            if 0 in public_inputs and any(value < 0 for value in public_inputs) and any(value > 0 for value in public_inputs):
                 break
         hidden_inputs = sorted(
             rng.sample(
@@ -255,20 +288,20 @@ def _generate_raw_suite() -> dict[str, Any]:
         )
 
         while True:
-            target = rng.choice(programs)
+            target = tuple(rng.choice(instruction_pool) for _ in range(PROGRAM_LENGTH))
             if target in used_targets:
                 continue
             target_values = [_execute_tuple(target, value) for value in public_inputs]
-            if len(set(target_values)) >= 4 and max(target_values) - min(target_values) >= 5:
+            if len(set(target_values)) >= 4 and max(target_values) - min(target_values) >= 8:
                 used_targets.add(target)
                 break
 
         target_vector = tuple(_execute_tuple(target, value) for value in public_inputs)
         scored: list[tuple[int, int, int, str, tuple[Instruction, ...], tuple[int, ...]]] = []
-        for program in programs:
-            if program == target:
-                continue
+        for program in _candidate_variants(target, instruction_pool):
             vector = tuple(_execute_tuple(program, value) for value in public_inputs)
+            if vector == target_vector:
+                continue
             matches = sum(actual == expected for actual, expected in zip(vector, target_vector))
             distance = sum(abs(actual - expected) for actual, expected in zip(vector, target_vector))
             instruction_matches = sum(left == right for left, right in zip(program, target))
@@ -302,14 +335,8 @@ def _generate_raw_suite() -> dict[str, Any]:
         tasks.append(
             {
                 "task_id": f"{TASK_ID_PREFIX}{task_index + 1:02d}",
-                "public_examples": [
-                    {"x": value, "y": _execute_tuple(target, value)}
-                    for value in public_inputs
-                ],
-                "hidden_examples": [
-                    {"x": value, "y": _execute_tuple(target, value)}
-                    for value in hidden_inputs
-                ],
+                "public_examples": [{"x": value, "y": _execute_tuple(target, value)} for value in public_inputs],
+                "hidden_examples": [{"x": value, "y": _execute_tuple(target, value)} for value in hidden_inputs],
                 "candidates": candidate_items,
                 "answer_candidate_id": f"C{answer_index:02d}",
             }
@@ -412,6 +439,7 @@ def _parse_raw_task(value: Mapping[str, Any], index: int) -> AdvantageTask:
     return task
 
 
+@lru_cache(maxsize=1)
 def build_frozen_task_suite() -> AdvantageTaskSuite:
     raw = _generate_raw_suite()
     digest = sha256_bytes(canonical_json_bytes(raw))
