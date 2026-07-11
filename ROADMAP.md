@@ -105,7 +105,7 @@ RSI-0: CLOSED
 -> HoloState worker v4: reviewable-accept; process-local micro-worker unlocked
 -> CatalyticSwarm-0: executed once; control qualification pass, readiness inconclusive on exact-PID WDDM telemetry loss before canary
 -> CatalyticSwarm-0 v2: structured micro-worker and bounded swarm control reviewable-accept
--> CatalyticSwarm-1: equal-budget evaluation integrated; not executed
+-> CatalyticSwarm-1: equal-budget evaluation repaired and integrated; not executed
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -122,8 +122,8 @@ this section is only its navigation capsule.
 - **HoloState carrier hierarchy:** exact live prefix state is proven process-locally; a bounded logical swarm over live leases and a verified append-only blackboard are proven at the 32-worker control boundary; expert residency, recurrent trajectory state, and executable CUDA-graph/warm-runtime state are later carriers. Only exact identity-bound state may survive closure.
 - **Preserved predecessor:** CatalyticSwarm-0 v1 executed exactly once. Generation-free control qualification passed; readiness stopped `inconclusive` on exact-PID WDDM telemetry loss before the parser canary, capability attempt, lease, ledger, blackboard, or any worker request. V1 is immutable and no-retry.
 - **Current boundary:** `catalytic_swarm_0_v2` completed one artifact-claiming live execution from protected integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests. Its sole causal intervention was bounded transient exact-PID WDDM query resilience plus fresh-sample admission; the inherited 32-worker plan, prompts, seeds, parent graph, one-slot lease law, parser, verifier, blackboard, and 64-token Fast budget remained unchanged. All 32 workers and the 16/8/6/2 control sequence passed, so structured-micro-worker and bounded swarm-control availability are unlocked at `reviewable-accept`.
-- **Prepared successor:** CatalyticSwarm-1 is statically integrated at complete-contract SHA-256 `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. The exact eight-task suite, four equal-budget arms, common-root warm law, Latin-square order, hidden-data isolation, bounded ledger, one-shot paths, and protected runner are present. No sidecar, model request, or artifact claim occurred.
-- **Next boundary:** task advantage is not established. Executing `audit-catalytic-swarm-1` requires separate explicit authorization; no further swarm execution is currently authorized.
+- **Prepared successor:** CatalyticSwarm-1 is repaired and statically integrated at unchanged complete-contract SHA-256 `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. The exact eight-task suite, four equal-budget arms, common-root warm law, Latin-square order, hidden-data isolation, bounded ledger, one-shot paths, and protected runner are present. The runner now fails closed on per-request custody/resource drift, per-task parity failure, parser-to-attempt cleanup loss, and terminal boundary-count mismatch. No sidecar, model request, or artifact claim occurred.
+- **Next boundary:** task advantage is not established. The prior live authorization is unconsumed but superseded by the repaired protected-main identity; executing `audit-catalytic-swarm-1` now requires new separate explicit authorization.
 
 | Swarm stage | Architectural purpose | Unlock boundary |
 |---|---|---|
@@ -636,7 +636,7 @@ V2 is `reviewable-accept`. `STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE` and `CAT
 
 No CatalyticSwarm-0 rerun is authorized. The CatalyticSwarm-1 equal-budget successor is integrated below, but its live invocation remains separately authorized. This control proof does not establish task advantage.
 
-### CatalyticSwarm-1 equal-budget evaluation: INTEGRATED / NOT EXECUTED
+### CatalyticSwarm-1 equal-budget evaluation: REPAIRED / INTEGRATED / NOT EXECUTED
 
 Draft PR #6 supplied the five-file pure connector at exact head `aaeb3fe8cc906121fdfcb8ed41d9420b2849d8b6`. Its twelve commits were not imported individually. The protected integration retains the frozen eight-task DSL suite at SHA-256 `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92` and complete contract at `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
 
@@ -644,7 +644,7 @@ The four plan hashes are serial-chain `99FE4402A487EEAF07FAEE7A64CAB241A888E1CB9
 
 Hidden examples and answer keys are excluded from roots, assignments, requests, ledger records, arm context, and later task context. Arm outputs stay arm-local; task outputs stay task-local. Hidden scoring is deferred until all four arms for a task finish. The exclusive ledger is capped at 80,000 records and 67,108,864 bytes and retains bounded metadata only.
 
-The prepared runner inherits the v2 exact-PID WDDM resilience/freshness policy, v4 token evidence, strict candidate JSON, one physical lease, stable/candidate isolation, and bounded cleanup. All seven `state/catalytic_swarm_1` paths are ignored and absent. Live request count is zero; no `catalytic_swarm_1_evidence` object exists. `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, SOTA, broader process-local HoloState, restart persistence, and automatic promotion remain locked.
+The repaired runner inherits the v2 exact-PID WDDM resilience/freshness policy, v4 token evidence, strict candidate JSON, one physical lease, stable/candidate isolation, and bounded cleanup. It adds exact stable/candidate custody checks before and after every prospective model request, post-request host/resource checks, an immediate parity stop after every completed task, guarded cleanup across the parser-to-attempt boundary, and terminal reconciliation of `2064 / 1032 / 8` custody, host-memory, and task-parity checks. All seven `state/catalytic_swarm_1` paths are ignored and absent. Sidecar launches and live requests remain zero; no `catalytic_swarm_1_evidence` object exists. The prior authorization is unconsumed but superseded by the new protected-main identity. `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, SOTA, broader process-local HoloState, restart persistence, and automatic promotion remain locked.
 
 ### HoloState-v2 persistence boundary
 

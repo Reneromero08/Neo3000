@@ -96,6 +96,8 @@
       "scripts/catalytic_swarm_advantage_protocol.py",
       "scripts/test_catalytic_swarm_advantage.py",
       "scripts/test_catalytic_swarm_advantage_protocol.py",
+      "scripts/catalytic_swarm_1_runtime_safety.py",
+      "scripts/test_catalytic_swarm_1_runtime_safety.py",
       "tools/server/server-context.cpp",
       "tools/server/server-task.cpp",
       ".gitignore",
@@ -139,7 +141,9 @@
     "scripts/catalytic_swarm_advantage.py",
     "scripts/catalytic_swarm_advantage_protocol.py",
     "scripts/test_catalytic_swarm_advantage.py",
-    "scripts/test_catalytic_swarm_advantage_protocol.py"
+    "scripts/test_catalytic_swarm_advantage_protocol.py",
+    "scripts/catalytic_swarm_1_runtime_safety.py",
+    "scripts/test_catalytic_swarm_1_runtime_safety.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"

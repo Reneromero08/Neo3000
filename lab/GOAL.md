@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Preserve the integrated, unexecuted CatalyticSwarm-1 boundary
+## Checkpoint 2: Preserve the repaired, integrated, unexecuted CatalyticSwarm-1 boundary
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse and the bounded process-local HoloState micro-worker are proven; broader process-local and restart-persistent availability remain locked.
 
@@ -44,13 +44,13 @@ Control qualification, readiness, parser canary, all 32 worker requests, 32 one-
 
 ## Prepared CatalyticSwarm-1 boundary
 
-The equal-budget CatalyticSwarm-1 evaluation is integrated but not executed. Its frozen task suite SHA-256 is `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`; complete contract SHA-256 is `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. It prepares serial-chain, best-of-N, sparse-swarm, and verified-swarm arms under exact equal request/token budgets, one common public-root warm per task, Latin-square order, strict isolation, and bounded metadata-only evidence.
+The equal-budget CatalyticSwarm-1 evaluation is repaired and integrated but not executed. Its frozen task suite SHA-256 is `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`; complete contract SHA-256 remains `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. It prepares serial-chain, best-of-N, sparse-swarm, and verified-swarm arms under exact equal request/token budgets, one common public-root warm per task, Latin-square order, strict isolation, and bounded metadata-only evidence. The safety-only repair adds per-request custody and host/resource enforcement, per-task parity stops, parser-to-attempt cleanup protection, and terminal `2064 / 1032 / 8` boundary reconciliation without changing the task or comparison geometry.
 
-No sidecar was launched, no live model request was made, no one-shot authority was claimed, and all seven `state/catalytic_swarm_1` paths remain absent. The static command exists only for a future separately authorized invocation.
+No sidecar was launched, no live model request was made, no one-shot authority was claimed, and all seven `state/catalytic_swarm_1` paths remain absent. The prior live authorization is unconsumed but superseded by the new protected-main identity. The static command exists only for a future newly authorized invocation.
 
 ## Active bounded objective
 
-Preserve the integrated, unexecuted CatalyticSwarm-1 boundary. Do not invoke `audit-catalytic-swarm-1`, rerun CatalyticSwarm-0 v1/v2 or worker protocols v1-v4, infer task advantage, run Deep workers, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, or promote automatically without separate explicit authority.
+Preserve the repaired, integrated, unexecuted CatalyticSwarm-1 boundary. Do not invoke `audit-catalytic-swarm-1`, rerun CatalyticSwarm-0 v1/v2 or worker protocols v1-v4, infer task advantage, run Deep workers, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, or promote automatically without new separate explicit authority bound to repaired protected main.
 
 ## Claim state
 
@@ -62,8 +62,10 @@ PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 CatalyticSwarm-0: EXECUTED_ONCE_READINESS_INCONCLUSIVE
 CatalyticSwarm-0-v2: EXECUTED_ONCE / reviewable-accept
-CatalyticSwarm-1: INTEGRATED / NOT EXECUTED
+CatalyticSwarm-1: REPAIRED / INTEGRATED / NOT EXECUTED
+CatalyticSwarm-1 prior authorization: UNCONSUMED BUT SUPERSEDED BY NEW MAIN IDENTITY
 CatalyticSwarm-1 live model requests: 0
+CatalyticSwarm-1 sidecar launches: 0
 CatalyticSwarm-1 one-shot artifacts: ABSENT
 CATALYTIC_SWARM_READINESS: PASS
 STRUCTURED_HOLOSTATE_MICROWORKER: reviewable-accept

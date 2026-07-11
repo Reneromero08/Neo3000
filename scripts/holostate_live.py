@@ -126,6 +126,14 @@ from catalytic_swarm_advantage_protocol import (  # noqa: E402
     counterbalanced_arm_order,
     validate_catalytic_swarm_1_contract,
 )
+from catalytic_swarm_1_runtime_safety import (  # noqa: E402
+    ArmedCleanup,
+    live_boundary_gate as build_live_boundary_gate,
+    require_custody_snapshot,
+    require_host_memory_growth,
+    require_task_budget_parity,
+    run_request_with_boundaries,
+)
 from holostate_swarm_adapter import (  # noqa: E402
     HoloStateSwarmAdapterError,
     build_worker_messages,
@@ -4569,6 +4577,7 @@ def run_worker_v4_chat_request(
     request_label: str,
     request_sequence_index: int,
     warm: bool = False,
+    request_completed: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
     payload = build_worker_chat_payload(protocol, system_message, user_message, lane)
     if "stop" in payload:
@@ -4584,6 +4593,8 @@ def run_worker_v4_chat_request(
         event_recorder=ledger.recorder(request_label, request_sequence_index),
         request_label=request_label,
     )
+    if request_completed is not None:
+        request_completed()
     result = compact_worker_v4_measurement(
         measurement,
         root_name=root_name,
@@ -11634,6 +11645,7 @@ def catalytic_swarm_1_warm_request(
     *,
     request_sequence_index: int,
     lease_id: int,
+    model_request_completed: Callable[[str], None] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], str, dict[str, Any]]:
     system_message, system_identity, public_root = catalytic_swarm_1_public_root(
         task, readiness
@@ -11673,9 +11685,10 @@ def catalytic_swarm_1_warm_request(
     )
     transient = BoundedInMemoryLedger(max_bytes=MIB, max_records=10_000)
     started_at = utc_now()
-    result = sidecar.guarded(
-        f"cs1-warm:{task.task_id}",
-        lambda: run_worker_v4_chat_request(
+    warm_request_label = f"{task.task_id}:common-root-warm"
+
+    def execute_warm_model_request() -> dict[str, Any]:
+        return run_worker_v4_chat_request(
             protocol_v4,
             system_message,
             system_identity,
@@ -11686,10 +11699,19 @@ def catalytic_swarm_1_warm_request(
             user_message=warm_user_message,
             expected_content=expected,
             ledger=transient,  # type: ignore[arg-type]
-            request_label=f"{task.task_id}:common-root-warm",
+            request_label=warm_request_label,
             request_sequence_index=request_sequence_index,
             warm=True,
-        ),
+            request_completed=(
+                lambda: model_request_completed(warm_request_label)
+                if model_request_completed is not None
+                else None
+            ),
+        )
+
+    result = sidecar.guarded(
+        f"cs1-warm:{task.task_id}",
+        execute_warm_model_request,
     )
     finished_at = utc_now()
     resource = worker_resource_gate(sidecar, readiness, predecessor_contract)
@@ -11761,6 +11783,7 @@ def stream_catalytic_swarm_1_candidate(
     *,
     request_sequence_index: int,
     lease_id: int,
+    model_request_completed: Callable[[str], None] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     lane = catalytic_swarm_1_lane(turn)
     payload = build_worker_chat_payload(protocol_v4, system_message, assignment, lane)
@@ -11805,6 +11828,8 @@ def stream_catalytic_swarm_1_candidate(
         request_label=request_label,
     )
     finished_at = utc_now()
+    if model_request_completed is not None:
+        model_request_completed(request_label)
     content = measurement.content
     candidate_id = parse_candidate_content(content, task)
     compact = compact_worker_v4_measurement(
@@ -12069,13 +12094,114 @@ def catalytic_swarm_1_isolation_gate(
 
 
 def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
-    """Execute the separately authorized, one-shot CS1 equal-budget comparison."""
+    """Execute CS1 under a cleanup owner spanning the complete live lifetime."""
+    cleanup_state: dict[str, Any] = {"callback": None}
+    post_parser_cleanup = ArmedCleanup(
+        lambda: cleanup_state["callback"](), armed=False
+    )
+    try:
+        return _run_catalytic_swarm_1_audit(
+            args, post_parser_cleanup, cleanup_state
+        )
+    finally:
+        post_parser_cleanup.run()
+
+
+def _run_catalytic_swarm_1_audit(
+    args: argparse.Namespace,
+    post_parser_cleanup: ArmedCleanup,
+    cleanup_state: dict[str, Any],
+) -> dict[str, Any]:
+    """Inner CS1 runner; the public wrapper owns unhandled cleanup."""
     preclaim = prepare_catalytic_swarm_1_claim(args)
     contract = preclaim["contract"]
     protocol_v4 = preclaim["protocol_v4"]
     predecessor_contract = preclaim["predecessor_contract"]
     lock = preclaim["lock"]
     contract_hash = lock["catalytic_swarm_1_sha256"]
+    runtime_custody_expected = {
+        "stable": git_read(
+            ROOT, "status", "--porcelain=v2", "--branch", "--untracked-files=all"
+        ),
+        "candidate": git_read(
+            preclaim["candidate_root"],
+            "status",
+            "--porcelain=v2",
+            "--branch",
+            "--untracked-files=all",
+        ),
+    }
+    runtime_boundary_stats: dict[str, Any] = {
+        "custody_checks": 0,
+        "host_memory_checks": 0,
+        "task_parity_checks": 0,
+        "completed_model_requests": 0,
+        "maximum_host_private_growth_bytes": 0,
+        "last_completed_model_request": None,
+        "last_boundary": None,
+    }
+
+    def require_live_boundary(boundary: str, *, require_host: bool) -> dict[str, Any]:
+        observed = {
+            "stable": git_read(
+                ROOT, "status", "--porcelain=v2", "--branch", "--untracked-files=all"
+            ),
+            "candidate": git_read(
+                preclaim["candidate_root"],
+                "status",
+                "--porcelain=v2",
+                "--branch",
+                "--untracked-files=all",
+            ),
+        }
+        custody = require_custody_snapshot(
+            runtime_custody_expected, observed, boundary=boundary
+        )
+        runtime_boundary_stats["custody_checks"] += 1
+        runtime_boundary_stats["last_boundary"] = boundary
+        evidence: dict[str, Any] = {
+            "boundary": boundary,
+            "custody_passed": custody["passed"],
+            "stable_snapshot_sha256": sha256_bytes(observed["stable"].encode("utf-8")),
+            "candidate_snapshot_sha256": sha256_bytes(
+                observed["candidate"].encode("utf-8")
+            ),
+        }
+        if require_host:
+            if sidecar is None or sidecar.process is None or readiness is None:
+                raise NeoLoopError(
+                    f"{boundary}: CatalyticSwarm-1 host boundary lacks a live sidecar"
+                )
+            resource = worker_resource_gate(sidecar, readiness, predecessor_contract)
+            if resource.get("passed") is not True:
+                raise NeoLoopError(
+                    f"{boundary}: CatalyticSwarm-1 per-request resource gate failed"
+                )
+            info = process_info(sidecar.process.pid)
+            if not isinstance(info, dict):
+                raise NeoLoopError(
+                    f"{boundary}: CatalyticSwarm-1 process memory is unavailable"
+                )
+            host = require_host_memory_growth(
+                baseline_private_bytes=int(readiness["process_memory"]["private_bytes"]),
+                current_private_bytes=int(info["private_bytes"]),
+                ceiling_bytes=int(predecessor_contract["memory"]["host_cache_mib_ceiling"]) * MIB,
+                boundary=boundary,
+            )
+            runtime_boundary_stats["host_memory_checks"] += 1
+            runtime_boundary_stats["maximum_host_private_growth_bytes"] = max(
+                int(runtime_boundary_stats["maximum_host_private_growth_bytes"]),
+                int(host["growth_bytes"]),
+            )
+            evidence["host_memory"] = host
+            evidence["resource_gate_passed"] = True
+        return evidence
+
+    def record_model_request_completion(request_label: str) -> None:
+        if not isinstance(request_label, str) or not request_label:
+            raise NeoLoopError("CatalyticSwarm-1 completed request label is invalid")
+        runtime_boundary_stats["completed_model_requests"] += 1
+        runtime_boundary_stats["last_completed_model_request"] = request_label
 
     control_record: dict[str, Any] = {
         "schema_version": 1,
@@ -12170,6 +12296,20 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
     stable_pids: set[int] | None = None
     readiness: dict[str, Any] | None = None
     readiness_claimed = False
+
+    def cleanup_post_readiness_pre_parser() -> dict[str, Any]:
+        cleanup = safe_sidecar_cleanup(sidecar)
+        readiness_record["post_readiness_pre_parser_cleanup"] = cleanup
+        readiness_record["post_readiness_pre_parser_cleanup_gate"] = cleanup_integrity(
+            cleanup, stable_pids
+        )
+        readiness_record["post_readiness_pre_parser_cleanup_at"] = utc_now()
+        if readiness_claimed:
+            write_catalytic_swarm_1_runtime_json(
+                CATALYTIC_SWARM_1_READINESS_PATH, readiness_record
+            )
+        return cleanup
+
     try:
         claim_catalytic_swarm_1_runtime_json_once(
             CATALYTIC_SWARM_1_READINESS_PATH, readiness_record
@@ -12228,13 +12368,19 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
         write_catalytic_swarm_1_runtime_json(
             CATALYTIC_SWARM_1_READINESS_PATH, readiness_record
         )
+        cleanup_state["callback"] = cleanup_post_readiness_pre_parser
+        post_parser_cleanup.arm()
     except Exception as exc:
         if not readiness_claimed:
             raise
         cleanup = (
-            safe_sidecar_cleanup(sidecar)
-            if sidecar is not None
-            else readiness_v3_no_sidecar_cleanup(readiness_control, stable_pids)
+            post_parser_cleanup.run()
+            if post_parser_cleanup.armed
+            else (
+                safe_sidecar_cleanup(sidecar)
+                if sidecar is not None
+                else readiness_v3_no_sidecar_cleanup(readiness_control, stable_pids)
+            )
         )
         gate = cleanup_integrity(cleanup, stable_pids)
         readiness_record.update({
@@ -12257,7 +12403,11 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
         assert_catalytic_swarm_1_artifact_stage(allow_through="readiness")
         return readiness_record
     except BaseException as exc:
-        cleanup = safe_sidecar_cleanup(sidecar)
+        cleanup = (
+            post_parser_cleanup.run()
+            if post_parser_cleanup.armed
+            else safe_sidecar_cleanup(sidecar)
+        )
         readiness_record.update({
             "status": "complete",
             "readiness_v1": "inconclusive",
@@ -12304,11 +12454,25 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
     first_warm_metadata: dict[str, Any] | None = None
     first_system_message: str | None = None
     first_system_identity: dict[str, Any] | None = None
+
+    def cleanup_post_parser_pre_attempt() -> dict[str, Any]:
+        cleanup = safe_sidecar_cleanup(sidecar)
+        parser_record["post_parser_pre_attempt_cleanup"] = cleanup
+        parser_record["post_parser_pre_attempt_cleanup_gate"] = cleanup_integrity(
+            cleanup, stable_pids
+        )
+        parser_record["post_parser_pre_attempt_cleanup_at"] = utc_now()
+        write_catalytic_swarm_1_runtime_json(
+            CATALYTIC_SWARM_1_PARSER_CANARY_PATH, parser_record
+        )
+        return cleanup
+
     try:
         claim_catalytic_swarm_1_runtime_json_once(
             CATALYTIC_SWARM_1_PARSER_CANARY_PATH, parser_record
         )
         parser_claimed = True
+        cleanup_state["callback"] = cleanup_post_parser_pre_attempt
         maximum_wait = float(
             readiness_control["fresh_sample_boundary_law"]["maximum_wait_seconds"]
         )
@@ -12323,23 +12487,44 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
         if canary["passed"] is not True:
             raise NeoLoopError("CatalyticSwarm-1 strict candidate JSON parser canary failed")
         parser_record["parser_canary"] = canary
-        with lease_pool.lease() as lease_id:
-            (
-                first_warm_summary,
-                first_warm_metadata,
-                first_system_message,
-                first_system_identity,
-            ) = catalytic_swarm_1_warm_request(
-                sidecar,
-                protocol_v4,
-                predecessor_contract,
-                readiness,
-                suite.tasks[0],
-                request_sequence_index=1,
-                lease_id=lease_id,
-            )
-        mark_catalytic_swarm_1_first_warm_executed(parser_record)
-        parser_record["first_common_root_warm"] = first_warm_summary
+
+        def record_first_warm_completion(request_label: str) -> None:
+            record_model_request_completion(request_label)
+            mark_catalytic_swarm_1_first_warm_executed(parser_record)
+
+        def execute_first_common_root_warm() -> tuple[
+            dict[str, Any], dict[str, Any], str, dict[str, Any]
+        ]:
+            with lease_pool.lease() as lease_id:
+                completed = catalytic_swarm_1_warm_request(
+                    sidecar,
+                    protocol_v4,
+                    predecessor_contract,
+                    readiness,
+                    suite.tasks[0],
+                    request_sequence_index=1,
+                    lease_id=lease_id,
+                    model_request_completed=record_first_warm_completion,
+                )
+            parser_record["first_common_root_warm"] = completed[0]
+            return completed
+
+        (
+            first_warm_summary,
+            first_warm_metadata,
+            first_system_message,
+            first_system_identity,
+        ) = run_request_with_boundaries(
+            before=lambda: require_live_boundary(
+                f"pre-request:{suite.tasks[0].task_id}:common-root-warm",
+                require_host=False,
+            ),
+            request=execute_first_common_root_warm,
+            after=lambda: require_live_boundary(
+                f"post-request:{suite.tasks[0].task_id}:common-root-warm",
+                require_host=True,
+            ),
+        )
         parser_record["before_capability_attempt_wddm"] = sidecar.wait_for_fresh_wddm(
             "before-capability-attempt", maximum_wait
         )
@@ -12353,7 +12538,11 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
             CATALYTIC_SWARM_1_PARSER_CANARY_PATH, parser_record
         )
     except Exception as exc:
-        cleanup = safe_sidecar_cleanup(sidecar)
+        cleanup = (
+            post_parser_cleanup.run()
+            if post_parser_cleanup.armed
+            else safe_sidecar_cleanup(sidecar)
+        )
         gate = cleanup_integrity(cleanup, stable_pids)
         classification = catalytic_swarm_1_failure_classification(exc)
         parser_record.update({
@@ -12375,7 +12564,11 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
         assert_catalytic_swarm_1_artifact_stage(allow_through="parser_canary")
         return parser_record
     except BaseException as exc:
-        cleanup = safe_sidecar_cleanup(sidecar)
+        cleanup = (
+            post_parser_cleanup.run()
+            if post_parser_cleanup.armed
+            else safe_sidecar_cleanup(sidecar)
+        )
         parser_record.update({
             "status": "complete",
             "parser_canary_v1": "inconclusive",
@@ -12410,10 +12603,8 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
         (CATALYTIC_SWARM_1_PARSER_CANARY_PATH, parser_sha256),
     ):
         if sha256_file(path) != digest:
-            cleanup = safe_sidecar_cleanup(sidecar)
             raise NeoLoopError(
-                f"CatalyticSwarm-1 frozen stage changed before attempt: {path.name}; "
-                f"cleanup={cleanup_integrity(cleanup, stable_pids)}"
+                f"CatalyticSwarm-1 frozen stage changed before attempt: {path.name}"
             )
 
     attempt: dict[str, Any] = {
@@ -12450,7 +12641,10 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
     attempt_claimed = result_claimed = False
     task_results_claimed = False
     execution_error: Exception | None = None
+
+    result["runtime_boundary_evidence"] = runtime_boundary_stats
     try:
+        post_parser_cleanup.disarm()
         claim_catalytic_swarm_1_runtime_json_once(
             CATALYTIC_SWARM_1_ATTEMPT_PATH, attempt
         )
@@ -12481,9 +12675,17 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
                 system_identity = first_system_identity  # type: ignore[assignment]
             else:
                 request_sequence_index += 1
-                with lease_pool.lease() as lease_id:
-                    warm_summary, warm_metadata, system_message, system_identity = (
-                        catalytic_swarm_1_warm_request(
+
+                def record_common_root_warm_completion(request_label: str) -> None:
+                    record_model_request_completion(request_label)
+                    result["live_request_count"] += 1
+                    result["common_root_warm_count"] += 1
+
+                def execute_common_root_warm() -> tuple[
+                    dict[str, Any], dict[str, Any], str, dict[str, Any]
+                ]:
+                    with lease_pool.lease() as lease_id:
+                        completed = catalytic_swarm_1_warm_request(
                             sidecar,
                             protocol_v4,
                             predecessor_contract,
@@ -12491,16 +12693,32 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
                             task,
                             request_sequence_index=request_sequence_index,
                             lease_id=lease_id,
+                            model_request_completed=record_common_root_warm_completion,
                         )
+                    warm_summaries.append(completed[0])
+                    ledger.append(
+                        completed[1],
+                        request_label=f"{task.task_id}:common-root-warm",
+                        request_sequence_index=request_sequence_index,
                     )
-                warm_summaries.append(warm_summary)
-                ledger.append(
+                    return completed
+
+                (
+                    warm_summary,
                     warm_metadata,
-                    request_label=f"{task.task_id}:common-root-warm",
-                    request_sequence_index=request_sequence_index,
+                    system_message,
+                    system_identity,
+                ) = run_request_with_boundaries(
+                    before=lambda: require_live_boundary(
+                        f"pre-request:{task.task_id}:common-root-warm",
+                        require_host=False,
+                    ),
+                    request=execute_common_root_warm,
+                    after=lambda: require_live_boundary(
+                        f"post-request:{task.task_id}:common-root-warm",
+                        require_host=True,
+                    ),
                 )
-                result["live_request_count"] += 1
-                result["common_root_warm_count"] += 1
 
             outcomes: list[Any] = []
             for arm in execution_order[task.task_id]:
@@ -12522,49 +12740,69 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
                     ]:
                         raise NeoLoopError("CatalyticSwarm-1 arm received a different root")
                     request_sequence_index += 1
-                    with lease_pool.lease() as lease_id:
-                        try:
-                            transport, metadata = sidecar.guarded(
-                                f"cs1-request:{_task.task_id}:{turn.arm}:{turn.turn_id}",
-                                lambda: stream_catalytic_swarm_1_candidate(
-                                    protocol_v4,
-                                    _task,
-                                    turn,
-                                    _system_message,
-                                    _system_identity,
-                                    assignment,
-                                    request_sequence_index=request_sequence_index,
-                                    lease_id=lease_id,
-                                ),
-                            )
-                        except CompletedRequestBoundaryError as boundary_exc:
-                            completed = boundary_exc.completed_value
-                            if isinstance(completed, tuple) and len(completed) == 2:
-                                _transport, metadata = completed
-                                metadata["wddm_freshness_boundary"] = (
-                                    "post-request-boundary-failed"
-                                )
-                                validate_catalytic_swarm_1_ledger_record(metadata)
-                                ledger.append(
-                                    metadata,
-                                    request_label=(
-                                        f"{_task.task_id}:{turn.arm}:{turn.turn_id}"
+
+                    def record_comparison_model_completion(
+                        request_label: str,
+                    ) -> None:
+                        record_model_request_completion(request_label)
+                        result["live_request_count"] += 1
+                        result["comparison_request_count"] += 1
+
+                    def record_completed_request(metadata: dict[str, Any]) -> None:
+                        validate_catalytic_swarm_1_ledger_record(metadata)
+                        ledger.append(
+                            metadata,
+                            request_label=(
+                                f"{_task.task_id}:{turn.arm}:{turn.turn_id}"
+                            ),
+                            request_sequence_index=request_sequence_index,
+                        )
+
+                    def execute_comparison_request() -> dict[str, Any]:
+                        with lease_pool.lease() as lease_id:
+                            try:
+                                transport, metadata = sidecar.guarded(
+                                    f"cs1-request:{_task.task_id}:{turn.arm}:{turn.turn_id}",
+                                    lambda: stream_catalytic_swarm_1_candidate(
+                                        protocol_v4,
+                                        _task,
+                                        turn,
+                                        _system_message,
+                                        _system_identity,
+                                        assignment,
+                                        request_sequence_index=request_sequence_index,
+                                        lease_id=lease_id,
+                                        model_request_completed=(
+                                            record_comparison_model_completion
+                                        ),
                                     ),
-                                    request_sequence_index=request_sequence_index,
                                 )
-                            raise
-                    metadata["wddm_freshness_boundary"] = sidecar.wddm_freshness_boundaries[
-                        -1
-                    ]["boundary"]
-                    validate_catalytic_swarm_1_ledger_record(metadata)
-                    ledger.append(
-                        metadata,
-                        request_label=f"{_task.task_id}:{turn.arm}:{turn.turn_id}",
-                        request_sequence_index=request_sequence_index,
+                            except CompletedRequestBoundaryError as boundary_exc:
+                                completed = boundary_exc.completed_value
+                                if isinstance(completed, tuple) and len(completed) == 2:
+                                    _transport, metadata = completed
+                                    metadata["wddm_freshness_boundary"] = (
+                                        "post-request-boundary-failed"
+                                    )
+                                    record_completed_request(metadata)
+                                raise
+                        metadata["wddm_freshness_boundary"] = (
+                            sidecar.wddm_freshness_boundaries[-1]["boundary"]
+                        )
+                        record_completed_request(metadata)
+                        return transport
+
+                    return run_request_with_boundaries(
+                        before=lambda: require_live_boundary(
+                            f"pre-request:{_task.task_id}:{turn.arm}:{turn.turn_id}",
+                            require_host=False,
+                        ),
+                        request=execute_comparison_request,
+                        after=lambda: require_live_boundary(
+                            f"post-request:{_task.task_id}:{turn.arm}:{turn.turn_id}",
+                            require_host=True,
+                        ),
                     )
-                    result["live_request_count"] += 1
-                    result["comparison_request_count"] += 1
-                    return transport
 
                 outcome = run_advantage_arm(plan, task, worker_runner=worker_runner)
                 if outcome.verdict != "complete" or outcome.request_count != 32:
@@ -12601,6 +12839,14 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
             write_catalytic_swarm_1_runtime_json(
                 CATALYTIC_SWARM_1_RESULT_PATH, result
             )
+            parity_evidence = require_task_budget_parity(
+                comparison, ratio_limit=1.10
+            )
+            runtime_boundary_stats["task_parity_checks"] += 1
+            result["last_task_parity"] = {
+                "task_id": task.task_id,
+                **parity_evidence,
+            }
 
         suite_result = classify_suite_advantage(comparisons)
         result["suite_advantage"] = suite_result.to_dict()
@@ -12649,7 +12895,10 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
             "catalytic_swarm_1": "inconclusive",
         })
     finally:
-        cleanup = safe_sidecar_cleanup(sidecar)
+        try:
+            cleanup = safe_sidecar_cleanup(sidecar)
+        finally:
+            post_parser_cleanup.disarm()
         cleanup_gate = cleanup_integrity(cleanup, stable_pids)
         result["cleanup"] = cleanup
         result["cleanup_gate"] = cleanup_gate
@@ -12708,7 +12957,10 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
             and result.get("comparison_request_count") == 1024
             and result.get("common_root_warm_count") == 8
             and result.get("task_comparison_count") == 8
+            and runtime_boundary_stats.get("completed_model_requests") == 1032
         )
+        live_boundary_gate = build_live_boundary_gate(runtime_boundary_stats)
+        result["live_boundary_gate"] = live_boundary_gate
         safety = (
             cleanup_gate["passed"] is True
             and isolation_gate["passed"] is True
@@ -12717,6 +12969,7 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
             and freshness_gate["passed"] is True
             and ledger_gate
             and request_gate
+            and live_boundary_gate["passed"] is True
             and execution_error is None
             and interruption is None
         )
@@ -12729,6 +12982,7 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
             "freshness": freshness_gate,
             "metadata_ledger": ledger_gate,
             "request_law": request_gate,
+            "live_boundaries": live_boundary_gate,
         }
         result["cleanup"] = compact_catalytic_swarm_1_cleanup(cleanup)
         if not safety and result.get("catalytic_swarm_1") in {

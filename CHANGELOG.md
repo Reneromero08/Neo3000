@@ -27,10 +27,15 @@ PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 CatalyticSwarm-0: EXECUTED ONCE / CONTROL QUALIFICATION PASS / READINESS INCONCLUSIVE
 CatalyticSwarm-0 v2: REVIEWABLE ACCEPT
-CatalyticSwarm-1: INTEGRATED / NOT EXECUTED
+CatalyticSwarm-1: REPAIRED / INTEGRATED / NOT EXECUTED
+CatalyticSwarm-1 prior authorization: UNCONSUMED BUT SUPERSEDED BY NEW MAIN IDENTITY
+CatalyticSwarm-1 live model requests: 0
+CatalyticSwarm-1 sidecar launches: 0
+CatalyticSwarm-1 one-shot artifacts: ABSENT
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_CONTROL_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN: LOCKED
+SOTA_SWARM_CLAIM: LOCKED
 RSI-0F supervised rejection cycle: PASSED
 RSI-0G supervised acceptance cycle: REVIEWABLE ACCEPT
 Automatic promotion: DISABLED
@@ -56,7 +61,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Worker protocol v4 ran exactly once with no retry. Readiness, tokenizer, canary, both roots, all Fast requests, repeats, and isolation passed; Deep independently rejected on a 768-token length stop.
 - CatalyticSwarm-0 ran exactly once from protected integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`. Control qualification passed, then readiness stopped inconclusively on exact-PID WDDM telemetry loss before the parser canary or any worker request. This version cannot be retried.
 - The separately versioned CatalyticSwarm-0 v2 successor completed one artifact-claiming live execution and returned `reviewable-accept` for structured micro-workers and bounded swarm control. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests. V2 changed only exact-PID WDDM transient-gap resilience plus fresh-sample admission and preserved the exact v1 plan and prompt bytes.
-- CatalyticSwarm-1 equal-budget evaluation is integrated but not executed. The protected command requires separate explicit live authority; task advantage, Deep, persistence, SOTA, and promotion claims remain locked.
+- CatalyticSwarm-1 equal-budget evaluation is repaired and integrated but not executed. The prior live authorization is unconsumed but superseded by the new protected-main identity; the command now requires new separate explicit live authority. Task advantage, Deep, persistence, SOTA, and promotion claims remain locked.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
@@ -114,6 +119,13 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Added one common public-root warm per task outside arm budgets, exact Latin-square order, strict arm/task/hidden-data isolation, 1,024 comparison plus 8 warm prospective requests, 32-token request ceilings, per-arm 1,024 completion / 8,192 fresh-prompt ceilings, and 1.10 parity gates.
 - Added an exclusive metadata-only ledger capped at 80,000 records and 67,108,864 bytes, seven ignored one-shot paths, complete predecessor bindings, protected exact-PID WDDM/ownership/cleanup reuse, and the separately gated `audit-catalytic-swarm-1` command. CatalyticSwarm-0 v2 is hard-retired against rerun.
 - This integration launched no sidecar, made zero live model requests, claimed no one-shot attempt, created no evidence object or runtime artifact, and did not unlock task advantage, SOTA, broader HoloState, restart persistence, or automatic promotion.
+
+### CatalyticSwarm-1 live stop-law repair prepared
+
+- Retained a pure protected runtime-safety helper and direct CPU-only regression suite. The repair does not change the frozen task suite, complete contract, plan hashes, prompts, candidate programs, hidden data, Latin-square order, request/token budgets, or advantage thresholds.
+- Added exact stable/candidate custody checks before and after every prospective model request, post-request inherited host/resource enforcement, an immediate parity stop after each completed four-arm task, and guarded cleanup ownership across parser success and attempt/result preparation.
+- Terminal safety now requires exactly 2,064 custody checks, 1,032 host-memory checks, and 8 task-parity checks before any completed verdict can survive.
+- The repair launched zero sidecars, made zero live model requests, and created no one-shot artifact or evidence object. The prior authorization is unconsumed but superseded by the new protected-main identity. Task advantage, SOTA, broader process-local HoloState, restart persistence, and automatic promotion remain locked.
 
 ### HoloState worker protocol v3 readiness integration prepared
 

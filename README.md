@@ -31,18 +31,25 @@ load Agents-A1 correctly
 
 Neo3000 starts from a pinned source import of the runtime portions of `llama.cpp`. It is not an AGS governance port, an MCP framework, or a general agent platform. Speed, compute efficiency, inference quality, and experimental clarity come first.
 
-## Current checkpoint
+## Current protected boundary
 
-Checkpoint 0 is baseline establishment:
+Checkpoint 0 and the supervised RSI substrate are closed. Checkpoint 1A tracing is paused, and Checkpoint 2 is active. CatalyticSwarm-0 v2 proved the bounded 32-worker, one-slot control plane at `reviewable-accept`; it did not prove task advantage.
 
-1. Import the pinned upstream runtime.
-2. Build CUDA release binaries on Windows.
-3. Load the exact Agents-A1 GGUF.
-4. Expose the OpenAI-compatible streaming endpoint.
-5. Connect Pi.
-6. Record short-context and long-context performance.
+CatalyticSwarm-1 is **REPAIRED / INTEGRATED / NOT EXECUTED**. The safety-repaired runner preserves the frozen eight-task suite and equal-budget four-arm comparison while adding per-request repository custody, host/resource enforcement, per-task parity stops, guarded cleanup transfer, and terminal boundary-count reconciliation.
 
-No catalytic feature should enter the hot path until this checkpoint is closed.
+```text
+prior live authorization: UNCONSUMED BUT SUPERSEDED BY NEW MAIN IDENTITY
+live model requests: 0
+sidecar launches: 0
+one-shot artifacts: absent
+CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN: LOCKED
+SOTA_SWARM_CLAIM: LOCKED
+PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
+RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
+automatic promotion: disabled
+```
+
+Do not invoke `audit-catalytic-swarm-1` without new separate explicit authorization bound to the repaired protected main.
 
 ## Bootstrap
 

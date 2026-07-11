@@ -436,7 +436,7 @@ reconciled, but no worker capability request has yet executed.
 - Exact SHA-256 bindings are control `1FC67796F436E69B1B2C2F132345C0335FADF6D1452E7F98D8A92D78CB616CE3`; readiness `129FD883FD03BBEF8B216AC67F77CBE854CA798A86BBC18A11D4DCDF010E7124`; parser canary `9282D7F8AE195C866E767A7F0D3BCB0A366E3FC3C1509A7DB1F99F1C541191B5`; attempt `0E9A839B7AD9D50AE6FD82DD3C63A93D23596C4A32FAF515BAC67A68EFEE8866`; result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`; ledger `C523EF77C80CDD4783D2E41103FCD72490A4C837DA2B3988B29F8D7A97E1F7F9`; blackboard `197929DF8DF62A24480A64C071651CED43E16D82F0B6DA5A9AB740C6C1236964`.
 - Next boundary: preserve v2 without retry. The CatalyticSwarm-1 equal-budget successor is integrated below but remains unexecuted; this control proof does not establish task advantage.
 
-### CatalyticSwarm-1 equal-budget evaluation [INTEGRATED / NOT EXECUTED]
+### CatalyticSwarm-1 equal-budget evaluation [REPAIRED / INTEGRATED / NOT EXECUTED]
 
 - Draft PR #6 was inspected at exact head `aaeb3fe8cc906121fdfcb8ed41d9420b2849d8b6`: twelve linear commits from protected `7cad4a9d8181c160da712c3474d66a4fbf8a1ba3`, adding exactly the five declared connector files and no evaluator or evidence mutation. The commits were not imported individually.
 - The real-repository connector passed its original 25 CPU-only tests. Static review then demonstrated and repaired fail-open defects in scoring timing, complete-root cached-prefix proof, token-evidence scope, outcome/classification revalidation, task/root observation binding, sparse-versus-verified prompt parity, exact-success semantics, protected state naming, and hidden-data serialization. The repaired connector passes its expanded negative regression suite.
@@ -447,7 +447,10 @@ reconciled, but no worker capability request has yet executed.
 - The protected runner reuses v4 terminal-EOS token evidence, one physical lease, v2 exact-PID WDDM resilience and fresh-sample admission, stable/candidate isolation, and bounded cleanup. The exclusive metadata-only ledger is capped at 80,000 records and 67,108,864 bytes.
 - Seven ignored one-shot paths are prepared under `state/catalytic_swarm_1`: control qualification, readiness, parser canary, attempt, result, ledger, and task results. All seven remain absent. No `catalytic_swarm_1_evidence` object exists.
 - `audit-catalytic-swarm-1` is statically wired for a future separately authorized invocation. CatalyticSwarm-0 v2 is hard-retired against rerun. During this integration: sidecar launches `0`, live model requests `0`, common-root warm requests `0`, comparison requests `0`, one-shot claims `0`.
-- `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, `SOTA_SWARM_CLAIM`, broader process-local HoloState, restart persistence, and automatic promotion remain locked. The next unchecked action is a separately authorized one-shot live invocation, not permission to execute now.
+- The safety repair requires exact stable/candidate custody before and after all 1,032 prospective model requests, host/resource enforcement after each request, a hard parity stop after each of eight completed tasks, cleanup coverage across parser success and attempt/result preparation, and terminal count reconciliation at `2064 / 1032 / 8`. The retained helper and its direct regression suite are protected controller sources.
+- The task suite, complete contract, four plans, prompts, candidate programs, hidden data, Latin-square order, request/token budgets, and advantage thresholds remain unchanged. No `catalytic_swarm_1_evidence` object or result record was added.
+- The prior live authorization is unconsumed but superseded by the new protected-main identity. Sidecar launches, live model requests, and one-shot claims remain zero; all seven paths remain absent.
+- `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, `SOTA_SWARM_CLAIM`, broader process-local HoloState, restart persistence, and automatic promotion remain locked. The next unchecked action requires new separate explicit authority bound to repaired protected main, not permission to execute now.
 
 ### Durable persistence boundary
 

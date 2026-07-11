@@ -3750,12 +3750,16 @@ class CatalyticSwarm0LiveTests(unittest.TestCase):
 
 
 class CatalyticSwarm1ProtectedRunnerTests(unittest.TestCase):
+    BASELINE_PRIVATE_BYTES = 4096
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.evaluator = holo.load_json(holo.EVALUATOR_PATH)
         cls.contract = holo.validate_catalytic_swarm_1_contract(
             cls.evaluator["catalytic_swarm_1"]
         )
+        cls.protocol_v4 = cls.evaluator["holostate_worker_protocol_v4"]
+        cls.predecessor_contract = cls.evaluator["catalytic_swarm_0_v2"]
 
     def patch_paths(self, stack: ExitStack, root: Path) -> dict[str, Path]:
         names = {
@@ -3790,6 +3794,643 @@ class CatalyticSwarm1ProtectedRunnerTests(unittest.TestCase):
             )
         )
         return paths
+
+    def preclaim(self, root: Path) -> dict[str, object]:
+        return {
+            "evaluator": self.evaluator,
+            "live_contract": self.evaluator["holostate_live_contract"],
+            "protocol_v4": self.protocol_v4,
+            "predecessor_contract": self.predecessor_contract,
+            "contract": self.contract,
+            "lock": {"catalytic_swarm_1_sha256": "C" * 64},
+            "predecessor_artifacts": {"catalytic_swarm_0_v2": "preserved"},
+            "stable_head": "HEAD",
+            "candidate_root": root / "candidate",
+            "binary_identity": {"sha256": holo.EXPECTED_BINARY_SHA256},
+            "model_identity": {"sha256": holo.EXPECTED_MODEL_SHA256},
+        }
+
+    @staticmethod
+    def query(pids: set[int]) -> SimpleNamespace:
+        return SimpleNamespace(
+            passed=True,
+            pids=frozenset(pids),
+            to_dict=lambda: {"passed": True, "pids": sorted(pids)},
+        )
+
+    @staticmethod
+    def cleanup(stable: set[int] = {42}) -> dict[str, object]:
+        return {
+            "not_launched": False,
+            "readiness_controlled": True,
+            "readiness_admitted": True,
+            "process_stopped": True,
+            "port_free": True,
+            "runtime_removed": True,
+            "wddm": {"failure_reason": None, "freshness_boundaries": []},
+            "retirement_samples": [
+                {"available": False, "bytes": None} for _ in range(5)
+            ],
+            "stable_after": {"healthy": True, "listener_pids": sorted(stable)},
+            "pre_teardown_ownership": {"passed": True},
+            "post_teardown_ownership": {"passed": True},
+        }
+
+    class FakeSidecar:
+        def __init__(self, baseline_private_bytes: int) -> None:
+            self.baseline_private_bytes = baseline_private_bytes
+            self.process = SimpleNamespace(pid=99)
+            self.wddm_freshness_boundaries: list[dict[str, object]] = []
+            self.launch_count = 0
+
+        def launch(self) -> dict[str, object]:
+            self.launch_count += 1
+            return {
+                "pid": self.process.pid,
+                "binary": {"sha256": holo.EXPECTED_BINARY_SHA256},
+                "model": {"sha256": holo.EXPECTED_MODEL_SHA256},
+                "process_memory": {
+                    "private_bytes": self.baseline_private_bytes,
+                },
+            }
+
+        def exact_ownership(self, boundary: str, **_kwargs: object) -> dict[str, object]:
+            return {"boundary": boundary, "passed": True}
+
+        def wait_for_fresh_wddm(
+            self, boundary: str, *_args: object, **_kwargs: object
+        ) -> dict[str, object]:
+            record: dict[str, object] = {
+                "boundary": boundary,
+                "passed": True,
+                "telemetry": {"last_valid_sample_age_seconds": 0.0},
+            }
+            self.wddm_freshness_boundaries.append(record)
+            return record
+
+        def telemetry(self) -> dict[str, object]:
+            return {
+                "sample_count": 1,
+                "peak_dedicated_mib": 1,
+                "freshness_boundaries": list(self.wddm_freshness_boundaries),
+                "telemetry_snapshot": {"admission_ready": True},
+            }
+
+        def guarded(self, _label: str, function, **_kwargs: object):
+            return function()
+
+    @staticmethod
+    def comparison(**changes: object) -> SimpleNamespace:
+        values: dict[str, object] = {
+            "budget_parity_passed": True,
+            "budget_parity_reasons": (),
+            "fresh_prompt_ratio": 1.01,
+            "completion_ratio": 1.02,
+            "total_model_token_ratio": 1.03,
+        }
+        values.update(changes)
+        return SimpleNamespace(**values, to_dict=lambda: dict(values))
+
+    def install_direct_controller_stage(
+        self,
+        stack: ExitStack,
+        root: Path,
+        *,
+        drift_side: str | None = None,
+        current_private_bytes: int | None = None,
+    ) -> dict[str, object]:
+        paths = self.patch_paths(stack, root)
+        preclaim = self.preclaim(root)
+        sidecar = self.FakeSidecar(self.BASELINE_PRIVATE_BYTES)
+        cleanup = stack.enter_context(
+            mock.patch.object(
+                holo,
+                "safe_sidecar_cleanup",
+                return_value=self.cleanup(),
+            )
+        )
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "prepare_catalytic_swarm_1_claim",
+                return_value=preclaim,
+            )
+        )
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "preserved_catalytic_swarm_0_v2_evidence",
+                return_value=preclaim["predecessor_artifacts"],
+            )
+        )
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "qualify_catalytic_swarm_1_control",
+                return_value={
+                    "passed": True,
+                    "generation_executed": False,
+                    "model_requests": 0,
+                },
+            )
+        )
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "query_listener_pids",
+                return_value=self.query({42}),
+            )
+        )
+        stack.enter_context(mock.patch.object(holo, "health_ok", return_value=True))
+        live_sidecar = stack.enter_context(
+            mock.patch.object(holo, "LiveSidecar", return_value=sidecar)
+        )
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "catalytic_swarm_1_parser_canary",
+                return_value={"passed": True, "model_requests": 0},
+            )
+        )
+
+        def fake_warm(*args: object, **kwargs: object):
+            task = args[4]
+            completed = kwargs.get("model_request_completed")
+            if completed is not None:
+                completed(f"{task.task_id}:common-root-warm")
+            return (
+                {"task_id": task.task_id, "accepted": True},
+                {"task_id": task.task_id, "arm": "common-root-warm"},
+                "system-message",
+                {
+                    "public_root_sha256": holo.sha256_bytes(
+                        holo.render_public_task(task).encode("utf-8")
+                    )
+                },
+            )
+
+        warm = stack.enter_context(
+            mock.patch.object(
+                holo,
+                "catalytic_swarm_1_warm_request",
+                side_effect=fake_warm,
+            )
+        )
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "worker_resource_gate",
+                return_value={
+                    "passed": True,
+                    "host_private_growth_bytes": 0,
+                },
+            )
+        )
+        process_info = stack.enter_context(
+            mock.patch.object(
+                holo,
+                "process_info",
+                return_value={
+                    "private_bytes": (
+                        self.BASELINE_PRIVATE_BYTES
+                        if current_private_bytes is None
+                        else current_private_bytes
+                    )
+                },
+            )
+        )
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "cleanup_integrity",
+                return_value={"passed": True, "reasons": []},
+            )
+        )
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "validate_catalytic_swarm_1_ledger_record",
+                return_value=None,
+            )
+        )
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "reconcile_catalytic_swarm_1_ledger",
+                return_value={"passed": True, "reasons": []},
+            )
+        )
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "reconcile_catalytic_swarm_1_freshness",
+                return_value={"passed": True, "reasons": []},
+            )
+        )
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "reconcile_v2_terminal_wddm",
+                return_value={"passed": True, "reasons": []},
+            )
+        )
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "catalytic_swarm_1_isolation_gate",
+                return_value={"passed": True, "reasons": []},
+            )
+        )
+
+        custody_calls = {"stable": 0, "candidate": 0}
+        candidate_root = Path(preclaim["candidate_root"])
+
+        def git_status(repo: Path, *args: str) -> str:
+            self.assertEqual(
+                args,
+                ("status", "--porcelain=v2", "--branch", "--untracked-files=all"),
+            )
+            name = (
+                "stable"
+                if Path(repo).resolve() == holo.ROOT.resolve()
+                else "candidate"
+            )
+            if name == "candidate":
+                self.assertEqual(Path(repo).resolve(), candidate_root.resolve())
+            custody_calls[name] += 1
+            if drift_side == name and custody_calls[name] >= 2:
+                return f"{name}-drifted"
+            return f"{name}-frozen"
+
+        git_read = stack.enter_context(
+            mock.patch.object(holo, "git_read", side_effect=git_status)
+        )
+        request_json = stack.enter_context(
+            mock.patch.object(
+                holo,
+                "request_json",
+                side_effect=AssertionError("real network request forbidden"),
+            )
+        )
+        stream_completion = stack.enter_context(
+            mock.patch.object(
+                holo,
+                "stream_completion",
+                side_effect=AssertionError("real model request forbidden"),
+            )
+        )
+        stream_candidate = stack.enter_context(
+            mock.patch.object(
+                holo,
+                "stream_catalytic_swarm_1_candidate",
+                side_effect=AssertionError("real CS1 model request forbidden"),
+            )
+        )
+        popen = stack.enter_context(
+            mock.patch.object(
+                holo.subprocess,
+                "Popen",
+                side_effect=AssertionError("real process launch forbidden"),
+            )
+        )
+        return {
+            "paths": paths,
+            "preclaim": preclaim,
+            "sidecar": sidecar,
+            "live_sidecar": live_sidecar,
+            "warm": warm,
+            "cleanup": cleanup,
+            "process_info": process_info,
+            "git_read": git_read,
+            "request_json": request_json,
+            "stream_completion": stream_completion,
+            "stream_candidate": stream_candidate,
+            "popen": popen,
+        }
+
+    @staticmethod
+    def stop_at_attempt(
+        stack: ExitStack,
+        attempt_path: Path,
+        error: BaseException,
+    ) -> list[Path]:
+        original_claim = holo.claim_catalytic_swarm_1_runtime_json_once
+        observed: list[Path] = []
+
+        def claim(path: Path, value: dict[str, object], **kwargs: object) -> None:
+            if Path(path) == attempt_path:
+                observed.append(Path(path))
+                raise error
+            original_claim(path, value, **kwargs)
+
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "claim_catalytic_swarm_1_runtime_json_once",
+                side_effect=claim,
+            )
+        )
+        return observed
+
+    @staticmethod
+    def assert_no_real_model_or_process(stage: dict[str, object]) -> None:
+        stage["request_json"].assert_not_called()
+        stage["stream_completion"].assert_not_called()
+        stage["stream_candidate"].assert_not_called()
+        stage["popen"].assert_not_called()
+
+    def test_direct_controller_stable_custody_drift_stops_before_continuing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            stage = self.install_direct_controller_stage(
+                stack, Path(temp), drift_side="stable"
+            )
+            result = holo.run_catalytic_swarm_1_audit(
+                SimpleNamespace(binary="x", model="y")
+            )
+            stage["warm"].assert_not_called()
+            self.assertFalse(stage["paths"]["attempt"].exists())
+            self.assertIn("stable-custody-changed", result["error"])
+            self.assertEqual(stage["cleanup"].call_count, 1)
+            self.assert_no_real_model_or_process(stage)
+
+    def test_direct_controller_candidate_custody_drift_stops_before_continuing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            stage = self.install_direct_controller_stage(
+                stack, Path(temp), drift_side="candidate"
+            )
+            result = holo.run_catalytic_swarm_1_audit(
+                SimpleNamespace(binary="x", model="y")
+            )
+            stage["warm"].assert_not_called()
+            self.assertFalse(stage["paths"]["attempt"].exists())
+            self.assertIn("candidate-custody-changed", result["error"])
+            self.assertEqual(stage["cleanup"].call_count, 1)
+            self.assert_no_real_model_or_process(stage)
+
+    def test_direct_controller_host_growth_above_ceiling_stops_after_request(self) -> None:
+        ceiling = 4096 * holo.MIB
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            stage = self.install_direct_controller_stage(
+                stack,
+                Path(temp),
+                current_private_bytes=self.BASELINE_PRIVATE_BYTES + ceiling + 1,
+            )
+            result = holo.run_catalytic_swarm_1_audit(
+                SimpleNamespace(binary="x", model="y")
+            )
+            self.assertEqual(stage["warm"].call_count, 1)
+            self.assertEqual(result["model_requests"], 1)
+            self.assertFalse(stage["paths"]["attempt"].exists())
+            self.assertIn("host-private growth exceeded ceiling", result["error"])
+            self.assertEqual(stage["cleanup"].call_count, 1)
+            self.assert_no_real_model_or_process(stage)
+
+    def test_direct_controller_host_growth_at_ceiling_passes(self) -> None:
+        ceiling = 4096 * holo.MIB
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            stage = self.install_direct_controller_stage(
+                stack,
+                Path(temp),
+                current_private_bytes=self.BASELINE_PRIVATE_BYTES + ceiling,
+            )
+            reached_attempt = self.stop_at_attempt(
+                stack,
+                stage["paths"]["attempt"],
+                RuntimeError("stop-after-host-boundary"),
+            )
+            result = holo.run_catalytic_swarm_1_audit(
+                SimpleNamespace(binary="x", model="y")
+            )
+            self.assertEqual(reached_attempt, [stage["paths"]["attempt"]])
+            self.assertEqual(stage["warm"].call_count, 1)
+            self.assertEqual(stage["process_info"].call_count, 1)
+            self.assertIn("stop-after-host-boundary", result["error"])
+            self.assertEqual(stage["cleanup"].call_count, 1)
+            self.assert_no_real_model_or_process(stage)
+
+    def test_direct_controller_false_task_parity_stops_before_next_task(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            stage = self.install_direct_controller_stage(stack, Path(temp))
+            arm = stack.enter_context(
+                mock.patch.object(
+                    holo,
+                    "run_advantage_arm",
+                    return_value=SimpleNamespace(
+                        verdict="complete", request_count=32, reasons=()
+                    ),
+                )
+            )
+            stack.enter_context(
+                mock.patch.object(
+                    holo,
+                    "compare_task_outcomes",
+                    return_value=self.comparison(
+                        budget_parity_passed=False,
+                        budget_parity_reasons=("request-count parity failed",),
+                    ),
+                )
+            )
+            result = holo.run_catalytic_swarm_1_audit(
+                SimpleNamespace(binary="x", model="y")
+            )
+            self.assertEqual(arm.call_count, 4)
+            self.assertEqual(stage["warm"].call_count, 1)
+            self.assertEqual(result["task_comparison_count"], 1)
+            self.assertIn("task budget parity failed", result["error"])
+            self.assertEqual(stage["cleanup"].call_count, 1)
+            self.assert_no_real_model_or_process(stage)
+
+    def test_direct_controller_each_ratio_over_limit_stops_before_next_task(self) -> None:
+        for ratio_name in (
+            "fresh_prompt_ratio",
+            "completion_ratio",
+            "total_model_token_ratio",
+        ):
+            with self.subTest(ratio=ratio_name), tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+                stage = self.install_direct_controller_stage(stack, Path(temp))
+                arm = stack.enter_context(
+                    mock.patch.object(
+                        holo,
+                        "run_advantage_arm",
+                        return_value=SimpleNamespace(
+                            verdict="complete", request_count=32, reasons=()
+                        ),
+                    )
+                )
+                stack.enter_context(
+                    mock.patch.object(
+                        holo,
+                        "compare_task_outcomes",
+                        return_value=self.comparison(**{ratio_name: 1.10001}),
+                    )
+                )
+                result = holo.run_catalytic_swarm_1_audit(
+                    SimpleNamespace(binary="x", model="y")
+                )
+                self.assertEqual(arm.call_count, 4)
+                self.assertEqual(stage["warm"].call_count, 1)
+                self.assertIn(f"{ratio_name}-exceeded", result["error"])
+                self.assertEqual(stage["cleanup"].call_count, 1)
+                self.assert_no_real_model_or_process(stage)
+
+    def test_direct_controller_parser_to_attempt_keyboard_interrupt_cleans_once(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            stage = self.install_direct_controller_stage(stack, Path(temp))
+            original_sha256_file = holo.sha256_file
+            interrupted = False
+
+            def interrupt_in_gap(path: Path) -> str:
+                nonlocal interrupted
+                if Path(path) == stage["paths"]["parser_canary"] and not interrupted:
+                    interrupted = True
+                    raise KeyboardInterrupt("parser-to-attempt")
+                return original_sha256_file(path)
+
+            stack.enter_context(
+                mock.patch.object(holo, "sha256_file", side_effect=interrupt_in_gap)
+            )
+            with self.assertRaisesRegex(KeyboardInterrupt, "parser-to-attempt"):
+                holo.run_catalytic_swarm_1_audit(
+                    SimpleNamespace(binary="x", model="y")
+                )
+            self.assertTrue(interrupted)
+            self.assertFalse(stage["paths"]["attempt"].exists())
+            self.assertEqual(stage["cleanup"].call_count, 1)
+            self.assert_no_real_model_or_process(stage)
+
+    def test_direct_controller_cleanup_transfer_does_not_double_stop(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            stage = self.install_direct_controller_stage(stack, Path(temp))
+            reached_attempt = self.stop_at_attempt(
+                stack,
+                stage["paths"]["attempt"],
+                KeyboardInterrupt("execution-handoff"),
+            )
+            with self.assertRaisesRegex(KeyboardInterrupt, "execution-handoff"):
+                holo.run_catalytic_swarm_1_audit(
+                    SimpleNamespace(binary="x", model="y")
+                )
+            self.assertEqual(reached_attempt, [stage["paths"]["attempt"]])
+            self.assertEqual(stage["cleanup"].call_count, 1)
+            self.assert_no_real_model_or_process(stage)
+
+    def test_direct_controller_terminal_safety_requires_exact_boundary_counts(self) -> None:
+        exact = {
+            "custody_checks": 2064,
+            "host_memory_checks": 1032,
+            "task_parity_checks": 8,
+            "maximum_host_private_growth_bytes": 0,
+            "last_boundary": "task-8",
+        }
+        self.assertTrue(holo.build_live_boundary_gate(exact)["passed"])
+        for name, required in (
+            ("custody_checks", 2064),
+            ("host_memory_checks", 1032),
+            ("task_parity_checks", 8),
+        ):
+            for observed in (required - 1, required + 1):
+                with self.subTest(name=name, observed=observed):
+                    changed = dict(exact)
+                    changed[name] = observed
+                    gate = holo.build_live_boundary_gate(changed)
+                    self.assertFalse(gate["passed"])
+                    self.assertIn(f"{name}-mismatch", gate["reasons"])
+        source = inspect.getsource(holo._run_catalytic_swarm_1_audit)
+        self.assertIn("build_live_boundary_gate(runtime_boundary_stats)", source)
+        self.assertIn('and live_boundary_gate["passed"] is True', source)
+
+    def test_direct_controller_cpu_regression_launches_no_real_model_or_process(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            stage = self.install_direct_controller_stage(stack, Path(temp))
+            reached_attempt = self.stop_at_attempt(
+                stack,
+                stage["paths"]["attempt"],
+                RuntimeError("cpu-only-stop"),
+            )
+            result = holo.run_catalytic_swarm_1_audit(
+                SimpleNamespace(binary="x", model="y")
+            )
+            self.assertEqual(reached_attempt, [stage["paths"]["attempt"]])
+            self.assertIn("cpu-only-stop", result["error"])
+            self.assertEqual(stage["sidecar"].launch_count, 1)
+            self.assertEqual(stage["warm"].call_count, 1)
+            self.assert_no_real_model_or_process(stage)
+
+    def test_direct_controller_readiness_to_parser_interrupt_cleans_once(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            stage = self.install_direct_controller_stage(stack, Path(temp))
+            original_sha256_file = holo.sha256_file
+
+            def interrupt_at_readiness_hash(path: Path) -> str:
+                if Path(path) == stage["paths"]["readiness"]:
+                    raise KeyboardInterrupt("readiness-to-parser")
+                return original_sha256_file(path)
+
+            stack.enter_context(
+                mock.patch.object(
+                    holo, "sha256_file", side_effect=interrupt_at_readiness_hash
+                )
+            )
+            with self.assertRaisesRegex(KeyboardInterrupt, "readiness-to-parser"):
+                holo.run_catalytic_swarm_1_audit(
+                    SimpleNamespace(binary="x", model="y")
+                )
+            self.assertEqual(stage["sidecar"].launch_count, 1)
+            self.assertEqual(stage["cleanup"].call_count, 1)
+            self.assertFalse(stage["paths"]["parser_canary"].exists())
+            self.assert_no_real_model_or_process(stage)
+
+    def test_warm_completion_precedes_post_response_processing(self) -> None:
+        completed: list[str] = []
+        ledger = SimpleNamespace(
+            record_count=0,
+            recorder=lambda *_args: mock.Mock(),
+        )
+        with ExitStack() as stack:
+            stack.enter_context(
+                mock.patch.object(
+                    holo,
+                    "build_worker_chat_payload",
+                    return_value={"messages": []},
+                )
+            )
+            stack.enter_context(
+                mock.patch.object(holo, "render_messages", return_value="rendered")
+            )
+            stack.enter_context(mock.patch.object(holo, "tokenize", return_value=[1]))
+            stream = stack.enter_context(
+                mock.patch.object(
+                    holo,
+                    "stream_completion",
+                    return_value=SimpleNamespace(content="TASK ROOT READY"),
+                )
+            )
+            stack.enter_context(
+                mock.patch.object(
+                    holo,
+                    "compact_worker_v4_measurement",
+                    side_effect=RuntimeError("post-response-processing"),
+                )
+            )
+            with self.assertRaisesRegex(RuntimeError, "post-response-processing"):
+                holo.run_worker_v4_chat_request(
+                    {"endpoint": "/v1/chat/completions"},
+                    "system",
+                    {},
+                    root_name="task-1",
+                    assignment_name="common-root-warm",
+                    lane_name="W",
+                    lane={"max_tokens": 32},
+                    user_message="warm",
+                    expected_content="TASK ROOT READY",
+                    ledger=ledger,
+                    request_label="task-1:common-root-warm",
+                    request_sequence_index=1,
+                    warm=True,
+                    request_completed=lambda: completed.append("completed"),
+                )
+        stream.assert_called_once()
+        self.assertEqual(completed, ["completed"])
 
     def test_all_seven_prepared_runtime_paths_are_absent(self) -> None:
         self.assertEqual(len(holo.CATALYTIC_SWARM_1_ARTIFACT_PATHS), 7)
@@ -4054,7 +4695,7 @@ class CatalyticSwarm1ProtectedRunnerTests(unittest.TestCase):
                 holo.assert_catalytic_swarm_1_artifact_stage(allow_through="control")
 
     def test_runner_lifecycle_orders_claims_before_live_capability(self) -> None:
-        source = inspect.getsource(holo.run_catalytic_swarm_1_audit)
+        source = inspect.getsource(holo._run_catalytic_swarm_1_audit)
         positions = [
             source.index("CATALYTIC_SWARM_1_CONTROL_PATH"),
             source.index("CATALYTIC_SWARM_1_READINESS_PATH"),

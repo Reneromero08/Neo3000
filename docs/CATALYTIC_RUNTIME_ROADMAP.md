@@ -376,8 +376,10 @@ promotion remain locked.
 
 ## CatalyticSwarm-1: equal-budget task advantage
 
-The protected design and runner are integrated but not executed. Separate
-explicit authorization is required before `audit-catalytic-swarm-1` may run.
+The protected design and safety-repaired runner are integrated but not
+executed. The prior live authorization is unconsumed but superseded by the new
+protected-main identity. New separate explicit authorization is required before
+`audit-catalytic-swarm-1` may run.
 
 Frozen identity:
 
@@ -414,14 +416,25 @@ later task context, or the ledger. Hidden scoring occurs only after all four arm
 for one task finish. Arm state and task state are isolated. The exclusive
 metadata-only ledger is capped at 80,000 records and 67,108,864 bytes.
 
+The safety repair leaves that experiment geometry unchanged. It requires exact
+stable and candidate custody before and after every prospective model request,
+checks the inherited host/resource ceiling after every request, stops on each
+task's parity result before the next task, guards cleanup across the
+parser-to-attempt transition, and requires terminal counts of 2,064 custody,
+1,032 host-memory, and 8 task-parity boundaries.
+
 Prepared state:
 
 ```text
+status: REPAIRED / INTEGRATED / NOT EXECUTED
+prior authorization: UNCONSUMED BUT SUPERSEDED BY NEW MAIN IDENTITY
 live model requests: 0
 sidecar launches: 0
 one-shot artifacts: absent
 CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN: LOCKED
 SOTA_SWARM_CLAIM: LOCKED
+PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
+RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 automatic promotion: disabled
 ```
 
@@ -568,8 +581,8 @@ Metrics must distinguish observed versus accepted reuse, process-local versus du
 
 ```text
 completed: CatalyticSwarm-0 v2 bounded control proof
-completed: integrate CatalyticSwarm-1 equal-total-budget design and protected runner without execution
-1. separately authorize and execute CatalyticSwarm-1 exactly once
+completed: repair and integrate the CatalyticSwarm-1 equal-total-budget runner without execution
+1. obtain new explicit authorization bound to repaired protected main, then execute CatalyticSwarm-1 exactly once
 2. adjudicate and bind its evidence without broadening the exact suite scope
 3. Adaptive population and verifier allocation
 4. HoloState multi-root admission and eviction policy
@@ -601,8 +614,10 @@ CatalyticSwarm-0 v2 then completed its 32-worker, one-slot control proof.
 Structured micro-workers and bounded swarm control are reviewable-accept and
 available; task advantage remains untested and locked.
 
-CatalyticSwarm-1 equal-budget evaluation is integrated but not executed. It has
-made zero live model requests and created no one-shot artifact.
+CatalyticSwarm-1 equal-budget evaluation is repaired and integrated but not
+executed. Its prior authorization is unconsumed but superseded by the repaired
+protected-main identity. It has made zero live model requests, launched zero
+sidecars, and created no one-shot artifact.
 ```
 
 Not yet allowed:
