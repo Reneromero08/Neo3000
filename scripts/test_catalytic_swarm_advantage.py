@@ -11,8 +11,8 @@ from typing import Any
 
 from catalytic_advantage_tasks import (
     AdvantageTaskError,
+    build_frozen_task_suite,
     candidate_is_exact,
-    load_task_suite,
     render_public_task,
     score_candidate,
     validate_public_projection,
@@ -36,13 +36,12 @@ from catalytic_swarm_advantage import (
 )
 
 ROOT = Path(__file__).resolve().parent
-SUITE_PATH = ROOT.parent / "lab" / "catalytic_swarm_1_tasks.json"
 
 
 class TaskSuiteTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.suite = load_task_suite(SUITE_PATH)
+        cls.suite = build_frozen_task_suite()
 
     def test_suite_is_frozen_and_unique(self) -> None:
         self.assertEqual(len(self.suite.tasks), 8)
@@ -58,9 +57,7 @@ class TaskSuiteTests(unittest.TestCase):
                 if candidate_is_exact(task, candidate.candidate_id, hidden=False)
             ]
             self.assertEqual(public_exact, [task.answer_candidate_id])
-            self.assertTrue(
-                candidate_is_exact(task, task.answer_candidate_id, hidden=True)
-            )
+            self.assertTrue(candidate_is_exact(task, task.answer_candidate_id, hidden=True))
 
     def test_public_prompt_excludes_hidden_fields(self) -> None:
         task = self.suite.tasks[0]
@@ -77,22 +74,17 @@ class TaskSuiteTests(unittest.TestCase):
         self.assertEqual(score_candidate(task, task.answer_candidate_id, hidden=False), (7, 7))
         self.assertEqual(score_candidate(task, task.answer_candidate_id, hidden=True), (12, 12))
 
-    def test_malformed_suite_is_rejected(self) -> None:
-        payload = json.loads(SUITE_PATH.read_text(encoding="utf-8"))
-        payload["tasks"][0]["candidates"][0]["instructions"][0]["op"] = "EVAL"
-        temp = ROOT / ".bad-cs1-suite.json"
-        try:
-            temp.write_text(json.dumps(payload), encoding="utf-8")
-            with self.assertRaises(AdvantageTaskError):
-                load_task_suite(temp)
-        finally:
-            temp.unlink(missing_ok=True)
+    def test_suite_hash_is_exact(self) -> None:
+        self.assertEqual(
+            self.suite.suite_sha256,
+            "511315F206889D0194ECB7076380A8D6F43170F7D9564BA0DA008ACE538F049C",
+        )
 
 
 class ArmPlanTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.suite = load_task_suite(SUITE_PATH)
+        cls.suite = build_frozen_task_suite()
         cls.task = cls.suite.tasks[0]
 
     def test_all_arms_share_exact_budget_role_and_seed_sequence(self) -> None:
@@ -203,7 +195,7 @@ class ArmPlanTests(unittest.TestCase):
 class RunnerAndComparisonTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.suite = load_task_suite(SUITE_PATH)
+        cls.suite = build_frozen_task_suite()
 
     def fake_runner(self, answer_id: str):
         def run(turn, public_root: str, assignment: str) -> dict[str, Any]:
