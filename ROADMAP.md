@@ -105,7 +105,7 @@ RSI-0: CLOSED
 -> HoloState worker v4: reviewable-accept; process-local micro-worker unlocked
 -> CatalyticSwarm-0: executed once; control qualification pass, readiness inconclusive on exact-PID WDDM telemetry loss before canary
 -> CatalyticSwarm-0 v2: structured micro-worker and bounded swarm control reviewable-accept
--> CatalyticSwarm-1: task-advantage design requires separate explicit authorization
+-> CatalyticSwarm-1: equal-budget evaluation integrated; not executed
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -122,7 +122,8 @@ this section is only its navigation capsule.
 - **HoloState carrier hierarchy:** exact live prefix state is proven process-locally; a bounded logical swarm over live leases and a verified append-only blackboard are proven at the 32-worker control boundary; expert residency, recurrent trajectory state, and executable CUDA-graph/warm-runtime state are later carriers. Only exact identity-bound state may survive closure.
 - **Preserved predecessor:** CatalyticSwarm-0 v1 executed exactly once. Generation-free control qualification passed; readiness stopped `inconclusive` on exact-PID WDDM telemetry loss before the parser canary, capability attempt, lease, ledger, blackboard, or any worker request. V1 is immutable and no-retry.
 - **Current boundary:** `catalytic_swarm_0_v2` completed one artifact-claiming live execution from protected integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests. Its sole causal intervention was bounded transient exact-PID WDDM query resilience plus fresh-sample admission; the inherited 32-worker plan, prompts, seeds, parent graph, one-slot lease law, parser, verifier, blackboard, and 64-token Fast budget remained unchanged. All 32 workers and the 16/8/6/2 control sequence passed, so structured-micro-worker and bounded swarm-control availability are unlocked at `reviewable-accept`.
-- **Next boundary:** task advantage is not established by the control proof. CatalyticSwarm-1 requires separate explicit authorization and must begin with an equal-total-budget comparison design; no further swarm execution is currently authorized.
+- **Prepared successor:** CatalyticSwarm-1 is statically integrated at complete-contract SHA-256 `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. The exact eight-task suite, four equal-budget arms, common-root warm law, Latin-square order, hidden-data isolation, bounded ledger, one-shot paths, and protected runner are present. No sidecar, model request, or artifact claim occurred.
+- **Next boundary:** task advantage is not established. Executing `audit-catalytic-swarm-1` requires separate explicit authorization; no further swarm execution is currently authorized.
 
 | Swarm stage | Architectural purpose | Unlock boundary |
 |---|---|---|
@@ -633,7 +634,17 @@ Control qualification, readiness, parser canary, all 32 worker requests, 32 one-
 
 V2 is `reviewable-accept`. `STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE` and `CATALYTIC_SWARM_CONTROL_AVAILABLE` are unlocked. Broader process-local HoloState, restart persistence, task advantage, and SOTA remain locked; automatic promotion remains false. Exact result SHA-256 is `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`; the full artifact bindings are recorded in `lab/CHECKPOINT.md`.
 
-No further swarm execution is authorized. CatalyticSwarm-1 requires separate explicit authorization and begins with an equal-total-budget task-advantage design. This control proof does not establish task advantage.
+No CatalyticSwarm-0 rerun is authorized. The CatalyticSwarm-1 equal-budget successor is integrated below, but its live invocation remains separately authorized. This control proof does not establish task advantage.
+
+### CatalyticSwarm-1 equal-budget evaluation: INTEGRATED / NOT EXECUTED
+
+Draft PR #6 supplied the five-file pure connector at exact head `aaeb3fe8cc906121fdfcb8ed41d9420b2849d8b6`. Its twelve commits were not imported individually. The protected integration retains the frozen eight-task DSL suite at SHA-256 `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92` and complete contract at `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
+
+The four plan hashes are serial-chain `99FE4402A487EEAF07FAEE7A64CAB241A888E1CB916D09C62BDA493AB08EEF53`, best-of-N `E989ECB8A53E9AD24885759627D3E3BA9A16E76A41A770E70784644A9A96696A`, sparse swarm `9289DE195D12AB93A9A9DD70949C92FC55D40E0D930CAD521605FC1707E116DE`, and verified swarm `46A2CEADA66217AC2DD3E0BD6D1C20A052EFE9D76EE236887AF18428409A772C`. Every task prepares one common public-root warm outside the four comparison budgets, and every arm request must prove its cached token prefix covers that complete root before the exact four-position Latin square continues. Each arm has 32 requests, one physical slot, 32 maximum completion tokens per request, 1,024 maximum completion tokens, and 8,192 maximum fresh prompt tokens. Actual fresh, completion, and total-model token ratios must each remain at or below 1.10.
+
+Hidden examples and answer keys are excluded from roots, assignments, requests, ledger records, arm context, and later task context. Arm outputs stay arm-local; task outputs stay task-local. Hidden scoring is deferred until all four arms for a task finish. The exclusive ledger is capped at 80,000 records and 67,108,864 bytes and retains bounded metadata only.
+
+The prepared runner inherits the v2 exact-PID WDDM resilience/freshness policy, v4 token evidence, strict candidate JSON, one physical lease, stable/candidate isolation, and bounded cleanup. All seven `state/catalytic_swarm_1` paths are ignored and absent. Live request count is zero; no `catalytic_swarm_1_evidence` object exists. `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, SOTA, broader process-local HoloState, restart persistence, and automatic promotion remain locked.
 
 ### HoloState-v2 persistence boundary
 

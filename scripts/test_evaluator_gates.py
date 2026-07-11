@@ -10,6 +10,11 @@ import sys
 import unittest
 from pathlib import Path
 
+from catalytic_swarm_advantage_protocol import (
+    ONE_SHOT_PATHS as CATALYTIC_SWARM_1_PATHS,
+    build_catalytic_swarm_1_contract,
+)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -377,6 +382,54 @@ class EvaluatorGateTests(unittest.TestCase):
         for path in (
             "scripts/test_neo_loop_vram.py",
             "scripts/test_evaluator_gates.py",
+        ):
+            self.assertIn(path, EVALUATOR["protected_paths"]["files"])
+            self.assertIn(path, EVALUATOR["controller_files"])
+
+    def test_catalytic_swarm_1_complete_object_is_exact_and_unexecuted(self) -> None:
+        self.assertEqual(
+            EVALUATOR["catalytic_swarm_1"],
+            build_catalytic_swarm_1_contract(),
+        )
+        self.assertEqual(
+            neo_loop.catalytic_swarm_1_hash(EVALUATOR),
+            "fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e",
+        )
+        self.assertNotIn("catalytic_swarm_1_evidence", EVALUATOR)
+        self.assertEqual(
+            EVALUATOR["catalytic_swarm_1"]["one_shot"]["paths"],
+            CATALYTIC_SWARM_1_PATHS,
+        )
+
+    def test_catalytic_swarm_1_hash_covers_full_contract(self) -> None:
+        baseline = neo_loop.catalytic_swarm_1_hash(EVALUATOR)
+        mutations = [
+            (("predecessor", "evidence_sha256"), "0" * 64),
+            (("task_suite", "suite_sha256"), "0" * 64),
+            (("arms", "serial-chain", "plan_sha256"), "0" * 64),
+            (("execution_order", "cs1-task-01", 0), "best-of-n"),
+            (("budget_law", "maximum_tokens_per_request"), 64),
+            (("claim_limits", "automatic_promotion"), True),
+        ]
+        for path, value in mutations:
+            changed = copy.deepcopy(EVALUATOR)
+            cursor = changed["catalytic_swarm_1"]
+            for key in path[:-1]:
+                cursor = cursor[key]
+            cursor[path[-1]] = value
+            self.assertNotEqual(
+                baseline,
+                neo_loop.catalytic_swarm_1_hash(changed),
+                path,
+            )
+
+    def test_catalytic_swarm_1_connector_surface_is_protected(self) -> None:
+        for path in (
+            "scripts/catalytic_advantage_tasks.py",
+            "scripts/catalytic_swarm_advantage.py",
+            "scripts/catalytic_swarm_advantage_protocol.py",
+            "scripts/test_catalytic_swarm_advantage.py",
+            "scripts/test_catalytic_swarm_advantage_protocol.py",
         ):
             self.assertIn(path, EVALUATOR["protected_paths"]["files"])
             self.assertIn(path, EVALUATOR["controller_files"])

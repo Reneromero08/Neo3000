@@ -376,20 +376,54 @@ promotion remain locked.
 
 ## CatalyticSwarm-1: equal-budget task advantage
 
-This stage is not authorized for execution. Separate explicit authorization is
-required before its equal-total-budget design or any live comparison proceeds.
+The protected design and runner are integrated but not executed. Separate
+explicit authorization is required before `audit-catalytic-swarm-1` may run.
+
+Frozen identity:
+
+```text
+task suite: catalytic-swarm-1-dsl-selection-v1
+tasks: 8
+candidates per task: 64
+program length: 5
+public examples: 5
+hidden examples: 16
+suite SHA-256: 4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92
+contract SHA-256: fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e
+```
 
 Compare:
 
 ```text
-single Agents-A1 trajectory
-best-of-8 independent Fast workers
-best-of-32 independent Fast workers
-32-worker sparse blackboard swarm
-32-worker swarm plus external verification
+serial-chain: one 32-turn trajectory; each turn sees only its predecessor
+best-of-n: 32 independent candidates; public verifier selects after completion
+sparse-swarm: exact 16/8/6/2 parent graph without verifier scores in context
+verified-swarm: identical graph with assigned-parent public scores in context
 ```
 
-Measure verified success, candidate coverage, verifier precision, unique proposals, error correlation, total tokens, prompt evaluations avoided, wall-clock time, communication overhead, and fresh-compute ratio.
+Every arm receives 32 requests, one physical slot, at most 32 completion tokens
+per request, at most 1,024 completion tokens, and at most 8,192 fresh prompt
+tokens per task. Fresh-prompt, completion, and total-model token ratios must each
+remain at or below 1.10. Each task warms one exact public root once before any
+arm; the warm is recorded separately and excluded from every arm budget. Every
+arm request must prove its cached-token prefix covers that complete root. The
+exact four-position Latin square is repeated over tasks five through eight.
+
+Hidden examples and answer keys never enter requests, assignments, arm context,
+later task context, or the ledger. Hidden scoring occurs only after all four arms
+for one task finish. Arm state and task state are isolated. The exclusive
+metadata-only ledger is capped at 80,000 records and 67,108,864 bytes.
+
+Prepared state:
+
+```text
+live model requests: 0
+sidecar launches: 0
+one-shot artifacts: absent
+CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN: LOCKED
+SOTA_SWARM_CLAIM: LOCKED
+automatic promotion: disabled
+```
 
 Unlock target:
 
@@ -534,8 +568,9 @@ Metrics must distinguish observed versus accepted reuse, process-local versus du
 
 ```text
 completed: CatalyticSwarm-0 v2 bounded control proof
-1. separately authorize and design CatalyticSwarm-1 equal-total-budget executable-task advantage
-2. execute CatalyticSwarm-1 only under that future authorization
+completed: integrate CatalyticSwarm-1 equal-total-budget design and protected runner without execution
+1. separately authorize and execute CatalyticSwarm-1 exactly once
+2. adjudicate and bind its evidence without broadening the exact suite scope
 3. Adaptive population and verifier allocation
 4. HoloState multi-root admission and eviction policy
 5. HoloState-v2 durable checkpoint-list persistence
@@ -565,6 +600,9 @@ readiness inconclusively before any canary or capability request.
 CatalyticSwarm-0 v2 then completed its 32-worker, one-slot control proof.
 Structured micro-workers and bounded swarm control are reviewable-accept and
 available; task advantage remains untested and locked.
+
+CatalyticSwarm-1 equal-budget evaluation is integrated but not executed. It has
+made zero live model requests and created no one-shot artifact.
 ```
 
 Not yet allowed:

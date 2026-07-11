@@ -27,6 +27,7 @@ PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 CatalyticSwarm-0: EXECUTED ONCE / CONTROL QUALIFICATION PASS / READINESS INCONCLUSIVE
 CatalyticSwarm-0 v2: REVIEWABLE ACCEPT
+CatalyticSwarm-1: INTEGRATED / NOT EXECUTED
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_CONTROL_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN: LOCKED
@@ -55,7 +56,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Worker protocol v4 ran exactly once with no retry. Readiness, tokenizer, canary, both roots, all Fast requests, repeats, and isolation passed; Deep independently rejected on a 768-token length stop.
 - CatalyticSwarm-0 ran exactly once from protected integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`. Control qualification passed, then readiness stopped inconclusively on exact-PID WDDM telemetry loss before the parser canary or any worker request. This version cannot be retried.
 - The separately versioned CatalyticSwarm-0 v2 successor completed one artifact-claiming live execution and returned `reviewable-accept` for structured micro-workers and bounded swarm control. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests. V2 changed only exact-PID WDDM transient-gap resilience plus fresh-sample admission and preserved the exact v1 plan and prompt bytes.
-- No further swarm execution is authorized. CatalyticSwarm-1 requires separate explicit authorization and must begin with an equal-total-budget task-advantage design; task advantage, Deep, persistence, SOTA, and promotion claims remain locked.
+- CatalyticSwarm-1 equal-budget evaluation is integrated but not executed. The protected command requires separate explicit live authority; task advantage, Deep, persistence, SOTA, and promotion claims remain locked.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
@@ -103,7 +104,16 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Exact-PID WDDM recorded 177 valid and zero unavailable samples, zero recoveries, maximum failure streak 0, maximum valid-sample gap 2.938 seconds, 107 passed freshness boundaries, and a 2,284.9 MiB peak. Maximum host-private growth was 727,982,080 bytes.
 - Cleanup, sampler retirement, runtime removal, port retirement, stable/candidate isolation, v1 preservation, and worker-v4 preservation passed. V2 is `reviewable-accept`; structured-micro-worker and bounded swarm-control availability are unlocked.
 - Exact SHA-256 values are control `1FC67796F436E69B1B2C2F132345C0335FADF6D1452E7F98D8A92D78CB616CE3`; readiness `129FD883FD03BBEF8B216AC67F77CBE854CA798A86BBC18A11D4DCDF010E7124`; parser canary `9282D7F8AE195C866E767A7F0D3BCB0A366E3FC3C1509A7DB1F99F1C541191B5`; attempt `0E9A839B7AD9D50AE6FD82DD3C63A93D23596C4A32FAF515BAC67A68EFEE8866`; result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`; ledger `C523EF77C80CDD4783D2E41103FCD72490A4C837DA2B3988B29F8D7A97E1F7F9`; blackboard `197929DF8DF62A24480A64C071651CED43E16D82F0B6DA5A9AB740C6C1236964`.
-- Broader process-local HoloState, restart persistence, task advantage, and SOTA remain locked; automatic promotion remains false. CatalyticSwarm-1 requires separate explicit authorization and an equal-total-budget task-advantage design. No task advantage is claimed from this control proof.
+- Broader process-local HoloState, restart persistence, task advantage, and SOTA remain locked; automatic promotion remains false. CatalyticSwarm-1 now has a separately gated equal-total-budget task-advantage design, but its live invocation still requires explicit authorization. No task advantage is claimed from the v2 control proof or the unexecuted design.
+
+### CatalyticSwarm-1 equal-budget integration prepared
+
+- Integrated the five-file PR #6 connector from exact head `aaeb3fe8cc906121fdfcb8ed41d9420b2849d8b6` as one architectural change without importing its twelve intermediate commits.
+- Froze the eight-task DSL suite at SHA-256 `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`, complete contract at `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`, and the four declared arm plan hashes.
+- Repaired only demonstrated connector defects: hidden scoring waits for all four arms and best-of-N scoring waits for all 32 responses; complete public-root cached-prefix reuse and accepted v4 token evidence fail closed; task/root/arm observations, totals, selections, and scores are canonically revalidated; sparse/verified model-visible prompts differ only by public-score visibility; exact success requires public plus hidden success; public suite serialization excludes hidden material; and the result uses the protected task-advantage state name.
+- Added one common public-root warm per task outside arm budgets, exact Latin-square order, strict arm/task/hidden-data isolation, 1,024 comparison plus 8 warm prospective requests, 32-token request ceilings, per-arm 1,024 completion / 8,192 fresh-prompt ceilings, and 1.10 parity gates.
+- Added an exclusive metadata-only ledger capped at 80,000 records and 67,108,864 bytes, seven ignored one-shot paths, complete predecessor bindings, protected exact-PID WDDM/ownership/cleanup reuse, and the separately gated `audit-catalytic-swarm-1` command. CatalyticSwarm-0 v2 is hard-retired against rerun.
+- This integration launched no sidecar, made zero live model requests, claimed no one-shot attempt, created no evidence object or runtime artifact, and did not unlock task advantage, SOTA, broader HoloState, restart persistence, or automatic promotion.
 
 ### HoloState worker protocol v3 readiness integration prepared
 

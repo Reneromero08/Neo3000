@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Manage the protected process-local HoloState-v1 Live Prefix Lattice.
 
-All writes are confined to ignored ``state/holostate`` or
-``state/catalytic_swarm`` runtime data.  This controller never edits engine
+All writes are confined to ignored ``state/holostate``, ``state/catalytic_swarm``,
+or ``state/catalytic_swarm_1`` runtime data.  This controller never edits engine
 source, model bytes, stable configuration, Git history, or Pi configuration. A
 registry entry is historical metadata; live state is recognized only for the
 exact running sidecar session after the server has reported reusable cached
@@ -46,6 +46,8 @@ from neo_loop import (  # noqa: E402
     holostate_worker_protocol_v4_hash,
     catalytic_swarm_0_hash,
     catalytic_swarm_0_v2_hash,
+    catalytic_swarm_0_v2_evidence_hash,
+    catalytic_swarm_1_hash,
     listener_pids,
     load_json,
     verify_lock,
@@ -86,6 +88,7 @@ from catalytic_blackboard import (  # noqa: E402
     verify_blackboard_snapshot,
 )
 from catalytic_swarm import (  # noqa: E402
+    PhysicalLeasePool,
     REQUIRED_VERIFICATION_CHECKS,
     VERIFIER_ID,
     VerificationReceipt,
@@ -95,6 +98,33 @@ from catalytic_swarm import (  # noqa: E402
     expected_control_content,
     expected_control_contribution,
     run_swarm,
+)
+from catalytic_advantage_tasks import (  # noqa: E402
+    EXPECTED_SUITE_SHA256 as CATALYTIC_SWARM_1_SUITE_SHA256,
+    AdvantageTask,
+    build_frozen_task_suite,
+    render_public_task,
+    score_candidate,
+    validate_public_projection,
+)
+from catalytic_swarm_advantage import (  # noqa: E402
+    ARMS as CATALYTIC_SWARM_1_ARMS,
+    AdvantageTurn,
+    build_all_arm_plans,
+    classify_suite_advantage,
+    compare_task_outcomes,
+    parse_candidate_content,
+    run_advantage_arm,
+)
+from catalytic_swarm_advantage_protocol import (  # noqa: E402
+    ARM_PLAN_HASHES as CATALYTIC_SWARM_1_ARM_PLAN_HASHES,
+    ONE_SHOT_PATHS as CATALYTIC_SWARM_1_ONE_SHOT_PATHS,
+    PREDECESSOR_ARTIFACTS as CATALYTIC_SWARM_1_PREDECESSOR_ARTIFACTS,
+    PREDECESSOR_CONTRACT_SHA256 as CATALYTIC_SWARM_1_PREDECESSOR_CONTRACT_SHA256,
+    PREDECESSOR_EVIDENCE_SHA256 as CATALYTIC_SWARM_1_PREDECESSOR_EVIDENCE_SHA256,
+    contract_sha256 as catalytic_swarm_1_contract_sha256,
+    counterbalanced_arm_order,
+    validate_catalytic_swarm_1_contract,
 )
 from holostate_swarm_adapter import (  # noqa: E402
     HoloStateSwarmAdapterError,
@@ -166,6 +196,54 @@ CATALYTIC_V2_ARTIFACT_PATHS = (
     CATALYTIC_V2_LEDGER_PATH,
     CATALYTIC_V2_BLACKBOARD_PATH,
 )
+CATALYTIC_SWARM_1_STATE_ROOT = ROOT / "state" / "catalytic_swarm_1"
+CATALYTIC_SWARM_1_CONTROL_PATH = (
+    CATALYTIC_SWARM_1_STATE_ROOT / "control-qualification-v1.json"
+)
+CATALYTIC_SWARM_1_READINESS_PATH = CATALYTIC_SWARM_1_STATE_ROOT / "readiness-v1.json"
+CATALYTIC_SWARM_1_PARSER_CANARY_PATH = (
+    CATALYTIC_SWARM_1_STATE_ROOT / "parser-canary-v1.json"
+)
+CATALYTIC_SWARM_1_ATTEMPT_PATH = CATALYTIC_SWARM_1_STATE_ROOT / "attempt-v1.json"
+CATALYTIC_SWARM_1_RESULT_PATH = CATALYTIC_SWARM_1_STATE_ROOT / "result-v1.json"
+CATALYTIC_SWARM_1_LEDGER_PATH = CATALYTIC_SWARM_1_STATE_ROOT / "ledger-v1.jsonl"
+CATALYTIC_SWARM_1_TASK_RESULTS_PATH = (
+    CATALYTIC_SWARM_1_STATE_ROOT / "task-results-v1.json"
+)
+CATALYTIC_SWARM_1_ARTIFACT_PATHS = (
+    CATALYTIC_SWARM_1_CONTROL_PATH,
+    CATALYTIC_SWARM_1_READINESS_PATH,
+    CATALYTIC_SWARM_1_PARSER_CANARY_PATH,
+    CATALYTIC_SWARM_1_ATTEMPT_PATH,
+    CATALYTIC_SWARM_1_RESULT_PATH,
+    CATALYTIC_SWARM_1_LEDGER_PATH,
+    CATALYTIC_SWARM_1_TASK_RESULTS_PATH,
+)
+CATALYTIC_SWARM_1_CONNECTOR_FILES = (
+    "scripts/catalytic_advantage_tasks.py",
+    "scripts/catalytic_swarm_advantage.py",
+    "scripts/catalytic_swarm_advantage_protocol.py",
+    "scripts/test_catalytic_swarm_advantage.py",
+    "scripts/test_catalytic_swarm_advantage_protocol.py",
+)
+CATALYTIC_SWARM_1_LEDGER_MAX_BYTES = 64 * MIB
+CATALYTIC_SWARM_1_LEDGER_MAX_RECORDS = 80_000
+CATALYTIC_SWARM_1_TASK_RESULTS_MAX_BYTES = 16 * MIB
+CATALYTIC_SWARM_1_REFERENCE_ENVELOPE = (
+    "The following JSON is the immutable public task root. It contains no hidden "
+    "examples or answer key. Answer only the separate current user assignment.\n"
+)
+CATALYTIC_SWARM_1_LEDGER_FIELDS = frozenset({
+    "task_id", "arm", "turn_id", "phase", "role", "assigned_parents",
+    "candidate_id", "public_pass_count", "content_sha256", "prompt_tokens",
+    "cached_prompt_tokens", "required_cached_prompt_tokens", "fresh_prompt_tokens",
+    "completion_tokens",
+    "token_evidence_scope", "wddm_freshness_boundary", "lease_id",
+    "request_started_at", "request_finished_at",
+})
+CATALYTIC_SWARM_1_LEDGER_ENVELOPE_FIELDS = frozenset({
+    "global_record_index", "request_sequence_index", "request_label",
+})
 EVALUATOR_PATH = ROOT / "lab" / "EVALUATOR.json"
 DEFAULT_BINARY = ROOT / "build" / "stable" / "bin" / "Release" / "llama-server.exe"
 EXPECTED_BINARY_SHA256 = "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
@@ -246,6 +324,12 @@ def require_catalytic_runtime_path(path: Path) -> Path:
     )
 
 
+def require_catalytic_swarm_1_runtime_path(path: Path) -> Path:
+    return require_resolved_state_path(
+        path, CATALYTIC_SWARM_1_STATE_ROOT, "state/catalytic_swarm_1"
+    )
+
+
 def write_runtime_json(path: Path, value: Any) -> None:
     path = require_runtime_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -320,6 +404,67 @@ def claim_catalytic_runtime_json_once(
     except BaseException:
         path.unlink(missing_ok=True)
         raise
+
+
+def write_catalytic_swarm_1_runtime_json(
+    path: Path,
+    value: Any,
+    *,
+    max_bytes: int = 2 * MIB,
+) -> None:
+    """Atomically replace one bounded CatalyticSwarm-1 runtime document."""
+    path = require_catalytic_swarm_1_runtime_path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    encoded = _bounded_json_document(value, max_bytes=max_bytes)
+    temporary = require_catalytic_swarm_1_runtime_path(
+        path.with_name(path.name + f".{os.getpid()}.tmp")
+    )
+    try:
+        with temporary.open("xb") as handle:
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def claim_catalytic_swarm_1_runtime_json_once(
+    path: Path,
+    value: Any,
+    *,
+    max_bytes: int = 2 * MIB,
+) -> None:
+    """Atomically claim one bounded CatalyticSwarm-1 one-shot document."""
+    path = require_catalytic_swarm_1_runtime_path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    encoded = _bounded_json_document(value, max_bytes=max_bytes)
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+    except FileExistsError as exc:
+        raise NeoLoopError(f"one-shot operation already claimed: {path.name}") from exc
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except BaseException:
+        path.unlink(missing_ok=True)
+        raise
+
+
+def write_owned_catalytic_swarm_1_runtime_json(
+    path: Path,
+    value: Any,
+    *,
+    claimed: bool,
+    max_bytes: int = 2 * MIB,
+) -> bool:
+    """Write a terminal update only for an artifact claimed by this process."""
+    if claimed is not True:
+        return False
+    write_catalytic_swarm_1_runtime_json(path, value, max_bytes=max_bytes)
+    return True
 
 
 class BoundedInMemoryLedger:
@@ -2291,6 +2436,57 @@ def load_locked_catalytic_swarm_0_v2() -> tuple[
     return evaluator, live_contract, protocol_v4, contract, lock
 
 
+def load_locked_catalytic_swarm_1() -> tuple[
+    dict[str, Any],
+    dict[str, Any],
+    dict[str, Any],
+    dict[str, Any],
+    dict[str, Any],
+    dict[str, Any],
+]:
+    """Load the complete CS1 contract and its immutable CS0-v2 predecessor."""
+    evaluator, live_contract, protocol_v4, predecessor, lock = (
+        load_locked_catalytic_swarm_0_v2()
+    )
+    try:
+        contract = validate_catalytic_swarm_1_contract(
+            evaluator.get("catalytic_swarm_1", {})
+        )
+    except Exception as exc:
+        raise NeoLoopError(f"CatalyticSwarm-1 contract validation failed: {exc}") from exc
+    actual = catalytic_swarm_1_hash(evaluator)
+    if lock.get("catalytic_swarm_1_sha256") != actual:
+        raise NeoLoopError("CatalyticSwarm-1 is not locked as a complete object")
+    if catalytic_swarm_1_contract_sha256(contract) != actual:
+        raise NeoLoopError("CatalyticSwarm-1 canonical contract hash differs from lock")
+    if "catalytic_swarm_1_evidence" in evaluator:
+        raise NeoLoopError("CatalyticSwarm-1 evidence object is forbidden before execution")
+    predecessor_contract = contract["predecessor"]
+    if (
+        predecessor_contract["contract_sha256"]
+        != CATALYTIC_SWARM_1_PREDECESSOR_CONTRACT_SHA256
+        or predecessor_contract["evidence_sha256"]
+        != CATALYTIC_SWARM_1_PREDECESSOR_EVIDENCE_SHA256
+        or lock.get("catalytic_swarm_0_v2_sha256")
+        != predecessor_contract["contract_sha256"]
+        or lock.get("catalytic_swarm_0_v2_evidence_sha256")
+        != predecessor_contract["evidence_sha256"]
+        or catalytic_swarm_0_v2_hash(evaluator)
+        != predecessor_contract["contract_sha256"]
+        or catalytic_swarm_0_v2_evidence_hash(evaluator)
+        != predecessor_contract["evidence_sha256"]
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 predecessor complete-object binding changed")
+    evidence = evaluator.get("catalytic_swarm_0_v2_evidence")
+    availability = evidence.get("availability") if isinstance(evidence, dict) else None
+    if not isinstance(availability, dict) or any(
+        availability.get(name) != state
+        for name, state in predecessor_contract["required_availability"].items()
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 predecessor availability is not unlocked")
+    return evaluator, live_contract, protocol_v4, predecessor, contract, lock
+
+
 def selected_reasoning_budget(contract: dict[str, Any]) -> int:
     selected = contract["reasoning_budget"].get("selected_max_tokens")
     candidates = contract["reasoning_budget"]["qualification_candidates"]
@@ -3566,7 +3762,7 @@ def strict_stable_tokenize_for_control(content: str) -> tuple[list[int], dict[st
     response = request_json("POST", "/tokenize", payload, port=STABLE_PORT)
     tokens = strict_v4_token_ids(
         response.get("tokens") if isinstance(response, dict) else None,
-        label="CatalyticSwarm-0 stable tokenizer",
+        label="CatalyticSwarm stable tokenizer",
     )
     return tokens, {
         "request_sha256": sha256_bytes(canonical_json_bytes(payload)),
@@ -3680,6 +3876,61 @@ def preserved_catalytic_v1_evidence(
         ],
         "preserved": True,
     }
+
+
+def preserved_catalytic_swarm_0_v2_evidence(
+    predecessor: dict[str, Any],
+) -> dict[str, Any]:
+    """Rehash every immutable CS0-v2 artifact used to authorize CS1."""
+    paths = {
+        "control": CATALYTIC_V2_CONTROL_QUALIFICATION_PATH,
+        "readiness": CATALYTIC_V2_READINESS_PATH,
+        "parser_canary": CATALYTIC_V2_PARSER_CANARY_PATH,
+        "attempt": CATALYTIC_V2_ATTEMPT_PATH,
+        "result": CATALYTIC_V2_RESULT_PATH,
+        "ledger": CATALYTIC_V2_LEDGER_PATH,
+        "blackboard": CATALYTIC_V2_BLACKBOARD_PATH,
+    }
+    expected = predecessor.get("artifacts")
+    if expected != CATALYTIC_SWARM_1_PREDECESSOR_ARTIFACTS:
+        raise NeoLoopError("CatalyticSwarm-1 predecessor artifact law changed")
+    artifacts: dict[str, Any] = {}
+    for name, path in paths.items():
+        if not path.is_file():
+            raise NeoLoopError(f"CatalyticSwarm-0 v2 artifact is missing: {name}")
+        actual = sha256_file(path)
+        if actual != expected[name]:
+            raise NeoLoopError(f"CatalyticSwarm-0 v2 artifact changed: {name}")
+        artifacts[name] = {
+            "path": path.relative_to(ROOT).as_posix(),
+            "sha256": actual,
+            "size_bytes": path.stat().st_size,
+        }
+    return {"artifacts": artifacts, "preserved": True}
+
+
+def assert_catalytic_swarm_1_artifact_stage(
+    *,
+    allow_through: str | None = None,
+) -> None:
+    """Reject any CS1 artifact that appears ahead of the claimed lifecycle stage."""
+    order = {
+        "control": 1,
+        "readiness": 2,
+        "parser_canary": 3,
+        "attempt": 4,
+        "result": 5,
+        "ledger": 6,
+        "task_results": 7,
+    }
+    if allow_through is not None and allow_through not in order:
+        raise ValueError("unknown CatalyticSwarm-1 artifact stage")
+    allowed = order.get(allow_through or "", 0)
+    for index, path in enumerate(CATALYTIC_SWARM_1_ARTIFACT_PATHS, start=1):
+        if index > allowed and path.exists():
+            raise NeoLoopError(
+                f"CatalyticSwarm-1 later artifact already exists: {path.name}"
+            )
 
 
 def assert_catalytic_artifacts_absent(
@@ -6812,6 +7063,222 @@ def prepare_catalytic_swarm_0_v2_claim(args: argparse.Namespace) -> dict[str, An
         "predecessor_v1_artifacts": preserved_v1,
         "frozen_root_source_ref": frozen_source_ref,
         "frozen_root_sources": frozen_sources,
+        "stable_branch": stable_branch,
+        "stable_head": stable_head,
+        "stable_status": stable_status,
+        "candidate_root": candidate_root,
+        "candidate_head": candidate_head,
+        "candidate_status": candidate_status,
+        "binary_identity": binary_identity,
+        "model_identity": model_identity,
+        "stable_template_sha256": stable_template_sha256,
+    }
+
+
+def qualify_catalytic_swarm_1_control(
+    contract: dict[str, Any],
+    *,
+    stable_tokenizer: bool = False,
+) -> dict[str, Any]:
+    """Regenerate every frozen CS1 control object without model generation."""
+    suite = build_frozen_task_suite()
+    if suite.suite_sha256 != CATALYTIC_SWARM_1_SUITE_SHA256:
+        raise NeoLoopError("CatalyticSwarm-1 task-suite hash drift")
+    if suite.suite_sha256 != contract["task_suite"]["suite_sha256"]:
+        raise NeoLoopError("CatalyticSwarm-1 contract binds a different task suite")
+    plans = build_all_arm_plans()
+    plan_hashes = {plan.arm: plan.plan_sha256 for plan in plans}
+    if plan_hashes != CATALYTIC_SWARM_1_ARM_PLAN_HASHES:
+        raise NeoLoopError("CatalyticSwarm-1 arm-plan hash drift")
+    if plan_hashes != {
+        arm: contract["arms"][arm]["plan_sha256"]
+        for arm in CATALYTIC_SWARM_1_ARMS
+    }:
+        raise NeoLoopError("CatalyticSwarm-1 contract arm plans changed")
+
+    order = counterbalanced_arm_order()
+    if order != contract["execution_order"]:
+        raise NeoLoopError("CatalyticSwarm-1 Latin-square order changed")
+    task_ids = [task.task_id for task in suite.tasks]
+    if list(order) != task_ids:
+        raise NeoLoopError("CatalyticSwarm-1 task order changed")
+    for position in range(4):
+        if {
+            order[task_id][position] for task_id in task_ids[:4]
+        } != set(CATALYTIC_SWARM_1_ARMS):
+            raise NeoLoopError("CatalyticSwarm-1 Latin square is not position-balanced")
+    if any(order[task_ids[index + 4]] != order[task_ids[index]] for index in range(4)):
+        raise NeoLoopError("CatalyticSwarm-1 Latin square does not repeat for tasks five-eight")
+
+    roots: list[dict[str, Any]] = []
+    for task in suite.tasks:
+        rendered = render_public_task(task)
+        validate_public_projection(task, rendered)
+        payload = json.loads(rendered)
+        if "hidden_examples" in payload or "answer_candidate_id" in payload:
+            raise NeoLoopError("CatalyticSwarm-1 public root leaked protected task data")
+        roots.append({
+            "task_id": task.task_id,
+            "public_root_sha256": sha256_bytes(rendered.encode("utf-8")),
+            "public_root_bytes": len(rendered.encode("utf-8")),
+            "hidden_examples_present": False,
+            "answer_key_present": False,
+        })
+        if stable_tokenizer:
+            first, first_evidence = strict_stable_tokenize_for_control(rendered)
+            second, second_evidence = strict_stable_tokenize_for_control(rendered)
+            if not first or first != second or len(first) >= CTX_SIZE:
+                raise NeoLoopError(
+                    f"CatalyticSwarm-1 public root token qualification failed: {task.task_id}"
+                )
+            roots[-1].update({
+                "stable_token_count": len(first),
+                "stable_token_array_sha256": sha256_bytes(
+                    canonical_json_bytes(first)
+                ),
+                "stable_tokenizer_repeat_equal": True,
+                "stable_tokenizer_first": first_evidence,
+                "stable_tokenizer_second": second_evidence,
+            })
+    if len({item["public_root_sha256"] for item in roots}) != len(roots):
+        raise NeoLoopError("CatalyticSwarm-1 public task roots are not distinct")
+
+    transport = contract["shared_transport"]
+    if (
+        transport["comparison_request_count"] != 1024
+        or transport["task_root_warm_request_count"] != 8
+        or transport["total_live_request_count"] != 1032
+        or transport["one_sidecar"] is not True
+        or transport["one_physical_lease"] is not True
+        or transport["deep_requests"] != 0
+        or transport["thinking_disabled"] is not True
+        or transport["temperature"] != 0
+        or transport["accepted_v4_token_evidence_required"] is not True
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 transport/request law changed")
+    expected_paths = {
+        name: (ROOT / relative).resolve()
+        for name, relative in CATALYTIC_SWARM_1_ONE_SHOT_PATHS.items()
+    }
+    actual_paths = {
+        name: path.resolve()
+        for name, path in zip(
+            ("control", "readiness", "parser_canary", "attempt", "result", "ledger", "task_results"),
+            CATALYTIC_SWARM_1_ARTIFACT_PATHS,
+        )
+    }
+    if expected_paths != actual_paths or contract["one_shot"]["paths"] != dict(
+        CATALYTIC_SWARM_1_ONE_SHOT_PATHS
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 one-shot path law changed")
+    return {
+        "passed": True,
+        "generation_executed": False,
+        "model_requests": 0,
+        "stable_tokenizer_requests": 16 if stable_tokenizer else 0,
+        "suite_sha256": suite.suite_sha256,
+        "task_count": len(suite.tasks),
+        "arm_plan_hashes": plan_hashes,
+        "execution_order": order,
+        "public_roots": roots,
+        "public_root_qualification_count": len(roots),
+        "hidden_data_excluded": True,
+        "comparison_request_count": 1024,
+        "common_root_warm_request_count": 8,
+        "prospective_live_request_count": 1032,
+        "automatic_promotion": False,
+    }
+
+
+def prepare_catalytic_swarm_1_claim(args: argparse.Namespace) -> dict[str, Any]:
+    """Close every static CS1 gate before atomically claiming control."""
+    assert_catalytic_swarm_1_artifact_stage()
+    (
+        evaluator,
+        live_contract,
+        protocol_v4,
+        predecessor_contract,
+        contract,
+        lock,
+    ) = load_locked_catalytic_swarm_1()
+
+    protected = lock.get("protected_file_hashes", {})
+    for relative in CATALYTIC_SWARM_1_CONNECTOR_FILES:
+        if relative not in protected:
+            raise NeoLoopError(
+                f"CatalyticSwarm-1 connector source is not protected: {relative}"
+            )
+        if sha256_file(ROOT / relative).lower() != str(protected[relative]).lower():
+            raise NeoLoopError(
+                f"CatalyticSwarm-1 connector source differs from lock: {relative}"
+            )
+
+    predecessor = contract["predecessor"]
+    for label in ("main_commit", "integration_commit"):
+        expected = predecessor[label]
+        if git_read(ROOT, "rev-parse", f"{expected}^{{commit}}") != expected:
+            raise NeoLoopError(f"CatalyticSwarm-1 predecessor {label} is unavailable")
+    predecessor_artifacts = preserved_catalytic_swarm_0_v2_evidence(predecessor)
+    control_qualification = qualify_catalytic_swarm_1_control(contract)
+    assert_catalytic_swarm_1_artifact_stage()
+
+    stable_branch = git_read(ROOT, "branch", "--show-current")
+    if stable_branch != "main":
+        raise NeoLoopError("CatalyticSwarm-1 requires the checked-out branch main")
+    stable_head = git_read(ROOT, "rev-parse", "HEAD")
+    local_main = git_read(ROOT, "rev-parse", "main")
+    origin_main = git_read(ROOT, "rev-parse", "origin/main")
+    remote_main = git_read(ROOT, "ls-remote", "origin", "refs/heads/main").split()[0]
+    if not (stable_head == local_main == origin_main == remote_main):
+        raise NeoLoopError(
+            "CatalyticSwarm-1 requires exact HEAD = main = origin/main = remote main"
+        )
+    for label in ("main_commit", "integration_commit"):
+        git_read(
+            ROOT,
+            "merge-base",
+            "--is-ancestor",
+            predecessor[label],
+            stable_head,
+        )
+    stable_status = git_read(ROOT, "status", "--porcelain", "--untracked-files=all")
+    if stable_status:
+        raise NeoLoopError("CatalyticSwarm-1 requires a clean stable worktree")
+
+    candidate_root = ROOT.parent / f"{ROOT.name}-candidate"
+    if not candidate_root.is_dir():
+        raise NeoLoopError("archived trace candidate worktree is missing")
+    candidate_head = git_read(candidate_root, "rev-parse", "HEAD")
+    candidate_status = git_read(
+        candidate_root, "status", "--porcelain", "--untracked-files=all"
+    )
+    expected_candidate = predecessor_contract["stable_isolation"][
+        "archived_trace_candidate_head"
+    ]
+    if candidate_head != expected_candidate or candidate_status:
+        raise NeoLoopError("archived trace candidate must remain exact and clean")
+
+    binary_identity = verify_binary_identity(Path(args.binary))
+    model_identity = verify_model(Path(args.model), evaluator)
+    stable_props = request_json("GET", "/props", timeout=10, port=STABLE_PORT)
+    stable_template_sha256 = sha256_bytes(
+        str(stable_props.get("chat_template", "")).encode("utf-8")
+    )
+    expected_template = predecessor_contract["transport"]["chat_template_identity"][
+        "sha256"
+    ]
+    if stable_template_sha256 != expected_template:
+        raise NeoLoopError("stable chat-template identity differs from CatalyticSwarm-1")
+    assert_catalytic_swarm_1_artifact_stage()
+    return {
+        "evaluator": evaluator,
+        "live_contract": live_contract,
+        "protocol_v4": protocol_v4,
+        "predecessor_contract": predecessor_contract,
+        "contract": contract,
+        "lock": lock,
+        "predecessor_artifacts": predecessor_artifacts,
+        "control_qualification": control_qualification,
         "stable_branch": stable_branch,
         "stable_head": stable_head,
         "stable_status": stable_status,
@@ -10854,6 +11321,1480 @@ def run_catalytic_swarm_0_audit(
     return result
 
 
+def catalytic_swarm_1_wddm_policy(
+    predecessor_contract: dict[str, Any],
+) -> WddmTelemetryPolicy:
+    policy = predecessor_contract["readiness_control"]["wddm_transient_gap_policy"]
+    return WddmTelemetryPolicy(
+        initial_grace_seconds=float(policy["initial_attribution_grace_seconds"]),
+        max_consecutive_failures=int(
+            policy["maximum_tolerated_consecutive_unavailable_queries"]
+        ),
+        max_valid_sample_gap_seconds=float(policy["maximum_valid_sample_gap_seconds"]),
+        admission_freshness_seconds=float(policy["admission_freshness_seconds"]),
+    )
+
+
+def catalytic_swarm_1_candidate_grammar() -> str:
+    alternatives = [
+        json.dumps(f'{{"candidate_id":"C{index:02d}"}}', ensure_ascii=False)
+        for index in range(64)
+    ]
+    return "root ::= " + " | ".join(alternatives)
+
+
+def catalytic_swarm_1_required_cached_prefix(
+    warm_rendered_prompt: str,
+    warm_prompt_token_ids: list[int],
+    candidate_rendered_prompt: str,
+    candidate_prompt_token_ids: list[int],
+    system_message: str,
+) -> int:
+    """Return the exact reusable token prefix after proving it covers the root."""
+    if not all(
+        isinstance(value, str) and value
+        for value in (warm_rendered_prompt, candidate_rendered_prompt, system_message)
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 root-prefix text is unavailable")
+    for label, values in (
+        ("warm", warm_prompt_token_ids),
+        ("candidate", candidate_prompt_token_ids),
+    ):
+        if not isinstance(values, list) or not values or any(
+            isinstance(value, bool) or not isinstance(value, int)
+            for value in values
+        ):
+            raise NeoLoopError(
+                f"CatalyticSwarm-1 {label} prompt token identity is invalid"
+            )
+    warm_root_start = warm_rendered_prompt.find(system_message)
+    candidate_root_start = candidate_rendered_prompt.find(system_message)
+    if warm_root_start < 0 or candidate_root_start < 0:
+        raise NeoLoopError("CatalyticSwarm-1 rendered prompt omitted the public root")
+    common_characters = 0
+    for left, right in zip(warm_rendered_prompt, candidate_rendered_prompt):
+        if left != right:
+            break
+        common_characters += 1
+    if common_characters < max(
+        warm_root_start + len(system_message),
+        candidate_root_start + len(system_message),
+    ):
+        raise NeoLoopError(
+            "CatalyticSwarm-1 reusable rendered prefix does not cover the public root"
+        )
+    common_tokens = 0
+    for left, right in zip(warm_prompt_token_ids, candidate_prompt_token_ids):
+        if left != right:
+            break
+        common_tokens += 1
+    if common_tokens <= 0:
+        raise NeoLoopError("CatalyticSwarm-1 reusable token prefix is empty")
+    return common_tokens
+
+
+def catalytic_swarm_1_public_pass_for_ledger(
+    task: AdvantageTask,
+    turn: AdvantageTurn,
+    candidate_id: str,
+) -> int | None:
+    """Defer best-of-N public verification until its 32 responses are complete."""
+    if turn.arm == "best-of-n":
+        return None
+    return score_candidate(task, candidate_id, hidden=False)[0]
+
+
+def mark_catalytic_swarm_1_first_warm_executed(record: dict[str, Any]) -> None:
+    """Make the parser-stage request accounting explicit after a successful warm."""
+    record.update({
+        "root_warm_generation_executed": True,
+        "root_warm_model_requests": 1,
+        "generation_executed": True,
+        "model_requests": 1,
+        "live_model_requests": 1,
+    })
+
+
+def catalytic_swarm_1_lane(turn: AdvantageTurn) -> dict[str, Any]:
+    if turn.max_tokens != 32:
+        raise NeoLoopError("CatalyticSwarm-1 per-request completion budget changed")
+    return {
+        "thinking_mode": "disabled",
+        "chat_template_kwargs": {"enable_thinking": False},
+        "max_tokens": 32,
+        "temperature": 0.0,
+        "seed": int(turn.seed),
+        "requires": {
+            "accepted_v4_token_evidence": True,
+            "cached_prompt_tokens_positive": True,
+            "empty_reasoning_content": True,
+            "empty_tool_calls": True,
+            "finish_reason": "stop",
+            "fresh_prompt_tokens_less_than_logical": True,
+        },
+        "grammar": catalytic_swarm_1_candidate_grammar(),
+    }
+
+
+def catalytic_swarm_1_public_root(
+    task: AdvantageTask,
+    readiness: dict[str, Any],
+) -> tuple[str, dict[str, Any], str]:
+    public_root = render_public_task(task)
+    validate_public_projection(task, public_root)
+    parsed = json.loads(public_root)
+    if "hidden_examples" in parsed or "answer_candidate_id" in parsed:
+        raise NeoLoopError("CatalyticSwarm-1 public task root leaked protected data")
+    system_message = CATALYTIC_SWARM_1_REFERENCE_ENVELOPE + public_root
+    identity = {
+        "task_id": task.task_id,
+        "public_root_sha256": sha256_bytes(public_root.encode("utf-8")),
+        "public_root_bytes": len(public_root.encode("utf-8")),
+        "system_message_characters": len(system_message),
+        "system_message_sha256": sha256_bytes(system_message.encode("utf-8")),
+        "reference_envelope_sha256": sha256_bytes(
+            CATALYTIC_SWARM_1_REFERENCE_ENVELOPE.encode("utf-8")
+        ),
+        "binary_sha256": readiness["binary"]["sha256"],
+        "model_sha256": readiness["model"]["sha256"],
+        "chat_template_sha256": readiness["chat_template_sha256"],
+        "hidden_examples_present": False,
+        "answer_key_present": False,
+    }
+    identity["state_id"] = "catalytic-swarm-1-root-" + sha256_bytes(
+        canonical_json_bytes(identity)
+    )[:24].lower()
+    return system_message, identity, public_root
+
+
+def catalytic_swarm_1_parser_canary(task: AdvantageTask) -> dict[str, Any]:
+    """Exercise the strict candidate parser locally without adding a 1,033rd request."""
+    exact = '{"candidate_id":"C00"}'
+    candidate_id = parse_candidate_content(exact, task)
+    rejected: list[str] = []
+    for label, value in (
+        ("extra-key", '{"candidate_id":"C00","extra":0}'),
+        ("whitespace", '{"candidate_id": "C00"}'),
+        ("out-of-range", '{"candidate_id":"C64"}'),
+    ):
+        try:
+            parse_candidate_content(value, task)
+        except Exception:
+            rejected.append(label)
+    passed = candidate_id == "C00" and rejected == [
+        "extra-key", "whitespace", "out-of-range"
+    ]
+    return {
+        "passed": passed,
+        "generation_executed": False,
+        "model_requests": 0,
+        "canonical_content_sha256": sha256_bytes(exact.encode("utf-8")),
+        "candidate_id": candidate_id,
+        "negative_cases_rejected": rejected,
+        "grammar_sha256": sha256_bytes(
+            catalytic_swarm_1_candidate_grammar().encode("utf-8")
+        ),
+    }
+
+
+def validate_catalytic_swarm_1_ledger_record(record: dict[str, Any]) -> None:
+    if not isinstance(record, dict) or set(record) != CATALYTIC_SWARM_1_LEDGER_FIELDS:
+        raise NeoLoopError("CatalyticSwarm-1 metadata ledger field set changed")
+    encoded = canonical_json_bytes(record).lower()
+    for forbidden in (
+        b"hidden_examples",
+        b"answer_candidate_id",
+        b"reasoning_text",
+        b"raw_sse",
+        b"raw_payload",
+    ):
+        if forbidden in encoded:
+            raise NeoLoopError("CatalyticSwarm-1 metadata ledger contains forbidden data")
+    if record["arm"] not in (*CATALYTIC_SWARM_1_ARMS, "common-root-warm"):
+        raise NeoLoopError("CatalyticSwarm-1 metadata ledger has an unknown arm")
+    for field in (
+        "prompt_tokens",
+        "cached_prompt_tokens",
+        "required_cached_prompt_tokens",
+        "fresh_prompt_tokens",
+        "completion_tokens",
+    ):
+        value = record[field]
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise NeoLoopError(
+                f"CatalyticSwarm-1 metadata ledger {field} is invalid"
+            )
+    if record["arm"] == "common-root-warm":
+        if (
+            record["required_cached_prompt_tokens"] != 0
+            or record["public_pass_count"] is not None
+        ):
+            raise NeoLoopError("CatalyticSwarm-1 warm metadata is invalid")
+    else:
+        if (
+            record["required_cached_prompt_tokens"] <= 0
+            or record["cached_prompt_tokens"]
+            < record["required_cached_prompt_tokens"]
+        ):
+            raise NeoLoopError(
+                "CatalyticSwarm-1 metadata does not prove complete root reuse"
+            )
+        if record["arm"] == "best-of-n":
+            if record["public_pass_count"] is not None:
+                raise NeoLoopError(
+                    "CatalyticSwarm-1 best-of-N metadata was scored early"
+                )
+        elif (
+            isinstance(record["public_pass_count"], bool)
+            or not isinstance(record["public_pass_count"], int)
+            or record["public_pass_count"] < 0
+        ):
+            raise NeoLoopError("CatalyticSwarm-1 public score metadata is invalid")
+    if type(record["lease_id"]) is not int or record["lease_id"] != 0:
+        raise NeoLoopError("CatalyticSwarm-1 metadata ledger has a non-single-slot lease")
+    if not isinstance(record["assigned_parents"], list) or any(
+        not isinstance(parent, str) for parent in record["assigned_parents"]
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 assigned-parent metadata is malformed")
+
+
+def reconcile_catalytic_swarm_1_ledger(
+    path: Path,
+    snapshot: dict[str, Any],
+    *,
+    expected_records: int,
+) -> dict[str, Any]:
+    reasons: list[str] = []
+    records: list[dict[str, Any]] = []
+    raw = b""
+    try:
+        raw = require_catalytic_swarm_1_runtime_path(path).read_bytes()
+        for line in raw.decode("utf-8").splitlines():
+            if line.strip():
+                value = json.loads(line)
+                if not isinstance(value, dict):
+                    raise NeoLoopError("CatalyticSwarm-1 ledger record is not an object")
+                records.append(value)
+    except Exception as exc:
+        reasons.append(f"ledger-read-or-parse:{exc}")
+    if len(raw) > CATALYTIC_SWARM_1_LEDGER_MAX_BYTES:
+        reasons.append("ledger-byte-ceiling")
+    if len(records) > CATALYTIC_SWARM_1_LEDGER_MAX_RECORDS:
+        reasons.append("ledger-record-ceiling")
+    if len(records) != expected_records:
+        reasons.append("ledger-request-count")
+    for index, item in enumerate(records, start=1):
+        if set(item) != CATALYTIC_SWARM_1_LEDGER_FIELDS | CATALYTIC_SWARM_1_LEDGER_ENVELOPE_FIELDS:
+            reasons.append(f"ledger-envelope:{index}")
+            continue
+        if (
+            item.get("global_record_index") != index
+            or item.get("request_sequence_index") != index
+            or not isinstance(item.get("request_label"), str)
+            or not item["request_label"]
+        ):
+            reasons.append(f"ledger-order:{index}")
+        base = {
+            key: value
+            for key, value in item.items()
+            if key not in CATALYTIC_SWARM_1_LEDGER_ENVELOPE_FIELDS
+        }
+        try:
+            validate_catalytic_swarm_1_ledger_record(base)
+        except Exception as exc:
+            reasons.append(f"ledger-metadata:{index}:{exc}")
+    actual_sha256 = sha256_bytes(raw)
+    if (
+        snapshot.get("failure") is not None
+        or snapshot.get("within_limits") is not True
+        or snapshot.get("record_count") != len(records)
+        or snapshot.get("size_bytes") != len(raw)
+        or snapshot.get("sha256") != actual_sha256
+    ):
+        reasons.append("ledger-snapshot-reconciliation")
+    return {
+        "passed": not reasons,
+        "reasons": reasons,
+        "metadata_only": not reasons,
+        "raw_sse_persisted": False,
+        "record_count": len(records),
+        "size_bytes": len(raw),
+        "sha256": actual_sha256,
+        "max_records": CATALYTIC_SWARM_1_LEDGER_MAX_RECORDS,
+        "max_bytes": CATALYTIC_SWARM_1_LEDGER_MAX_BYTES,
+    }
+
+
+def catalytic_swarm_1_warm_request(
+    sidecar: LiveSidecar,
+    protocol_v4: dict[str, Any],
+    predecessor_contract: dict[str, Any],
+    readiness: dict[str, Any],
+    task: AdvantageTask,
+    *,
+    request_sequence_index: int,
+    lease_id: int,
+) -> tuple[dict[str, Any], dict[str, Any], str, dict[str, Any]]:
+    system_message, system_identity, public_root = catalytic_swarm_1_public_root(
+        task, readiness
+    )
+    expected = "TASK ROOT READY"
+    warm_user_message = "Load this public task root. Return exactly: TASK ROOT READY"
+    lane = {
+        "thinking_mode": "disabled",
+        "chat_template_kwargs": {"enable_thinking": False},
+        "max_tokens": 32,
+        "temperature": 0.0,
+        "seed": 14000 + int(task.task_id.rsplit("-", 1)[-1]),
+        "requires": {
+            "accepted_v4_token_evidence": True,
+            "empty_reasoning_content": True,
+            "empty_tool_calls": True,
+            "finish_reason": "stop",
+        },
+        "grammar": exact_gbnf_literal(expected),
+    }
+    warm_payload = build_worker_chat_payload(
+        protocol_v4, system_message, warm_user_message, lane
+    )
+    warm_rendered_prompt = render_messages(
+        warm_payload["messages"], lane["chat_template_kwargs"]
+    )
+    warm_prompt_token_ids = tokenize(warm_rendered_prompt)
+    if not warm_prompt_token_ids:
+        raise NeoLoopError("CatalyticSwarm-1 warm prompt token identity is empty")
+    system_identity["_warm_rendered_prompt"] = warm_rendered_prompt
+    system_identity["_warm_prompt_token_ids"] = warm_prompt_token_ids
+    system_identity["warm_rendered_prompt_sha256"] = sha256_bytes(
+        warm_rendered_prompt.encode("utf-8")
+    )
+    system_identity["warm_rendered_prompt_token_count"] = len(
+        warm_prompt_token_ids
+    )
+    transient = BoundedInMemoryLedger(max_bytes=MIB, max_records=10_000)
+    started_at = utc_now()
+    result = sidecar.guarded(
+        f"cs1-warm:{task.task_id}",
+        lambda: run_worker_v4_chat_request(
+            protocol_v4,
+            system_message,
+            system_identity,
+            root_name=task.task_id,
+            assignment_name="common-root-warm",
+            lane_name="W",
+            lane=lane,
+            user_message=warm_user_message,
+            expected_content=expected,
+            ledger=transient,  # type: ignore[arg-type]
+            request_label=f"{task.task_id}:common-root-warm",
+            request_sequence_index=request_sequence_index,
+            warm=True,
+        ),
+    )
+    finished_at = utc_now()
+    resource = worker_resource_gate(sidecar, readiness, predecessor_contract)
+    evidence = result.get("visible_token_evidence", {})
+    if (
+        result.get("accepted") is not True
+        or resource.get("passed") is not True
+        or result.get("finish_reason") != "stop"
+        or result.get("reasoning_content", {}).get("present") is not False
+        or result.get("tool_calls") != []
+        or evidence.get("accepted") is not True
+        or result.get("logical_prompt_tokens") != len(warm_prompt_token_ids)
+    ):
+        raise NeoLoopError(f"CatalyticSwarm-1 common root warm failed: {task.task_id}")
+    summary = {
+        "task_id": task.task_id,
+        "public_root_sha256": system_identity["public_root_sha256"],
+        "system_message_sha256": system_identity["system_message_sha256"],
+        "state_id": system_identity["state_id"],
+        "warm_rendered_prompt_sha256": system_identity[
+            "warm_rendered_prompt_sha256"
+        ],
+        "warm_rendered_prompt_token_count": len(warm_prompt_token_ids),
+        "prompt_tokens": result["logical_prompt_tokens"],
+        "cached_prompt_tokens": result["cached_prompt_tokens"],
+        "required_cached_prompt_tokens": 0,
+        "fresh_prompt_tokens": result["fresh_prompt_tokens"],
+        "completion_tokens": result["completion_tokens"],
+        "content_sha256": result["assistant_content"]["sha256"],
+        "token_evidence_scope": evidence.get("claim_scope"),
+        "stream_provenance": transient.snapshot(include_records=False),
+        "resource_gate": resource,
+        "cost_in_arm_budget": False,
+        "request_sequence_index": request_sequence_index,
+    }
+    boundary = sidecar.wddm_freshness_boundaries[-1]["boundary"]
+    metadata = {
+        "task_id": task.task_id,
+        "arm": "common-root-warm",
+        "turn_id": f"{task.task_id}-warm",
+        "phase": "warm",
+        "role": "root",
+        "assigned_parents": [],
+        "candidate_id": "",
+        "public_pass_count": None,
+        "content_sha256": result["assistant_content"]["sha256"],
+        "prompt_tokens": result["logical_prompt_tokens"],
+        "cached_prompt_tokens": result["cached_prompt_tokens"],
+        "required_cached_prompt_tokens": 0,
+        "fresh_prompt_tokens": result["fresh_prompt_tokens"],
+        "completion_tokens": result["completion_tokens"],
+        "token_evidence_scope": evidence.get("claim_scope"),
+        "wddm_freshness_boundary": boundary,
+        "lease_id": lease_id,
+        "request_started_at": started_at,
+        "request_finished_at": finished_at,
+    }
+    validate_catalytic_swarm_1_ledger_record(metadata)
+    return summary, metadata, system_message, system_identity
+
+
+def stream_catalytic_swarm_1_candidate(
+    protocol_v4: dict[str, Any],
+    task: AdvantageTask,
+    turn: AdvantageTurn,
+    system_message: str,
+    system_identity: dict[str, Any],
+    assignment: str,
+    *,
+    request_sequence_index: int,
+    lease_id: int,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    lane = catalytic_swarm_1_lane(turn)
+    payload = build_worker_chat_payload(protocol_v4, system_message, assignment, lane)
+    if (
+        protocol_v4.get("endpoint") != "/v1/chat/completions"
+        or payload.get("model") != protocol_v4.get("model_alias")
+        or payload.get("max_tokens") != 32
+        or payload.get("temperature") != 0.0
+        or payload.get("seed") != turn.seed
+        or payload.get("cache_prompt") is not True
+        or payload.get("stream") is not True
+        or payload.get("chat_template_kwargs") != {"enable_thinking": False}
+        or "tools" in payload
+        or "tool_choice" in payload
+        or "stop" in payload
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 model request law changed")
+    rendered = render_messages(payload["messages"], lane["chat_template_kwargs"])
+    rendered_ids = tokenize(rendered)
+    warm_rendered_prompt = system_identity.get("_warm_rendered_prompt")
+    warm_prompt_token_ids = system_identity.get("_warm_prompt_token_ids")
+    if not isinstance(warm_rendered_prompt, str) or not isinstance(
+        warm_prompt_token_ids, list
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 common-root warm identity is unavailable")
+    required_cached_prompt_tokens = catalytic_swarm_1_required_cached_prefix(
+        warm_rendered_prompt,
+        warm_prompt_token_ids,
+        rendered,
+        rendered_ids,
+        system_message,
+    )
+    transient = BoundedInMemoryLedger(max_bytes=MIB, max_records=10_000)
+    request_label = f"{task.task_id}:{turn.arm}:{turn.turn_id}"
+    started_at = utc_now()
+    measurement = stream_completion(
+        f"http://127.0.0.1:{PORT}{protocol_v4['endpoint']}",
+        payload,
+        repeat=1,
+        timeout=1_200,
+        event_recorder=transient.recorder(request_label, request_sequence_index),
+        request_label=request_label,
+    )
+    finished_at = utc_now()
+    content = measurement.content
+    candidate_id = parse_candidate_content(content, task)
+    compact = compact_worker_v4_measurement(
+        measurement,
+        root_name=task.task_id,
+        assignment_name=turn.turn_id,
+        lane_name="F",
+        expected_content=content,
+        system_identity=system_identity,
+        user_message=assignment,
+        configured_max_tokens=32,
+    )
+    compact["rendered_prompt_token_count"] = len(rendered_ids)
+    compact["prompt_token_identity_matches"] = (
+        compact.get("logical_prompt_tokens") == len(rendered_ids)
+    )
+    token_result = resolve_worker_v4_visible_token_evidence(
+        measurement,
+        expected_content=content,
+        logical_prompt_tokens=compact.get("logical_prompt_tokens"),
+    )
+    evidence = token_result["visible_token_evidence"]
+    compact["visible_token_evidence"] = evidence
+    classification = classify_worker_v4_channels(
+        compact, lane, warm=False, token_evidence_required=True
+    )
+    if classification != "accepted" or evidence.get("accepted") is not True:
+        raise NeoLoopError(
+            f"CatalyticSwarm-1 candidate transport failed: {classification}"
+        )
+    cached_prompt_tokens = compact.get("cached_prompt_tokens")
+    if (
+        isinstance(cached_prompt_tokens, bool)
+        or not isinstance(cached_prompt_tokens, int)
+        or cached_prompt_tokens < required_cached_prompt_tokens
+    ):
+        raise NeoLoopError(
+            "CatalyticSwarm-1 candidate did not reuse the complete public root"
+        )
+    public_passed = catalytic_swarm_1_public_pass_for_ledger(
+        task, turn, candidate_id
+    )
+    scope = evidence.get("claim_scope")
+    transport = {
+        "content": content,
+        "prompt_tokens": compact["logical_prompt_tokens"],
+        "cached_prompt_tokens": compact["cached_prompt_tokens"],
+        "required_cached_prompt_tokens": required_cached_prompt_tokens,
+        "fresh_prompt_tokens": compact["fresh_prompt_tokens"],
+        "completion_tokens": compact["completion_tokens"],
+        "finish_reason": compact["finish_reason"],
+        "reasoning_content": "" if compact["reasoning_content"]["present"] is False else "present",
+        "tool_calls": compact["tool_calls"],
+        "transport_passed": True,
+        "token_evidence_scope": scope,
+    }
+    metadata = {
+        "task_id": task.task_id,
+        "arm": turn.arm,
+        "turn_id": turn.turn_id,
+        "phase": turn.phase,
+        "role": turn.role,
+        "assigned_parents": list(turn.parent_turn_ids),
+        "candidate_id": candidate_id,
+        "public_pass_count": public_passed,
+        "content_sha256": sha256_bytes(content.encode("utf-8")),
+        "prompt_tokens": compact["logical_prompt_tokens"],
+        "cached_prompt_tokens": compact["cached_prompt_tokens"],
+        "required_cached_prompt_tokens": required_cached_prompt_tokens,
+        "fresh_prompt_tokens": compact["fresh_prompt_tokens"],
+        "completion_tokens": compact["completion_tokens"],
+        "token_evidence_scope": scope,
+        "wddm_freshness_boundary": "pending-post-request-boundary",
+        "lease_id": lease_id,
+        "request_started_at": started_at,
+        "request_finished_at": finished_at,
+    }
+    validate_catalytic_swarm_1_ledger_record(metadata)
+    return transport, metadata
+
+
+def catalytic_swarm_1_availability(
+    *,
+    predecessor_preserved: bool,
+    task_advantage: bool = False,
+) -> dict[str, Any]:
+    inherited = "UNLOCKED" if predecessor_preserved else "LOCKED"
+    return {
+        "PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE": inherited,
+        "STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE": inherited,
+        "CATALYTIC_SWARM_CONTROL_AVAILABLE": inherited,
+        "CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN": (
+            "reviewable-accept" if task_advantage else "LOCKED"
+        ),
+        "SOTA_SWARM_CLAIM": "LOCKED",
+        "PROCESS_LOCAL_HOLOSTATE_AVAILABLE": "LOCKED",
+        "RESTART_PERSISTENT_HOLOSTATE_AVAILABLE": "LOCKED",
+        "automatic_promotion": False,
+    }
+
+
+def compact_catalytic_swarm_1_cleanup(cleanup: dict[str, Any]) -> dict[str, Any]:
+    """Retain terminal WDDM proof while bounding thousands of freshness records."""
+    compact = dict(cleanup)
+    wddm = cleanup.get("wddm")
+    if isinstance(wddm, dict):
+        compact_wddm = dict(wddm)
+        boundaries = compact_wddm.pop("freshness_boundaries", None)
+        if isinstance(boundaries, list):
+            compact_wddm["freshness_boundary_summary"] = {
+                "count": len(boundaries),
+                "passed": sum(
+                    isinstance(item, dict) and item.get("passed") is True
+                    for item in boundaries
+                ),
+                "failed": sum(
+                    not isinstance(item, dict) or item.get("passed") is not True
+                    for item in boundaries
+                ),
+                "maximum_sample_age_seconds": max(
+                    (
+                        float(item.get("telemetry", {}).get("last_valid_sample_age_seconds"))
+                        for item in boundaries
+                        if isinstance(item, dict)
+                        and isinstance(item.get("telemetry"), dict)
+                        and isinstance(
+                            item["telemetry"].get("last_valid_sample_age_seconds"),
+                            (int, float),
+                        )
+                    ),
+                    default=None,
+                ),
+            }
+        compact["wddm"] = compact_wddm
+    return compact
+
+
+def reconcile_catalytic_swarm_1_freshness(
+    cleanup: dict[str, Any],
+    *,
+    expected_model_requests: int,
+) -> dict[str, Any]:
+    reasons: list[str] = []
+    wddm = cleanup.get("wddm")
+    boundaries = wddm.get("freshness_boundaries") if isinstance(wddm, dict) else None
+    if not isinstance(boundaries, list):
+        return {
+            "passed": False,
+            "reasons": ["freshness-boundaries-missing"],
+            "boundary_count": 0,
+        }
+    valid = [item for item in boundaries if isinstance(item, dict)]
+    if len(valid) != len(boundaries):
+        reasons.append("freshness-boundary-malformed")
+    if any(item.get("passed") is not True for item in valid):
+        reasons.append("freshness-boundary-nonpass")
+    labels = [item.get("boundary") for item in valid]
+    request_pre = [
+        label
+        for label in labels
+        if isinstance(label, str) and label.startswith("pre-request:cs1-")
+    ]
+    request_post = [
+        label
+        for label in labels
+        if isinstance(label, str) and label.startswith("post-request:cs1-")
+    ]
+    if len(request_pre) != expected_model_requests:
+        reasons.append("freshness-pre-request-count")
+    if len(request_post) != expected_model_requests:
+        reasons.append("freshness-post-request-count")
+    required = {
+        "readiness-admission",
+        "before-parser-canary",
+        "after-parser-canary",
+        "before-capability-attempt",
+        "before-teardown",
+    }
+    if not required.issubset(set(labels)):
+        reasons.append("freshness-required-stage-boundary")
+    ages = [
+        float(item["telemetry"]["last_valid_sample_age_seconds"])
+        for item in valid
+        if isinstance(item.get("telemetry"), dict)
+        and isinstance(
+            item["telemetry"].get("last_valid_sample_age_seconds"),
+            (int, float),
+        )
+    ]
+    if len(ages) != len(valid) or any(age > 5.0 for age in ages):
+        reasons.append("freshness-sample-age")
+    return {
+        "passed": not reasons,
+        "reasons": reasons,
+        "boundary_count": len(valid),
+        "model_request_pre_boundary_count": len(request_pre),
+        "model_request_post_boundary_count": len(request_post),
+        "required_stage_boundaries": sorted(required),
+        "maximum_sample_age_seconds": max(ages, default=None),
+    }
+
+
+def catalytic_swarm_1_failure_classification(exc: Exception | str) -> str:
+    text = str(exc).lower()
+    instrumentation = (
+        "parser",
+        "canonical json",
+        "candidate response",
+        "candidate_id",
+        "has no candidate",
+        "candidate transport",
+        "unexpected reasoning",
+        "unexpected tool",
+        "non-normal-stop",
+        "token evidence",
+        "token-evidence",
+        "ledger",
+        "hidden",
+        "answer key",
+        "prompt-token accounting",
+        "field set",
+        "artifact",
+        "plan",
+        "latin square",
+        "suite hash",
+    )
+    return "instrumentation-reject" if any(item in text for item in instrumentation) else "inconclusive"
+
+
+def catalytic_swarm_1_isolation_gate(
+    preclaim: dict[str, Any],
+    predecessor_after: dict[str, Any] | None,
+) -> dict[str, Any]:
+    reasons: list[str] = []
+    try:
+        if git_read(ROOT, "branch", "--show-current") != "main":
+            reasons.append("stable-branch-changed")
+        if git_read(ROOT, "rev-parse", "HEAD") != preclaim["stable_head"]:
+            reasons.append("stable-head-changed")
+        if git_read(ROOT, "rev-parse", "main") != preclaim["stable_head"]:
+            reasons.append("local-main-changed")
+        if git_read(ROOT, "rev-parse", "origin/main") != preclaim["stable_head"]:
+            reasons.append("origin-main-changed")
+        if git_read(ROOT, "status", "--porcelain", "--untracked-files=all") != preclaim[
+            "stable_status"
+        ]:
+            reasons.append("stable-status-changed")
+        candidate_root = preclaim["candidate_root"]
+        if git_read(candidate_root, "rev-parse", "HEAD") != preclaim["candidate_head"]:
+            reasons.append("candidate-head-changed")
+        if git_read(
+            candidate_root, "status", "--porcelain", "--untracked-files=all"
+        ) != preclaim["candidate_status"]:
+            reasons.append("candidate-status-changed")
+    except Exception as exc:
+        reasons.append(f"isolation-check-failed:{exc}")
+    if predecessor_after is None or canonical_json_bytes(predecessor_after) != canonical_json_bytes(
+        preclaim["predecessor_artifacts"]
+    ):
+        reasons.append("predecessor-v2-evidence-changed")
+    return {"passed": not reasons, "reasons": reasons}
+
+
+def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
+    """Execute the separately authorized, one-shot CS1 equal-budget comparison."""
+    preclaim = prepare_catalytic_swarm_1_claim(args)
+    contract = preclaim["contract"]
+    protocol_v4 = preclaim["protocol_v4"]
+    predecessor_contract = preclaim["predecessor_contract"]
+    lock = preclaim["lock"]
+    contract_hash = lock["catalytic_swarm_1_sha256"]
+
+    control_record: dict[str, Any] = {
+        "schema_version": 1,
+        "operation": "catalytic-swarm-1-control-qualification-v1",
+        "started_at": utc_now(),
+        "status": "running",
+        "control_qualification_v1": "inconclusive",
+        "contract_sha256": contract_hash,
+        "protocol_commit": preclaim["stable_head"],
+        "binary_identity": preclaim["binary_identity"],
+        "model_identity": preclaim["model_identity"],
+        "predecessor": contract["predecessor"],
+        "predecessor_artifacts": preclaim["predecessor_artifacts"],
+        "generation_executed": False,
+        "live_model_requests": 0,
+        "automatic_promotion": False,
+    }
+    control_claimed = False
+    try:
+        claim_catalytic_swarm_1_runtime_json_once(
+            CATALYTIC_SWARM_1_CONTROL_PATH, control_record
+        )
+        control_claimed = True
+        predecessor_now = preserved_catalytic_swarm_0_v2_evidence(
+            contract["predecessor"]
+        )
+        if canonical_json_bytes(predecessor_now) != canonical_json_bytes(
+            preclaim["predecessor_artifacts"]
+        ):
+            raise NeoLoopError("CatalyticSwarm-0 v2 evidence changed during CS1 control")
+        qualification = qualify_catalytic_swarm_1_control(
+            contract, stable_tokenizer=True
+        )
+        control_record.update({
+            "status": "complete",
+            "control_qualification_v1": "pass",
+            "qualification": qualification,
+            "finished_at": utc_now(),
+        })
+        write_catalytic_swarm_1_runtime_json(
+            CATALYTIC_SWARM_1_CONTROL_PATH, control_record
+        )
+    except Exception as exc:
+        if not control_claimed:
+            raise
+        control_record.update({
+            "status": "complete",
+            "control_qualification_v1": "reject",
+            "error": str(exc),
+            "finished_at": utc_now(),
+            "catalytic_swarm_1": "instrumentation-reject",
+            **catalytic_swarm_1_availability(predecessor_preserved=False),
+        })
+        write_catalytic_swarm_1_runtime_json(
+            CATALYTIC_SWARM_1_CONTROL_PATH, control_record
+        )
+        assert_catalytic_swarm_1_artifact_stage(allow_through="control")
+        return control_record
+    except BaseException as exc:
+        if control_claimed or CATALYTIC_SWARM_1_CONTROL_PATH.exists():
+            control_record.update({
+                "status": "complete",
+                "control_qualification_v1": "inconclusive",
+                "error": f"{type(exc).__name__}: {exc}",
+                "interrupted": True,
+                "finished_at": utc_now(),
+                "catalytic_swarm_1": "inconclusive",
+                **catalytic_swarm_1_availability(predecessor_preserved=False),
+            })
+            write_catalytic_swarm_1_runtime_json(
+                CATALYTIC_SWARM_1_CONTROL_PATH, control_record
+            )
+        raise
+    control_sha256 = sha256_file(CATALYTIC_SWARM_1_CONTROL_PATH)
+
+    readiness_control = predecessor_contract["readiness_control"]
+    readiness_deadline_at = time.monotonic() + float(
+        readiness_control["readiness_deadline_seconds"]
+    )
+    readiness_record: dict[str, Any] = {
+        "schema_version": 1,
+        "operation": "catalytic-swarm-1-readiness-v1",
+        "started_at": utc_now(),
+        "status": "running",
+        "readiness_v1": "inconclusive",
+        "contract_sha256": contract_hash,
+        "control_qualification_sha256": control_sha256,
+        "capability_artifacts_created": False,
+        "automatic_promotion": False,
+    }
+    sidecar: LiveSidecar | None = None
+    stable_pids: set[int] | None = None
+    readiness: dict[str, Any] | None = None
+    readiness_claimed = False
+    try:
+        claim_catalytic_swarm_1_runtime_json_once(
+            CATALYTIC_SWARM_1_READINESS_PATH, readiness_record
+        )
+        readiness_claimed = True
+        discovery = query_listener_pids(
+            STABLE_PORT,
+            **listener_retry_options(
+                readiness_control, deadline_at=readiness_deadline_at
+            ),
+        )
+        readiness_record["stable_listener_discovery"] = discovery.to_dict()
+        if not discovery.passed or len(discovery.pids) != 1:
+            raise HoloStateReadinessError("stable-listener-cardinality-or-query-failed")
+        stable_pids = set(discovery.pids)
+        if not health_ok(STABLE_PORT, timeout=3):
+            raise HoloStateReadinessError("stable-health-unavailable-before-sidecar-launch")
+        sidecar = LiveSidecar(
+            Path(args.binary),
+            Path(args.model),
+            preclaim["evaluator"],
+            preclaim["live_contract"],
+            detached=False,
+            stable_pids=stable_pids,
+            readiness_control=readiness_control,
+            prelaunch_evidence={"stable_listener_discovery": discovery.to_dict()},
+            readiness_deadline_at=readiness_deadline_at,
+            preverified_binary_identity=preclaim["binary_identity"],
+            preverified_model_identity=preclaim["model_identity"],
+            state_root=CATALYTIC_SWARM_1_STATE_ROOT,
+            wddm_policy=catalytic_swarm_1_wddm_policy(predecessor_contract),
+        )
+        readiness = sidecar.launch()
+        final_ownership = sidecar.exact_ownership(
+            "catalytic-swarm-1-readiness-final", deadline_at=readiness_deadline_at
+        )
+        sidecar.wait_for_fresh_wddm(
+            "readiness-admission",
+            float(
+                readiness_control["fresh_sample_boundary_law"]["maximum_wait_seconds"]
+            ),
+            deadline_at=readiness_deadline_at,
+        )
+        if sha256_file(CATALYTIC_SWARM_1_CONTROL_PATH) != control_sha256:
+            raise NeoLoopError("CatalyticSwarm-1 control changed during readiness")
+        readiness_record.update({
+            "status": "complete",
+            "readiness_v1": "pass",
+            "stable_pids": sorted(stable_pids),
+            "sidecar_pid": sidecar.process.pid if sidecar.process else None,
+            "sidecar": readiness,
+            "final_ownership": final_ownership,
+            "wddm": sidecar.telemetry(),
+            "finished_at": utc_now(),
+        })
+        write_catalytic_swarm_1_runtime_json(
+            CATALYTIC_SWARM_1_READINESS_PATH, readiness_record
+        )
+    except Exception as exc:
+        if not readiness_claimed:
+            raise
+        cleanup = (
+            safe_sidecar_cleanup(sidecar)
+            if sidecar is not None
+            else readiness_v3_no_sidecar_cleanup(readiness_control, stable_pids)
+        )
+        gate = cleanup_integrity(cleanup, stable_pids)
+        readiness_record.update({
+            "status": "complete",
+            "readiness_v1": (
+                classify_worker_v3_readiness_failure(exc)
+                if gate["passed"] is True
+                else "inconclusive"
+            ),
+            "error": str(exc),
+            "cleanup": cleanup,
+            "cleanup_gate": gate,
+            "finished_at": utc_now(),
+            "catalytic_swarm_1": "inconclusive",
+            **catalytic_swarm_1_availability(predecessor_preserved=True),
+        })
+        write_catalytic_swarm_1_runtime_json(
+            CATALYTIC_SWARM_1_READINESS_PATH, readiness_record
+        )
+        assert_catalytic_swarm_1_artifact_stage(allow_through="readiness")
+        return readiness_record
+    except BaseException as exc:
+        cleanup = safe_sidecar_cleanup(sidecar)
+        readiness_record.update({
+            "status": "complete",
+            "readiness_v1": "inconclusive",
+            "error": f"{type(exc).__name__}: {exc}",
+            "interrupted": True,
+            "cleanup": cleanup,
+            "cleanup_gate": cleanup_integrity(cleanup, stable_pids),
+            "finished_at": utc_now(),
+            "catalytic_swarm_1": "inconclusive",
+            **catalytic_swarm_1_availability(predecessor_preserved=True),
+        })
+        if readiness_claimed or CATALYTIC_SWARM_1_READINESS_PATH.exists():
+            write_catalytic_swarm_1_runtime_json(
+                CATALYTIC_SWARM_1_READINESS_PATH, readiness_record
+            )
+        raise
+
+    if sidecar is None or readiness is None or stable_pids is None:
+        raise NeoLoopError("CatalyticSwarm-1 readiness passed without sidecar evidence")
+    readiness_sha256 = sha256_file(CATALYTIC_SWARM_1_READINESS_PATH)
+    parser_record: dict[str, Any] = {
+        "schema_version": 1,
+        "operation": "catalytic-swarm-1-parser-canary-v1",
+        "started_at": utc_now(),
+        "status": "running",
+        "parser_canary_v1": "inconclusive",
+        "contract_sha256": contract_hash,
+        "control_qualification_sha256": control_sha256,
+        "readiness_sha256": readiness_sha256,
+        "parser_canary_generation_executed": False,
+        "parser_canary_model_requests": 0,
+        "root_warm_generation_executed": False,
+        "root_warm_model_requests": 0,
+        "generation_executed": False,
+        "model_requests": 0,
+        "live_model_requests": 0,
+        "first_common_root_warm": None,
+        "capability_artifacts_created": False,
+        "automatic_promotion": False,
+    }
+    parser_claimed = False
+    lease_pool = PhysicalLeasePool(1)
+    first_warm_summary: dict[str, Any] | None = None
+    first_warm_metadata: dict[str, Any] | None = None
+    first_system_message: str | None = None
+    first_system_identity: dict[str, Any] | None = None
+    try:
+        claim_catalytic_swarm_1_runtime_json_once(
+            CATALYTIC_SWARM_1_PARSER_CANARY_PATH, parser_record
+        )
+        parser_claimed = True
+        maximum_wait = float(
+            readiness_control["fresh_sample_boundary_law"]["maximum_wait_seconds"]
+        )
+        parser_record["before_parser_canary_wddm"] = sidecar.wait_for_fresh_wddm(
+            "before-parser-canary", maximum_wait
+        )
+        suite = build_frozen_task_suite()
+        canary = catalytic_swarm_1_parser_canary(suite.tasks[0])
+        parser_record["after_parser_canary_wddm"] = sidecar.wait_for_fresh_wddm(
+            "after-parser-canary", maximum_wait
+        )
+        if canary["passed"] is not True:
+            raise NeoLoopError("CatalyticSwarm-1 strict candidate JSON parser canary failed")
+        parser_record["parser_canary"] = canary
+        with lease_pool.lease() as lease_id:
+            (
+                first_warm_summary,
+                first_warm_metadata,
+                first_system_message,
+                first_system_identity,
+            ) = catalytic_swarm_1_warm_request(
+                sidecar,
+                protocol_v4,
+                predecessor_contract,
+                readiness,
+                suite.tasks[0],
+                request_sequence_index=1,
+                lease_id=lease_id,
+            )
+        mark_catalytic_swarm_1_first_warm_executed(parser_record)
+        parser_record["first_common_root_warm"] = first_warm_summary
+        parser_record["before_capability_attempt_wddm"] = sidecar.wait_for_fresh_wddm(
+            "before-capability-attempt", maximum_wait
+        )
+        parser_record.update({
+            "status": "complete",
+            "parser_canary_v1": "pass",
+            "first_task_root_warm_v1": "pass",
+            "finished_at": utc_now(),
+        })
+        write_catalytic_swarm_1_runtime_json(
+            CATALYTIC_SWARM_1_PARSER_CANARY_PATH, parser_record
+        )
+    except Exception as exc:
+        cleanup = safe_sidecar_cleanup(sidecar)
+        gate = cleanup_integrity(cleanup, stable_pids)
+        classification = catalytic_swarm_1_failure_classification(exc)
+        parser_record.update({
+            "status": "complete",
+            "parser_canary_v1": (
+                "reject" if classification == "instrumentation-reject" else "inconclusive"
+            ),
+            "error": str(exc),
+            "cleanup": cleanup,
+            "cleanup_gate": gate,
+            "finished_at": utc_now(),
+            "catalytic_swarm_1": classification,
+            **catalytic_swarm_1_availability(predecessor_preserved=True),
+        })
+        if parser_claimed:
+            write_catalytic_swarm_1_runtime_json(
+                CATALYTIC_SWARM_1_PARSER_CANARY_PATH, parser_record
+            )
+        assert_catalytic_swarm_1_artifact_stage(allow_through="parser_canary")
+        return parser_record
+    except BaseException as exc:
+        cleanup = safe_sidecar_cleanup(sidecar)
+        parser_record.update({
+            "status": "complete",
+            "parser_canary_v1": "inconclusive",
+            "error": f"{type(exc).__name__}: {exc}",
+            "interrupted": True,
+            "cleanup": cleanup,
+            "cleanup_gate": cleanup_integrity(cleanup, stable_pids),
+            "finished_at": utc_now(),
+            "catalytic_swarm_1": "inconclusive",
+            **catalytic_swarm_1_availability(predecessor_preserved=True),
+        })
+        if parser_claimed or CATALYTIC_SWARM_1_PARSER_CANARY_PATH.exists():
+            write_catalytic_swarm_1_runtime_json(
+                CATALYTIC_SWARM_1_PARSER_CANARY_PATH, parser_record
+            )
+        raise
+
+    if any(
+        item is None
+        for item in (
+            first_warm_summary,
+            first_warm_metadata,
+            first_system_message,
+            first_system_identity,
+        )
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 first root warm did not freeze")
+    parser_sha256 = sha256_file(CATALYTIC_SWARM_1_PARSER_CANARY_PATH)
+    for path, digest in (
+        (CATALYTIC_SWARM_1_CONTROL_PATH, control_sha256),
+        (CATALYTIC_SWARM_1_READINESS_PATH, readiness_sha256),
+        (CATALYTIC_SWARM_1_PARSER_CANARY_PATH, parser_sha256),
+    ):
+        if sha256_file(path) != digest:
+            cleanup = safe_sidecar_cleanup(sidecar)
+            raise NeoLoopError(
+                f"CatalyticSwarm-1 frozen stage changed before attempt: {path.name}; "
+                f"cleanup={cleanup_integrity(cleanup, stable_pids)}"
+            )
+
+    attempt: dict[str, Any] = {
+        "schema_version": 1,
+        "operation": "catalytic-swarm-1",
+        "started_at": utc_now(),
+        "status": "running",
+        "contract_sha256": contract_hash,
+        "control_qualification_sha256": control_sha256,
+        "readiness_sha256": readiness_sha256,
+        "parser_canary_sha256": parser_sha256,
+        "suite_sha256": contract["task_suite"]["suite_sha256"],
+        "arm_plan_hashes": CATALYTIC_SWARM_1_ARM_PLAN_HASHES,
+        "prospective_live_requests": 1032,
+        "automatic_promotion": False,
+    }
+    result: dict[str, Any] = {
+        **attempt,
+        "control_qualification_v1": "pass",
+        "readiness_v1": "pass",
+        "parser_canary_v1": "pass",
+        "catalytic_swarm_1": "inconclusive",
+        "live_request_count": 1,
+        "common_root_warm_count": 1,
+        "comparison_request_count": 0,
+        "task_comparison_count": 0,
+        "automatic_promotion": False,
+    }
+    ledger: BoundedStreamLedger | None = None
+    comparisons: list[Any] = []
+    warm_summaries: list[dict[str, Any]] = [first_warm_summary]  # type: ignore[list-item]
+    request_sequence_index = 1
+    interruption: BaseException | None = None
+    attempt_claimed = result_claimed = False
+    task_results_claimed = False
+    execution_error: Exception | None = None
+    try:
+        claim_catalytic_swarm_1_runtime_json_once(
+            CATALYTIC_SWARM_1_ATTEMPT_PATH, attempt
+        )
+        attempt_claimed = True
+        claim_catalytic_swarm_1_runtime_json_once(
+            CATALYTIC_SWARM_1_RESULT_PATH, result
+        )
+        result_claimed = True
+        ledger = BoundedStreamLedger(
+            CATALYTIC_SWARM_1_LEDGER_PATH,
+            max_bytes=CATALYTIC_SWARM_1_LEDGER_MAX_BYTES,
+            max_records=CATALYTIC_SWARM_1_LEDGER_MAX_RECORDS,
+            state_root=CATALYTIC_SWARM_1_STATE_ROOT,
+        )
+        validate_catalytic_swarm_1_ledger_record(first_warm_metadata)  # type: ignore[arg-type]
+        ledger.append(
+            first_warm_metadata,  # type: ignore[arg-type]
+            request_label=f"{build_frozen_task_suite().tasks[0].task_id}:common-root-warm",
+            request_sequence_index=1,
+        )
+        suite = build_frozen_task_suite()
+        plans = {plan.arm: plan for plan in build_all_arm_plans()}
+        execution_order = counterbalanced_arm_order()
+
+        for task_index, task in enumerate(suite.tasks):
+            if task_index == 0:
+                system_message = first_system_message  # type: ignore[assignment]
+                system_identity = first_system_identity  # type: ignore[assignment]
+            else:
+                request_sequence_index += 1
+                with lease_pool.lease() as lease_id:
+                    warm_summary, warm_metadata, system_message, system_identity = (
+                        catalytic_swarm_1_warm_request(
+                            sidecar,
+                            protocol_v4,
+                            predecessor_contract,
+                            readiness,
+                            task,
+                            request_sequence_index=request_sequence_index,
+                            lease_id=lease_id,
+                        )
+                    )
+                warm_summaries.append(warm_summary)
+                ledger.append(
+                    warm_metadata,
+                    request_label=f"{task.task_id}:common-root-warm",
+                    request_sequence_index=request_sequence_index,
+                )
+                result["live_request_count"] += 1
+                result["common_root_warm_count"] += 1
+
+            outcomes: list[Any] = []
+            for arm in execution_order[task.task_id]:
+                plan = plans[arm]
+
+                def worker_runner(
+                    turn: AdvantageTurn,
+                    public_root: str,
+                    assignment: str,
+                    *,
+                    _task: AdvantageTask = task,
+                    _system_message: str = system_message,
+                    _system_identity: dict[str, Any] = system_identity,
+                ) -> dict[str, Any]:
+                    nonlocal request_sequence_index
+                    validate_public_projection(_task, public_root)
+                    if sha256_bytes(public_root.encode("utf-8")) != _system_identity[
+                        "public_root_sha256"
+                    ]:
+                        raise NeoLoopError("CatalyticSwarm-1 arm received a different root")
+                    request_sequence_index += 1
+                    with lease_pool.lease() as lease_id:
+                        try:
+                            transport, metadata = sidecar.guarded(
+                                f"cs1-request:{_task.task_id}:{turn.arm}:{turn.turn_id}",
+                                lambda: stream_catalytic_swarm_1_candidate(
+                                    protocol_v4,
+                                    _task,
+                                    turn,
+                                    _system_message,
+                                    _system_identity,
+                                    assignment,
+                                    request_sequence_index=request_sequence_index,
+                                    lease_id=lease_id,
+                                ),
+                            )
+                        except CompletedRequestBoundaryError as boundary_exc:
+                            completed = boundary_exc.completed_value
+                            if isinstance(completed, tuple) and len(completed) == 2:
+                                _transport, metadata = completed
+                                metadata["wddm_freshness_boundary"] = (
+                                    "post-request-boundary-failed"
+                                )
+                                validate_catalytic_swarm_1_ledger_record(metadata)
+                                ledger.append(
+                                    metadata,
+                                    request_label=(
+                                        f"{_task.task_id}:{turn.arm}:{turn.turn_id}"
+                                    ),
+                                    request_sequence_index=request_sequence_index,
+                                )
+                            raise
+                    metadata["wddm_freshness_boundary"] = sidecar.wddm_freshness_boundaries[
+                        -1
+                    ]["boundary"]
+                    validate_catalytic_swarm_1_ledger_record(metadata)
+                    ledger.append(
+                        metadata,
+                        request_label=f"{_task.task_id}:{turn.arm}:{turn.turn_id}",
+                        request_sequence_index=request_sequence_index,
+                    )
+                    result["live_request_count"] += 1
+                    result["comparison_request_count"] += 1
+                    return transport
+
+                outcome = run_advantage_arm(plan, task, worker_runner=worker_runner)
+                if outcome.verdict != "complete" or outcome.request_count != 32:
+                    raise NeoLoopError(
+                        f"CatalyticSwarm-1 arm did not complete: {task.task_id}/{arm}: "
+                        + "; ".join(outcome.reasons)
+                    )
+                outcomes.append(outcome)
+            comparison = compare_task_outcomes(task, outcomes)
+            comparisons.append(comparison)
+            result["task_comparison_count"] = len(comparisons)
+            task_results = {
+                "schema_version": 1,
+                "operation": "catalytic-swarm-1-task-results-v1",
+                "contract_sha256": contract_hash,
+                "hidden_scoring_timing": "after all four arms for each task complete",
+                "tasks": [item.to_dict() for item in comparisons],
+                "task_count": len(comparisons),
+                "automatic_promotion": False,
+            }
+            if not task_results_claimed:
+                claim_catalytic_swarm_1_runtime_json_once(
+                    CATALYTIC_SWARM_1_TASK_RESULTS_PATH,
+                    task_results,
+                    max_bytes=CATALYTIC_SWARM_1_TASK_RESULTS_MAX_BYTES,
+                )
+                task_results_claimed = True
+            else:
+                write_catalytic_swarm_1_runtime_json(
+                    CATALYTIC_SWARM_1_TASK_RESULTS_PATH,
+                    task_results,
+                    max_bytes=CATALYTIC_SWARM_1_TASK_RESULTS_MAX_BYTES,
+                )
+            write_catalytic_swarm_1_runtime_json(
+                CATALYTIC_SWARM_1_RESULT_PATH, result
+            )
+
+        suite_result = classify_suite_advantage(comparisons)
+        result["suite_advantage"] = suite_result.to_dict()
+        result["catalytic_swarm_1"] = suite_result.verdict
+        if (
+            result["live_request_count"] != 1032
+            or result["common_root_warm_count"] != 8
+            or result["comparison_request_count"] != 1024
+            or request_sequence_index != 1032
+        ):
+            raise NeoLoopError("CatalyticSwarm-1 prospective request law was not exact")
+        if (
+            lease_pool.physical_slots != 1
+            or lease_pool.max_concurrent != 1
+            or lease_pool.active_count != 0
+            or lease_pool.lease_count != 1032
+        ):
+            raise NeoLoopError("CatalyticSwarm-1 one-physical-lease law failed")
+        result["lease_evidence"] = {
+            "physical_slots": lease_pool.physical_slots,
+            "max_concurrent": lease_pool.max_concurrent,
+            "lease_count": lease_pool.lease_count,
+            "active_after": lease_pool.active_count,
+        }
+        result["final_live_resource_gate"] = worker_resource_gate(
+            sidecar, readiness, predecessor_contract
+        )
+        if result["final_live_resource_gate"].get("passed") is not True:
+            raise NeoLoopError("CatalyticSwarm-1 final live resource gate failed")
+        result["common_root_warms"] = warm_summaries
+        result["status"] = "complete"
+    except Exception as exc:
+        execution_error = exc
+        result.update({
+            "status": "complete",
+            "error": str(exc),
+            "failure_classification": catalytic_swarm_1_failure_classification(exc),
+            "catalytic_swarm_1": catalytic_swarm_1_failure_classification(exc),
+        })
+    except BaseException as exc:
+        interruption = exc
+        result.update({
+            "status": "complete",
+            "error": f"{type(exc).__name__}: {exc}",
+            "interrupted": True,
+            "catalytic_swarm_1": "inconclusive",
+        })
+    finally:
+        cleanup = safe_sidecar_cleanup(sidecar)
+        cleanup_gate = cleanup_integrity(cleanup, stable_pids)
+        result["cleanup"] = cleanup
+        result["cleanup_gate"] = cleanup_gate
+        if ledger is not None:
+            try:
+                ledger.close()
+                ledger_snapshot = ledger.snapshot()
+                ledger_snapshot["sha256"] = sha256_file(CATALYTIC_SWARM_1_LEDGER_PATH)
+                ledger_snapshot["metadata_only"] = True
+                ledger_snapshot["raw_sse_persisted"] = False
+                result["ledger"] = ledger_snapshot
+                result["ledger_reconciliation"] = reconcile_catalytic_swarm_1_ledger(
+                    CATALYTIC_SWARM_1_LEDGER_PATH,
+                    ledger_snapshot,
+                    expected_records=int(result.get("live_request_count", -1)),
+                )
+            except Exception as exc:
+                result["ledger"] = {"error": str(exc), "metadata_only": False}
+                result["ledger_reconciliation"] = {
+                    "passed": False,
+                    "reasons": [f"ledger-finalization:{exc}"],
+                }
+        predecessor_after: dict[str, Any] | None = None
+        try:
+            predecessor_after = preserved_catalytic_swarm_0_v2_evidence(
+                contract["predecessor"]
+            )
+        except Exception as exc:
+            result["predecessor_preservation_error"] = str(exc)
+        result["predecessor_after"] = predecessor_after
+        isolation_gate = catalytic_swarm_1_isolation_gate(preclaim, predecessor_after)
+        result["isolation_gate"] = isolation_gate
+        frozen = {
+            "control": sha256_file(CATALYTIC_SWARM_1_CONTROL_PATH) == control_sha256,
+            "readiness": sha256_file(CATALYTIC_SWARM_1_READINESS_PATH)
+            == readiness_sha256,
+            "parser_canary": sha256_file(CATALYTIC_SWARM_1_PARSER_CANARY_PATH)
+            == parser_sha256,
+        }
+        result["frozen_stage_gate"] = {
+            "passed": all(frozen.values()),
+            "stages": frozen,
+        }
+        terminal_wddm = reconcile_v2_terminal_wddm(predecessor_contract, cleanup)
+        result["terminal_wddm_gate"] = terminal_wddm
+        freshness_gate = reconcile_catalytic_swarm_1_freshness(
+            cleanup, expected_model_requests=1032
+        )
+        result["freshness_gate"] = freshness_gate
+        ledger_gate = (
+            isinstance(result.get("ledger_reconciliation"), dict)
+            and result["ledger_reconciliation"].get("passed") is True
+        )
+        request_gate = (
+            result.get("live_request_count") == 1032
+            and result.get("comparison_request_count") == 1024
+            and result.get("common_root_warm_count") == 8
+            and result.get("task_comparison_count") == 8
+        )
+        safety = (
+            cleanup_gate["passed"] is True
+            and isolation_gate["passed"] is True
+            and result["frozen_stage_gate"]["passed"] is True
+            and terminal_wddm["passed"] is True
+            and freshness_gate["passed"] is True
+            and ledger_gate
+            and request_gate
+            and execution_error is None
+            and interruption is None
+        )
+        result["protocol_safety_gate"] = {
+            "passed": safety,
+            "cleanup": cleanup_gate,
+            "isolation": isolation_gate,
+            "frozen_stages": result["frozen_stage_gate"],
+            "terminal_wddm": terminal_wddm,
+            "freshness": freshness_gate,
+            "metadata_ledger": ledger_gate,
+            "request_law": request_gate,
+        }
+        result["cleanup"] = compact_catalytic_swarm_1_cleanup(cleanup)
+        if not safety and result.get("catalytic_swarm_1") in {
+            "reviewable-accept", "no-advantage"
+        }:
+            result["catalytic_swarm_1"] = "inconclusive"
+        task_advantage = (
+            result.get("catalytic_swarm_1") == "reviewable-accept" and safety
+        )
+        result.update(catalytic_swarm_1_availability(
+            predecessor_preserved=isolation_gate["passed"] is True,
+            task_advantage=task_advantage,
+        ))
+        result["finished_at"] = utc_now()
+        write_owned_catalytic_swarm_1_runtime_json(
+            CATALYTIC_SWARM_1_RESULT_PATH,
+            result,
+            claimed=result_claimed,
+        )
+        if task_results_claimed and CATALYTIC_SWARM_1_TASK_RESULTS_PATH.exists():
+            final_tasks = load_json(CATALYTIC_SWARM_1_TASK_RESULTS_PATH)
+            final_tasks.update({
+                "suite_advantage": result.get("suite_advantage"),
+                "catalytic_swarm_1": result.get("catalytic_swarm_1"),
+                "protocol_safety_passed": safety,
+                "finished_at": result["finished_at"],
+                "automatic_promotion": False,
+            })
+            write_catalytic_swarm_1_runtime_json(
+                CATALYTIC_SWARM_1_TASK_RESULTS_PATH,
+                final_tasks,
+                max_bytes=CATALYTIC_SWARM_1_TASK_RESULTS_MAX_BYTES,
+            )
+        if attempt_claimed:
+            attempt.update({
+                "status": "complete",
+                "finished_at": result["finished_at"],
+                "catalytic_swarm_1": result.get("catalytic_swarm_1"),
+                "result_sha256": (
+                    sha256_file(CATALYTIC_SWARM_1_RESULT_PATH)
+                    if result_claimed and CATALYTIC_SWARM_1_RESULT_PATH.is_file()
+                    else None
+                ),
+                "ledger_sha256": (
+                    sha256_file(CATALYTIC_SWARM_1_LEDGER_PATH)
+                    if ledger is not None and CATALYTIC_SWARM_1_LEDGER_PATH.is_file()
+                    else None
+                ),
+                "task_results_sha256": (
+                    sha256_file(CATALYTIC_SWARM_1_TASK_RESULTS_PATH)
+                    if task_results_claimed
+                    and CATALYTIC_SWARM_1_TASK_RESULTS_PATH.is_file()
+                    else None
+                ),
+                "automatic_promotion": False,
+            })
+            write_owned_catalytic_swarm_1_runtime_json(
+                CATALYTIC_SWARM_1_ATTEMPT_PATH,
+                attempt,
+                claimed=attempt_claimed,
+            )
+    if interruption is not None:
+        raise interruption
+    return result
+
+
 def run_budget_qualification(args: argparse.Namespace) -> dict[str, Any]:
     raise NeoLoopError("reasoning-budget qualification is complete and must not be rerun")
     started = utc_now()
@@ -11354,7 +13295,12 @@ def command_audit_catalytic_swarm_0(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_audit_catalytic_swarm_0_v2(args: argparse.Namespace) -> dict[str, Any]:
-    return run_catalytic_swarm_0_audit(args, version=2)
+    del args
+    raise NeoLoopError("CatalyticSwarm-0 v2 is complete and must not be rerun")
+
+
+def command_audit_catalytic_swarm_1(args: argparse.Namespace) -> dict[str, Any]:
+    return run_catalytic_swarm_1_audit(args)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -11388,20 +13334,26 @@ def build_parser() -> argparse.ArgumentParser:
         "audit-catalytic-swarm-0-v2", parents=[common]
     )
     catalytic_swarm_v2.set_defaults(handler=command_audit_catalytic_swarm_0_v2)
+    catalytic_swarm_1 = subparsers.add_parser(
+        "audit-catalytic-swarm-1", parents=[common]
+    )
+    catalytic_swarm_1.set_defaults(handler=command_audit_catalytic_swarm_1)
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
-    if args.command in {
-        "start", "audit-catalytic-swarm-0", "audit-catalytic-swarm-0-v2",
-    } and not args.model:
+    if args.command in {"start", "audit-catalytic-swarm-1"} and not args.model:
         raise SystemExit("set NEO3000_MODEL or pass --model with the exact Agents-A1 GGUF path")
     try:
         result = args.handler(args)
         print(json.dumps(result, indent=2, sort_keys=True))
         if args.command == "audit-catalytic-swarm-0-v2":
-            return 0 if result.get("catalytic_swarm_0_v2") == "reviewable-accept" else 1
+            return 1
+        if args.command == "audit-catalytic-swarm-1":
+            return 0 if result.get("catalytic_swarm_1") in {
+                "reviewable-accept", "no-advantage",
+            } else 1
         if args.command == "audit-catalytic-swarm-0":
             return 1
         return 0 if result.get("verdict") != "inconclusive" else 1

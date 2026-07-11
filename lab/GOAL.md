@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Preserve the completed CatalyticSwarm-0 v2 control boundary
+## Checkpoint 2: Preserve the integrated, unexecuted CatalyticSwarm-1 boundary
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse and the bounded process-local HoloState micro-worker are proven; broader process-local and restart-persistent availability remain locked.
 
@@ -42,9 +42,15 @@ The v1 control objective, exact plan hash `7AE101BA52CE0C8F00EC649646D6B44D25EDA
 
 Control qualification, readiness, parser canary, all 32 worker requests, 32 one-slot leases and verifier receipts, the 32-entry append-only blackboard, exact 16/8/6/2 phases, the 1,319-record bounded ledger, and both synthesis entries passed. Exact-PID WDDM recorded 177 valid and zero unavailable samples, zero recoveries, maximum failure streak 0, maximum valid-sample gap 2.938 seconds, 107 passed freshness boundaries, and a 2,284.9 MiB peak. Cleanup, isolation, v1 preservation, worker-v4 preservation, and the 727,982,080-byte host-growth bound passed. The result is `reviewable-accept` for structured micro-worker and bounded swarm-control capability only.
 
+## Prepared CatalyticSwarm-1 boundary
+
+The equal-budget CatalyticSwarm-1 evaluation is integrated but not executed. Its frozen task suite SHA-256 is `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`; complete contract SHA-256 is `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. It prepares serial-chain, best-of-N, sparse-swarm, and verified-swarm arms under exact equal request/token budgets, one common public-root warm per task, Latin-square order, strict isolation, and bounded metadata-only evidence.
+
+No sidecar was launched, no live model request was made, no one-shot authority was claimed, and all seven `state/catalytic_swarm_1` paths remain absent. The static command exists only for a future separately authorized invocation.
+
 ## Active bounded objective
 
-Preserve the completed v2 no-retry evidence boundary. No further CatalyticSwarm live execution is authorized. A CatalyticSwarm-1 continuation requires separate explicit authorization and must begin with an equal-total-budget task-advantage design. Do not infer task advantage from the control proof, rerun v1/v2 or worker protocols v1-v4, run Deep workers, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, or promote automatically.
+Preserve the integrated, unexecuted CatalyticSwarm-1 boundary. Do not invoke `audit-catalytic-swarm-1`, rerun CatalyticSwarm-0 v1/v2 or worker protocols v1-v4, infer task advantage, run Deep workers, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, or promote automatically without separate explicit authority.
 
 ## Claim state
 
@@ -56,6 +62,9 @@ PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 CatalyticSwarm-0: EXECUTED_ONCE_READINESS_INCONCLUSIVE
 CatalyticSwarm-0-v2: EXECUTED_ONCE / reviewable-accept
+CatalyticSwarm-1: INTEGRATED / NOT EXECUTED
+CatalyticSwarm-1 live model requests: 0
+CatalyticSwarm-1 one-shot artifacts: ABSENT
 CATALYTIC_SWARM_READINESS: PASS
 STRUCTURED_HOLOSTATE_MICROWORKER: reviewable-accept
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED

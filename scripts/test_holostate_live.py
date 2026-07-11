@@ -6,6 +6,7 @@ from __future__ import annotations
 import ast
 import copy
 import hashlib
+import inspect
 import json
 import tempfile
 import time
@@ -167,6 +168,7 @@ class StaticCapabilityTests(unittest.TestCase):
             {
                 "start", "stop", "status", "warm", "branch", "list", "evict",
                 "audit-catalytic-swarm-0", "audit-catalytic-swarm-0-v2",
+                "audit-catalytic-swarm-1",
             },
         )
 
@@ -175,6 +177,23 @@ class StaticCapabilityTests(unittest.TestCase):
             holo.command_audit_catalytic_swarm_0(
                 SimpleNamespace(binary="x", model="y")
             )
+
+    def test_catalytic_swarm_v2_command_is_hard_retired(self) -> None:
+        with self.assertRaises(holo.NeoLoopError):
+            holo.command_audit_catalytic_swarm_0_v2(
+                SimpleNamespace(binary="x", model="y")
+            )
+
+    def test_catalytic_swarm_1_command_remains_independently_wired(self) -> None:
+        sentinel = {"catalytic_swarm_1": "inconclusive"}
+        with mock.patch.object(
+            holo, "run_catalytic_swarm_1_audit", return_value=sentinel
+        ) as runner:
+            result = holo.command_audit_catalytic_swarm_1(
+                SimpleNamespace(binary="x", model="y")
+            )
+        self.assertIs(result, sentinel)
+        runner.assert_called_once()
 
     def test_worker_protocol_v2_command_is_hard_retired(self) -> None:
         with self.assertRaises(holo.NeoLoopError):
@@ -3728,6 +3747,326 @@ class CatalyticSwarm0LiveTests(unittest.TestCase):
         self.assertIn(v2_blackboard, writes)
         self.assertNotIn(v1_blackboard, writes)
         self.assertEqual(v1_blackboard_after, "immutable-v1")
+
+
+class CatalyticSwarm1ProtectedRunnerTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.evaluator = holo.load_json(holo.EVALUATOR_PATH)
+        cls.contract = holo.validate_catalytic_swarm_1_contract(
+            cls.evaluator["catalytic_swarm_1"]
+        )
+
+    def patch_paths(self, stack: ExitStack, root: Path) -> dict[str, Path]:
+        names = {
+            "control": "control-qualification-v1.json",
+            "readiness": "readiness-v1.json",
+            "parser_canary": "parser-canary-v1.json",
+            "attempt": "attempt-v1.json",
+            "result": "result-v1.json",
+            "ledger": "ledger-v1.jsonl",
+            "task_results": "task-results-v1.json",
+        }
+        paths = {name: root / filename for name, filename in names.items()}
+        stack.enter_context(
+            mock.patch.object(holo, "CATALYTIC_SWARM_1_STATE_ROOT", root)
+        )
+        attributes = {
+            "control": "CATALYTIC_SWARM_1_CONTROL_PATH",
+            "readiness": "CATALYTIC_SWARM_1_READINESS_PATH",
+            "parser_canary": "CATALYTIC_SWARM_1_PARSER_CANARY_PATH",
+            "attempt": "CATALYTIC_SWARM_1_ATTEMPT_PATH",
+            "result": "CATALYTIC_SWARM_1_RESULT_PATH",
+            "ledger": "CATALYTIC_SWARM_1_LEDGER_PATH",
+            "task_results": "CATALYTIC_SWARM_1_TASK_RESULTS_PATH",
+        }
+        for name, attribute in attributes.items():
+            stack.enter_context(mock.patch.object(holo, attribute, paths[name]))
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "CATALYTIC_SWARM_1_ARTIFACT_PATHS",
+                tuple(paths.values()),
+            )
+        )
+        return paths
+
+    def test_all_seven_prepared_runtime_paths_are_absent(self) -> None:
+        self.assertEqual(len(holo.CATALYTIC_SWARM_1_ARTIFACT_PATHS), 7)
+        self.assertFalse(any(path.exists() for path in holo.CATALYTIC_SWARM_1_ARTIFACT_PATHS))
+
+    def test_all_seven_collisions_refuse_before_loader_or_network(self) -> None:
+        for collision in range(7):
+            with self.subTest(collision=collision), tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+                paths = self.patch_paths(stack, Path(temp))
+                list(paths.values())[collision].write_text("{}", encoding="utf-8")
+                loader = stack.enter_context(
+                    mock.patch.object(holo, "load_locked_catalytic_swarm_1")
+                )
+                network = stack.enter_context(mock.patch.object(holo, "request_json"))
+                with self.assertRaises(holo.NeoLoopError):
+                    holo.prepare_catalytic_swarm_1_claim(
+                        SimpleNamespace(binary="x", model="y")
+                    )
+                loader.assert_not_called()
+                network.assert_not_called()
+
+    def test_static_control_qualification_makes_no_live_call(self) -> None:
+        with mock.patch.object(holo, "LiveSidecar") as sidecar, mock.patch.object(
+            holo, "stream_completion"
+        ) as stream:
+            result = holo.qualify_catalytic_swarm_1_control(self.contract)
+        sidecar.assert_not_called()
+        stream.assert_not_called()
+        self.assertTrue(result["passed"])
+        self.assertFalse(result["generation_executed"])
+        self.assertEqual(result["model_requests"], 0)
+        self.assertEqual(result["stable_tokenizer_requests"], 0)
+        self.assertEqual(result["prospective_live_request_count"], 1032)
+        self.assertEqual(result["public_root_qualification_count"], 8)
+        self.assertEqual(result["suite_sha256"], holo.CATALYTIC_SWARM_1_SUITE_SHA256)
+        self.assertEqual(result["arm_plan_hashes"], holo.CATALYTIC_SWARM_1_ARM_PLAN_HASHES)
+
+    def test_public_roots_exclude_hidden_and_answer_fields(self) -> None:
+        suite = holo.build_frozen_task_suite()
+        roots = []
+        for task in suite.tasks:
+            rendered = holo.render_public_task(task)
+            holo.validate_public_projection(task, rendered)
+            payload = json.loads(rendered)
+            self.assertNotIn("hidden_examples", payload)
+            self.assertNotIn("answer_candidate_id", payload)
+            roots.append(rendered)
+        self.assertEqual(len(set(roots)), 8)
+
+    def test_control_root_token_qualification_is_generation_free(self) -> None:
+        with mock.patch.object(
+            holo,
+            "strict_stable_tokenize_for_control",
+            return_value=([1, 2, 3], {"token_count": 3}),
+        ) as tokenizer, mock.patch.object(holo, "stream_completion") as stream, mock.patch.object(
+            holo, "LiveSidecar"
+        ) as sidecar:
+            result = holo.qualify_catalytic_swarm_1_control(
+                self.contract, stable_tokenizer=True
+            )
+        self.assertEqual(tokenizer.call_count, 16)
+        stream.assert_not_called()
+        sidecar.assert_not_called()
+        self.assertEqual(result["stable_tokenizer_requests"], 16)
+        self.assertEqual(result["model_requests"], 0)
+
+    def test_parser_canary_is_strict_and_generation_free(self) -> None:
+        task = holo.build_frozen_task_suite().tasks[0]
+        with mock.patch.object(holo, "stream_completion") as stream:
+            result = holo.catalytic_swarm_1_parser_canary(task)
+        stream.assert_not_called()
+        self.assertTrue(result["passed"])
+        self.assertEqual(result["model_requests"], 0)
+        self.assertEqual(
+            result["negative_cases_rejected"],
+            ["extra-key", "whitespace", "out-of-range"],
+        )
+
+    def test_metadata_ledger_rejects_hidden_or_raw_payload_fields(self) -> None:
+        record = {
+            "task_id": "cs1-task-01",
+            "arm": "verified-swarm",
+            "turn_id": "vs-01",
+            "phase": "proposal",
+            "role": "scout",
+            "assigned_parents": [],
+            "candidate_id": "C00",
+            "public_pass_count": 5,
+            "content_sha256": "A" * 64,
+            "prompt_tokens": 100,
+            "cached_prompt_tokens": 90,
+            "required_cached_prompt_tokens": 80,
+            "fresh_prompt_tokens": 10,
+            "completion_tokens": 8,
+            "token_evidence_scope": "exact-visible-content-tokenization",
+            "wddm_freshness_boundary": "after-each-worker-request",
+            "lease_id": 0,
+            "request_started_at": "start",
+            "request_finished_at": "finish",
+        }
+        holo.validate_catalytic_swarm_1_ledger_record(record)
+        for forbidden in ("hidden_examples", "answer_candidate_id", "raw_sse", "reasoning_text"):
+            changed = dict(record)
+            changed[forbidden] = "forbidden"
+            with self.assertRaises(holo.NeoLoopError):
+                holo.validate_catalytic_swarm_1_ledger_record(changed)
+        early_best_of_n = dict(record)
+        early_best_of_n["arm"] = "best-of-n"
+        with self.assertRaisesRegex(holo.NeoLoopError, "scored early"):
+            holo.validate_catalytic_swarm_1_ledger_record(early_best_of_n)
+        partial_root = dict(record)
+        partial_root["required_cached_prompt_tokens"] = 91
+        with self.assertRaisesRegex(holo.NeoLoopError, "root reuse"):
+            holo.validate_catalytic_swarm_1_ledger_record(partial_root)
+        self.assertEqual(holo.CATALYTIC_SWARM_1_LEDGER_MAX_BYTES, 64 * holo.MIB)
+        self.assertEqual(holo.CATALYTIC_SWARM_1_LEDGER_MAX_RECORDS, 80_000)
+
+    def test_metadata_ledger_reconciles_exact_file_bytes_and_order(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            paths = self.patch_paths(stack, Path(temp))
+            record = {
+                "task_id": "cs1-task-01",
+                "arm": "common-root-warm",
+                "turn_id": "cs1-task-01-warm",
+                "phase": "warm",
+                "role": "root",
+                "assigned_parents": [],
+                "candidate_id": "",
+                "public_pass_count": None,
+                "content_sha256": "A" * 64,
+                "prompt_tokens": 100,
+                "cached_prompt_tokens": 0,
+                "required_cached_prompt_tokens": 0,
+                "fresh_prompt_tokens": 100,
+                "completion_tokens": 4,
+                "token_evidence_scope": "exact-visible-content-tokenization",
+                "wddm_freshness_boundary": "post-request",
+                "lease_id": 0,
+                "request_started_at": "start",
+                "request_finished_at": "finish",
+            }
+            ledger = holo.BoundedStreamLedger(
+                paths["ledger"],
+                max_bytes=holo.CATALYTIC_SWARM_1_LEDGER_MAX_BYTES,
+                max_records=holo.CATALYTIC_SWARM_1_LEDGER_MAX_RECORDS,
+                state_root=Path(temp),
+            )
+            ledger.append(
+                record,
+                request_label="cs1-task-01:common-root-warm",
+                request_sequence_index=1,
+            )
+            ledger.close()
+            snapshot = ledger.snapshot()
+            snapshot["sha256"] = holo.sha256_file(paths["ledger"])
+            gate = holo.reconcile_catalytic_swarm_1_ledger(
+                paths["ledger"], snapshot, expected_records=1
+            )
+            self.assertTrue(gate["passed"], gate["reasons"])
+            self.assertTrue(gate["metadata_only"])
+            self.assertFalse(gate["raw_sse_persisted"])
+
+    def test_freshness_gate_requires_each_model_request_boundary(self) -> None:
+        labels = [
+            "readiness-admission",
+            "before-parser-canary",
+            "after-parser-canary",
+            "before-capability-attempt",
+            "pre-request:cs1-request:cs1-task-01:serial-chain:sc-01",
+            "post-request:cs1-request:cs1-task-01:serial-chain:sc-01",
+            "before-teardown",
+        ]
+        cleanup = {
+            "wddm": {
+                "freshness_boundaries": [
+                    {
+                        "boundary": label,
+                        "passed": True,
+                        "telemetry": {"last_valid_sample_age_seconds": 1.0},
+                    }
+                    for label in labels
+                ]
+            }
+        }
+        gate = holo.reconcile_catalytic_swarm_1_freshness(
+            cleanup, expected_model_requests=1
+        )
+        self.assertTrue(gate["passed"], gate["reasons"])
+        broken = copy.deepcopy(cleanup)
+        broken["wddm"]["freshness_boundaries"].pop(-2)
+        self.assertFalse(
+            holo.reconcile_catalytic_swarm_1_freshness(
+                broken, expected_model_requests=1
+            )["passed"]
+        )
+
+    def test_best_of_n_public_scoring_is_deferred(self) -> None:
+        task = holo.build_frozen_task_suite().tasks[0]
+        best = next(
+            plan for plan in holo.build_all_arm_plans() if plan.arm == "best-of-n"
+        )
+        with mock.patch.object(holo, "score_candidate") as scorer:
+            self.assertIsNone(
+                holo.catalytic_swarm_1_public_pass_for_ledger(
+                    task, best.turns[0], "C00"
+                )
+            )
+        scorer.assert_not_called()
+
+    def test_required_cached_prefix_covers_complete_public_root(self) -> None:
+        warm = "prefix PUBLIC ROOT user-A"
+        candidate = "prefix PUBLIC ROOT user-B"
+        self.assertEqual(
+            holo.catalytic_swarm_1_required_cached_prefix(
+                warm,
+                [1, 2, 3, 4],
+                candidate,
+                [1, 2, 3, 5],
+                "PUBLIC ROOT",
+            ),
+            3,
+        )
+        with self.assertRaisesRegex(holo.NeoLoopError, "does not cover"):
+            holo.catalytic_swarm_1_required_cached_prefix(
+                "shared-before-root-A PUBLIC ROOT",
+                [1, 2, 3],
+                "shared-before-root-B PUBLIC ROOT",
+                [1, 2, 4],
+                "PUBLIC ROOT",
+            )
+
+    def test_first_warm_accounting_and_owned_terminal_writes(self) -> None:
+        record = {
+            "generation_executed": False,
+            "model_requests": 0,
+            "live_model_requests": 0,
+            "root_warm_generation_executed": False,
+            "root_warm_model_requests": 0,
+        }
+        holo.mark_catalytic_swarm_1_first_warm_executed(record)
+        self.assertTrue(record["generation_executed"])
+        self.assertTrue(record["root_warm_generation_executed"])
+        self.assertEqual(record["model_requests"], 1)
+        self.assertEqual(record["live_model_requests"], 1)
+        self.assertEqual(record["root_warm_model_requests"], 1)
+
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            paths = self.patch_paths(stack, Path(temp))
+            paths["result"].write_text("foreign", encoding="utf-8")
+            written = holo.write_owned_catalytic_swarm_1_runtime_json(
+                paths["result"], {"owned": False}, claimed=False
+            )
+            self.assertFalse(written)
+            self.assertEqual(paths["result"].read_text(encoding="utf-8"), "foreign")
+
+    def test_stage_gate_rejects_later_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            paths = self.patch_paths(stack, Path(temp))
+            paths["control"].write_text("{}", encoding="utf-8")
+            paths["result"].write_text("{}", encoding="utf-8")
+            with self.assertRaisesRegex(holo.NeoLoopError, "later artifact"):
+                holo.assert_catalytic_swarm_1_artifact_stage(allow_through="control")
+
+    def test_runner_lifecycle_orders_claims_before_live_capability(self) -> None:
+        source = inspect.getsource(holo.run_catalytic_swarm_1_audit)
+        positions = [
+            source.index("CATALYTIC_SWARM_1_CONTROL_PATH"),
+            source.index("CATALYTIC_SWARM_1_READINESS_PATH"),
+            source.index("LiveSidecar("),
+            source.index("CATALYTIC_SWARM_1_PARSER_CANARY_PATH"),
+            source.index("catalytic_swarm_1_parser_canary"),
+            source.index("catalytic_swarm_1_warm_request"),
+            source.index("CATALYTIC_SWARM_1_ATTEMPT_PATH"),
+            source.index("run_advantage_arm"),
+        ]
+        self.assertEqual(positions, sorted(positions))
+        self.assertNotIn("automatic_promotion\": True", source)
 
 
 if __name__ == "__main__":

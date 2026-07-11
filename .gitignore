@@ -21,6 +21,7 @@ runtime/
 slots/
 state/holostate/
 state/catalytic_swarm/
+state/catalytic_swarm_1/
 
 # Benchmarks and logs
 *.log

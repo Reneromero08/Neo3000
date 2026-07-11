@@ -3,10 +3,11 @@
 **Active checkpoint:** Checkpoint 2, First catalytic compute intervention
 **Current RSI level:** Level 1, supervised bounded RSI available
 **Baseline evidence through:** CatalyticSwarm-0 v2 integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`; bound `reviewable-accept` result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`
+**Prepared evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; integrated, not executed
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. `CatalyticSwarm-0` v1 is immutable after its single readiness-inconclusive execution. The separately versioned `catalytic_swarm_0_v2` completed one artifact-claiming live execution and returned `reviewable-accept`, unlocking only structured HoloState micro-worker and bounded swarm-control availability. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests.
-**Next exact action:** preserve the completed v2 boundary. Any CatalyticSwarm-1 work requires separate explicit authorization and must begin with an equal-total-budget task-advantage design. Do not execute another swarm, run Deep, claim task advantage, or promote automatically.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. `CatalyticSwarm-0` v1 and v2 are immutable at their executed boundaries. The protected CatalyticSwarm-1 equal-budget task-advantage substrate is integrated but has made zero live requests and created no one-shot artifact.
+**Next exact action:** preserve the static CatalyticSwarm-1 boundary. A live `audit-catalytic-swarm-1` invocation requires separate explicit authorization. Do not invoke it, rerun CatalyticSwarm-0 v1/v2, run Deep, claim task advantage, or promote automatically.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -408,7 +409,18 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Pass cleanup, stable/candidate isolation, exact v1 preservation, worker-v4 preservation, sampler retirement, runtime removal, free port 9494, and five empty post-teardown WDDM samples.
 - [x] Bind exact v2 SHA-256 values: control `1FC67796F436E69B1B2C2F132345C0335FADF6D1452E7F98D8A92D78CB616CE3`; readiness `129FD883FD03BBEF8B216AC67F77CBE854CA798A86BBC18A11D4DCDF010E7124`; parser canary `9282D7F8AE195C866E767A7F0D3BCB0A366E3FC3C1509A7DB1F99F1C541191B5`; attempt `0E9A839B7AD9D50AE6FD82DD3C63A93D23596C4A32FAF515BAC67A68EFEE8866`; result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`; ledger `C523EF77C80CDD4783D2E41103FCD72490A4C837DA2B3988B29F8D7A97E1F7F9`; blackboard `197929DF8DF62A24480A64C071651CED43E16D82F0B6DA5A9AB740C6C1236964`.
 - [x] Unlock only `STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE` and `CATALYTIC_SWARM_CONTROL_AVAILABLE`. Keep broader process-local HoloState, restart persistence, task advantage, SOTA, and automatic promotion locked.
-- [ ] After separate explicit authorization, design an equal-total-budget CatalyticSwarm-1 task-advantage experiment. This completed control proof does not establish task advantage.
+
+### CatalyticSwarm-1 equal-budget task advantage [INTEGRATED / NOT EXECUTED]
+
+- [x] Integrate draft PR #6 at exact connector head `aaeb3fe8cc906121fdfcb8ed41d9420b2849d8b6` as one architectural change without importing its twelve connector commits.
+- [x] Freeze the eight-task DSL suite at SHA-256 `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92` and the complete contract at `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
+- [x] Freeze four 32-request, one-slot arms: serial-chain `99FE4402A487EEAF07FAEE7A64CAB241A888E1CB916D09C62BDA493AB08EEF53`; best-of-N `E989ECB8A53E9AD24885759627D3E3BA9A16E76A41A770E70784644A9A96696A`; sparse swarm `9289DE195D12AB93A9A9DD70949C92FC55D40E0D930CAD521605FC1707E116DE`; verified swarm `46A2CEADA66217AC2DD3E0BD6D1C20A052EFE9D76EE236887AF18428409A772C`.
+- [x] Repair only demonstrated connector defects: defer hidden and best-of-N scoring to their protected boundaries; require the cached token prefix to cover the complete common public root plus accepted v4 token-evidence scopes; bind and revalidate canonical task/root/arm observations, totals, selections, and scores; keep sparse/verified model-visible prompts identical except for public-score visibility; require public plus hidden exact success; and redact hidden suite material from public serialization.
+- [x] Prepare one common public-root warm per task outside arm budgets, exact Latin-square arm order, strict hidden/arm/task isolation, 1,024 comparison requests plus 8 warm requests, 32-token request ceilings, per-arm 1,024 completion / 8,192 fresh-prompt ceilings, 1.10 parity gates, and a 64 MiB / 80,000-record metadata-only ledger.
+- [x] Protect the complete contract, connector/controller sources, predecessor bindings, and seven ignored one-shot paths. No `catalytic_swarm_1_evidence` object exists.
+- [x] Add the protected `audit-catalytic-swarm-1` command and hard-retire CatalyticSwarm-0 v2 against rerun. Integration and tests make no model request and launch no sidecar.
+- [x] Keep all seven `state/catalytic_swarm_1/*-v1` paths absent; live requests remain zero; task advantage, SOTA, broader process-local HoloState, restart persistence, and automatic promotion remain locked.
+- [ ] After separate explicit authorization, invoke `audit-catalytic-swarm-1` once from exact protected main. This unchecked item is execution authority, not permission under the current integration task.
 
 Preserved v1 executed boundary:
 
@@ -439,4 +451,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: preserve the completed v2 no-retry boundary. Any CatalyticSwarm-1 continuation requires separate explicit authorization and begins with an equal-total-budget task-advantage design; no task advantage is yet proven. V1 and worker protocols v1-v4 remain immutable.
+Next task: preserve the integrated, unexecuted CatalyticSwarm-1 boundary. A live invocation requires separate explicit authorization; no task advantage is yet proven. CatalyticSwarm-0 v1/v2 and worker protocols v1-v4 remain immutable.
