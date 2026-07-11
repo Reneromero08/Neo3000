@@ -4,7 +4,7 @@
 Four 32-request arms solve the same protected executable task suite:
 
 - serial-chain: one sequential trajectory over 32 bounded Fast turns;
-- independent-ensemble: 32 independent candidates with deterministic plurality;
+- best-of-n: 32 independent candidates selected by the public verifier;
 - sparse-swarm: the proven 16/8/6/2 CatalyticSwarm topology without verifier
   feedback in model context;
 - verified-swarm: the same topology with bounded public-example verifier scores
@@ -25,6 +25,7 @@ from typing import Any, Callable, Mapping, Sequence
 
 from catalytic_advantage_tasks import (
     AdvantageTask,
+    AdvantageTaskError,
     candidate_is_exact,
     render_public_task,
     score_candidate,
@@ -36,7 +37,7 @@ SCHEMA_VERSION = 1
 PLAN_ID = "catalytic-swarm-1-equal-budget-v1"
 ARMS = (
     "serial-chain",
-    "independent-ensemble",
+    "best-of-n",
     "sparse-swarm",
     "verified-swarm",
 )
@@ -225,7 +226,7 @@ class SuiteAdvantageResult:
 def _arm_short(arm: str) -> str:
     return {
         "serial-chain": "chain",
-        "independent-ensemble": "ind",
+        "best-of-n": "best",
         "sparse-swarm": "sparse",
         "verified-swarm": "verified",
     }[arm]
@@ -257,7 +258,9 @@ def _role_assignment(role: str, arm: str) -> str:
         if arm == "verified-swarm"
         else "No verifier score is available in context."
     )
-    return f"{action}. {feedback} Return exactly one candidate ID in the required JSON."
+    return (
+        f"{action}. {feedback} Return exactly one candidate ID in the required JSON."
+    )
 
 
 def _build_turns(arm: str) -> tuple[AdvantageTurn, ...]:
@@ -272,7 +275,7 @@ def _build_turns(arm: str) -> tuple[AdvantageTurn, ...]:
         if arm == "serial-chain":
             parents = () if ordinal == 1 else (_turn_id(arm, ordinal - 1),)
             phase = "trajectory"
-        elif arm == "independent-ensemble":
+        elif arm == "best-of-n":
             parents = ()
             phase = "independent"
         else:
@@ -371,7 +374,9 @@ def build_all_arm_plans() -> tuple[AdvantageArmPlan, ...]:
         for plan in plans
     }
     if len(role_seed_sequences) != 1:
-        raise AdvantageControlError("arms do not share the exact role and seed sequence")
+        raise AdvantageControlError(
+            "arms do not share the exact role and seed sequence"
+        )
     return plans
 
 
@@ -382,7 +387,11 @@ def _parent_slot(
 ) -> dict[str, str]:
     if observation is None:
         return {"turn_id": "---", "candidate_id": "---", "public_score": "--"}
-    score = f"{observation.public_passed:02d}" if reveal_public_score else "--"
+    score = (
+        f"{observation.public_passed:02d}"
+        if reveal_public_score
+        else "--"
+    )
     return {
         "turn_id": observation.turn_id,
         "candidate_id": observation.candidate_id,
@@ -396,11 +405,16 @@ def render_turn_assignment(
     parent_observations: Sequence[TurnObservation],
 ) -> str:
     if tuple(item.turn_id for item in parent_observations) != turn.parent_turn_ids:
-        raise AdvantageControlError(f"{turn.turn_id} received the wrong parent observations")
+        raise AdvantageControlError(
+            f"{turn.turn_id} received the wrong parent observations"
+        )
     if len(parent_observations) > CONTEXT_SLOTS:
         raise AdvantageControlError("parent context exceeds fixed slot count")
     slots = [
-        _parent_slot(observation, reveal_public_score=turn.verifier_feedback_visible)
+        _parent_slot(
+            observation,
+            reveal_public_score=turn.verifier_feedback_visible,
+        )
         for observation in parent_observations
     ]
     slots.extend(
@@ -454,7 +468,10 @@ def parse_candidate_content(content: str, task: AdvantageTask) -> str:
     return candidate_id
 
 
-WorkerRunner = Callable[[AdvantageTurn, str, str], Mapping[str, Any]]
+WorkerRunner = Callable[
+    [AdvantageTurn, str, str],
+    Mapping[str, Any],
+]
 
 
 def _require_nonnegative_int(value: Any, label: str) -> int:
@@ -482,7 +499,9 @@ def _parse_transport(
         "token_evidence_scope",
     }
     if not isinstance(result, Mapping) or set(result) != required:
-        raise AdvantageControlError(f"{turn.turn_id} transport key set mismatch")
+        raise AdvantageControlError(
+            f"{turn.turn_id} transport key set mismatch"
+        )
     if result["transport_passed"] is not True:
         raise AdvantageControlError(f"{turn.turn_id} transport did not pass")
     if result["reasoning_content"] != "":
@@ -490,20 +509,41 @@ def _parse_transport(
     if result["tool_calls"] != []:
         raise AdvantageControlError(f"{turn.turn_id} emitted a tool call")
     if result["finish_reason"] != "stop":
-        raise AdvantageControlError(f"{turn.turn_id} finish reason is not stop")
+        raise AdvantageControlError(
+            f"{turn.turn_id} finish reason is not stop"
+        )
     evidence_scope = result["token_evidence_scope"]
     if not isinstance(evidence_scope, str) or not evidence_scope:
-        raise AdvantageControlError(f"{turn.turn_id} token evidence scope is unavailable")
+        raise AdvantageControlError(
+            f"{turn.turn_id} token evidence scope is unavailable"
+        )
     candidate_id = parse_candidate_content(result["content"], task)
-    prompt_tokens = _require_nonnegative_int(result["prompt_tokens"], f"{turn.turn_id}.prompt_tokens")
-    cached = _require_nonnegative_int(result["cached_prompt_tokens"], f"{turn.turn_id}.cached_prompt_tokens")
-    fresh = _require_nonnegative_int(result["fresh_prompt_tokens"], f"{turn.turn_id}.fresh_prompt_tokens")
-    completion = _require_nonnegative_int(result["completion_tokens"], f"{turn.turn_id}.completion_tokens")
+    prompt_tokens = _require_nonnegative_int(
+        result["prompt_tokens"], f"{turn.turn_id}.prompt_tokens"
+    )
+    cached = _require_nonnegative_int(
+        result["cached_prompt_tokens"],
+        f"{turn.turn_id}.cached_prompt_tokens",
+    )
+    fresh = _require_nonnegative_int(
+        result["fresh_prompt_tokens"],
+        f"{turn.turn_id}.fresh_prompt_tokens",
+    )
+    completion = _require_nonnegative_int(
+        result["completion_tokens"],
+        f"{turn.turn_id}.completion_tokens",
+    )
     if cached > prompt_tokens or fresh != prompt_tokens - cached:
-        raise AdvantageControlError(f"{turn.turn_id} prompt-token accounting mismatch")
+        raise AdvantageControlError(
+            f"{turn.turn_id} prompt-token accounting mismatch"
+        )
     if completion > turn.max_tokens:
-        raise AdvantageControlError(f"{turn.turn_id} exceeded completion budget")
-    public_passed, public_total = score_candidate(task, candidate_id, hidden=False)
+        raise AdvantageControlError(
+            f"{turn.turn_id} exceeded completion budget"
+        )
+    public_passed, public_total = score_candidate(
+        task, candidate_id, hidden=False
+    )
     return TurnObservation(
         turn_id=turn.turn_id,
         ordinal=turn.ordinal,
@@ -536,6 +576,17 @@ def _plurality_candidate(observations: Sequence[TurnObservation]) -> str:
     raise AssertionError("unreachable plurality selection")
 
 
+def _best_public_candidate(observations: Sequence[TurnObservation]) -> str:
+    """Select the highest public-example score, breaking ties by earliest turn."""
+    if not observations:
+        raise AdvantageControlError("cannot select from empty observations")
+    best_score = max(item.public_passed for item in observations)
+    for item in observations:
+        if item.public_passed == best_score:
+            return item.candidate_id
+    raise AssertionError("unreachable best-of-N selection")
+
+
 def select_final_candidate(
     plan: AdvantageArmPlan,
     observations: Sequence[TurnObservation],
@@ -544,11 +595,15 @@ def select_final_candidate(
         raise AdvantageControlError("arm did not complete all requests")
     if plan.arm == "serial-chain":
         return observations[-1].candidate_id
-    if plan.arm == "independent-ensemble":
-        return _plurality_candidate(observations)
-    synthesis = [item for item in observations if item.phase == "synthesis"]
+    if plan.arm == "best-of-n":
+        return _best_public_candidate(observations)
+    synthesis = [
+        item for item in observations if item.phase == "synthesis"
+    ]
     if len(synthesis) != 2:
-        raise AdvantageControlError(f"{plan.arm} did not produce two synthesis observations")
+        raise AdvantageControlError(
+            f"{plan.arm} did not produce two synthesis observations"
+        )
     return _plurality_candidate(synthesis)
 
 
@@ -570,7 +625,9 @@ def run_advantage_arm(
         try:
             parents = tuple(by_id[parent_id] for parent_id in turn.parent_turn_ids)
         except KeyError as exc:
-            raise AdvantageControlError(f"{turn.turn_id} dependency did not execute: {exc}") from exc
+            raise AdvantageControlError(
+                f"{turn.turn_id} dependency did not execute: {exc}"
+            ) from exc
         assignment = render_turn_assignment(task, turn, parents)
         try:
             result = worker_runner(turn, public_root, assignment)
@@ -596,8 +653,12 @@ def run_advantage_arm(
         else ""
     )
     if final_candidate:
-        public_passed, public_total = score_candidate(task, final_candidate, hidden=False)
-        hidden_passed, hidden_total = score_candidate(task, final_candidate, hidden=True)
+        public_passed, public_total = score_candidate(
+            task, final_candidate, hidden=False
+        )
+        hidden_passed, hidden_total = score_candidate(
+            task, final_candidate, hidden=True
+        )
     else:
         public_passed = hidden_passed = 0
         public_total = len(task.public_examples)
@@ -608,7 +669,9 @@ def run_advantage_arm(
     total_fresh = sum(item.fresh_prompt_tokens for item in observations)
     total_completion = sum(item.completion_tokens for item in observations)
     exact_success = bool(
-        completed and final_candidate and candidate_is_exact(task, final_candidate, hidden=True)
+        completed
+        and final_candidate
+        and candidate_is_exact(task, final_candidate, hidden=True)
     )
     verdict = "complete" if completed else "inconclusive"
     return ArmOutcome(
@@ -643,10 +706,15 @@ def _ratio(values: Sequence[int]) -> float:
     return max(values) / min(values)
 
 
-def compare_task_outcomes(task: AdvantageTask, outcomes: Sequence[ArmOutcome]) -> TaskComparison:
+def compare_task_outcomes(
+    task: AdvantageTask,
+    outcomes: Sequence[ArmOutcome],
+) -> TaskComparison:
     by_arm = {item.arm: item for item in outcomes}
     if set(by_arm) != set(ARMS):
-        raise AdvantageControlError(f"{task.task_id} does not contain all four arms")
+        raise AdvantageControlError(
+            f"{task.task_id} does not contain all four arms"
+        )
     ordered = tuple(by_arm[arm] for arm in ARMS)
     reasons: list[str] = []
     if any(item.task_id != task.task_id for item in ordered):
@@ -684,7 +752,9 @@ def compare_task_outcomes(task: AdvantageTask, outcomes: Sequence[ArmOutcome]) -
     )
 
 
-def classify_suite_advantage(comparisons: Sequence[TaskComparison]) -> SuiteAdvantageResult:
+def classify_suite_advantage(
+    comparisons: Sequence[TaskComparison],
+) -> SuiteAdvantageResult:
     reasons: list[str] = []
     if len(comparisons) != 8:
         reasons.append("suite must contain exactly eight task comparisons")
