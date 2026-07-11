@@ -31,6 +31,33 @@ class RuntimePathTests(unittest.TestCase):
         self.assertIsNone(registry["sidecar"])
         self.assertEqual(registry["states"], {})
 
+    def test_catalytic_runtime_path_rejects_resolved_escape(self) -> None:
+        with self.assertRaises(holo.NeoLoopError):
+            holo.require_catalytic_runtime_path(holo.ROOT / "TASKS.md")
+
+    def test_catalytic_atomic_writer_stays_inside_declared_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, mock.patch.object(
+            holo, "CATALYTIC_STATE_ROOT", Path(temp)
+        ):
+            path = Path(temp) / "attempt-v1.json"
+            holo.claim_catalytic_runtime_json_once(path, {"owner": "test"})
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8")), {"owner": "test"})
+            with self.assertRaises(holo.NeoLoopError):
+                holo.claim_catalytic_runtime_json_once(path, {"owner": "other"})
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8")), {"owner": "test"})
+
+    def test_preclaim_memory_ledger_is_bounded_and_has_no_file(self) -> None:
+        ledger = holo.BoundedInMemoryLedger(max_bytes=2048, max_records=2)
+        record = {"reasoning_fragment_length": 5, "reasoning_fragment_sha256": "A" * 64}
+        ledger.recorder("warm-A", 1)(record)
+        snapshot = ledger.snapshot(include_records=True)
+        self.assertTrue(snapshot["within_limits"])
+        self.assertEqual(snapshot["record_count"], 1)
+        self.assertNotIn("reasoning_text", json.dumps(snapshot))
+        ledger.recorder("canary", 2)(record)
+        with self.assertRaises(holo.NeoLoopError):
+            ledger.recorder("extra", 3)(record)
+
 
 class IdentityTests(unittest.TestCase):
     def test_changed_prefix_produces_changed_identity(self) -> None:
@@ -129,7 +156,7 @@ class StaticCapabilityTests(unittest.TestCase):
             set(subparsers.choices),
             {
                 "start", "stop", "status", "warm", "branch", "list", "evict",
-                "audit-worker-protocol-v4",
+                "audit-catalytic-swarm-0",
             },
         )
 
@@ -140,6 +167,28 @@ class StaticCapabilityTests(unittest.TestCase):
     def test_worker_protocol_v3_command_is_hard_retired(self) -> None:
         with self.assertRaises(holo.NeoLoopError):
             holo.command_audit_worker_protocol_v3(SimpleNamespace(binary="x", model="y"))
+
+    def test_worker_protocol_v4_command_is_hard_retired(self) -> None:
+        with self.assertRaises(holo.NeoLoopError):
+            holo.command_audit_worker_protocol_v4(SimpleNamespace(binary="x", model="y"))
+
+    def test_exact_gbnf_literal_is_stable_and_escaped(self) -> None:
+        content = '{"kind":"proposal","claim":"SWARM CANARY"}'
+        grammar = holo.exact_gbnf_literal(content)
+        self.assertEqual(grammar, "root ::= " + json.dumps(content, ensure_ascii=False))
+        lane = {
+            "thinking_mode": "disabled",
+            "chat_template_kwargs": {"enable_thinking": False},
+            "temperature": 0.0,
+            "max_tokens": 64,
+            "seed": 0,
+            "grammar": grammar,
+        }
+        protocol = holo.load_json(holo.EVALUATOR_PATH)["holostate_worker_protocol_v4"]
+        payload = holo.build_worker_chat_payload(protocol, "root", "assignment", lane)
+        self.assertEqual(payload["grammar"], grammar)
+        self.assertEqual(payload["max_tokens"], 64)
+        self.assertEqual(payload["chat_template_kwargs"], {"enable_thinking": False})
 
     def test_subprocess_git_calls_are_read_only(self) -> None:
         tree = ast.parse(Path(holo.__file__).read_text(encoding="utf-8"))
@@ -2336,6 +2385,586 @@ class WorkerProtocolV4Tests(unittest.TestCase):
         broken = copy.deepcopy(results)
         broken[-2]["visible_token_evidence"]["usage_delta"] = 0
         self.assertFalse(holo.fast_worker_v4_determinism_gate(broken, self.protocol)["passed"])
+
+
+class CatalyticSwarm0LiveTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.evaluator = holo.load_json(holo.EVALUATOR_PATH)
+        protocol_v2 = holo.validate_worker_protocol_v2(
+            cls.evaluator["holostate_worker_protocol_v2"]
+        )
+        protocol_v3 = holo.validate_worker_protocol_v3(
+            cls.evaluator["holostate_worker_protocol_v3"], protocol_v2
+        )
+        cls.protocol_v4 = holo.validate_worker_protocol_v4(
+            cls.evaluator["holostate_worker_protocol_v4"], protocol_v3
+        )
+        cls.contract = holo.validate_catalytic_swarm_0(
+            cls.evaluator["catalytic_swarm_0"], cls.protocol_v4
+        )
+
+    def patch_paths(self, stack: ExitStack, root: Path) -> dict[str, Path]:
+        names = {
+            "control": "control-qualification-v1.json",
+            "readiness": "readiness-v1.json",
+            "canary": "parser-canary-v1.json",
+            "attempt": "attempt-v1.json",
+            "result": "result-v1.json",
+            "ledger": "ledger-v1.jsonl",
+            "blackboard": "blackboard-v1.json",
+        }
+        paths = {key: root / value for key, value in names.items()}
+        stack.enter_context(mock.patch.object(holo, "CATALYTIC_STATE_ROOT", root))
+        attributes = {
+            "control": "CATALYTIC_CONTROL_QUALIFICATION_PATH",
+            "readiness": "CATALYTIC_READINESS_PATH",
+            "canary": "CATALYTIC_PARSER_CANARY_PATH",
+            "attempt": "CATALYTIC_ATTEMPT_PATH",
+            "result": "CATALYTIC_RESULT_PATH",
+            "ledger": "CATALYTIC_LEDGER_PATH",
+            "blackboard": "CATALYTIC_BLACKBOARD_PATH",
+        }
+        for key, attribute in attributes.items():
+            stack.enter_context(mock.patch.object(holo, attribute, paths[key]))
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "CATALYTIC_ARTIFACT_PATHS",
+                tuple(paths[key] for key in names),
+            )
+        )
+        return paths
+
+    def preclaim(self, root: Path) -> dict:
+        return {
+            "evaluator": self.evaluator,
+            "live_contract": self.evaluator["holostate_live_contract"],
+            "protocol_v4": self.protocol_v4,
+            "contract": self.contract,
+            "lock": {"catalytic_swarm_0_sha256": "A" * 64},
+            "prior_before": {"v4": "preserved"},
+            "stable_branch": "main",
+            "stable_head": "HEAD",
+            "stable_status": "",
+            "candidate_root": root / "candidate",
+            "candidate_head": "CANDIDATE",
+            "candidate_status": "",
+            "binary_identity": {"sha256": holo.EXPECTED_BINARY_SHA256},
+            "model_identity": {"sha256": holo.EXPECTED_MODEL_SHA256},
+            "stable_template_sha256": self.contract["transport"]["chat_template_identity"]["sha256"],
+        }
+
+    @staticmethod
+    def query(pids: set[int]) -> SimpleNamespace:
+        return SimpleNamespace(
+            passed=True,
+            pids=frozenset(pids),
+            to_dict=lambda: {"passed": True, "pids": sorted(pids)},
+        )
+
+    @staticmethod
+    def cleanup(stable: set[int] = {42}) -> dict:
+        return {
+            "not_launched": False,
+            "readiness_controlled": True,
+            "readiness_admitted": True,
+            "process_stopped": True,
+            "port_free": True,
+            "runtime_removed": True,
+            "wddm": {"failure_reason": None},
+            "retirement_samples": [
+                {"available": False, "bytes": None} for _ in range(5)
+            ],
+            "stable_after": {"healthy": True, "listener_pids": sorted(stable)},
+            "pre_teardown_ownership": {"passed": True},
+            "post_teardown_ownership": {"passed": True},
+        }
+
+    class FakeSidecar:
+        def __init__(self, *args, **kwargs) -> None:
+            self.process = SimpleNamespace(pid=99)
+            self.ownership_boundaries = []
+
+        def launch(self):
+            return {
+                "pid": 99,
+                "binary": {"sha256": holo.EXPECTED_BINARY_SHA256},
+                "model": {"sha256": holo.EXPECTED_MODEL_SHA256},
+                "chat_template_sha256": holo.load_json(holo.EVALUATOR_PATH)[
+                    "catalytic_swarm_0"
+                ]["transport"]["chat_template_identity"]["sha256"],
+                "process_memory": {"private_bytes": 100},
+            }
+
+        def exact_ownership(self, boundary, **kwargs):
+            item = {"boundary": boundary, "passed": True}
+            self.ownership_boundaries.append(item)
+            return item
+
+        def require_active(self, **kwargs):
+            return None
+
+        def guarded(self, _label, function, **kwargs):
+            return function()
+
+    def install_live_stage(
+        self,
+        stack: ExitStack,
+        temp: Path,
+        *,
+        warm_accepted: bool = True,
+        canary_accepted: bool = True,
+    ) -> tuple[dict[str, Path], mock.Mock, mock.Mock]:
+        paths = self.patch_paths(stack, temp)
+        stack.enter_context(mock.patch.object(
+            holo, "prepare_catalytic_swarm_0_claim",
+            return_value=self.preclaim(temp),
+        ))
+        stack.enter_context(mock.patch.object(
+            holo, "qualify_catalytic_control_outputs",
+            return_value={
+                "passed": True, "reasons": [], "generation_executed": False,
+            },
+        ))
+        stack.enter_context(mock.patch.object(
+            holo, "query_listener_pids", return_value=self.query({42}),
+        ))
+        stack.enter_context(mock.patch.object(holo, "health_ok", return_value=True))
+        stack.enter_context(mock.patch.object(holo, "LiveSidecar", self.FakeSidecar))
+        stack.enter_context(mock.patch.object(
+            holo, "prepare_catalytic_root",
+            return_value=(
+                "root",
+                {
+                    "state_id": "state",
+                    "system_message_sha256": self.contract[
+                        "root_and_prior_evidence"
+                    ]["system_message_sha256"],
+                },
+            ),
+        ))
+        warm = stack.enter_context(mock.patch.object(
+            holo, "run_worker_v4_chat_request",
+            return_value={"accepted": warm_accepted, "finish_classification": "accepted"},
+        ))
+        canary = stack.enter_context(mock.patch.object(
+            holo, "run_catalytic_parser_canary",
+            return_value={
+                "accepted": canary_accepted,
+                "finish_classification": (
+                    "accepted" if canary_accepted else "structured-reject"
+                ),
+            },
+        ))
+        stack.enter_context(mock.patch.object(
+            holo,
+            "worker_resource_gate",
+            return_value={"passed": True, "host_private_growth_bytes": 10},
+        ))
+        cleanup = stack.enter_context(mock.patch.object(
+            holo, "safe_sidecar_cleanup", return_value=self.cleanup(),
+        ))
+        stack.enter_context(mock.patch.object(
+            holo, "cleanup_integrity", return_value={"passed": True, "reasons": []},
+        ))
+        return paths, cleanup, canary
+
+    def test_complete_contract_hash_and_validator_reject_plan_drift(self) -> None:
+        baseline = neo_loop.catalytic_swarm_0_hash(self.evaluator)
+        changed = copy.deepcopy(self.evaluator)
+        changed["catalytic_swarm_0"]["plan"]["definition"]["physical_slots"] = 2
+        self.assertNotEqual(baseline, neo_loop.catalytic_swarm_0_hash(changed))
+        with self.assertRaises(holo.NeoLoopError):
+            holo.validate_catalytic_swarm_0(
+                changed["catalytic_swarm_0"], self.protocol_v4
+            )
+
+    def test_validator_rejects_weakened_nested_control_laws(self) -> None:
+        mutations = (
+            (("connector", "source_hash_authority"), "unprotected"),
+            (("connector", "undeclared"), True),
+            (("root_and_prior_evidence", "undeclared"), True),
+            (("transport", "lane", "undeclared"), True),
+            (("structured_output", "verifier", "id"), "other"),
+            (("transport", "lane", "requires", "empty_tool_calls"), False),
+            (("parser_canary", "requires", "valid_json"), False),
+            (("communication", "complete_sse_streams_in_worker_context"), True),
+            (("blackboard", "genesis_hash"), "1" * 64),
+            (("stream_ledger", "worker_summary_fields"), []),
+            (("stable_isolation", "stable_health_required"), False),
+            (("one_shot", "capability_claim_requires_frozen_readiness_pass"), False),
+            (("cleanup", "runtime_removed"), False),
+            (("availability", "SOTA_SWARM_CLAIM"), "UNLOCKED"),
+        )
+        for keys, value in mutations:
+            with self.subTest(keys=keys):
+                changed = copy.deepcopy(self.contract)
+                target = changed
+                for key in keys[:-1]:
+                    target = target[key]
+                target[keys[-1]] = value
+                with self.assertRaises(holo.NeoLoopError):
+                    holo.validate_catalytic_swarm_0(changed, self.protocol_v4)
+
+    def test_preclaim_requires_checked_out_main_before_network(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            self.patch_paths(stack, Path(temp))
+            lock = {
+                "holostate_worker_protocol_v4_sha256": self.contract[
+                    "root_and_prior_evidence"
+                ]["holostate_worker_protocol_v4_sha256"],
+                "holostate_worker_protocol_v4_evidence_sha256": self.contract[
+                    "root_and_prior_evidence"
+                ]["holostate_worker_protocol_v4_evidence_sha256"],
+            }
+            stack.enter_context(mock.patch.object(
+                holo,
+                "load_locked_catalytic_swarm_0",
+                return_value=(
+                    self.evaluator,
+                    self.evaluator["holostate_live_contract"],
+                    self.protocol_v4,
+                    self.contract,
+                    lock,
+                ),
+            ))
+            stack.enter_context(mock.patch.object(
+                holo, "preserved_catalytic_v4_evidence", return_value={},
+            ))
+            stack.enter_context(mock.patch.object(
+                holo, "git_read", return_value="detached-or-alias",
+            ))
+            network = stack.enter_context(mock.patch.object(holo, "request_json"))
+            with self.assertRaisesRegex(holo.NeoLoopError, "checked-out branch main"):
+                holo.prepare_catalytic_swarm_0_claim(
+                    SimpleNamespace(binary="x", model="y")
+                )
+            network.assert_not_called()
+
+    def test_all_seven_collisions_refuse_before_loader_or_network(self) -> None:
+        for collision in range(7):
+            with self.subTest(collision=collision), tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+                paths = self.patch_paths(stack, Path(temp))
+                list(paths.values())[collision].write_text("{}", encoding="utf-8")
+                loader = stack.enter_context(mock.patch.object(holo, "load_locked_catalytic_swarm_0"))
+                network = stack.enter_context(mock.patch.object(holo, "request_json"))
+                with self.assertRaises(holo.NeoLoopError):
+                    holo.prepare_catalytic_swarm_0_claim(SimpleNamespace(binary="x", model="y"))
+                loader.assert_not_called()
+                network.assert_not_called()
+
+    def test_control_failure_creates_no_later_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            paths = self.patch_paths(stack, Path(temp))
+            stack.enter_context(mock.patch.object(holo, "prepare_catalytic_swarm_0_claim", return_value=self.preclaim(Path(temp))))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "qualify_catalytic_control_outputs",
+                return_value={"passed": False, "reasons": ["forced"], "generation_executed": False},
+            ))
+            result = holo.run_catalytic_swarm_0_audit(SimpleNamespace(binary="x", model="y"))
+            self.assertEqual(result["control_qualification_v1"], "reject")
+            self.assertEqual(result["STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE"], "LOCKED")
+            self.assertEqual(result["CATALYTIC_SWARM_CONTROL_AVAILABLE"], "LOCKED")
+            self.assertTrue(paths["control"].is_file())
+            durable = json.loads(paths["control"].read_text(encoding="utf-8"))
+            self.assertEqual(durable["catalytic_swarm_0"], "instrumentation-reject")
+            self.assertEqual(durable["CATALYTIC_SWARM_CONTROL_AVAILABLE"], "LOCKED")
+            self.assertFalse(any(paths[key].exists() for key in list(paths)[1:]))
+
+    def test_readiness_failure_creates_no_canary_or_attempt(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            paths = self.patch_paths(stack, Path(temp))
+            preclaim = self.preclaim(Path(temp))
+            stack.enter_context(mock.patch.object(holo, "prepare_catalytic_swarm_0_claim", return_value=preclaim))
+            stack.enter_context(mock.patch.object(
+                holo, "qualify_catalytic_control_outputs", return_value={"passed": True, "reasons": [], "generation_executed": False}
+            ))
+            stack.enter_context(mock.patch.object(holo, "query_listener_pids", return_value=self.query({42, 43})))
+            stack.enter_context(mock.patch.object(holo, "readiness_v3_no_sidecar_cleanup", return_value={"not_launched": True}))
+            stack.enter_context(mock.patch.object(holo, "cleanup_integrity", return_value={"passed": True, "reasons": []}))
+            result = holo.run_catalytic_swarm_0_audit(SimpleNamespace(binary="x", model="y"))
+            self.assertIn(result["readiness_v1"], {"reject", "inconclusive"})
+            self.assertEqual(result["STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE"], "LOCKED")
+            self.assertEqual(result["CATALYTIC_SWARM_CONTROL_AVAILABLE"], "LOCKED")
+            self.assertTrue(paths["control"].exists())
+            self.assertTrue(paths["readiness"].exists())
+            durable = json.loads(paths["readiness"].read_text(encoding="utf-8"))
+            self.assertEqual(durable["catalytic_swarm_0"], "inconclusive")
+            self.assertEqual(durable["STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE"], "LOCKED")
+            self.assertFalse(paths["canary"].exists())
+            self.assertFalse(paths["attempt"].exists())
+
+    def test_parser_canary_failure_creates_no_attempt_ledger_or_blackboard(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            paths = self.patch_paths(stack, Path(temp))
+            preclaim = self.preclaim(Path(temp))
+            stack.enter_context(mock.patch.object(holo, "prepare_catalytic_swarm_0_claim", return_value=preclaim))
+            stack.enter_context(mock.patch.object(
+                holo, "qualify_catalytic_control_outputs", return_value={"passed": True, "reasons": [], "generation_executed": False}
+            ))
+            stack.enter_context(mock.patch.object(holo, "query_listener_pids", return_value=self.query({42})))
+            stack.enter_context(mock.patch.object(holo, "health_ok", return_value=True))
+            stack.enter_context(mock.patch.object(holo, "LiveSidecar", self.FakeSidecar))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "prepare_catalytic_root",
+                return_value=("root", {"state_id": "state", "system_message_sha256": self.contract["root_and_prior_evidence"]["system_message_sha256"]}),
+            ))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "run_worker_v4_chat_request",
+                return_value={"accepted": True},
+            ))
+            stack.enter_context(mock.patch.object(holo, "worker_resource_gate", return_value={"passed": True}))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "run_catalytic_parser_canary",
+                return_value={"accepted": False, "gate_reasons": ["forced"]},
+            ))
+            stack.enter_context(mock.patch.object(holo, "safe_sidecar_cleanup", return_value=self.cleanup()))
+            result = holo.run_catalytic_swarm_0_audit(SimpleNamespace(binary="x", model="y"))
+            self.assertEqual(result["parser_canary_v1"], "reject")
+            self.assertEqual(result["STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE"], "LOCKED")
+            self.assertEqual(result["CATALYTIC_SWARM_CONTROL_AVAILABLE"], "LOCKED")
+            self.assertTrue(paths["canary"].exists())
+            durable = json.loads(paths["canary"].read_text(encoding="utf-8"))
+            self.assertEqual(durable["CATALYTIC_SWARM_CONTROL_AVAILABLE"], "LOCKED")
+            self.assertFalse(paths["attempt"].exists())
+            self.assertFalse(paths["ledger"].exists())
+            self.assertFalse(paths["blackboard"].exists())
+
+    def test_post_launch_artifact_claim_collisions_always_cleanup(self) -> None:
+        for target in ("canary", "attempt", "result", "blackboard"):
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+                paths, cleanup, _canary = self.install_live_stage(stack, Path(temp))
+                original = holo.claim_catalytic_runtime_json_once
+
+                def claim(path, payload, *, max_bytes=2 * holo.MIB):
+                    if path == paths[target]:
+                        raise holo.NeoLoopError(f"forced-{target}-collision")
+                    return original(path, payload, max_bytes=max_bytes)
+
+                stack.enter_context(mock.patch.object(
+                    holo, "claim_catalytic_runtime_json_once", side_effect=claim,
+                ))
+                with self.assertRaises(holo.NeoLoopError):
+                    holo.run_catalytic_swarm_0_audit(
+                        SimpleNamespace(binary="x", model="y")
+                    )
+                cleanup.assert_called()
+                self.assertFalse(paths["ledger"].exists())
+                if target in {"result", "blackboard"}:
+                    durable = json.loads(
+                        paths["attempt"].read_text(encoding="utf-8")
+                    )
+                    self.assertEqual(durable["catalytic_swarm_0"], "inconclusive")
+                    self.assertEqual(
+                        durable["CATALYTIC_SWARM_CONTROL_AVAILABLE"], "LOCKED"
+                    )
+
+    def test_ledger_claim_failure_cleans_sidecar_and_persists_result(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            paths, cleanup, _canary = self.install_live_stage(stack, Path(temp))
+            preclaim = self.preclaim(Path(temp))
+            stack.enter_context(mock.patch.object(
+                holo, "BoundedStreamLedger",
+                side_effect=holo.NeoLoopError("stream-ledger-ceiling-exceeded"),
+            ))
+
+            def git_value(root, *args):
+                if args == ("branch", "--show-current"):
+                    return "feature-after-launch"
+                if args[0] == "status":
+                    return ""
+                if Path(root) == preclaim["candidate_root"]:
+                    return "CANDIDATE"
+                return "HEAD"
+
+            stack.enter_context(mock.patch.object(holo, "git_read", side_effect=git_value))
+            stack.enter_context(mock.patch.object(
+                holo, "preserved_catalytic_v4_evidence",
+                return_value=preclaim["prior_before"],
+            ))
+            result = holo.run_catalytic_swarm_0_audit(
+                SimpleNamespace(binary="x", model="y")
+            )
+            cleanup.assert_called()
+            self.assertEqual(result["catalytic_swarm_0"], "instrumentation-reject")
+            self.assertIn("stable-branch-changed", result["isolation_gate"]["reasons"])
+            self.assertEqual(result["final_sidecar_telemetry"], self.cleanup()["wddm"])
+            self.assertEqual(result["maximum_host_private_growth_bytes"], 10)
+            self.assertTrue(paths["result"].is_file())
+            self.assertEqual(
+                json.loads(paths["result"].read_text(encoding="utf-8"))["status"],
+                "complete",
+            )
+
+    def test_warm_failure_leaves_parser_unattempted_and_inconclusive(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            paths, _cleanup, canary = self.install_live_stage(
+                stack, Path(temp), warm_accepted=False,
+            )
+            result = holo.run_catalytic_swarm_0_audit(
+                SimpleNamespace(binary="x", model="y")
+            )
+            artifact = json.loads(paths["canary"].read_text(encoding="utf-8"))
+            self.assertEqual(result["parser_canary_v1"], "inconclusive")
+            self.assertEqual(result["STRUCTURED_HOLOSTATE_MICROWORKER"], "inconclusive")
+            self.assertTrue(artifact["warm_attempted"])
+            self.assertTrue(artifact["warm_executed"])
+            self.assertFalse(artifact["parser_canary_attempted"])
+            self.assertIsNotNone(artifact["warm_A"])
+            canary.assert_not_called()
+
+    def test_executed_parser_failure_is_reject_with_partial_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            paths, _cleanup, _canary = self.install_live_stage(
+                stack, Path(temp), canary_accepted=False,
+            )
+            result = holo.run_catalytic_swarm_0_audit(
+                SimpleNamespace(binary="x", model="y")
+            )
+            artifact = json.loads(paths["canary"].read_text(encoding="utf-8"))
+            self.assertEqual(result["parser_canary_v1"], "reject")
+            self.assertEqual(result["STRUCTURED_HOLOSTATE_MICROWORKER"], "reject")
+            self.assertTrue(artifact["parser_canary_attempted"])
+            self.assertTrue(artifact["parser_canary_executed"])
+            self.assertIsNotNone(artifact["parser_canary"])
+            self.assertIn("preclaim_stream_provenance", artifact)
+
+    def test_failure_and_transport_classifiers_are_fail_closed(self) -> None:
+        self.assertEqual(
+            holo.catalytic_worker_failure_classification(RuntimeError("unknown")),
+            "inconclusive",
+        )
+        self.assertEqual(
+            holo.catalytic_worker_failure_classification("WDDM telemetry lost"),
+            "inconclusive",
+        )
+        self.assertEqual(
+            holo.catalytic_worker_failure_classification("stream-ledger-invalid"),
+            "instrumentation-reject",
+        )
+        self.assertEqual(
+            holo.catalytic_transport_failure_classification(
+                ["exact-control-content-mismatch", "top-level-transport-not-accepted"],
+                {},
+            ),
+            "capability-reject",
+        )
+        self.assertEqual(
+            holo.catalytic_transport_failure_classification(
+                ["visible-token-evidence-missing"], {},
+            ),
+            "instrumentation-reject",
+        )
+        self.assertEqual(
+            holo.catalytic_transport_failure_classification(
+                ["prompt-reuse-evidence-invalid"],
+                {
+                    "logical_prompt_tokens": 100,
+                    "cached_prompt_tokens": 0,
+                    "fresh_prompt_tokens": 100,
+                    "prompt_token_identity_matches": True,
+                },
+            ),
+            "capability-reject",
+        )
+        self.assertEqual(
+            holo.catalytic_transport_failure_classification(
+                ["prompt-reuse-evidence-invalid"],
+                {
+                    "logical_prompt_tokens": 100,
+                    "cached_prompt_tokens": 90,
+                    "fresh_prompt_tokens": 9,
+                    "prompt_token_identity_matches": False,
+                },
+            ),
+            "instrumentation-reject",
+        )
+
+    def test_resource_summary_includes_warm_canary_and_workers(self) -> None:
+        summary = holo.catalytic_resource_summary(
+            {
+                "warm_A": {"resource_gate": {"host_private_growth_bytes": 30}},
+                "parser_canary": {
+                    "resource_gate": {"host_private_growth_bytes": 50}
+                },
+            },
+            [
+                {
+                    "measurement": {
+                        "resource_gate": {"host_private_growth_bytes": 40}
+                    }
+                }
+            ],
+        )
+        self.assertEqual(summary["maximum_host_private_growth_bytes"], 50)
+        self.assertEqual(summary["resource_gate_observation_count"], 3)
+
+    def test_swallowed_verifier_failure_preserves_runtime_and_receipt(self) -> None:
+        plan = holo.build_catalytic_swarm_0_plan()
+        contribution = holo.expected_control_contribution(plan.logical_workers[0])
+
+        class Transport:
+            accepted = True
+            reasons = ()
+
+            @staticmethod
+            def to_dict():
+                return {
+                    "accepted": True,
+                    "content_sha256": "A" * 64,
+                    "token_claim_scope": "exact-generated-token-sequence",
+                }
+
+        class Ledger:
+            def __init__(self):
+                self.records = []
+
+            def append(self, record, **kwargs):
+                self.records.append(record)
+
+        sidecar = self.FakeSidecar()
+        result = {"worker_results": []}
+        board = holo.AppendOnlyBlackboard(max_entries=32)
+        ledger = Ledger()
+        with ExitStack() as stack:
+            stack.enter_context(mock.patch.object(
+                holo, "run_worker_v4_chat_request", return_value={"accepted": True},
+            ))
+            stack.enter_context(mock.patch.object(
+                holo, "worker_resource_gate", return_value={"passed": True},
+            ))
+            stack.enter_context(mock.patch.object(
+                holo, "validate_fast_transport", return_value=Transport(),
+            ))
+            stack.enter_context(mock.patch.object(
+                holo, "parse_structured_fast_result",
+                return_value=(Transport(), contribution),
+            ))
+            stack.enter_context(mock.patch.object(
+                holo, "write_catalytic_runtime_json", return_value=None,
+            ))
+            swarm = holo.execute_catalytic_swarm_sequence(
+                sidecar,
+                {"process_memory": {"private_bytes": 1}},
+                self.protocol_v4,
+                self.contract,
+                "root",
+                {"state_id": "state"},
+                ledger,
+                board,
+                result,
+            )
+        self.assertNotEqual(swarm.verdict, "reviewable-accept")
+        self.assertEqual(result["failure_classification"], "capability-reject")
+        self.assertEqual(len(result["worker_results"]), 1)
+        self.assertFalse(result["worker_failure"]["verification_receipt"]["passed"])
+        self.assertEqual(result["worker_failure"]["visible_blackboard_entry_ids"], [])
+        self.assertTrue(any(item["record_type"] == "worker-failure" for item in ledger.records))
 
 
 if __name__ == "__main__":

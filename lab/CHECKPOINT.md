@@ -398,6 +398,15 @@ reconciled, but no worker capability request has yet executed.
 - Tracked v4 evidence and `neo-exp-0018` are bound; 232 post-audit CPU-only tests, compilation, and JSON/JSONL validation pass.
 - `worker_protocol_v4=reviewable-accept`; Fast=`reviewable-accept`; Deep=`reject`. `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` is unlocked. Broader process-local and restart-persistent availability remain locked. `CatalyticSwarm-0` is authorized but not executed; automatic promotion remains disabled.
 
+### CatalyticSwarm-0 bounded control [HISTORICAL PRE-EXECUTION SNAPSHOT]
+
+- Draft PR #3 is inspected at connector head `c73a684b0d83ba9f59d11396a579f5e9a3478c2b`: four linear commits from protected `f17caefa41527f910e1039e70b33c8035c418ea9`, adding only the declared blackboard, scheduler, adapter, and test files.
+- The integrated substrate remains callback-driven. Static review demonstrated and repairs close forged-plan, multi-slot, over-budget, partial-receipt, missing-key, subset-parent, wrong-decision, fail-open transport, mutable/unbounded entry, and silent unverified-synthesis gaps.
+- The protected protocol locks 32 logical Fast workers over one physical slot, exact phase counts/order/codes, deterministic identities/seeds/assignments/parent graph, compact assigned-parent context, exact structured contributions, append-only chain evidence, resource ceilings, cleanup, and no promotion.
+- Control qualification, readiness, and parser canary are separate one-shot gates. At this snapshot none of the seven `state/catalytic_swarm/*-v1` artifacts exists and no CatalyticSwarm worker request has executed.
+- The live sequence may start only from exact pushed protected `main` after protected preflight. It warms current Root A once, runs the exact structured parser canary, and claims the swarm attempt only after the canary freezes as a pass. Any failure stops without retry.
+- `STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE`, `CATALYTIC_SWARM_CONTROL_AVAILABLE`, task-advantage, and SOTA claims remain locked. Existing process-local micro-worker availability stays unlocked; broader process-local and restart-persistent HoloState remain locked; automatic promotion remains disabled.
+
 ### Durable persistence boundary
 
 The built-in slot file persists active KV/recurrent state and token history, but does not persist the server prompt-checkpoint list required for hybrid recurrent prefix selection after restart.

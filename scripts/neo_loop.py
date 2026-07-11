@@ -169,6 +169,22 @@ def holostate_worker_protocol_v4_evidence_hash(evaluator: dict[str, Any]) -> str
     return sha256_bytes(canonical_json_bytes(evidence))
 
 
+def catalytic_swarm_0_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the complete claim-bearing CatalyticSwarm-0 contract."""
+    contract = evaluator.get("catalytic_swarm_0")
+    if not isinstance(contract, dict):
+        raise NeoLoopError("evaluator is missing catalytic_swarm_0")
+    return sha256_bytes(canonical_json_bytes(contract))
+
+
+def catalytic_swarm_0_evidence_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the tracked adjudication of the one-shot CatalyticSwarm-0 proof."""
+    evidence = evaluator.get("catalytic_swarm_0_evidence")
+    if not isinstance(evidence, dict):
+        raise NeoLoopError("evaluator is missing catalytic_swarm_0_evidence")
+    return sha256_bytes(canonical_json_bytes(evidence))
+
+
 def load_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise NeoLoopError(f"missing required file: {path}")
@@ -259,6 +275,7 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         "holostate_worker_protocol_v2_sha256": holostate_worker_protocol_v2_hash(evaluator),
         "holostate_worker_protocol_v3_sha256": holostate_worker_protocol_v3_hash(evaluator),
         "holostate_worker_protocol_v4_sha256": holostate_worker_protocol_v4_hash(evaluator),
+        "catalytic_swarm_0_sha256": catalytic_swarm_0_hash(evaluator),
         "model_identity": evaluator["model"],
         "baseline_source_commit": git(ROOT, "rev-parse", "HEAD"),
         "stable_launch": evaluator["stable_launch"],
@@ -278,6 +295,10 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     if "holostate_worker_protocol_v4_evidence" in evaluator:
         lock["holostate_worker_protocol_v4_evidence_sha256"] = (
             holostate_worker_protocol_v4_evidence_hash(evaluator)
+        )
+    if "catalytic_swarm_0_evidence" in evaluator:
+        lock["catalytic_swarm_0_evidence_sha256"] = (
+            catalytic_swarm_0_evidence_hash(evaluator)
         )
     return lock
 
@@ -373,6 +394,19 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         actual_worker_v4_evidence = holostate_worker_protocol_v4_evidence_hash(evaluator)
         if expected_worker_v4_evidence != actual_worker_v4_evidence:
             raise NeoLoopError("HoloState worker v4 evidence differs from its locked complete-object hash")
+    expected_swarm_0 = lock.get("catalytic_swarm_0_sha256")
+    actual_swarm_0 = catalytic_swarm_0_hash(evaluator)
+    if expected_swarm_0 != actual_swarm_0:
+        raise NeoLoopError("CatalyticSwarm-0 contract differs from its locked complete-object hash")
+    has_swarm_0_evidence = "catalytic_swarm_0_evidence" in evaluator
+    has_swarm_0_evidence_lock = "catalytic_swarm_0_evidence_sha256" in lock
+    if has_swarm_0_evidence != has_swarm_0_evidence_lock:
+        raise NeoLoopError("CatalyticSwarm-0 evidence and lock must appear together")
+    if has_swarm_0_evidence:
+        expected_swarm_0_evidence = lock["catalytic_swarm_0_evidence_sha256"]
+        actual_swarm_0_evidence = catalytic_swarm_0_evidence_hash(evaluator)
+        if expected_swarm_0_evidence != actual_swarm_0_evidence:
+            raise NeoLoopError("CatalyticSwarm-0 evidence differs from its locked complete-object hash")
     return lock
 
 

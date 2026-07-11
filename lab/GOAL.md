@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: HoloState worker protocol v4 executed boundary
+## Checkpoint 2: CatalyticSwarm-0 bounded control preparation
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse and the bounded process-local HoloState micro-worker are proven; broader process-local and restart-persistent availability remain locked.
 
@@ -28,6 +28,12 @@ V3 ran once. Readiness passed; the exact, normal-stop canary exposed zero token 
 
 V4 ran exactly once with no retry. Readiness, tokenizer, canary, both roots, and all six Fast requests passed; A1/B1 repeats and cross-root isolation were exact. Deep A1 independently rejected on a 768-token length stop, so its failure does not erase the completed Fast proof. Do not rerun v4.
 
+## Active separately scoped protocol
+
+Integrate the draft PR #3 control substrate as one architectural commit, freeze one deterministic 32-worker/one-slot plan, and execute one protected `CatalyticSwarm-0` control proof only after exact pushed `main` and protected preflight. The proof is limited to structured Fast micro-workers, assigned prior-phase blackboard communication, exact verifier receipts, one physical lease, bounded resource evidence, and clean teardown.
+
+Do not run Deep workers, exceed 64 completion tokens, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, rerun worker protocols v1-v4, retry the swarm, or promote automatically. Before the live command, control qualification, readiness, and the parser canary are separate one-shot boundaries; no capability attempt may exist unless all three freeze as passes.
+
 ## Claim state
 
 ```text
@@ -36,7 +42,11 @@ EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
-CatalyticSwarm-0: AUTHORIZED_NOT_EXECUTED
+CatalyticSwarm-0: PREPARED_NOT_EXECUTED
+STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
+CATALYTIC_SWARM_CONTROL_AVAILABLE: LOCKED
+CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN: LOCKED
+SOTA_SWARM_CLAIM: LOCKED
 automatic promotion: disabled
 global claim ceiling: NEO3000_BASELINE_OPERATIONAL
 ```

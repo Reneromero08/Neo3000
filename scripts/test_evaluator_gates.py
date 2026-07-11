@@ -108,6 +108,24 @@ class EvaluatorGateTests(unittest.TestCase):
         self.assertFalse(neo_loop.validate_gate(slow, gate, True)[0])
         self.assertEqual(gate["min_decode_tps"], 10.0)
 
+    def test_catalytic_swarm_complete_object_hash_covers_execution_law(self) -> None:
+        baseline = neo_loop.catalytic_swarm_0_hash(EVALUATOR)
+        mutations = [
+            (("plan", "physical_slot_count"), 2),
+            (("plan", "definition", "logical_workers", 0, "max_tokens"), 65),
+            (("parser_canary", "expected_content"), "{}"),
+            (("blackboard", "max_entries"), 33),
+            (("one_shot", "capability_retry_allowed"), True),
+            (("availability", "automatic_promotion"), True),
+        ]
+        for path, value in mutations:
+            changed = copy.deepcopy(EVALUATOR)
+            cursor = changed["catalytic_swarm_0"]
+            for key in path[:-1]:
+                cursor = cursor[key]
+            cursor[path[-1]] = value
+            self.assertNotEqual(baseline, neo_loop.catalytic_swarm_0_hash(changed), path)
+
 
 if __name__ == "__main__":
     unittest.main()

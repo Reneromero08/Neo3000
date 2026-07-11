@@ -5,8 +5,8 @@
 **Baseline evidence through:** protocol commit `da04c5bf388c3d091da4e2f1aee33bf852377517`; ignored worker-v4 result `396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. `holostate_worker_protocol_v4` executed once: readiness, tokenizer, canary, both roots, and all Fast requests passed; Deep A1 rejected independently on a 768-token length stop.
-**Next exact action:** preserve the v4 no-retry boundary. `CatalyticSwarm-0` is authorized but must remain unexecuted until a separately scoped protocol; automatic promotion remains forbidden.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. A separately protected `CatalyticSwarm-0` control protocol is being integrated from the proven HoloState v4 Fast boundary; it has not executed.
+**Next exact action:** make the bounded control-plane integration the exact pushed protected `main`, pass protected preflight, then invoke `CatalyticSwarm-0` exactly once with no retry. Do not run Deep or promote automatically.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -375,7 +375,16 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Recorded readiness/tokenizer/attempt/result/ledger SHA-256 values `4B8A44B4CB3DE9355B8A3D4E3FC945DD685EA35B98F5BF0C0160DAA090249BA7`, `EB10127666CDADE0D6A8E7EF59CA7D4310B64B89619800DF245BD769666A587D`, `6197D986FD3ED030340A82300245AE0EF1249229E21162BF6796F7F614A7EA19`, `396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF`, and `CD96EE1F41F15E9953705F7DDA762D1111D60E04C828F9B157D314D789F0F104`.
 - [x] Bind tracked v4 evidence and `neo-exp-0018`; pass 232 post-audit CPU-only tests plus compilation and JSON/JSONL validation.
 - [x] Unlock only `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`; keep broader process-local and restart-persistent availability locked, authorize but do not execute `CatalyticSwarm-0`, and keep automatic promotion disabled.
-- [ ] Next task: preserve this no-retry evidence boundary. Any `CatalyticSwarm-0` execution requires a separately scoped protocol and must not be inferred from authorization alone.
+- [x] Preserve this no-retry evidence boundary. The separately scoped `CatalyticSwarm-0` control protocol below does not rerun v1-v4 or infer execution from prior authorization.
+
+### CatalyticSwarm-0 bounded control proof [PREPARED / NOT EXECUTED]
+
+- [x] Inspect draft PR #3 at connector head `c73a684b0d83ba9f59d11396a579f5e9a3478c2b`: exactly four commits from protected `f17caefa41527f910e1039e70b33c8035c418ea9`, adding only the declared blackboard, scheduler, adapter, and CPU-only test files.
+- [x] Retain the callback-driven connector substrate without importing its four commits individually; repair only demonstrated fail-open plan, contribution, adapter, blackboard, lease, and 64-token defects with negative tests.
+- [x] Lock one exact 32-worker plan: 16 proposal, 8 evidence, 6 critique, 2 synthesis; one physical HoloState slot; thinking disabled; maximum 64 completion tokens; deterministic identities, seeds, parent graph, phase routing, and fixed execution order.
+- [x] Add separately versioned control qualification, readiness, structured parser canary, capability attempt/result, bounded ledger, and append-only blackboard artifacts under ignored `state/catalytic_swarm`.
+- [x] Reuse the protected HoloState v4 sidecar, ownership, WDDM, terminal-EOS, tokenizer, and cleanup infrastructure. Deep, persistence, CUDA, kernels, model, Pi, stable behavior, archived trace candidate, retry, and promotion remain outside scope.
+- [ ] Push the integration as exact protected `main`, pass protected preflight, and invoke `audit-catalytic-swarm-0` exactly once. A control, readiness, or parser-canary failure must stop before the capability attempt and must not be retried.
 
 Preserved v1 executed boundary:
 
