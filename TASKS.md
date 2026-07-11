@@ -2,11 +2,11 @@
 
 **Active checkpoint:** Checkpoint 2, First catalytic compute intervention
 **Current RSI level:** Level 1, supervised bounded RSI available
-**Baseline evidence through:** CatalyticSwarm-0 integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`; bound `neo-exp-0019` single no-retry readiness early-stop after preserved worker-v4 result `396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF`
+**Baseline evidence through:** CatalyticSwarm-0 v2 integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`; bound `reviewable-accept` result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. `CatalyticSwarm-0` v1 is immutable after its single readiness-inconclusive execution. The separately authorized `catalytic_swarm_0_v2` changes only bounded exact-PID WDDM transient-gap resilience plus fresh-sample admission; it is implemented but not yet executed.
-**Next exact action:** publish the protected v2 integration as exact `main`, pass protected preflight, then invoke `audit-catalytic-swarm-0-v2` exactly once with no retry. Do not run Deep or promote automatically.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. `CatalyticSwarm-0` v1 is immutable after its single readiness-inconclusive execution. The separately versioned `catalytic_swarm_0_v2` completed one artifact-claiming live execution and returned `reviewable-accept`, unlocking only structured HoloState micro-worker and bounded swarm-control availability. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests.
+**Next exact action:** preserve the completed v2 boundary. Any CatalyticSwarm-1 work requires separate explicit authorization and must begin with an equal-total-budget task-advantage design. Do not execute another swarm, run Deep, claim task advantage, or promote automatically.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -392,7 +392,7 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Bound the exact early-stop evidence as `neo-exp-0019` in the protected evaluator/result/lock for this evidence commit without another live invocation.
 - [x] Preserve v1 without retry. No further v1 live work is authorized.
 
-### CatalyticSwarm-0 v2 WDDM telemetry successor [AUTHORIZED / IMPLEMENTED / NOT EXECUTED]
+### CatalyticSwarm-0 v2 WDDM telemetry successor [REVIEWABLE ACCEPT]
 
 - [x] Inspect draft PR #5 at exact connector head `428edaaa2772d6805c4733a9d629a7812838a932`: exactly two commits from protected `3fcef46c4863814f3396d1466269d4a3ef0f8c9a`, adding only the declared WDDM resilience module and its CPU-only tests.
 - [x] Pass all 14 connector tests before controller integration.
@@ -402,7 +402,13 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Preserve the exact v1 Root A prompt bytes from integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280` even though the authoritative catalytic roadmap is published before v2 execution.
 - [x] Import and reconcile `docs/CATALYTIC_RUNTIME_ROADMAP.md` from source commit `87fea7a5c51b0915a2cc1fb63dbbbdd306dff445`; make it authoritative without duplicating the full architecture in this task board.
 - [x] Pass compilation and 338 CPU-only regression tests without contacting a live inference endpoint; all v1 artifacts remain exact and all seven v2 artifacts remain absent.
-- [ ] Commit and push the architectural integration, fast-forward exact protected `main`, pass the protected preflight, and execute `audit-catalytic-swarm-0-v2` exactly once with no automatic retry.
+- [x] Commit and push the architectural integration at `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`, fast-forward exact protected `main`, and pass protected preflight. One artifact-claiming live `audit-catalytic-swarm-0-v2` invocation ran; no retry occurred after claim. One earlier pre-claim command refusal created zero artifacts and made zero model requests. No Deep request or automatic promotion occurred.
+- [x] Pass control qualification, readiness, parser canary, all 32 thinking-disabled worker requests, 32 one-slot leases, 32 verifier receipts, the append-only blackboard chain, 1,319 bounded ledger records, and two synthesis entries. Phase execution was exactly 16 proposal / 8 evidence / 6 critique / 2 synthesis.
+- [x] Classify v2 as `reviewable-accept`. Exact-PID WDDM produced 177 valid samples, zero unavailable samples, zero recoveries, maximum failure streak 0, maximum valid-sample gap 2.938 seconds, 107 passed freshness boundaries, and a 2,284.9 MiB peak. Maximum host-private growth was 727,982,080 bytes.
+- [x] Pass cleanup, stable/candidate isolation, exact v1 preservation, worker-v4 preservation, sampler retirement, runtime removal, free port 9494, and five empty post-teardown WDDM samples.
+- [x] Bind exact v2 SHA-256 values: control `1FC67796F436E69B1B2C2F132345C0335FADF6D1452E7F98D8A92D78CB616CE3`; readiness `129FD883FD03BBEF8B216AC67F77CBE854CA798A86BBC18A11D4DCDF010E7124`; parser canary `9282D7F8AE195C866E767A7F0D3BCB0A366E3FC3C1509A7DB1F99F1C541191B5`; attempt `0E9A839B7AD9D50AE6FD82DD3C63A93D23596C4A32FAF515BAC67A68EFEE8866`; result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`; ledger `C523EF77C80CDD4783D2E41103FCD72490A4C837DA2B3988B29F8D7A97E1F7F9`; blackboard `197929DF8DF62A24480A64C071651CED43E16D82F0B6DA5A9AB740C6C1236964`.
+- [x] Unlock only `STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE` and `CATALYTIC_SWARM_CONTROL_AVAILABLE`. Keep broader process-local HoloState, restart persistence, task advantage, SOTA, and automatic promotion locked.
+- [ ] After separate explicit authorization, design an equal-total-budget CatalyticSwarm-1 task-advantage experiment. This completed control proof does not establish task advantage.
 
 Preserved v1 executed boundary:
 
@@ -433,4 +439,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: publish the separately versioned v2 integration as exact protected `main`, pass preflight, and execute its single no-retry audit. V1 and worker protocols v1-v4 remain immutable.
+Next task: preserve the completed v2 no-retry boundary. Any CatalyticSwarm-1 continuation requires separate explicit authorization and begins with an equal-total-budget task-advantage design; no task advantage is yet proven. V1 and worker protocols v1-v4 remain immutable.

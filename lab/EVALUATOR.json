@@ -1636,6 +1636,248 @@
     "no_retry": true,
     "automatic_promotion": false
   },
+  "catalytic_swarm_0_v2_evidence": {
+    "protocol_commit": "cf61f90ff5544f2f8bc546e5d661ea72cdda8666",
+    "contract_sha256": "eadea6e1c6d66e50d85803c4cc96ad6a703b4964799251977ff1288eabc24cf1",
+    "plan_sha256": "7AE101BA52CE0C8F00EC649646D6B44D25EDAC2466A730EFF30BF3FD7FDCF78A",
+    "binary_identity": {
+      "runtime_version": "13 (417e1d6)",
+      "sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
+    },
+    "model_identity": {
+      "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+      "size_bytes": 21166757632
+    },
+    "chat_template_identity": {
+      "sha256": "A4AEE8AFCF2E0711942CF848899BE66016F8D14A889FF9EDE07BCA099C28F715"
+    },
+    "repository": {
+      "execution_branch": "main",
+      "HEAD": "cf61f90ff5544f2f8bc546e5d661ea72cdda8666",
+      "main": "cf61f90ff5544f2f8bc546e5d661ea72cdda8666",
+      "origin/main": "cf61f90ff5544f2f8bc546e5d661ea72cdda8666",
+      "remote_main": "cf61f90ff5544f2f8bc546e5d661ea72cdda8666",
+      "all_main_identities_equal": true,
+      "clean_at_admission": true,
+      "clean_after_execution": true,
+      "protected_preflight": "pass",
+      "candidate": {
+        "branch": "candidate",
+        "head": "14de9c71593e5aea4fcfcadeda47ba5c623fadcf",
+        "clean": true,
+        "unchanged": true
+      }
+    },
+    "artifacts": {
+      "state/catalytic_swarm/control-qualification-v2.json": {
+        "sha256": "1FC67796F436E69B1B2C2F132345C0335FADF6D1452E7F98D8A92D78CB616CE3",
+        "size_bytes": 65208
+      },
+      "state/catalytic_swarm/readiness-v2.json": {
+        "sha256": "129FD883FD03BBEF8B216AC67F77CBE854CA798A86BBC18A11D4DCDF010E7124",
+        "size_bytes": 18248
+      },
+      "state/catalytic_swarm/parser-canary-v2.json": {
+        "sha256": "9282D7F8AE195C866E767A7F0D3BCB0A366E3FC3C1509A7DB1F99F1C541191B5",
+        "size_bytes": 91947
+      },
+      "state/catalytic_swarm/attempt-v2.json": {
+        "sha256": "0E9A839B7AD9D50AE6FD82DD3C63A93D23596C4A32FAF515BAC67A68EFEE8866",
+        "size_bytes": 1150
+      },
+      "state/catalytic_swarm/result-v2.json": {
+        "sha256": "AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7",
+        "size_bytes": 1186515
+      },
+      "state/catalytic_swarm/ledger-v2.jsonl": {
+        "sha256": "C523EF77C80CDD4783D2E41103FCD72490A4C837DA2B3988B29F8D7A97E1F7F9",
+        "size_bytes": 920418
+      },
+      "state/catalytic_swarm/blackboard-v2.json": {
+        "sha256": "197929DF8DF62A24480A64C071651CED43E16D82F0B6DA5A9AB740C6C1236964",
+        "size_bytes": 25482
+      }
+    },
+    "started_at": "2026-07-11T10:05:58.101968+00:00",
+    "capability_started_at": "2026-07-11T10:09:06.040740+00:00",
+    "finished_at": "2026-07-11T10:14:09.680090+00:00",
+    "invocation_accounting": {
+      "preclaim_refusal_count": 1,
+      "preclaim_refusal_reason": "required model path was not supplied",
+      "preclaim_refusal_v2_artifacts_created": 0,
+      "preclaim_refusal_model_requests": 0,
+      "artifact_claiming_v2_invocation_count": 1,
+      "live_v2_attempt_count": 1,
+      "automatic_retry_count": 0,
+      "no_retry": true
+    },
+    "stage_gates": {
+      "control_qualification_v2": "pass",
+      "control_generation_executed": false,
+      "readiness_v2": "pass",
+      "warm_A": "pass",
+      "parser_canary_v2": "pass",
+      "parser_canary_attempted": true,
+      "parser_canary_executed": true,
+      "parser_canary_accepted": true,
+      "frozen_control_evidence": true,
+      "frozen_readiness_evidence": true,
+      "frozen_parser_canary_evidence": true
+    },
+    "wddm": {
+      "policy": {
+        "measurement_source": "Windows GPU Process Memory(*)\\Dedicated Usage",
+        "exact_pid_instances_only": true,
+        "sample_interval_seconds": 1.0,
+        "initial_attribution_grace_seconds": 60.0,
+        "maximum_tolerated_consecutive_unavailable_queries": 2,
+        "hard_failure_on_consecutive_unavailable_query": 3,
+        "maximum_valid_sample_gap_seconds": 30.0,
+        "admission_freshness_seconds": 5.0,
+        "memory_ceiling_mib": 6000,
+        "sampler_query_timeout_seconds": 10.0,
+        "sampler_stop_timeout_seconds": 12.0,
+        "transition_event_limit": 512,
+        "transition_overflow_policy": "immediate-hard-failure",
+        "valid_recovery_resets_failure_streak": true,
+        "aggregate_nvidia_smi_fallback": "forbidden",
+        "device_wide_fallback": "forbidden"
+      },
+      "candidate_pid": 8916,
+      "valid_sample_count": 177,
+      "unavailable_query_count": 0,
+      "maximum_consecutive_unavailable_queries": 0,
+      "maximum_valid_sample_gap_seconds": 2.938000000001921,
+      "recovered_gap_count": 0,
+      "freshness_boundaries_recorded": 107,
+      "freshness_boundaries_passed": 107,
+      "required_protocol_boundary_count": 69,
+      "required_protocol_boundaries_passed": 69,
+      "maximum_boundary_sample_age_seconds": 2.9219999999986612,
+      "readiness_admission_sample_age_seconds": 2.139999999999418,
+      "capability_admission_sample_age_seconds": 2.6710000000020955,
+      "peak_dedicated_bytes": 2395889664,
+      "peak_dedicated_mib": 2284.9,
+      "maximum_host_private_growth_bytes": 727982080,
+      "transition_event_count": 0,
+      "transition_ledger_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "failure_reason": null,
+      "sampler_stop_attempted": true,
+      "sampler_stop_timed_out": false,
+      "sampler_thread_alive": false,
+      "terminal_gate_passed": true
+    },
+    "execution": {
+      "logical_worker_count": 32,
+      "logical_workers_executed": 32,
+      "verification_receipts_passed": 32,
+      "lease_count": 32,
+      "max_concurrent_leases": 1,
+      "active_leases_after_completion": 0,
+      "physical_slot_count": 1,
+      "phase_counts": {
+        "proposal": 16,
+        "evidence": 8,
+        "critique": 6,
+        "synthesis": 2
+      },
+      "synthesis_entry_count": 2,
+      "synthesis_entry_ids": [
+        "bb-0031-2ad974953e434d43",
+        "bb-0032-d85306e17a3d66d8"
+      ],
+      "blackboard_entry_count": 32,
+      "blackboard_chain_valid": true,
+      "blackboard_head_hash": "D85306E17A3D66D83DD0B325E1B8C31165A5DE7DEAB28627106D43ACB31F7658",
+      "parent_graph_verified": true,
+      "same_phase_isolation_verified": true,
+      "maximum_completion_tokens_observed": 45,
+      "maximum_completion_tokens_allowed": 64,
+      "stream_ledger_record_count": 1319,
+      "stream_ledger_within_limits": true,
+      "deep_workers_attempted": 0,
+      "deep_workers_executed": 0
+    },
+    "preservation": {
+      "predecessor_v1": {
+        "contract_sha256": "ca8987fd5d8f1d3043a2c78147e2ec6f2ab8006cccfc4c958398ba8f7d0a9cd4",
+        "evidence_object_sha256": "1e8bc8416e1a772f14cfebd39ce98850c61b2ff3cc8ed57a1953c4521445a426",
+        "artifacts": {
+          "state/catalytic_swarm/control-qualification-v1.json": {
+            "sha256": "864F74F58792E120422BB4078439E40AAE96546D58282DED38BB7665678A3E53",
+            "size_bytes": 60604
+          },
+          "state/catalytic_swarm/readiness-v1.json": {
+            "sha256": "76351D413785D6E239F1E20FB152EDF78DF312EEBE85D86FC343C6B25D7C1CCC",
+            "size_bytes": 6791
+          }
+        },
+        "downstream_absent": [
+          "state/catalytic_swarm/parser-canary-v1.json",
+          "state/catalytic_swarm/attempt-v1.json",
+          "state/catalytic_swarm/result-v1.json",
+          "state/catalytic_swarm/ledger-v1.jsonl",
+          "state/catalytic_swarm/blackboard-v1.json"
+        ],
+        "preserved": true
+      },
+      "holostate_worker_protocol_v4": {
+        "artifacts": {
+          "state/holostate/worker-protocol-attempt-v4.json": {
+            "sha256": "6197D986FD3ED030340A82300245AE0EF1249229E21162BF6796F7F614A7EA19",
+            "size_bytes": 6915
+          },
+          "state/holostate/worker-protocol-readiness-v4.json": {
+            "sha256": "4B8A44B4CB3DE9355B8A3D4E3FC945DD685EA35B98F5BF0C0160DAA090249BA7",
+            "size_bytes": 17393
+          },
+          "state/holostate/worker-protocol-result-v4.json": {
+            "sha256": "396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF",
+            "size_bytes": 143994
+          },
+          "state/holostate/worker-protocol-tokenizer-v4.json": {
+            "sha256": "EB10127666CDADE0D6A8E7EF59CA7D4310B64B89619800DF245BD769666A587D",
+            "size_bytes": 4605
+          },
+          "state/holostate/worker-protocol-v4-stream.jsonl": {
+            "sha256": "CD96EE1F41F15E9953705F7DDA762D1111D60E04C828F9B157D314D789F0F104",
+            "size_bytes": 618838
+          }
+        },
+        "preserved": true
+      }
+    },
+    "final_gates": {
+      "artifact_reconciliation_passed": true,
+      "protocol_safety_passed": true,
+      "cleanup_passed": true,
+      "isolation_passed": true,
+      "process_stopped": true,
+      "runtime_removed": true,
+      "port_9494_free": true,
+      "five_wddm_retirement_samples_empty": true,
+      "stable_health_and_listener_preserved": true,
+      "candidate_clean_and_unchanged": true
+    },
+    "verdicts": {
+      "catalytic_swarm_0_v2": "reviewable-accept",
+      "STRUCTURED_HOLOSTATE_MICROWORKER": "reviewable-accept",
+      "CATALYTIC_SWARM_CONTROL": "reviewable-accept"
+    },
+    "availability": {
+      "PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE": "UNLOCKED",
+      "PROCESS_LOCAL_HOLOSTATE_AVAILABLE": "LOCKED",
+      "RESTART_PERSISTENT_HOLOSTATE_AVAILABLE": "LOCKED",
+      "STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE": "UNLOCKED",
+      "CATALYTIC_SWARM_CONTROL_AVAILABLE": "UNLOCKED",
+      "CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN": "LOCKED",
+      "SOTA_SWARM_CLAIM": "LOCKED",
+      "automatic_promotion": false
+    },
+    "no_deep_population": true,
+    "no_retry": true,
+    "automatic_promotion": false
+  },
   "candidate_editable_paths": {
     "description": "Candidates may only modify files under these paths.",
     "paths": [

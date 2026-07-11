@@ -290,7 +290,7 @@ No literal infinity claim is made. Accepted cumulative avoided evaluations, acce
 ```text
 HoloState-v1 reuse mechanism: succeeded
 HoloState-v1 raw /completion gate: no literal final marker through 2048
-Current action: preserve the bound CatalyticSwarm-0 v1 readiness boundary; no further live work is authorized
+Current action: preserve the completed CatalyticSwarm-0 v2 control boundary; no further live work is authorized without separate explicit authorization
 HoloState-v2 persistence: separate future intervention
 ```
 
@@ -419,16 +419,22 @@ reconciled, but no worker capability request has yet executed.
 - The exact early-stop evidence is bound as `neo-exp-0019`: control qualification SHA-256 `864F74F58792E120422BB4078439E40AAE96546D58282DED38BB7665678A3E53` and readiness SHA-256 `76351D413785D6E239F1E20FB152EDF78DF312EEBE85D86FC343C6B25D7C1CCC` are recorded in the protected evaluator/result/lock for the evidence commit.
 - This version is no-retry. At the v1 evidence boundary no further live work was authorized; the separately versioned v2 successor below is the later explicit authorization and must not alter or retry v1.
 
-### CatalyticSwarm-0 v2 WDDM successor [AUTHORIZED / IMPLEMENTED / NOT EXECUTED]
+### CatalyticSwarm-0 v2 WDDM successor [REVIEWABLE ACCEPT]
 
 - Draft PR #5 was inspected at exact connector head `428edaaa2772d6805c4733a9d629a7812838a932`: two commits from protected `3fcef46c4863814f3396d1466269d4a3ef0f8c9a` and only the two declared new WDDM policy/test files. All 14 connector tests pass.
 - The optional sampler policy preserves legacy behavior when absent. When present, one or two unavailable queries are bounded transient gaps; the third, a valid-sample gap over 30 seconds, or memory over 6000 MiB fails closed. A fresh admission sample is at most 5 seconds old, exact-PID only, and has a zero failure streak.
 - Fresh-sample boundaries are implemented at readiness, before/after the parser canary, before capability claim, before/after every worker request, and before teardown. While awaiting recovery, the controller keeps process, stable/sidecar health, listener ownership, deadline, and hard WDDM failure checks active.
 - Complete-object `catalytic_swarm_0_v2` hash is `eadea6e1c6d66e50d85803c4cc96ad6a703b4964799251977ff1288eabc24cf1`. It binds v1 contract/evidence hashes `ca8987fd5d8f1d3043a2c78147e2ec6f2ab8006cccfc4c958398ba8f7d0a9cd4` / `1e8bc8416e1a772f14cfebd39ce98850c61b2ff3cc8ed57a1953c4521445a426` and exact v1 control/readiness artifact hashes `864F74F58792E120422BB4078439E40AAE96546D58282DED38BB7665678A3E53` / `76351D413785D6E239F1E20FB152EDF78DF312EEBE85D86FC343C6B25D7C1CCC`.
-- The seven v2 one-shot paths are distinct and absent. V1 control/readiness remain exact and its five downstream paths remain absent. The v1 command is hard-retired.
+- Before live execution, the seven v2 one-shot paths were distinct and absent. V1 control/readiness remained exact and its five downstream paths remained absent. The v1 command was hard-retired.
 - Root A prompt bytes are read from exact v1 integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`, preserving the inherited canonical/system/rendered identities while `docs/CATALYTIC_RUNTIME_ROADMAP.md` becomes authoritative.
-- Compilation and 338 CPU-only tests pass. No live inference, parser canary, capability attempt, worker request, lease, ledger, blackboard, Deep request, retry, persistence, or promotion has occurred under v2.
-- Next action: commit and push the architectural integration, fast-forward exact protected `main`, pass protected preflight, then execute `audit-catalytic-swarm-0-v2` exactly once with no retry.
+- Compilation and 338 CPU-only tests passed before execution. The architectural integration was committed and pushed at exact protected `main` commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`, then protected preflight passed.
+- The first controller command was refused before claim because the model path was absent; it created zero artifacts, made zero model requests, and left all seven v2 paths absent. That refusal is not a v2 execution. One subsequent artifact-claiming live invocation ran with explicit pinned paths, and no retry occurred after claim.
+- Control qualification, readiness, and the structured parser canary passed. All 32 thinking-disabled workers executed through exactly one physical slot with 32 leases, 32 verifier receipts, 32 valid hash-chained blackboard entries, exact phase counts 16 proposal / 8 evidence / 6 critique / 2 synthesis, 1,319 bounded stream-ledger records, and two verified synthesis entries.
+- Exact-PID WDDM remained fully available: 177 valid samples, 0 unavailable samples, 0 recoveries, maximum failure streak 0, maximum valid-sample gap 2.938 seconds, 107 passed freshness boundaries, and a 2,395,889,664-byte / 2,284.9 MiB peak. Maximum host-private growth was 727,982,080 bytes.
+- Cleanup, stable/candidate isolation, sampler retirement, runtime removal, free port 9494, five empty retirement samples, exact v1 evidence preservation, and exact worker-v4 evidence preservation all passed. No Deep, persistence, CUDA/kernel/model/Pi/stable change, retry, or automatic promotion occurred.
+- V2 is `reviewable-accept`: `STRUCTURED_HOLOSTATE_MICROWORKER=reviewable-accept` and `CATALYTIC_SWARM_CONTROL=reviewable-accept`. `STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE` and `CATALYTIC_SWARM_CONTROL_AVAILABLE` are unlocked. Broader process-local HoloState, restart persistence, task advantage, and SOTA remain locked; automatic promotion remains false.
+- Exact SHA-256 bindings are control `1FC67796F436E69B1B2C2F132345C0335FADF6D1452E7F98D8A92D78CB616CE3`; readiness `129FD883FD03BBEF8B216AC67F77CBE854CA798A86BBC18A11D4DCDF010E7124`; parser canary `9282D7F8AE195C866E767A7F0D3BCB0A366E3FC3C1509A7DB1F99F1C541191B5`; attempt `0E9A839B7AD9D50AE6FD82DD3C63A93D23596C4A32FAF515BAC67A68EFEE8866`; result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`; ledger `C523EF77C80CDD4783D2E41103FCD72490A4C837DA2B3988B29F8D7A97E1F7F9`; blackboard `197929DF8DF62A24480A64C071651CED43E16D82F0B6DA5A9AB740C6C1236964`.
+- Next boundary: preserve v2 without retry. Any CatalyticSwarm-1 work requires separate explicit authorization and begins with an equal-total-budget task-advantage design; this control proof does not establish task advantage.
 
 ### Durable persistence boundary
 

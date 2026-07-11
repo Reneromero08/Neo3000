@@ -24,6 +24,8 @@ The strongest supported mechanism claims are:
 NEO3000_BASELINE_OPERATIONAL
 EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE
+STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE
+CATALYTIC_SWARM_CONTROL_AVAILABLE
 ```
 
 Worker protocol v4 proved:
@@ -45,13 +47,23 @@ exact-PID WDDM counter query timed out and was classified
 capability attempt, physical lease, blackboard, or any logical worker request.
 This is not a swarm-capability result. V1 is immutable and may not be retried.
 
+The separately versioned v2 successor then completed one artifact-claiming live
+execution from protected integration commit
+`cf61f90ff5544f2f8bc546e5d661ea72cdda8666`. No retry occurred after claim;
+one earlier pre-claim command refusal created zero artifacts and made zero model
+requests. Its sole
+intervention was bounded exact-PID WDDM transient-query resilience plus fresh
+admission. Control qualification, readiness, parser canary, all 32 workers,
+32 one-slot leases and verifier receipts, the exact 16/8/6/2 phase sequence,
+the 32-entry append-only blackboard, 1,319 ledger records, and two synthesis
+entries passed. V2 is `reviewable-accept` for structured micro-workers and
+bounded swarm control. This is not evidence of task advantage.
+
 Not proven:
 
 ```text
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE
-STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE
-CATALYTIC_SWARM_CONTROL_AVAILABLE
 CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN
 SOTA_SWARM_CLAIM
 ```
@@ -167,8 +179,9 @@ Many logical workers share one or a small number of physical HoloState leases.
 Fast worker primitive: proven
 CatalyticSwarm-0 v1 control qualification: passed
 CatalyticSwarm-0 v1 readiness: inconclusive before canary or worker request
-32-worker control capability: untested; availability locked
-CatalyticSwarm-0 v2 telemetry successor: authorized, not yet executed
+CatalyticSwarm-0 v2 telemetry successor: reviewable-accept control proof
+32-worker control capability: proven at the bounded control layer; availability unlocked
+task advantage: untested; availability locked
 ```
 
 ## Carrier 3: expert residency state
@@ -215,6 +228,10 @@ artifact hashes
 verifier receipt
 decision
 ```
+
+Status: the v2 control proof produced a valid 32-entry append-only hash chain
+with 32 verifier receipts and two synthesis entries. Cross-task reuse and
+restart-durable blackboard state remain unproven.
 
 ---
 
@@ -328,13 +345,23 @@ This proves orchestration and communication mechanics only.
 
 Status: v1 executed exactly once and stopped at readiness after its
 generation-free control qualification passed. No parser canary, capability
-attempt, worker request, lease, ledger record, or blackboard entry executed, so
-the orchestration and communication mechanics remain unproven. V1 is no-retry.
-The separately authorized `catalytic_swarm_0_v2` successor is not yet executed;
-its only causal intervention is bounded resilience to transient exact-PID WDDM
-counter-query failures plus fresh-sample admission at every protected boundary.
-The plan, prompts, seeds, parent graph, parser, verifier, blackboard, one-slot
-lease law, and 64-token Fast budget remain unchanged.
+attempt, worker request, lease, ledger record, or blackboard entry executed;
+v1 remains immutable and no-retry.
+
+The separately versioned `catalytic_swarm_0_v2` successor completed one
+artifact-claiming live execution. No retry occurred after claim; one earlier
+pre-claim command refusal created zero artifacts and made zero model requests.
+Its only causal intervention was bounded resilience to
+transient exact-PID WDDM counter-query failures plus fresh-sample admission at
+every protected boundary. The plan, prompts, seeds, parent graph, parser,
+verifier, blackboard, one-slot lease law, and 64-token Fast budget remained
+unchanged. All 32 workers, leases, receipts, blackboard entries, exact 16/8/6/2
+phase counts, 1,319 ledger records, and two synthesis entries passed. WDDM
+recorded 177 valid and zero unavailable samples, zero recoveries, maximum
+failure streak 0, maximum valid-sample gap 2.938 seconds, 107 passed freshness
+boundaries, and a 2,284.9 MiB peak. Cleanup, isolation, v1 preservation, and v4
+preservation passed. The control proof is `reviewable-accept`.
+No Deep request, retry, or automatic promotion occurred.
 
 Unlock target:
 
@@ -343,7 +370,14 @@ STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE
 CATALYTIC_SWARM_CONTROL_AVAILABLE
 ```
 
+Both control-layer availability targets are now unlocked. Task advantage,
+broader process-local availability, restart persistence, SOTA, and automatic
+promotion remain locked.
+
 ## CatalyticSwarm-1: equal-budget task advantage
+
+This stage is not authorized for execution. Separate explicit authorization is
+required before its equal-total-budget design or any live comparison proceeds.
 
 Compare:
 
@@ -499,8 +533,9 @@ Metrics must distinguish observed versus accepted reuse, process-local versus du
 # 12. Phase order from the current boundary
 
 ```text
-1. CatalyticSwarm-0 v2 telemetry successor over the unchanged bounded control proof
-2. CatalyticSwarm-1 equal-budget executable-task advantage
+completed: CatalyticSwarm-0 v2 bounded control proof
+1. separately authorize and design CatalyticSwarm-1 equal-total-budget executable-task advantage
+2. execute CatalyticSwarm-1 only under that future authorization
 3. Adaptive population and verifier allocation
 4. HoloState multi-root admission and eviction policy
 5. HoloState-v2 durable checkpoint-list persistence
@@ -526,6 +561,10 @@ from reused executable prefixes on one bounded sidecar.
 
 CatalyticSwarm-0 v1 passed generation-free control qualification and stopped
 readiness inconclusively before any canary or capability request.
+
+CatalyticSwarm-0 v2 then completed its 32-worker, one-slot control proof.
+Structured micro-workers and bounded swarm control are reviewable-accept and
+available; task advantage remains untested and locked.
 ```
 
 Not yet allowed:

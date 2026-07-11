@@ -104,7 +104,8 @@ RSI-0: CLOSED
 -> HoloState worker v3: readiness pass; canary instrumentation reject; Fast/Deep untested
 -> HoloState worker v4: reviewable-accept; process-local micro-worker unlocked
 -> CatalyticSwarm-0: executed once; control qualification pass, readiness inconclusive on exact-PID WDDM telemetry loss before canary
--> CatalyticSwarm-0 v2: separately authorized telemetry successor; not yet executed
+-> CatalyticSwarm-0 v2: structured micro-worker and bounded swarm control reviewable-accept
+-> CatalyticSwarm-1: task-advantage design requires separate explicit authorization
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -118,9 +119,10 @@ this section is only its navigation capsule.
 
 - **Experiment 08:** carry forward the bounded lease-pool law: a logical worker population may exceed physical residency by acquiring, using, closing, and releasing a fixed slot pool. The experiment did not prove 1,000 simultaneously resident independent models or restoration of arbitrary unknown state.
 - **Experiment 13:** carry forward logical phase, worker, channel, and root-routing identities. Its models occupied different physical tape regions, so it did not prove that opaque KV or recurrent states can overlap in the same bytes and be recovered independently.
-- **HoloState carrier hierarchy:** exact live prefix state is proven process-locally; a bounded logical swarm over live leases is the current control boundary; expert residency, recurrent trajectory state, executable CUDA-graph/warm-runtime state, and verified blackboard state are later carriers. Only exact identity-bound state may survive closure.
-- **Current boundary:** CatalyticSwarm-0 v1 executed exactly once. Generation-free control qualification passed; readiness stopped `inconclusive` on exact-PID WDDM telemetry loss before the parser canary, capability attempt, lease, ledger, blackboard, or any worker request. V1 is immutable and no-retry; structured-micro-worker and swarm-control availability remain locked.
-- **Authorized successor:** `catalytic_swarm_0_v2` is authorized but not executed. Its sole causal intervention is bounded transient exact-PID WDDM query resilience plus fresh-sample admission. The 32-worker plan, prompts, seeds, parent graph, one-slot lease law, parser, verifier, blackboard, and 64-token Fast budget remain unchanged.
+- **HoloState carrier hierarchy:** exact live prefix state is proven process-locally; a bounded logical swarm over live leases and a verified append-only blackboard are proven at the 32-worker control boundary; expert residency, recurrent trajectory state, and executable CUDA-graph/warm-runtime state are later carriers. Only exact identity-bound state may survive closure.
+- **Preserved predecessor:** CatalyticSwarm-0 v1 executed exactly once. Generation-free control qualification passed; readiness stopped `inconclusive` on exact-PID WDDM telemetry loss before the parser canary, capability attempt, lease, ledger, blackboard, or any worker request. V1 is immutable and no-retry.
+- **Current boundary:** `catalytic_swarm_0_v2` completed one artifact-claiming live execution from protected integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests. Its sole causal intervention was bounded transient exact-PID WDDM query resilience plus fresh-sample admission; the inherited 32-worker plan, prompts, seeds, parent graph, one-slot lease law, parser, verifier, blackboard, and 64-token Fast budget remained unchanged. All 32 workers and the 16/8/6/2 control sequence passed, so structured-micro-worker and bounded swarm-control availability are unlocked at `reviewable-accept`.
+- **Next boundary:** task advantage is not established by the control proof. CatalyticSwarm-1 requires separate explicit authorization and must begin with an equal-total-budget comparison design; no further swarm execution is currently authorized.
 
 | Swarm stage | Architectural purpose | Unlock boundary |
 |---|---|---|
@@ -133,7 +135,7 @@ this section is only its navigation capsule.
 - **Durable HoloState:** v2 must persist KV/recurrent state plus checkpoint-selection metadata, token history, complete identities, nearest-checkpoint recovery, and exact restart A/B validation. V3 tiers live/pinned-host/host/disk state; v4 forms a content-addressed branching execution tree. None is currently proven.
 - **Native carrier lanes:** MoE work must first measure expert routes, buckets, padding, transfer, and residency; Gated Delta Net work must measure state identity, update/copy/restore cost, location, and exact fidelity; CUDA-graph work must measure capture signatures, replay, reconstruction, synchronization, and reuse across prefix boundaries. A low-level speedup is catalytic only when it lawfully retains and reuses executable structure.
 - **True orthogonal state:** a later experiment must encode independent channels in the same physical cells, decode them reversibly with bounded cross-talk, restore the substrate, and beat a disjoint-region control after encoding overhead. Until then, orthogonality is a logical routing device only.
-- **Metrics and claims:** report compute amplification, fresh-compute ratio, state-reuse yield, closure cost, carrier reuse count, prefix-hit depth, holographic branch density, expert-residency yield, and blackboard yield. Separate observed from quality-accepted reuse, live from durable state, and task advantage from speedup. No restart-persistence, task-advantage, SOTA, physical-infinity, v2-execution, or automatic-promotion claim is currently allowed.
+- **Metrics and claims:** report compute amplification, fresh-compute ratio, state-reuse yield, closure cost, carrier reuse count, prefix-hit depth, holographic branch density, expert-residency yield, and blackboard yield. Separate observed from quality-accepted reuse, live from durable state, and task advantage from speedup. No restart-persistence, task-advantage, SOTA, physical-infinity, or automatic-promotion claim is currently allowed.
 
 ---
 
@@ -621,7 +623,17 @@ Exact integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280` was pushed a
 
 The parser canary and capability attempt were not attempted. No 32-worker request, physical lease, bounded-ledger record, or blackboard entry exists. Lifecycle teardown and retirement passed: PID `44748` stopped, port 9494 retired, and stable PID `32684` remained healthy. The composite cleanup/resource gate is false because exact-PID WDDM telemetry was lost. Readiness, structured-micro-worker capability, and swarm-control capability are each `inconclusive`; both new availability states remain locked. The existing process-local micro-worker unlock survives, while broader process-local HoloState, restart persistence, task advantage, and SOTA remain locked. V4 evidence is preserved and automatic promotion remains false.
 
-This invocation is no-retry. Its exact early-stop evidence is bound as `neo-exp-0019` in the protected evaluator/result/lock for the evidence commit. No further CatalyticSwarm live work is authorized: preserve v1 and await explicit authorization for any separately versioned successor addressing exact-PID WDDM telemetry loss. Deep, persistence, CUDA/kernel/model/Pi/stable changes, and promotion remain excluded.
+This invocation is no-retry. Its exact early-stop evidence is bound as `neo-exp-0019` in the protected evaluator/result/lock for the evidence commit. V1 remains immutable; the only later continuation was the separately authorized and separately versioned v2 successor below. Deep, persistence, CUDA/kernel/model/Pi/stable changes, and promotion remained excluded.
+
+### CatalyticSwarm-0 v2 WDDM successor: REVIEWABLE ACCEPT
+
+Exact integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666` preserved the v1 plan and prompt bytes while adding only bounded exact-PID WDDM transient-query resilience and fresh-sample admission. Protected preflight passed before one artifact-claiming live invocation with explicit pinned paths. No retry occurred after claim, no Deep request ran, and automatic promotion remained false. One earlier pre-claim command refusal created zero artifacts and made zero model requests.
+
+Control qualification, readiness, parser canary, all 32 worker requests, 32 one-slot leases, 32 verifier receipts, the 32-entry append-only blackboard, exact 16/8/6/2 phase counts, the 1,319-record bounded ledger, and both synthesis entries passed. Exact-PID WDDM recorded 177 valid and zero unavailable samples, zero recoveries, maximum failure streak 0, maximum valid-sample gap 2.938 seconds, 107 passed freshness boundaries, and a 2,284.9 MiB peak. Maximum host-private growth was 727,982,080 bytes. Cleanup, isolation, v1 preservation, and v4 preservation passed.
+
+V2 is `reviewable-accept`. `STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE` and `CATALYTIC_SWARM_CONTROL_AVAILABLE` are unlocked. Broader process-local HoloState, restart persistence, task advantage, and SOTA remain locked; automatic promotion remains false. Exact result SHA-256 is `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`; the full artifact bindings are recorded in `lab/CHECKPOINT.md`.
+
+No further swarm execution is authorized. CatalyticSwarm-1 requires separate explicit authorization and begins with an equal-total-budget task-advantage design. This control proof does not establish task advantage.
 
 ### HoloState-v2 persistence boundary
 
