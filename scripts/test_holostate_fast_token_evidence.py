@@ -29,6 +29,8 @@ class FastTokenEvidenceAdapterTests(unittest.TestCase):
             "reasoning_content": "",
             "tool_calls": [],
             "finish_reason": "stop",
+            "stop_type": "eos",
+            "stopping_word": "",
             "prompt_tokens": 100,
             "cached_prompt_tokens": 90,
         }
@@ -45,7 +47,7 @@ class FastTokenEvidenceAdapterTests(unittest.TestCase):
         self.assertEqual(result["source"], "visible-content-retokenization")
         self.assertEqual(result["claim_scope"], "exact-visible-content-tokenization")
 
-    def test_v3_canary_accepts_unknown_terminal_control_token(self) -> None:
+    def test_v3_canary_accepts_unknown_terminal_eos(self) -> None:
         result = resolve_fast_token_evidence(
             self.measurement(content="TOKEN ARRAY CANARY", completion_tokens=5),
             tokenize_visible_content=self.tokenize,
@@ -59,9 +61,10 @@ class FastTokenEvidenceAdapterTests(unittest.TestCase):
         self.assertEqual(result["terminal_control_token_count"], 1)
         self.assertFalse(result["terminal_control_token_id_known"])
         self.assertFalse(result["full_generated_sequence_known"])
+        self.assertEqual(result["terminal_stop_type"], "eos")
         self.assertEqual(
             result["claim_scope"],
-            "exact-visible-content-tokenization-plus-one-terminal-control-token",
+            "exact-visible-content-tokenization-plus-one-terminal-eos-token",
         )
 
     def test_native_ids_preserve_generated_sequence_claim(self) -> None:
@@ -84,7 +87,7 @@ class FastTokenEvidenceAdapterTests(unittest.TestCase):
         self.assertTrue(result["accepted"], result["reasons"])
         self.assertEqual(result["fresh_prompt_tokens"], 10)
 
-    def test_full_fast_gate_accepts_terminal_control_reconciliation(self) -> None:
+    def test_full_fast_gate_accepts_terminal_eos_reconciliation(self) -> None:
         result = evaluate_fast_worker(
             self.measurement(content="TOKEN ARRAY CANARY", completion_tokens=5),
             expected_content="TOKEN ARRAY CANARY",
@@ -95,16 +98,21 @@ class FastTokenEvidenceAdapterTests(unittest.TestCase):
         self.assertTrue(result["accepted"], result["reasons"])
         self.assertEqual(result["token_evidence"]["terminal_control_token_count"], 1)
 
-    def test_terminal_control_reconciliation_must_be_authorized(self) -> None:
+    def test_terminal_eos_reconciliation_requires_metadata(self) -> None:
         result = evaluate_fast_worker(
-            self.measurement(content="TOKEN ARRAY CANARY", completion_tokens=5),
+            self.measurement(
+                content="TOKEN ARRAY CANARY",
+                completion_tokens=5,
+                stop_type=None,
+            ),
             expected_content="TOKEN ARRAY CANARY",
             logical_prompt_tokens=100,
             tokenize_visible_content=self.tokenize,
+            allow_terminal_control_accounting=True,
         )
         self.assertFalse(result["accepted"])
         self.assertEqual(result["classification"], "instrumentation-reject")
-        self.assertIn("terminal-control-accounting-not-authorized", result["reasons"])
+        self.assertIn("terminal-eos-accounting-not-proven", result["reasons"])
 
     def test_configured_stop_sequence_disables_terminal_reconciliation(self) -> None:
         result = evaluate_fast_worker(
