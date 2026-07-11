@@ -69,6 +69,19 @@ class CatalyticSwarmAdvantageProtocolTests(unittest.TestCase):
             ["hidden_examples_forbidden_in_requests_and_ledger"]
         )
 
+    def test_common_root_warm_is_outside_arm_budgets(self) -> None:
+        contract = build_catalytic_swarm_1_contract()
+        warm = contract["task_root_warm"]
+        self.assertEqual(warm["warm_request_count"], 8)
+        self.assertTrue(warm["occurs_before_any_arm_for_task"])
+        self.assertTrue(warm["same_public_root_for_all_four_arms"])
+        self.assertTrue(warm["warm_cost_excluded_from_arm_comparison_budgets"])
+        self.assertTrue(warm["all_arms_require_observed_root_cache_reuse"])
+        transport = contract["shared_transport"]
+        self.assertEqual(transport["comparison_request_count"], 1024)
+        self.assertEqual(transport["task_root_warm_request_count"], 8)
+        self.assertEqual(transport["total_live_request_count"], 1032)
+
     def test_equal_budget_law_is_exact(self) -> None:
         budget = build_catalytic_swarm_1_contract()["budget_law"]
         self.assertEqual(budget["requests_per_arm_per_task"], 32)
