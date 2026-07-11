@@ -5,8 +5,8 @@
 **Baseline evidence through:** CatalyticSwarm-0 integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`; bound `neo-exp-0019` single no-retry readiness early-stop after preserved worker-v4 result `396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. The separately protected `CatalyticSwarm-0` control protocol executed once from integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`: control qualification passed, then readiness stopped inconclusively on exact-PID WDDM telemetry loss before the parser canary or any worker request.
-**Next exact action:** no further CatalyticSwarm live work is authorized. Preserve the bound v1 evidence and await explicit authorization before any separately versioned successor addressing exact-PID WDDM telemetry loss. Do not run Deep or promote automatically.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. `CatalyticSwarm-0` v1 is immutable after its single readiness-inconclusive execution. The separately authorized `catalytic_swarm_0_v2` changes only bounded exact-PID WDDM transient-gap resilience plus fresh-sample admission; it is implemented but not yet executed.
+**Next exact action:** publish the protected v2 integration as exact `main`, pass protected preflight, then invoke `audit-catalytic-swarm-0-v2` exactly once with no retry. Do not run Deep or promote automatically.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -390,7 +390,19 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Completed lifecycle cleanup: PID `44748` stopped, runtime state retired, port 9494 became free, and stable PID `32684` remained healthy. The composite resource gate remained non-pass because telemetry was lost.
 - [x] Classified readiness, `STRUCTURED_HOLOSTATE_MICROWORKER`, and `CATALYTIC_SWARM_CONTROL` as `inconclusive`. Their new availability states remain locked; the existing process-local micro-worker unlock remains intact. Broader process-local HoloState, restart persistence, task advantage, and SOTA claims remain locked; automatic promotion remains false and v4 evidence is preserved.
 - [x] Bound the exact early-stop evidence as `neo-exp-0019` in the protected evaluator/result/lock for this evidence commit without another live invocation.
-- [ ] No further CatalyticSwarm live work is authorized. Preserve v1 and await explicit authorization for any separately versioned successor addressing exact-PID WDDM telemetry loss; do not claim or initiate another attempt.
+- [x] Preserve v1 without retry. No further v1 live work is authorized.
+
+### CatalyticSwarm-0 v2 WDDM telemetry successor [AUTHORIZED / IMPLEMENTED / NOT EXECUTED]
+
+- [x] Inspect draft PR #5 at exact connector head `428edaaa2772d6805c4733a9d629a7812838a932`: exactly two commits from protected `3fcef46c4863814f3396d1466269d4a3ef0f8c9a`, adding only the declared WDDM resilience module and its CPU-only tests.
+- [x] Pass all 14 connector tests before controller integration.
+- [x] Preserve legacy `CandidateVramSampler` behavior when no policy is supplied; add a separately activated policy that tolerates at most two consecutive unavailable queries, fails on the third or a valid-sample gap over 30 seconds, requires a sample no older than 5 seconds for admission, and retains the immediate 6000 MiB hard ceiling.
+- [x] Add fresh exact-PID WDDM admission at readiness, parser-canary, capability-attempt, every worker request, and teardown boundaries while process, health, listener, deadline, and hard-failure checks remain live.
+- [x] Add complete-object `catalytic_swarm_0_v2` with exact v1 inheritance, exact predecessor evidence bindings, seven new v2 one-shot paths, connector source protection, and no retry, Deep, persistence, or promotion authority.
+- [x] Preserve the exact v1 Root A prompt bytes from integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280` even though the authoritative catalytic roadmap is published before v2 execution.
+- [x] Import and reconcile `docs/CATALYTIC_RUNTIME_ROADMAP.md` from source commit `87fea7a5c51b0915a2cc1fb63dbbbdd306dff445`; make it authoritative without duplicating the full architecture in this task board.
+- [x] Pass compilation and 338 CPU-only regression tests without contacting a live inference endpoint; all v1 artifacts remain exact and all seven v2 artifacts remain absent.
+- [ ] Commit and push the architectural integration, fast-forward exact protected `main`, pass the protected preflight, and execute `audit-catalytic-swarm-0-v2` exactly once with no automatic retry.
 
 Preserved v1 executed boundary:
 
@@ -421,4 +433,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: preserve the bound `CatalyticSwarm-0` v1 readiness boundary and await explicit authorization for any separately versioned successor addressing exact-PID WDDM telemetry. No further live work is authorized.
+Next task: publish the separately versioned v2 integration as exact protected `main`, pass preflight, and execute its single no-retry audit. V1 and worker protocols v1-v4 remain immutable.

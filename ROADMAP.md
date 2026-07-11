@@ -18,13 +18,14 @@ Every agent must read:
 1. AGENTS.md
 2. TASKS.md
 3. ROADMAP.md
-4. lab/GOAL.md
-5. lab/CHECKPOINT.md
-6. lab/EVALUATOR.json, when present
-7. lab/BASELINE_PROTOCOL.md
-8. lab/results.jsonl
-9. NEO3000.md
-10. README.md
+4. docs/CATALYTIC_RUNTIME_ROADMAP.md
+5. lab/GOAL.md
+6. lab/CHECKPOINT.md
+7. lab/EVALUATOR.json, when present
+8. lab/BASELINE_PROTOCOL.md
+9. lab/results.jsonl
+10. NEO3000.md
+11. README.md
 ```
 
 | File | Authority |
@@ -32,6 +33,7 @@ Every agent must read:
 | `AGENTS.md` | Operating law, non-collapse protocol, engineering rules, stop conditions |
 | `TASKS.md` | Executable queue and exact next action |
 | `ROADMAP.md` | Phase order, unlock gates, long-range architecture |
+| `docs/CATALYTIC_RUNTIME_ROADMAP.md` | Authoritative detailed catalytic architecture, carrier hierarchy, swarm phase order, metrics, and claim discipline |
 | `lab/GOAL.md` | One active bounded objective |
 | `lab/CHECKPOINT.md` | Evidence ledger for the active checkpoint |
 | `lab/EVALUATOR.json` | Candidate-cycle evaluation contract |
@@ -45,7 +47,8 @@ When documents disagree:
 3. `lab/CHECKPOINT.md` determines what is proven
 4. `lab/GOAL.md` determines the current bounded objective
 5. this roadmap determines phase order and RSI unlock level
-6. architecture documents do not prove implementation status
+6. `docs/CATALYTIC_RUNTIME_ROADMAP.md` determines detailed catalytic architecture within that phase order
+7. architecture documents do not prove implementation status
 
 ---
 
@@ -101,11 +104,36 @@ RSI-0: CLOSED
 -> HoloState worker v3: readiness pass; canary instrumentation reject; Fast/Deep untested
 -> HoloState worker v4: reviewable-accept; process-local micro-worker unlocked
 -> CatalyticSwarm-0: executed once; control qualification pass, readiness inconclusive on exact-PID WDDM telemetry loss before canary
+-> CatalyticSwarm-0 v2: separately authorized telemetry successor; not yet executed
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
 
 No autonomous RSI. No automatic promotion. No stable inference modification outside declared candidate cycles.
+
+## Catalytic runtime architecture summary
+
+`docs/CATALYTIC_RUNTIME_ROADMAP.md` is the authoritative detailed architecture;
+this section is only its navigation capsule.
+
+- **Experiment 08:** carry forward the bounded lease-pool law: a logical worker population may exceed physical residency by acquiring, using, closing, and releasing a fixed slot pool. The experiment did not prove 1,000 simultaneously resident independent models or restoration of arbitrary unknown state.
+- **Experiment 13:** carry forward logical phase, worker, channel, and root-routing identities. Its models occupied different physical tape regions, so it did not prove that opaque KV or recurrent states can overlap in the same bytes and be recovered independently.
+- **HoloState carrier hierarchy:** exact live prefix state is proven process-locally; a bounded logical swarm over live leases is the current control boundary; expert residency, recurrent trajectory state, executable CUDA-graph/warm-runtime state, and verified blackboard state are later carriers. Only exact identity-bound state may survive closure.
+- **Current boundary:** CatalyticSwarm-0 v1 executed exactly once. Generation-free control qualification passed; readiness stopped `inconclusive` on exact-PID WDDM telemetry loss before the parser canary, capability attempt, lease, ledger, blackboard, or any worker request. V1 is immutable and no-retry; structured-micro-worker and swarm-control availability remain locked.
+- **Authorized successor:** `catalytic_swarm_0_v2` is authorized but not executed. Its sole causal intervention is bounded transient exact-PID WDDM query resilience plus fresh-sample admission. The 32-worker plan, prompts, seeds, parent graph, one-slot lease law, parser, verifier, blackboard, and 64-token Fast budget remain unchanged.
+
+| Swarm stage | Architectural purpose | Unlock boundary |
+|---|---|---|
+| CatalyticSwarm-0 | Prove the bounded 32-logical-worker, one-physical-lease control plane | Structured micro-worker and swarm-control availability |
+| CatalyticSwarm-1 | Compare single, best-of-N, sparse swarm, and verified swarm under equal total budgets | Verified task advantage, not ordinary speed alone |
+| CatalyticSwarm-2 | Expand and stop the logical population from verified marginal value | Adaptive population and verifier allocation |
+| CatalyticSwarm-3 | Preserve logical agents across restart only after durable capsules pass | Restart-persistent identity-bound state |
+| CatalyticSwarm-4 | Add heterogeneous models, quantizations, adapters, and specialist verifiers | Role-specific capability with declared boundaries |
+
+- **Durable HoloState:** v2 must persist KV/recurrent state plus checkpoint-selection metadata, token history, complete identities, nearest-checkpoint recovery, and exact restart A/B validation. V3 tiers live/pinned-host/host/disk state; v4 forms a content-addressed branching execution tree. None is currently proven.
+- **Native carrier lanes:** MoE work must first measure expert routes, buckets, padding, transfer, and residency; Gated Delta Net work must measure state identity, update/copy/restore cost, location, and exact fidelity; CUDA-graph work must measure capture signatures, replay, reconstruction, synchronization, and reuse across prefix boundaries. A low-level speedup is catalytic only when it lawfully retains and reuses executable structure.
+- **True orthogonal state:** a later experiment must encode independent channels in the same physical cells, decode them reversibly with bounded cross-talk, restore the substrate, and beat a disjoint-region control after encoding overhead. Until then, orthogonality is a logical routing device only.
+- **Metrics and claims:** report compute amplification, fresh-compute ratio, state-reuse yield, closure cost, carrier reuse count, prefix-hit depth, holographic branch density, expert-residency yield, and blackboard yield. Separate observed from quality-accepted reuse, live from durable state, and task advantage from speedup. No restart-persistence, task-advantage, SOTA, physical-infinity, v2-execution, or automatic-promotion claim is currently allowed.
 
 ---
 

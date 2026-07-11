@@ -26,6 +26,7 @@ PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 CatalyticSwarm-0: EXECUTED ONCE / CONTROL QUALIFICATION PASS / READINESS INCONCLUSIVE
+CatalyticSwarm-0 v2: AUTHORIZED / IMPLEMENTED / NOT EXECUTED
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
 CATALYTIC_SWARM_CONTROL_AVAILABLE: LOCKED
 RSI-0F supervised rejection cycle: PASSED
@@ -52,6 +53,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Worker protocol v3 ran once: checked readiness passed, then its parser canary instrumentation rejected on missing nonempty token arrays and completion-count mismatch. It cannot be retried; Fast and Deep remain untested/inconclusive.
 - Worker protocol v4 ran exactly once with no retry. Readiness, tokenizer, canary, both roots, all Fast requests, repeats, and isolation passed; Deep independently rejected on a 768-token length stop.
 - CatalyticSwarm-0 ran exactly once from protected integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`. Control qualification passed, then readiness stopped inconclusively on exact-PID WDDM telemetry loss before the parser canary or any worker request. This version cannot be retried.
+- The separately versioned CatalyticSwarm-0 v2 successor is implemented but not executed. It changes only bounded exact-PID WDDM transient-gap resilience plus fresh-sample admission, preserves the exact v1 plan and prompt bytes, and remains no-retry with Deep, persistence, task-advantage, SOTA, and promotion claims locked.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 

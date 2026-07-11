@@ -312,6 +312,98 @@ class ReadinessTests(unittest.TestCase):
         self.assertTrue(stable.passed and sidecar.passed)
         self.assertEqual(windows, [(9292, 5.0), (9494, 1.0)])
 
+    def test_resilient_readiness_waits_for_fresh_wddm_before_listener_queries(self) -> None:
+        fresh = deque([False, False, True, True, True])
+        clock = [0.0]
+        qualifier_calls: list[int] = []
+
+        def qualifier(port: int, expected: set[int], **_kwargs):
+            qualifier_calls.append(port)
+            return ownership(passed=True, expected=expected)
+
+        result = readiness.wait_for_holostate_readiness(
+            sidecar_pid=44748,
+            stable_pids={32684},
+            stable_port=9292,
+            sidecar_port=9494,
+            deadline_seconds=30.0,
+            process_alive=lambda: True,
+            stable_health_ok=lambda: True,
+            sidecar_health_ok=lambda: True,
+            wddm_has_valid_sample=lambda: True,
+            wddm_has_fresh_valid_sample=lambda: fresh.popleft() if fresh else True,
+            wddm_failure_reason=lambda: None,
+            wddm_snapshot=lambda: {"consecutive_failures": 0},
+            listener_qualifier=qualifier,
+            monotonic=lambda: clock[0],
+            sleep_fn=lambda delay: clock.__setitem__(0, clock[0] + delay),
+        )
+        self.assertTrue(result.passed)
+        self.assertEqual(qualifier_calls, [9292, 9494, 9292])
+        self.assertGreaterEqual(result.poll_count, 4)
+
+    def test_transient_gap_during_listener_query_forces_full_requalification(self) -> None:
+        # Fresh at the first listener boundary, stale immediately afterward,
+        # then recovered.  Admission must use a new stable/sidecar pair.
+        fresh = deque([True, False, True, True, True])
+        clock = [0.0]
+        qualifier_calls: list[int] = []
+
+        def qualifier(port: int, expected: set[int], **_kwargs):
+            qualifier_calls.append(port)
+            return ownership(passed=True, expected=expected)
+
+        result = readiness.wait_for_holostate_readiness(
+            sidecar_pid=44748,
+            stable_pids={32684},
+            stable_port=9292,
+            sidecar_port=9494,
+            deadline_seconds=30.0,
+            process_alive=lambda: True,
+            stable_health_ok=lambda: True,
+            sidecar_health_ok=lambda: True,
+            wddm_has_valid_sample=lambda: True,
+            wddm_has_fresh_valid_sample=lambda: fresh.popleft() if fresh else True,
+            wddm_failure_reason=lambda: None,
+            listener_qualifier=qualifier,
+            monotonic=lambda: clock[0],
+            sleep_fn=lambda delay: clock.__setitem__(0, clock[0] + delay),
+        )
+        self.assertTrue(result.passed)
+        self.assertEqual(qualifier_calls, [9292, 9494, 9292, 9494, 9292])
+
+    def test_resilient_readiness_still_fails_on_hard_wddm_loss(self) -> None:
+        failures = deque([None, "candidate-vram-telemetry-lost"])
+        clock = [0.0]
+        qualifier_calls = 0
+
+        def qualifier(_port: int, expected: set[int], **_kwargs):
+            nonlocal qualifier_calls
+            qualifier_calls += 1
+            return ownership(passed=True, expected=expected)
+
+        with self.assertRaisesRegex(
+            readiness.HoloStateReadinessError,
+            "candidate-vram-telemetry-lost",
+        ):
+            readiness.wait_for_holostate_readiness(
+                sidecar_pid=44748,
+                stable_pids={32684},
+                stable_port=9292,
+                sidecar_port=9494,
+                deadline_seconds=30.0,
+                process_alive=lambda: True,
+                stable_health_ok=lambda: True,
+                sidecar_health_ok=lambda: True,
+                wddm_has_valid_sample=lambda: True,
+                wddm_has_fresh_valid_sample=lambda: False,
+                wddm_failure_reason=lambda: failures.popleft() if failures else "candidate-vram-telemetry-lost",
+                listener_qualifier=qualifier,
+                monotonic=lambda: clock[0],
+                sleep_fn=lambda delay: clock.__setitem__(0, clock[0] + delay),
+            )
+        self.assertEqual(qualifier_calls, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

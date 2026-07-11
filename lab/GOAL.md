@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Preserve the CatalyticSwarm-0 readiness boundary
+## Checkpoint 2: Execute the separately versioned CatalyticSwarm-0 v2 successor
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse and the bounded process-local HoloState micro-worker are proven; broader process-local and restart-persistent availability remain locked.
 
@@ -34,9 +34,15 @@ The control substrate was integrated and pushed at exact commit `8e2a14cc11be31c
 
 The parser canary, capability attempt, all 32 worker requests, physical leases, ledger, and blackboard were unattempted or absent. Lifecycle teardown and retirement passed: PID `44748` stopped, port 9494 is free, and stable PID `32684` remains healthy. The composite cleanup/resource gate is false because exact-PID WDDM telemetry was lost. Readiness, structured-micro-worker capability, and swarm-control capability are inconclusive; both new availability states remain locked. The existing process-local micro-worker unlock and all v4 evidence are preserved.
 
+## Authorized v2 boundary
+
+`catalytic_swarm_0_v2` is separately authorized and implemented but not executed. Its sole causal intervention is bounded resilience to transient exact-PID WDDM counter-query failures plus fresh-sample admission. One or two consecutive unavailable queries remain transient; the third, a valid-sample gap over 30 seconds, or memory over 6000 MiB fails closed. Admission requires a valid exact-PID sample no older than 5 seconds and no active failure streak.
+
+The v1 control objective, exact plan hash `7AE101BA52CE0C8F00EC649646D6B44D25EDAC2466A730EFF30BF3FD7FDCF78A`, 32 workers, prompts, seeds, parent graph, phase law, one physical slot, 64-token Fast budget, parser, verifier, blackboard, binary/model/template identities, and availability/no-promotion law remain unchanged. Root A is reconstructed from the exact v1 integration commit so the newly published roadmap cannot mutate the inherited prompt.
+
 ## Active bounded objective
 
-The exact early-stop evidence is bound as `neo-exp-0019` in the protected evaluator/result/lock for the evidence commit. No further CatalyticSwarm live work is authorized. Preserve v1 and await explicit authorization for any separately versioned successor addressing exact-PID WDDM telemetry loss. Do not run Deep workers, exceed 64 completion tokens, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, rerun worker protocols v1-v4, claim another attempt, or promote automatically.
+Publish the v2 architectural integration as exact protected `main`, pass protected preflight, then invoke `audit-catalytic-swarm-0-v2` exactly once with no retry. Record the result without rerunning v1 or worker protocols v1-v4. Do not run Deep workers, exceed 64 completion tokens, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, or promote automatically.
 
 ## Claim state
 
@@ -47,6 +53,7 @@ PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 CatalyticSwarm-0: EXECUTED_ONCE_READINESS_INCONCLUSIVE
+CatalyticSwarm-0-v2: AUTHORIZED_NOT_EXECUTED
 CATALYTIC_SWARM_READINESS: INCONCLUSIVE
 STRUCTURED_HOLOSTATE_MICROWORKER: INCONCLUSIVE
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED

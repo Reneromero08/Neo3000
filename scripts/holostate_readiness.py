@@ -119,6 +119,8 @@ def wait_for_holostate_readiness(
     sidecar_health_ok: Callable[[], bool],
     wddm_has_valid_sample: Callable[[], bool],
     wddm_failure_reason: Callable[[], str | None],
+    wddm_has_fresh_valid_sample: Callable[[], bool] | None = None,
+    wddm_snapshot: Callable[[], dict[str, Any]] | None = None,
     listener_qualifier: Callable[..., ListenerOwnershipEvidence] = qualify_listener_ownership,
     listener_kwargs: dict[str, Any] | None = None,
     poll_interval_seconds: float = 0.25,
@@ -138,6 +140,26 @@ def wait_for_holostate_readiness(
         raise ValueError("stable_pids must contain positive integers")
     if deadline_seconds <= 0 or poll_interval_seconds <= 0:
         raise ValueError("readiness timing values must be positive")
+
+    if wddm_has_fresh_valid_sample is not None:
+        return _wait_for_resilient_holostate_readiness(
+            sidecar_pid=sidecar_pid,
+            stable_pids=stable,
+            stable_port=stable_port,
+            sidecar_port=sidecar_port,
+            deadline_seconds=deadline_seconds,
+            process_alive=process_alive,
+            stable_health_ok=stable_health_ok,
+            sidecar_health_ok=sidecar_health_ok,
+            wddm_has_fresh_valid_sample=wddm_has_fresh_valid_sample,
+            wddm_failure_reason=wddm_failure_reason,
+            wddm_snapshot=wddm_snapshot,
+            listener_qualifier=listener_qualifier,
+            listener_kwargs=listener_kwargs,
+            poll_interval_seconds=poll_interval_seconds,
+            monotonic=monotonic,
+            sleep_fn=sleep_fn,
+        )
 
     started = monotonic()
     deadline = started + deadline_seconds
@@ -279,3 +301,172 @@ def wait_for_holostate_readiness(
         sidecar_listener,
         stable_listener_confirmation,
     )
+
+
+def _wait_for_resilient_holostate_readiness(
+    *,
+    sidecar_pid: int,
+    stable_pids: frozenset[int],
+    stable_port: int,
+    sidecar_port: int,
+    deadline_seconds: float,
+    process_alive: Callable[[], bool],
+    stable_health_ok: Callable[[], bool],
+    sidecar_health_ok: Callable[[], bool],
+    wddm_has_fresh_valid_sample: Callable[[], bool],
+    wddm_failure_reason: Callable[[], str | None],
+    wddm_snapshot: Callable[[], dict[str, Any]] | None,
+    listener_qualifier: Callable[..., ListenerOwnershipEvidence],
+    listener_kwargs: dict[str, Any] | None,
+    poll_interval_seconds: float,
+    monotonic: Callable[[], float],
+    sleep_fn: Callable[[float], None],
+) -> HoloStateReadinessEvidence:
+    """Admit only a fresh exact-PID sample and requalify after transient gaps.
+
+    Listener subprocesses remain outside the model-load poll loop.  If WDDM
+    freshness is lost while the bounded listener queries are running, the
+    method waits for recovery using cheap health/process checks and repeats the
+    complete listener qualification before admission.
+    """
+
+    started = monotonic()
+    deadline = started + deadline_seconds
+    polls = 0
+    last_process_alive = False
+    last_stable_health = False
+    last_sidecar_health = False
+    last_wddm_fresh = False
+
+    def fail(reason: str, *, extra: dict[str, Any] | None = None) -> None:
+        snapshot: dict[str, Any] | None = None
+        if wddm_snapshot is not None:
+            try:
+                snapshot = dict(wddm_snapshot())
+            except Exception as exc:  # pragma: no cover - defensive evidence path
+                snapshot = {"snapshot_error": str(exc)}
+        raise HoloStateReadinessError(
+            reason,
+            evidence={
+                "poll_count": polls,
+                "readiness_seconds": max(0.0, monotonic() - started),
+                "process_alive": last_process_alive,
+                "stable_health_ok": last_stable_health,
+                "sidecar_health_ok": last_sidecar_health,
+                "wddm_attributed": last_wddm_fresh,
+                "wddm_fresh": last_wddm_fresh,
+                "wddm_snapshot": snapshot,
+                **(extra or {}),
+            },
+        )
+
+    def refresh_cheap_conditions() -> float:
+        nonlocal polls, last_process_alive, last_stable_health
+        nonlocal last_sidecar_health, last_wddm_fresh
+        polls += 1
+        last_process_alive = process_alive()
+        if not last_process_alive:
+            fail("sidecar-process-exited-before-readiness")
+        last_stable_health = stable_health_ok()
+        if not last_stable_health:
+            fail("stable-health-lost-before-readiness")
+        failure = wddm_failure_reason()
+        if failure:
+            fail(failure)
+        last_sidecar_health = sidecar_health_ok()
+        last_wddm_fresh = wddm_has_fresh_valid_sample()
+        return monotonic()
+
+    def wait_until_fresh() -> None:
+        while True:
+            now = refresh_cheap_conditions()
+            if last_sidecar_health and last_wddm_fresh:
+                if now >= deadline:
+                    fail("holostate-sidecar-readiness-timeout")
+                return
+            if now >= deadline:
+                fail("holostate-sidecar-readiness-timeout")
+            sleep_fn(min(poll_interval_seconds, max(0.0, deadline - now)))
+
+    listener_options = dict(listener_kwargs or {})
+    maximum_total_window = listener_options.pop(
+        "maximum_total_query_window_seconds", None
+    )
+    while True:
+        wait_until_fresh()
+        ownership_deadline = deadline
+        if maximum_total_window is not None:
+            total_window = float(maximum_total_window)
+            if total_window <= 0:
+                raise ValueError("maximum total listener-query window must be positive")
+            ownership_deadline = min(deadline, monotonic() + total_window)
+
+        try:
+            stable_listener, sidecar_listener = qualify_runtime_ownership(
+                stable_port=stable_port,
+                stable_pids=stable_pids,
+                sidecar_port=sidecar_port,
+                sidecar_pid=sidecar_pid,
+                listener_qualifier=listener_qualifier,
+                listener_kwargs=listener_options,
+                deadline_at=ownership_deadline,
+                monotonic=monotonic,
+            )
+        except HoloStateReadinessError as exc:
+            fail(str(exc), extra=exc.evidence)
+
+        refresh_cheap_conditions()
+        if not last_sidecar_health:
+            fail("sidecar-health-lost-during-listener-qualification")
+        if not last_wddm_fresh:
+            # A bounded transient gap is not a rejection.  Recover first, then
+            # repeat both listener samples so admission evidence is fresh as a
+            # single boundary.
+            continue
+
+        remaining = ownership_deadline - monotonic()
+        if remaining <= 0:
+            fail("holostate-listener-qualification-timeout")
+        confirmation_options = dict(listener_options)
+        confirmation_options["max_window_seconds"] = min(
+            float(confirmation_options.get("max_window_seconds", remaining)),
+            remaining,
+        )
+        stable_listener_confirmation = listener_qualifier(
+            stable_port,
+            set(stable_pids),
+            **confirmation_options,
+        )
+        try:
+            _require_listener_evidence(
+                "stable_confirmation", stable_listener_confirmation
+            )
+        except HoloStateReadinessError as exc:
+            fail(
+                str(exc),
+                extra={
+                    "stable_listener": stable_listener.to_dict(),
+                    "sidecar_listener": sidecar_listener.to_dict(),
+                    **exc.evidence,
+                },
+            )
+
+        refresh_cheap_conditions()
+        if not last_sidecar_health:
+            fail("sidecar-health-lost-after-listener-qualification")
+        if not last_wddm_fresh:
+            continue
+        return HoloStateReadinessEvidence(
+            True,
+            sidecar_pid,
+            stable_pids,
+            polls,
+            max(0.0, monotonic() - started),
+            last_process_alive,
+            last_stable_health,
+            last_sidecar_health,
+            True,
+            stable_listener,
+            sidecar_listener,
+            stable_listener_confirmation,
+        )

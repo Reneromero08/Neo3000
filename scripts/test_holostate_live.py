@@ -46,6 +46,16 @@ class RuntimePathTests(unittest.TestCase):
                 holo.claim_catalytic_runtime_json_once(path, {"owner": "other"})
             self.assertEqual(json.loads(path.read_text(encoding="utf-8")), {"owner": "test"})
 
+    def test_catalytic_claim_removes_owned_partial_on_base_exception(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, mock.patch.object(
+            holo, "CATALYTIC_STATE_ROOT", Path(temp)
+        ):
+            path = Path(temp) / "attempt-v2.json"
+            with mock.patch.object(holo.os, "fsync", side_effect=KeyboardInterrupt):
+                with self.assertRaises(KeyboardInterrupt):
+                    holo.claim_catalytic_runtime_json_once(path, {"status": "running"})
+            self.assertFalse(path.exists())
+
     def test_preclaim_memory_ledger_is_bounded_and_has_no_file(self) -> None:
         ledger = holo.BoundedInMemoryLedger(max_bytes=2048, max_records=2)
         record = {"reasoning_fragment_length": 5, "reasoning_fragment_sha256": "A" * 64}
@@ -156,9 +166,15 @@ class StaticCapabilityTests(unittest.TestCase):
             set(subparsers.choices),
             {
                 "start", "stop", "status", "warm", "branch", "list", "evict",
-                "audit-catalytic-swarm-0",
+                "audit-catalytic-swarm-0", "audit-catalytic-swarm-0-v2",
             },
         )
+
+    def test_catalytic_swarm_v1_command_is_hard_retired(self) -> None:
+        with self.assertRaises(holo.NeoLoopError):
+            holo.command_audit_catalytic_swarm_0(
+                SimpleNamespace(binary="x", model="y")
+            )
 
     def test_worker_protocol_v2_command_is_hard_retired(self) -> None:
         with self.assertRaises(holo.NeoLoopError):
@@ -289,6 +305,59 @@ class ContractTests(unittest.TestCase):
             with mock.patch.object(neo_loop, "LOCK_PATH", path):
                 with self.assertRaises(neo_loop.NeoLoopError):
                     neo_loop.verify_lock(self.evaluator)
+
+    def test_lock_rejects_omitted_or_injected_protected_hash_path(self) -> None:
+        baseline = neo_loop.make_lock(self.evaluator)
+        required_path = "scripts/holostate_live.py"
+        self.assertIn(required_path, baseline["protected_file_hashes"])
+        mutations = []
+        omitted = copy.deepcopy(baseline)
+        omitted["protected_file_hashes"].pop(required_path)
+        mutations.append(omitted)
+        injected = copy.deepcopy(baseline)
+        injected["protected_file_hashes"]["injected/extra.py"] = "0" * 64
+        mutations.append(injected)
+        for lock in mutations:
+            with self.subTest(paths=sorted(lock["protected_file_hashes"])):
+                with mock.patch.object(neo_loop, "load_json", return_value=lock):
+                    with self.assertRaisesRegex(
+                        neo_loop.NeoLoopError, "protected hash surface"
+                    ):
+                        neo_loop.verify_lock(self.evaluator)
+
+    def test_lock_rejects_reauthored_duplicated_evaluator_lists(self) -> None:
+        baseline = neo_loop.make_lock(self.evaluator)
+        for key in (
+            "model_identity",
+            "stable_launch",
+            "candidate_launch",
+            "protected_paths",
+            "candidate_editable_paths",
+            "controller_files",
+        ):
+            with self.subTest(key=key):
+                lock = copy.deepcopy(baseline)
+                if isinstance(lock[key], list):
+                    lock[key] = list(lock[key]) + ["injected"]
+                else:
+                    lock[key] = {**lock[key], "injected": True}
+                with mock.patch.object(neo_loop, "load_json", return_value=lock):
+                    with self.assertRaisesRegex(neo_loop.NeoLoopError, key):
+                        neo_loop.verify_lock(self.evaluator)
+
+    def test_lock_generation_and_verification_reject_missing_protected_file(self) -> None:
+        missing = "injected/definitely-missing.py"
+        evaluator = copy.deepcopy(self.evaluator)
+        evaluator["protected_paths"]["files"].append(missing)
+        with self.assertRaisesRegex(neo_loop.NeoLoopError, "missing"):
+            neo_loop.make_lock(evaluator)
+
+        lock = neo_loop.make_lock(self.evaluator)
+        lock["protected_paths"] = evaluator["protected_paths"]["files"]
+        lock["protected_file_hashes"][missing] = "MISSING"
+        with mock.patch.object(neo_loop, "load_json", return_value=lock):
+            with self.assertRaisesRegex(neo_loop.NeoLoopError, "missing"):
+                neo_loop.verify_lock(evaluator)
 
     def test_unlocked_selected_budget_mutation_rejects_before_launch(self) -> None:
         lock = neo_loop.make_lock(self.evaluator)
@@ -2403,6 +2472,11 @@ class CatalyticSwarm0LiveTests(unittest.TestCase):
         cls.contract = holo.validate_catalytic_swarm_0(
             cls.evaluator["catalytic_swarm_0"], cls.protocol_v4
         )
+        cls.v2_contract = holo.validate_catalytic_swarm_0_v2(
+            cls.evaluator["catalytic_swarm_0_v2"],
+            cls.contract,
+            cls.protocol_v4,
+        )
 
     def patch_paths(self, stack: ExitStack, root: Path) -> dict[str, Path]:
         names = {
@@ -2436,6 +2510,38 @@ class CatalyticSwarm0LiveTests(unittest.TestCase):
         )
         return paths
 
+    def patch_v2_paths(self, stack: ExitStack, root: Path) -> dict[str, Path]:
+        names = {
+            "control": "control-qualification-v2.json",
+            "readiness": "readiness-v2.json",
+            "canary": "parser-canary-v2.json",
+            "attempt": "attempt-v2.json",
+            "result": "result-v2.json",
+            "ledger": "ledger-v2.jsonl",
+            "blackboard": "blackboard-v2.json",
+        }
+        paths = {key: root / value for key, value in names.items()}
+        stack.enter_context(mock.patch.object(holo, "CATALYTIC_STATE_ROOT", root))
+        attributes = {
+            "control": "CATALYTIC_V2_CONTROL_QUALIFICATION_PATH",
+            "readiness": "CATALYTIC_V2_READINESS_PATH",
+            "canary": "CATALYTIC_V2_PARSER_CANARY_PATH",
+            "attempt": "CATALYTIC_V2_ATTEMPT_PATH",
+            "result": "CATALYTIC_V2_RESULT_PATH",
+            "ledger": "CATALYTIC_V2_LEDGER_PATH",
+            "blackboard": "CATALYTIC_V2_BLACKBOARD_PATH",
+        }
+        for key, attribute in attributes.items():
+            stack.enter_context(mock.patch.object(holo, attribute, paths[key]))
+        stack.enter_context(
+            mock.patch.object(
+                holo,
+                "CATALYTIC_V2_ARTIFACT_PATHS",
+                tuple(paths[key] for key in names),
+            )
+        )
+        return paths
+
     def preclaim(self, root: Path) -> dict:
         return {
             "evaluator": self.evaluator,
@@ -2453,6 +2559,32 @@ class CatalyticSwarm0LiveTests(unittest.TestCase):
             "binary_identity": {"sha256": holo.EXPECTED_BINARY_SHA256},
             "model_identity": {"sha256": holo.EXPECTED_MODEL_SHA256},
             "stable_template_sha256": self.contract["transport"]["chat_template_identity"]["sha256"],
+        }
+
+    def preclaim_v2(self, root: Path) -> dict:
+        return {
+            "evaluator": self.evaluator,
+            "live_contract": self.evaluator["holostate_live_contract"],
+            "protocol_v4": self.protocol_v4,
+            "contract": self.v2_contract,
+            "lock": {"catalytic_swarm_0_v2_sha256": "B" * 64},
+            "prior_before": {"v4": "preserved"},
+            "predecessor_v1_artifacts": {"v1": "preserved"},
+            "frozen_root_source_ref": self.v2_contract["predecessor_v1"][
+                "integration_commit"
+            ],
+            "frozen_root_sources": [],
+            "stable_branch": "main",
+            "stable_head": "HEAD",
+            "stable_status": "",
+            "candidate_root": root / "candidate",
+            "candidate_head": "CANDIDATE",
+            "candidate_status": "",
+            "binary_identity": {"sha256": holo.EXPECTED_BINARY_SHA256},
+            "model_identity": {"sha256": holo.EXPECTED_MODEL_SHA256},
+            "stable_template_sha256": self.v2_contract["transport"][
+                "chat_template_identity"
+            ]["sha256"],
         }
 
     @staticmethod
@@ -2579,6 +2711,619 @@ class CatalyticSwarm0LiveTests(unittest.TestCase):
             holo.validate_catalytic_swarm_0(
                 changed["catalytic_swarm_0"], self.protocol_v4
             )
+
+    def test_v2_validator_rejects_any_undeclared_inherited_change(self) -> None:
+        changed = copy.deepcopy(self.v2_contract)
+        changed["plan"]["worker_seeds"]["cs0-w01"] += 1
+        with self.assertRaisesRegex(holo.NeoLoopError, "inherited v1 law"):
+            holo.validate_catalytic_swarm_0_v2(
+                changed,
+                self.contract,
+                self.protocol_v4,
+            )
+
+    def test_v2_frozen_root_uses_exact_v1_integration_bytes(self) -> None:
+        raw, sources = holo.compose_prefix(
+            "A",
+            self.protocol_v4,
+            source_ref=self.v2_contract["predecessor_v1"]["integration_commit"],
+        )
+        self.assertEqual(
+            holo.sha256_bytes(raw),
+            self.v2_contract["root_and_prior_evidence"]["canonical_prefix_sha256"],
+        )
+        self.assertEqual(
+            [item["path"] for item in sources],
+            self.protocol_v4["roots"]["A"]["sources"],
+        )
+
+    def test_v2_control_failure_creates_only_v2_control_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            root = Path(temp)
+            paths = self.patch_v2_paths(stack, root)
+            v1_sentinel = root / "control-qualification-v1.json"
+            v1_sentinel.write_text("immutable-v1", encoding="utf-8")
+            stack.enter_context(mock.patch.object(
+                holo,
+                "prepare_catalytic_swarm_0_v2_claim",
+                return_value=self.preclaim_v2(root),
+            ))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "qualify_catalytic_control_outputs",
+                return_value={
+                    "passed": False,
+                    "reasons": ["forced"],
+                    "generation_executed": False,
+                },
+            ))
+            result = holo.run_catalytic_swarm_0_audit(
+                SimpleNamespace(binary="x", model="y"), version=2
+            )
+            self.assertEqual(result["control_qualification_v2"], "reject")
+            self.assertEqual(result["catalytic_swarm_0_v2"], "instrumentation-reject")
+            self.assertTrue(paths["control"].is_file())
+            self.assertFalse(any(paths[key].exists() for key in list(paths)[1:]))
+            self.assertEqual(v1_sentinel.read_text(encoding="utf-8"), "immutable-v1")
+
+    def test_v2_readiness_nonpass_creates_no_canary_or_attempt(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            root = Path(temp)
+            paths = self.patch_v2_paths(stack, root)
+            stack.enter_context(mock.patch.object(
+                holo,
+                "prepare_catalytic_swarm_0_v2_claim",
+                return_value=self.preclaim_v2(root),
+            ))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "qualify_catalytic_control_outputs",
+                return_value={
+                    "passed": True,
+                    "reasons": [],
+                    "generation_executed": False,
+                },
+            ))
+            stack.enter_context(mock.patch.object(
+                holo, "query_listener_pids", return_value=self.query({42, 43})
+            ))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "readiness_v3_no_sidecar_cleanup",
+                return_value={"not_launched": True},
+            ))
+            stack.enter_context(mock.patch.object(
+                holo,
+                "cleanup_integrity",
+                return_value={"passed": True, "reasons": []},
+            ))
+            result = holo.run_catalytic_swarm_0_audit(
+                SimpleNamespace(binary="x", model="y"), version=2
+            )
+            self.assertIn(result["readiness_v2"], {"reject", "inconclusive"})
+            self.assertEqual(result["catalytic_swarm_0_v2"], "inconclusive")
+            self.assertTrue(paths["control"].is_file())
+            self.assertTrue(paths["readiness"].is_file())
+            self.assertFalse(paths["canary"].exists())
+            self.assertFalse(paths["attempt"].exists())
+
+    def test_resilient_guarded_uses_named_canary_and_worker_boundaries(self) -> None:
+        sidecar = object.__new__(holo.LiveSidecar)
+        sidecar.wddm_policy = holo.WddmTelemetryPolicy()
+        sidecar.require_active = mock.Mock()
+        sidecar.exact_ownership = mock.Mock(return_value={"passed": True})
+        sidecar.wait_for_fresh_wddm = mock.Mock(return_value={"telemetry": {}})
+
+        self.assertEqual(
+            sidecar.guarded("catalytic-parser-canary", lambda: "canary", timeout=1),
+            "canary",
+        )
+        self.assertEqual(
+            sidecar.guarded("cs0-w01", lambda: "worker", timeout=1),
+            "worker",
+        )
+        boundaries = [call.args[0] for call in sidecar.wait_for_fresh_wddm.call_args_list]
+        self.assertEqual(
+            boundaries,
+            [
+                "before-parser-canary",
+                "after-parser-canary",
+                "before-each-worker-request:cs0-w01",
+                "after-each-worker-request:cs0-w01",
+            ],
+        )
+
+    def test_fresh_wddm_failure_records_compact_named_boundary_evidence(self) -> None:
+        class Sampler:
+            @staticmethod
+            def telemetry_snapshot():
+                return {
+                    "failure_reason": "candidate-vram-telemetry-lost",
+                    "admission_ready": False,
+                    "transition_events": [{"kind": "hard-failure"}],
+                    "freshness_boundaries": [{"boundary": "duplicated"}],
+                }
+
+        cases = (
+            ("timeout-boundary", None, time.monotonic() - 1.0),
+            (
+                "hard-failure-boundary",
+                holo.NeoLoopError("candidate-vram-telemetry-lost"),
+                None,
+            ),
+        )
+        for boundary, active_error, deadline_at in cases:
+            with self.subTest(boundary=boundary):
+                sidecar = object.__new__(holo.LiveSidecar)
+                sidecar.wddm_policy = holo.WddmTelemetryPolicy()
+                sidecar.sampler = Sampler()
+                sidecar.wddm_freshness_boundaries = []
+                sidecar.last_exact_ownership = None
+                sidecar.require_active = mock.Mock(side_effect=active_error)
+                sidecar.exact_ownership = mock.Mock(return_value={"passed": True})
+
+                with self.assertRaises(holo.HoloStateReadinessError) as caught:
+                    sidecar.wait_for_fresh_wddm(
+                        boundary,
+                        0.1,
+                        deadline_at=deadline_at,
+                    )
+
+                record = caught.exception.evidence["freshness_boundary"]
+                self.assertEqual(record["boundary"], boundary)
+                self.assertFalse(record["passed"])
+                self.assertEqual(sidecar.wddm_freshness_boundaries, [record])
+                self.assertNotIn("transition_events", record["telemetry"])
+                self.assertNotIn("freshness_boundaries", record["telemetry"])
+                self.assertEqual(
+                    record["telemetry"]["failure_reason"],
+                    "candidate-vram-telemetry-lost",
+                )
+
+    def test_completed_request_boundary_error_retains_value(self) -> None:
+        completed = {"accepted": True, "completion_tokens": 5}
+        sidecar = object.__new__(holo.LiveSidecar)
+        sidecar.wddm_policy = holo.WddmTelemetryPolicy()
+        sidecar.require_active = mock.Mock()
+        sidecar.exact_ownership = mock.Mock(return_value={"passed": True})
+        sidecar.wait_for_fresh_wddm = mock.Mock(
+            side_effect=[
+                {"passed": True},
+                holo.HoloStateReadinessError("post-boundary-failed"),
+            ]
+        )
+
+        with self.assertRaises(holo.CompletedRequestBoundaryError) as caught:
+            sidecar.guarded(
+                "catalytic-parser-canary",
+                lambda: completed,
+                timeout=1,
+            )
+
+        error = caught.exception
+        self.assertIs(error.completed_value, completed)
+        self.assertTrue(error.request_completed)
+        self.assertEqual(error.request_name, "catalytic-parser-canary")
+        self.assertIsInstance(error.boundary_error, holo.HoloStateReadinessError)
+        self.assertEqual(
+            [call.args[0] for call in sidecar.wait_for_fresh_wddm.call_args_list],
+            ["before-parser-canary", "after-parser-canary"],
+        )
+
+    def test_legacy_guarded_deadline_starts_after_pre_request_gates(self) -> None:
+        sidecar = object.__new__(holo.LiveSidecar)
+        sidecar.wddm_policy = None
+        active_calls = 0
+
+        def require_active(**_kwargs):
+            nonlocal active_calls
+            active_calls += 1
+            if active_calls == 1:
+                time.sleep(0.1)
+
+        sidecar.require_active = mock.Mock(side_effect=require_active)
+        sidecar.exact_ownership = mock.Mock(return_value={"passed": True})
+        self.assertEqual(
+            sidecar.guarded("legacy-budget", lambda: "complete", timeout=0.05),
+            "complete",
+        )
+        self.assertEqual(active_calls, 2)
+
+    def test_resilient_retirement_requires_exact_empty_pid_samples(self) -> None:
+        cleanup = self.cleanup()
+        cleanup.update({
+            "wddm_resilience_active": True,
+            "wddm": {"failure_reason": None},
+            "retirement_samples": [
+                {
+                    "available": False,
+                    "bytes": None,
+                    "error": "no-matching-pid-instance",
+                    "instances": [],
+                }
+                for _ in range(5)
+            ],
+        })
+        self.assertTrue(holo.cleanup_integrity(cleanup, {42})["passed"])
+
+        query_failed = copy.deepcopy(cleanup)
+        query_failed["retirement_samples"][2]["error"] = "Get-Counter timeout"
+        gate = holo.cleanup_integrity(query_failed, {42})
+        self.assertFalse(gate["passed"])
+        self.assertIn("WDDM-retirement-query-unproven", gate["reasons"])
+
+    def test_v2_validator_rejects_identity_policy_path_and_retry_mutations(self) -> None:
+        mutations = (
+            (("schema_version",), 2.0),
+            (("schema_version",), True),
+            (
+                (
+                    "readiness_control",
+                    "wddm_transient_gap_policy",
+                    "transition_event_limit",
+                ),
+                511,
+            ),
+            (
+                ("one_shot", "result_path"),
+                "state/catalytic_swarm/result-v3.json",
+            ),
+            (("causal_intervention", "automatic_retry_allowed"), True),
+            (("one_shot", "capability_retry_allowed"), True),
+        )
+        for keys, value in mutations:
+            with self.subTest(keys=keys, value=value):
+                changed = copy.deepcopy(self.v2_contract)
+                target = changed
+                for key in keys[:-1]:
+                    target = target[key]
+                target[keys[-1]] = value
+                with self.assertRaises(holo.NeoLoopError):
+                    holo.validate_catalytic_swarm_0_v2(
+                        changed,
+                        self.contract,
+                        self.protocol_v4,
+                    )
+
+    def terminal_wddm_cleanup(self, *, recovered_gap_count: int = 1) -> dict:
+        policy = self.v2_contract["readiness_control"][
+            "wddm_transient_gap_policy"
+        ]
+        telemetry_policy = holo.WddmTelemetryPolicy(
+            initial_grace_seconds=policy["initial_attribution_grace_seconds"],
+            max_consecutive_failures=policy[
+                "maximum_tolerated_consecutive_unavailable_queries"
+            ],
+            max_valid_sample_gap_seconds=policy[
+                "maximum_valid_sample_gap_seconds"
+            ],
+            admission_freshness_seconds=policy["admission_freshness_seconds"],
+        )
+        tracker = neo_loop.ResilientWddmTelemetry(
+            ceiling_bytes=policy["memory_ceiling_mib"] * holo.MIB,
+            policy=telemetry_policy,
+            started_at=0.0,
+            transition_event_limit=policy["transition_event_limit"],
+        )
+        exact_instance = "pid_99_luid_0x00000000_phys_0_eng_0_engtype_3d"
+        observed_at = 0.1
+        tracker.observe_valid(
+            bytes_used=1234,
+            instances=(exact_instance,),
+            now=observed_at,
+        )
+        for index in range(recovered_gap_count):
+            observed_at += 0.01
+            tracker.observe_unavailable(
+                f"Get-Counter télémétrie indisponible ☃ {index}",
+                now=observed_at,
+            )
+            observed_at += 0.01
+            tracker.observe_valid(
+                bytes_used=1234,
+                instances=(exact_instance,),
+                now=observed_at,
+            )
+        snapshot = tracker.snapshot(now=observed_at + 0.001).to_dict()
+        snapshot.update({
+            "sampler_stop_attempted": True,
+            "sampler_stop_timed_out": False,
+            "sampler_stop_failure_reason": None,
+            "sampler_thread_alive": False,
+        })
+        boundary_telemetry = {
+            key: snapshot[key]
+            for key in (
+                "failure_reason",
+                "admission_ready",
+                "has_valid_sample",
+                "consecutive_failures",
+                "transient_gap_active",
+                "last_valid_sample_age_seconds",
+                "peak_bytes",
+            )
+        }
+        boundary_names = [
+            "readiness-admission",
+            "before-parser-canary",
+            "after-parser-canary",
+            "before-capability-attempt",
+            *[
+                boundary
+                for worker_id in self.v2_contract["plan"][
+                    "fixed_execution_order"
+                ]
+                for boundary in (
+                    f"before-each-worker-request:{worker_id}",
+                    f"after-each-worker-request:{worker_id}",
+                )
+            ],
+            "before-teardown",
+        ]
+        boundaries = [
+            {
+                "boundary": boundary,
+                "passed": True,
+                "telemetry": dict(boundary_telemetry),
+            }
+            for boundary in boundary_names
+        ]
+        return {
+            "pid": 99,
+            "wddm_resilience_active": True,
+            "wddm": {
+                "candidate_pid": 99,
+                "source": (
+                    "Windows GPU Process Memory Dedicated Usage (PID-filtered)"
+                ),
+                "sample_interval_seconds": policy["sample_interval_seconds"],
+                "ceiling_mib": policy["memory_ceiling_mib"],
+                "resilience_policy": {
+                    "initial_grace_seconds": policy[
+                        "initial_attribution_grace_seconds"
+                    ],
+                    "max_consecutive_failures": policy[
+                        "maximum_tolerated_consecutive_unavailable_queries"
+                    ],
+                    "max_valid_sample_gap_seconds": policy[
+                        "maximum_valid_sample_gap_seconds"
+                    ],
+                    "admission_freshness_seconds": policy[
+                        "admission_freshness_seconds"
+                    ],
+                },
+                "telemetry_snapshot": snapshot,
+                "freshness_boundary_count": len(boundaries),
+                "freshness_boundaries": boundaries,
+            },
+        }
+
+    def test_terminal_wddm_reconciliation_accepts_tuple_unicode_and_fails_closed(self) -> None:
+        cleanup = self.terminal_wddm_cleanup()
+        events = cleanup["wddm"]["telemetry_snapshot"]["transition_events"]
+        self.assertIsInstance(events, tuple)
+        self.assertIn("☃", events[0]["reason"])
+        accepted = holo.reconcile_v2_terminal_wddm(self.v2_contract, cleanup)
+        self.assertTrue(accepted["passed"], accepted["reasons"])
+
+        mutations = {
+            "inconsistent": (
+                "transition_ledger_sha256",
+                "0" * 64,
+                "wddm-terminal:transition_ledger_sha256",
+            ),
+            "truncated": (
+                "transition_events_omitted",
+                1,
+                "wddm-terminal:transition_events_omitted",
+            ),
+            "active-gap": (
+                "transient_gap_active",
+                True,
+                "wddm-terminal:transient_gap_active",
+            ),
+        }
+        for name, (field, value, expected_reason) in mutations.items():
+            with self.subTest(name=name):
+                changed = copy.deepcopy(cleanup)
+                changed["wddm"]["telemetry_snapshot"][field] = value
+                gate = holo.reconcile_v2_terminal_wddm(
+                    self.v2_contract,
+                    changed,
+                )
+                self.assertFalse(gate["passed"])
+                self.assertIn(expected_reason, gate["reasons"])
+
+    def final_artifact_fixture(self) -> tuple[dict, dict, dict, list[dict]]:
+        plan = holo.build_catalytic_swarm_0_plan()
+        board_contract = self.v2_contract["blackboard"]
+        board = holo.AppendOnlyBlackboard(
+            max_entries=board_contract["max_entries"],
+            max_entry_bytes=board_contract["max_entry_bytes"],
+            max_references=board_contract["max_references"],
+            max_parents=board_contract["max_parents"],
+            max_artifacts=board_contract["max_artifacts"],
+        )
+
+        def worker_runner(spec, _context):
+            return holo.expected_control_contribution(spec).to_dict()
+
+        def verifier(spec, _contribution, _context):
+            return holo.VerificationReceipt(
+                worker_id=spec.worker_id,
+                passed=True,
+                checks=holo.REQUIRED_VERIFICATION_CHECKS,
+                artifact_refs=(),
+                verifier=holo.VERIFIER_ID,
+            )
+
+        swarm = holo.run_swarm(
+            plan,
+            worker_runner=worker_runner,
+            verifier=verifier,
+            blackboard=board,
+        )
+        persisted_board = board.snapshot()
+        worker_results = []
+        ledger_records: list[dict] = []
+        request_ranges = {}
+        global_index = 0
+        for execution in swarm.executions:
+            spec = execution.spec
+            summary = {
+                "record_type": "worker-summary",
+                "worker_id": spec.worker_id,
+                "ordinal": spec.ordinal,
+                "phase": spec.phase,
+                "lease_id": execution.lease_id,
+                "assigned_parent_worker_ids": list(spec.parent_worker_ids),
+                "visible_blackboard_entry_ids": list(
+                    execution.visible_entry_ids
+                ),
+                "verification_receipt": execution.receipt.to_dict(),
+                "created_blackboard_entry_id": execution.entry_id,
+                "blackboard_head_hash": execution.blackboard_head_hash,
+            }
+            worker_results.append({
+                "worker_id": spec.worker_id,
+                "ordinal": spec.ordinal,
+                "phase": spec.phase,
+                "worker_summary": summary,
+            })
+            global_index += 1
+            first_index = global_index
+            ledger_records.append({
+                "global_record_index": global_index,
+                "request_sequence_index": spec.ordinal,
+                "request_label": spec.worker_id,
+                "record_type": "stream-event",
+            })
+            global_index += 1
+            ledger_records.append({
+                **summary,
+                "global_record_index": global_index,
+                "request_sequence_index": spec.ordinal,
+                "request_label": spec.worker_id,
+            })
+            request_ranges[spec.worker_id] = {
+                "request_sequence_index": spec.ordinal,
+                "first_record_index": first_index,
+                "last_record_index": global_index,
+            }
+        ledger_contract = self.v2_contract["stream_ledger"]
+        result = {
+            "blackboard": copy.deepcopy(persisted_board),
+            "worker_results": worker_results,
+            "swarm": swarm.to_dict(),
+            "stream_ledger": {
+                "failure": None,
+                "within_limits": True,
+                "sha256": "A" * 64,
+                "path": ledger_contract["path"],
+                "max_bytes": ledger_contract["max_bytes"],
+                "max_records": ledger_contract["max_records"],
+                "size_bytes": 1,
+                "record_count": len(ledger_records),
+                "request_ranges": request_ranges,
+            },
+        }
+        return result, persisted_board, board.snapshot(), ledger_records
+
+    def test_final_artifact_reconciliation_rejects_incomplete_proof_surfaces(self) -> None:
+        result, persisted, in_memory, ledger_records = self.final_artifact_fixture()
+        base = holo.reconcile_catalytic_final_artifacts(
+            self.v2_contract,
+            result,
+            persisted,
+            in_memory,
+            ledger_records,
+        )
+        self.assertTrue(base["passed"], base["reasons"])
+
+        genesis = holo.AppendOnlyBlackboard(max_entries=32).snapshot()
+        genesis_result = copy.deepcopy(result)
+        genesis_result["blackboard"] = copy.deepcopy(genesis)
+        gate = holo.reconcile_catalytic_final_artifacts(
+            self.v2_contract,
+            genesis_result,
+            genesis,
+            genesis,
+            ledger_records,
+        )
+        self.assertFalse(gate["passed"])
+        self.assertTrue(gate["blackboard_chain_valid"])
+        self.assertIn("blackboard-entry-count", gate["reasons"])
+
+        stale_result = copy.deepcopy(result)
+        stale_result["blackboard"] = genesis
+        gate = holo.reconcile_catalytic_final_artifacts(
+            self.v2_contract,
+            stale_result,
+            persisted,
+            in_memory,
+            ledger_records,
+        )
+        self.assertFalse(gate["passed"])
+        self.assertIn("persisted-result-blackboard-mismatch", gate["reasons"])
+
+        incomplete = copy.deepcopy(result)
+        incomplete["worker_results"].pop()
+        gate = holo.reconcile_catalytic_final_artifacts(
+            self.v2_contract,
+            incomplete,
+            persisted,
+            in_memory,
+            ledger_records,
+        )
+        self.assertFalse(gate["passed"])
+        self.assertIn("worker-result-count", gate["reasons"])
+
+        missing_summary = copy.deepcopy(ledger_records)
+        missing_summary[1]["record_type"] = "stream-event"
+        gate = holo.reconcile_catalytic_final_artifacts(
+            self.v2_contract,
+            result,
+            persisted,
+            in_memory,
+            missing_summary,
+        )
+        self.assertFalse(gate["passed"])
+        self.assertIn("stream-ledger-worker-proof:cs0-w01", gate["reasons"])
+
+    def test_large_terminal_wddm_evidence_is_single_copy_and_under_ceiling(self) -> None:
+        cleanup = self.terminal_wddm_cleanup(recovered_gap_count=170)
+        terminal_gate = holo.reconcile_v2_terminal_wddm(
+            self.v2_contract,
+            cleanup,
+        )
+        self.assertTrue(terminal_gate["passed"], terminal_gate["reasons"])
+        self.assertEqual(terminal_gate["transition_event_count"], 510)
+
+        result, _persisted, _in_memory, _ledger_records = (
+            self.final_artifact_fixture()
+        )
+        result["cleanup"] = cleanup
+        result["final_sidecar_telemetry"] = holo.compact_wddm_telemetry(
+            cleanup["wddm"]
+        )
+        self.assertNotIn(
+            "transition_events",
+            result["final_sidecar_telemetry"]["telemetry_snapshot"],
+        )
+        self.assertNotIn("freshness_boundaries", result["final_sidecar_telemetry"])
+
+        def count_key(value, key):
+            if isinstance(value, dict):
+                return (key in value) + sum(
+                    count_key(item, key) for item in value.values()
+                )
+            if isinstance(value, (list, tuple)):
+                return sum(count_key(item, key) for item in value)
+            return 0
+
+        self.assertEqual(count_key(result, "transition_events"), 1)
+        self.assertEqual(count_key(result, "freshness_boundaries"), 1)
+        self.assertLess(len(holo.canonical_json_bytes(result)), 2 * holo.MIB)
 
     def test_validator_rejects_weakened_nested_control_laws(self) -> None:
         mutations = (
@@ -2933,7 +3678,17 @@ class CatalyticSwarm0LiveTests(unittest.TestCase):
         result = {"worker_results": []}
         board = holo.AppendOnlyBlackboard(max_entries=32)
         ledger = Ledger()
-        with ExitStack() as stack:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            root = Path(temp)
+            v1_blackboard = root / "blackboard-v1.json"
+            v2_blackboard = root / "blackboard-v2.json"
+            v2_result = root / "result-v2.json"
+            v1_blackboard.write_text("immutable-v1", encoding="utf-8")
+            writes: list[Path] = []
+
+            def record_write(path, _value, **_kwargs):
+                writes.append(Path(path))
+
             stack.enter_context(mock.patch.object(
                 holo, "run_worker_v4_chat_request", return_value={"accepted": True},
             ))
@@ -2948,7 +3703,7 @@ class CatalyticSwarm0LiveTests(unittest.TestCase):
                 return_value=(Transport(), contribution),
             ))
             stack.enter_context(mock.patch.object(
-                holo, "write_catalytic_runtime_json", return_value=None,
+                holo, "write_catalytic_runtime_json", side_effect=record_write,
             ))
             swarm = holo.execute_catalytic_swarm_sequence(
                 sidecar,
@@ -2960,13 +3715,19 @@ class CatalyticSwarm0LiveTests(unittest.TestCase):
                 ledger,
                 board,
                 result,
+                result_path=v2_result,
+                blackboard_path=v2_blackboard,
             )
+            v1_blackboard_after = v1_blackboard.read_text(encoding="utf-8")
         self.assertNotEqual(swarm.verdict, "reviewable-accept")
         self.assertEqual(result["failure_classification"], "capability-reject")
         self.assertEqual(len(result["worker_results"]), 1)
         self.assertFalse(result["worker_failure"]["verification_receipt"]["passed"])
         self.assertEqual(result["worker_failure"]["visible_blackboard_entry_ids"], [])
         self.assertTrue(any(item["record_type"] == "worker-failure" for item in ledger.records))
+        self.assertIn(v2_blackboard, writes)
+        self.assertNotIn(v1_blackboard, writes)
+        self.assertEqual(v1_blackboard_after, "immutable-v1")
 
 
 if __name__ == "__main__":

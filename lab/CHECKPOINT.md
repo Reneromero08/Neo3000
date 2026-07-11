@@ -417,7 +417,18 @@ reconciled, but no worker capability request has yet executed.
 - `readiness_v1=inconclusive`; `STRUCTURED_HOLOSTATE_MICROWORKER=inconclusive`; `CATALYTIC_SWARM_CONTROL=inconclusive`. `STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE` and `CATALYTIC_SWARM_CONTROL_AVAILABLE` remain locked.
 - `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` remains unlocked from v4. Broader process-local HoloState, restart-persistent HoloState, task advantage, and SOTA claims remain locked. V4 evidence is preserved and automatic promotion remains false.
 - The exact early-stop evidence is bound as `neo-exp-0019`: control qualification SHA-256 `864F74F58792E120422BB4078439E40AAE96546D58282DED38BB7665678A3E53` and readiness SHA-256 `76351D413785D6E239F1E20FB152EDF78DF312EEBE85D86FC343C6B25D7C1CCC` are recorded in the protected evaluator/result/lock for the evidence commit.
-- This version is no-retry. No further CatalyticSwarm live work is authorized; preserve v1 and await explicit authorization for any separately versioned successor addressing exact-PID WDDM telemetry loss. Do not claim another attempt.
+- This version is no-retry. At the v1 evidence boundary no further live work was authorized; the separately versioned v2 successor below is the later explicit authorization and must not alter or retry v1.
+
+### CatalyticSwarm-0 v2 WDDM successor [AUTHORIZED / IMPLEMENTED / NOT EXECUTED]
+
+- Draft PR #5 was inspected at exact connector head `428edaaa2772d6805c4733a9d629a7812838a932`: two commits from protected `3fcef46c4863814f3396d1466269d4a3ef0f8c9a` and only the two declared new WDDM policy/test files. All 14 connector tests pass.
+- The optional sampler policy preserves legacy behavior when absent. When present, one or two unavailable queries are bounded transient gaps; the third, a valid-sample gap over 30 seconds, or memory over 6000 MiB fails closed. A fresh admission sample is at most 5 seconds old, exact-PID only, and has a zero failure streak.
+- Fresh-sample boundaries are implemented at readiness, before/after the parser canary, before capability claim, before/after every worker request, and before teardown. While awaiting recovery, the controller keeps process, stable/sidecar health, listener ownership, deadline, and hard WDDM failure checks active.
+- Complete-object `catalytic_swarm_0_v2` hash is `eadea6e1c6d66e50d85803c4cc96ad6a703b4964799251977ff1288eabc24cf1`. It binds v1 contract/evidence hashes `ca8987fd5d8f1d3043a2c78147e2ec6f2ab8006cccfc4c958398ba8f7d0a9cd4` / `1e8bc8416e1a772f14cfebd39ce98850c61b2ff3cc8ed57a1953c4521445a426` and exact v1 control/readiness artifact hashes `864F74F58792E120422BB4078439E40AAE96546D58282DED38BB7665678A3E53` / `76351D413785D6E239F1E20FB152EDF78DF312EEBE85D86FC343C6B25D7C1CCC`.
+- The seven v2 one-shot paths are distinct and absent. V1 control/readiness remain exact and its five downstream paths remain absent. The v1 command is hard-retired.
+- Root A prompt bytes are read from exact v1 integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`, preserving the inherited canonical/system/rendered identities while `docs/CATALYTIC_RUNTIME_ROADMAP.md` becomes authoritative.
+- Compilation and 338 CPU-only tests pass. No live inference, parser canary, capability attempt, worker request, lease, ledger, blackboard, Deep request, retry, persistence, or promotion has occurred under v2.
+- Next action: commit and push the architectural integration, fast-forward exact protected `main`, pass protected preflight, then execute `audit-catalytic-swarm-0-v2` exactly once with no retry.
 
 ### Durable persistence boundary
 

@@ -126,6 +126,261 @@ class EvaluatorGateTests(unittest.TestCase):
             cursor[path[-1]] = value
             self.assertNotEqual(baseline, neo_loop.catalytic_swarm_0_hash(changed), path)
 
+    def test_catalytic_swarm_v2_is_a_complete_v1_successor(self) -> None:
+        v1 = EVALUATOR["catalytic_swarm_0"]
+        v2 = EVALUATOR["catalytic_swarm_0_v2"]
+        self.assertEqual(list(v2), [
+            "id",
+            "schema_version",
+            "attempt_version",
+            "connector",
+            "predecessor_v1",
+            "causal_intervention",
+            "control_objective",
+            "plan",
+            "root_and_prior_evidence",
+            "transport",
+            "structured_output",
+            "parser_canary",
+            "communication",
+            "blackboard",
+            "stream_ledger",
+            "readiness_control",
+            "memory",
+            "stable_isolation",
+            "one_shot",
+            "cleanup",
+            "stop_law",
+            "verdicts",
+            "availability",
+            "automatic_promotion",
+        ])
+        self.assertEqual(v2["id"], "catalytic_swarm_0_v2")
+        self.assertEqual(v2["schema_version"], 2)
+        self.assertEqual(v2["attempt_version"], 2)
+        self.assertEqual(
+            v2["causal_intervention"]["sole_intervention"],
+            "Bounded exact-PID WDDM transient-gap resilience plus fresh-sample boundary admission.",
+        )
+        self.assertTrue(v2["causal_intervention"]["inherits_complete_v1_control_object"])
+        self.assertFalse(v2["causal_intervention"]["automatic_retry_allowed"])
+
+        for key in (
+            "control_objective",
+            "plan",
+            "root_and_prior_evidence",
+            "transport",
+            "structured_output",
+            "parser_canary",
+            "communication",
+            "memory",
+            "stable_isolation",
+            "cleanup",
+            "stop_law",
+            "availability",
+            "automatic_promotion",
+        ):
+            self.assertEqual(v2[key], v1[key], key)
+
+        expected_blackboard = copy.deepcopy(v1["blackboard"])
+        expected_blackboard["path"] = "state/catalytic_swarm/blackboard-v2.json"
+        self.assertEqual(v2["blackboard"], expected_blackboard)
+        expected_ledger = copy.deepcopy(v1["stream_ledger"])
+        expected_ledger["path"] = "state/catalytic_swarm/ledger-v2.jsonl"
+        self.assertEqual(v2["stream_ledger"], expected_ledger)
+
+        expected_verdicts = copy.deepcopy(v1["verdicts"])
+        expected_verdicts["catalytic_swarm_0_v2"] = expected_verdicts.pop("catalytic_swarm_0")
+        self.assertEqual(v2["verdicts"], expected_verdicts)
+
+    def test_catalytic_swarm_v2_binds_v1_evidence_and_connector_authority(self) -> None:
+        v2 = EVALUATOR["catalytic_swarm_0_v2"]
+        self.assertEqual(v2["connector"], {
+            "branch": "codex/catalytic-swarm-wddm-v2",
+            "head": "428edaaa2772d6805c4733a9d629a7812838a932",
+            "protected_base": "3fcef46c4863814f3396d1466269d4a3ef0f8c9a",
+            "connector_commit_count": 2,
+            "imported_as_single_architectural_commit": True,
+            "files": [
+                "scripts/wddm_telemetry_resilience.py",
+                "scripts/test_wddm_telemetry_resilience.py",
+            ],
+            "source_hash_authority": "lab/EVALUATOR.lock.json protected_file_hashes",
+        })
+        self.assertEqual(v2["predecessor_v1"], {
+            "id": "catalytic_swarm_0",
+            "integration_commit": "8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280",
+            "evidence_commit": "3fcef46c4863814f3396d1466269d4a3ef0f8c9a",
+            "contract_sha256": "ca8987fd5d8f1d3043a2c78147e2ec6f2ab8006cccfc4c958398ba8f7d0a9cd4",
+            "evidence_object_sha256": "1e8bc8416e1a772f14cfebd39ce98850c61b2ff3cc8ed57a1953c4521445a426",
+            "artifacts": {
+                "state/catalytic_swarm/control-qualification-v1.json": "864F74F58792E120422BB4078439E40AAE96546D58282DED38BB7665678A3E53",
+                "state/catalytic_swarm/readiness-v1.json": "76351D413785D6E239F1E20FB152EDF78DF312EEBE85D86FC343C6B25D7C1CCC",
+            },
+            "control_qualification": "pass",
+            "readiness": "inconclusive",
+            "capability_attempt_created": False,
+            "logical_workers_executed": 0,
+            "retry_allowed": False,
+            "immutable_prior_evidence": True,
+        })
+        for path in v2["connector"]["files"]:
+            self.assertIn(path, EVALUATOR["protected_paths"]["files"])
+            self.assertIn(path, EVALUATOR["controller_files"])
+
+    def test_catalytic_swarm_v2_only_changes_readiness_by_declared_policy(self) -> None:
+        v1 = EVALUATOR["catalytic_swarm_0"]["readiness_control"]
+        v2 = copy.deepcopy(EVALUATOR["catalytic_swarm_0_v2"]["readiness_control"])
+        policy = v2.pop("wddm_transient_gap_policy")
+        boundary = v2.pop("fresh_sample_boundary_law")
+        admission_additions = {}
+        for key in (
+            "WDDM_failure_reason_must_be_none",
+            "fresh_exact_WDDM_PID_sample_required",
+            "maximum_WDDM_sample_age_seconds",
+            "consecutive_WDDM_failures_required",
+        ):
+            admission_additions[key] = v2["admission_law"].pop(key)
+        self.assertEqual(v2, v1)
+        self.assertEqual(admission_additions, {
+            "WDDM_failure_reason_must_be_none": True,
+            "fresh_exact_WDDM_PID_sample_required": True,
+            "maximum_WDDM_sample_age_seconds": 5.0,
+            "consecutive_WDDM_failures_required": 0,
+        })
+
+        self.assertEqual(policy, {
+            "measurement_source": "Windows GPU Process Memory(*)\\Dedicated Usage",
+            "exact_pid_instance_prefix": "pid_<sidecar PID>_",
+            "exact_pid_instances_only": True,
+            "sample_interval_seconds": 1.0,
+            "initial_attribution_grace_seconds": 60.0,
+            "maximum_tolerated_consecutive_unavailable_queries": 2,
+            "hard_failure_on_consecutive_unavailable_query": 3,
+            "maximum_valid_sample_gap_seconds": 30.0,
+            "admission_freshness_seconds": 5.0,
+            "memory_ceiling_mib": 6000,
+            "ceiling_violation_policy": "immediate-hard-failure",
+            "bounded_error_metadata_required": True,
+            "transient_failure_reason_before_hard_failure": None,
+            "active_transient_gap_admission_ready": False,
+            "valid_recovery_resets_failure_streak": True,
+            "valid_recovery_recorded": True,
+            "aggregate_nvidia_smi_fallback": "forbidden",
+            "device_wide_fallback": "forbidden",
+            "state_methods": [
+                "has_valid_sample",
+                "has_fresh_valid_sample",
+                "failure_reason",
+                "telemetry_snapshot",
+            ],
+            "transition_event_kinds": [
+                "gap-start",
+                "unavailable",
+                "recovery",
+                "hard-failure",
+            ],
+            "transition_event_limit": 512,
+            "transition_full_ledger_required_at_terminal": True,
+            "transition_overflow_policy": "immediate-hard-failure",
+            "transition_reason_max_characters": 256,
+            "transition_reason_sha256_required": True,
+            "sampler_query_timeout_seconds": 10.0,
+            "sampler_stop_margin_seconds": 2.0,
+            "sampler_stop_timeout_seconds": 12.0,
+            "sampler_thread_still_alive_policy": "hard-failure-and-non-accept",
+            "retirement_sample_error_required": "no-matching-pid-instance",
+            "retirement_query_failures_policy": "cleanup-failure-and-inconclusive",
+        })
+        self.assertEqual(boundary, {
+            "wait_method": "wait_for_fresh_wddm",
+            "maximum_wait_seconds": 30.0,
+            "boundaries": [
+                "readiness-admission",
+                "before-parser-canary",
+                "after-parser-canary",
+                "before-capability-attempt",
+                "before-each-worker-request",
+                "after-each-worker-request",
+                "before-teardown",
+            ],
+            "active_transient_gap_blocks_model_requests": True,
+            "admission_requirements": {
+                "failure_reason": None,
+                "fresh_exact_pid_sample_required": True,
+                "maximum_last_valid_sample_age_seconds": 5.0,
+                "consecutive_failures": 0,
+                "memory_mib_at_or_below": 6000,
+            },
+            "continuous_checks_during_wait": [
+                "sidecar-process-liveness",
+                "stable-health",
+                "sidecar-health",
+                "listener-ownership",
+                "readiness-or-request-deadline",
+                "hard-WDDM-failure",
+            ],
+            "deadline_law": "Stop at the earliest boundary deadline, request deadline, hard WDDM failure, or valid-sample gap over 30 seconds.",
+        })
+
+    def test_catalytic_swarm_v2_uses_only_v2_one_shot_paths(self) -> None:
+        v1 = EVALUATOR["catalytic_swarm_0"]["one_shot"]
+        v2 = EVALUATOR["catalytic_swarm_0_v2"]["one_shot"]
+        expected = copy.deepcopy(v1)
+        paths = {
+            "control_qualification_path": "state/catalytic_swarm/control-qualification-v2.json",
+            "readiness_path": "state/catalytic_swarm/readiness-v2.json",
+            "parser_canary_path": "state/catalytic_swarm/parser-canary-v2.json",
+            "attempt_path": "state/catalytic_swarm/attempt-v2.json",
+            "result_path": "state/catalytic_swarm/result-v2.json",
+            "ledger_path": "state/catalytic_swarm/ledger-v2.jsonl",
+            "blackboard_path": "state/catalytic_swarm/blackboard-v2.json",
+        }
+        expected.update(paths)
+        expected["control_failure_artifacts"] = [paths["control_qualification_path"]]
+        expected["readiness_failure_artifacts"] = [
+            paths["control_qualification_path"],
+            paths["readiness_path"],
+        ]
+        expected["parser_canary_failure_artifacts"] = [
+            paths["control_qualification_path"],
+            paths["readiness_path"],
+            paths["parser_canary_path"],
+        ]
+        self.assertEqual(v2, expected)
+        self.assertFalse(any("-v1." in path for path in paths.values()))
+
+    def test_catalytic_swarm_v2_complete_object_hash_covers_successor_law(self) -> None:
+        baseline = neo_loop.catalytic_swarm_0_v2_hash(EVALUATOR)
+        mutations = [
+            (("predecessor_v1", "evidence_object_sha256"), "0" * 64),
+            (("causal_intervention", "automatic_retry_allowed"), True),
+            (("plan", "physical_slot_count"), 2),
+            (("parser_canary", "expected_content"), "{}"),
+            (("readiness_control", "wddm_transient_gap_policy", "maximum_tolerated_consecutive_unavailable_queries"), 3),
+            (("readiness_control", "wddm_transient_gap_policy", "admission_freshness_seconds"), 6.0),
+            (("readiness_control", "wddm_transient_gap_policy", "transition_event_limit"), 511),
+            (("readiness_control", "wddm_transient_gap_policy", "sampler_stop_timeout_seconds"), 11.0),
+            (("readiness_control", "fresh_sample_boundary_law", "active_transient_gap_blocks_model_requests"), False),
+            (("one_shot", "attempt_path"), "state/catalytic_swarm/attempt-v1.json"),
+            (("availability", "automatic_promotion"), True),
+        ]
+        for path, value in mutations:
+            changed = copy.deepcopy(EVALUATOR)
+            cursor = changed["catalytic_swarm_0_v2"]
+            for key in path[:-1]:
+                cursor = cursor[key]
+            cursor[path[-1]] = value
+            self.assertNotEqual(baseline, neo_loop.catalytic_swarm_0_v2_hash(changed), path)
+
+    def test_catalytic_swarm_v2_controller_test_surface_is_protected(self) -> None:
+        for path in (
+            "scripts/test_neo_loop_vram.py",
+            "scripts/test_evaluator_gates.py",
+        ):
+            self.assertIn(path, EVALUATOR["protected_paths"]["files"])
+            self.assertIn(path, EVALUATOR["controller_files"])
+
 
 if __name__ == "__main__":
     unittest.main()

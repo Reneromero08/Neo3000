@@ -23,7 +23,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -34,6 +34,10 @@ from listener_probe import (  # shared checked ownership substrate for protected
     qualify_listener_ownership,
     query_listener_pids,
 )
+from wddm_telemetry_resilience import (
+    ResilientWddmTelemetry,
+    WddmTelemetryPolicy,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 CANDIDATE_ROOT = ROOT.parent / f"{ROOT.name}-candidate"
@@ -43,6 +47,9 @@ RESULTS_PATH = ROOT / "lab" / "results.jsonl"
 LOCK_DYNAMIC_PATHS = {"lab/EVALUATOR.lock.json", "lab/results.jsonl"}
 CANDIDATE_BUILD_DIR = CANDIDATE_ROOT / "build" / "candidate"
 WDDM_DEDICATED_COUNTER = r"\GPU Process Memory(*)\Dedicated Usage"
+WDDM_QUERY_TIMEOUT_SECONDS = 10.0
+WDDM_SAMPLER_STOP_MARGIN_SECONDS = 2.0
+WDDM_SAMPLER_STOP_FAILURE = "candidate-vram-telemetry-sampler-stop-timeout"
 
 
 class NeoLoopError(RuntimeError):
@@ -185,6 +192,22 @@ def catalytic_swarm_0_evidence_hash(evaluator: dict[str, Any]) -> str:
     return sha256_bytes(canonical_json_bytes(evidence))
 
 
+def catalytic_swarm_0_v2_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the complete separately versioned CatalyticSwarm-0 v2 contract."""
+    contract = evaluator.get("catalytic_swarm_0_v2")
+    if not isinstance(contract, dict):
+        raise NeoLoopError("evaluator is missing catalytic_swarm_0_v2")
+    return sha256_bytes(canonical_json_bytes(contract))
+
+
+def catalytic_swarm_0_v2_evidence_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the tracked adjudication of the one-shot CatalyticSwarm-0 v2 proof."""
+    evidence = evaluator.get("catalytic_swarm_0_v2_evidence")
+    if not isinstance(evidence, dict):
+        raise NeoLoopError("evaluator is missing catalytic_swarm_0_v2_evidence")
+    return sha256_bytes(canonical_json_bytes(evidence))
+
+
 def load_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise NeoLoopError(f"missing required file: {path}")
@@ -216,7 +239,8 @@ def require_distinct_paths(left: Path, right: Path, label: str) -> None:
         raise NeoLoopError(f"isolation failure: overlapping {label}: {left} and {right}")
 
 
-def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
+def protected_lock_paths(evaluator: dict[str, Any]) -> list[str]:
+    """Derive the complete protected hash surface from the evaluator."""
     protected_files = evaluator["protected_paths"]["files"]
     controller_files = evaluator["controller_files"]
     benchmark_files = evaluator["benchmark_prompt_sources"]
@@ -245,7 +269,7 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         for root in evaluator["holostate_worker_protocol_v4"]["roots"].values()
         for source in root["sources"]
     ]
-    hashed_files = sorted(
+    return sorted(
         path for path in set(
             protected_files
             + controller_files
@@ -258,11 +282,23 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         )
         if path not in LOCK_DYNAMIC_PATHS
     )
+
+
+def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
+    protected_files = evaluator["protected_paths"]["files"]
+    controller_files = evaluator["controller_files"]
+    hashed_files = protected_lock_paths(evaluator)
+    protected_hashes: dict[str, str] = {}
+    for path in hashed_files:
+        digest = sha256_file(ROOT / path)
+        if digest == "MISSING":
+            raise NeoLoopError(f"protected file is missing during lock generation: {path}")
+        protected_hashes[path] = digest
     lock = {
         "schema_version": 2,
         "generated_at": utc_now(),
         "evaluator_sha256": sha256_file(EVALUATOR_PATH),
-        "protected_file_hashes": {path: sha256_file(ROOT / path) for path in hashed_files},
+        "protected_file_hashes": protected_hashes,
         "benchmark_prompt_hashes": {
             prompt["id"]: sha256_bytes(prompt["text"].encode("utf-8"))
             for prompt in evaluator["inline_prompt_sources"]
@@ -276,6 +312,7 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         "holostate_worker_protocol_v3_sha256": holostate_worker_protocol_v3_hash(evaluator),
         "holostate_worker_protocol_v4_sha256": holostate_worker_protocol_v4_hash(evaluator),
         "catalytic_swarm_0_sha256": catalytic_swarm_0_hash(evaluator),
+        "catalytic_swarm_0_v2_sha256": catalytic_swarm_0_v2_hash(evaluator),
         "model_identity": evaluator["model"],
         "baseline_source_commit": git(ROOT, "rev-parse", "HEAD"),
         "stable_launch": evaluator["stable_launch"],
@@ -300,6 +337,10 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         lock["catalytic_swarm_0_evidence_sha256"] = (
             catalytic_swarm_0_evidence_hash(evaluator)
         )
+    if "catalytic_swarm_0_v2_evidence" in evaluator:
+        lock["catalytic_swarm_0_v2_evidence_sha256"] = (
+            catalytic_swarm_0_v2_evidence_hash(evaluator)
+        )
     return lock
 
 
@@ -316,14 +357,32 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         raise NeoLoopError("unsupported evaluator lock schema")
     if lock.get("evaluator_sha256") != sha256_file(EVALUATOR_PATH):
         raise NeoLoopError("evaluator manifest differs from its lockfile")
-    for key in ("model_identity", "stable_launch", "candidate_launch", "protected_paths", "candidate_editable_paths"):
-        if key not in lock:
-            raise NeoLoopError(f"lockfile missing {key}")
+    duplicated_bindings = {
+        "model_identity": evaluator["model"],
+        "stable_launch": evaluator["stable_launch"],
+        "candidate_launch": evaluator["candidate_launch"],
+        "protected_paths": evaluator["protected_paths"]["files"],
+        "candidate_editable_paths": evaluator["candidate_editable_paths"]["paths"],
+        "controller_files": evaluator["controller_files"],
+    }
+    for key, expected in duplicated_bindings.items():
+        if lock.get(key) != expected:
+            raise NeoLoopError(f"lockfile {key} differs from evaluator")
     expected_hashes = lock.get("protected_file_hashes", {})
-    if not expected_hashes:
+    if not isinstance(expected_hashes, dict) or not expected_hashes:
         raise NeoLoopError("lockfile contains no protected hashes")
+    required_hash_paths = protected_lock_paths(evaluator)
+    if set(expected_hashes) != set(required_hash_paths):
+        missing = sorted(set(required_hash_paths) - set(expected_hashes))
+        extra = sorted(set(expected_hashes) - set(required_hash_paths))
+        raise NeoLoopError(
+            "lockfile protected hash surface differs from evaluator "
+            f"(missing={missing}, extra={extra})"
+        )
     for path, expected in expected_hashes.items():
         actual = sha256_file(ROOT / path)
+        if expected == "MISSING" or actual == "MISSING":
+            raise NeoLoopError(f"protected file is missing: {path}")
         if actual != expected:
             raise NeoLoopError(
                 f"protected hash changed: {path} (expected {expected}, actual {actual})"
@@ -407,6 +466,29 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         actual_swarm_0_evidence = catalytic_swarm_0_evidence_hash(evaluator)
         if expected_swarm_0_evidence != actual_swarm_0_evidence:
             raise NeoLoopError("CatalyticSwarm-0 evidence differs from its locked complete-object hash")
+    expected_swarm_0_v2 = lock.get("catalytic_swarm_0_v2_sha256")
+    actual_swarm_0_v2 = catalytic_swarm_0_v2_hash(evaluator)
+    if expected_swarm_0_v2 != actual_swarm_0_v2:
+        raise NeoLoopError(
+            "CatalyticSwarm-0 v2 contract differs from its locked complete-object hash"
+        )
+    has_swarm_0_v2_evidence = "catalytic_swarm_0_v2_evidence" in evaluator
+    has_swarm_0_v2_evidence_lock = (
+        "catalytic_swarm_0_v2_evidence_sha256" in lock
+    )
+    if has_swarm_0_v2_evidence != has_swarm_0_v2_evidence_lock:
+        raise NeoLoopError("CatalyticSwarm-0 v2 evidence and lock must appear together")
+    if has_swarm_0_v2_evidence:
+        expected_swarm_0_v2_evidence = lock[
+            "catalytic_swarm_0_v2_evidence_sha256"
+        ]
+        actual_swarm_0_v2_evidence = catalytic_swarm_0_v2_evidence_hash(
+            evaluator
+        )
+        if expected_swarm_0_v2_evidence != actual_swarm_0_v2_evidence:
+            raise NeoLoopError(
+                "CatalyticSwarm-0 v2 evidence differs from its locked complete-object hash"
+            )
     return lock
 
 
@@ -579,7 +661,7 @@ $Rows = @($Counter.CounterSamples | ForEach-Object {{
     try:
         completed = subprocess.run(
             ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True, text=True, timeout=WDDM_QUERY_TIMEOUT_SECONDS,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         return ProcessVramSample(False, None, [], f"counter-query-failed: {exc}")
@@ -600,14 +682,25 @@ $Rows = @($Counter.CounterSamples | ForEach-Object {{
 class CandidateVramSampler:
     """PID-filtered WDDM sampler retaining a compact peak, never raw streams."""
 
-    def __init__(self, pid: int, ceiling_mib: int, interval_seconds: float, grace_seconds: float, sample_fn=wddm_pid_memory_sample):
+    def __init__(
+        self,
+        pid: int,
+        ceiling_mib: int,
+        interval_seconds: float,
+        grace_seconds: float,
+        sample_fn=wddm_pid_memory_sample,
+        wddm_policy: WddmTelemetryPolicy | None = None,
+    ):
         self.pid = pid
         self.ceiling_bytes = ceiling_mib * 1024 * 1024
         self.interval_seconds = interval_seconds
         self.grace_seconds = grace_seconds
         self.sample_fn = sample_fn
+        self.wddm_policy = wddm_policy
         self.started_at = time.monotonic()
         self.first_valid_at: float | None = None
+        self.last_valid_at: float | None = None
+        self.maximum_valid_sample_gap_seconds = 0.0
         self.peak_bytes = 0
         self.sample_count = 0
         self.instances: set[str] = set()
@@ -616,26 +709,106 @@ class CandidateVramSampler:
         self._stop = threading.Event()
         self._lock = threading.Lock()
         self._thread: threading.Thread | None = None
+        self._sampler_stop_attempted = False
+        self._sampler_stop_timed_out = False
+        self._sampler_stop_failure_reason: str | None = None
+        self._sampler_stop_wait_seconds: float | None = None
+        self._resilient_telemetry = (
+            ResilientWddmTelemetry(
+                ceiling_bytes=self.ceiling_bytes,
+                policy=wddm_policy,
+                started_at=self.started_at,
+            )
+            if wddm_policy is not None
+            else None
+        )
 
     def start(self) -> None:
         self._thread = threading.Thread(target=self._run, name=f"neo-vram-{self.pid}", daemon=True)
         self._thread.start()
 
-    def stop(self) -> None:
+    def stop(self) -> bool | None:
+        """Stop sampling after allowing the in-flight WDDM query to time out.
+
+        ``wddm_pid_memory_sample`` has a ten-second subprocess timeout.  The
+        join therefore waits through that timeout plus a fixed margin.  A
+        still-live worker is retained as explicit fail-closed evidence rather
+        than being silently abandoned as a daemon thread.  Policy-absent
+        callers retain the original best-effort join and evidence surface.
+        """
+
         self._stop.set()
-        if self._thread:
-            self._thread.join(timeout=max(5.0, self.interval_seconds * 2))
+        thread = self._thread
+        if self._resilient_telemetry is None:
+            if thread is not None:
+                thread.join(timeout=max(5.0, self.interval_seconds * 2))
+            return None
+
+        timeout_seconds = WDDM_QUERY_TIMEOUT_SECONDS + WDDM_SAMPLER_STOP_MARGIN_SECONDS
+        wait_started = time.monotonic()
+        if thread is not None:
+            thread.join(timeout=timeout_seconds)
+        wait_seconds = max(0.0, time.monotonic() - wait_started)
+        thread_alive = bool(thread is not None and thread.is_alive())
+        with self._lock:
+            self._sampler_stop_attempted = True
+            self._sampler_stop_wait_seconds = wait_seconds
+            if thread_alive:
+                self._sampler_stop_timed_out = True
+                self._sampler_stop_failure_reason = WDDM_SAMPLER_STOP_FAILURE
+                now = time.monotonic()
+                if self._resilient_telemetry is not None:
+                    self._resilient_telemetry.fail_closed(
+                        WDDM_SAMPLER_STOP_FAILURE,
+                        now=now,
+                        trigger_kind="sampler-stop",
+                    )
+                elif self._failure_reason is None:
+                    self._failure_reason = WDDM_SAMPLER_STOP_FAILURE
+        return not thread_alive
 
     def sample_once(self) -> None:
         sample = self.sample_fn(self.pid)
         now = time.monotonic()
         with self._lock:
+            if self._resilient_telemetry is not None:
+                try:
+                    if sample.available and sample.bytes is not None:
+                        marker = f"pid_{self.pid}_".lower()
+                        if not sample.instances or any(
+                            not str(instance).lower().startswith(marker)
+                            for instance in sample.instances
+                        ):
+                            raise ValueError("sample did not contain only exact-PID instances")
+                    self._resilient_telemetry.observe_sample(sample, now=now)
+                except ValueError as exc:
+                    self._resilient_telemetry.observe_unavailable(
+                        f"invalid-exact-pid-sample: {exc}",
+                        now=now,
+                    )
+                snapshot = self._resilient_telemetry.snapshot(now=now)
+                self.first_valid_at = self._resilient_telemetry.first_valid_at
+                self.last_valid_at = self._resilient_telemetry.last_valid_at
+                self.maximum_valid_sample_gap_seconds = (
+                    snapshot.maximum_valid_sample_gap_seconds or 0.0
+                )
+                self.sample_count = snapshot.sample_count
+                self.peak_bytes = snapshot.peak_bytes or 0
+                self.instances = set(snapshot.exact_instances)
+                self.failures = list(snapshot.recent_failures)
+                return
             if sample.available and sample.bytes is not None:
+                if self.last_valid_at is not None:
+                    self.maximum_valid_sample_gap_seconds = max(
+                        self.maximum_valid_sample_gap_seconds,
+                        max(0.0, now - self.last_valid_at),
+                    )
                 self.sample_count += 1
                 self.peak_bytes = max(self.peak_bytes, sample.bytes)
                 self.instances.update(sample.instances)
                 if self.first_valid_at is None:
                     self.first_valid_at = now
+                self.last_valid_at = now
                 if sample.bytes > self.ceiling_bytes:
                     self._failure_reason = "candidate-memory-ceiling"
             else:
@@ -648,21 +821,98 @@ class CandidateVramSampler:
             self.sample_once()
             self._stop.wait(self.interval_seconds)
 
+    def _legacy_failure_reason_locked(self, now: float) -> str | None:
+        if self._failure_reason:
+            return self._failure_reason
+        if self.first_valid_at is None and now - self.started_at >= self.grace_seconds:
+            return "candidate-vram-telemetry-unavailable"
+        return None
+
     def failure_reason(self) -> str | None:
+        now = time.monotonic()
         with self._lock:
-            if self._failure_reason:
-                return self._failure_reason
-            if self.first_valid_at is None and time.monotonic() - self.started_at >= self.grace_seconds:
-                return "candidate-vram-telemetry-unavailable"
-            return None
+            if self._resilient_telemetry is not None:
+                return self._resilient_telemetry.failure_reason(now=now)
+            return self._legacy_failure_reason_locked(now)
 
     def has_valid_sample(self) -> bool:
         with self._lock:
+            if self._resilient_telemetry is not None:
+                return self._resilient_telemetry.has_valid_sample()
             return self.first_valid_at is not None
 
-    def evidence(self, ceiling_mib: int) -> dict[str, Any]:
+    def has_fresh_valid_sample(self) -> bool:
+        """Return freshness admission state without changing legacy callers."""
+        now = time.monotonic()
         with self._lock:
-            return {
+            if self._resilient_telemetry is not None:
+                return self._resilient_telemetry.has_fresh_valid_sample(now=now)
+            return self.first_valid_at is not None
+
+    def telemetry_snapshot(self) -> dict[str, Any]:
+        """Return one synchronized, bounded view of the current telemetry state."""
+        now = time.monotonic()
+        with self._lock:
+            if self._resilient_telemetry is not None:
+                snapshot = self._resilient_telemetry.snapshot(now=now).to_dict()
+                snapshot["mode"] = "resilient"
+                snapshot["policy"] = asdict(self.wddm_policy)
+                snapshot.update(self._sampler_lifecycle_locked())
+                return snapshot
+            last_valid_age = (
+                max(0.0, now - self.last_valid_at)
+                if self.last_valid_at is not None
+                else None
+            )
+            maximum_gap = (
+                max(self.maximum_valid_sample_gap_seconds, last_valid_age or 0.0)
+                if self.last_valid_at is not None
+                else None
+            )
+            failure = self._legacy_failure_reason_locked(now)
+            snapshot = {
+                "mode": "legacy",
+                "policy": None,
+                "failure_reason": failure,
+                "admission_ready": self.first_valid_at is not None and failure is None,
+                "has_valid_sample": self.first_valid_at is not None,
+                "sample_count": self.sample_count,
+                "peak_bytes": self.peak_bytes if self.sample_count else None,
+                "first_valid_sample_seconds": (
+                    max(0.0, self.first_valid_at - self.started_at)
+                    if self.first_valid_at is not None
+                    else None
+                ),
+                "last_valid_sample_age_seconds": last_valid_age,
+                "maximum_valid_sample_gap_seconds": maximum_gap,
+                "consecutive_failures": 0,
+                "maximum_consecutive_failures": 0,
+                "total_failures": len(self.failures),
+                "recovered_gap_count": 0,
+                "transient_gap_active": False,
+                "exact_instances": tuple(sorted(self.instances)),
+                "recent_failures": tuple(self.failures[-16:]),
+            }
+            return snapshot
+
+    def _sampler_lifecycle_locked(self) -> dict[str, Any]:
+        return {
+            "sampler_stop_attempted": self._sampler_stop_attempted,
+            "sampler_stop_timed_out": self._sampler_stop_timed_out,
+            "sampler_stop_failure_reason": self._sampler_stop_failure_reason,
+            "sampler_stop_wait_seconds": self._sampler_stop_wait_seconds,
+            "sampler_stop_timeout_seconds": (
+                WDDM_QUERY_TIMEOUT_SECONDS + WDDM_SAMPLER_STOP_MARGIN_SECONDS
+            ),
+            "sampler_thread_alive": bool(
+                self._thread is not None and self._thread.is_alive()
+            ),
+        }
+
+    def evidence(self, ceiling_mib: int) -> dict[str, Any]:
+        now = time.monotonic()
+        with self._lock:
+            evidence = {
                 "source": "Windows GPU Process Memory Dedicated Usage (PID-filtered)",
                 "candidate_pid": self.pid,
                 "counter_instances": sorted(self.instances),
@@ -673,6 +923,16 @@ class CandidateVramSampler:
                 "ceiling_mib": ceiling_mib,
                 "telemetry_failures": self.failures[-8:],
             }
+            if self._resilient_telemetry is not None:
+                evidence["resilience_policy"] = asdict(self.wddm_policy)
+                evidence["sample_interval_seconds"] = self.interval_seconds
+                telemetry_snapshot = self._resilient_telemetry.snapshot(now=now).to_dict()
+                telemetry_snapshot["mode"] = "resilient"
+                telemetry_snapshot["policy"] = asdict(self.wddm_policy)
+                telemetry_snapshot.update(self._sampler_lifecycle_locked())
+                evidence["telemetry_snapshot"] = telemetry_snapshot
+                evidence.update(self._sampler_lifecycle_locked())
+            return evidence
 def verify_model_identity(model: Path, evaluator: dict[str, Any]) -> None:
     expected = evaluator["model"]
     if model.stat().st_size != expected["size_bytes"]:
