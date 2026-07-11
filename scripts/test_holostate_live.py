@@ -2610,6 +2610,8 @@ class CatalyticSwarm0LiveTests(unittest.TestCase):
     def test_preclaim_requires_checked_out_main_before_network(self) -> None:
         with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
             self.patch_paths(stack, Path(temp))
+            evaluator = copy.deepcopy(self.evaluator)
+            evaluator.pop("catalytic_swarm_0_evidence", None)
             lock = {
                 "holostate_worker_protocol_v4_sha256": self.contract[
                     "root_and_prior_evidence"
@@ -2622,8 +2624,8 @@ class CatalyticSwarm0LiveTests(unittest.TestCase):
                 holo,
                 "load_locked_catalytic_swarm_0",
                 return_value=(
-                    self.evaluator,
-                    self.evaluator["holostate_live_contract"],
+                    evaluator,
+                    evaluator["holostate_live_contract"],
                     self.protocol_v4,
                     self.contract,
                     lock,

@@ -100,7 +100,7 @@ RSI-0: CLOSED
 -> HoloState worker v2: executed once; inconclusive at readiness before canary
 -> HoloState worker v3: readiness pass; canary instrumentation reject; Fast/Deep untested
 -> HoloState worker v4: reviewable-accept; process-local micro-worker unlocked
--> CatalyticSwarm-0: separately protected control protocol prepared, not executed
+-> CatalyticSwarm-0: executed once; control qualification pass, readiness inconclusive on exact-PID WDDM telemetry loss before canary
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -585,11 +585,15 @@ Protocol commit `b2559f7c0c06e35a3e360b71ed13b69c4eb1eb7c` passed the protected 
 
 The empty stream ledger is itself bounded evidence: 0 records, 0 bytes, SHA-256 `E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855`. Cleanup passed, port 9494 retired, five exact-PID WDDM retirement samples were empty, stable PID `32684` remained healthy, and all historical evidence remained exact. V2 is no-retry. Every HoloState availability state, CatalyticSwarm-0, and automatic promotion remain locked.
 
-### CatalyticSwarm-0 bounded control: PREPARED / NOT EXECUTED
+### CatalyticSwarm-0 bounded control: EXECUTED ONCE / READINESS INCONCLUSIVE
 
-The executed v4 boundary unlocked only bounded thinking-disabled process-local micro-workers. CatalyticSwarm-0 now freezes a deterministic control proof over that carrier: 32 logical workers in proposal/evidence/critique/synthesis phases, one physical HoloState slot, exact assigned-parent communication through compact append-only objects, deterministic verifier receipts, 64-token maximum, and no automatic promotion.
+The executed v4 boundary unlocked only bounded thinking-disabled process-local micro-workers. CatalyticSwarm-0 froze a deterministic control proof over that carrier: 32 logical workers in proposal/evidence/critique/synthesis phases, one physical HoloState slot, exact assigned-parent communication through compact append-only objects, deterministic verifier receipts, 64-token maximum, and no automatic promotion.
 
-Control qualification, readiness, and structured-output parser canary are independent one-shot boundaries. Only their frozen passes may create the capability attempt, ledger, or blackboard execution. Deep workers, task-advantage claims, SOTA claims, persistence, CUDA/kernel/model/Pi/stable changes, retries, and promotion are excluded. The next action is exact pushed protected `main`, protected preflight, then one invocation of `audit-catalytic-swarm-0`.
+Exact integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280` was pushed as protected `main` and passed protected preflight before the one authorized invocation. Generation-free control qualification passed. Readiness then stopped as `inconclusive` when an exact-PID WDDM counter query timed out after 6 valid samples and a 92.84 MiB peak for sidecar PID `44748`; the failure classification is `candidate-vram-telemetry-lost`.
+
+The parser canary and capability attempt were not attempted. No 32-worker request, physical lease, bounded-ledger record, or blackboard entry exists. Lifecycle teardown and retirement passed: PID `44748` stopped, port 9494 retired, and stable PID `32684` remained healthy. The composite cleanup/resource gate is false because exact-PID WDDM telemetry was lost. Readiness, structured-micro-worker capability, and swarm-control capability are each `inconclusive`; both new availability states remain locked. The existing process-local micro-worker unlock survives, while broader process-local HoloState, restart persistence, task advantage, and SOTA remain locked. V4 evidence is preserved and automatic promotion remains false.
+
+This invocation is no-retry. Its exact early-stop evidence is bound as `neo-exp-0019` in the protected evaluator/result/lock for the evidence commit. No further CatalyticSwarm live work is authorized: preserve v1 and await explicit authorization for any separately versioned successor addressing exact-PID WDDM telemetry loss. Deep, persistence, CUDA/kernel/model/Pi/stable changes, and promotion remain excluded.
 
 ### HoloState-v2 persistence boundary
 

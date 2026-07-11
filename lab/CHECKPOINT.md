@@ -290,7 +290,7 @@ No literal infinity claim is made. Accepted cumulative avoided evaluations, acce
 ```text
 HoloState-v1 reuse mechanism: succeeded
 HoloState-v1 raw /completion gate: no literal final marker through 2048
-Current action: preserve the executed worker-v3 no-retry instrumentation boundary
+Current action: preserve the bound CatalyticSwarm-0 v1 readiness boundary; no further live work is authorized
 HoloState-v2 persistence: separate future intervention
 ```
 
@@ -396,7 +396,7 @@ reconciled, but no worker capability request has yet executed.
 - All 29 ownership boundaries, resources, ledger limits, cleanup, isolation, frozen readiness/tokenizer/source authority, historical hashes, stable PID, clean candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, runtime removal, free port 9494, and five empty retirement samples passed.
 - Readiness/tokenizer/attempt/result/ledger SHA-256 values are `4B8A44B4CB3DE9355B8A3D4E3FC945DD685EA35B98F5BF0C0160DAA090249BA7`, `EB10127666CDADE0D6A8E7EF59CA7D4310B64B89619800DF245BD769666A587D`, `6197D986FD3ED030340A82300245AE0EF1249229E21162BF6796F7F614A7EA19`, `396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF`, and `CD96EE1F41F15E9953705F7DDA762D1111D60E04C828F9B157D314D789F0F104`.
 - Tracked v4 evidence and `neo-exp-0018` are bound; 232 post-audit CPU-only tests, compilation, and JSON/JSONL validation pass.
-- `worker_protocol_v4=reviewable-accept`; Fast=`reviewable-accept`; Deep=`reject`. `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` is unlocked. Broader process-local and restart-persistent availability remain locked. `CatalyticSwarm-0` is authorized but not executed; automatic promotion remains disabled.
+- At the v4 boundary, `worker_protocol_v4=reviewable-accept`; Fast=`reviewable-accept`; Deep=`reject`. `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` was unlocked, broader process-local and restart-persistent availability remained locked, and `CatalyticSwarm-0` was authorized but not yet executed. Automatic promotion remained disabled.
 
 ### CatalyticSwarm-0 bounded control [HISTORICAL PRE-EXECUTION SNAPSHOT]
 
@@ -404,8 +404,20 @@ reconciled, but no worker capability request has yet executed.
 - The integrated substrate remains callback-driven. Static review demonstrated and repairs close forged-plan, multi-slot, over-budget, partial-receipt, missing-key, subset-parent, wrong-decision, fail-open transport, mutable/unbounded entry, and silent unverified-synthesis gaps.
 - The protected protocol locks 32 logical Fast workers over one physical slot, exact phase counts/order/codes, deterministic identities/seeds/assignments/parent graph, compact assigned-parent context, exact structured contributions, append-only chain evidence, resource ceilings, cleanup, and no promotion.
 - Control qualification, readiness, and parser canary are separate one-shot gates. At this snapshot none of the seven `state/catalytic_swarm/*-v1` artifacts exists and no CatalyticSwarm worker request has executed.
-- The live sequence may start only from exact pushed protected `main` after protected preflight. It warms current Root A once, runs the exact structured parser canary, and claims the swarm attempt only after the canary freezes as a pass. Any failure stops without retry.
+- At this snapshot, the live sequence was authorized to start only from exact pushed protected `main` after protected preflight. It would warm current Root A once, run the exact structured parser canary, and claim the swarm attempt only after the canary froze as a pass. Any failure would stop without retry.
 - `STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE`, `CATALYTIC_SWARM_CONTROL_AVAILABLE`, task-advantage, and SOTA claims remain locked. Existing process-local micro-worker availability stays unlocked; broader process-local and restart-persistent HoloState remain locked; automatic promotion remains disabled.
+
+### CatalyticSwarm-0 bounded control [EXECUTED ONCE / READINESS INCONCLUSIVE]
+
+- Exact integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280` was pushed as protected `main` and passed protected preflight before the single authorized invocation. No retry occurred.
+- Generation-free control qualification passed. This is a control-contract result, not a swarm-capability pass.
+- Readiness launched sidecar PID `44748` and admitted 6 exact-PID WDDM samples with a 92.84 MiB peak. A subsequent exact-PID counter query timed out; the sampler classified `candidate-vram-telemetry-lost`, so readiness stopped as `inconclusive`.
+- The structured parser canary and capability attempt were not attempted. `parser-canary-v1.json`, `attempt-v1.json`, `result-v1.json`, `ledger-v1.jsonl`, and `blackboard-v1.json` are absent. No logical worker request, physical lease, ledger record, or blackboard entry was created.
+- Lifecycle cleanup succeeded despite the resource-gate stop: PID `44748` exited, runtime state was removed, port 9494 is free, and stable PID `32684` remains healthy. The composite cleanup/resource gate remained non-pass only because exact-PID WDDM telemetry was lost.
+- `readiness_v1=inconclusive`; `STRUCTURED_HOLOSTATE_MICROWORKER=inconclusive`; `CATALYTIC_SWARM_CONTROL=inconclusive`. `STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE` and `CATALYTIC_SWARM_CONTROL_AVAILABLE` remain locked.
+- `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` remains unlocked from v4. Broader process-local HoloState, restart-persistent HoloState, task advantage, and SOTA claims remain locked. V4 evidence is preserved and automatic promotion remains false.
+- The exact early-stop evidence is bound as `neo-exp-0019`: control qualification SHA-256 `864F74F58792E120422BB4078439E40AAE96546D58282DED38BB7665678A3E53` and readiness SHA-256 `76351D413785D6E239F1E20FB152EDF78DF312EEBE85D86FC343C6B25D7C1CCC` are recorded in the protected evaluator/result/lock for the evidence commit.
+- This version is no-retry. No further CatalyticSwarm live work is authorized; preserve v1 and await explicit authorization for any separately versioned successor addressing exact-PID WDDM telemetry loss. Do not claim another attempt.
 
 ### Durable persistence boundary
 

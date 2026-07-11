@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: CatalyticSwarm-0 bounded control preparation
+## Checkpoint 2: Preserve the CatalyticSwarm-0 readiness boundary
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse and the bounded process-local HoloState micro-worker are proven; broader process-local and restart-persistent availability remain locked.
 
@@ -28,11 +28,15 @@ V3 ran once. Readiness passed; the exact, normal-stop canary exposed zero token 
 
 V4 ran exactly once with no retry. Readiness, tokenizer, canary, both roots, and all six Fast requests passed; A1/B1 repeats and cross-root isolation were exact. Deep A1 independently rejected on a 768-token length stop, so its failure does not erase the completed Fast proof. Do not rerun v4.
 
-## Active separately scoped protocol
+## Executed CatalyticSwarm-0 boundary
 
-Integrate the draft PR #3 control substrate as one architectural commit, freeze one deterministic 32-worker/one-slot plan, and execute one protected `CatalyticSwarm-0` control proof only after exact pushed `main` and protected preflight. The proof is limited to structured Fast micro-workers, assigned prior-phase blackboard communication, exact verifier receipts, one physical lease, bounded resource evidence, and clean teardown.
+The control substrate was integrated and pushed at exact commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`; protected preflight passed before one invocation. Generation-free control qualification passed. Readiness then stopped inconclusively on an exact-PID WDDM counter-query timeout classified as `candidate-vram-telemetry-lost`. Sidecar PID `44748` produced 6 valid samples and a 92.84 MiB peak before telemetry was lost.
 
-Do not run Deep workers, exceed 64 completion tokens, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, rerun worker protocols v1-v4, retry the swarm, or promote automatically. Before the live command, control qualification, readiness, and the parser canary are separate one-shot boundaries; no capability attempt may exist unless all three freeze as passes.
+The parser canary, capability attempt, all 32 worker requests, physical leases, ledger, and blackboard were unattempted or absent. Lifecycle teardown and retirement passed: PID `44748` stopped, port 9494 is free, and stable PID `32684` remains healthy. The composite cleanup/resource gate is false because exact-PID WDDM telemetry was lost. Readiness, structured-micro-worker capability, and swarm-control capability are inconclusive; both new availability states remain locked. The existing process-local micro-worker unlock and all v4 evidence are preserved.
+
+## Active bounded objective
+
+The exact early-stop evidence is bound as `neo-exp-0019` in the protected evaluator/result/lock for the evidence commit. No further CatalyticSwarm live work is authorized. Preserve v1 and await explicit authorization for any separately versioned successor addressing exact-PID WDDM telemetry loss. Do not run Deep workers, exceed 64 completion tokens, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, rerun worker protocols v1-v4, claim another attempt, or promote automatically.
 
 ## Claim state
 
@@ -42,8 +46,11 @@ EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
-CatalyticSwarm-0: PREPARED_NOT_EXECUTED
+CatalyticSwarm-0: EXECUTED_ONCE_READINESS_INCONCLUSIVE
+CATALYTIC_SWARM_READINESS: INCONCLUSIVE
+STRUCTURED_HOLOSTATE_MICROWORKER: INCONCLUSIVE
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
+CATALYTIC_SWARM_CONTROL: INCONCLUSIVE
 CATALYTIC_SWARM_CONTROL_AVAILABLE: LOCKED
 CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN: LOCKED
 SOTA_SWARM_CLAIM: LOCKED

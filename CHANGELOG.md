@@ -25,7 +25,7 @@ Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
 PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
-CatalyticSwarm-0: PREPARED_NOT_EXECUTED
+CatalyticSwarm-0: EXECUTED ONCE / CONTROL QUALIFICATION PASS / READINESS INCONCLUSIVE
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: LOCKED
 CATALYTIC_SWARM_CONTROL_AVAILABLE: LOCKED
 RSI-0F supervised rejection cycle: PASSED
@@ -51,7 +51,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Worker protocol v2 ran exactly once and stopped during sidecar readiness on `stable-listener-query-timeout`, before its canary. It cannot be retried; no parser or model-capability conclusion is supported.
 - Worker protocol v3 ran once: checked readiness passed, then its parser canary instrumentation rejected on missing nonempty token arrays and completion-count mismatch. It cannot be retried; Fast and Deep remain untested/inconclusive.
 - Worker protocol v4 ran exactly once with no retry. Readiness, tokenizer, canary, both roots, all Fast requests, repeats, and isolation passed; Deep independently rejected on a 768-token length stop.
-- CatalyticSwarm-0 has a separately protected, non-executed 32-worker/one-slot control protocol. Exact pushed `main` and protected preflight must precede its single no-retry invocation.
+- CatalyticSwarm-0 ran exactly once from protected integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`. Control qualification passed, then readiness stopped inconclusively on exact-PID WDDM telemetry loss before the parser canary or any worker request. This version cannot be retried.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
@@ -70,17 +70,27 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Root A/B warmed at 8,173/4,436 tokens. Fast A1/B1/A2/B2 and exact A1/B1 repeats all passed; distinct branches and cross-root isolation passed.
 - Deep A1 retained opaque reasoning evidence but exhausted 768 tokens with `finish_reason=length` and no final content, so Deep is `reject` without invalidating Fast=`reviewable-accept`.
 - The 907-record, 618,838-byte ledger, 136-sample 2,252.88 MiB WDDM evidence, host-memory ceiling, 29 ownership boundaries, cleanup, isolation, frozen evidence/source authority, historical hashes, stable PID `32684`, and candidate integrity all passed.
-- V4 is `reviewable-accept`. `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` is unlocked; broader process-local and restart-persistent availability remain locked. `CatalyticSwarm-0` is authorized but not executed, and automatic promotion remains disabled.
+- At the v4 boundary, v4 was `reviewable-accept`, `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` was unlocked, broader process-local and restart-persistent availability remained locked, and `CatalyticSwarm-0` was authorized but not yet executed. Automatic promotion remained disabled.
 - Readiness/tokenizer/attempt/result/ledger SHA-256 values are `4B8A44B4CB3DE9355B8A3D4E3FC945DD685EA35B98F5BF0C0160DAA090249BA7`, `EB10127666CDADE0D6A8E7EF59CA7D4310B64B89619800DF245BD769666A587D`, `6197D986FD3ED030340A82300245AE0EF1249229E21162BF6796F7F614A7EA19`, `396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF`, and `CD96EE1F41F15E9953705F7DDA762D1111D60E04C828F9B157D314D789F0F104`.
 - Tracked v4 evidence and `neo-exp-0018` are bound; 232 post-audit CPU-only tests, compilation, and JSON/JSONL validation pass.
 
-### CatalyticSwarm-0 bounded control integration prepared
+### CatalyticSwarm-0 bounded control integration prepared (historical snapshot)
 
 - Integrated the four-file draft PR #3 substrate as a callback-driven blackboard/scheduler/adapter boundary without importing its four connector commits.
 - Repaired only demonstrated fail-open behavior: complete-plan validation, exact one-slot and 32-worker acceptance, per-worker 64-token enforcement, exact structured ACK/parent/decision law, strict real-v4 transport evidence, immutable full-entry bounds, hard verified-parent synthesis, and fresh genesis blackboard requirements.
 - Added a complete-object evaluator contract and seven ignored one-shot artifacts for control qualification, readiness, parser canary, attempt, result, bounded ledger, and blackboard snapshot.
 - The protected runner reuses the v4 sidecar, checked ownership, WDDM, tokenizer, terminal-EOS, resource, isolation, and teardown machinery. It contains no Deep, persistence, CUDA/kernel/model/Pi/stable, retry, promotion, task-advantage, or SOTA claim path.
-- At this preparation boundary no CatalyticSwarm-0 artifact or worker request exists. The next operation is exact pushed protected `main`, protected preflight, then one `audit-catalytic-swarm-0` invocation.
+- At this historical preparation boundary no CatalyticSwarm-0 artifact or worker request existed. The then-next operation was exact pushed protected `main`, protected preflight, then one `audit-catalytic-swarm-0` invocation.
+
+### CatalyticSwarm-0 bounded control executed once
+
+- Exact integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280` was pushed as protected `main` and passed protected preflight before the single invocation. No retry occurred.
+- Generation-free control qualification passed. Readiness launched sidecar PID `44748`, recorded 6 exact-PID WDDM samples and a 92.84 MiB peak, then stopped as `inconclusive` when a counter query timed out and telemetry was classified `candidate-vram-telemetry-lost`.
+- The parser canary, capability attempt, all 32 worker requests, physical leases, bounded ledger, and blackboard remained unattempted or absent. The qualification pass therefore does not establish structured-micro-worker or swarm-control capability.
+- Lifecycle cleanup succeeded: PID `44748` stopped, runtime state retired, port 9494 became free, and stable PID `32684` remained healthy. The composite resource gate remained non-pass because telemetry was lost.
+- Readiness, `STRUCTURED_HOLOSTATE_MICROWORKER`, and `CATALYTIC_SWARM_CONTROL` are `inconclusive`; both new availability states remain locked. The existing process-local micro-worker unlock remains intact, while broader process-local HoloState, restart persistence, task advantage, and SOTA remain locked. V4 evidence is preserved and automatic promotion remains false.
+- The exact early-stop evidence is bound as `neo-exp-0019` in the protected evaluator/result/lock for the evidence commit. Control qualification SHA-256 is `864F74F58792E120422BB4078439E40AAE96546D58282DED38BB7665678A3E53`; readiness SHA-256 is `76351D413785D6E239F1E20FB152EDF78DF312EEBE85D86FC343C6B25D7C1CCC`.
+- Preserve this no-retry boundary. No further CatalyticSwarm live work is authorized; preserve v1 and await explicit authorization for any separately versioned successor addressing exact-PID WDDM telemetry loss. Do not claim another attempt.
 
 ### HoloState worker protocol v3 readiness integration prepared
 

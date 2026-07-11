@@ -2,11 +2,11 @@
 
 **Active checkpoint:** Checkpoint 2, First catalytic compute intervention
 **Current RSI level:** Level 1, supervised bounded RSI available
-**Baseline evidence through:** protocol commit `da04c5bf388c3d091da4e2f1aee33bf852377517`; ignored worker-v4 result `396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF`
+**Baseline evidence through:** CatalyticSwarm-0 integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`; bound `neo-exp-0019` single no-retry readiness early-stop after preserved worker-v4 result `396C1E76EC07EB64E8FF700E49F45A931638BD071A7955941712314CADDF59CF`
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. A separately protected `CatalyticSwarm-0` control protocol is being integrated from the proven HoloState v4 Fast boundary; it has not executed.
-**Next exact action:** make the bounded control-plane integration the exact pushed protected `main`, pass protected preflight, then invoke `CatalyticSwarm-0` exactly once with no retry. Do not run Deep or promote automatically.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. The separately protected `CatalyticSwarm-0` control protocol executed once from integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`: control qualification passed, then readiness stopped inconclusively on exact-PID WDDM telemetry loss before the parser canary or any worker request.
+**Next exact action:** no further CatalyticSwarm live work is authorized. Preserve the bound v1 evidence and await explicit authorization before any separately versioned successor addressing exact-PID WDDM telemetry loss. Do not run Deep or promote automatically.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -377,14 +377,20 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Unlock only `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`; keep broader process-local and restart-persistent availability locked, authorize but do not execute `CatalyticSwarm-0`, and keep automatic promotion disabled.
 - [x] Preserve this no-retry evidence boundary. The separately scoped `CatalyticSwarm-0` control protocol below does not rerun v1-v4 or infer execution from prior authorization.
 
-### CatalyticSwarm-0 bounded control proof [PREPARED / NOT EXECUTED]
+### CatalyticSwarm-0 bounded control proof [EXECUTED ONCE / READINESS INCONCLUSIVE]
 
 - [x] Inspect draft PR #3 at connector head `c73a684b0d83ba9f59d11396a579f5e9a3478c2b`: exactly four commits from protected `f17caefa41527f910e1039e70b33c8035c418ea9`, adding only the declared blackboard, scheduler, adapter, and CPU-only test files.
 - [x] Retain the callback-driven connector substrate without importing its four commits individually; repair only demonstrated fail-open plan, contribution, adapter, blackboard, lease, and 64-token defects with negative tests.
 - [x] Lock one exact 32-worker plan: 16 proposal, 8 evidence, 6 critique, 2 synthesis; one physical HoloState slot; thinking disabled; maximum 64 completion tokens; deterministic identities, seeds, parent graph, phase routing, and fixed execution order.
 - [x] Add separately versioned control qualification, readiness, structured parser canary, capability attempt/result, bounded ledger, and append-only blackboard artifacts under ignored `state/catalytic_swarm`.
 - [x] Reuse the protected HoloState v4 sidecar, ownership, WDDM, terminal-EOS, tokenizer, and cleanup infrastructure. Deep, persistence, CUDA, kernels, model, Pi, stable behavior, archived trace candidate, retry, and promotion remain outside scope.
-- [ ] Push the integration as exact protected `main`, pass protected preflight, and invoke `audit-catalytic-swarm-0` exactly once. A control, readiness, or parser-canary failure must stop before the capability attempt and must not be retried.
+- [x] Pushed exact integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280` as protected `main`, passed protected preflight, and invoked `audit-catalytic-swarm-0` exactly once. No retry occurred.
+- [x] Passed generation-free control qualification, then stopped readiness as `inconclusive` when the exact-PID WDDM counter query timed out and the controller classified `candidate-vram-telemetry-lost`.
+- [x] Recorded sidecar PID `44748`, 6 valid exact-PID WDDM samples, and a 92.84 MiB peak before telemetry was lost. The structured parser canary, capability attempt, all 32 workers, physical leases, bounded ledger, and blackboard remained unattempted or absent.
+- [x] Completed lifecycle cleanup: PID `44748` stopped, runtime state retired, port 9494 became free, and stable PID `32684` remained healthy. The composite resource gate remained non-pass because telemetry was lost.
+- [x] Classified readiness, `STRUCTURED_HOLOSTATE_MICROWORKER`, and `CATALYTIC_SWARM_CONTROL` as `inconclusive`. Their new availability states remain locked; the existing process-local micro-worker unlock remains intact. Broader process-local HoloState, restart persistence, task advantage, and SOTA claims remain locked; automatic promotion remains false and v4 evidence is preserved.
+- [x] Bound the exact early-stop evidence as `neo-exp-0019` in the protected evaluator/result/lock for this evidence commit without another live invocation.
+- [ ] No further CatalyticSwarm live work is authorized. Preserve v1 and await explicit authorization for any separately versioned successor addressing exact-PID WDDM telemetry loss; do not claim or initiate another attempt.
 
 Preserved v1 executed boundary:
 
@@ -415,4 +421,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: preserve the executed v4 no-retry boundary. `CatalyticSwarm-0` is authorized but remains unexecuted pending a separately scoped protocol.
+Next task: preserve the bound `CatalyticSwarm-0` v1 readiness boundary and await explicit authorization for any separately versioned successor addressing exact-PID WDDM telemetry. No further live work is authorized.
