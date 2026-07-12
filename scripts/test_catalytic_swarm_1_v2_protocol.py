@@ -44,11 +44,15 @@ class DiagnosticEvidenceBindingTests(unittest.TestCase):
 class CatalyticSwarm1V2ContractTests(unittest.TestCase):
     def test_contract_hash_is_exact(self):
         contract = build_catalytic_swarm_1_v2_contract()
-        self.assertEqual(
-            EXPECTED_CONTRACT_SHA256,
-            "911242c74509f1d2d8c6a3c8aa82948c452dac5f4646dd97d70d7b27b750e984",
+        corrected = (
+            "911242c74509f1d2d8c6a3c8aa82948c452dac5f4646dd97d70d7b27b750e984"
         )
-        self.assertEqual(sha256_object(contract), EXPECTED_CONTRACT_SHA256)
+        stale_pre_finalization = (
+            "c782b777a0da0828c96c38d1148e58f2a5893ac9dd9e5c22238a4eb7a25baaa8"
+        )
+        self.assertEqual(EXPECTED_CONTRACT_SHA256, corrected)
+        self.assertNotEqual(EXPECTED_CONTRACT_SHA256, stale_pre_finalization)
+        self.assertEqual(sha256_object(contract), corrected)
         validate_catalytic_swarm_1_v2_contract(contract)
 
     def test_only_cache_admission_authority_changes(self):
