@@ -27,11 +27,12 @@ PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 CatalyticSwarm-0: EXECUTED ONCE / CONTROL QUALIFICATION PASS / READINESS INCONCLUSIVE
 CatalyticSwarm-0 v2: REVIEWABLE ACCEPT
-CatalyticSwarm-1: REPAIRED / INTEGRATED / NOT EXECUTED
-CatalyticSwarm-1 prior authorization: UNCONSUMED BUT SUPERSEDED BY NEW MAIN IDENTITY
-CatalyticSwarm-1 live model requests: 0
-CatalyticSwarm-1 sidecar launches: 0
-CatalyticSwarm-1 one-shot artifacts: ABSENT
+CatalyticSwarm-1: EXECUTED ONCE / INCONCLUSIVE
+CatalyticSwarm-1 authorization: CONSUMED / NO RETRY
+CatalyticSwarm-1 live model requests: 2
+CatalyticSwarm-1 common-root warm / comparison / completed tasks: 1 / 1 / 0
+CatalyticSwarm-1 sidecar launches: 1
+CatalyticSwarm-1 one-shot artifacts: 6 PRESENT / TASK RESULTS ABSENT
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_CONTROL_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN: LOCKED
@@ -61,7 +62,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Worker protocol v4 ran exactly once with no retry. Readiness, tokenizer, canary, both roots, all Fast requests, repeats, and isolation passed; Deep independently rejected on a 768-token length stop.
 - CatalyticSwarm-0 ran exactly once from protected integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`. Control qualification passed, then readiness stopped inconclusively on exact-PID WDDM telemetry loss before the parser canary or any worker request. This version cannot be retried.
 - The separately versioned CatalyticSwarm-0 v2 successor completed one artifact-claiming live execution and returned `reviewable-accept` for structured micro-workers and bounded swarm control. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests. V2 changed only exact-PID WDDM transient-gap resilience plus fresh-sample admission and preserved the exact v1 plan and prompt bytes.
-- CatalyticSwarm-1 equal-budget evaluation is repaired and integrated but not executed. The prior live authorization is unconsumed but superseded by the new protected-main identity; the command now requires new separate explicit live authority. Task advantage, Deep, persistence, SOTA, and promotion claims remain locked.
+- CatalyticSwarm-1 v1 executed exactly once and stopped `inconclusive` on the first serial-chain comparison's complete-public-root cache proof. Exactly 2 model requests completed: 1 common-root warm, 1 comparison, and 0 completed tasks. Its authority is consumed and v1 is no-retry. Equal-budget task advantage, Deep, persistence, SOTA, and promotion claims remain locked.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
@@ -109,7 +110,17 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - Exact-PID WDDM recorded 177 valid and zero unavailable samples, zero recoveries, maximum failure streak 0, maximum valid-sample gap 2.938 seconds, 107 passed freshness boundaries, and a 2,284.9 MiB peak. Maximum host-private growth was 727,982,080 bytes.
 - Cleanup, sampler retirement, runtime removal, port retirement, stable/candidate isolation, v1 preservation, and worker-v4 preservation passed. V2 is `reviewable-accept`; structured-micro-worker and bounded swarm-control availability are unlocked.
 - Exact SHA-256 values are control `1FC67796F436E69B1B2C2F132345C0335FADF6D1452E7F98D8A92D78CB616CE3`; readiness `129FD883FD03BBEF8B216AC67F77CBE854CA798A86BBC18A11D4DCDF010E7124`; parser canary `9282D7F8AE195C866E767A7F0D3BCB0A366E3FC3C1509A7DB1F99F1C541191B5`; attempt `0E9A839B7AD9D50AE6FD82DD3C63A93D23596C4A32FAF515BAC67A68EFEE8866`; result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`; ledger `C523EF77C80CDD4783D2E41103FCD72490A4C837DA2B3988B29F8D7A97E1F7F9`; blackboard `197929DF8DF62A24480A64C071651CED43E16D82F0B6DA5A9AB740C6C1236964`.
-- Broader process-local HoloState, restart persistence, task advantage, and SOTA remain locked; automatic promotion remains false. CatalyticSwarm-1 now has a separately gated equal-total-budget task-advantage design, but its live invocation still requires explicit authorization. No task advantage is claimed from the v2 control proof or the unexecuted design.
+- Broader process-local HoloState, restart persistence, task advantage, and SOTA remain locked; automatic promotion remains false. CatalyticSwarm-1 later executed once under separate authority and stopped before completing an equal-budget task, so neither control proof establishes task advantage.
+
+### CatalyticSwarm-1 v1 executed evidence
+
+- Exact protected commit `556bb4d57a05bb81fa101a98092472170b50c0dd` and unchanged contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e` were authorized for one invocation. No retry, Deep request, or automatic promotion occurred.
+- Control qualification, readiness, and the generation-free parser canary passed. The first task common root warmed with 4,846 fresh prompt tokens, 0 cached prompt tokens, and 4 completion tokens. The first serial-chain response then failed to prove complete-public-root reuse, so execution stopped after 2 model requests with 0 completed task comparisons.
+- Six artifacts are preserved: control `F9C8032340655EBBE5E41867D8C4C426940E6B7D2236ACDA9019EE9E24F8733D`; readiness `F6DF670C7CE1659E78D4B51F5CD45FAF4087DD46ABE87D8AD529AB45F6FE9C95`; parser canary `0B2749F3F864CB93FB003EA68A41AD364C56360C270506DB3684C1738E221680`; attempt `593D013494064F10FF9ECF732942EE114E1DC91E14A3290210C8801684A48A40`; result `D37CBF79BC867D927C01C7977D4432A29B2CA40E59ED5C10CCF6EF9A5F3AACAB`; ledger `5E016B7554E57564833BAA3B5B1250C6EE6FB73CFE204BDCBC4EEB902C1E40B8`. `task-results-v1.json` is absent.
+- The ledger contains one bounded metadata-only warm record for 2 completed responses because the failed comparison stopped before ledger persistence. Terminal reconciliation therefore records `ledger-request-count`; raw SSE and hidden material were not persisted.
+- All 12 observed WDDM freshness admissions passed, but the inherited CatalyticSwarm-0 v2 terminal reconciler expects v2 worker-boundary labels instead of CS1 request-boundary labels and separately reports `wddm-required-freshness-boundary-order`. This unrepaired label incompatibility did not cause the primary cache-proof stop.
+- Cleanup and observed runtime integrity passed: sidecar PID `30848` stopped, runtime state was removed, port 9494 became free, five WDDM retirement samples were empty, stable PID `32684` remained healthy, and candidate custody remained intact. Full-schedule `2064 / 1032 / 8` reconciliation remains non-pass after the early stop.
+- CatalyticSwarm-1 v1 is `inconclusive` and no-retry. Equal-budget advantage was not completed; task advantage, SOTA, broader process-local HoloState, restart persistence, and automatic promotion remain locked.
 
 ### CatalyticSwarm-1 equal-budget integration prepared
 

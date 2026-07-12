@@ -35,13 +35,16 @@ Neo3000 starts from a pinned source import of the runtime portions of `llama.cpp
 
 Checkpoint 0 and the supervised RSI substrate are closed. Checkpoint 1A tracing is paused, and Checkpoint 2 is active. CatalyticSwarm-0 v2 proved the bounded 32-worker, one-slot control plane at `reviewable-accept`; it did not prove task advantage.
 
-CatalyticSwarm-1 is **REPAIRED / INTEGRATED / NOT EXECUTED**. The safety-repaired runner preserves the frozen eight-task suite and equal-budget four-arm comparison while adding per-request repository custody, host/resource enforcement, per-task parity stops, guarded cleanup transfer, and terminal boundary-count reconciliation.
+CatalyticSwarm-1 v1 is **EXECUTED ONCE / INCONCLUSIVE**. Control, readiness, the generation-free parser canary, and one common-root warm passed. The first serial-chain comparison then stopped because its response did not prove reuse of the complete public root. The audit ended after 2 model requests: 1 warm, 1 comparison, and 0 completed tasks. Equal-budget advantage was not completed.
 
 ```text
-prior live authorization: UNCONSUMED BUT SUPERSEDED BY NEW MAIN IDENTITY
-live model requests: 0
-sidecar launches: 0
-one-shot artifacts: absent
+authorization: CONSUMED / NO RETRY
+live model requests: 2
+common-root warm requests: 1
+comparison requests: 1
+completed task comparisons: 0
+sidecar launches: 1
+one-shot artifacts: 6 present / task-results-v1.json absent
 CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN: LOCKED
 SOTA_SWARM_CLAIM: LOCKED
 PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
@@ -49,7 +52,9 @@ RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 automatic promotion: disabled
 ```
 
-Do not invoke `audit-catalytic-swarm-1` without new separate explicit authorization bound to the repaired protected main.
+The partial metadata ledger records the warm only; the failed comparison stopped before ledger persistence, leaving exact 2-response/1-record partial accounting. A separate inherited CatalyticSwarm-0 v2 terminal-WDDM label mismatch remains non-pass even though all 12 observed freshness admissions passed. It did not cause the primary cache-proof stop. Cleanup passed: sidecar PID `30848` stopped, runtime state was removed, port 9494 became free, and stable PID `32684` remained healthy.
+
+Do not invoke `audit-catalytic-swarm-1` again. Any successor requires a separately versioned contract, evidence paths, and new explicit authorization.
 
 ## Bootstrap
 

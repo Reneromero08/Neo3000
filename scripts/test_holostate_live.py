@@ -184,16 +184,20 @@ class StaticCapabilityTests(unittest.TestCase):
                 SimpleNamespace(binary="x", model="y")
             )
 
-    def test_catalytic_swarm_1_command_remains_independently_wired(self) -> None:
-        sentinel = {"catalytic_swarm_1": "inconclusive"}
+    def test_catalytic_swarm_1_command_is_hard_retired(self) -> None:
         with mock.patch.object(
-            holo, "run_catalytic_swarm_1_audit", return_value=sentinel
-        ) as runner:
-            result = holo.command_audit_catalytic_swarm_1(
-                SimpleNamespace(binary="x", model="y")
-            )
-        self.assertIs(result, sentinel)
-        runner.assert_called_once()
+            holo, "assert_catalytic_swarm_1_artifact_stage", return_value=None
+        ), mock.patch.object(holo, "LiveSidecar") as sidecar, mock.patch.object(
+            holo, "stream_completion"
+        ) as stream:
+            with self.assertRaisesRegex(
+                holo.NeoLoopError, "CatalyticSwarm-1 v1 has executed and is retired"
+            ):
+                holo.command_audit_catalytic_swarm_1(
+                    SimpleNamespace(binary="x", model="y")
+                )
+        sidecar.assert_not_called()
+        stream.assert_not_called()
 
     def test_worker_protocol_v2_command_is_hard_retired(self) -> None:
         with self.assertRaises(holo.NeoLoopError):
@@ -4432,9 +4436,15 @@ class CatalyticSwarm1ProtectedRunnerTests(unittest.TestCase):
         stream.assert_called_once()
         self.assertEqual(completed, ["completed"])
 
-    def test_all_seven_prepared_runtime_paths_are_absent(self) -> None:
+    def test_executed_runtime_paths_are_preserved_without_task_results(self) -> None:
         self.assertEqual(len(holo.CATALYTIC_SWARM_1_ARTIFACT_PATHS), 7)
-        self.assertFalse(any(path.exists() for path in holo.CATALYTIC_SWARM_1_ARTIFACT_PATHS))
+        completed_paths = (
+            path
+            for path in holo.CATALYTIC_SWARM_1_ARTIFACT_PATHS
+            if path != holo.CATALYTIC_SWARM_1_TASK_RESULTS_PATH
+        )
+        self.assertTrue(all(path.is_file() for path in completed_paths))
+        self.assertFalse(holo.CATALYTIC_SWARM_1_TASK_RESULTS_PATH.exists())
 
     def test_all_seven_collisions_refuse_before_loader_or_network(self) -> None:
         for collision in range(7):

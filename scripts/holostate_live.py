@@ -2468,7 +2468,7 @@ def load_locked_catalytic_swarm_1() -> tuple[
     if catalytic_swarm_1_contract_sha256(contract) != actual:
         raise NeoLoopError("CatalyticSwarm-1 canonical contract hash differs from lock")
     if "catalytic_swarm_1_evidence" in evaluator:
-        raise NeoLoopError("CatalyticSwarm-1 evidence object is forbidden before execution")
+        raise NeoLoopError("CatalyticSwarm-1 v1 has executed and is retired")
     predecessor_contract = contract["predecessor"]
     if (
         predecessor_contract["contract_sha256"]

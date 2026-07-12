@@ -216,6 +216,14 @@ def catalytic_swarm_1_hash(evaluator: dict[str, Any]) -> str:
     return sha256_bytes(canonical_json_bytes(contract))
 
 
+def catalytic_swarm_1_evidence_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the tracked adjudication of the one-shot CatalyticSwarm-1 attempt."""
+    evidence = evaluator.get("catalytic_swarm_1_evidence")
+    if not isinstance(evidence, dict):
+        raise NeoLoopError("evaluator is missing catalytic_swarm_1_evidence")
+    return sha256_bytes(canonical_json_bytes(evidence))
+
+
 def load_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise NeoLoopError(f"missing required file: {path}")
@@ -349,6 +357,10 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     if "catalytic_swarm_0_v2_evidence" in evaluator:
         lock["catalytic_swarm_0_v2_evidence_sha256"] = (
             catalytic_swarm_0_v2_evidence_hash(evaluator)
+        )
+    if "catalytic_swarm_1_evidence" in evaluator:
+        lock["catalytic_swarm_1_evidence_sha256"] = (
+            catalytic_swarm_1_evidence_hash(evaluator)
         )
     return lock
 
@@ -504,6 +516,17 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         raise NeoLoopError(
             "CatalyticSwarm-1 contract differs from its locked complete-object hash"
         )
+    has_swarm_1_evidence = "catalytic_swarm_1_evidence" in evaluator
+    has_swarm_1_evidence_lock = "catalytic_swarm_1_evidence_sha256" in lock
+    if has_swarm_1_evidence != has_swarm_1_evidence_lock:
+        raise NeoLoopError("CatalyticSwarm-1 evidence and lock must appear together")
+    if has_swarm_1_evidence:
+        expected_swarm_1_evidence = lock["catalytic_swarm_1_evidence_sha256"]
+        actual_swarm_1_evidence = catalytic_swarm_1_evidence_hash(evaluator)
+        if expected_swarm_1_evidence != actual_swarm_1_evidence:
+            raise NeoLoopError(
+                "CatalyticSwarm-1 evidence differs from its locked complete-object hash"
+            )
     return lock
 
 

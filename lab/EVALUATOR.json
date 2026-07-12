@@ -1893,6 +1893,273 @@
     "no_retry": true,
     "automatic_promotion": false
   },
+  "catalytic_swarm_1_evidence": {
+    "schema_version": 1,
+    "protocol_commit": "556bb4d57a05bb81fa101a98092472170b50c0dd",
+    "contract_sha256": "fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e",
+    "suite_sha256": "4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92",
+    "arm_plan_hashes": {
+      "serial-chain": "99FE4402A487EEAF07FAEE7A64CAB241A888E1CB916D09C62BDA493AB08EEF53",
+      "best-of-n": "E989ECB8A53E9AD24885759627D3E3BA9A16E76A41A770E70784644A9A96696A",
+      "sparse-swarm": "9289DE195D12AB93A9A9DD70949C92FC55D40E0D930CAD521605FC1707E116DE",
+      "verified-swarm": "46A2CEADA66217AC2DD3E0BD6D1C20A052EFE9D76EE236887AF18428409A772C"
+    },
+    "binary_identity": {
+      "sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
+    },
+    "model_identity": {
+      "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+      "size_bytes": 21166757632
+    },
+    "repository": {
+      "execution_branch": "main",
+      "head": "556bb4d57a05bb81fa101a98092472170b50c0dd",
+      "main": "556bb4d57a05bb81fa101a98092472170b50c0dd",
+      "origin_main": "556bb4d57a05bb81fa101a98092472170b50c0dd",
+      "remote_main": "556bb4d57a05bb81fa101a98092472170b50c0dd",
+      "clean_before_invocation": true,
+      "clean_after_invocation": true,
+      "candidate_head": "14de9c71593e5aea4fcfcadeda47ba5c623fadcf",
+      "candidate_clean_and_unchanged": true
+    },
+    "authorization": {
+      "authorized_main": "556bb4d57a05bb81fa101a98092472170b50c0dd",
+      "invocation_count": 1,
+      "retry_count": 0,
+      "command_started_at": "2026-07-12T01:05:07.0708399Z",
+      "command_finished_at": "2026-07-12T01:09:07.2108170Z",
+      "process_exit_code": 1,
+      "authority_consumed": true,
+      "partial_evidence_preserved": true
+    },
+    "artifacts": {
+      "control": {
+        "path": "state/catalytic_swarm_1/control-qualification-v1.json",
+        "sha256": "F9C8032340655EBBE5E41867D8C4C426940E6B7D2236ACDA9019EE9E24F8733D",
+        "size_bytes": 16694
+      },
+      "readiness": {
+        "path": "state/catalytic_swarm_1/readiness-v1.json",
+        "sha256": "F6DF670C7CE1659E78D4B51F5CD45FAF4087DD46ABE87D8AD529AB45F6FE9C95",
+        "size_bytes": 15363
+      },
+      "parser_canary": {
+        "path": "state/catalytic_swarm_1/parser-canary-v1.json",
+        "sha256": "0B2749F3F864CB93FB003EA68A41AD364C56360C270506DB3684C1738E221680",
+        "size_bytes": 16258
+      },
+      "attempt": {
+        "path": "state/catalytic_swarm_1/attempt-v1.json",
+        "sha256": "593D013494064F10FF9ECF732942EE114E1DC91E14A3290210C8801684A48A40",
+        "size_bytes": 1343
+      },
+      "result": {
+        "path": "state/catalytic_swarm_1/result-v1.json",
+        "sha256": "D37CBF79BC867D927C01C7977D4432A29B2CA40E59ED5C10CCF6EF9A5F3AACAB",
+        "size_bytes": 16586
+      },
+      "ledger": {
+        "path": "state/catalytic_swarm_1/ledger-v1.jsonl",
+        "sha256": "5E016B7554E57564833BAA3B5B1250C6EE6FB73CFE204BDCBC4EEB902C1E40B8",
+        "size_bytes": 741
+      },
+      "task_results": {
+        "path": "state/catalytic_swarm_1/task-results-v1.json",
+        "present": false,
+        "reason": "no four-arm task completed before the fail-closed stop"
+      }
+    },
+    "stage_gates": {
+      "control_qualification_v1": "pass",
+      "control_generation_executed": false,
+      "readiness_v1": "pass",
+      "parser_canary_v1": "pass",
+      "first_task_root_warm_v1": "pass",
+      "attempt_claimed": true,
+      "result_claimed": true,
+      "task_results_claimed": false,
+      "hidden_scoring_executed": false
+    },
+    "failure": {
+      "classification": "inconclusive",
+      "boundary": "cs1-task-01/serial-chain/cs1-chain-t01",
+      "reason": "complete-public-root-cache-reuse-failed",
+      "message": "CatalyticSwarm-1 arm did not complete: cs1-task-01/serial-chain: cs1-chain-t01: CatalyticSwarm-1 candidate did not reuse the complete public root",
+      "completed_response_counted": true,
+      "next_request_admitted": false,
+      "candidate_id_persisted": false,
+      "selected_candidate_id": null
+    },
+    "execution": {
+      "prospective_live_request_count": 1032,
+      "common_root_warm_count": 1,
+      "comparison_request_count": 1,
+      "live_model_request_count": 2,
+      "completed_model_request_count": 2,
+      "task_comparison_count": 0,
+      "completed_task_count": 0,
+      "completed_arm_count": 0,
+      "sidecar_launch_count": 1,
+      "deep_request_count": 0
+    },
+    "first_root_warm": {
+      "task_id": "cs1-task-01",
+      "request_sequence_index": 1,
+      "prompt_tokens": 4846,
+      "cached_prompt_tokens": 0,
+      "fresh_prompt_tokens": 4846,
+      "completion_tokens": 4,
+      "required_cached_prompt_tokens": 0,
+      "content_sha256": "20F3F1B78AE1F3539870077C7B07F62F431E4FE78B46970ACAC108C5852C47E1",
+      "public_root_sha256": "98FAB6C4B0C263CFB30290B2B258F63413E3A4818D695A3CC03F1F466812C402",
+      "token_evidence_scope": "exact-visible-content-tokenization-plus-one-terminal-eos-token",
+      "resource_gate_passed": true
+    },
+    "task_arm_status": {
+      "cs1-task-01": {
+        "serial-chain": "stopped-after-first-comparison-response-before-arm-selection",
+        "best-of-n": "not-executed",
+        "sparse-swarm": "not-executed",
+        "verified-swarm": "not-executed"
+      },
+      "cs1-task-02": {"serial-chain":"not-executed","best-of-n":"not-executed","sparse-swarm":"not-executed","verified-swarm":"not-executed"},
+      "cs1-task-03": {"serial-chain":"not-executed","best-of-n":"not-executed","sparse-swarm":"not-executed","verified-swarm":"not-executed"},
+      "cs1-task-04": {"serial-chain":"not-executed","best-of-n":"not-executed","sparse-swarm":"not-executed","verified-swarm":"not-executed"},
+      "cs1-task-05": {"serial-chain":"not-executed","best-of-n":"not-executed","sparse-swarm":"not-executed","verified-swarm":"not-executed"},
+      "cs1-task-06": {"serial-chain":"not-executed","best-of-n":"not-executed","sparse-swarm":"not-executed","verified-swarm":"not-executed"},
+      "cs1-task-07": {"serial-chain":"not-executed","best-of-n":"not-executed","sparse-swarm":"not-executed","verified-swarm":"not-executed"},
+      "cs1-task-08": {"serial-chain":"not-executed","best-of-n":"not-executed","sparse-swarm":"not-executed","verified-swarm":"not-executed"}
+    },
+    "task_arm_metrics": {
+      "completed_records": [],
+      "selected_candidate_ids": [],
+      "public_pass_counts": [],
+      "hidden_pass_counts": [],
+      "exact_hidden_successes": [],
+      "reason": "no arm completed and task-results-v1.json was not created"
+    },
+    "aggregate_arm_results": {
+      "status": "not-available",
+      "serial-chain_exact_hidden_successes": null,
+      "best-of-n_exact_hidden_successes": null,
+      "sparse-swarm_exact_hidden_successes": null,
+      "verified-swarm_exact_hidden_successes": null,
+      "verified_paired_wins": null,
+      "verified_paired_losses": null,
+      "verified_paired_ties": null
+    },
+    "budget_parity": {
+      "status": "not-reached",
+      "task_parity_checks": 0,
+      "task_ratios": [],
+      "maximum_fresh_prompt_ratio": null,
+      "maximum_completion_ratio": null,
+      "maximum_total_model_token_ratio": null
+    },
+    "safety_boundaries": {
+      "custody_checks": 4,
+      "expected_terminal_custody_checks": 2064,
+      "host_memory_checks": 2,
+      "expected_terminal_host_memory_checks": 1032,
+      "task_parity_checks": 0,
+      "expected_terminal_task_parity_checks": 8,
+      "last_boundary": "post-request:cs1-task-01:serial-chain:cs1-chain-t01",
+      "terminal_count_gate_passed": false,
+      "early_stop_counts_exact": true
+    },
+    "lease_evidence": {
+      "physical_slot_count": 1,
+      "lease_count": null,
+      "maximum_concurrent_leases": null,
+      "reason": "terminal lease evidence was not emitted after the early stop"
+    },
+    "wddm": {
+      "candidate_pid": 30848,
+      "valid_sample_count": 44,
+      "unavailable_event_count": 1,
+      "total_failures": 1,
+      "maximum_consecutive_failures": 0,
+      "maximum_valid_sample_gap_seconds": 2.875,
+      "recovered_gap_count": 0,
+      "peak_dedicated_bytes": 2362318848,
+      "peak_dedicated_mib": 2252.88,
+      "freshness_boundary_count": 12,
+      "observed_freshness_boundaries_passed": 12,
+      "observed_freshness_boundary_failures": 0,
+      "model_request_pre_boundary_count": 2,
+      "model_request_post_boundary_count": 2,
+      "maximum_sample_age_seconds": 2.062999999994645,
+      "failure_reason": null
+    },
+    "host_memory": {
+      "readiness_private_bytes": 3414474752,
+      "maximum_private_growth_bytes": 318357504,
+      "growth_ceiling_bytes": 4294967296,
+      "observed_checks_passed": true
+    },
+    "ledger": {
+      "record_count": 1,
+      "size_bytes": 741,
+      "snapshot_metadata_only": true,
+      "artifact_reconciliation_metadata_only_field": false,
+      "adjudicated_payload_metadata_only": true,
+      "raw_sse_persisted": false,
+      "within_limits": true,
+      "reconciliation_passed": false,
+      "reconciliation_reasons": ["ledger-request-count"],
+      "reason": "the failed comparison response was counted but produced no post-cache-gate metadata record; the derived reconciliation metadata_only field is false only because reconciliation has a reason, and no forbidden or raw payload field was found"
+    },
+    "preservation": {
+      "predecessor_v2_evidence_sha256": "02a62f72245d6651a9a5ac39f0f56dc3ec717b9e43577481936706102eec794b",
+      "predecessor_preserved": true,
+      "frozen_stage_gate_passed": true,
+      "isolation_gate_passed": true,
+      "cleanup_gate_passed": true,
+      "sidecar_process_stopped": true,
+      "sidecar_runtime_removed": true,
+      "port_9494_free": true,
+      "empty_wddm_retirement_sample_count": 5,
+      "stable_pid_before": 32684,
+      "stable_pid_after": 32684,
+      "stable_health_preserved": true,
+      "candidate_clean_and_unchanged": true
+    },
+    "final_gates": {
+      "protocol_safety_passed": false,
+      "request_law_passed": false,
+      "metadata_ledger_reconciliation_passed": false,
+      "terminal_wddm_gate_passed": false,
+      "freshness_gate_passed": false,
+      "live_boundary_reasons": ["custody_checks-mismatch", "host_memory_checks-mismatch", "task_parity_checks-mismatch"],
+      "metadata_ledger_reasons": ["ledger-request-count"],
+      "terminal_wddm_reasons": ["wddm-required-freshness-boundary-order"],
+      "freshness_reasons": ["freshness-pre-request-count", "freshness-post-request-count"],
+      "cleanup_passed": true,
+      "isolation_passed": true,
+      "frozen_stages_passed": true
+    },
+    "terminal_wddm_observation": {
+      "status": "recorded-not-repaired",
+      "reconciler": "reconcile_v2_terminal_wddm",
+      "inherited_required_boundary_namespace": "before/after-each-worker-request:*",
+      "catalytic_swarm_1_boundary_namespace": "pre/post-request:cs1-*",
+      "observation": "the inherited terminal order check is structurally incompatible with the CatalyticSwarm-1 request-boundary labels",
+      "counterfactual_verdict_claimed": false
+    },
+    "verdicts": {
+      "PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE": "UNLOCKED",
+      "STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE": "UNLOCKED",
+      "CATALYTIC_SWARM_CONTROL_AVAILABLE": "UNLOCKED",
+      "catalytic_swarm_1": "inconclusive",
+      "CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN": "LOCKED",
+      "SOTA_SWARM_CLAIM": "LOCKED",
+      "PROCESS_LOCAL_HOLOSTATE_AVAILABLE": "LOCKED",
+      "RESTART_PERSISTENT_HOLOSTATE_AVAILABLE": "LOCKED"
+    },
+    "no_deep_requests": true,
+    "no_retry": true,
+    "automatic_promotion": false
+  },
   "candidate_editable_paths": {
     "description": "Candidates may only modify files under these paths.",
     "paths": [

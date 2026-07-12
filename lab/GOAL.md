@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Preserve the repaired, integrated, unexecuted CatalyticSwarm-1 boundary
+## Checkpoint 2: Preserve the executed, inconclusive CatalyticSwarm-1 v1 boundary
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse and the bounded process-local HoloState micro-worker are proven; broader process-local and restart-persistent availability remain locked.
 
@@ -42,15 +42,21 @@ The v1 control objective, exact plan hash `7AE101BA52CE0C8F00EC649646D6B44D25EDA
 
 Control qualification, readiness, parser canary, all 32 worker requests, 32 one-slot leases and verifier receipts, the 32-entry append-only blackboard, exact 16/8/6/2 phases, the 1,319-record bounded ledger, and both synthesis entries passed. Exact-PID WDDM recorded 177 valid and zero unavailable samples, zero recoveries, maximum failure streak 0, maximum valid-sample gap 2.938 seconds, 107 passed freshness boundaries, and a 2,284.9 MiB peak. Cleanup, isolation, v1 preservation, worker-v4 preservation, and the 727,982,080-byte host-growth bound passed. The result is `reviewable-accept` for structured micro-worker and bounded swarm-control capability only.
 
-## Prepared CatalyticSwarm-1 boundary
+## Executed CatalyticSwarm-1 boundary
 
-The equal-budget CatalyticSwarm-1 evaluation is repaired and integrated but not executed. Its frozen task suite SHA-256 is `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`; complete contract SHA-256 remains `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. It prepares serial-chain, best-of-N, sparse-swarm, and verified-swarm arms under exact equal request/token budgets, one common public-root warm per task, Latin-square order, strict isolation, and bounded metadata-only evidence. The safety-only repair adds per-request custody and host/resource enforcement, per-task parity stops, parser-to-attempt cleanup protection, and terminal `2064 / 1032 / 8` boundary reconciliation without changing the task or comparison geometry.
+The frozen equal-budget CatalyticSwarm-1 v1 evaluation ran exactly once from protected commit `556bb4d57a05bb81fa101a98092472170b50c0dd`. Its task-suite SHA-256 remains `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`; complete contract SHA-256 remains `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. The task suite, four arms, prompts, hidden data, Latin-square order, budgets, parity thresholds, and claim law did not change.
 
-No sidecar was launched, no live model request was made, no one-shot authority was claimed, and all seven `state/catalytic_swarm_1` paths remain absent. The prior live authorization is unconsumed but superseded by the new protected-main identity. The static command exists only for a future newly authorized invocation.
+Control qualification, readiness, and the generation-free parser canary passed. The first task's common public root warmed once with 4,846 fresh prompt tokens, 0 cached prompt tokens, and 4 completion tokens. The first serial-chain comparison response then failed to prove reuse of the complete public root. The fail-fast law stopped the audit after exactly 2 completed model requests: 1 common-root warm, 1 comparison, and 0 completed four-arm task comparisons. Equal-budget advantage was not completed or adjudicated.
+
+Six artifacts are preserved: control `F9C8032340655EBBE5E41867D8C4C426940E6B7D2236ACDA9019EE9E24F8733D`; readiness `F6DF670C7CE1659E78D4B51F5CD45FAF4087DD46ABE87D8AD529AB45F6FE9C95`; parser canary `0B2749F3F864CB93FB003EA68A41AD364C56360C270506DB3684C1738E221680`; attempt `593D013494064F10FF9ECF732942EE114E1DC91E14A3290210C8801684A48A40`; result `D37CBF79BC867D927C01C7977D4432A29B2CA40E59ED5C10CCF6EF9A5F3AACAB`; and ledger `5E016B7554E57564833BAA3B5B1250C6EE6FB73CFE204BDCBC4EEB902C1E40B8`. `task-results-v1.json` is absent.
+
+The metadata-only ledger contains the warm record only. Two responses completed, but the failed comparison stopped before ledger persistence, so terminal reconciliation reports `ledger-request-count`. A separate inherited terminal-control mismatch reports `wddm-required-freshness-boundary-order`: the CatalyticSwarm-0 v2 terminal WDDM reconciler expects v2 worker-boundary labels instead of the CS1 request-boundary labels. All 12 observed freshness admissions passed. This secondary label incompatibility did not cause the primary complete-root-cache stop and remains unrepaired because v1 cannot be retried.
+
+Cleanup and observed runtime integrity passed. Sidecar PID `30848` stopped, runtime state was removed, port 9494 became free, five WDDM retirement samples were empty, stable PID `32684` remained healthy, and candidate custody remained intact. The authorization is consumed. CatalyticSwarm-1 v1 is no-retry.
 
 ## Active bounded objective
 
-Preserve the repaired, integrated, unexecuted CatalyticSwarm-1 boundary. Do not invoke `audit-catalytic-swarm-1`, rerun CatalyticSwarm-0 v1/v2 or worker protocols v1-v4, infer task advantage, run Deep workers, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, or promote automatically without new separate explicit authority bound to repaired protected main.
+Preserve the executed, inconclusive, no-retry CatalyticSwarm-1 v1 boundary. Do not invoke `audit-catalytic-swarm-1` again, reinterpret its partial evidence as task advantage, repair it through a silent rerun, rerun CatalyticSwarm-0 v1/v2 or worker protocols v1-v4, run Deep workers, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, or promote automatically. Any CS1 successor requires a separately versioned contract, evidence paths, and new explicit authority.
 
 ## Claim state
 
@@ -62,11 +68,14 @@ PROCESS_LOCAL_HOLOSTATE_AVAILABLE: LOCKED
 RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 CatalyticSwarm-0: EXECUTED_ONCE_READINESS_INCONCLUSIVE
 CatalyticSwarm-0-v2: EXECUTED_ONCE / reviewable-accept
-CatalyticSwarm-1: REPAIRED / INTEGRATED / NOT EXECUTED
-CatalyticSwarm-1 prior authorization: UNCONSUMED BUT SUPERSEDED BY NEW MAIN IDENTITY
-CatalyticSwarm-1 live model requests: 0
-CatalyticSwarm-1 sidecar launches: 0
-CatalyticSwarm-1 one-shot artifacts: ABSENT
+CatalyticSwarm-1: EXECUTED ONCE / INCONCLUSIVE
+CatalyticSwarm-1 authorization: CONSUMED / NO RETRY
+CatalyticSwarm-1 live model requests: 2
+CatalyticSwarm-1 common-root warm requests: 1
+CatalyticSwarm-1 comparison requests: 1
+CatalyticSwarm-1 completed task comparisons: 0
+CatalyticSwarm-1 sidecar launches: 1
+CatalyticSwarm-1 one-shot artifacts: 6 PRESENT / TASK RESULTS ABSENT
 CATALYTIC_SWARM_READINESS: PASS
 STRUCTURED_HOLOSTATE_MICROWORKER: reviewable-accept
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED

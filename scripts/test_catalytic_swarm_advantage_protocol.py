@@ -59,7 +59,7 @@ class CatalyticSwarmAdvantageProtocolTests(unittest.TestCase):
         )
         self.assertTrue(contract["one_shot"]["no_retry"])
 
-    def test_all_one_shot_paths_are_ignored_and_absent(self) -> None:
+    def test_one_shot_paths_are_ignored_and_match_executed_boundary(self) -> None:
         repository = ROOT.parent
         ignore_lines = {
             line.strip()
@@ -68,8 +68,11 @@ class CatalyticSwarmAdvantageProtocolTests(unittest.TestCase):
             ).splitlines()
         }
         self.assertIn("state/catalytic_swarm_1/", ignore_lines)
-        for relative in ONE_SHOT_PATHS.values():
-            self.assertFalse((repository / relative).exists(), relative)
+        for name, relative in ONE_SHOT_PATHS.items():
+            if name == "task_results":
+                self.assertFalse((repository / relative).exists(), relative)
+            else:
+                self.assertTrue((repository / relative).is_file(), relative)
 
     def test_hidden_feedback_and_deep_are_forbidden(self) -> None:
         contract = build_catalytic_swarm_1_contract()

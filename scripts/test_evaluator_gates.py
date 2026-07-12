@@ -386,7 +386,7 @@ class EvaluatorGateTests(unittest.TestCase):
             self.assertIn(path, EVALUATOR["protected_paths"]["files"])
             self.assertIn(path, EVALUATOR["controller_files"])
 
-    def test_catalytic_swarm_1_complete_object_is_exact_and_unexecuted(self) -> None:
+    def test_catalytic_swarm_1_complete_object_is_exact_and_evidence_bound(self) -> None:
         self.assertEqual(
             EVALUATOR["catalytic_swarm_1"],
             build_catalytic_swarm_1_contract(),
@@ -395,7 +395,11 @@ class EvaluatorGateTests(unittest.TestCase):
             neo_loop.catalytic_swarm_1_hash(EVALUATOR),
             "fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e",
         )
-        self.assertNotIn("catalytic_swarm_1_evidence", EVALUATOR)
+        self.assertIsInstance(EVALUATOR["catalytic_swarm_1_evidence"], dict)
+        self.assertEqual(
+            neo_loop.catalytic_swarm_1_evidence_hash(EVALUATOR),
+            "e308b5953b90d5a28b902b728292440443a9299e58db8049f756557d5693a3d5",
+        )
         self.assertEqual(
             EVALUATOR["catalytic_swarm_1"]["one_shot"]["paths"],
             CATALYTIC_SWARM_1_PATHS,
@@ -422,6 +426,15 @@ class EvaluatorGateTests(unittest.TestCase):
                 neo_loop.catalytic_swarm_1_hash(changed),
                 path,
             )
+
+    def test_catalytic_swarm_1_evidence_hash_covers_full_object(self) -> None:
+        baseline = neo_loop.catalytic_swarm_1_evidence_hash(EVALUATOR)
+        changed = copy.deepcopy(EVALUATOR)
+        changed["catalytic_swarm_1_evidence"]["automatic_promotion"] = True
+        self.assertNotEqual(
+            baseline,
+            neo_loop.catalytic_swarm_1_evidence_hash(changed),
+        )
 
     def test_catalytic_swarm_1_connector_surface_is_protected(self) -> None:
         for path in (
