@@ -6,6 +6,8 @@ only cache admission: actual cached tokens must cover the exact public-root
 terminal token index. The disproven legacy common-prefix threshold remains
 recorded as provenance and is not an admission authority.
 
+The canonical contract hash was recomputed from the final object after the
+initial stale pre-finalization constant was rejected by the protected agent.
 This module performs no live execution.
 """
 
