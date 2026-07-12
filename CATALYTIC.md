@@ -195,8 +195,13 @@ The current evidence supports:
   reused for its two probes. It did not test task advantage.
 - CS1-v2 consumed its command attempt before artifact claim and made zero model
   requests. It is `PRECLAIM FAIL-CLOSED / NO RETRY`.
-- CS1-v3 is statically integrated only. Its claim contract and immutable v1
-  scheduler identities are separately bound in every prospective artifact.
+- CS1-v3 consumed its one authorized invocation preclaim fail-closed with one
+  exact control artifact and zero model requests or sidecars. Its canonical
+  consumed-boundary identity is
+  `fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14`.
+- CS1-v4 is statically integrated only. Its semantic mapping repair, claim
+  contract, immutable v1 scheduler, and runtime-evidence identities are
+  separately bound before every prospective persistence operation.
 
 ### Locked
 
@@ -209,8 +214,8 @@ PHYSICAL_ORTHOGONAL_STATE_SHARING_PROVEN
 AUTOMATIC_PROMOTION
 ```
 
-The current exact action remains preservation of CS1-v3 static custody without
-invoking it. No consumed command may be rerun. A live CS1-v3 invocation requires
+The current exact action remains preservation of CS1-v4 static custody without
+invoking it. No consumed command may be rerun. A live CS1-v4 invocation requires
 new explicit authority bound to the then-exact pushed protected `main` and exact
 model path.
 
@@ -574,11 +579,13 @@ No experiment in this section is authorized merely by being listed here.
 
 Current exact action:
 
-- verify the CS1-v3 claim contract;
+- verify the consumed CS1-v3 boundary and raw control artifact;
+- verify the CS1-v4 claim contract;
 - verify the immutable v1 scheduler contract;
 - verify the runtime-evidence binding;
 - verify evaluator locks and exact repository identity;
-- verify the v3 state root remains absent;
+- verify only the consumed v3 control artifact exists and all six later v3 paths remain absent;
+- verify the v4 state root remains absent;
 - make zero model requests and launch zero sidecars.
 
 Any mismatch stops the task. Do not repair and invoke under the same authority.
@@ -790,7 +797,8 @@ Do not attempt or claim the following at the current boundary:
 - rerunning HoloState worker protocols v1, v2, v3, or v4;
 - rerunning CatalyticSwarm-0 v1 or CatalyticSwarm-0 v2;
 - rerunning CS1-v1, the CS1 cache diagnostic, or CS1-v2;
-- invoking CS1-v3 without new exact-main and exact-model authority;
+- invoking CS1-v3 again;
+- invoking CS1-v4 without new exact-main and exact-model authority;
 - running Deep;
 - task advantage or SOTA;
 - automatic promotion;

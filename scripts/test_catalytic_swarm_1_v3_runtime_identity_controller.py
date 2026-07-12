@@ -134,11 +134,15 @@ class V3RuntimeIdentityControllerTests(unittest.TestCase):
         returned = dict(persisted[4])
         self.assertEqual(returned, persisted[4])
         self.assertTrue(all(item["schema_version"] == 3 for item in persisted))
-        self.assertFalse(any(before))
-        self.assertFalse(any(path.exists() for path in holo.CATALYTIC_SWARM_1_V3_ARTIFACT_PATHS))
+        self.assertEqual(before, (True, False, False, False, False, False, False))
+        self.assertEqual(before, tuple(path.exists() for path in holo.CATALYTIC_SWARM_1_V3_ARTIFACT_PATHS))
 
-    def test_runtime_root_remains_absent(self) -> None:
-        self.assertFalse(holo.CATALYTIC_SWARM_1_V3_STATE_ROOT.exists())
+    def test_runtime_root_contains_only_consumed_control(self) -> None:
+        self.assertTrue(holo.CATALYTIC_SWARM_1_V3_STATE_ROOT.exists())
+        self.assertEqual(
+            tuple(path.exists() for path in holo.CATALYTIC_SWARM_1_V3_ARTIFACT_PATHS),
+            (True, False, False, False, False, False, False),
+        )
 
     def test_schedule_and_promotion_remain_frozen(self) -> None:
         evaluator = json.loads((ROOT / "lab" / "EVALUATOR.json").read_text())

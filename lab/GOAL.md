@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Preserve CS1-v1, the consumed v2 preclaim boundary, and static CS1-v3 custody
+## Checkpoint 2: Preserve consumed CS1 predecessors and static CS1-v4 custody
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse and the bounded process-local HoloState micro-worker are proven; broader process-local and restart-persistent availability remain locked.
 
@@ -66,11 +66,13 @@ Both probes cached 4,822 tokens, covering public-root terminal 4,820 by two toke
 
 CS1-v2 is `COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / NO RETRY`. It stopped before artifact claim because inherited v1 qualification compared its v2 contract/runtime tuple with v1 paths. It made zero model requests, launched zero sidecars, claimed zero artifacts, and its seven-path root remains absent.
 
-CS1-v3 is `INTEGRATED / NOT EXECUTED` at complete claim contract SHA-256 `433b4d4e418614c2e9c2b177f46b68d24710921b11d8d7e848a226da22c1fd27`. It binds the consumed v2 boundary `dc64c8dff9dc129a3002629bdf97dd9114fc89f7fa01bd0744af7b8fbd3adb1e`, active-version one-shot qualification, and runtime-evidence binding `09d3c7753d3840b568d85642791425931dedc7bd34c017a16e84e606b7d3d681`. Every prospective v3 artifact carries that claim hash plus the distinct immutable v1 scheduler hash; its separate seven-path root remains absent.
+CS1-v3 is `COMMAND INVOCATION CONSUMED / PRECLAIM FAIL-CLOSED / NO RETRY`. Its exact 960-byte control artifact has SHA-256 `FCAD4C71807DCC61409A09720A092DD50D8DD96AB76A8946BF418EEBF74DE8A6`; the other six v3 paths remain absent. It made zero model requests, launched zero sidecars, and stopped because mapping insertion order was treated as contract identity. Canonical tracked boundary `catalytic_swarm_1_v3_preclaim_boundary` has SHA-256 `fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14`.
+
+CS1-v4 is `STATICALLY INTEGRATED / NOT EXECUTED`. Its only causal change is exact semantic seven-key validation followed by explicit canonical stage-order projection. Claim contract SHA-256 is `2ba862a097da4b3c6bb2e2fbececa49296b38a8c9b5b047f6c281b84c3111ece`; runtime-evidence binding is `d7949912512316d551bf6466895fe7d52b44fe568590782b85e23c4cbd6e53e4`; immutable scheduler identity remains `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. All seven v4 paths remain absent.
 
 ## Active bounded objective
 
-Preserve CS1-v1 as `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`, the diagnostic as `EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY`, CS1-v2 as `COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / NO RETRY`, and CS1-v3 as `INTEGRATED / NOT EXECUTED`. Do not invoke any consumed command; do not invoke CS1-v3 without new exact-main/model authority. Task advantage, SOTA, broader process-local HoloState, restart persistence, Deep, and automatic promotion remain locked.
+Preserve CS1-v1 as `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`, the diagnostic as `EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY`, CS1-v2 and CS1-v3 as consumed preclaim fail-closed no-retry boundaries, and CS1-v4 as `STATICALLY INTEGRATED / NOT EXECUTED`. Do not invoke any consumed command; do not invoke CS1-v4 without new exact-main/model authority. Task advantage, SOTA, broader process-local HoloState, restart persistence, Deep, and automatic promotion remain locked.
 
 ## Claim state
 
@@ -95,8 +97,11 @@ CS1 cache-admission diagnostic completed model requests: 3
 CS1 cache-admission diagnostic artifacts: 5 PRESENT / IMMUTABLE
 CS1 cache-admission diagnostic evidence: a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031
 CS1-v2: COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / ZERO REQUESTS / ZERO ARTIFACTS / NO RETRY
-CS1-v3: INTEGRATED / NOT EXECUTED
-CS1-v3 runtime-evidence binding: 09d3c7753d3840b568d85642791425931dedc7bd34c017a16e84e606b7d3d681
+CS1-v3: COMMAND INVOCATION CONSUMED / PRECLAIM FAIL-CLOSED / ZERO REQUESTS / ONE CONTROL ARTIFACT / NO RETRY
+CS1-v3 preclaim boundary: fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14
+CS1-v4: STATICALLY INTEGRATED / NOT EXECUTED
+CS1-v4 claim contract: 2ba862a097da4b3c6bb2e2fbececa49296b38a8c9b5b047f6c281b84c3111ece
+CS1-v4 runtime-evidence binding: d7949912512316d551bf6466895fe7d52b44fe568590782b85e23c4cbd6e53e4
 CatalyticSwarm-0 v2 readiness: PASS
 STRUCTURED_HOLOSTATE_MICROWORKER: reviewable-accept
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED

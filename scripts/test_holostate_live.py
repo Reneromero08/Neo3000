@@ -189,6 +189,7 @@ class StaticCapabilityTests(unittest.TestCase):
                 "audit-catalytic-swarm-1-cache-diagnostic",
                 "audit-catalytic-swarm-1-v2",
                 "audit-catalytic-swarm-1-v3",
+                "audit-catalytic-swarm-1-v4",
             },
         )
 
@@ -4549,6 +4550,71 @@ class CatalyticSwarm1ProtectedRunnerTests(unittest.TestCase):
             self.assertIn("cpu-only-stop", result["error"])
             self.assertEqual(stage["sidecar"].launch_count, 1)
             self.assertEqual(stage["warm"].call_count, 1)
+            self.assert_no_real_model_or_process(stage)
+
+    def test_v4_returned_result_exactly_matches_real_persisted_result(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
+            stage = self.install_direct_controller_stage(stack, Path(temp))
+            paths = stage["paths"]
+            binding = holo.build_v4_runtime_binding()
+            stages = {
+                Path(paths["control"]): "control",
+                Path(paths["readiness"]): "readiness",
+                Path(paths["parser_canary"]): "parser_canary",
+                Path(paths["attempt"]): "attempt",
+                Path(paths["result"]): "result",
+                Path(paths["task_results"]): "task_results",
+            }
+            stack.enter_context(
+                mock.patch.object(
+                    holo,
+                    "_catalytic_swarm_1_runtime_stage",
+                    side_effect=lambda path: stages[Path(path)],
+                )
+            )
+            stack.enter_context(
+                mock.patch.object(holo, "CATALYTIC_SWARM_1_RUNTIME_VERSION", "v4")
+            )
+            stack.enter_context(
+                mock.patch.object(
+                    holo, "CATALYTIC_SWARM_1_ACTIVE_RUNTIME_BINDING", binding
+                )
+            )
+            stack.enter_context(
+                mock.patch.object(
+                    holo,
+                    "qualify_active_catalytic_swarm_1_control",
+                    return_value={"passed": True, "model_requests": 0},
+                )
+            )
+            holo.claim_catalytic_swarm_1_runtime_json_once(
+                Path(paths["control"]),
+                {
+                    "status": "preclaim",
+                    "command_invocation_consumed": True,
+                    "no_retry": True,
+                    "control_qualification_v4": "inconclusive",
+                },
+                runtime_binding=binding,
+                preserve_partial_on_failure=True,
+            )
+            stack.enter_context(
+                mock.patch.object(
+                    holo,
+                    "BoundedStreamLedger",
+                    side_effect=RuntimeError("stop-after-real-result-claim"),
+                )
+            )
+            returned = holo.run_catalytic_swarm_1_audit(
+                SimpleNamespace(binary="x", model="y"),
+                runtime_binding=binding,
+                preclaimed_control=True,
+            )
+            persisted = holo.load_json(Path(paths["result"]))
+            self.assertEqual(returned, persisted)
+            holo.validate_persisted_v4_record(persisted, "result")
+            self.assertIn("stop-after-real-result-claim", persisted["error"])
+            self.assertEqual(stage["cleanup"].call_count, 1)
             self.assert_no_real_model_or_process(stage)
 
     def test_direct_controller_readiness_to_parser_interrupt_cleans_once(self) -> None:

@@ -108,7 +108,8 @@ RSI-0: CLOSED
 -> CatalyticSwarm-1: executed once; inconclusive on the first serial-chain comparison before any task completed
 -> CatalyticSwarm-1 cache-admission diagnostic: executed once / reviewable-accept / no retry; exact public-root reuse proven for both probes
 -> CatalyticSwarm-1 v2: command attempt consumed / preclaim fail-closed / zero requests / no retry
--> CatalyticSwarm-1 v3: integrated / not executed; active-version path law plus runtime-evidence identity binding
+-> CatalyticSwarm-1 v3: command invocation consumed / preclaim fail-closed / one control artifact / no retry
+-> CatalyticSwarm-1 v4: statically integrated / not executed; semantic key-set admission plus explicit canonical stage projection
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -128,7 +129,8 @@ this section is only its navigation capsule.
 - **Executed successor:** CatalyticSwarm-1 ran exactly once from protected commit `556bb4d57a05bb81fa101a98092472170b50c0dd` at unchanged complete-contract SHA-256 `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. Control, readiness, the generation-free parser canary, and the first common-root warm passed. The first serial-chain comparison completed a response but did not prove reuse of the complete public root, so the fail-fast law stopped after 2 model requests: 1 warm, 1 comparison, and 0 completed tasks.
 - **Executed diagnostic:** the separately versioned cache diagnostic executed exactly once: 3 requests, `reviewable-accept`, cache 4,822 covering root terminal 4,820 for both probes, and legacy threshold 4,825 overextended by five tokens. It is diagnostic-only and cannot unlock task advantage or SOTA.
 - **Consumed boundary:** CS1-v2 stopped before artifact claim because inherited v1 qualification compared its v2 tuple against v1 paths. It made zero model requests, launched zero sidecars, claimed zero artifacts, and is no-retry.
-- **Next boundary:** CS1-v3 is statically integrated only. Its active-version path law and runtime-evidence identity binding separate v3 claim authority from immutable v1 scheduler authority; root-terminal admission, suite, arms, budgets, and claim limits are unchanged. Any live v3 invocation requires new explicit exact-main/model authority.
+- **Consumed v3 boundary:** the one authorized CS1-v3 invocation persisted its 960-byte control marker, then failed closed before network or inference because sorted evaluator key order did not equal the helper's runtime-stage tuple. Canonical tracked boundary SHA-256 is `fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14`; task advantage was not adjudicated.
+- **Next boundary:** CS1-v4 is statically integrated only. It changes only insertion-order-sensitive mapping admission into exact semantic key-set validation followed by explicit canonical stage projection. Claim contract `2ba862a097da4b3c6bb2e2fbececa49296b38a8c9b5b047f6c281b84c3111ece` and runtime-evidence binding `d7949912512316d551bf6466895fe7d52b44fe568590782b85e23c4cbd6e53e4` remain distinct from immutable scheduler authority. Any live v4 invocation requires new explicit exact-main/model authority.
 
 | Swarm stage | Architectural purpose | Unlock boundary |
 |---|---|---|
@@ -661,7 +663,7 @@ Cleanup and observed runtime integrity passed. Sidecar PID `30848` stopped, runt
 
 ### CatalyticSwarm-1 cache-admission diagnostic [HISTORICAL PRE-EXECUTION SNAPSHOT]
 
-This section preserves the diagnostic's static integration boundary before its separately authorized execution. It is superseded for current status by the executed diagnostic, consumed CS1-v2 boundary, and static CS1-v3 custody recorded in the architecture summary above and `lab/CHECKPOINT.md`.
+This section preserves the diagnostic's static integration boundary before its separately authorized execution. It is superseded for current status by the executed diagnostic, consumed CS1-v2/v3 boundaries, and static CS1-v4 custody recorded in the architecture summary above and `lab/CHECKPOINT.md`.
 
 CatalyticSwarm-1 v1 remains `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`. The separately versioned cache diagnostic is statically integrated under complete-contract SHA-256 `be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b`. No diagnostic evidence object or runtime artifact exists, and no live request was made during integration.
 

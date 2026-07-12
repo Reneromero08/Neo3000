@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. CS1-v1 and its cache diagnostic are immutable executed evidence. CS1-v2 is a consumed preclaim fail-closed boundary; CS1-v3 is statically integrated with versioned runtime-evidence identity hardening only.
-**Next exact action:** preserve CS1-v3 static custody without invoking it. Its v3 claim contract and immutable v1 scheduler contract are separately bound in every prospective artifact. A live `audit-catalytic-swarm-1-v3` invocation requires future explicit authorization bound to the then-exact pushed protected `main` and exact model path. Do not rerun v1, the diagnostic, or v2; do not run Deep, claim task advantage or SOTA, or promote automatically.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. CS1-v1, its cache diagnostic, CS1-v2, and CS1-v3 are immutable consumed evidence. CS1-v4 is statically integrated with semantic one-shot mapping admission and distinct claim/scheduler/runtime identities only.
+**Next exact action:** preserve CS1-v4 static custody without invoking it. Its v4 claim contract and immutable v1 scheduler contract are separately bound in every prospective artifact. A live `audit-catalytic-swarm-1-v4` invocation requires future explicit authorization bound to the then-exact pushed protected `main` and exact model path. Do not rerun v1, the diagnostic, v2, or v3; do not run Deep, claim task advantage or SOTA, or promote automatically.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -450,7 +450,7 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Add seven absent v2-only state paths, the explicit `audit-catalytic-swarm-1-v2 --authorized-main --model` command, v1/diagnostic retirement, and CPU-only controller checks.
 - [x] Preserve the single authorized command attempt as consumed: active v2 qualification failed closed before artifact claim after comparing the v2 contract/runtime tuple against immutable v1 paths. It made zero model requests, launched zero sidecars, claimed zero artifacts, and cannot be retried.
 
-### CatalyticSwarm-1 v3 [INTEGRATED / NOT EXECUTED]
+### CatalyticSwarm-1 v3 [COMMAND INVOCATION CONSUMED / PRECLAIM FAIL-CLOSED / NO RETRY]
 
 - [x] Bind the consumed v2 preclaim boundary at SHA-256 `dc64c8dff9dc129a3002629bdf97dd9114fc89f7fa01bd0744af7b8fbd3adb1e` and repair only active-version one-shot path qualification.
 - [x] Bind claim contract `433b4d4e418614c2e9c2b177f46b68d24710921b11d8d7e848a226da22c1fd27` separately from immutable v1 scheduler contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
@@ -458,7 +458,18 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Close static one-shot custody defects without changing the frozen experiment: keep live control on v3 paths; durably consume the invocation before every fallible preclaim check; create the ledger with its first identity-bound record; project root-terminal admission into the immutable scheduler schema; and reconcile completed-response-aware CS1-native WDDM with exact early-stop counts.
 - [x] Rehash model/binary identity under replacement-denying Windows leaf and directory-chain locks, bind stable file IDs before launch and after model readiness, make close failures fail closed, and keep protected preflight failures read-only.
 - [x] Make protected-file hashing checkout-EOL-independent and protect both catalytic architecture documents. No evaluator contract, scheduler geometry, prompt, budget, hidden-data, cache-law, or claim threshold changed.
-- [ ] Preserve CS1-v3 static custody until a separately authorized live evaluation is bound to the then-exact pushed protected `main` and exact Agents-A1 model path. Do not rerun v1, the diagnostic, or v2; do not run Deep or promote automatically.
+- [x] Consume the one authorized v3 invocation exactly once. It persisted only `control-qualification-v3.json` (960 bytes, SHA-256 `FCAD4C71807DCC61409A09720A092DD50D8DD96AB76A8946BF418EEBF74DE8A6`) and failed closed at insertion-order-sensitive path admission before sidecar, model, or WDDM work.
+- [x] Bind canonical consumed-boundary evidence `catalytic_swarm_1_v3_preclaim_boundary` at SHA-256 `fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14`; preserve the raw ignored control artifact exactly and keep the other six v3 paths absent.
+- [x] Hard-retire `audit-catalytic-swarm-1-v3` with an explicit consumed/no-retry tombstone.
+
+### CatalyticSwarm-1 v4 [STATICALLY INTEGRATED / NOT EXECUTED]
+
+- [x] Add separately versioned semantic mapping admission: require the exact seven-key set, then project explicitly into `control, readiness, parser_canary, attempt, result, ledger, task_results` order without granting source insertion order authority.
+- [x] Freeze v4 claim contract `2ba862a097da4b3c6bb2e2fbececa49296b38a8c9b5b047f6c281b84c3111ece`, immutable scheduler `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`, and runtime-evidence binding `d7949912512316d551bf6466895fe7d52b44fe568590782b85e23c4cbd6e53e4` separately.
+- [x] Preserve the exact eight-task, four-arm, one-slot, 1,032-request geometry, root-terminal cache law, budgets, hidden-data boundary, scoring, thresholds, no-Deep law, no-retry law, locked claims, and disabled promotion.
+- [x] Add seven v4-only paths under `state/catalytic_swarm_1_v4`; all remain absent. Static integration made zero model requests and launched zero sidecars.
+- [x] Consume any future valid v4 command before fallible contract construction or preclaim validation, reject a second public invocation before preparation, and keep the entire raw v4 runtime namespace ignored.
+- [ ] Preserve CS1-v4 static custody until a separately authorized live evaluation is bound to the then-exact pushed protected `main` and exact Agents-A1 model path. Do not rerun any predecessor or promote automatically.
 
 Preserved v1 executed boundary:
 
@@ -489,4 +500,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: preserve CS1-v3 at `INTEGRATED / NOT EXECUTED` with its claim, scheduler, and runtime-evidence identities distinct and all seven one-shot paths absent. The diagnostic is immutable `EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY`; CS1-v2 is `COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / NO RETRY`. Do not invoke v1, the diagnostic, or v2 again. A live `audit-catalytic-swarm-1-v3` evaluation requires separate authority bound to the then-exact pushed protected `main` and exact model path. Task advantage and SOTA remain locked; Deep and automatic promotion remain disabled. CatalyticSwarm-0 v1/v2 and worker protocols v1-v4 remain immutable.
+Next task: preserve CS1-v4 at `STATICALLY INTEGRATED / NOT EXECUTED` with its claim, scheduler, and runtime-evidence identities distinct and all seven v4 paths absent. CS1-v3 is immutable `COMMAND INVOCATION CONSUMED / PRECLAIM FAIL-CLOSED / ONE CONTROL ARTIFACT / NO RETRY`. Do not invoke v1, the diagnostic, v2, or v3 again. A live `audit-catalytic-swarm-1-v4` evaluation requires separate authority bound to the then-exact pushed protected `main` and exact model path. Task advantage and SOTA remain locked; Deep and automatic promotion remain disabled. CatalyticSwarm-0 v1/v2 and worker protocols v1-v4 remain immutable.

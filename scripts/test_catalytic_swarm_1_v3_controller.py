@@ -33,15 +33,18 @@ class CatalyticSwarm1V3ControllerTests(unittest.TestCase):
                 required_namespace="state/catalytic_swarm_1",
             )
 
-    def test_v3_controller_path_qualification_passes_without_live_access(self) -> None:
+    def test_historical_v3_path_qualification_does_not_mutate_consumed_evidence(self) -> None:
         before = tuple(path.exists() for path in holo.CATALYTIC_SWARM_1_V3_ARTIFACT_PATHS)
         base = holo.load_json(ROOT / "lab" / "EVALUATOR.json")["catalytic_swarm_1"]
         with holo.catalytic_swarm_1_v3_runtime_namespace(self.v3):
             result = holo.qualify_active_catalytic_swarm_1_control(base)
         self.assertTrue(result["passed"])
         self.assertFalse(result["generation_executed"])
-        self.assertFalse(any(before))
-        self.assertFalse(any(path.exists() for path in holo.CATALYTIC_SWARM_1_V3_ARTIFACT_PATHS))
+        self.assertEqual(before, (True, False, False, False, False, False, False))
+        self.assertEqual(
+            before,
+            tuple(path.exists() for path in holo.CATALYTIC_SWARM_1_V3_ARTIFACT_PATHS),
+        )
 
     def test_live_control_requalification_cannot_fall_back_to_v1_paths(self) -> None:
         base = holo.load_json(ROOT / "lab" / "EVALUATOR.json")["catalytic_swarm_1"]
@@ -62,78 +65,17 @@ class CatalyticSwarm1V3ControllerTests(unittest.TestCase):
             holo.CATALYTIC_SWARM_1_V3_ARTIFACT_PATHS,
         )
 
-    def test_v3_invocation_is_claimed_before_preclaim_failure(self) -> None:
-        events = mock.Mock()
-        claim = events.claim
-        prepare = events.prepare
-        prepare.side_effect = holo.NeoLoopError("static preclaim failed")
-        write = events.write
-        with mock.patch.object(
-            holo, "catalytic_swarm_1_v3_runtime_namespace", return_value=nullcontext()
-        ), mock.patch.object(
-            holo, "assert_catalytic_swarm_1_v2_artifacts_absent"
-        ), mock.patch.object(
-            holo, "assert_catalytic_swarm_1_v3_artifacts_absent"
-        ), mock.patch.object(
-            holo, "claim_catalytic_swarm_1_runtime_json_once", claim
-        ), mock.patch.object(
-            holo, "prepare_catalytic_swarm_1_v3_claim", prepare
-        ), mock.patch.object(
-            holo, "write_catalytic_swarm_1_runtime_json", write
-        ), mock.patch.object(holo, "LiveSidecar") as sidecar:
-            with self.assertRaisesRegex(holo.NeoLoopError, "static preclaim failed"):
-                holo.run_catalytic_swarm_1_v3_audit(
-                    SimpleNamespace(
-                        authorized_main="a" * 40,
-                        model="Agents-A1.gguf",
-                    )
-                )
-        names = [item[0] for item in events.mock_calls]
-        self.assertLess(names.index("claim"), names.index("prepare"))
-        self.assertLess(names.index("prepare"), names.index("write"))
-        claimed = claim.call_args.args[1]
-        self.assertTrue(claimed["command_invocation_consumed"])
-        self.assertTrue(claimed["no_retry"])
-        self.assertTrue(claim.call_args.kwargs["preserve_partial_on_failure"])
+    def test_v3_runner_is_a_consumed_tombstone(self) -> None:
+        with mock.patch.object(holo, "LiveSidecar") as sidecar:
+            with self.assertRaisesRegex(holo.NeoLoopError, "consumed / no retry"):
+                holo.run_catalytic_swarm_1_v3_audit(object())
         sidecar.assert_not_called()
 
-    def test_common_runtime_preclaim_failure_updates_consumed_marker(self) -> None:
-        binding = holo.build_v3_runtime_binding()
-        marker = {"status": "preclaim", "command_invocation_consumed": True}
-        with mock.patch.object(
-            holo, "catalytic_swarm_1_v3_runtime_namespace", return_value=nullcontext()
-        ), mock.patch.object(
-            holo, "assert_catalytic_swarm_1_v2_artifacts_absent"
-        ), mock.patch.object(
-            holo, "assert_catalytic_swarm_1_v3_artifacts_absent"
-        ), mock.patch.object(
-            holo, "claim_catalytic_swarm_1_runtime_json_once"
-        ), mock.patch.object(
-            holo,
-            "prepare_catalytic_swarm_1_v3_claim",
-            return_value=(self.v3, binding),
-        ), mock.patch.object(
-            holo,
-            "run_catalytic_swarm_1_audit",
-            side_effect=holo.NeoLoopError("binary identity failed"),
-        ), mock.patch.object(
-            holo, "load_json", return_value=marker
-        ), mock.patch.object(
-            Path,
-            "is_file",
-            autospec=True,
-            side_effect=lambda path: path == holo.CATALYTIC_SWARM_1_CONTROL_PATH,
-        ), mock.patch.object(
-            holo, "write_catalytic_swarm_1_runtime_json"
-        ) as write:
-            with self.assertRaisesRegex(holo.NeoLoopError, "binary identity failed"):
-                holo.run_catalytic_swarm_1_v3_audit(
-                    SimpleNamespace(authorized_main="a" * 40, model="model.gguf")
-                )
-        persisted = write.call_args.args[1]
-        self.assertEqual(write.call_args.args[0], holo.CATALYTIC_SWARM_1_CONTROL_PATH)
-        self.assertEqual(persisted["failure_stage"], "runtime-preclaim")
-        self.assertTrue(persisted["command_invocation_consumed"])
+    def test_v3_public_handler_is_retired_before_runtime(self) -> None:
+        with mock.patch.object(holo, "run_catalytic_swarm_1_audit") as shared:
+            with self.assertRaisesRegex(holo.NeoLoopError, "consumed / no retry"):
+                holo.command_audit_catalytic_swarm_1_v3(object())
+        shared.assert_not_called()
 
     def test_runtime_path_mismatch_fails_closed(self) -> None:
         paths = list(holo.CATALYTIC_SWARM_1_V3_ARTIFACT_PATHS)
@@ -173,14 +115,19 @@ class CatalyticSwarm1V3ControllerTests(unittest.TestCase):
         with self.assertRaisesRegex(holo.NeoLoopError, "consumed and must not be rerun"):
             holo.command_audit_catalytic_swarm_1_v2(object())
 
-    def test_v3_command_requires_exact_model_and_main_flags(self) -> None:
+    def test_v3_command_parses_only_to_explicit_retirement(self) -> None:
         parser = holo.build_parser()
-        with self.assertRaises(SystemExit):
-            parser.parse_args(["audit-catalytic-swarm-1-v3"])
+        args = parser.parse_args(["audit-catalytic-swarm-1-v3"])
+        with self.assertRaisesRegex(holo.NeoLoopError, "consumed / no retry"):
+            args.handler(args)
 
-    def test_v2_and_v3_state_roots_remain_absent(self) -> None:
+    def test_v2_absent_and_v3_has_only_consumed_control(self) -> None:
         self.assertFalse(holo.CATALYTIC_SWARM_1_V2_STATE_ROOT.exists())
-        self.assertFalse(holo.CATALYTIC_SWARM_1_V3_STATE_ROOT.exists())
+        self.assertTrue(holo.CATALYTIC_SWARM_1_V3_STATE_ROOT.exists())
+        self.assertEqual(
+            tuple(path.exists() for path in holo.CATALYTIC_SWARM_1_V3_ARTIFACT_PATHS),
+            (True, False, False, False, False, False, False),
+        )
 
     def test_v2_and_v3_path_maps_are_disjoint(self) -> None:
         self.assertTrue(

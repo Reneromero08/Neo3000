@@ -18,7 +18,7 @@ The central objective is not merely to make ordinary inference cheaper. It is to
 
 # 1. Current proven boundary
 
-CS1 cache diagnostic evidence is bounded: a single authorized three-request diagnostic returned `reviewable-accept`, proving complete public-root cache reuse for two probes. It does not measure task advantage. The separately versioned CS1-v2 command attempt was consumed preclaim fail-closed with zero model requests, sidecars, or artifacts and no retry. CS1-v3 is statically integrated but unexecuted; it preserves all frozen evaluation geometry and uses the exact public-root terminal index, not the superseded legacy threshold, for cache admission. Broader HoloState, restart persistence, SOTA, and automatic promotion remain locked.
+CS1 cache diagnostic evidence is bounded: a single authorized three-request diagnostic returned `reviewable-accept`, proving complete public-root cache reuse for two probes. It does not measure task advantage. CS1-v2 and CS1-v3 are consumed preclaim fail-closed boundaries; v3 persisted only its exact control marker before insertion-order-sensitive mapping admission stopped. CS1-v4 is statically integrated but unexecuted; it preserves all frozen evaluation geometry, treats exact semantic stage identity rather than source-object insertion order as authority, and uses the exact public-root terminal index for cache admission. Broader HoloState, restart persistence, SOTA, and automatic promotion remain locked.
 
 The strongest supported mechanism claims are:
 
@@ -481,7 +481,7 @@ CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN
 
 ### CatalyticSwarm-1 cache-admission diagnostic [HISTORICAL PRE-EXECUTION SNAPSHOT]
 
-This section preserves the diagnostic's static integration boundary. Current status is the later `EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY` record, followed by the consumed CS1-v2 preclaim boundary and static CS1-v3 successor.
+This section preserves the diagnostic's static integration boundary. Current status is the later `EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY` record, followed by consumed CS1-v2/v3 preclaim boundaries and the static CS1-v4 successor.
 
 CatalyticSwarm-1 v1 remains `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`.
 The separately versioned cache-admission diagnostic is integrated at canonical
@@ -669,7 +669,9 @@ completed: adjudicate and bind the partial no-retry evidence without broadening 
 completed: integrate and execute the separately versioned CS1 cache-admission diagnostic exactly once
 completed: consume the CS1-v2 command attempt preclaim fail-closed with zero requests, sidecars, or artifacts
 completed: integrate CS1-v3 with active-version path qualification and pre-persistence runtime-evidence identity
-current: preserve CS1-v3 static custody until separately authorized exact-main and exact-model live evaluation
+completed: consume CS1-v3 preclaim fail-closed on insertion-order-sensitive mapping admission and bind its sole control artifact
+completed: statically integrate CS1-v4 with exact semantic key-set admission and explicit canonical stage projection
+current: preserve CS1-v4 static custody until separately authorized exact-main and exact-model live evaluation
 1. Adaptive population and verifier allocation, only after verified task advantage
 2. HoloState multi-root admission and eviction policy
 3. HoloState-v2 durable checkpoint-list persistence
@@ -712,8 +714,9 @@ and returned reviewable-accept after 3 model requests. Both probes recorded
 4,822 cached tokens covering public-root terminal 4,820; the former 4,825
 threshold is overextended provenance only. CS1-v2 then consumed its command
 attempt preclaim fail-closed with zero requests, sidecars, or artifacts and no
-retry. CS1-v3 is integrated but unexecuted with distinct claim, immutable
-scheduler, and runtime-evidence identities. Task advantage and SOTA remain
+retry. CS1-v3 is consumed preclaim fail-closed with one exact control artifact.
+CS1-v4 is integrated but unexecuted with distinct claim, immutable scheduler,
+and runtime-evidence identities. Task advantage and SOTA remain
 locked and automatic promotion remains disabled.
 ```
 

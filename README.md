@@ -33,7 +33,7 @@ Neo3000 starts from a pinned source import of the runtime portions of `llama.cpp
 
 ## Current protected boundary
 
-CS1-v1 is immutable (`EXECUTED ONCE / INCONCLUSIVE / NO RETRY`). Its separately versioned cache diagnostic executed once and returned `reviewable-accept`: both probes reused the complete public root (4,822 cached tokens covering terminal 4,820), while the former 4,825-token threshold was overextended. CS1-v2 consumed its command attempt preclaim fail-closed with zero model requests, sidecars, or artifacts and no retry. CS1-v3 is statically integrated but unexecuted with distinct claim, immutable scheduler, and runtime-evidence identities. Task advantage, SOTA, broader HoloState, restart persistence, and automatic promotion remain locked.
+CS1-v1 is immutable (`EXECUTED ONCE / INCONCLUSIVE / NO RETRY`). Its separately versioned cache diagnostic executed once and returned `reviewable-accept`: both probes reused the complete public root (4,822 cached tokens covering terminal 4,820), while the former 4,825-token threshold was overextended. CS1-v2 and CS1-v3 consumed preclaim fail-closed authority with zero model requests; v3 preserved one exact control artifact before its insertion-order admission defect stopped. CS1-v4 is statically integrated but unexecuted with distinct claim, immutable scheduler, and runtime-evidence identities. Task advantage, SOTA, broader HoloState, restart persistence, and automatic promotion remain locked.
 
 Checkpoint 0 and the supervised RSI substrate are closed. Checkpoint 1A tracing is paused, and Checkpoint 2 is active. CatalyticSwarm-0 v2 proved the bounded 32-worker, one-slot control plane at `reviewable-accept`; it did not prove task advantage.
 
@@ -56,11 +56,11 @@ automatic promotion: disabled
 
 CatalyticSwarm-1 v1 remains **EXECUTED ONCE / INCONCLUSIVE / NO RETRY**. The separately versioned CS1 cache-admission diagnostic is **EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY**: exactly 3 requests completed, both probes recorded 4,822 cached tokens covering public-root terminal 4,820, and all five artifacts are immutable. CS1-v2 is **COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / ZERO REQUESTS / ZERO ARTIFACTS / NO RETRY**.
 
-The diagnostic persists completed branch measurements before cache-admission classification and uses a CS1-native terminal reconciler. CS1-v3 remains static only: its v3 claim contract, immutable v1 scheduler contract, and runtime-evidence identity binding are separately locked before any prospective artifact can be written. A live invocation requires new explicit authorization bound to the then-exact pushed protected `main` and exact Agents-A1 model path. Task advantage and SOTA remain locked; automatic promotion remains disabled.
+The diagnostic persists completed branch measurements before cache-admission classification and uses a CS1-native terminal reconciler. CS1-v3 is consumed and hard-retired. CS1-v4 remains static only: its semantic mapping law, v4 claim contract, immutable v1 scheduler contract, and runtime-evidence identity binding are separately locked before any prospective artifact can be written. A live invocation requires new explicit authorization bound to the then-exact pushed protected `main` and exact Agents-A1 model path. Task advantage and SOTA remain locked; automatic promotion remains disabled.
 
 The partial metadata ledger records the warm only; the failed comparison stopped before ledger persistence, leaving exact 2-response/1-record partial accounting. A separate inherited CatalyticSwarm-0 v2 terminal-WDDM label mismatch remains non-pass even though all 12 observed freshness admissions passed. It did not cause the primary cache-proof stop. Cleanup passed: sidecar PID `30848` stopped, runtime state was removed, port 9494 became free, and stable PID `32684` remained healthy.
 
-Do not invoke `audit-catalytic-swarm-1`, `audit-catalytic-swarm-1-cache-diagnostic`, or `audit-catalytic-swarm-1-v2` again. Only CS1-v3 may receive a future separately authorized exact-main and exact-model live evaluation.
+Do not invoke `audit-catalytic-swarm-1`, `audit-catalytic-swarm-1-cache-diagnostic`, `audit-catalytic-swarm-1-v2`, or `audit-catalytic-swarm-1-v3` again. Only CS1-v4 may receive a future separately authorized exact-main and exact-model live evaluation.
 
 ## Bootstrap
 

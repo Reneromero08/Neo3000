@@ -25,6 +25,7 @@ state/catalytic_swarm_1/
 state/catalytic_swarm_1_cache_diagnostic/
 state/catalytic_swarm_1_v2/
 state/catalytic_swarm_1_v3/
+state/catalytic_swarm_1_v4/
 
 # Benchmarks and logs
 *.log

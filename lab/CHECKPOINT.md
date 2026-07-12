@@ -486,20 +486,40 @@ This preserved integration snapshot is superseded for current status by the exec
 - V2 has a distinct absent seven-path state root, hard-retires the consumed v1 and diagnostic commands, requires explicit `--authorized-main` and `--model`, and preserves the fixed 8-task, 4-arm, 1,032-request schedule and all claim limits.
 - The single authorized v2 command stopped before artifact claim with `CatalyticSwarm-1 one-shot path law changed`: its v2 contract/runtime tuple was compared against immutable v1 paths. It made zero model requests, launched zero sidecars, claimed zero artifacts, left its state root absent, and cannot be retried.
 
-### CatalyticSwarm-1 v3 [INTEGRATED / NOT EXECUTED]
+### CatalyticSwarm-1 v3 [HISTORICAL PRE-EXECUTION SNAPSHOT]
 
 - V3 binds the immutable consumed v2 preclaim boundary `dc64c8dff9dc129a3002629bdf97dd9114fc89f7fa01bd0744af7b8fbd3adb1e` and applies only active-version one-shot path qualification.
 - Its effective contract hash is `433b4d4e418614c2e9c2b177f46b68d24710921b11d8d7e848a226da22c1fd27`; the root-terminal cache law, 8-task / 4-arm geometry, 1,032-request schedule, limits, and locked claims are unchanged.
 - `audit-catalytic-swarm-1-v3` requires exact `--model` and `--authorized-main`. It has not been executed, launched no sidecar, made no model request, and its seven-path `state/catalytic_swarm_1_v3/` root remains absent.
 - Static preauthorization review found that the shared v1 scheduler would otherwise persist v1 schema, operation, and verdict identity before the wrapper renamed its returned object. This was repaired without executing v3: runtime-evidence binding `09d3c7753d3840b568d85642791425931dedc7bd34c017a16e84e606b7d3d681` now applies v3 identity before every artifact write and every metadata-ledger record, while recording the immutable v1 scheduler hash separately.
 
-### CatalyticSwarm-1 v3 static preauthorization audit [PASS / NO LIVE EXECUTION]
+### CatalyticSwarm-1 v3 static preauthorization audit [HISTORICAL PRE-EXECUTION SNAPSHOT]
 
 - Claim contract `433b4d4e418614c2e9c2b177f46b68d24710921b11d8d7e848a226da22c1fd27`, immutable scheduler contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`, runtime-evidence binding `09d3c7753d3840b568d85642791425931dedc7bd34c017a16e84e606b7d3d681`, and consumed v2 boundary `dc64c8dff9dc129a3002629bdf97dd9114fc89f7fa01bd0744af7b8fbd3adb1e` remain exact and independently bound.
 - Static audit found and repaired bounded controller defects only: post-claim control had fallen back to v1 paths; fallible state checks and failed marker sync could escape durable authority consumption; an empty ledger could precede identity; the v2/v3 root-terminal transport did not fit the immutable scheduler schema; terminal WDDM used CatalyticSwarm-0 labels and could misclassify completed responses that failed later parsing; early-stop counters required the full schedule; model/binary path identity was not namespace-pinned from final verification through model readiness; failed preflight could append a result; and protected-lock hashes depended on checkout line endings.
 - The repairs preserve the exact eight-task suite, four arm plans, candidate programs, prompts, public-root construction, hidden-data boundary, Latin-square order, 1,024 comparison requests, eight warms, 1,032 total requests, one physical slot, 32-token request ceiling, equal-budget thresholds, root-terminal cache law, advantage gate, no-retry law, locked claims, and automatic-promotion prohibition.
 - The exact local Agents-A1 file remains 21,166,757,632 bytes with SHA-256 `31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2`. The protected binary remains version `13 (417e1d6)` with SHA-256 `5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B`.
 - Static work made zero model requests, launched zero sidecars, claimed zero one-shot artifacts, created no `state/catalytic_swarm_1_v3/` root, did not run Deep, and did not promote anything. A live v3 invocation remains separately authorized work only.
+
+### CatalyticSwarm-1 v3 consumed preclaim boundary [FAIL-CLOSED / NO RETRY]
+
+- The single separately authorized `audit-catalytic-swarm-1-v3` invocation ran exactly once from protected main `16d0f439936188391b984df50deebd16734aca4f`. Authority is consumed; retry count is zero.
+- It atomically persisted only `state/catalytic_swarm_1_v3/control-qualification-v3.json`: 960 bytes, SHA-256 `FCAD4C71807DCC61409A09720A092DD50D8DD96AB76A8946BF418EEBF74DE8A6`. The artifact remains ignored runtime evidence and is not rewritten or committed.
+- Preclaim then failed with `CatalyticSwarm-1 v3 one-shot path law changed: one-shot key order or cardinality changed`. The evaluator contained the exact seven semantic keys in alphabetically sorted JSON order; v3 admission required mapping iteration order to equal runtime stage order.
+- Failure preceded network access, sidecar launch, model inference, root warm, comparison, WDDM sampling, scoring, and task completion. Exact counts are zero model requests, zero sidecars, zero warms, zero comparisons, zero completed arms, and zero completed tasks.
+- The other six v3 artifacts remain absent. Stable PID `32684` on port 9292 and candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf` remained exact and clean; ports 9393 and 9494 remained free.
+- Canonical tracked evidence object `catalytic_swarm_1_v3_preclaim_boundary` has SHA-256 `fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14`. The public v3 command is hard-retired with an explicit consumed/no-retry error.
+- This maps a controller custody Wall only. It does not adjudicate the catalytic hypothesis, task advantage, SOTA, broader process-local HoloState, or restart persistence.
+
+### CatalyticSwarm-1 v4 static successor [PASS / NOT EXECUTED]
+
+- V4 changes only one law: accept a mapping only when its semantic key set is exactly the frozen seven stages, then reconstruct the normalized mapping by explicit `control, readiness, parser_canary, attempt, result, ledger, task_results` projection. Source insertion order has no authority.
+- V4 state root is `state/catalytic_swarm_1_v4`; its seven v4-only artifact paths are distinct and absent. V1, diagnostic, v2, and consumed v3 namespaces are forbidden.
+- Claim contract SHA-256 is `2ba862a097da4b3c6bb2e2fbececa49296b38a8c9b5b047f6c281b84c3111ece`. Runtime-evidence binding SHA-256 is `d7949912512316d551bf6466895fe7d52b44fe568590782b85e23c4cbd6e53e4`. Immutable scheduler SHA-256 remains `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e` and is separately recorded.
+- The eight-task suite, 64 candidates, four arm-plan hashes, Latin-square order, one physical slot, 32 requests per arm/task, eight warms, 1,024 comparisons, 1,032 total requests, 32-token per-request cap, equal budgets, root-terminal admission, metadata-only ledger, hidden scoring boundary, advantage threshold, no-Deep law, no-retry law, and all claim limits are unchanged.
+- V4 identity is applied before every prospective artifact write and ledger append. The first ledger record is identity-bound at exclusive creation; returned and persisted result identities are identical; predecessor verdict fields are forbidden.
+- The exclusive v4 control marker is created before fallible contract construction and preclaim validation. A second public invocation fails on the existing marker before preparation or sidecar construction. The full `state/catalytic_swarm_1_v4/` namespace is ignored raw runtime state.
+- Static integration made zero model requests, launched zero sidecars, did not contact an inference endpoint, did not run Deep, and did not promote anything. Live execution requires a later exact-main/exact-model authorization.
 
 ### Durable persistence boundary
 
