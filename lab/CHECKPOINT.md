@@ -476,11 +476,17 @@ reconciled, but no worker capability request has yet executed.
 - Both minimal and realistic probes observed 4,822 cached tokens, covering the common public-root terminal index 4,820 by two tokens. Both miss the inherited 4,825 threshold by three tokens; that threshold overreaches the root by five and is retired as admission authority.
 - Exact evidence object is `a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031`. Five diagnostic artifacts remain immutable. This is not task-advantage evidence.
 
-### CatalyticSwarm-1 v2 [INTEGRATED / NOT EXECUTED]
+### CatalyticSwarm-1 v2 [COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / NO RETRY]
 
 - Complete successor contract `911242c74509f1d2d8c6a3c8aa82948c452dac5f4646dd97d70d7b27b750e984` changes only cache admission to `actual_cached_prompt_tokens >= public_root_terminal_token_index`; the legacy threshold remains provenance.
 - V2 has a distinct absent seven-path state root, hard-retires the consumed v1 and diagnostic commands, requires explicit `--authorized-main` and `--model`, and preserves the fixed 8-task, 4-arm, 1,032-request schedule and all claim limits.
-- Static integration did not execute v2, launch a sidecar, or contact the model. Future execution requires separate exact-main/model authority.
+- The single authorized v2 command stopped before artifact claim with `CatalyticSwarm-1 one-shot path law changed`: its v2 contract/runtime tuple was compared against immutable v1 paths. It made zero model requests, launched zero sidecars, claimed zero artifacts, left its state root absent, and cannot be retried.
+
+### CatalyticSwarm-1 v3 [INTEGRATED / NOT EXECUTED]
+
+- V3 binds the immutable consumed v2 preclaim boundary `dc64c8dff9dc129a3002629bdf97dd9114fc89f7fa01bd0744af7b8fbd3adb1e` and applies only active-version one-shot path qualification.
+- Its effective contract hash is `433b4d4e418614c2e9c2b177f46b68d24710921b11d8d7e848a226da22c1fd27`; the root-terminal cache law, 8-task / 4-arm geometry, 1,032-request schedule, limits, and locked claims are unchanged.
+- `audit-catalytic-swarm-1-v3` requires exact `--model` and `--authorized-main`. It has not been executed, launched no sidecar, made no model request, and its seven-path `state/catalytic_swarm_1_v3/` root remains absent.
 
 ### Durable persistence boundary
 

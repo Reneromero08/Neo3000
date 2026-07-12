@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. CS1-v1 and its cache diagnostic are immutable executed evidence. CS1-v2 is integrated but unexecuted under the exact root-terminal cache law.
-**Next exact action:** preserve CS1-v2 static custody without invoking it. A live `audit-catalytic-swarm-1-v2` invocation requires future explicit authorization bound to the then-exact pushed protected `main` and exact model path. Do not rerun consumed commands, run Deep, claim task advantage or SOTA, or promote automatically.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. CS1-v1 and its cache diagnostic are immutable executed evidence. CS1-v2 is a consumed preclaim fail-closed boundary; CS1-v3 is statically integrated only.
+**Next exact action:** preserve CS1-v3 static custody without invoking it. A live `audit-catalytic-swarm-1-v3` invocation requires future explicit authorization bound to the then-exact pushed protected `main` and exact model path. Do not rerun v1, the diagnostic, or v2; do not run Deep, claim task advantage or SOTA, or promote automatically.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 

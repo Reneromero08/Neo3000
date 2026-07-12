@@ -254,6 +254,22 @@ def catalytic_swarm_1_v2_hash(evaluator: dict[str, Any]) -> str:
     return sha256_bytes(canonical_json_bytes(contract))
 
 
+def catalytic_swarm_1_v2_preclaim_boundary_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the immutable fail-closed CS1-v2 consumed-attempt boundary."""
+    boundary = evaluator.get("catalytic_swarm_1_v2_preclaim_boundary")
+    if not isinstance(boundary, dict):
+        raise NeoLoopError("evaluator is missing catalytic_swarm_1_v2_preclaim_boundary")
+    return sha256_bytes(canonical_json_bytes(boundary))
+
+
+def catalytic_swarm_1_v3_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the complete separately versioned CS1-v3 contract."""
+    contract = evaluator.get("catalytic_swarm_1_v3")
+    if not isinstance(contract, dict):
+        raise NeoLoopError("evaluator is missing catalytic_swarm_1_v3")
+    return sha256_bytes(canonical_json_bytes(contract))
+
+
 def load_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise NeoLoopError(f"missing required file: {path}")
@@ -367,6 +383,10 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
             catalytic_swarm_1_cache_diagnostic_evidence_hash(evaluator)
         ),
         "catalytic_swarm_1_v2_sha256": catalytic_swarm_1_v2_hash(evaluator),
+        "catalytic_swarm_1_v2_preclaim_boundary_sha256": (
+            catalytic_swarm_1_v2_preclaim_boundary_hash(evaluator)
+        ),
+        "catalytic_swarm_1_v3_sha256": catalytic_swarm_1_v3_hash(evaluator),
         "model_identity": evaluator["model"],
         "baseline_source_commit": git(ROOT, "rev-parse", "HEAD"),
         "stable_launch": evaluator["stable_launch"],
@@ -587,6 +607,18 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     if expected_swarm_1_v2 != actual_swarm_1_v2:
         raise NeoLoopError(
             "CatalyticSwarm-1 v2 contract differs from its locked complete-object hash"
+        )
+    expected_v2_preclaim = lock.get("catalytic_swarm_1_v2_preclaim_boundary_sha256")
+    actual_v2_preclaim = catalytic_swarm_1_v2_preclaim_boundary_hash(evaluator)
+    if expected_v2_preclaim != actual_v2_preclaim:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 v2 preclaim boundary differs from its locked complete-object hash"
+        )
+    expected_swarm_1_v3 = lock.get("catalytic_swarm_1_v3_sha256")
+    actual_swarm_1_v3 = catalytic_swarm_1_v3_hash(evaluator)
+    if expected_swarm_1_v3 != actual_swarm_1_v3:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 v3 contract differs from its locked complete-object hash"
         )
     return lock
 

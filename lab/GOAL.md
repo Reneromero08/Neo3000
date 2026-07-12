@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Preserve CS1-v1 and the non-executed cache diagnostic boundary
+## Checkpoint 2: Preserve CS1-v1, the consumed v2 preclaim boundary, and static CS1-v3 custody
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse and the bounded process-local HoloState micro-worker are proven; broader process-local and restart-persistent availability remain locked.
 
@@ -64,11 +64,13 @@ The diagnostic must persist each completed branch observation before applying a 
 
 Both probes cached 4,822 tokens, covering public-root terminal 4,820 by two tokens while missing legacy threshold 4,825 by three. The legacy threshold therefore overreaches the root by five tokens and is retired as admission authority.
 
-CS1-v2 is `INTEGRATED / NOT EXECUTED` at complete contract SHA-256 `911242c74509f1d2d8c6a3c8aa82948c452dac5f4646dd97d70d7b27b750e984`. It preserves suite, arms, budgets, safety, and claim limits, changes only the cache-admission law, and reserves a distinct absent `state/catalytic_swarm_1_v2/` root. Future execution requires separate exact-main/model authority.
+CS1-v2 is `COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / NO RETRY`. It stopped before artifact claim because inherited v1 qualification compared its v2 contract/runtime tuple with v1 paths. It made zero model requests, launched zero sidecars, claimed zero artifacts, and its seven-path root remains absent.
+
+CS1-v3 is `INTEGRATED / NOT EXECUTED` at complete contract SHA-256 `433b4d4e418614c2e9c2b177f46b68d24710921b11d8d7e848a226da22c1fd27`. It binds the consumed v2 boundary `dc64c8dff9dc129a3002629bdf97dd9114fc89f7fa01bd0744af7b8fbd3adb1e` and changes only active-version one-shot path qualification. Its separate seven-path root remains absent; future execution requires separate exact-main/model authority.
 
 ## Active bounded objective
 
-Preserve CS1-v1 as `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`, the diagnostic as `EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY`, and CS1-v2 as `INTEGRATED / NOT EXECUTED`. Do not invoke any consumed command; do not invoke CS1-v2 without new exact-main/model authority. Task advantage, SOTA, broader process-local HoloState, restart persistence, Deep, and automatic promotion remain locked.
+Preserve CS1-v1 as `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`, the diagnostic as `EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY`, CS1-v2 as `COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / NO RETRY`, and CS1-v3 as `INTEGRATED / NOT EXECUTED`. Do not invoke any consumed command; do not invoke CS1-v3 without new exact-main/model authority. Task advantage, SOTA, broader process-local HoloState, restart persistence, Deep, and automatic promotion remain locked.
 
 ## Claim state
 
@@ -92,6 +94,8 @@ CS1 cache-admission diagnostic: INTEGRATED / NOT EXECUTED
 CS1 cache-admission diagnostic prospective model requests: 3
 CS1 cache-admission diagnostic artifacts: 5 ABSENT / STATE DIRECTORY ABSENT
 CS1 cache-admission diagnostic authority: FUTURE EXACT-MAIN AUTHORIZATION REQUIRED
+CS1-v2: COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / ZERO REQUESTS / ZERO ARTIFACTS / NO RETRY
+CS1-v3: INTEGRATED / NOT EXECUTED
 CATALYTIC_SWARM_READINESS: PASS
 STRUCTURED_HOLOSTATE_MICROWORKER: reviewable-accept
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
