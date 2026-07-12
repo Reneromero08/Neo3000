@@ -22,6 +22,7 @@ slots/
 state/holostate/
 state/catalytic_swarm/
 state/catalytic_swarm_1/
+state/catalytic_swarm_1_cache_diagnostic/
 
 # Benchmarks and logs
 *.log

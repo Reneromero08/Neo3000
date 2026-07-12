@@ -2,7 +2,8 @@
 """Manage the protected process-local HoloState-v1 Live Prefix Lattice.
 
 All writes are confined to ignored ``state/holostate``, ``state/catalytic_swarm``,
-or ``state/catalytic_swarm_1`` runtime data.  This controller never edits engine
+``state/catalytic_swarm_1``, or ``state/catalytic_swarm_1_cache_diagnostic``
+runtime data.  This controller never edits engine
 source, model bytes, stable configuration, Git history, or Pi configuration. A
 registry entry is historical metadata; live state is recognized only for the
 exact running sidecar session after the server has reported reusable cached
@@ -48,6 +49,8 @@ from neo_loop import (  # noqa: E402
     catalytic_swarm_0_v2_hash,
     catalytic_swarm_0_v2_evidence_hash,
     catalytic_swarm_1_hash,
+    catalytic_swarm_1_evidence_hash,
+    catalytic_swarm_1_cache_diagnostic_hash,
     listener_pids,
     load_json,
     verify_lock,
@@ -114,6 +117,7 @@ from catalytic_swarm_advantage import (  # noqa: E402
     classify_suite_advantage,
     compare_task_outcomes,
     parse_candidate_content,
+    render_turn_assignment,
     run_advantage_arm,
 )
 from catalytic_swarm_advantage_protocol import (  # noqa: E402
@@ -133,6 +137,23 @@ from catalytic_swarm_1_runtime_safety import (  # noqa: E402
     require_host_memory_growth,
     require_task_budget_parity,
     run_request_with_boundaries,
+)
+from catalytic_swarm_1_cache_diagnostic import (  # noqa: E402
+    CacheProbeObservation,
+    classify_diagnostic as classify_cache_diagnostic,
+    classify_probe as classify_cache_probe,
+    validate_persisted_observation as validate_cache_observation,
+)
+from catalytic_swarm_1_cache_diagnostic_protocol import (  # noqa: E402
+    CHECKPOINT_MIN_STEP as CACHE_DIAGNOSTIC_CHECKPOINT_MIN_STEP,
+    ONE_SHOT_PATHS as CACHE_DIAGNOSTIC_ONE_SHOT_PATHS,
+    PREDECESSOR_ARTIFACTS as CACHE_DIAGNOSTIC_PREDECESSOR_ARTIFACTS,
+    PREDECESSOR_CONTRACT_SHA256 as CACHE_DIAGNOSTIC_PREDECESSOR_CONTRACT_SHA256,
+    PREDECESSOR_EVIDENCE_SHA256 as CACHE_DIAGNOSTIC_PREDECESSOR_EVIDENCE_SHA256,
+    TASK_ID as CACHE_DIAGNOSTIC_TASK_ID,
+    TASK_SUITE_SHA256 as CACHE_DIAGNOSTIC_TASK_SUITE_SHA256,
+    contract_sha256 as cache_diagnostic_contract_sha256,
+    validate_cache_diagnostic_contract,
 )
 from holostate_swarm_adapter import (  # noqa: E402
     HoloStateSwarmAdapterError,
@@ -227,6 +248,48 @@ CATALYTIC_SWARM_1_ARTIFACT_PATHS = (
     CATALYTIC_SWARM_1_LEDGER_PATH,
     CATALYTIC_SWARM_1_TASK_RESULTS_PATH,
 )
+CACHE_DIAGNOSTIC_STATE_ROOT = (
+    ROOT / "state" / "catalytic_swarm_1_cache_diagnostic"
+)
+CACHE_DIAGNOSTIC_CONTROL_PATH = (
+    CACHE_DIAGNOSTIC_STATE_ROOT / "control-qualification-v1.json"
+)
+CACHE_DIAGNOSTIC_READINESS_PATH = (
+    CACHE_DIAGNOSTIC_STATE_ROOT / "readiness-v1.json"
+)
+CACHE_DIAGNOSTIC_ATTEMPT_PATH = CACHE_DIAGNOSTIC_STATE_ROOT / "attempt-v1.json"
+CACHE_DIAGNOSTIC_RESULT_PATH = CACHE_DIAGNOSTIC_STATE_ROOT / "result-v1.json"
+CACHE_DIAGNOSTIC_LEDGER_PATH = CACHE_DIAGNOSTIC_STATE_ROOT / "ledger-v1.jsonl"
+CACHE_DIAGNOSTIC_ARTIFACT_PATHS = (
+    CACHE_DIAGNOSTIC_CONTROL_PATH,
+    CACHE_DIAGNOSTIC_READINESS_PATH,
+    CACHE_DIAGNOSTIC_ATTEMPT_PATH,
+    CACHE_DIAGNOSTIC_RESULT_PATH,
+    CACHE_DIAGNOSTIC_LEDGER_PATH,
+)
+CACHE_DIAGNOSTIC_CONNECTOR_FILES = (
+    "scripts/catalytic_swarm_1_cache_diagnostic.py",
+    "scripts/catalytic_swarm_1_cache_diagnostic_protocol.py",
+    "scripts/test_catalytic_swarm_1_cache_diagnostic.py",
+    "scripts/test_catalytic_swarm_1_cache_diagnostic_protocol.py",
+)
+CACHE_DIAGNOSTIC_LEDGER_MAX_BYTES = 2 * MIB
+CACHE_DIAGNOSTIC_LEDGER_MAX_RECORDS = 3
+CACHE_DIAGNOSTIC_MINIMAL_ASSIGNMENT = (
+    'Return exactly this canonical JSON: {"candidate_id":"C00"}'
+)
+CACHE_DIAGNOSTIC_MINIMAL_CONTENT = '{"candidate_id":"C00"}'
+CACHE_DIAGNOSTIC_REQUEST_NAMES = (
+    "common-root-warm",
+    "minimal-branch",
+    "realistic-first-turn",
+)
+
+
+class CacheDiagnosticInstrumentationError(NeoLoopError):
+    """The diagnostic could not establish trustworthy measurement evidence."""
+
+
 CATALYTIC_SWARM_1_CONNECTOR_FILES = (
     "scripts/catalytic_advantage_tasks.py",
     "scripts/catalytic_swarm_advantage.py",
@@ -335,6 +398,14 @@ def require_catalytic_runtime_path(path: Path) -> Path:
 def require_catalytic_swarm_1_runtime_path(path: Path) -> Path:
     return require_resolved_state_path(
         path, CATALYTIC_SWARM_1_STATE_ROOT, "state/catalytic_swarm_1"
+    )
+
+
+def require_cache_diagnostic_runtime_path(path: Path) -> Path:
+    return require_resolved_state_path(
+        path,
+        CACHE_DIAGNOSTIC_STATE_ROOT,
+        "state/catalytic_swarm_1_cache_diagnostic",
     )
 
 
@@ -472,6 +543,66 @@ def write_owned_catalytic_swarm_1_runtime_json(
     if claimed is not True:
         return False
     write_catalytic_swarm_1_runtime_json(path, value, max_bytes=max_bytes)
+    return True
+
+
+def write_cache_diagnostic_runtime_json(
+    path: Path,
+    value: Any,
+    *,
+    max_bytes: int = 2 * MIB,
+) -> None:
+    """Atomically replace one bounded cache-diagnostic runtime document."""
+    path = require_cache_diagnostic_runtime_path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    encoded = _bounded_json_document(value, max_bytes=max_bytes)
+    temporary = require_cache_diagnostic_runtime_path(
+        path.with_name(path.name + f".{os.getpid()}.tmp")
+    )
+    try:
+        with temporary.open("xb") as handle:
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def claim_cache_diagnostic_runtime_json_once(
+    path: Path,
+    value: Any,
+    *,
+    max_bytes: int = 2 * MIB,
+) -> None:
+    """Atomically claim one bounded cache-diagnostic one-shot document."""
+    path = require_cache_diagnostic_runtime_path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    encoded = _bounded_json_document(value, max_bytes=max_bytes)
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+    except FileExistsError as exc:
+        raise NeoLoopError(f"one-shot operation already claimed: {path.name}") from exc
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except BaseException:
+        path.unlink(missing_ok=True)
+        raise
+
+
+def write_owned_cache_diagnostic_runtime_json(
+    path: Path,
+    value: Any,
+    *,
+    claimed: bool,
+    max_bytes: int = 2 * MIB,
+) -> bool:
+    if claimed is not True:
+        return False
+    write_cache_diagnostic_runtime_json(path, value, max_bytes=max_bytes)
     return True
 
 
@@ -2493,6 +2624,315 @@ def load_locked_catalytic_swarm_1() -> tuple[
     ):
         raise NeoLoopError("CatalyticSwarm-1 predecessor availability is not unlocked")
     return evaluator, live_contract, protocol_v4, predecessor, contract, lock
+
+
+def load_locked_cache_diagnostic() -> tuple[
+    dict[str, Any],
+    dict[str, Any],
+    dict[str, Any],
+    dict[str, Any],
+    dict[str, Any],
+    dict[str, Any],
+    dict[str, Any],
+]:
+    """Load the new diagnostic without reactivating the executed CS1-v1 loader."""
+    evaluator, live_contract, protocol_v4, predecessor, lock = (
+        load_locked_catalytic_swarm_0_v2()
+    )
+    diagnostic = evaluator.get("catalytic_swarm_1_cache_diagnostic")
+    try:
+        validate_cache_diagnostic_contract(diagnostic)
+    except Exception as exc:
+        raise NeoLoopError(
+            f"CatalyticSwarm-1 cache diagnostic validation failed: {exc}"
+        ) from exc
+    if not isinstance(diagnostic, dict):
+        raise NeoLoopError("CatalyticSwarm-1 cache diagnostic is not an object")
+    actual = catalytic_swarm_1_cache_diagnostic_hash(evaluator)
+    if lock.get("catalytic_swarm_1_cache_diagnostic_sha256") != actual:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 cache diagnostic is not locked as a complete object"
+        )
+    if cache_diagnostic_contract_sha256(diagnostic) != actual:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 cache diagnostic canonical hash differs from lock"
+        )
+    if "catalytic_swarm_1_cache_diagnostic_evidence" in evaluator:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 cache diagnostic v1 has executed and is retired"
+        )
+    try:
+        v1_contract = validate_catalytic_swarm_1_contract(
+            evaluator.get("catalytic_swarm_1", {})
+        )
+    except Exception as exc:
+        raise NeoLoopError(
+            f"preserved CatalyticSwarm-1 v1 contract validation failed: {exc}"
+        ) from exc
+    v1_contract_hash = catalytic_swarm_1_hash(evaluator)
+    v1_evidence_hash = catalytic_swarm_1_evidence_hash(evaluator)
+    predecessor_binding = diagnostic["predecessor"]
+    if (
+        v1_contract_hash != CACHE_DIAGNOSTIC_PREDECESSOR_CONTRACT_SHA256
+        or v1_evidence_hash != CACHE_DIAGNOSTIC_PREDECESSOR_EVIDENCE_SHA256
+        or lock.get("catalytic_swarm_1_sha256") != v1_contract_hash
+        or lock.get("catalytic_swarm_1_evidence_sha256") != v1_evidence_hash
+        or predecessor_binding["contract_sha256"] != v1_contract_hash
+        or predecessor_binding["evidence_object_sha256"] != v1_evidence_hash
+        or predecessor_binding["authority_consumed"] is not True
+        or predecessor_binding["no_retry"] is not True
+    ):
+        raise NeoLoopError(
+            "CatalyticSwarm-1 cache diagnostic predecessor binding changed"
+        )
+    return (
+        evaluator,
+        live_contract,
+        protocol_v4,
+        predecessor,
+        v1_contract,
+        diagnostic,
+        lock,
+    )
+
+
+def preserved_catalytic_swarm_1_v1_evidence(
+    diagnostic: dict[str, Any],
+) -> dict[str, Any]:
+    """Verify the six immutable v1 artifacts without parsing or rewriting them."""
+    expected = diagnostic["predecessor"]["artifacts"]
+    if expected != CACHE_DIAGNOSTIC_PREDECESSOR_ARTIFACTS:
+        raise NeoLoopError("CatalyticSwarm-1 v1 artifact binding changed")
+    paths = {
+        "control": CATALYTIC_SWARM_1_CONTROL_PATH,
+        "readiness": CATALYTIC_SWARM_1_READINESS_PATH,
+        "parser_canary": CATALYTIC_SWARM_1_PARSER_CANARY_PATH,
+        "attempt": CATALYTIC_SWARM_1_ATTEMPT_PATH,
+        "result": CATALYTIC_SWARM_1_RESULT_PATH,
+        "ledger": CATALYTIC_SWARM_1_LEDGER_PATH,
+    }
+    evidence: dict[str, Any] = {}
+    for name, path in paths.items():
+        if not path.is_file():
+            raise NeoLoopError(f"preserved CatalyticSwarm-1 v1 artifact is missing: {name}")
+        actual = sha256_file(path)
+        if actual != expected[name]:
+            raise NeoLoopError(f"preserved CatalyticSwarm-1 v1 artifact changed: {name}")
+        evidence[name] = {
+            "path": path.relative_to(ROOT).as_posix(),
+            "sha256": actual,
+            "size_bytes": path.stat().st_size,
+        }
+    if CATALYTIC_SWARM_1_TASK_RESULTS_PATH.exists():
+        raise NeoLoopError("preserved CatalyticSwarm-1 task-results absence changed")
+    evidence["task_results"] = {
+        "path": CATALYTIC_SWARM_1_TASK_RESULTS_PATH.relative_to(ROOT).as_posix(),
+        "present": False,
+    }
+    return evidence
+
+
+def assert_cache_diagnostic_artifact_stage(
+    *, allow_through: str | None = None
+) -> None:
+    names = ("control", "readiness", "attempt", "result", "ledger")
+    allowed_count = 0 if allow_through is None else names.index(allow_through) + 1
+    for index, path in enumerate(CACHE_DIAGNOSTIC_ARTIFACT_PATHS):
+        exists = path.exists()
+        if index < allowed_count:
+            if not exists:
+                raise NeoLoopError(
+                    f"cache diagnostic artifact stage is incomplete: {path.name}"
+                )
+        elif exists:
+            raise NeoLoopError(
+                f"cache diagnostic one-shot path already exists: {path.name}"
+            )
+
+
+def qualify_cache_diagnostic_control(contract: dict[str, Any]) -> dict[str, Any]:
+    """Validate the frozen three-request geometry without network or generation."""
+    validate_cache_diagnostic_contract(contract)
+    suite = build_frozen_task_suite()
+    if suite.suite_sha256 != CACHE_DIAGNOSTIC_TASK_SUITE_SHA256:
+        raise NeoLoopError("cache diagnostic task suite identity changed")
+    if len(suite.tasks) != 8 or suite.tasks[0].task_id != CACHE_DIAGNOSTIC_TASK_ID:
+        raise NeoLoopError("cache diagnostic task selection changed")
+    plans = build_all_arm_plans()
+    serial = next(plan for plan in plans if plan.arm == "serial-chain")
+    first_turn = serial.turns[0]
+    if (
+        first_turn.turn_id != "cs1-chain-t01"
+        or first_turn.ordinal != 1
+        or first_turn.parent_turn_ids != ()
+        or render_turn_assignment(suite.tasks[0], first_turn, ()) == ""
+    ):
+        raise NeoLoopError("cache diagnostic realistic first turn changed")
+    sequence = contract["sequence"]
+    if (
+        [item["ordinal"] for item in sequence] != [1, 2, 3]
+        or [item["label"] for item in sequence]
+        != list(CACHE_DIAGNOSTIC_REQUEST_NAMES)
+        or contract["request_law"]["maximum_model_requests"] != 3
+        or contract["request_law"]["deep_requests"] != 0
+        or contract["request_law"]["one_physical_slot"] is not True
+        or contract["request_law"]["thinking_disabled"] is not True
+        or contract["request_law"]["temperature"] != 0
+        or contract["request_law"]["automatic_promotion"] is not False
+    ):
+        raise NeoLoopError("cache diagnostic request geometry changed")
+    expected_paths = {
+        name: (ROOT / relative).resolve()
+        for name, relative in CACHE_DIAGNOSTIC_ONE_SHOT_PATHS.items()
+    }
+    actual_paths = {
+        name: path.resolve()
+        for name, path in zip(
+            ("control", "readiness", "attempt", "result", "ledger"),
+            CACHE_DIAGNOSTIC_ARTIFACT_PATHS,
+        )
+    }
+    if expected_paths != actual_paths:
+        raise NeoLoopError("cache diagnostic one-shot path law changed")
+    if set(expected_paths.values()) & {
+        path.resolve() for path in CATALYTIC_SWARM_1_ARTIFACT_PATHS
+    }:
+        raise NeoLoopError("cache diagnostic reused a CatalyticSwarm-1 v1 path")
+    if CACHE_DIAGNOSTIC_MINIMAL_CONTENT not in CACHE_DIAGNOSTIC_MINIMAL_ASSIGNMENT:
+        raise NeoLoopError("cache diagnostic minimal assignment changed")
+    return {
+        "passed": True,
+        "generation_executed": False,
+        "model_requests": 0,
+        "contract_sha256": cache_diagnostic_contract_sha256(contract),
+        "suite_sha256": suite.suite_sha256,
+        "task_id": suite.tasks[0].task_id,
+        "realistic_turn_id": first_turn.turn_id,
+        "prospective_model_requests": 3,
+        "deep_requests": 0,
+        "automatic_promotion": False,
+    }
+
+
+def prepare_cache_diagnostic_claim(args: argparse.Namespace) -> dict[str, Any]:
+    """Require an explicit future exact-main authorization before any claim."""
+    assert_cache_diagnostic_artifact_stage()
+    (
+        evaluator,
+        live_contract,
+        protocol_v4,
+        predecessor_contract,
+        v1_contract,
+        diagnostic,
+        lock,
+    ) = load_locked_cache_diagnostic()
+    protected = lock.get("protected_file_hashes", {})
+    for relative in CACHE_DIAGNOSTIC_CONNECTOR_FILES:
+        if relative not in protected:
+            raise NeoLoopError(f"cache diagnostic source is not protected: {relative}")
+        if sha256_file(ROOT / relative).lower() != str(protected[relative]).lower():
+            raise NeoLoopError(f"cache diagnostic source differs from lock: {relative}")
+    v1_artifacts = preserved_catalytic_swarm_1_v1_evidence(diagnostic)
+    qualification = qualify_cache_diagnostic_control(diagnostic)
+    assert_cache_diagnostic_artifact_stage()
+
+    authorized_main = getattr(args, "authorized_main", None)
+    if (
+        not isinstance(authorized_main, str)
+        or len(authorized_main) != 40
+        or any(character not in "0123456789abcdef" for character in authorized_main)
+    ):
+        raise NeoLoopError("cache diagnostic requires an exact authorized main SHA")
+    if git_read(ROOT, "branch", "--show-current") != "main":
+        raise NeoLoopError("cache diagnostic requires the checked-out branch main")
+    stable_head = git_read(ROOT, "rev-parse", "HEAD")
+    local_main = git_read(ROOT, "rev-parse", "main")
+    origin_main = git_read(ROOT, "rev-parse", "origin/main")
+    remote_main = git_read(ROOT, "ls-remote", "origin", "refs/heads/main").split()[0]
+    if not (
+        stable_head
+        == local_main
+        == origin_main
+        == remote_main
+        == authorized_main
+    ):
+        raise NeoLoopError(
+            "cache diagnostic requires exact authorized HEAD = main = origin/main = remote main"
+        )
+    stable_status = git_read(
+        ROOT, "status", "--porcelain", "--untracked-files=all"
+    )
+    if stable_status:
+        raise NeoLoopError("cache diagnostic requires a clean stable worktree")
+    candidate_root = ROOT.parent / f"{ROOT.name}-candidate"
+    evidence_object = evaluator.get("catalytic_swarm_1_evidence")
+    repository_evidence = (
+        evidence_object.get("repository")
+        if isinstance(evidence_object, dict)
+        else None
+    )
+    expected_candidate = (
+        repository_evidence.get("candidate_head")
+        if isinstance(repository_evidence, dict)
+        else None
+    )
+    candidate_head = git_read(candidate_root, "rev-parse", "HEAD")
+    candidate_status = git_read(
+        candidate_root, "status", "--porcelain", "--untracked-files=all"
+    )
+    if candidate_head != expected_candidate or candidate_status:
+        raise NeoLoopError("cache diagnostic requires the exact clean archived candidate")
+    model_argument = getattr(args, "model", None)
+    if not isinstance(model_argument, str) or not Path(model_argument).is_absolute():
+        raise NeoLoopError("cache diagnostic requires an exact absolute model path")
+    binary_identity = verify_binary_identity(Path(args.binary))
+    model_identity = verify_model(Path(model_argument), evaluator)
+    stable_props = request_json("GET", "/props", timeout=10, port=STABLE_PORT)
+    stable_template_sha256 = sha256_bytes(
+        str(stable_props.get("chat_template", "")).encode("utf-8")
+    )
+    expected_template = predecessor_contract["transport"]["chat_template_identity"][
+        "sha256"
+    ]
+    if stable_template_sha256 != expected_template:
+        raise NeoLoopError("stable chat-template identity differs from cache diagnostic")
+    runtime_custody = {
+        "stable": git_read(
+            ROOT,
+            "status",
+            "--porcelain=v2",
+            "--branch",
+            "--untracked-files=all",
+        ),
+        "candidate": git_read(
+            candidate_root,
+            "status",
+            "--porcelain=v2",
+            "--branch",
+            "--untracked-files=all",
+        ),
+    }
+    assert_cache_diagnostic_artifact_stage()
+    return {
+        "evaluator": evaluator,
+        "live_contract": live_contract,
+        "protocol_v4": protocol_v4,
+        "predecessor_contract": predecessor_contract,
+        "v1_contract": v1_contract,
+        "contract": diagnostic,
+        "lock": lock,
+        "v1_artifacts": v1_artifacts,
+        "control_qualification": qualification,
+        "stable_head": stable_head,
+        "stable_status": stable_status,
+        "candidate_root": candidate_root,
+        "candidate_head": candidate_head,
+        "candidate_status": candidate_status,
+        "binary_identity": binary_identity,
+        "model_identity": model_identity,
+        "stable_template_sha256": stable_template_sha256,
+        "runtime_custody": runtime_custody,
+    }
 
 
 def selected_reasoning_budget(contract: dict[str, Any]) -> int:
@@ -8299,12 +8739,18 @@ def reconcile_catalytic_final_artifacts(
     }
 
 
-def reconcile_v2_terminal_wddm(
-    contract: dict[str, Any], cleanup: dict[str, Any]
+def reconcile_terminal_wddm(
+    policy: dict[str, Any],
+    cleanup: dict[str, Any],
+    *,
+    required_boundaries: list[str],
 ) -> dict[str, Any]:
-    """Require one complete, internally consistent terminal v2 WDDM proof."""
+    """Require one complete, internally consistent terminal WDDM proof."""
     reasons: list[str] = []
-    policy = contract["readiness_control"]["wddm_transient_gap_policy"]
+    if not isinstance(required_boundaries, list) or any(
+        not isinstance(item, str) or not item for item in required_boundaries
+    ):
+        raise NeoLoopError("terminal WDDM required boundaries are malformed")
     wddm = cleanup.get("wddm")
     snapshot = wddm.get("telemetry_snapshot") if isinstance(wddm, dict) else None
     raw_events = snapshot.get("transition_events") if isinstance(snapshot, dict) else None
@@ -8461,21 +8907,6 @@ def reconcile_v2_terminal_wddm(
         boundaries = []
     if isinstance(wddm, dict) and wddm.get("freshness_boundary_count") != len(boundaries):
         reasons.append("wddm-freshness-boundary-count")
-    required_boundaries = [
-        "readiness-admission",
-        "before-parser-canary",
-        "after-parser-canary",
-        "before-capability-attempt",
-        *[
-            value
-            for worker_id in contract["plan"]["fixed_execution_order"]
-            for value in (
-                f"before-each-worker-request:{worker_id}",
-                f"after-each-worker-request:{worker_id}",
-            )
-        ],
-        "before-teardown",
-    ]
     observed_required = [
         item.get("boundary")
         for item in boundaries
@@ -8511,6 +8942,64 @@ def reconcile_v2_terminal_wddm(
         "transition_counts": counts,
         "freshness_boundary_count": len(boundaries),
     }
+
+
+def reconcile_v2_terminal_wddm(
+    contract: dict[str, Any], cleanup: dict[str, Any]
+) -> dict[str, Any]:
+    """Apply the CatalyticSwarm-0-v2 boundary order to the generic WDDM proof."""
+    required_boundaries = [
+        "readiness-admission",
+        "before-parser-canary",
+        "after-parser-canary",
+        "before-capability-attempt",
+        *[
+            value
+            for worker_id in contract["plan"]["fixed_execution_order"]
+            for value in (
+                f"before-each-worker-request:{worker_id}",
+                f"after-each-worker-request:{worker_id}",
+            )
+        ],
+        "before-teardown",
+    ]
+    return reconcile_terminal_wddm(
+        contract["readiness_control"]["wddm_transient_gap_policy"],
+        cleanup,
+        required_boundaries=required_boundaries,
+    )
+
+
+def reconcile_cache_diagnostic_terminal_wddm(
+    predecessor_contract: dict[str, Any],
+    cleanup: dict[str, Any],
+    *,
+    completed_model_requests: int,
+) -> dict[str, Any]:
+    """Apply only CS1 cache-diagnostic boundaries to the terminal WDDM proof."""
+    if (
+        isinstance(completed_model_requests, bool)
+        or not isinstance(completed_model_requests, int)
+        or not 0 <= completed_model_requests <= 3
+    ):
+        raise NeoLoopError("cache diagnostic WDDM request count is invalid")
+    required_boundaries = [
+        "cache-diagnostic-readiness-admission",
+        *[
+            value
+            for name in CACHE_DIAGNOSTIC_REQUEST_NAMES[:completed_model_requests]
+            for value in (
+                f"pre-request:cs1-cache-diagnostic-{name}",
+                f"post-request:cs1-cache-diagnostic-{name}",
+            )
+        ],
+        "before-teardown",
+    ]
+    return reconcile_terminal_wddm(
+        predecessor_contract["readiness_control"]["wddm_transient_gap_policy"],
+        cleanup,
+        required_boundaries=required_boundaries,
+    )
 
 
 def execute_catalytic_swarm_sequence(
@@ -12093,6 +12582,1514 @@ def catalytic_swarm_1_isolation_gate(
     return {"passed": not reasons, "reasons": reasons}
 
 
+def exact_common_token_prefix(left: list[int], right: list[int]) -> int:
+    """Return the exact equal-token prefix length for two rendered prompts."""
+    for label, values in (("warm", left), ("branch", right)):
+        if not isinstance(values, list) or not values or any(
+            isinstance(value, bool) or not isinstance(value, int)
+            for value in values
+        ):
+            raise CacheDiagnosticInstrumentationError(
+                f"cache diagnostic {label} token identity is invalid"
+            )
+    count = 0
+    for left_token, right_token in zip(left, right):
+        if left_token != right_token:
+            break
+        count += 1
+    return count
+
+
+def cache_diagnostic_detokenize(token_ids: list[int]) -> str:
+    response = request_json(
+        "POST", "/detokenize", {"tokens": token_ids}, port=PORT
+    )
+    content = response.get("content") if isinstance(response, dict) else None
+    if not isinstance(content, str):
+        raise CacheDiagnosticInstrumentationError(
+            "cache diagnostic detokenizer returned no content"
+        )
+    return content
+
+
+def locate_public_root_terminal_token_index(
+    rendered_prompt: str,
+    token_ids: list[int],
+    system_message: str,
+    *,
+    detokenize: Callable[[list[int]], str] = cache_diagnostic_detokenize,
+) -> int:
+    """Locate the smallest exact token prefix reaching the system-message end."""
+    if not all(
+        isinstance(value, str) and value
+        for value in (rendered_prompt, system_message)
+    ):
+        raise CacheDiagnosticInstrumentationError(
+            "cache diagnostic rendered/system text is unavailable"
+        )
+    if not isinstance(token_ids, list) or not token_ids:
+        raise CacheDiagnosticInstrumentationError(
+            "cache diagnostic rendered token identity is empty"
+        )
+    root_start = rendered_prompt.find(system_message)
+    if root_start < 0 or rendered_prompt.find(system_message, root_start + 1) >= 0:
+        raise CacheDiagnosticInstrumentationError(
+            "cache diagnostic rendered prompt must contain the system message exactly once"
+        )
+    root_end = root_start + len(system_message)
+    full = detokenize(list(token_ids))
+    if full != rendered_prompt:
+        raise CacheDiagnosticInstrumentationError(
+            "cache diagnostic full rendered-token detokenization is not exact"
+        )
+
+    low = 1
+    high = len(token_ids)
+    while low < high:
+        middle = (low + high) // 2
+        prefix = detokenize(list(token_ids[:middle]))
+        if not rendered_prompt.startswith(prefix):
+            raise CacheDiagnosticInstrumentationError(
+                "cache diagnostic token-prefix detokenization diverged from rendered prompt"
+            )
+        if len(prefix) >= root_end:
+            high = middle
+        else:
+            low = middle + 1
+    terminal = detokenize(list(token_ids[:low]))
+    if not rendered_prompt.startswith(terminal) or len(terminal) < root_end:
+        raise CacheDiagnosticInstrumentationError(
+            "cache diagnostic could not reach the public-root terminal"
+        )
+    if low > 1:
+        previous = detokenize(list(token_ids[: low - 1]))
+        if not rendered_prompt.startswith(previous) or len(previous) >= root_end:
+            raise CacheDiagnosticInstrumentationError(
+                "cache diagnostic public-root terminal token is not minimal"
+            )
+    return low
+
+
+def agreed_cache_diagnostic_root_terminal_index(
+    terminal_indices: dict[str, int],
+) -> int:
+    """Require one exact public-root terminal index across all three prompts."""
+    if set(terminal_indices) != set(CACHE_DIAGNOSTIC_REQUEST_NAMES) or any(
+        isinstance(value, bool) or not isinstance(value, int) or value <= 0
+        for value in terminal_indices.values()
+    ):
+        raise CacheDiagnosticInstrumentationError(
+            "cache diagnostic root terminal evidence is malformed"
+        )
+    if len(set(terminal_indices.values())) != 1:
+        raise CacheDiagnosticInstrumentationError(
+            "cache diagnostic warm/branch public-root terminal indices disagree"
+        )
+    return terminal_indices["common-root-warm"]
+
+
+CACHE_DIAGNOSTIC_OBSERVATION_FIELDS = frozenset(
+    CacheProbeObservation.__dataclass_fields__
+)
+CACHE_DIAGNOSTIC_OBSERVATION_RECORD_FIELDS = frozenset(
+    {
+        "record_type",
+        "content_sha256",
+        "token_evidence_scope",
+        *CACHE_DIAGNOSTIC_OBSERVATION_FIELDS,
+    }
+)
+CACHE_DIAGNOSTIC_WARM_RECORD_FIELDS = frozenset(
+    {
+        "record_type",
+        "label",
+        "request_sequence_index",
+        "warm_prompt_tokens",
+        "actual_cached_prompt_tokens",
+        "fresh_prompt_tokens",
+        "completion_tokens",
+        "response_completed",
+        "transport_passed",
+        "token_evidence_passed",
+        "content_sha256",
+        "token_evidence_scope",
+    }
+)
+CACHE_DIAGNOSTIC_LEDGER_ENVELOPE_FIELDS = frozenset(
+    {"global_record_index", "request_label"}
+)
+CACHE_DIAGNOSTIC_FORBIDDEN_LEDGER_TERMS = (
+    b"raw_sse",
+    b"raw_payload",
+    b"reasoning",
+    b"hidden_examples",
+    b"answer_candidate_id",
+    b"answer_key",
+    b"prompt_text",
+    b"rendered_prompt",
+    b"complete_prompt",
+    b"system_message",
+    b"user_message",
+    b"messages",
+)
+
+
+def validate_cache_diagnostic_ledger_record(record: dict[str, Any]) -> None:
+    """Require a bounded metadata-only warm or branch observation record."""
+    if not isinstance(record, dict):
+        raise NeoLoopError("cache diagnostic ledger record is not an object")
+    record_type = record.get("record_type")
+    expected = (
+        CACHE_DIAGNOSTIC_WARM_RECORD_FIELDS
+        if record_type == "warm"
+        else CACHE_DIAGNOSTIC_OBSERVATION_RECORD_FIELDS
+        if record_type == "branch-observation"
+        else frozenset()
+    )
+    if set(record) != expected:
+        raise NeoLoopError("cache diagnostic ledger field set changed")
+    encoded = canonical_json_bytes(record).lower()
+    if any(term in encoded for term in CACHE_DIAGNOSTIC_FORBIDDEN_LEDGER_TERMS):
+        raise NeoLoopError("cache diagnostic ledger contains forbidden material")
+    if record_type == "warm":
+        if (
+            record["label"] != "common-root-warm"
+            or record["request_sequence_index"] != 1
+            or record["warm_prompt_tokens"] <= 0
+            or record["actual_cached_prompt_tokens"] < 0
+            or record["actual_cached_prompt_tokens"] > record["warm_prompt_tokens"]
+            or record["fresh_prompt_tokens"]
+            != record["warm_prompt_tokens"]
+            - record["actual_cached_prompt_tokens"]
+            or record["completion_tokens"] < 0
+            or record["response_completed"] is not True
+            or type(record["transport_passed"]) is not bool
+            or type(record["token_evidence_passed"]) is not bool
+        ):
+            raise NeoLoopError("cache diagnostic warm ledger record is invalid")
+    else:
+        observation = {
+            name: record[name] for name in CACHE_DIAGNOSTIC_OBSERVATION_FIELDS
+        }
+        validate_cache_observation(observation)
+    if (
+        not isinstance(record["content_sha256"], str)
+        or len(record["content_sha256"]) != 64
+        or not isinstance(record["token_evidence_scope"], (str, type(None)))
+    ):
+        raise NeoLoopError("cache diagnostic ledger hash/token scope is invalid")
+
+
+def persist_cache_probe_before_gate(
+    ledger: BoundedStreamLedger,
+    observation: CacheProbeObservation,
+    *,
+    content_sha256: str,
+    token_evidence_scope: str | None,
+    classifier: Callable[[CacheProbeObservation], Any] = classify_cache_probe,
+) -> Any:
+    """Persist the completed response before applying cache classification."""
+    record = {
+        "record_type": "branch-observation",
+        **observation.to_dict(),
+        "content_sha256": content_sha256,
+        "token_evidence_scope": token_evidence_scope,
+    }
+    validate_cache_diagnostic_ledger_record(record)
+    ledger.append(
+        record,
+        request_label=f"cs1-cache-diagnostic-{observation.label}",
+        request_sequence_index=observation.request_sequence_index,
+    )
+    return classifier(observation)
+
+
+def reconcile_cache_diagnostic_ledger(
+    path: Path,
+    snapshot: dict[str, Any],
+    *,
+    completed_model_requests: int,
+) -> dict[str, Any]:
+    reasons: list[str] = []
+    records: list[dict[str, Any]] = []
+    raw = b""
+    try:
+        raw = require_cache_diagnostic_runtime_path(path).read_bytes()
+        for line in raw.decode("utf-8").splitlines():
+            if line.strip():
+                value = json.loads(line)
+                if not isinstance(value, dict):
+                    raise NeoLoopError("cache diagnostic ledger row is not an object")
+                records.append(value)
+    except Exception as exc:
+        reasons.append(f"ledger-read-or-parse:{exc}")
+    expected_records = completed_model_requests
+    if expected_records < 0 or expected_records > 3:
+        reasons.append("completed-request-count-invalid")
+    if len(records) != expected_records:
+        reasons.append("ledger-request-count")
+    if len(raw) > CACHE_DIAGNOSTIC_LEDGER_MAX_BYTES:
+        reasons.append("ledger-byte-ceiling")
+    if len(records) > CACHE_DIAGNOSTIC_LEDGER_MAX_RECORDS:
+        reasons.append("ledger-record-ceiling")
+    expected_types = ["warm", "branch-observation", "branch-observation"]
+    expected_labels = [
+        "cs1-cache-diagnostic-common-root-warm",
+        "cs1-cache-diagnostic-minimal-branch",
+        "cs1-cache-diagnostic-realistic-first-turn",
+    ]
+    for index, item in enumerate(records, start=1):
+        base = {
+            key: value
+            for key, value in item.items()
+            if key not in CACHE_DIAGNOSTIC_LEDGER_ENVELOPE_FIELDS
+        }
+        if (
+            item.get("global_record_index") != index
+            or item.get("request_sequence_index") != index
+            or item.get("request_label") != expected_labels[index - 1]
+            or base.get("record_type") != expected_types[index - 1]
+        ):
+            reasons.append(f"ledger-order:{index}")
+        try:
+            validate_cache_diagnostic_ledger_record(base)
+        except Exception as exc:
+            reasons.append(f"ledger-metadata:{index}:{exc}")
+    actual_sha256 = sha256_bytes(raw)
+    if (
+        snapshot.get("failure") is not None
+        or snapshot.get("within_limits") is not True
+        or snapshot.get("record_count") != len(records)
+        or snapshot.get("size_bytes") != len(raw)
+        or snapshot.get("sha256") != actual_sha256
+    ):
+        reasons.append("ledger-snapshot-reconciliation")
+    return {
+        "passed": not reasons,
+        "reasons": reasons,
+        "metadata_only": True,
+        "raw_sse_persisted": False,
+        "record_count": len(records),
+        "size_bytes": len(raw),
+        "sha256": actual_sha256,
+        "expected_records": expected_records,
+    }
+
+
+def reconcile_cache_diagnostic_terminal(
+    runtime_stats: dict[str, Any],
+    wddm: dict[str, Any],
+    *,
+    ledger_record_count: int,
+    full_schedule: bool,
+) -> dict[str, Any]:
+    """Reconcile CS1-native request labels against exactly observed requests."""
+    completed = runtime_stats.get("completed_model_requests")
+    if isinstance(completed, bool) or not isinstance(completed, int) or not 0 <= completed <= 3:
+        raise NeoLoopError("cache diagnostic completed request count is invalid")
+    if full_schedule and completed != 3:
+        raise NeoLoopError("cache diagnostic full schedule did not complete three requests")
+    boundary_gate = build_live_boundary_gate(
+        runtime_stats,
+        expected_custody_checks=2 * completed,
+        expected_host_memory_checks=completed,
+        expected_task_parity_checks=0,
+    )
+    boundaries = wddm.get("freshness_boundaries")
+    if not isinstance(boundaries, list):
+        boundaries = []
+    successful_labels = [
+        item.get("boundary")
+        for item in boundaries
+        if isinstance(item, dict) and item.get("passed") is True
+    ]
+    pre = [
+        label
+        for label in successful_labels
+        if isinstance(label, str)
+        and label.startswith("pre-request:cs1-cache-diagnostic-")
+    ]
+    post = [
+        label
+        for label in successful_labels
+        if isinstance(label, str)
+        and label.startswith("post-request:cs1-cache-diagnostic-")
+    ]
+    inherited = [
+        label
+        for label in successful_labels
+        if isinstance(label, str)
+        and (
+            label.startswith("before-each-worker-request:")
+            or label.startswith("after-each-worker-request:")
+        )
+    ]
+    expected_pre = [
+        f"pre-request:cs1-cache-diagnostic-{name}"
+        for name in CACHE_DIAGNOSTIC_REQUEST_NAMES[:completed]
+    ]
+    expected_post = [
+        f"post-request:cs1-cache-diagnostic-{name}"
+        for name in CACHE_DIAGNOSTIC_REQUEST_NAMES[:completed]
+    ]
+    reasons = list(boundary_gate["reasons"])
+    if pre != expected_pre:
+        reasons.append("freshness-pre-request-order")
+    if post != expected_post:
+        reasons.append("freshness-post-request-order")
+    if inherited:
+        reasons.append("inherited-v2-worker-boundary-label")
+    if ledger_record_count != completed:
+        reasons.append("ledger-observed-request-count")
+    return {
+        "passed": not reasons,
+        "reasons": reasons,
+        "full_schedule": full_schedule,
+        "completed_model_requests": completed,
+        "expected_custody_checks": 2 * completed,
+        "expected_host_memory_checks": completed,
+        "expected_task_parity_checks": 0,
+        "pre_request_freshness_count": len(pre),
+        "post_request_freshness_count": len(post),
+        "expected_ledger_records": completed,
+        "ledger_record_count": ledger_record_count,
+        "inherited_v2_worker_labels": inherited,
+        "live_boundary_gate": boundary_gate,
+    }
+
+
+def cache_diagnostic_lane(*, seed: int, grammar: str) -> dict[str, Any]:
+    return {
+        "thinking_mode": "disabled",
+        "chat_template_kwargs": {"enable_thinking": False},
+        "max_tokens": 32,
+        "temperature": 0.0,
+        "seed": int(seed),
+        "requires": {
+            "accepted_v4_token_evidence": True,
+            "empty_reasoning_content": True,
+            "empty_tool_calls": True,
+            "finish_reason": "stop",
+        },
+        "grammar": grammar,
+    }
+
+
+def prepare_cache_diagnostic_geometry(
+    protocol_v4: dict[str, Any],
+    readiness: dict[str, Any],
+    task: AdvantageTask,
+) -> dict[str, Any]:
+    """Render and tokenize all three frozen requests before any generation."""
+    system_message, system_identity, public_root = catalytic_swarm_1_public_root(
+        task, readiness
+    )
+    plans = build_all_arm_plans()
+    serial = next(plan for plan in plans if plan.arm == "serial-chain")
+    realistic_turn = serial.turns[0]
+    realistic_assignment = render_turn_assignment(task, realistic_turn, ())
+    warm_assignment = "Load this public task root. Return exactly: TASK ROOT READY"
+    lanes = {
+        "common-root-warm": cache_diagnostic_lane(
+            seed=14000 + int(task.task_id.rsplit("-", 1)[-1]),
+            grammar=exact_gbnf_literal("TASK ROOT READY"),
+        ),
+        "minimal-branch": cache_diagnostic_lane(
+            seed=realistic_turn.seed,
+            grammar=exact_gbnf_literal(CACHE_DIAGNOSTIC_MINIMAL_CONTENT),
+        ),
+        "realistic-first-turn": cache_diagnostic_lane(
+            seed=realistic_turn.seed,
+            grammar=catalytic_swarm_1_candidate_grammar(),
+        ),
+    }
+    assignments = {
+        "common-root-warm": warm_assignment,
+        "minimal-branch": CACHE_DIAGNOSTIC_MINIMAL_ASSIGNMENT,
+        "realistic-first-turn": realistic_assignment,
+    }
+    rendered: dict[str, str] = {}
+    token_ids: dict[str, list[int]] = {}
+    payloads: dict[str, dict[str, Any]] = {}
+    terminal_indices: dict[str, int] = {}
+    for label in CACHE_DIAGNOSTIC_REQUEST_NAMES:
+        payload = build_worker_chat_payload(
+            protocol_v4, system_message, assignments[label], lanes[label]
+        )
+        if (
+            payload.get("cache_prompt") is not True
+            or payload.get("stream") is not True
+            or payload.get("max_tokens") != 32
+            or payload.get("temperature") != 0.0
+            or payload.get("chat_template_kwargs") != {"enable_thinking": False}
+            or "tools" in payload
+            or "tool_choice" in payload
+        ):
+            raise NeoLoopError(f"cache diagnostic request law changed: {label}")
+        prompt = render_messages(
+            payload["messages"], lanes[label]["chat_template_kwargs"]
+        )
+        ids = tokenize(prompt)
+        terminal = locate_public_root_terminal_token_index(
+            prompt, ids, system_message
+        )
+        payloads[label] = payload
+        rendered[label] = prompt
+        token_ids[label] = ids
+        terminal_indices[label] = terminal
+    public_root_terminal = agreed_cache_diagnostic_root_terminal_index(
+        terminal_indices
+    )
+    branches: dict[str, dict[str, Any]] = {}
+    warm_rendered = rendered["common-root-warm"]
+    warm_ids = token_ids["common-root-warm"]
+    for label in ("minimal-branch", "realistic-first-turn"):
+        common_prefix = exact_common_token_prefix(warm_ids, token_ids[label])
+        required = catalytic_swarm_1_required_cached_prefix(
+            warm_rendered,
+            warm_ids,
+            rendered[label],
+            token_ids[label],
+            system_message,
+        )
+        branches[label] = {
+            "label": label,
+            "request_sequence_index": 2 if label == "minimal-branch" else 3,
+            "assignment": assignments[label],
+            "payload": payloads[label],
+            "rendered_prompt": rendered[label],
+            "prompt_token_ids": token_ids[label],
+            "branch_prompt_tokens": len(token_ids[label]),
+            "warm_prompt_tokens": len(warm_ids),
+            "common_prefix_tokens": common_prefix,
+            "required_cached_prompt_tokens": required,
+            "public_root_terminal_token_index": public_root_terminal,
+            "turn": realistic_turn if label == "realistic-first-turn" else None,
+            "expected_content": (
+                CACHE_DIAGNOSTIC_MINIMAL_CONTENT
+                if label == "minimal-branch"
+                else None
+            ),
+            "system_identity": system_identity,
+        }
+    system_identity.update(
+        {
+            "public_root_terminal_token_index": public_root_terminal,
+            "warm_rendered_prompt_sha256": sha256_bytes(
+                warm_rendered.encode("utf-8")
+            ),
+            "warm_rendered_prompt_token_count": len(warm_ids),
+        }
+    )
+    return {
+        "task_id": task.task_id,
+        "public_root_sha256": sha256_bytes(public_root.encode("utf-8")),
+        "system_message": system_message,
+        "system_identity": system_identity,
+        "public_root_terminal_token_index": public_root_terminal,
+        "warm": {
+            "assignment": warm_assignment,
+            "payload": payloads["common-root-warm"],
+            "rendered_prompt": warm_rendered,
+            "prompt_token_ids": warm_ids,
+            "warm_prompt_tokens": len(warm_ids),
+            "lane": lanes["common-root-warm"],
+        },
+        "branches": branches,
+        "terminal_indices": terminal_indices,
+        "realistic_turn_id": realistic_turn.turn_id,
+    }
+
+
+def execute_cache_diagnostic_warm(
+    protocol_v4: dict[str, Any],
+    geometry: dict[str, Any],
+    ledger: BoundedStreamLedger,
+    *,
+    request_completed: Callable[[str], None],
+) -> dict[str, Any]:
+    """Complete and persist the warm before enforcing its transport gate."""
+    warm = geometry["warm"]
+    transient = BoundedInMemoryLedger(max_bytes=MIB, max_records=10_000)
+    label = "cs1-cache-diagnostic-common-root-warm"
+    result = run_worker_v4_chat_request(
+        protocol_v4,
+        geometry["system_message"],
+        geometry["system_identity"],
+        root_name=geometry["task_id"],
+        assignment_name="common-root-warm",
+        lane_name="W",
+        lane=warm["lane"],
+        user_message=warm["assignment"],
+        expected_content="TASK ROOT READY",
+        ledger=transient,  # type: ignore[arg-type]
+        request_label=label,
+        request_sequence_index=1,
+        warm=True,
+        request_completed=lambda: request_completed(label),
+    )
+    evidence = result.get("visible_token_evidence")
+    evidence = evidence if isinstance(evidence, dict) else {}
+    cached = result.get("cached_prompt_tokens")
+    completion = result.get("completion_tokens")
+    if (
+        isinstance(cached, bool)
+        or not isinstance(cached, int)
+        or cached < 0
+        or cached > warm["warm_prompt_tokens"]
+        or isinstance(completion, bool)
+        or not isinstance(completion, int)
+        or completion < 0
+    ):
+        raise NeoLoopError("cache diagnostic warm token accounting is invalid")
+    transport_passed = (
+        result.get("accepted") is True
+        and result.get("finish_reason") == "stop"
+        and result.get("reasoning_content", {}).get("present") is False
+        and result.get("tool_calls") == []
+        and result.get("logical_prompt_tokens") == warm["warm_prompt_tokens"]
+    )
+    token_passed = evidence.get("accepted") is True
+    record = {
+        "record_type": "warm",
+        "label": "common-root-warm",
+        "request_sequence_index": 1,
+        "warm_prompt_tokens": warm["warm_prompt_tokens"],
+        "actual_cached_prompt_tokens": cached,
+        "fresh_prompt_tokens": warm["warm_prompt_tokens"] - cached,
+        "completion_tokens": completion,
+        "response_completed": True,
+        "transport_passed": transport_passed,
+        "token_evidence_passed": token_passed,
+        "content_sha256": result["assistant_content"]["sha256"],
+        "token_evidence_scope": evidence.get("claim_scope"),
+    }
+    validate_cache_diagnostic_ledger_record(record)
+    ledger.append(record, request_label=label, request_sequence_index=1)
+    return {
+        **record,
+        "public_root_terminal_token_index": geometry[
+            "public_root_terminal_token_index"
+        ],
+        "stream_provenance": transient.snapshot(include_records=False),
+    }
+
+
+def cache_diagnostic_transport_passed(
+    result: dict[str, Any],
+    *,
+    content_valid: bool,
+    token_evidence_passed: bool,
+) -> bool:
+    """Validate transport without treating a cache miss as transport failure."""
+    logical = result.get("logical_prompt_tokens")
+    cached = result.get("cached_prompt_tokens")
+    fresh = result.get("fresh_prompt_tokens")
+    usage_valid = (
+        type(logical) is int
+        and type(cached) is int
+        and type(fresh) is int
+        and logical > 0
+        and 0 <= cached <= logical
+        and fresh == logical - cached
+    )
+    reasoning = result.get("reasoning_content")
+    return (
+        result.get("http_status") == 200
+        and result.get("prompt_token_identity_matches") is True
+        and result.get("finish_reason") == "stop"
+        and content_valid is True
+        and result.get("tool_calls") == []
+        and isinstance(reasoning, dict)
+        and reasoning.get("present") is False
+        and token_evidence_passed is True
+        and usage_valid
+    )
+
+
+def cache_diagnostic_response_completed(measurement: Any) -> bool:
+    """Require explicit terminal finish evidence rather than treating EOF as complete."""
+    finish_reason = getattr(measurement, "finish_reason", None)
+    return isinstance(finish_reason, str) and bool(finish_reason)
+
+
+def execute_cache_diagnostic_probe(
+    protocol_v4: dict[str, Any],
+    task: AdvantageTask,
+    branch: dict[str, Any],
+    ledger: BoundedStreamLedger,
+    *,
+    request_completed: Callable[[str], None],
+) -> tuple[CacheProbeObservation, Any]:
+    """Persist one completed branch response before cache classification."""
+    label = branch["label"]
+    request_label = f"cs1-cache-diagnostic-{label}"
+    transient = BoundedInMemoryLedger(max_bytes=MIB, max_records=10_000)
+    measurement = stream_completion(
+        f"http://127.0.0.1:{PORT}{protocol_v4['endpoint']}",
+        branch["payload"],
+        repeat=1,
+        timeout=1_200,
+        event_recorder=transient.recorder(
+            request_label, branch["request_sequence_index"]
+        ),
+        request_label=request_label,
+    )
+    request_completed(request_label)
+    content = measurement.content
+    compact = compact_worker_v4_measurement(
+        measurement,
+        root_name=task.task_id,
+        assignment_name=label,
+        lane_name="F",
+        expected_content=(
+            branch["expected_content"]
+            if branch["expected_content"] is not None
+            else content
+        ),
+        system_identity=branch["system_identity"],
+        user_message=branch["assignment"],
+        configured_max_tokens=32,
+    )
+    compact["rendered_prompt_token_count"] = branch["branch_prompt_tokens"]
+    compact["prompt_token_identity_matches"] = (
+        compact.get("logical_prompt_tokens") == branch["branch_prompt_tokens"]
+    )
+    token_evidence: dict[str, Any] = {}
+    token_passed = False
+    try:
+        token_result = resolve_worker_v4_visible_token_evidence(
+            measurement,
+            expected_content=content,
+            logical_prompt_tokens=compact.get("logical_prompt_tokens"),
+        )
+        token_evidence = token_result.get("visible_token_evidence", {})
+        token_passed = token_evidence.get("accepted") is True
+    except Exception:
+        token_evidence = {}
+    compact["visible_token_evidence"] = token_evidence
+    content_valid = content == CACHE_DIAGNOSTIC_MINIMAL_CONTENT
+    if label == "realistic-first-turn":
+        try:
+            parse_candidate_content(content, task)
+            content_valid = True
+        except Exception:
+            content_valid = False
+    actual_cached = compact.get("cached_prompt_tokens")
+    completion_tokens = compact.get("completion_tokens")
+    if (
+        isinstance(actual_cached, bool)
+        or not isinstance(actual_cached, int)
+        or actual_cached < 0
+        or isinstance(completion_tokens, bool)
+        or not isinstance(completion_tokens, int)
+        or completion_tokens < 0
+    ):
+        raise NeoLoopError("cache diagnostic branch token accounting is invalid")
+    observation = CacheProbeObservation(
+        label=label,
+        request_sequence_index=branch["request_sequence_index"],
+        warm_prompt_tokens=branch.get("warm_prompt_tokens", 0),
+        branch_prompt_tokens=branch["branch_prompt_tokens"],
+        public_root_terminal_token_index=branch[
+            "public_root_terminal_token_index"
+        ],
+        common_prefix_tokens=branch["common_prefix_tokens"],
+        required_cached_prompt_tokens=branch["required_cached_prompt_tokens"],
+        actual_cached_prompt_tokens=actual_cached,
+        fresh_prompt_tokens=branch["branch_prompt_tokens"] - actual_cached,
+        completion_tokens=completion_tokens,
+        cache_checkpoint_min_step=CACHE_DIAGNOSTIC_CHECKPOINT_MIN_STEP,
+        response_completed=cache_diagnostic_response_completed(measurement),
+        transport_passed=cache_diagnostic_transport_passed(
+            compact,
+            content_valid=content_valid,
+            token_evidence_passed=token_passed,
+        ),
+        token_evidence_passed=token_passed,
+    )
+    verdict = persist_cache_probe_before_gate(
+        ledger,
+        observation,
+        content_sha256=sha256_bytes(content.encode("utf-8")),
+        token_evidence_scope=token_evidence.get("claim_scope"),
+    )
+    return observation, verdict
+
+
+def run_cache_diagnostic_probes(
+    execute_probe: Callable[[str], tuple[CacheProbeObservation, Any]],
+    *,
+    probe_completed: Callable[[CacheProbeObservation, Any], None] | None = None,
+) -> tuple[list[CacheProbeObservation], list[dict[str, Any]], Any]:
+    """Always collect both diagnostic probes before aggregate classification."""
+    observations: list[CacheProbeObservation] = []
+    probe_verdicts: list[dict[str, Any]] = []
+    for label in ("minimal-branch", "realistic-first-turn"):
+        observation, probe_verdict = execute_probe(label)
+        observations.append(observation)
+        probe_verdicts.append(probe_verdict.to_dict())
+        if probe_completed is not None:
+            probe_completed(observation, probe_verdict)
+        if not observation.transport_passed or not observation.token_evidence_passed:
+            raise CacheDiagnosticInstrumentationError(
+                f"cache diagnostic {label} transport or token evidence failed"
+            )
+    aggregate = classify_cache_diagnostic(observations)
+    return observations, probe_verdicts, aggregate
+
+
+def cache_diagnostic_failure_verdict(exc: BaseException) -> str:
+    """Map measurement failures explicitly; never infer a causal cache class."""
+    if isinstance(exc, CacheDiagnosticInstrumentationError):
+        return "instrumentation-reject"
+    text = str(exc).lower()
+    markers = (
+        "terminal token",
+        "terminal indices",
+        "detoken",
+        "token accounting",
+        "token evidence",
+        "token-evidence",
+        "prompt token",
+        "rendered prompt",
+        "ledger",
+    )
+    return "instrumentation-reject" if any(item in text for item in markers) else "inconclusive"
+
+
+def enforce_cache_diagnostic_final_safety(
+    result: dict[str, Any], *, final_safety: bool
+) -> None:
+    """Prevent a causal accept or reject from surviving failed safety evidence."""
+    if final_safety is not True and result.get("cache_diagnostic") in {
+        "reviewable-accept",
+        "reject",
+    }:
+        result["safety_demoted_from"] = result["cache_diagnostic"]
+        result["cache_diagnostic"] = "inconclusive"
+        result["cache_admission"] = "unadjudicated"
+
+
+def cache_diagnostic_final_safety(
+    *,
+    execution_error: BaseException | None,
+    interruption: BaseException | None,
+    cleanup_gate: dict[str, Any],
+    terminal_gate: dict[str, Any],
+    terminal_wddm_gate: dict[str, Any],
+    ledger_gate: dict[str, Any],
+    isolation_gate: dict[str, Any],
+    artifact_preservation: dict[str, dict[str, Any]],
+    v1_preserved: bool,
+    active_leases: int,
+    maximum_concurrent_leases: int,
+    completed_model_requests: int,
+) -> bool:
+    """Combine every terminal invariant without allowing error-path acceptance."""
+    return (
+        execution_error is None
+        and interruption is None
+        and cleanup_gate.get("passed") is True
+        and terminal_gate.get("passed") is True
+        and terminal_wddm_gate.get("passed") is True
+        and ledger_gate.get("passed") is True
+        and isolation_gate.get("passed") is True
+        and bool(artifact_preservation)
+        and all(
+            item.get("passed") is True
+            for item in artifact_preservation.values()
+        )
+        and v1_preserved is True
+        and active_leases == 0
+        and maximum_concurrent_leases <= 1
+        and 0 <= completed_model_requests <= 3
+    )
+
+
+def cache_diagnostic_isolation_gate(preclaim: dict[str, Any]) -> dict[str, Any]:
+    """Recheck exact protected-main, lock, and archived-candidate custody."""
+    reasons: list[str] = []
+    try:
+        stable_head = preclaim["stable_head"]
+        if git_read(ROOT, "branch", "--show-current") != "main":
+            reasons.append("stable-branch-changed")
+        for label, value in (
+            ("stable-head", git_read(ROOT, "rev-parse", "HEAD")),
+            ("local-main", git_read(ROOT, "rev-parse", "main")),
+            ("origin-main", git_read(ROOT, "rev-parse", "origin/main")),
+        ):
+            if value != stable_head:
+                reasons.append(f"{label}-changed")
+        remote = git_read(ROOT, "ls-remote", "origin", "refs/heads/main")
+        remote_head = remote.split()[0] if remote.split() else ""
+        if remote_head != stable_head:
+            reasons.append("remote-main-changed")
+        if git_read(
+            ROOT, "status", "--porcelain", "--untracked-files=all"
+        ) != preclaim["stable_status"]:
+            reasons.append("stable-status-changed")
+        candidate_root = preclaim["candidate_root"]
+        if git_read(candidate_root, "rev-parse", "HEAD") != preclaim["candidate_head"]:
+            reasons.append("candidate-head-changed")
+        if git_read(
+            candidate_root, "status", "--porcelain", "--untracked-files=all"
+        ) != preclaim["candidate_status"]:
+            reasons.append("candidate-status-changed")
+        verify_lock(load_json(EVALUATOR_PATH))
+    except Exception as exc:
+        reasons.append(f"isolation-check-failed:{exc}")
+    return {"passed": not reasons, "reasons": reasons}
+
+
+def run_cache_diagnostic(args: argparse.Namespace) -> dict[str, Any]:
+    """Execute only under a future explicit exact-main authorization."""
+    cleanup_state: dict[str, Any] = {"callback": None}
+    cleanup_owner = ArmedCleanup(
+        lambda: cleanup_state["callback"](), armed=False
+    )
+    try:
+        return _run_cache_diagnostic(args, cleanup_owner, cleanup_state)
+    finally:
+        cleanup_owner.run()
+
+
+def _run_cache_diagnostic(
+    args: argparse.Namespace,
+    cleanup_owner: ArmedCleanup,
+    cleanup_state: dict[str, Any],
+) -> dict[str, Any]:
+    preclaim = prepare_cache_diagnostic_claim(args)
+    contract = preclaim["contract"]
+    protocol_v4 = preclaim["protocol_v4"]
+    predecessor_contract = preclaim["predecessor_contract"]
+    contract_hash = preclaim["lock"][
+        "catalytic_swarm_1_cache_diagnostic_sha256"
+    ]
+    control_record: dict[str, Any] = {
+        "schema_version": 1,
+        "operation": "catalytic-swarm-1-cache-diagnostic-control-v1",
+        "status": "running",
+        "started_at": utc_now(),
+        "contract_sha256": contract_hash,
+        "protocol_commit": preclaim["stable_head"],
+        "control_qualification_v1": "inconclusive",
+        "binary_identity": preclaim["binary_identity"],
+        "model_identity": preclaim["model_identity"],
+        "predecessor": contract["predecessor"],
+        "predecessor_artifacts": preclaim["v1_artifacts"],
+        "generation_executed": False,
+        "live_model_requests": 0,
+        "automatic_promotion": False,
+    }
+    control_claimed = False
+    try:
+        claim_cache_diagnostic_runtime_json_once(
+            CACHE_DIAGNOSTIC_CONTROL_PATH, control_record
+        )
+        control_claimed = True
+        if canonical_json_bytes(
+            preserved_catalytic_swarm_1_v1_evidence(contract)
+        ) != canonical_json_bytes(preclaim["v1_artifacts"]):
+            raise NeoLoopError("CatalyticSwarm-1 v1 evidence changed during control")
+        qualification = qualify_cache_diagnostic_control(contract)
+        control_record.update(
+            {
+                "status": "complete",
+                "control_qualification_v1": "pass",
+                "qualification": qualification,
+                "finished_at": utc_now(),
+            }
+        )
+        write_cache_diagnostic_runtime_json(
+            CACHE_DIAGNOSTIC_CONTROL_PATH, control_record
+        )
+    except Exception as exc:
+        if not control_claimed:
+            raise
+        control_record.update(
+            {
+                "status": "complete",
+                "control_qualification_v1": "reject",
+                "error": str(exc),
+                "finished_at": utc_now(),
+                "cache_diagnostic": "instrumentation-reject",
+                "CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN": "LOCKED",
+                "SOTA_SWARM_CLAIM": "LOCKED",
+                "automatic_promotion": False,
+            }
+        )
+        write_cache_diagnostic_runtime_json(
+            CACHE_DIAGNOSTIC_CONTROL_PATH, control_record
+        )
+        assert_cache_diagnostic_artifact_stage(allow_through="control")
+        return control_record
+    except BaseException as exc:
+        if control_claimed:
+            control_record.update(
+                {
+                    "status": "complete",
+                    "control_qualification_v1": "inconclusive",
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "interrupted": True,
+                    "finished_at": utc_now(),
+                    "cache_diagnostic": "inconclusive",
+                    "automatic_promotion": False,
+                }
+            )
+            write_cache_diagnostic_runtime_json(
+                CACHE_DIAGNOSTIC_CONTROL_PATH, control_record
+            )
+        raise
+    control_sha256 = sha256_file(CACHE_DIAGNOSTIC_CONTROL_PATH)
+
+    readiness_control = predecessor_contract["readiness_control"]
+    readiness_deadline_at = time.monotonic() + float(
+        readiness_control["readiness_deadline_seconds"]
+    )
+    readiness_record: dict[str, Any] = {
+        "schema_version": 1,
+        "operation": "catalytic-swarm-1-cache-diagnostic-readiness-v1",
+        "status": "running",
+        "started_at": utc_now(),
+        "contract_sha256": contract_hash,
+        "control_qualification_sha256": control_sha256,
+        "readiness_v1": "inconclusive",
+        "generation_executed": False,
+        "live_model_requests": 0,
+        "automatic_promotion": False,
+    }
+    readiness_claimed = False
+    sidecar: LiveSidecar | None = None
+    stable_pids: set[int] | None = None
+    readiness: dict[str, Any] | None = None
+
+    def cleanup_sidecar_once() -> dict[str, Any]:
+        return safe_sidecar_cleanup(sidecar)
+
+    try:
+        claim_cache_diagnostic_runtime_json_once(
+            CACHE_DIAGNOSTIC_READINESS_PATH, readiness_record
+        )
+        readiness_claimed = True
+        discovery = query_listener_pids(
+            STABLE_PORT,
+            **listener_retry_options(
+                readiness_control, deadline_at=readiness_deadline_at
+            ),
+        )
+        readiness_record["stable_listener_discovery"] = discovery.to_dict()
+        if not discovery.passed or len(discovery.pids) != 1:
+            raise HoloStateReadinessError(
+                "stable-listener-cardinality-or-query-failed"
+            )
+        stable_pids = set(discovery.pids)
+        if not health_ok(STABLE_PORT, timeout=3):
+            raise HoloStateReadinessError(
+                "stable-health-unavailable-before-sidecar-launch"
+            )
+        sidecar = LiveSidecar(
+            Path(args.binary),
+            Path(args.model),
+            preclaim["evaluator"],
+            preclaim["live_contract"],
+            detached=False,
+            stable_pids=stable_pids,
+            readiness_control=readiness_control,
+            prelaunch_evidence={
+                "stable_listener_discovery": discovery.to_dict()
+            },
+            readiness_deadline_at=readiness_deadline_at,
+            preverified_binary_identity=preclaim["binary_identity"],
+            preverified_model_identity=preclaim["model_identity"],
+            state_root=CACHE_DIAGNOSTIC_STATE_ROOT,
+            wddm_policy=catalytic_swarm_1_wddm_policy(predecessor_contract),
+        )
+        cleanup_state["callback"] = cleanup_sidecar_once
+        cleanup_owner.arm()
+        readiness = sidecar.launch()
+        final_ownership = sidecar.exact_ownership(
+            "cache-diagnostic-readiness-final",
+            deadline_at=readiness_deadline_at,
+        )
+        sidecar.wait_for_fresh_wddm(
+            "cache-diagnostic-readiness-admission",
+            float(
+                readiness_control["fresh_sample_boundary_law"][
+                    "maximum_wait_seconds"
+                ]
+            ),
+            deadline_at=readiness_deadline_at,
+        )
+        if sha256_file(CACHE_DIAGNOSTIC_CONTROL_PATH) != control_sha256:
+            raise NeoLoopError("cache diagnostic control changed during readiness")
+        readiness_record.update(
+            {
+                "status": "complete",
+                "readiness_v1": "pass",
+                "stable_pids": sorted(stable_pids),
+                "sidecar_pid": sidecar.process.pid if sidecar.process else None,
+                "sidecar": readiness,
+                "final_ownership": final_ownership,
+                "wddm": sidecar.telemetry(),
+                "finished_at": utc_now(),
+            }
+        )
+        write_cache_diagnostic_runtime_json(
+            CACHE_DIAGNOSTIC_READINESS_PATH, readiness_record
+        )
+    except Exception as exc:
+        cleanup = cleanup_owner.run() if cleanup_owner.armed else safe_sidecar_cleanup(sidecar)
+        gate = cleanup_integrity(cleanup, stable_pids)
+        if readiness_claimed:
+            readiness_record.update(
+                {
+                    "status": "complete",
+                    "readiness_v1": "inconclusive",
+                    "error": str(exc),
+                    "cleanup": cleanup,
+                    "cleanup_gate": gate,
+                    "finished_at": utc_now(),
+                    "cache_diagnostic": "inconclusive",
+                    "CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN": "LOCKED",
+                    "SOTA_SWARM_CLAIM": "LOCKED",
+                    "automatic_promotion": False,
+                }
+            )
+            write_cache_diagnostic_runtime_json(
+                CACHE_DIAGNOSTIC_READINESS_PATH, readiness_record
+            )
+            assert_cache_diagnostic_artifact_stage(allow_through="readiness")
+            return readiness_record
+        raise
+    except BaseException as exc:
+        cleanup = cleanup_owner.run() if cleanup_owner.armed else safe_sidecar_cleanup(sidecar)
+        if readiness_claimed:
+            readiness_record.update(
+                {
+                    "status": "complete",
+                    "readiness_v1": "inconclusive",
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "interrupted": True,
+                    "cleanup": cleanup,
+                    "cleanup_gate": cleanup_integrity(cleanup, stable_pids),
+                    "finished_at": utc_now(),
+                    "cache_diagnostic": "inconclusive",
+                    "automatic_promotion": False,
+                }
+            )
+            write_cache_diagnostic_runtime_json(
+                CACHE_DIAGNOSTIC_READINESS_PATH, readiness_record
+            )
+        raise
+
+    if sidecar is None or readiness is None or stable_pids is None:
+        raise NeoLoopError("cache diagnostic readiness passed without sidecar evidence")
+    readiness_sha256 = sha256_file(CACHE_DIAGNOSTIC_READINESS_PATH)
+    attempt: dict[str, Any] = {
+        "schema_version": 1,
+        "operation": "catalytic-swarm-1-cache-diagnostic-attempt-v1",
+        "status": "running",
+        "started_at": utc_now(),
+        "protocol_commit": preclaim["stable_head"],
+        "authorized_main": args.authorized_main,
+        "contract_sha256": contract_hash,
+        "control_qualification_sha256": control_sha256,
+        "readiness_sha256": readiness_sha256,
+        "sequence": contract["sequence"],
+        "prospective_model_requests": 3,
+        "completed_model_requests": 0,
+        "automatic_promotion": False,
+    }
+    result: dict[str, Any] = {
+        "schema_version": 1,
+        "operation": "catalytic-swarm-1-cache-diagnostic-result-v1",
+        "status": "running",
+        "started_at": utc_now(),
+        "contract_sha256": contract_hash,
+        "cache_diagnostic": "inconclusive",
+        "cache_admission": "unadjudicated",
+        "CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN": "LOCKED",
+        "SOTA_SWARM_CLAIM": "LOCKED",
+        "PROCESS_LOCAL_HOLOSTATE_AVAILABLE": "LOCKED",
+        "RESTART_PERSISTENT_HOLOSTATE_AVAILABLE": "LOCKED",
+        "automatic_promotion": False,
+        "observations": [],
+    }
+    attempt_claimed = False
+    result_claimed = False
+    ledger: BoundedStreamLedger | None = None
+    interruption: BaseException | None = None
+    execution_error: BaseException | None = None
+    runtime_custody_expected = preclaim["runtime_custody"]
+    runtime_stats: dict[str, Any] = {
+        "custody_checks": 0,
+        "host_memory_checks": 0,
+        "task_parity_checks": 0,
+        "completed_model_requests": 0,
+        "maximum_host_private_growth_bytes": 0,
+        "last_completed_model_request": None,
+        "last_boundary": None,
+    }
+
+    def require_live_boundary(boundary: str, *, require_host: bool) -> dict[str, Any]:
+        observed = {
+            "stable": git_read(
+                ROOT,
+                "status",
+                "--porcelain=v2",
+                "--branch",
+                "--untracked-files=all",
+            ),
+            "candidate": git_read(
+                preclaim["candidate_root"],
+                "status",
+                "--porcelain=v2",
+                "--branch",
+                "--untracked-files=all",
+            ),
+        }
+        custody = require_custody_snapshot(
+            runtime_custody_expected, observed, boundary=boundary
+        )
+        runtime_stats["custody_checks"] += 1
+        runtime_stats["last_boundary"] = boundary
+        evidence: dict[str, Any] = {
+            "boundary": boundary,
+            "custody_passed": custody["passed"],
+            "stable_snapshot_sha256": sha256_bytes(
+                observed["stable"].encode("utf-8")
+            ),
+            "candidate_snapshot_sha256": sha256_bytes(
+                observed["candidate"].encode("utf-8")
+            ),
+        }
+        if require_host:
+            resource = worker_resource_gate(sidecar, readiness, predecessor_contract)
+            if resource.get("passed") is not True:
+                raise NeoLoopError(f"{boundary}: cache diagnostic resource gate failed")
+            if sidecar.process is None:
+                raise NeoLoopError(f"{boundary}: cache diagnostic sidecar PID is missing")
+            info = process_info(sidecar.process.pid)
+            if not isinstance(info, dict):
+                raise NeoLoopError(f"{boundary}: cache diagnostic host memory is unavailable")
+            host = require_host_memory_growth(
+                baseline_private_bytes=int(readiness["process_memory"]["private_bytes"]),
+                current_private_bytes=int(info["private_bytes"]),
+                ceiling_bytes=int(
+                    predecessor_contract["memory"]["host_cache_mib_ceiling"]
+                )
+                * MIB,
+                boundary=boundary,
+            )
+            runtime_stats["host_memory_checks"] += 1
+            runtime_stats["maximum_host_private_growth_bytes"] = max(
+                int(runtime_stats["maximum_host_private_growth_bytes"]),
+                int(host["growth_bytes"]),
+            )
+            evidence["host_memory"] = host
+            evidence["resource_gate_passed"] = True
+        return evidence
+
+    def record_completion(request_label: str) -> None:
+        if not isinstance(request_label, str) or not request_label:
+            raise NeoLoopError("cache diagnostic completed request label is invalid")
+        runtime_stats["completed_model_requests"] += 1
+        runtime_stats["last_completed_model_request"] = request_label
+        attempt["completed_model_requests"] = runtime_stats[
+            "completed_model_requests"
+        ]
+
+    lease_pool = PhysicalLeasePool(1)
+
+    def execute_request(name: str, call: Callable[[], Any]) -> Any:
+        guarded_name = f"cs1-cache-diagnostic-{name}"
+
+        def leased() -> Any:
+            with lease_pool.lease() as lease_id:
+                if lease_id != 0:
+                    raise NeoLoopError("cache diagnostic acquired a non-single-slot lease")
+                return sidecar.guarded(guarded_name, call)
+
+        return run_request_with_boundaries(
+            before=lambda: require_live_boundary(
+                f"pre-request:{guarded_name}", require_host=False
+            ),
+            request=leased,
+            after=lambda: require_live_boundary(
+                f"post-request:{guarded_name}", require_host=True
+            ),
+        )
+
+    wddm_complete: dict[str, Any] = {}
+    try:
+        claim_cache_diagnostic_runtime_json_once(
+            CACHE_DIAGNOSTIC_ATTEMPT_PATH, attempt
+        )
+        attempt_claimed = True
+        claim_cache_diagnostic_runtime_json_once(
+            CACHE_DIAGNOSTIC_RESULT_PATH, result
+        )
+        result_claimed = True
+        ledger = BoundedStreamLedger(
+            CACHE_DIAGNOSTIC_LEDGER_PATH,
+            max_bytes=CACHE_DIAGNOSTIC_LEDGER_MAX_BYTES,
+            max_records=CACHE_DIAGNOSTIC_LEDGER_MAX_RECORDS,
+            state_root=CACHE_DIAGNOSTIC_STATE_ROOT,
+        )
+        assert_cache_diagnostic_artifact_stage(allow_through="ledger")
+        suite = build_frozen_task_suite()
+        task = suite.tasks[0]
+        geometry = prepare_cache_diagnostic_geometry(protocol_v4, readiness, task)
+        geometry_evidence = {
+            "task_id": geometry["task_id"],
+            "public_root_sha256": geometry["public_root_sha256"],
+            "public_root_terminal_token_index": geometry[
+                "public_root_terminal_token_index"
+            ],
+            "terminal_indices": geometry["terminal_indices"],
+            "warm_prompt_tokens": geometry["warm"]["warm_prompt_tokens"],
+            "branches": {
+                name: {
+                    "branch_prompt_tokens": item["branch_prompt_tokens"],
+                    "common_prefix_tokens": item["common_prefix_tokens"],
+                    "required_cached_prompt_tokens": item[
+                        "required_cached_prompt_tokens"
+                    ],
+                    "rendered_prompt_sha256": sha256_bytes(
+                        item["rendered_prompt"].encode("utf-8")
+                    ),
+                }
+                for name, item in geometry["branches"].items()
+            },
+        }
+        attempt["geometry"] = geometry_evidence
+        result["geometry"] = geometry_evidence
+
+        warm = execute_request(
+            "common-root-warm",
+            lambda: execute_cache_diagnostic_warm(
+                protocol_v4,
+                geometry,
+                ledger,  # type: ignore[arg-type]
+                request_completed=record_completion,
+            ),
+        )
+        result["warm"] = warm
+        if not warm["transport_passed"] or not warm["token_evidence_passed"]:
+            raise CacheDiagnosticInstrumentationError(
+                "cache diagnostic common-root warm transport or token evidence failed"
+            )
+        def checkpoint_probe(
+            observation: CacheProbeObservation, probe_verdict: Any
+        ) -> None:
+            result["observations"].append(observation.to_dict())
+            result.setdefault("probe_verdicts", []).append(
+                probe_verdict.to_dict()
+            )
+            write_owned_cache_diagnostic_runtime_json(
+                CACHE_DIAGNOSTIC_RESULT_PATH,
+                result,
+                claimed=result_claimed,
+            )
+
+        observations, probe_verdicts, aggregate = run_cache_diagnostic_probes(
+            lambda label: execute_request(
+                label,
+                lambda: execute_cache_diagnostic_probe(
+                    protocol_v4,
+                    task,
+                    geometry["branches"][label],
+                    ledger,  # type: ignore[arg-type]
+                    request_completed=record_completion,
+                ),
+            ),
+            probe_completed=checkpoint_probe,
+        )
+        result.update(
+            {
+                "cache_diagnostic": aggregate.verdict,
+                "cache_admission": aggregate.cache_admission,
+                "observations": [item.to_dict() for item in observations],
+                "probe_verdicts": probe_verdicts,
+                "aggregate": aggregate.to_dict(),
+                "status": "complete",
+                "finished_at": utc_now(),
+            }
+        )
+    except BaseException as exc:
+        execution_error = exc
+        result.update(
+            {
+                "status": "complete",
+                "cache_diagnostic": cache_diagnostic_failure_verdict(exc),
+                "cache_admission": "unadjudicated",
+                "error": f"{type(exc).__name__}: {exc}",
+                "interrupted": isinstance(exc, (KeyboardInterrupt, SystemExit)),
+                "finished_at": utc_now(),
+            }
+        )
+        if isinstance(exc, (KeyboardInterrupt, SystemExit)):
+            interruption = exc
+    finally:
+        if ledger is not None:
+            ledger.close()
+            ledger_snapshot = ledger.snapshot()
+            ledger_snapshot["sha256"] = sha256_file(CACHE_DIAGNOSTIC_LEDGER_PATH)
+        else:
+            ledger_snapshot = {
+                "record_count": 0,
+                "size_bytes": 0,
+                "within_limits": False,
+                "failure": "ledger-not-created",
+                "sha256": None,
+            }
+        try:
+            wddm_complete = sidecar.telemetry(complete=True)
+        except Exception as telemetry_exc:
+            wddm_complete = {"error": str(telemetry_exc), "freshness_boundaries": []}
+        cleanup = cleanup_owner.run()
+        cleanup_gate = cleanup_integrity(cleanup, stable_pids)
+        if ledger is not None:
+            ledger_reconciliation = reconcile_cache_diagnostic_ledger(
+                CACHE_DIAGNOSTIC_LEDGER_PATH,
+                ledger_snapshot,
+                completed_model_requests=int(
+                    runtime_stats["completed_model_requests"]
+                ),
+            )
+        else:
+            ledger_reconciliation = {
+                "passed": False,
+                "reasons": ["ledger-not-created"],
+                "record_count": 0,
+                "size_bytes": 0,
+            }
+        terminal = reconcile_cache_diagnostic_terminal(
+            runtime_stats,
+            wddm_complete,
+            ledger_record_count=int(ledger_reconciliation["record_count"]),
+            full_schedule=(runtime_stats["completed_model_requests"] == 3),
+        )
+        terminal_wddm = reconcile_cache_diagnostic_terminal_wddm(
+            predecessor_contract,
+            cleanup,
+            completed_model_requests=int(
+                runtime_stats["completed_model_requests"]
+            ),
+        )
+        isolation_gate = cache_diagnostic_isolation_gate(preclaim)
+        artifact_preservation: dict[str, Any] = {}
+        for name, path, expected in (
+            ("control", CACHE_DIAGNOSTIC_CONTROL_PATH, control_sha256),
+            ("readiness", CACHE_DIAGNOSTIC_READINESS_PATH, readiness_sha256),
+        ):
+            try:
+                actual = sha256_file(path)
+                artifact_preservation[name] = {
+                    "passed": actual == expected,
+                    "expected_sha256": expected,
+                    "actual_sha256": actual,
+                }
+            except Exception as artifact_exc:
+                artifact_preservation[name] = {
+                    "passed": False,
+                    "expected_sha256": expected,
+                    "actual_sha256": None,
+                    "error": str(artifact_exc),
+                }
+        v1_after: dict[str, Any] = {}
+        v1_preservation_error: str | None = None
+        try:
+            v1_after = preserved_catalytic_swarm_1_v1_evidence(contract)
+            v1_preserved = canonical_json_bytes(v1_after) == canonical_json_bytes(
+                preclaim["v1_artifacts"]
+            )
+        except Exception as preservation_exc:
+            v1_preserved = False
+            v1_preservation_error = str(preservation_exc)
+        final_safety = cache_diagnostic_final_safety(
+            execution_error=execution_error,
+            interruption=interruption,
+            cleanup_gate=cleanup_gate,
+            terminal_gate=terminal,
+            terminal_wddm_gate=terminal_wddm,
+            ledger_gate=ledger_reconciliation,
+            isolation_gate=isolation_gate,
+            artifact_preservation=artifact_preservation,
+            v1_preserved=v1_preserved,
+            active_leases=lease_pool.active_count,
+            maximum_concurrent_leases=lease_pool.max_concurrent,
+            completed_model_requests=int(
+                runtime_stats["completed_model_requests"]
+            ),
+        )
+        enforce_cache_diagnostic_final_safety(
+            result, final_safety=final_safety
+        )
+        result.update(
+            {
+                "runtime_boundaries": runtime_stats,
+                "lease_evidence": {
+                    "physical_slots": 1,
+                    "lease_count": lease_pool.lease_count,
+                    "maximum_concurrent_leases": lease_pool.max_concurrent,
+                    "active_leases_after": lease_pool.active_count,
+                },
+                "ledger": ledger_snapshot,
+                "ledger_reconciliation": ledger_reconciliation,
+                "terminal_reconciliation": terminal,
+                "terminal_wddm_reconciliation": terminal_wddm,
+                "wddm_before_cleanup": wddm_complete,
+                "cleanup": compact_catalytic_swarm_1_cleanup(cleanup),
+                "cleanup_gate": cleanup_gate,
+                "isolation_gate": isolation_gate,
+                "frozen_artifact_preservation": artifact_preservation,
+                "v1_evidence_preserved": v1_preserved,
+                "v1_artifacts": v1_after,
+                "v1_preservation_error": v1_preservation_error,
+                "execution_error_present": execution_error is not None,
+                "final_safety_passed": final_safety,
+                "CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN": "LOCKED",
+                "SOTA_SWARM_CLAIM": "LOCKED",
+                "PROCESS_LOCAL_HOLOSTATE_AVAILABLE": "LOCKED",
+                "RESTART_PERSISTENT_HOLOSTATE_AVAILABLE": "LOCKED",
+                "automatic_promotion": False,
+            }
+        )
+        write_owned_cache_diagnostic_runtime_json(
+            CACHE_DIAGNOSTIC_RESULT_PATH, result, claimed=result_claimed
+        )
+        attempt.update(
+            {
+                "status": "complete",
+                "completed_model_requests": runtime_stats[
+                    "completed_model_requests"
+                ],
+                "result_sha256": (
+                    sha256_file(CACHE_DIAGNOSTIC_RESULT_PATH)
+                    if result_claimed and CACHE_DIAGNOSTIC_RESULT_PATH.is_file()
+                    else None
+                ),
+                "ledger_sha256": (
+                    sha256_file(CACHE_DIAGNOSTIC_LEDGER_PATH)
+                    if ledger is not None and CACHE_DIAGNOSTIC_LEDGER_PATH.is_file()
+                    else None
+                ),
+                "cache_diagnostic": result.get("cache_diagnostic"),
+                "cache_admission": result.get("cache_admission"),
+                "finished_at": utc_now(),
+                "automatic_promotion": False,
+            }
+        )
+        write_owned_cache_diagnostic_runtime_json(
+            CACHE_DIAGNOSTIC_ATTEMPT_PATH, attempt, claimed=attempt_claimed
+        )
+    if interruption is not None:
+        raise interruption
+    return result
+
+
 def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
     """Execute CS1 under a cleanup owner spanning the complete live lifetime."""
     cleanup_state: dict[str, Any] = {"callback": None}
@@ -13557,6 +15554,12 @@ def command_audit_catalytic_swarm_1(args: argparse.Namespace) -> dict[str, Any]:
     return run_catalytic_swarm_1_audit(args)
 
 
+def command_audit_catalytic_swarm_1_cache_diagnostic(
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    return run_cache_diagnostic(args)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     common = argparse.ArgumentParser(add_help=False)
@@ -13592,12 +15595,25 @@ def build_parser() -> argparse.ArgumentParser:
         "audit-catalytic-swarm-1", parents=[common]
     )
     catalytic_swarm_1.set_defaults(handler=command_audit_catalytic_swarm_1)
+    cache_diagnostic = subparsers.add_parser(
+        "audit-catalytic-swarm-1-cache-diagnostic"
+    )
+    cache_diagnostic.add_argument("--binary", default=str(DEFAULT_BINARY))
+    cache_diagnostic.add_argument("--model", required=True)
+    cache_diagnostic.add_argument("--authorized-main", required=True)
+    cache_diagnostic.set_defaults(
+        handler=command_audit_catalytic_swarm_1_cache_diagnostic
+    )
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
-    if args.command in {"start", "audit-catalytic-swarm-1"} and not args.model:
+    if args.command in {
+        "start",
+        "audit-catalytic-swarm-1",
+        "audit-catalytic-swarm-1-cache-diagnostic",
+    } and not args.model:
         raise SystemExit("set NEO3000_MODEL or pass --model with the exact Agents-A1 GGUF path")
     try:
         result = args.handler(args)
@@ -13607,6 +15623,10 @@ def main() -> int:
         if args.command == "audit-catalytic-swarm-1":
             return 0 if result.get("catalytic_swarm_1") in {
                 "reviewable-accept", "no-advantage",
+            } else 1
+        if args.command == "audit-catalytic-swarm-1-cache-diagnostic":
+            return 0 if result.get("cache_diagnostic") in {
+                "reviewable-accept", "reject",
             } else 1
         if args.command == "audit-catalytic-swarm-0":
             return 1

@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. `CatalyticSwarm-0` v1/v2 and CatalyticSwarm-1 v1 are immutable at their executed boundaries. CatalyticSwarm-1 ran exactly once, stopped inconclusively on the first serial-chain comparison, and completed no task or equal-budget advantage comparison.
-**Next exact action:** preserve and publish the no-retry CatalyticSwarm-1 v1 evidence boundary. The single live authorization is consumed. Do not rerun it, rerun CatalyticSwarm-0 v1/v2, run Deep, claim task advantage, or promote automatically. Any successor requires a separately versioned contract, evidence paths, and new explicit authority.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. `CatalyticSwarm-0` v1/v2 and CatalyticSwarm-1 v1 are immutable at their executed boundaries. CatalyticSwarm-1 v1 is `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`. Its separately versioned cache-admission diagnostic is `INTEGRATED / NOT EXECUTED` with exactly three prospective model requests.
+**Next exact action:** preserve the static diagnostic boundary without invoking it. A live `audit-catalytic-swarm-1-cache-diagnostic` invocation requires future explicit authorization bound to the then-exact pushed protected `main` and exact model path. Do not rerun CatalyticSwarm-1 v1 or CatalyticSwarm-0 v1/v2, run Deep, claim task advantage or SOTA, or promote automatically.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -432,6 +432,19 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Pass lifecycle cleanup and observed runtime integrity: sidecar PID `30848` stopped, runtime state was removed, port 9494 became free, five retirement samples were empty, stable PID `32684` remained healthy, and candidate custody remained intact. Full-schedule `2064 / 1032 / 8` terminal counts correctly remain non-pass after the early stop.
 - [x] Keep `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, SOTA, broader process-local HoloState, restart persistence, and automatic promotion locked. CatalyticSwarm-1 v1 is no-retry.
 
+### CatalyticSwarm-1 cache-admission diagnostic [INTEGRATED / NOT EXECUTED]
+
+- [x] Integrate the separately versioned connector contract at SHA-256 `be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b` without changing the immutable CatalyticSwarm-1 v1 contract or evidence object.
+- [x] Protect the diagnostic source, protocol, and CPU-only tests as complete evaluator-lock inputs. No diagnostic evidence object exists because no diagnostic has executed.
+- [x] Reserve five distinct one-shot paths under `state/catalytic_swarm_1_cache_diagnostic/`; keep the directory and all five paths absent throughout static integration. Do not reuse or rewrite `state/catalytic_swarm_1/*`.
+- [x] Wire the separate `audit-catalytic-swarm-1-cache-diagnostic` command while keeping `audit-catalytic-swarm-1` hard-retired.
+- [x] Freeze exactly three prospective requests: `common-root-warm`, `minimal-branch`, and the exact `serial-chain / cs1-chain-t01` realistic first turn. Thinking is disabled, temperature is zero, the physical-slot count is one, and Deep request count is zero.
+- [x] Require the exact public-root terminal token index, exact warm/branch common-token prefix, the inherited v1 proof threshold, and server-reported cache accounting. Persist each completed branch observation before cache-admission classification or enforcement.
+- [x] Classify both probes even when the first cache class is negative, unless a safety, custody, transport, token-evidence, memory, ownership, or process-health gate stops the run.
+- [x] Use CS1-native `pre-request:cs1-cache-diagnostic-*` and `post-request:cs1-cache-diagnostic-*` terminal reconciliation. A complete diagnostic requires 3 completed requests, 6 custody checks, 3 host/resource checks, 3 pre-request and 3 post-request freshness boundaries, one warm ledger record, and two branch observations; a lawful early safety stop reconciles the exact observed completed-request count.
+- [x] Preserve all six CatalyticSwarm-1 v1 artifact hashes and the absence of `task-results-v1.json`. The diagnostic does not identify a root cause before execution and cannot unlock task advantage, SOTA, persistence, or automatic promotion.
+- [ ] Execute the diagnostic only after a new explicit authorization names the exact pushed protected-main commit and exact Agents-A1 model path.
+
 Preserved v1 executed boundary:
 
 - Root A rendered 7,806 tokens and returned exact visible content `HOLOSTATE ROOT WARM`, empty reasoning metadata, `finish_reason=stop`, and 7 completion tokens. Prompt processing was 145,519.789 ms at 53.642 TPS.
@@ -461,4 +474,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: preserve the evidence-bound, no-retry CatalyticSwarm-1 v1 `inconclusive` boundary. The authorization is consumed; 2 model requests completed but no task or equal-budget advantage comparison completed. Any successor requires a separately versioned contract, evidence paths, and new explicit authorization. CatalyticSwarm-0 v1/v2 and worker protocols v1-v4 remain immutable.
+Next task: preserve the evidence-bound CatalyticSwarm-1 v1 `EXECUTED ONCE / INCONCLUSIVE / NO RETRY` boundary and the separately versioned cache diagnostic at `INTEGRATED / NOT EXECUTED`. Do not execute its exact three-request sequence without a new explicit authorization bound to the then-exact pushed protected `main` and exact model path. Task advantage and SOTA remain locked; automatic promotion remains disabled. CatalyticSwarm-0 v1/v2 and worker protocols v1-v4 remain immutable.

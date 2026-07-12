@@ -458,6 +458,18 @@ reconciled, but no worker capability request has yet executed.
 - Cleanup, isolation, frozen control/readiness/parser evidence, and predecessor preservation passed. PID `30848` stopped, runtime state was removed, port 9494 became free, five retirement samples were empty, stable PID `32684` remained healthy, and candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf` remained clean and unchanged.
 - `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, `SOTA_SWARM_CLAIM`, broader process-local HoloState, restart persistence, and automatic promotion remain locked. CatalyticSwarm-1 v1 is no-retry; any successor requires a separately versioned contract, evidence paths, and new explicit authority.
 
+### CatalyticSwarm-1 cache-admission diagnostic [INTEGRATED / NOT EXECUTED]
+
+- CatalyticSwarm-1 v1 remains `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`.
+- The separately versioned diagnostic contract is integrated at canonical SHA-256 `be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b`. Its connector source, protocol, CPU-only tests, controller, and complete evaluator object are protected by the evaluator lock.
+- No diagnostic evidence object exists. `state/catalytic_swarm_1_cache_diagnostic/` and its five paths for control qualification, readiness, attempt, result, and ledger remain absent. No diagnostic sidecar launched and no diagnostic model request executed during integration.
+- The fixed prospective sequence contains exactly 3 requests on one physical slot: `common-root-warm`, `minimal-branch` constrained to exact `{"candidate_id":"C00"}`, and the unchanged `serial-chain / cs1-chain-t01` realistic first turn. Thinking is disabled, temperature is zero, and Deep request count is zero.
+- The common root preserves the exact v1 public task projection and reference envelope. The task suite, public data, programs, hidden examples, answer key, chat template, model, binary, cache controls, and checkpoint minimum step remain unchanged.
+- The measurement law persists every completed branch response before cache-admission classification. It records the exact public-root terminal token index, exact common-token prefix, inherited v1 required threshold, actual cached tokens, fresh tokens, completion tokens, and transport/token-evidence state. A negative first cache class does not stop the second probe unless a separate safety gate fails.
+- The diagnostic terminal reconciler is CS1-native and does not call the CatalyticSwarm-0-v2 worker-boundary reconciler. A complete diagnostic requires 3 completed requests, 6 custody checks, 3 host/resource checks, 3 `pre-request:cs1-cache-diagnostic-*` and 3 `post-request:cs1-cache-diagnostic-*` freshness boundaries, one warm ledger record, and two branch observations. A lawful early safety stop reconciles the exact observed completed-request count.
+- All six CatalyticSwarm-1 v1 artifacts remain bound to their published hashes and `state/catalytic_swarm_1/task-results-v1.json` remains absent. `audit-catalytic-swarm-1` remains hard-retired. Static integration does not identify the cache root cause.
+- A future live diagnostic invocation requires new explicit authorization bound to the then-exact pushed protected `main` and exact Agents-A1 model path. `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, `SOTA_SWARM_CLAIM`, broader process-local HoloState, restart persistence, and automatic promotion remain locked.
+
 ### Durable persistence boundary
 
 The built-in slot file persists active KV/recurrent state and token history, but does not persist the server prompt-checkpoint list required for hybrid recurrent prefix selection after restart.

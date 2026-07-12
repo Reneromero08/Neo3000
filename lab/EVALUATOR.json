@@ -98,6 +98,10 @@
       "scripts/test_catalytic_swarm_advantage_protocol.py",
       "scripts/catalytic_swarm_1_runtime_safety.py",
       "scripts/test_catalytic_swarm_1_runtime_safety.py",
+      "scripts/catalytic_swarm_1_cache_diagnostic.py",
+      "scripts/catalytic_swarm_1_cache_diagnostic_protocol.py",
+      "scripts/test_catalytic_swarm_1_cache_diagnostic.py",
+      "scripts/test_catalytic_swarm_1_cache_diagnostic_protocol.py",
       "tools/server/server-context.cpp",
       "tools/server/server-task.cpp",
       ".gitignore",
@@ -143,7 +147,11 @@
     "scripts/test_catalytic_swarm_advantage.py",
     "scripts/test_catalytic_swarm_advantage_protocol.py",
     "scripts/catalytic_swarm_1_runtime_safety.py",
-    "scripts/test_catalytic_swarm_1_runtime_safety.py"
+    "scripts/test_catalytic_swarm_1_runtime_safety.py",
+    "scripts/catalytic_swarm_1_cache_diagnostic.py",
+    "scripts/catalytic_swarm_1_cache_diagnostic_protocol.py",
+    "scripts/test_catalytic_swarm_1_cache_diagnostic.py",
+    "scripts/test_catalytic_swarm_1_cache_diagnostic_protocol.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"
@@ -2159,6 +2167,111 @@
     "no_deep_requests": true,
     "no_retry": true,
     "automatic_promotion": false
+  },
+  "catalytic_swarm_1_cache_diagnostic": {
+    "schema_version": 1,
+    "id": "catalytic-swarm-1-cache-admission-v1",
+    "purpose": "classify the failed CS1 complete-public-root cache admission before any task-advantage successor",
+    "predecessor": {
+      "evidence_commit": "ca99f5560b9bf7a5a745c1156c43a64c3733fca9",
+      "protocol_commit": "556bb4d57a05bb81fa101a98092472170b50c0dd",
+      "contract_sha256": "fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e",
+      "evidence_object_sha256": "e308b5953b90d5a28b902b728292440443a9299e58db8049f756557d5693a3d5",
+      "artifacts": {
+        "control": "F9C8032340655EBBE5E41867D8C4C426940E6B7D2236ACDA9019EE9E24F8733D",
+        "readiness": "F6DF670C7CE1659E78D4B51F5CD45FAF4087DD46ABE87D8AD529AB45F6FE9C95",
+        "parser_canary": "0B2749F3F864CB93FB003EA68A41AD364C56360C270506DB3684C1738E221680",
+        "attempt": "593D013494064F10FF9ECF732942EE114E1DC91E14A3290210C8801684A48A40",
+        "result": "D37CBF79BC867D927C01C7977D4432A29B2CA40E59ED5C10CCF6EF9A5F3AACAB",
+        "ledger": "5E016B7554E57564833BAA3B5B1250C6EE6FB73CFE204BDCBC4EEB902C1E40B8"
+      },
+      "task_results_absent": true,
+      "authority_consumed": true,
+      "no_retry": true
+    },
+    "task": {
+      "suite_sha256": "4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92",
+      "task_id": "cs1-task-01",
+      "public_root_only": true,
+      "hidden_data_visible": false
+    },
+    "sequence": [
+      {
+        "ordinal": 1,
+        "label": "common-root-warm",
+        "kind": "warm"
+      },
+      {
+        "ordinal": 2,
+        "label": "minimal-branch",
+        "kind": "minimal-branch"
+      },
+      {
+        "ordinal": 3,
+        "label": "realistic-first-turn",
+        "kind": "realistic-first-turn"
+      }
+    ],
+    "request_law": {
+      "maximum_model_requests": 3,
+      "thinking_disabled": true,
+      "temperature": 0,
+      "one_physical_slot": true,
+      "deep_requests": 0,
+      "automatic_promotion": false
+    },
+    "measurement_law": {
+      "persist_before_gate": [
+        "warm_prompt_tokens",
+        "branch_prompt_tokens",
+        "public_root_terminal_token_index",
+        "common_prefix_tokens",
+        "required_cached_prompt_tokens",
+        "actual_cached_prompt_tokens",
+        "fresh_prompt_tokens",
+        "completion_tokens",
+        "cache_checkpoint_min_step",
+        "response_completed",
+        "transport_passed",
+        "token_evidence_passed"
+      ],
+      "checkpoint_min_step": 512,
+      "raw_sse_persisted": false,
+      "reasoning_text_persisted": false,
+      "hidden_data_persisted": false
+    },
+    "classification_law": [
+      "exact-root-reuse-proven",
+      "proof-threshold-overextended",
+      "checkpoint-shortfall",
+      "cache-session-reuse-failed",
+      "prompt-prefix-diverged-before-root-end",
+      "unstable-or-geometry-dependent-reuse",
+      "transport-or-token-evidence-failed"
+    ],
+    "terminal_reconciliation": {
+      "use_cs1_request_boundary_namespace": true,
+      "accept_exact_observed_request_count_on_early_stop": true,
+      "full_schedule_counts_not_required_for_diagnostic": true
+    },
+    "one_shot": {
+      "paths": {
+        "control": "state/catalytic_swarm_1_cache_diagnostic/control-qualification-v1.json",
+        "readiness": "state/catalytic_swarm_1_cache_diagnostic/readiness-v1.json",
+        "attempt": "state/catalytic_swarm_1_cache_diagnostic/attempt-v1.json",
+        "result": "state/catalytic_swarm_1_cache_diagnostic/result-v1.json",
+        "ledger": "state/catalytic_swarm_1_cache_diagnostic/ledger-v1.jsonl"
+      },
+      "no_retry": true
+    },
+    "claims": {
+      "cache_diagnostic_only": true,
+      "task_advantage": "LOCKED",
+      "sota": "LOCKED",
+      "process_local_holostate": "LOCKED",
+      "restart_persistence": "LOCKED",
+      "automatic_promotion": false
+    }
   },
   "candidate_editable_paths": {
     "description": "Candidates may only modify files under these paths.",

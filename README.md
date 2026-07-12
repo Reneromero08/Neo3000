@@ -52,9 +52,13 @@ RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 automatic promotion: disabled
 ```
 
+CatalyticSwarm-1 v1 remains **EXECUTED ONCE / INCONCLUSIVE / NO RETRY**. The separately versioned CS1 cache-admission diagnostic is **INTEGRATED / NOT EXECUTED**. Its fixed prospective sequence contains exactly 3 model requests: the exact common-root warm, a minimal exact `{"candidate_id":"C00"}` branch, and the unchanged `serial-chain / cs1-chain-t01` realistic first turn. It uses separate one-shot paths, and all five diagnostic paths plus their state directory remain absent.
+
+The diagnostic persists completed branch measurements before cache-admission classification and uses a CS1-native terminal reconciler. Static integration does not identify the root cause. A live invocation requires new explicit authorization bound to the then-exact pushed protected `main` and exact Agents-A1 model path. Task advantage and SOTA remain locked; automatic promotion remains disabled.
+
 The partial metadata ledger records the warm only; the failed comparison stopped before ledger persistence, leaving exact 2-response/1-record partial accounting. A separate inherited CatalyticSwarm-0 v2 terminal-WDDM label mismatch remains non-pass even though all 12 observed freshness admissions passed. It did not cause the primary cache-proof stop. Cleanup passed: sidecar PID `30848` stopped, runtime state was removed, port 9494 became free, and stable PID `32684` remained healthy.
 
-Do not invoke `audit-catalytic-swarm-1` again. Any successor requires a separately versioned contract, evidence paths, and new explicit authorization.
+Do not invoke `audit-catalytic-swarm-1` again. Do not invoke `audit-catalytic-swarm-1-cache-diagnostic` without that future exact-main and exact-model authorization.
 
 ## Bootstrap
 

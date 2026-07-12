@@ -477,6 +477,51 @@ Unlock target:
 CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN
 ```
 
+### CatalyticSwarm-1 cache-admission diagnostic: INTEGRATED / NOT EXECUTED
+
+CatalyticSwarm-1 v1 remains `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`.
+The separately versioned cache-admission diagnostic is integrated at canonical
+contract SHA-256
+`be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b`.
+It has not executed, has no evidence object, and created no runtime artifact or
+live model request during integration.
+
+Its prospective request geometry is exactly:
+
+```text
+1. common-root-warm
+2. minimal-branch -> {"candidate_id":"C00"}
+3. realistic-first-turn -> serial-chain / cs1-chain-t01
+```
+
+All three requests use one physical slot, thinking disabled, temperature zero,
+and zero Deep requests. The common root is the exact CS1-v1 public projection
+and reference envelope. The realistic probe retains the exact v1 assignment
+rendering and candidate grammar. The diagnostic does not change public task
+data, candidate programs, hidden examples, answer key, chat template, model,
+binary, cache controls, or checkpoint minimum step.
+
+The measurement law is persist-before-gate. Every completed branch response
+must record the exact public-root terminal token index, exact common-token
+prefix, inherited v1 proof threshold, actual cached tokens, fresh tokens,
+completion tokens, and transport/token-evidence state before classification.
+A zero cache count, root shortfall, or old-threshold miss is an observation, not
+permission to discard the response or stop before the second branch probe.
+
+The terminal law is CS1-native. It recognizes only
+`pre-request:cs1-cache-diagnostic-*` and
+`post-request:cs1-cache-diagnostic-*` request boundaries. A complete diagnostic
+requires 3 completed requests, 6 custody checks, 3 host/resource checks, 3
+pre-request and 3 post-request freshness boundaries, one warm ledger record,
+and two branch observations. A lawful early safety stop reconciles the exact
+observed completed-request count; the inherited CatalyticSwarm-0-v2
+worker-boundary reconciler is not used.
+
+This static integration does not identify the cache root cause. A future live
+invocation requires new explicit authorization bound to the then-exact pushed
+protected `main` and exact model path. It cannot unlock task advantage, SOTA,
+broader process-local HoloState, restart persistence, or automatic promotion.
+
 ## CatalyticSwarm-2: adaptive population
 
 Start small and expand only when disagreement, failure, or marginal candidate gain justifies more workers.
@@ -617,8 +662,9 @@ completed: CatalyticSwarm-0 v2 bounded control proof
 completed: repair and integrate the CatalyticSwarm-1 equal-total-budget runner without execution
 completed: execute CatalyticSwarm-1 v1 exactly once; inconclusive before one task completed
 completed: adjudicate and bind the partial no-retry evidence without broadening the exact suite scope
-current: preserve CatalyticSwarm-1 v1; no successor is authorized
-1. Separately versioned CatalyticSwarm-1 successor, only under new explicit authority
+completed: integrate the separately versioned CS1 cache-admission diagnostic without execution
+current: preserve CatalyticSwarm-1 v1 and the non-executed three-request diagnostic boundary
+1. Execute the cache diagnostic only under new exact-main and exact-model explicit authority
 2. Adaptive population and verifier allocation, only after verified task advantage
 3. HoloState multi-root admission and eviction policy
 4. HoloState-v2 durable checkpoint-list persistence
@@ -655,6 +701,12 @@ comparison failed the complete-public-root cache proof, so the run stopped after
 2 model requests with 0 completed tasks. Its six partial artifacts are preserved,
 task results are absent, cleanup passed, and the authority is consumed with no
 retry. Equal-budget task advantage remains incomplete and locked.
+
+The separately versioned CS1 cache-admission diagnostic is integrated but not
+executed. Its prospective sequence contains exactly 3 model requests and is
+diagnostic-only. It has not identified a root cause. A future invocation needs
+new exact-main authorization; task advantage and SOTA remain locked and
+automatic promotion remains disabled.
 ```
 
 Not yet allowed:

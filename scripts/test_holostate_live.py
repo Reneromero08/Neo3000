@@ -169,6 +169,7 @@ class StaticCapabilityTests(unittest.TestCase):
                 "start", "stop", "status", "warm", "branch", "list", "evict",
                 "audit-catalytic-swarm-0", "audit-catalytic-swarm-0-v2",
                 "audit-catalytic-swarm-1",
+                "audit-catalytic-swarm-1-cache-diagnostic",
             },
         )
 
@@ -4718,6 +4719,499 @@ class CatalyticSwarm1ProtectedRunnerTests(unittest.TestCase):
         ]
         self.assertEqual(positions, sorted(positions))
         self.assertNotIn("automatic_promotion\": True", source)
+
+
+class CacheDiagnosticControllerTests(unittest.TestCase):
+    AUTHORIZED_MAIN = "A" * 40
+
+    @staticmethod
+    def observation(
+        *,
+        label: str = "minimal-branch",
+        request_sequence_index: int = 2,
+        actual_cached_prompt_tokens: int = 10,
+        response_completed: bool = True,
+        transport_passed: bool = True,
+        token_evidence_passed: bool = True,
+    ) -> holo.CacheProbeObservation:
+        return holo.CacheProbeObservation(
+            label=label,
+            request_sequence_index=request_sequence_index,
+            warm_prompt_tokens=20,
+            branch_prompt_tokens=24,
+            public_root_terminal_token_index=10,
+            common_prefix_tokens=12,
+            required_cached_prompt_tokens=10,
+            actual_cached_prompt_tokens=actual_cached_prompt_tokens,
+            fresh_prompt_tokens=24 - actual_cached_prompt_tokens,
+            completion_tokens=2,
+            cache_checkpoint_min_step=512,
+            response_completed=response_completed,
+            transport_passed=transport_passed,
+            token_evidence_passed=token_evidence_passed,
+        )
+
+    @staticmethod
+    def runtime_stats(completed: int) -> dict[str, object]:
+        return {
+            "completed_model_requests": completed,
+            "custody_checks": 2 * completed,
+            "host_memory_checks": completed,
+            "task_parity_checks": 0,
+            "maximum_host_private_growth_bytes": 0,
+            "last_boundary": (
+                holo.CACHE_DIAGNOSTIC_REQUEST_NAMES[completed - 1]
+                if 0 < completed <= len(holo.CACHE_DIAGNOSTIC_REQUEST_NAMES)
+                else None
+            ),
+        }
+
+    @staticmethod
+    def native_freshness(completed: int) -> dict[str, object]:
+        boundaries: list[dict[str, object]] = []
+        for name in holo.CACHE_DIAGNOSTIC_REQUEST_NAMES[:completed]:
+            boundaries.extend(
+                {
+                    "boundary": f"{side}-request:cs1-cache-diagnostic-{name}",
+                    "passed": True,
+                    "telemetry": {"last_valid_sample_age_seconds": 0.0},
+                }
+                for side in ("pre", "post")
+            )
+        return {"freshness_boundaries": boundaries}
+
+    def test_command_is_present_and_requires_explicit_authority_without_running(self) -> None:
+        parser = holo.build_parser()
+        command = "audit-catalytic-swarm-1-cache-diagnostic"
+        with mock.patch.object(holo, "run_cache_diagnostic") as runner, mock.patch.object(
+            holo, "LiveSidecar"
+        ) as sidecar, mock.patch.object(holo, "request_json") as request:
+            with self.assertRaises(SystemExit), mock.patch.object(
+                holo.sys, "stderr", new=mock.Mock()
+            ):
+                parser.parse_args(
+                    [command, "--authorized-main", self.AUTHORIZED_MAIN]
+                )
+            with self.assertRaises(SystemExit), mock.patch.object(
+                holo.sys, "stderr", new=mock.Mock()
+            ):
+                parser.parse_args([command, "--model", "Agents-A1.gguf"])
+            args = parser.parse_args(
+                [
+                    command,
+                    "--model",
+                    "Agents-A1.gguf",
+                    "--authorized-main",
+                    self.AUTHORIZED_MAIN,
+                ]
+            )
+        self.assertEqual(args.command, command)
+        self.assertEqual(args.model, "Agents-A1.gguf")
+        self.assertEqual(args.authorized_main, self.AUTHORIZED_MAIN)
+        self.assertIs(
+            args.handler,
+            holo.command_audit_catalytic_swarm_1_cache_diagnostic,
+        )
+        runner.assert_not_called()
+        sidecar.assert_not_called()
+        request.assert_not_called()
+
+    def test_exact_common_token_prefix_stops_at_first_difference(self) -> None:
+        self.assertEqual(holo.exact_common_token_prefix([1, 2, 3], [1, 2, 4]), 2)
+        self.assertEqual(holo.exact_common_token_prefix([7, 8], [7, 8, 9]), 2)
+
+    def test_exact_common_token_prefix_rejects_invalid_token_identity(self) -> None:
+        for left, right in (([], [1]), ([1], []), ([True], [1]), ([1], ["1"])):
+            with self.subTest(left=left, right=right), self.assertRaises(
+                holo.NeoLoopError
+            ):
+                holo.exact_common_token_prefix(left, right)
+
+    def test_public_root_terminal_location_is_exact_and_minimal(self) -> None:
+        rendered = "<s>PUBLIC ROOT</s>\nUSER"
+        system_message = "PUBLIC ROOT"
+        token_ids = list(range(len(rendered)))
+        terminal = holo.locate_public_root_terminal_token_index(
+            rendered,
+            token_ids,
+            system_message,
+            detokenize=lambda values: rendered[: len(values)],
+        )
+        expected = rendered.index(system_message) + len(system_message)
+        self.assertEqual(terminal, expected)
+        self.assertLess(len(rendered[: terminal - 1]), expected)
+        self.assertGreaterEqual(len(rendered[:terminal]), expected)
+
+    def test_public_root_terminal_rejects_ambiguous_or_inexact_tokens(self) -> None:
+        rendered = "<s>PUBLIC ROOT</s>"
+        token_ids = list(range(len(rendered)))
+        with self.assertRaisesRegex(holo.NeoLoopError, "exactly once"):
+            holo.locate_public_root_terminal_token_index(
+                "PUBLIC ROOT / PUBLIC ROOT",
+                token_ids,
+                "PUBLIC ROOT",
+                detokenize=lambda values: "PUBLIC ROOT / PUBLIC ROOT"[: len(values)],
+            )
+        with self.assertRaisesRegex(holo.NeoLoopError, "detokenization is not exact"):
+            holo.locate_public_root_terminal_token_index(
+                rendered,
+                token_ids,
+                "PUBLIC ROOT",
+                detokenize=lambda values: "X" * len(values),
+            )
+
+    def test_warm_and_branch_root_terminal_indices_must_agree(self) -> None:
+        indices = {
+            "common-root-warm": 10,
+            "minimal-branch": 10,
+            "realistic-first-turn": 10,
+        }
+        self.assertEqual(
+            holo.agreed_cache_diagnostic_root_terminal_index(indices), 10
+        )
+        indices["realistic-first-turn"] = 11
+        with self.assertRaisesRegex(holo.NeoLoopError, "indices disagree"):
+            holo.agreed_cache_diagnostic_root_terminal_index(indices)
+
+    def test_branch_observation_is_persisted_before_classification(self) -> None:
+        events: list[str] = []
+
+        class Ledger:
+            def append(self, record: dict[str, object], **kwargs: object) -> None:
+                events.append("persist")
+                self.record = record
+                self.kwargs = kwargs
+
+        ledger = Ledger()
+
+        def reject_after_persist(_observation: object) -> None:
+            events.append("classify")
+            raise RuntimeError("classification-stop")
+
+        with self.assertRaisesRegex(RuntimeError, "classification-stop"):
+            holo.persist_cache_probe_before_gate(
+                ledger,
+                self.observation(actual_cached_prompt_tokens=0),
+                content_sha256="A" * 64,
+                token_evidence_scope="exact-visible-token-counts",
+                classifier=reject_after_persist,
+            )
+        self.assertEqual(events, ["persist", "classify"])
+        self.assertEqual(ledger.record["record_type"], "branch-observation")
+        self.assertEqual(
+            ledger.kwargs,
+            {
+                "request_label": "cs1-cache-diagnostic-minimal-branch",
+                "request_sequence_index": 2,
+            },
+        )
+
+    def test_negative_first_cache_class_does_not_suppress_second_probe(self) -> None:
+        executed: list[str] = []
+
+        def execute(label: str) -> tuple[object, object]:
+            executed.append(label)
+            index = 2 if label == "minimal-branch" else 3
+            observation = self.observation(
+                label=label,
+                request_sequence_index=index,
+                actual_cached_prompt_tokens=0 if index == 2 else 10,
+            )
+            return observation, holo.classify_cache_probe(observation)
+
+        with mock.patch.object(holo, "request_json") as request, mock.patch.object(
+            holo, "stream_completion"
+        ) as stream:
+            observations, verdicts, aggregate = holo.run_cache_diagnostic_probes(
+                execute
+            )
+        self.assertEqual(
+            executed, ["minimal-branch", "realistic-first-turn"]
+        )
+        self.assertEqual(
+            verdicts[0]["classification"], "cache-session-reuse-failed"
+        )
+        self.assertEqual(len(observations), 2)
+        self.assertEqual(aggregate.verdict, "inconclusive")
+        request.assert_not_called()
+        stream.assert_not_called()
+
+    def test_zero_cache_is_valid_transport_and_a_cache_admission_observation(self) -> None:
+        transport = {
+            "http_status": 200,
+            "prompt_token_identity_matches": True,
+            "finish_reason": "stop",
+            "tool_calls": [],
+            "reasoning_content": {"present": False},
+            "logical_prompt_tokens": 24,
+            "cached_prompt_tokens": 0,
+            "fresh_prompt_tokens": 24,
+        }
+        self.assertTrue(
+            holo.cache_diagnostic_transport_passed(
+                transport,
+                content_valid=True,
+                token_evidence_passed=True,
+            )
+        )
+        observation = self.observation(actual_cached_prompt_tokens=0)
+        self.assertTrue(observation.transport_passed)
+        self.assertEqual(
+            holo.classify_cache_probe(observation).classification,
+            "cache-session-reuse-failed",
+        )
+
+    def test_eof_without_finish_is_response_incomplete_not_a_cache_class(self) -> None:
+        self.assertFalse(
+            holo.cache_diagnostic_response_completed(
+                mock.Mock(finish_reason=None)
+            )
+        )
+        observation = self.observation(
+            response_completed=False,
+            transport_passed=False,
+            token_evidence_passed=False,
+        )
+        self.assertEqual(
+            holo.classify_cache_probe(observation).classification,
+            "response-incomplete",
+        )
+
+    def test_transport_failure_stops_only_after_the_probe_is_persisted(self) -> None:
+        events: list[str] = []
+
+        class Ledger:
+            def append(self, _record: object, **_kwargs: object) -> None:
+                events.append("persist")
+
+        def execute(label: str) -> tuple[object, object]:
+            self.assertEqual(label, "minimal-branch")
+            observation = self.observation(
+                transport_passed=False,
+                token_evidence_passed=False,
+            )
+            verdict = holo.persist_cache_probe_before_gate(
+                Ledger(),
+                observation,
+                content_sha256="C" * 64,
+                token_evidence_scope=None,
+            )
+            events.append("request-returned")
+            return observation, verdict
+
+        with self.assertRaises(holo.CacheDiagnosticInstrumentationError):
+            holo.run_cache_diagnostic_probes(
+                execute,
+                probe_completed=lambda _observation, _verdict: events.append(
+                    "checkpoint"
+                ),
+            )
+        self.assertEqual(events, ["persist", "request-returned", "checkpoint"])
+
+    def test_ledger_record_shape_is_exact_and_rejects_redacted_material(self) -> None:
+        record = {
+            "record_type": "branch-observation",
+            **self.observation().to_dict(),
+            "content_sha256": "B" * 64,
+            "token_evidence_scope": "exact-visible-token-counts",
+        }
+        holo.validate_cache_diagnostic_ledger_record(record)
+        self.assertEqual(
+            set(record),
+            set(holo.CACHE_DIAGNOSTIC_OBSERVATION_RECORD_FIELDS),
+        )
+
+        for forbidden in (
+            "raw_sse",
+            "raw_payload",
+            "reasoning text",
+            "hidden_examples",
+            "answer_key",
+            "complete_prompt",
+        ):
+            with self.subTest(forbidden=forbidden), self.assertRaisesRegex(
+                holo.NeoLoopError, "forbidden material"
+            ):
+                holo.validate_cache_diagnostic_ledger_record(
+                    dict(record, token_evidence_scope=forbidden)
+                )
+        leaked_field = dict(record, prompt_text="secret")
+        with self.assertRaisesRegex(holo.NeoLoopError, "field set changed"):
+            holo.validate_cache_diagnostic_ledger_record(leaked_field)
+
+    def test_native_terminal_reconciliation_accepts_full_three_request_schedule(self) -> None:
+        gate = holo.reconcile_cache_diagnostic_terminal(
+            self.runtime_stats(3),
+            self.native_freshness(3),
+            ledger_record_count=3,
+            full_schedule=True,
+        )
+        self.assertTrue(gate["passed"], gate["reasons"])
+        self.assertEqual(gate["completed_model_requests"], 3)
+        self.assertEqual(gate["pre_request_freshness_count"], 3)
+        self.assertEqual(gate["post_request_freshness_count"], 3)
+        self.assertEqual(gate["inherited_v2_worker_labels"], [])
+
+    def test_native_terminal_reconciliation_accepts_lawful_partial_counts(self) -> None:
+        gate = holo.reconcile_cache_diagnostic_terminal(
+            self.runtime_stats(2),
+            self.native_freshness(2),
+            ledger_record_count=2,
+            full_schedule=False,
+        )
+        self.assertTrue(gate["passed"], gate["reasons"])
+        self.assertEqual(gate["expected_custody_checks"], 4)
+        self.assertEqual(gate["expected_host_memory_checks"], 2)
+        self.assertEqual(gate["expected_ledger_records"], 2)
+
+    def test_terminal_reconciliation_enforces_exact_three_request_ceiling(self) -> None:
+        self.assertEqual(len(holo.CACHE_DIAGNOSTIC_REQUEST_NAMES), 3)
+        with self.assertRaisesRegex(holo.NeoLoopError, "count is invalid"):
+            holo.reconcile_cache_diagnostic_terminal(
+                self.runtime_stats(4),
+                self.native_freshness(4),
+                ledger_record_count=4,
+                full_schedule=False,
+            )
+
+    def test_terminal_wddm_reconciliation_uses_only_native_diagnostic_labels(self) -> None:
+        policy = {"policy": "sentinel"}
+        contract = {
+            "readiness_control": {"wddm_transient_gap_policy": policy}
+        }
+        with mock.patch.object(
+            holo,
+            "reconcile_terminal_wddm",
+            return_value={"passed": True, "reasons": []},
+        ) as generic:
+            gate = holo.reconcile_cache_diagnostic_terminal_wddm(
+                contract,
+                {"cleanup": "sentinel"},
+                completed_model_requests=2,
+            )
+        self.assertTrue(gate["passed"])
+        required = generic.call_args.kwargs["required_boundaries"]
+        self.assertEqual(
+            required,
+            [
+                "cache-diagnostic-readiness-admission",
+                "pre-request:cs1-cache-diagnostic-common-root-warm",
+                "post-request:cs1-cache-diagnostic-common-root-warm",
+                "pre-request:cs1-cache-diagnostic-minimal-branch",
+                "post-request:cs1-cache-diagnostic-minimal-branch",
+                "before-teardown",
+            ],
+        )
+        self.assertFalse(
+            any("before-each-worker-request" in item for item in required)
+        )
+
+    def test_error_or_failed_terminal_evidence_cannot_pass_final_safety(self) -> None:
+        passed = {"passed": True}
+        artifacts = {
+            "control": {"passed": True},
+            "readiness": {"passed": True},
+        }
+        kwargs = {
+            "execution_error": None,
+            "interruption": None,
+            "cleanup_gate": passed,
+            "terminal_gate": passed,
+            "terminal_wddm_gate": passed,
+            "ledger_gate": passed,
+            "isolation_gate": passed,
+            "artifact_preservation": artifacts,
+            "v1_preserved": True,
+            "active_leases": 0,
+            "maximum_concurrent_leases": 1,
+            "completed_model_requests": 3,
+        }
+        self.assertTrue(holo.cache_diagnostic_final_safety(**kwargs))
+        self.assertFalse(
+            holo.cache_diagnostic_final_safety(
+                **dict(kwargs, execution_error=RuntimeError("stop"))
+            )
+        )
+        self.assertFalse(
+            holo.cache_diagnostic_final_safety(
+                **dict(kwargs, isolation_gate={"passed": False})
+            )
+        )
+        self.assertFalse(
+            holo.cache_diagnostic_final_safety(
+                **dict(
+                    kwargs,
+                    artifact_preservation={
+                        **artifacts,
+                        "readiness": {"passed": False},
+                    },
+                )
+            )
+        )
+
+    def test_instrumentation_errors_and_failed_safety_demote_causal_results(self) -> None:
+        self.assertEqual(
+            holo.cache_diagnostic_failure_verdict(
+                holo.CacheDiagnosticInstrumentationError(
+                    "public-root terminal indices disagree"
+                )
+            ),
+            "instrumentation-reject",
+        )
+        result = {
+            "cache_diagnostic": "reject",
+            "cache_admission": "cache-session-reuse-failed",
+        }
+        holo.enforce_cache_diagnostic_final_safety(result, final_safety=False)
+        self.assertEqual(result["safety_demoted_from"], "reject")
+        self.assertEqual(result["cache_diagnostic"], "inconclusive")
+        self.assertEqual(result["cache_admission"], "unadjudicated")
+
+    def test_cache_diagnostic_runtime_writer_isolated_and_rejects_escape(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "cache-diagnostic"
+            inside = root / "control-qualification-v1.json"
+            outside = Path(temp) / "escaped.json"
+            with mock.patch.object(holo, "CACHE_DIAGNOSTIC_STATE_ROOT", root):
+                holo.write_cache_diagnostic_runtime_json(inside, {"owned": True})
+                self.assertEqual(
+                    json.loads(inside.read_text(encoding="utf-8")),
+                    {"owned": True},
+                )
+                with self.assertRaisesRegex(holo.NeoLoopError, "escaped"):
+                    holo.write_cache_diagnostic_runtime_json(
+                        outside, {"owned": False}
+                    )
+                with self.assertRaisesRegex(holo.NeoLoopError, "escaped"):
+                    holo.require_cache_diagnostic_runtime_path(
+                        holo.CATALYTIC_SWARM_1_STATE_ROOT / "result-v1.json"
+                    )
+            self.assertFalse(outside.exists())
+
+    def test_real_cache_diagnostic_paths_remain_absent_and_separate(self) -> None:
+        self.assertFalse(holo.CACHE_DIAGNOSTIC_STATE_ROOT.exists())
+        for path in holo.CACHE_DIAGNOSTIC_ARTIFACT_PATHS:
+            self.assertFalse(path.exists(), path)
+        self.assertTrue(
+            {path.resolve() for path in holo.CACHE_DIAGNOSTIC_ARTIFACT_PATHS}.isdisjoint(
+                path.resolve() for path in holo.CATALYTIC_SWARM_1_ARTIFACT_PATHS
+            )
+        )
+
+    def test_cache_diagnostic_cleanup_owner_runs_exactly_once(self) -> None:
+        calls: list[str] = []
+        owner = holo.ArmedCleanup(
+            lambda: calls.append("cleanup") or {"passed": True},
+            armed=False,
+        )
+        owner.arm()
+        with owner:
+            first = owner.run()
+            second = owner.run()
+        self.assertEqual(first, {"passed": True})
+        self.assertIs(second, first)
+        self.assertEqual(calls, ["cleanup"])
+        self.assertFalse(owner.armed)
 
 
 if __name__ == "__main__":

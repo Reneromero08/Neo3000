@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Preserve the executed, inconclusive CatalyticSwarm-1 v1 boundary
+## Checkpoint 2: Preserve CS1-v1 and the non-executed cache diagnostic boundary
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse and the bounded process-local HoloState micro-worker are proven; broader process-local and restart-persistent availability remain locked.
 
@@ -54,9 +54,19 @@ The metadata-only ledger contains the warm record only. Two responses completed,
 
 Cleanup and observed runtime integrity passed. Sidecar PID `30848` stopped, runtime state was removed, port 9494 became free, five WDDM retirement samples were empty, stable PID `32684` remained healthy, and candidate custody remained intact. The authorization is consumed. CatalyticSwarm-1 v1 is no-retry.
 
+## Integrated CatalyticSwarm-1 cache diagnostic
+
+The separately versioned CS1 cache-admission diagnostic is `INTEGRATED / NOT EXECUTED` at canonical contract SHA-256 `be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b`. It has no evidence object. Its separate state directory and all five one-shot paths remain absent.
+
+The prospective sequence contains exactly three model requests: the exact common-public-root warm, a minimal exact `{"candidate_id":"C00"}` branch, and the unchanged `serial-chain / cs1-chain-t01` realistic first turn. Thinking is disabled, temperature is zero, one physical slot is permitted, and Deep request count is zero.
+
+The diagnostic must persist each completed branch observation before applying a cache-admission class. It measures the exact public-root terminal token index, exact warm/branch common-token prefix, inherited v1 proof threshold, actual cached tokens, and fresh-token accounting. A negative first cache class does not suppress the second probe unless an independent safety gate fails. Terminal reconciliation uses CS1-native `pre-request:cs1-cache-diagnostic-*` and `post-request:cs1-cache-diagnostic-*` labels and exact observed completed-request counts on lawful early safety stops.
+
+Static integration does not establish the cause of the v1 cache-admission stop. A future invocation requires new explicit authorization bound to the then-exact pushed protected `main` and exact Agents-A1 model path. The command must not be invoked as part of integration.
+
 ## Active bounded objective
 
-Preserve the executed, inconclusive, no-retry CatalyticSwarm-1 v1 boundary. Do not invoke `audit-catalytic-swarm-1` again, reinterpret its partial evidence as task advantage, repair it through a silent rerun, rerun CatalyticSwarm-0 v1/v2 or worker protocols v1-v4, run Deep workers, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, or promote automatically. Any CS1 successor requires a separately versioned contract, evidence paths, and new explicit authority.
+Preserve CatalyticSwarm-1 v1 as `EXECUTED ONCE / INCONCLUSIVE / NO RETRY` and its cache diagnostic as `INTEGRATED / NOT EXECUTED`. Do not invoke `audit-catalytic-swarm-1` again or run `audit-catalytic-swarm-1-cache-diagnostic` without future exact-main and exact-model explicit authority. Do not reinterpret partial evidence as task advantage, infer that the diagnostic already found a root cause, rerun CatalyticSwarm-0 v1/v2 or worker protocols v1-v4, run Deep workers, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, or promote automatically.
 
 ## Claim state
 
@@ -76,6 +86,10 @@ CatalyticSwarm-1 comparison requests: 1
 CatalyticSwarm-1 completed task comparisons: 0
 CatalyticSwarm-1 sidecar launches: 1
 CatalyticSwarm-1 one-shot artifacts: 6 PRESENT / TASK RESULTS ABSENT
+CS1 cache-admission diagnostic: INTEGRATED / NOT EXECUTED
+CS1 cache-admission diagnostic prospective model requests: 3
+CS1 cache-admission diagnostic artifacts: 5 ABSENT / STATE DIRECTORY ABSENT
+CS1 cache-admission diagnostic authority: FUTURE EXACT-MAIN AUTHORIZATION REQUIRED
 CATALYTIC_SWARM_READINESS: PASS
 STRUCTURED_HOLOSTATE_MICROWORKER: reviewable-accept
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED

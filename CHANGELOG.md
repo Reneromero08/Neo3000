@@ -29,10 +29,14 @@ CatalyticSwarm-0: EXECUTED ONCE / CONTROL QUALIFICATION PASS / READINESS INCONCL
 CatalyticSwarm-0 v2: REVIEWABLE ACCEPT
 CatalyticSwarm-1: EXECUTED ONCE / INCONCLUSIVE
 CatalyticSwarm-1 authorization: CONSUMED / NO RETRY
+CatalyticSwarm-1 boundary: EXECUTED ONCE / INCONCLUSIVE / NO RETRY
 CatalyticSwarm-1 live model requests: 2
 CatalyticSwarm-1 common-root warm / comparison / completed tasks: 1 / 1 / 0
 CatalyticSwarm-1 sidecar launches: 1
 CatalyticSwarm-1 one-shot artifacts: 6 PRESENT / TASK RESULTS ABSENT
+CS1 cache-admission diagnostic: INTEGRATED / NOT EXECUTED
+CS1 cache-admission diagnostic prospective model requests: 3
+CS1 cache-admission diagnostic artifacts: 5 ABSENT / STATE DIRECTORY ABSENT
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_CONTROL_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN: LOCKED
@@ -63,8 +67,17 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - CatalyticSwarm-0 ran exactly once from protected integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`. Control qualification passed, then readiness stopped inconclusively on exact-PID WDDM telemetry loss before the parser canary or any worker request. This version cannot be retried.
 - The separately versioned CatalyticSwarm-0 v2 successor completed one artifact-claiming live execution and returned `reviewable-accept` for structured micro-workers and bounded swarm control. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests. V2 changed only exact-PID WDDM transient-gap resilience plus fresh-sample admission and preserved the exact v1 plan and prompt bytes.
 - CatalyticSwarm-1 v1 executed exactly once and stopped `inconclusive` on the first serial-chain comparison's complete-public-root cache proof. Exactly 2 model requests completed: 1 common-root warm, 1 comparison, and 0 completed tasks. Its authority is consumed and v1 is no-retry. Equal-budget task advantage, Deep, persistence, SOTA, and promotion claims remain locked.
+- The separately versioned CS1 cache-admission diagnostic is integrated but not executed. Its exact prospective sequence is 3 model requests, all five diagnostic paths remain absent, and any live invocation requires new explicit authorization bound to the then-exact pushed protected `main` and exact model path. Static integration does not identify the root cause.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
+
+### CatalyticSwarm-1 cache-admission diagnostic integrated
+
+- Integrated the separately versioned diagnostic contract at canonical SHA-256 `be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b` without changing the CatalyticSwarm-1 v1 contract, evidence object, artifacts, or absent task-results path.
+- Added the separate `audit-catalytic-swarm-1-cache-diagnostic` command and five isolated one-shot paths under `state/catalytic_swarm_1_cache_diagnostic/`. The v1 command remains hard-retired. The diagnostic directory and every diagnostic path remained absent throughout integration.
+- Froze exactly three prospective model requests: the exact common-root warm, a minimal exact `{"candidate_id":"C00"}` branch, and the unchanged `serial-chain / cs1-chain-t01` realistic first turn. Thinking remains disabled, temperature is zero, one physical slot is used, and Deep request count is zero.
+- Added exact public-root terminal-index and exact common-token-prefix measurement, persist-before-gate branch observations, both-probe classification after negative cache observations, and CS1-native request-boundary reconciliation. Full completion requires 3 requests, 6 custody checks, 3 host/resource checks, 3 pre-request and 3 post-request freshness boundaries, one warm ledger record, and two branch observations; lawful early safety stops use exact observed counts.
+- No diagnostic evidence object, sidecar launch, model request, cache classification, or root-cause conclusion was produced during static integration. Task advantage, SOTA, broader process-local HoloState, restart persistence, and automatic promotion remain locked. A future run requires new exact-main and exact-model explicit authority.
 
 ### HoloState worker protocol v4 terminal-EOS integration prepared (historical snapshot)
 

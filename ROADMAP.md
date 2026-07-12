@@ -106,6 +106,7 @@ RSI-0: CLOSED
 -> CatalyticSwarm-0: executed once; control qualification pass, readiness inconclusive on exact-PID WDDM telemetry loss before canary
 -> CatalyticSwarm-0 v2: structured micro-worker and bounded swarm control reviewable-accept
 -> CatalyticSwarm-1: executed once; inconclusive on the first serial-chain comparison before any task completed
+-> CatalyticSwarm-1 cache-admission diagnostic: integrated / not executed; exactly 3 prospective requests
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -123,7 +124,8 @@ this section is only its navigation capsule.
 - **Preserved predecessor:** CatalyticSwarm-0 v1 executed exactly once. Generation-free control qualification passed; readiness stopped `inconclusive` on exact-PID WDDM telemetry loss before the parser canary, capability attempt, lease, ledger, blackboard, or any worker request. V1 is immutable and no-retry.
 - **Current boundary:** `catalytic_swarm_0_v2` completed one artifact-claiming live execution from protected integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests. Its sole causal intervention was bounded transient exact-PID WDDM query resilience plus fresh-sample admission; the inherited 32-worker plan, prompts, seeds, parent graph, one-slot lease law, parser, verifier, blackboard, and 64-token Fast budget remained unchanged. All 32 workers and the 16/8/6/2 control sequence passed, so structured-micro-worker and bounded swarm-control availability are unlocked at `reviewable-accept`.
 - **Executed successor:** CatalyticSwarm-1 ran exactly once from protected commit `556bb4d57a05bb81fa101a98092472170b50c0dd` at unchanged complete-contract SHA-256 `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. Control, readiness, the generation-free parser canary, and the first common-root warm passed. The first serial-chain comparison completed a response but did not prove reuse of the complete public root, so the fail-fast law stopped after 2 model requests: 1 warm, 1 comparison, and 0 completed tasks.
-- **Next boundary:** task advantage is not established because no four-arm equal-budget task completed. The one-shot authorization is consumed and v1 is no-retry. Preserve its six artifacts and absent task-results object; any successor requires a separately versioned contract, evidence paths, and new explicit authorization.
+- **Prepared diagnostic:** the separately versioned CatalyticSwarm-1 cache-admission diagnostic is integrated but has not executed. Its fixed sequence is one exact common-root warm, one minimal branch, and the unchanged `serial-chain / cs1-chain-t01` realistic first turn. It is diagnostic-only and cannot unlock task advantage or SOTA.
+- **Next boundary:** task advantage is not established because no four-arm equal-budget task completed. The v1 authorization is consumed and v1 is no-retry. Preserve its six artifacts and absent task-results object. Any live diagnostic invocation requires new explicit authorization bound to the then-exact pushed protected `main` and exact model path.
 
 | Swarm stage | Architectural purpose | Unlock boundary |
 |---|---|---|
@@ -653,6 +655,18 @@ Six one-shot artifacts exist and are bound: control `F9C8032340655EBBE5E41867D8C
 The metadata-only ledger contains the warm record only: 2 responses completed but the failed comparison stopped before its ledger entry, so terminal ledger reconciliation correctly reports `ledger-request-count`. A separate inherited-control incompatibility also remains: the CatalyticSwarm-0 v2 terminal WDDM reconciler expects v2 worker-boundary labels rather than the CS1 request-boundary labels and reports `wddm-required-freshness-boundary-order`. All 12 observed freshness admissions passed; this secondary terminal label incompatibility did not cause the earlier complete-root-cache stop and was not repaired through a retry.
 
 Cleanup and observed runtime integrity passed. Sidecar PID `30848` stopped, runtime state was removed, port 9494 became free, five exact-PID retirement samples were empty, stable PID `32684` remained healthy, and candidate custody remained intact. Full-schedule custody, host, parity, request, ledger, and terminal-WDDM gates remain non-pass after the early stop rather than being rewritten as successful completion. `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, SOTA, broader process-local HoloState, restart persistence, and automatic promotion remain locked. CatalyticSwarm-1 v1 must not be rerun.
+
+### CatalyticSwarm-1 cache-admission diagnostic: INTEGRATED / NOT EXECUTED
+
+CatalyticSwarm-1 v1 remains `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`. The separately versioned cache diagnostic is statically integrated under complete-contract SHA-256 `be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b`. No diagnostic evidence object or runtime artifact exists, and no live request was made during integration.
+
+Its prospective sequence is exactly three model requests on one physical slot with thinking disabled, temperature zero, and no Deep request: the exact CS1-v1 public-root warm, a minimal branch constrained to `{"candidate_id":"C00"}`, and the unchanged `serial-chain / cs1-chain-t01` assignment and grammar. The public task projection, reference envelope, task suite, programs, hidden data, answer key, chat template, model, binary, cache controls, and checkpoint minimum step remain frozen.
+
+For each completed branch response, the controller must persist bounded measurements before applying any cache-admission class or threshold. The diagnostic separately records the exact public-root terminal token index, exact warm/branch common-token prefix, inherited v1 required threshold, actual cached tokens, fresh tokens, completion tokens, and transport/token-evidence state. A negative first cache class does not stop the second probe unless an independent safety gate fails.
+
+The terminal controller is CS1-native. It reconciles `pre-request:cs1-cache-diagnostic-*` and `post-request:cs1-cache-diagnostic-*` labels rather than CatalyticSwarm-0-v2 worker labels. A complete diagnostic requires 3 completed requests, 6 custody checks, 3 host/resource checks, 3 pre-request and 3 post-request freshness boundaries, one warm ledger record, and two branch observation records. Lawful early safety stops reconcile the exact observed completed-request count.
+
+This integration does not identify the root cause. A future live invocation requires new explicit authorization bound to the then-exact pushed protected `main` and exact Agents-A1 model path. `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, `SOTA_SWARM_CLAIM`, broader process-local HoloState, restart persistence, and automatic promotion remain locked.
 
 ### HoloState-v2 persistence boundary
 

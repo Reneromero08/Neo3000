@@ -14,6 +14,10 @@ from catalytic_swarm_advantage_protocol import (
     ONE_SHOT_PATHS as CATALYTIC_SWARM_1_PATHS,
     build_catalytic_swarm_1_contract,
 )
+from catalytic_swarm_1_cache_diagnostic_protocol import (
+    ONE_SHOT_PATHS as CACHE_DIAGNOSTIC_PATHS,
+    build_cache_diagnostic_contract,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -443,6 +447,49 @@ class EvaluatorGateTests(unittest.TestCase):
             "scripts/catalytic_swarm_advantage_protocol.py",
             "scripts/test_catalytic_swarm_advantage.py",
             "scripts/test_catalytic_swarm_advantage_protocol.py",
+        ):
+            self.assertIn(path, EVALUATOR["protected_paths"]["files"])
+            self.assertIn(path, EVALUATOR["controller_files"])
+
+    def test_cache_diagnostic_complete_object_is_exact_and_unexecuted(self) -> None:
+        self.assertEqual(
+            EVALUATOR["catalytic_swarm_1_cache_diagnostic"],
+            build_cache_diagnostic_contract(),
+        )
+        self.assertEqual(
+            neo_loop.catalytic_swarm_1_cache_diagnostic_hash(EVALUATOR),
+            "be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b",
+        )
+        self.assertNotIn(
+            "catalytic_swarm_1_cache_diagnostic_evidence", EVALUATOR
+        )
+        self.assertEqual(
+            EVALUATOR["catalytic_swarm_1_cache_diagnostic"]["one_shot"]["paths"],
+            CACHE_DIAGNOSTIC_PATHS,
+        )
+        self.assertTrue(
+            set(CACHE_DIAGNOSTIC_PATHS.values()).isdisjoint(
+                CATALYTIC_SWARM_1_PATHS.values()
+            )
+        )
+
+    def test_cache_diagnostic_hash_covers_full_object(self) -> None:
+        baseline = neo_loop.catalytic_swarm_1_cache_diagnostic_hash(EVALUATOR)
+        changed = copy.deepcopy(EVALUATOR)
+        changed["catalytic_swarm_1_cache_diagnostic"]["request_law"][
+            "maximum_model_requests"
+        ] = 4
+        self.assertNotEqual(
+            baseline,
+            neo_loop.catalytic_swarm_1_cache_diagnostic_hash(changed),
+        )
+
+    def test_cache_diagnostic_connector_surface_is_protected(self) -> None:
+        for path in (
+            "scripts/catalytic_swarm_1_cache_diagnostic.py",
+            "scripts/catalytic_swarm_1_cache_diagnostic_protocol.py",
+            "scripts/test_catalytic_swarm_1_cache_diagnostic.py",
+            "scripts/test_catalytic_swarm_1_cache_diagnostic_protocol.py",
         ):
             self.assertIn(path, EVALUATOR["protected_paths"]["files"])
             self.assertIn(path, EVALUATOR["controller_files"])
