@@ -106,7 +106,8 @@ RSI-0: CLOSED
 -> CatalyticSwarm-0: executed once; control qualification pass, readiness inconclusive on exact-PID WDDM telemetry loss before canary
 -> CatalyticSwarm-0 v2: structured micro-worker and bounded swarm control reviewable-accept
 -> CatalyticSwarm-1: executed once; inconclusive on the first serial-chain comparison before any task completed
--> CatalyticSwarm-1 cache-admission diagnostic: integrated / not executed; exactly 3 prospective requests
+-> CatalyticSwarm-1 cache-admission diagnostic: executed once / reviewable-accept / no retry; exact public-root reuse proven for both probes
+-> CatalyticSwarm-1 v2: integrated / not executed; exact root-terminal admission law
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -124,8 +125,8 @@ this section is only its navigation capsule.
 - **Preserved predecessor:** CatalyticSwarm-0 v1 executed exactly once. Generation-free control qualification passed; readiness stopped `inconclusive` on exact-PID WDDM telemetry loss before the parser canary, capability attempt, lease, ledger, blackboard, or any worker request. V1 is immutable and no-retry.
 - **Current boundary:** `catalytic_swarm_0_v2` completed one artifact-claiming live execution from protected integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests. Its sole causal intervention was bounded transient exact-PID WDDM query resilience plus fresh-sample admission; the inherited 32-worker plan, prompts, seeds, parent graph, one-slot lease law, parser, verifier, blackboard, and 64-token Fast budget remained unchanged. All 32 workers and the 16/8/6/2 control sequence passed, so structured-micro-worker and bounded swarm-control availability are unlocked at `reviewable-accept`.
 - **Executed successor:** CatalyticSwarm-1 ran exactly once from protected commit `556bb4d57a05bb81fa101a98092472170b50c0dd` at unchanged complete-contract SHA-256 `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. Control, readiness, the generation-free parser canary, and the first common-root warm passed. The first serial-chain comparison completed a response but did not prove reuse of the complete public root, so the fail-fast law stopped after 2 model requests: 1 warm, 1 comparison, and 0 completed tasks.
-- **Prepared diagnostic:** the separately versioned CatalyticSwarm-1 cache-admission diagnostic is integrated but has not executed. Its fixed sequence is one exact common-root warm, one minimal branch, and the unchanged `serial-chain / cs1-chain-t01` realistic first turn. It is diagnostic-only and cannot unlock task advantage or SOTA.
-- **Next boundary:** task advantage is not established because no four-arm equal-budget task completed. The v1 authorization is consumed and v1 is no-retry. Preserve its six artifacts and absent task-results object. Any live diagnostic invocation requires new explicit authorization bound to the then-exact pushed protected `main` and exact model path.
+- **Executed diagnostic:** the separately versioned cache diagnostic executed exactly once: 3 requests, `reviewable-accept`, cache 4,822 covering root terminal 4,820 for both probes, and legacy threshold 4,825 overextended by five tokens. It is diagnostic-only and cannot unlock task advantage or SOTA.
+- **Next boundary:** CS1-v2 is integrated but unexecuted. Its only causal change is the exact root-terminal admission law; suite, arms, budgets, and claim limits are unchanged. Any live v2 invocation requires new explicit exact-main/model authority.
 
 | Swarm stage | Architectural purpose | Unlock boundary |
 |---|---|---|

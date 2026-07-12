@@ -54,19 +54,21 @@ The metadata-only ledger contains the warm record only. Two responses completed,
 
 Cleanup and observed runtime integrity passed. Sidecar PID `30848` stopped, runtime state was removed, port 9494 became free, five WDDM retirement samples were empty, stable PID `32684` remained healthy, and candidate custody remained intact. The authorization is consumed. CatalyticSwarm-1 v1 is no-retry.
 
-## Integrated CatalyticSwarm-1 cache diagnostic
+## Executed CatalyticSwarm-1 cache diagnostic and CS1-v2 successor
 
-The separately versioned CS1 cache-admission diagnostic is `INTEGRATED / NOT EXECUTED` at canonical contract SHA-256 `be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b`. It has no evidence object. Its separate state directory and all five one-shot paths remain absent.
+The separately versioned CS1 cache-admission diagnostic executed exactly once from protected `95f869136efbe8921c15933a792b911ad40997d6`: `reviewable-accept`, no retry, three model requests, and exact evidence binding `a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031`. Its five artifacts are immutable.
 
 The prospective sequence contains exactly three model requests: the exact common-public-root warm, a minimal exact `{"candidate_id":"C00"}` branch, and the unchanged `serial-chain / cs1-chain-t01` realistic first turn. Thinking is disabled, temperature is zero, one physical slot is permitted, and Deep request count is zero.
 
 The diagnostic must persist each completed branch observation before applying a cache-admission class. It measures the exact public-root terminal token index, exact warm/branch common-token prefix, inherited v1 proof threshold, actual cached tokens, and fresh-token accounting. A negative first cache class does not suppress the second probe unless an independent safety gate fails. Terminal reconciliation uses CS1-native `pre-request:cs1-cache-diagnostic-*` and `post-request:cs1-cache-diagnostic-*` labels and exact observed completed-request counts on lawful early safety stops.
 
-Static integration does not establish the cause of the v1 cache-admission stop. A future invocation requires new explicit authorization bound to the then-exact pushed protected `main` and exact Agents-A1 model path. The command must not be invoked as part of integration.
+Both probes cached 4,822 tokens, covering public-root terminal 4,820 by two tokens while missing legacy threshold 4,825 by three. The legacy threshold therefore overreaches the root by five tokens and is retired as admission authority.
+
+CS1-v2 is `INTEGRATED / NOT EXECUTED` at complete contract SHA-256 `911242c74509f1d2d8c6a3c8aa82948c452dac5f4646dd97d70d7b27b750e984`. It preserves suite, arms, budgets, safety, and claim limits, changes only the cache-admission law, and reserves a distinct absent `state/catalytic_swarm_1_v2/` root. Future execution requires separate exact-main/model authority.
 
 ## Active bounded objective
 
-Preserve CatalyticSwarm-1 v1 as `EXECUTED ONCE / INCONCLUSIVE / NO RETRY` and its cache diagnostic as `INTEGRATED / NOT EXECUTED`. Do not invoke `audit-catalytic-swarm-1` again or run `audit-catalytic-swarm-1-cache-diagnostic` without future exact-main and exact-model explicit authority. Do not reinterpret partial evidence as task advantage, infer that the diagnostic already found a root cause, rerun CatalyticSwarm-0 v1/v2 or worker protocols v1-v4, run Deep workers, add restart persistence, alter CUDA/kernels/model/Pi/stable behavior, touch the archived trace candidate, or promote automatically.
+Preserve CS1-v1 as `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`, the diagnostic as `EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY`, and CS1-v2 as `INTEGRATED / NOT EXECUTED`. Do not invoke any consumed command; do not invoke CS1-v2 without new exact-main/model authority. Task advantage, SOTA, broader process-local HoloState, restart persistence, Deep, and automatic promotion remain locked.
 
 ## Claim state
 

@@ -234,6 +234,26 @@ def catalytic_swarm_1_cache_diagnostic_hash(evaluator: dict[str, Any]) -> str:
     return sha256_bytes(canonical_json_bytes(contract))
 
 
+def catalytic_swarm_1_cache_diagnostic_evidence_hash(
+    evaluator: dict[str, Any],
+) -> str:
+    """Hash the completed, separately bound CS1 cache-diagnostic evidence."""
+    evidence = evaluator.get("catalytic_swarm_1_cache_diagnostic_evidence")
+    if not isinstance(evidence, dict):
+        raise NeoLoopError(
+            "evaluator is missing catalytic_swarm_1_cache_diagnostic_evidence"
+        )
+    return sha256_bytes(canonical_json_bytes(evidence))
+
+
+def catalytic_swarm_1_v2_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the complete claim-bearing CatalyticSwarm-1 v2 contract."""
+    contract = evaluator.get("catalytic_swarm_1_v2")
+    if not isinstance(contract, dict):
+        raise NeoLoopError("evaluator is missing catalytic_swarm_1_v2")
+    return sha256_bytes(canonical_json_bytes(contract))
+
+
 def load_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise NeoLoopError(f"missing required file: {path}")
@@ -343,6 +363,10 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         "catalytic_swarm_1_cache_diagnostic_sha256": (
             catalytic_swarm_1_cache_diagnostic_hash(evaluator)
         ),
+        "catalytic_swarm_1_cache_diagnostic_evidence_sha256": (
+            catalytic_swarm_1_cache_diagnostic_evidence_hash(evaluator)
+        ),
+        "catalytic_swarm_1_v2_sha256": catalytic_swarm_1_v2_hash(evaluator),
         "model_identity": evaluator["model"],
         "baseline_source_commit": git(ROOT, "rev-parse", "HEAD"),
         "stable_launch": evaluator["stable_launch"],
@@ -547,6 +571,22 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     if expected_cache_diagnostic != actual_cache_diagnostic:
         raise NeoLoopError(
             "CatalyticSwarm-1 cache diagnostic differs from its locked complete-object hash"
+        )
+    expected_cache_diagnostic_evidence = lock.get(
+        "catalytic_swarm_1_cache_diagnostic_evidence_sha256"
+    )
+    actual_cache_diagnostic_evidence = (
+        catalytic_swarm_1_cache_diagnostic_evidence_hash(evaluator)
+    )
+    if expected_cache_diagnostic_evidence != actual_cache_diagnostic_evidence:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 cache diagnostic evidence differs from its locked complete-object hash"
+        )
+    expected_swarm_1_v2 = lock.get("catalytic_swarm_1_v2_sha256")
+    actual_swarm_1_v2 = catalytic_swarm_1_v2_hash(evaluator)
+    if expected_swarm_1_v2 != actual_swarm_1_v2:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 v2 contract differs from its locked complete-object hash"
         )
     return lock
 

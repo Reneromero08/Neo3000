@@ -170,6 +170,7 @@ class StaticCapabilityTests(unittest.TestCase):
                 "audit-catalytic-swarm-0", "audit-catalytic-swarm-0-v2",
                 "audit-catalytic-swarm-1",
                 "audit-catalytic-swarm-1-cache-diagnostic",
+                "audit-catalytic-swarm-1-v2",
             },
         )
 
@@ -192,7 +193,7 @@ class StaticCapabilityTests(unittest.TestCase):
             holo, "stream_completion"
         ) as stream:
             with self.assertRaisesRegex(
-                holo.NeoLoopError, "CatalyticSwarm-1 v1 has executed and is retired"
+                holo.NeoLoopError, "CatalyticSwarm-1 v1 is executed and must not be rerun"
             ):
                 holo.command_audit_catalytic_swarm_1(
                     SimpleNamespace(binary="x", model="y")
@@ -5188,10 +5189,21 @@ class CacheDiagnosticControllerTests(unittest.TestCase):
                     )
             self.assertFalse(outside.exists())
 
-    def test_real_cache_diagnostic_paths_remain_absent_and_separate(self) -> None:
-        self.assertFalse(holo.CACHE_DIAGNOSTIC_STATE_ROOT.exists())
+    def test_real_cache_diagnostic_paths_are_preserved_and_separate(self) -> None:
+        expected = {
+            "control-qualification-v1.json": "7E32C00378A9F5118982F465A40257B518C54C9A2A34410D5E1931C17DB255D2",
+            "readiness-v1.json": "B4C8A1F126F3636016542331ED1A615E2100595249D554450048A5D730BEF4C7",
+            "attempt-v1.json": "CDF1F383C567D26584D86053099B28D2A14E389E1BFCA7F5E33DE5B82A342FD2",
+            "result-v1.json": "9926CACF5E9F28FBD2A01DFA1BCBD4895F9E727A40301E9906A4B374854FB6A3",
+            "ledger-v1.jsonl": "D1EF5502EBDC627BD23A0667B726C4F313B8C78BD5A8DC145D9F36ED6E5C0D7F",
+        }
+        self.assertTrue(holo.CACHE_DIAGNOSTIC_STATE_ROOT.is_dir())
         for path in holo.CACHE_DIAGNOSTIC_ARTIFACT_PATHS:
-            self.assertFalse(path.exists(), path)
+            self.assertTrue(path.is_file(), path)
+            self.assertEqual(
+                hashlib.sha256(path.read_bytes()).hexdigest().upper(),
+                expected[path.name],
+            )
         self.assertTrue(
             {path.resolve() for path in holo.CACHE_DIAGNOSTIC_ARTIFACT_PATHS}.isdisjoint(
                 path.resolve() for path in holo.CATALYTIC_SWARM_1_ARTIFACT_PATHS

@@ -23,6 +23,7 @@ state/holostate/
 state/catalytic_swarm/
 state/catalytic_swarm_1/
 state/catalytic_swarm_1_cache_diagnostic/
+state/catalytic_swarm_1_v2/
 
 # Benchmarks and logs
 *.log

@@ -18,6 +18,8 @@ The central objective is not merely to make ordinary inference cheaper. It is to
 
 # 1. Current proven boundary
 
+CS1 cache diagnostic evidence is bounded: a single authorized three-request diagnostic returned `reviewable-accept`, proving complete public-root cache reuse for two probes. It does not measure task advantage. The separately versioned CS1-v2 successor is integrated but unexecuted; it preserves all frozen evaluation geometry and uses the exact public-root terminal index, not the superseded legacy threshold, for cache admission. Broader HoloState, restart persistence, SOTA, and automatic promotion remain locked.
+
 The strongest supported mechanism claims are:
 
 ```text

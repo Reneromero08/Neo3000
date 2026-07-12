@@ -470,6 +470,18 @@ reconciled, but no worker capability request has yet executed.
 - All six CatalyticSwarm-1 v1 artifacts remain bound to their published hashes and `state/catalytic_swarm_1/task-results-v1.json` remains absent. `audit-catalytic-swarm-1` remains hard-retired. Static integration does not identify the cache root cause.
 - A future live diagnostic invocation requires new explicit authorization bound to the then-exact pushed protected `main` and exact Agents-A1 model path. `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, `SOTA_SWARM_CLAIM`, broader process-local HoloState, restart persistence, and automatic promotion remain locked.
 
+### CatalyticSwarm-1 cache diagnostic [EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY]
+
+- Exactly three authorized requests completed with process exit 0, final safety pass, cleanup/isolation pass, 6 custody checks, 3 host checks, 3 metadata-only ledger records, 58 WDDM samples, and 2,252.88 MiB peak WDDM. No retry, Deep request, or promotion occurred.
+- Both minimal and realistic probes observed 4,822 cached tokens, covering the common public-root terminal index 4,820 by two tokens. Both miss the inherited 4,825 threshold by three tokens; that threshold overreaches the root by five and is retired as admission authority.
+- Exact evidence object is `a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031`. Five diagnostic artifacts remain immutable. This is not task-advantage evidence.
+
+### CatalyticSwarm-1 v2 [INTEGRATED / NOT EXECUTED]
+
+- Complete successor contract `911242c74509f1d2d8c6a3c8aa82948c452dac5f4646dd97d70d7b27b750e984` changes only cache admission to `actual_cached_prompt_tokens >= public_root_terminal_token_index`; the legacy threshold remains provenance.
+- V2 has a distinct absent seven-path state root, hard-retires the consumed v1 and diagnostic commands, requires explicit `--authorized-main` and `--model`, and preserves the fixed 8-task, 4-arm, 1,032-request schedule and all claim limits.
+- Static integration did not execute v2, launch a sidecar, or contact the model. Future execution requires separate exact-main/model authority.
+
 ### Durable persistence boundary
 
 The built-in slot file persists active KV/recurrent state and token history, but does not persist the server prompt-checkpoint list required for hybrid recurrent prefix selection after restart.

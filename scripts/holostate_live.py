@@ -26,6 +26,7 @@ import urllib.error
 import urllib.request
 import uuid
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+from contextlib import contextmanager
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -51,6 +52,8 @@ from neo_loop import (  # noqa: E402
     catalytic_swarm_1_hash,
     catalytic_swarm_1_evidence_hash,
     catalytic_swarm_1_cache_diagnostic_hash,
+    catalytic_swarm_1_cache_diagnostic_evidence_hash,
+    catalytic_swarm_1_v2_hash,
     listener_pids,
     load_json,
     verify_lock,
@@ -154,6 +157,18 @@ from catalytic_swarm_1_cache_diagnostic_protocol import (  # noqa: E402
     TASK_SUITE_SHA256 as CACHE_DIAGNOSTIC_TASK_SUITE_SHA256,
     contract_sha256 as cache_diagnostic_contract_sha256,
     validate_cache_diagnostic_contract,
+)
+from catalytic_swarm_1_v2_protocol import (  # noqa: E402
+    DIAGNOSTIC_EVIDENCE_SHA256 as CS1_V2_DIAGNOSTIC_EVIDENCE_SHA256,
+    EXPECTED_CONTRACT_SHA256 as CS1_V2_CONTRACT_SHA256,
+    build_cache_diagnostic_evidence_binding,
+    build_catalytic_swarm_1_v2_contract,
+    validate_cache_diagnostic_evidence_binding,
+    validate_catalytic_swarm_1_v2_contract,
+)
+from catalytic_swarm_1_v2_root_law import (  # noqa: E402
+    RootCacheObservation,
+    adjudicate_root_cache,
 )
 from holostate_swarm_adapter import (  # noqa: E402
     HoloStateSwarmAdapterError,
@@ -267,6 +282,41 @@ CACHE_DIAGNOSTIC_ARTIFACT_PATHS = (
     CACHE_DIAGNOSTIC_RESULT_PATH,
     CACHE_DIAGNOSTIC_LEDGER_PATH,
 )
+CATALYTIC_SWARM_1_V2_STATE_ROOT = ROOT / "state" / "catalytic_swarm_1_v2"
+CATALYTIC_SWARM_1_V2_CONTROL_PATH = (
+    CATALYTIC_SWARM_1_V2_STATE_ROOT / "control-qualification-v2.json"
+)
+CATALYTIC_SWARM_1_V2_READINESS_PATH = (
+    CATALYTIC_SWARM_1_V2_STATE_ROOT / "readiness-v2.json"
+)
+CATALYTIC_SWARM_1_V2_PARSER_CANARY_PATH = (
+    CATALYTIC_SWARM_1_V2_STATE_ROOT / "parser-canary-v2.json"
+)
+CATALYTIC_SWARM_1_V2_ATTEMPT_PATH = (
+    CATALYTIC_SWARM_1_V2_STATE_ROOT / "attempt-v2.json"
+)
+CATALYTIC_SWARM_1_V2_RESULT_PATH = (
+    CATALYTIC_SWARM_1_V2_STATE_ROOT / "result-v2.json"
+)
+CATALYTIC_SWARM_1_V2_LEDGER_PATH = CATALYTIC_SWARM_1_V2_STATE_ROOT / "ledger-v2.jsonl"
+CATALYTIC_SWARM_1_V2_TASK_RESULTS_PATH = (
+    CATALYTIC_SWARM_1_V2_STATE_ROOT / "task-results-v2.json"
+)
+CATALYTIC_SWARM_1_V2_ARTIFACT_PATHS = (
+    CATALYTIC_SWARM_1_V2_CONTROL_PATH,
+    CATALYTIC_SWARM_1_V2_READINESS_PATH,
+    CATALYTIC_SWARM_1_V2_PARSER_CANARY_PATH,
+    CATALYTIC_SWARM_1_V2_ATTEMPT_PATH,
+    CATALYTIC_SWARM_1_V2_RESULT_PATH,
+    CATALYTIC_SWARM_1_V2_LEDGER_PATH,
+    CATALYTIC_SWARM_1_V2_TASK_RESULTS_PATH,
+)
+CATALYTIC_SWARM_1_V2_CONNECTOR_FILES = (
+    "scripts/catalytic_swarm_1_v2_root_law.py",
+    "scripts/test_catalytic_swarm_1_v2_root_law.py",
+    "scripts/catalytic_swarm_1_v2_protocol.py",
+    "scripts/test_catalytic_swarm_1_v2_protocol.py",
+)
 CACHE_DIAGNOSTIC_CONNECTOR_FILES = (
     "scripts/catalytic_swarm_1_cache_diagnostic.py",
     "scripts/catalytic_swarm_1_cache_diagnostic_protocol.py",
@@ -315,6 +365,14 @@ CATALYTIC_SWARM_1_LEDGER_FIELDS = frozenset({
 CATALYTIC_SWARM_1_LEDGER_ENVELOPE_FIELDS = frozenset({
     "global_record_index", "request_sequence_index", "request_label",
 })
+CATALYTIC_SWARM_1_V2_ADMISSION_FIELDS = frozenset({
+    "public_root_terminal_token_index",
+    "common_prefix_tokens",
+    "response_completed",
+    "transport_passed",
+    "token_evidence_passed",
+})
+CATALYTIC_SWARM_1_RUNTIME_VERSION = "v1"
 EVALUATOR_PATH = ROOT / "lab" / "EVALUATOR.json"
 DEFAULT_BINARY = ROOT / "build" / "stable" / "bin" / "Release" / "llama-server.exe"
 EXPECTED_BINARY_SHA256 = "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
@@ -399,6 +457,62 @@ def require_catalytic_swarm_1_runtime_path(path: Path) -> Path:
     return require_resolved_state_path(
         path, CATALYTIC_SWARM_1_STATE_ROOT, "state/catalytic_swarm_1"
     )
+
+
+def require_catalytic_swarm_1_v2_runtime_path(path: Path) -> Path:
+    return require_resolved_state_path(
+        path, CATALYTIC_SWARM_1_V2_STATE_ROOT, "state/catalytic_swarm_1_v2"
+    )
+
+
+def assert_catalytic_swarm_1_v2_artifacts_absent() -> None:
+    present = [
+        path.relative_to(ROOT).as_posix()
+        for path in CATALYTIC_SWARM_1_V2_ARTIFACT_PATHS
+        if path.exists()
+    ]
+    if CATALYTIC_SWARM_1_V2_STATE_ROOT.exists() and not present:
+        present.append("state/catalytic_swarm_1_v2/")
+    if present:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 v2 one-shot state already exists: " + ", ".join(present)
+        )
+
+
+@contextmanager
+def catalytic_swarm_1_v2_runtime_namespace() -> Any:
+    """Route the inherited full scheduler into v2-only state and root law."""
+    names = (
+        "CATALYTIC_SWARM_1_STATE_ROOT",
+        "CATALYTIC_SWARM_1_CONTROL_PATH",
+        "CATALYTIC_SWARM_1_READINESS_PATH",
+        "CATALYTIC_SWARM_1_PARSER_CANARY_PATH",
+        "CATALYTIC_SWARM_1_ATTEMPT_PATH",
+        "CATALYTIC_SWARM_1_RESULT_PATH",
+        "CATALYTIC_SWARM_1_LEDGER_PATH",
+        "CATALYTIC_SWARM_1_TASK_RESULTS_PATH",
+        "CATALYTIC_SWARM_1_ARTIFACT_PATHS",
+        "CATALYTIC_SWARM_1_CONNECTOR_FILES",
+        "CATALYTIC_SWARM_1_RUNTIME_VERSION",
+    )
+    saved = {name: globals()[name] for name in names}
+    try:
+        globals().update({
+            "CATALYTIC_SWARM_1_STATE_ROOT": CATALYTIC_SWARM_1_V2_STATE_ROOT,
+            "CATALYTIC_SWARM_1_CONTROL_PATH": CATALYTIC_SWARM_1_V2_CONTROL_PATH,
+            "CATALYTIC_SWARM_1_READINESS_PATH": CATALYTIC_SWARM_1_V2_READINESS_PATH,
+            "CATALYTIC_SWARM_1_PARSER_CANARY_PATH": CATALYTIC_SWARM_1_V2_PARSER_CANARY_PATH,
+            "CATALYTIC_SWARM_1_ATTEMPT_PATH": CATALYTIC_SWARM_1_V2_ATTEMPT_PATH,
+            "CATALYTIC_SWARM_1_RESULT_PATH": CATALYTIC_SWARM_1_V2_RESULT_PATH,
+            "CATALYTIC_SWARM_1_LEDGER_PATH": CATALYTIC_SWARM_1_V2_LEDGER_PATH,
+            "CATALYTIC_SWARM_1_TASK_RESULTS_PATH": CATALYTIC_SWARM_1_V2_TASK_RESULTS_PATH,
+            "CATALYTIC_SWARM_1_ARTIFACT_PATHS": CATALYTIC_SWARM_1_V2_ARTIFACT_PATHS,
+            "CATALYTIC_SWARM_1_CONNECTOR_FILES": CATALYTIC_SWARM_1_V2_CONNECTOR_FILES,
+            "CATALYTIC_SWARM_1_RUNTIME_VERSION": "v2",
+        })
+        yield
+    finally:
+        globals().update(saved)
 
 
 def require_cache_diagnostic_runtime_path(path: Path) -> Path:
@@ -2598,7 +2712,10 @@ def load_locked_catalytic_swarm_1() -> tuple[
         raise NeoLoopError("CatalyticSwarm-1 is not locked as a complete object")
     if catalytic_swarm_1_contract_sha256(contract) != actual:
         raise NeoLoopError("CatalyticSwarm-1 canonical contract hash differs from lock")
-    if "catalytic_swarm_1_evidence" in evaluator:
+    if (
+        "catalytic_swarm_1_evidence" in evaluator
+        and CATALYTIC_SWARM_1_RUNTIME_VERSION != "v2"
+    ):
         raise NeoLoopError("CatalyticSwarm-1 v1 has executed and is retired")
     predecessor_contract = contract["predecessor"]
     if (
@@ -11998,7 +12115,14 @@ def catalytic_swarm_1_parser_canary(task: AdvantageTask) -> dict[str, Any]:
 
 
 def validate_catalytic_swarm_1_ledger_record(record: dict[str, Any]) -> None:
-    if not isinstance(record, dict) or set(record) != CATALYTIC_SWARM_1_LEDGER_FIELDS:
+    expected_fields = CATALYTIC_SWARM_1_LEDGER_FIELDS
+    if (
+        CATALYTIC_SWARM_1_RUNTIME_VERSION == "v2"
+        and isinstance(record, dict)
+        and record.get("arm") != "common-root-warm"
+    ):
+        expected_fields = expected_fields | CATALYTIC_SWARM_1_V2_ADMISSION_FIELDS
+    if not isinstance(record, dict) or set(record) != expected_fields:
         raise NeoLoopError("CatalyticSwarm-1 metadata ledger field set changed")
     encoded = canonical_json_bytes(record).lower()
     for forbidden in (
@@ -12031,7 +12155,27 @@ def validate_catalytic_swarm_1_ledger_record(record: dict[str, Any]) -> None:
         ):
             raise NeoLoopError("CatalyticSwarm-1 warm metadata is invalid")
     else:
-        if (
+        if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v2":
+            admission = adjudicate_root_cache(RootCacheObservation(
+                public_root_terminal_token_index=record[
+                    "public_root_terminal_token_index"
+                ],
+                common_prefix_tokens=record["common_prefix_tokens"],
+                legacy_required_cached_prompt_tokens=record[
+                    "required_cached_prompt_tokens"
+                ],
+                actual_cached_prompt_tokens=record["cached_prompt_tokens"],
+                branch_prompt_tokens=record["prompt_tokens"],
+                fresh_prompt_tokens=record["fresh_prompt_tokens"],
+                completion_tokens=record["completion_tokens"],
+                response_completed=record["response_completed"],
+                transport_passed=record["transport_passed"],
+                token_evidence_passed=record["token_evidence_passed"],
+            ))
+            # A completed negative observation is valid evidence and must be
+            # persisted before the caller enforces the admission stop.
+            del admission
+        elif (
             record["required_cached_prompt_tokens"] <= 0
             or record["cached_prompt_tokens"]
             < record["required_cached_prompt_tokens"]
@@ -12172,6 +12316,12 @@ def catalytic_swarm_1_warm_request(
     system_identity["warm_rendered_prompt_token_count"] = len(
         warm_prompt_token_ids
     )
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v2":
+        system_identity["public_root_terminal_token_index"] = (
+            locate_public_root_terminal_token_index(
+                warm_rendered_prompt, warm_prompt_token_ids, system_message
+            )
+        )
     transient = BoundedInMemoryLedger(max_bytes=MIB, max_records=10_000)
     started_at = utc_now()
     warm_request_label = f"{task.task_id}:common-root-warm"
@@ -12305,6 +12455,26 @@ def stream_catalytic_swarm_1_candidate(
         rendered_ids,
         system_message,
     )
+    public_root_terminal_token_index: int | None = None
+    common_prefix_tokens: int | None = None
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v2":
+        public_root_terminal_token_index = system_identity.get(
+            "public_root_terminal_token_index"
+        )
+        if (
+            isinstance(public_root_terminal_token_index, bool)
+            or not isinstance(public_root_terminal_token_index, int)
+            or public_root_terminal_token_index <= 0
+        ):
+            raise NeoLoopError("CatalyticSwarm-1 v2 warm root-terminal proof is absent")
+        candidate_terminal = locate_public_root_terminal_token_index(
+            rendered, rendered_ids, system_message
+        )
+        if candidate_terminal != public_root_terminal_token_index:
+            raise NeoLoopError("CatalyticSwarm-1 v2 warm/branch root terminals differ")
+        common_prefix_tokens = exact_common_token_prefix(
+            warm_prompt_token_ids, rendered_ids
+        )
     transient = BoundedInMemoryLedger(max_bytes=MIB, max_records=10_000)
     request_label = f"{task.task_id}:{turn.arm}:{turn.turn_id}"
     started_at = utc_now()
@@ -12353,11 +12523,24 @@ def stream_catalytic_swarm_1_candidate(
     if (
         isinstance(cached_prompt_tokens, bool)
         or not isinstance(cached_prompt_tokens, int)
-        or cached_prompt_tokens < required_cached_prompt_tokens
     ):
-        raise NeoLoopError(
-            "CatalyticSwarm-1 candidate did not reuse the complete public root"
-        )
+        raise NeoLoopError("CatalyticSwarm-1 candidate cache accounting is invalid")
+    admission = None
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v2":
+        admission = adjudicate_root_cache(RootCacheObservation(
+            public_root_terminal_token_index=public_root_terminal_token_index,
+            common_prefix_tokens=common_prefix_tokens,
+            legacy_required_cached_prompt_tokens=required_cached_prompt_tokens,
+            actual_cached_prompt_tokens=cached_prompt_tokens,
+            branch_prompt_tokens=compact["logical_prompt_tokens"],
+            fresh_prompt_tokens=compact["fresh_prompt_tokens"],
+            completion_tokens=compact["completion_tokens"],
+            response_completed=compact["finish_reason"] == "stop",
+            transport_passed=True,
+            token_evidence_passed=evidence.get("accepted") is True,
+        ))
+    elif cached_prompt_tokens < required_cached_prompt_tokens:
+        raise NeoLoopError("CatalyticSwarm-1 candidate did not reuse the complete public root")
     public_passed = catalytic_swarm_1_public_pass_for_ledger(
         task, turn, candidate_id
     )
@@ -12375,6 +12558,10 @@ def stream_catalytic_swarm_1_candidate(
         "transport_passed": True,
         "token_evidence_scope": scope,
     }
+    if admission is not None:
+        transport["public_root_terminal_token_index"] = public_root_terminal_token_index
+        transport["common_prefix_tokens"] = common_prefix_tokens
+        transport["cache_admission"] = admission.to_dict()
     metadata = {
         "task_id": task.task_id,
         "arm": turn.arm,
@@ -12396,6 +12583,14 @@ def stream_catalytic_swarm_1_candidate(
         "request_started_at": started_at,
         "request_finished_at": finished_at,
     }
+    if admission is not None:
+        metadata.update({
+            "public_root_terminal_token_index": public_root_terminal_token_index,
+            "common_prefix_tokens": common_prefix_tokens,
+            "response_completed": compact["finish_reason"] == "stop",
+            "transport_passed": True,
+            "token_evidence_passed": evidence.get("accepted") is True,
+        })
     validate_catalytic_swarm_1_ledger_record(metadata)
     return transport, metadata
 
@@ -14104,6 +14299,75 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
         post_parser_cleanup.run()
 
 
+def load_locked_catalytic_swarm_1_v2() -> tuple[dict[str, Any], dict[str, Any]]:
+    """Load the completed diagnostic binding and the unexecuted v2 successor."""
+    evaluator = load_json(EVALUATOR_PATH)
+    lock = verify_lock(evaluator)
+    evidence = evaluator.get("catalytic_swarm_1_cache_diagnostic_evidence")
+    contract = evaluator.get("catalytic_swarm_1_v2")
+    try:
+        validate_cache_diagnostic_evidence_binding(evidence)
+        validate_catalytic_swarm_1_v2_contract(contract)
+    except Exception as exc:
+        raise NeoLoopError(f"CatalyticSwarm-1 v2 canonical binding failed: {exc}") from exc
+    if (
+        catalytic_swarm_1_cache_diagnostic_evidence_hash(evaluator)
+        != CS1_V2_DIAGNOSTIC_EVIDENCE_SHA256
+        or lock.get("catalytic_swarm_1_cache_diagnostic_evidence_sha256")
+        != CS1_V2_DIAGNOSTIC_EVIDENCE_SHA256
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 cache diagnostic evidence is not exact")
+    if (
+        catalytic_swarm_1_v2_hash(evaluator) != CS1_V2_CONTRACT_SHA256
+        or lock.get("catalytic_swarm_1_v2_sha256") != CS1_V2_CONTRACT_SHA256
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 v2 contract is not exact")
+    if (
+        catalytic_swarm_1_hash(evaluator)
+        != contract["predecessors"]["catalytic_swarm_1_v1"]["contract_sha256"]
+        or catalytic_swarm_1_evidence_hash(evaluator)
+        != contract["predecessors"]["catalytic_swarm_1_v1"]["evidence_object_sha256"]
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 v1 predecessor binding changed")
+    return evaluator, contract
+
+
+def prepare_catalytic_swarm_1_v2_claim(args: argparse.Namespace) -> None:
+    """Close v2-only static gates before any sidecar construction or request."""
+    assert_catalytic_swarm_1_v2_artifacts_absent()
+    _, contract = load_locked_catalytic_swarm_1_v2()
+    if not isinstance(getattr(args, "authorized_main", None), str) or not args.authorized_main:
+        raise NeoLoopError("CatalyticSwarm-1 v2 requires --authorized-main")
+    if not isinstance(getattr(args, "model", None), str) or not args.model:
+        raise NeoLoopError("CatalyticSwarm-1 v2 requires --model")
+    authorized_main = args.authorized_main.lower()
+    observed = {
+        git_read(ROOT, "rev-parse", "HEAD").lower(),
+        git_read(ROOT, "rev-parse", "main").lower(),
+        git_read(ROOT, "rev-parse", "origin/main").lower(),
+        git_read(ROOT, "ls-remote", "origin", "refs/heads/main").split()[0].lower(),
+    }
+    if observed != {authorized_main}:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 v2 requires --authorized-main to equal protected main"
+        )
+    if contract["one_shot"]["no_retry"] is not True:
+        raise NeoLoopError("CatalyticSwarm-1 v2 no-retry law changed")
+    for relative in CATALYTIC_SWARM_1_V2_CONNECTOR_FILES:
+        if not (ROOT / relative).is_file():
+            raise NeoLoopError(f"CatalyticSwarm-1 v2 connector source is missing: {relative}")
+
+
+def run_catalytic_swarm_1_v2_audit(args: argparse.Namespace) -> dict[str, Any]:
+    """Execute only a future authorized v2 invocation through the inherited scheduler."""
+    prepare_catalytic_swarm_1_v2_claim(args)
+    with catalytic_swarm_1_v2_runtime_namespace():
+        result = run_catalytic_swarm_1_audit(args)
+    result["catalytic_swarm_1_v2"] = result.pop("catalytic_swarm_1", "inconclusive")
+    result["automatic_promotion"] = False
+    return result
+
+
 def _run_catalytic_swarm_1_audit(
     args: argparse.Namespace,
     post_parser_cleanup: ArmedCleanup,
@@ -14787,6 +15051,15 @@ def _run_catalytic_swarm_1_audit(
                             sidecar.wddm_freshness_boundaries[-1]["boundary"]
                         )
                         record_completed_request(metadata)
+                        if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v2":
+                            admission = transport.get("cache_admission")
+                            if not isinstance(admission, dict) or admission.get(
+                                "admitted"
+                            ) is not True:
+                                raise NeoLoopError(
+                                    "CatalyticSwarm-1 v2 cache admission rejected "
+                                    "after completed-response persistence"
+                                )
                         return transport
 
                     return run_request_with_boundaries(
@@ -15551,13 +15824,21 @@ def command_audit_catalytic_swarm_0_v2(args: argparse.Namespace) -> dict[str, An
 
 
 def command_audit_catalytic_swarm_1(args: argparse.Namespace) -> dict[str, Any]:
-    return run_catalytic_swarm_1_audit(args)
+    del args
+    raise NeoLoopError("CatalyticSwarm-1 v1 is executed and must not be rerun")
 
 
 def command_audit_catalytic_swarm_1_cache_diagnostic(
     args: argparse.Namespace,
 ) -> dict[str, Any]:
-    return run_cache_diagnostic(args)
+    del args
+    raise NeoLoopError(
+        "CatalyticSwarm-1 cache diagnostic is executed and must not be rerun"
+    )
+
+
+def command_audit_catalytic_swarm_1_v2(args: argparse.Namespace) -> dict[str, Any]:
+    return run_catalytic_swarm_1_v2_audit(args)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -15604,6 +15885,11 @@ def build_parser() -> argparse.ArgumentParser:
     cache_diagnostic.set_defaults(
         handler=command_audit_catalytic_swarm_1_cache_diagnostic
     )
+    catalytic_swarm_1_v2 = subparsers.add_parser("audit-catalytic-swarm-1-v2")
+    catalytic_swarm_1_v2.add_argument("--binary", default=str(DEFAULT_BINARY))
+    catalytic_swarm_1_v2.add_argument("--model", required=True)
+    catalytic_swarm_1_v2.add_argument("--authorized-main", required=True)
+    catalytic_swarm_1_v2.set_defaults(handler=command_audit_catalytic_swarm_1_v2)
     return parser
 
 
@@ -15613,6 +15899,7 @@ def main() -> int:
         "start",
         "audit-catalytic-swarm-1",
         "audit-catalytic-swarm-1-cache-diagnostic",
+        "audit-catalytic-swarm-1-v2",
     } and not args.model:
         raise SystemExit("set NEO3000_MODEL or pass --model with the exact Agents-A1 GGUF path")
     try:
@@ -15627,6 +15914,10 @@ def main() -> int:
         if args.command == "audit-catalytic-swarm-1-cache-diagnostic":
             return 0 if result.get("cache_diagnostic") in {
                 "reviewable-accept", "reject",
+            } else 1
+        if args.command == "audit-catalytic-swarm-1-v2":
+            return 0 if result.get("catalytic_swarm_1_v2") in {
+                "reviewable-accept", "no-advantage",
             } else 1
         if args.command == "audit-catalytic-swarm-0":
             return 1

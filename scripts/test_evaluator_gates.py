@@ -18,6 +18,12 @@ from catalytic_swarm_1_cache_diagnostic_protocol import (
     ONE_SHOT_PATHS as CACHE_DIAGNOSTIC_PATHS,
     build_cache_diagnostic_contract,
 )
+from catalytic_swarm_1_v2_protocol import (
+    DIAGNOSTIC_EVIDENCE_SHA256,
+    EXPECTED_CONTRACT_SHA256,
+    build_cache_diagnostic_evidence_binding,
+    build_catalytic_swarm_1_v2_contract,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -451,7 +457,7 @@ class EvaluatorGateTests(unittest.TestCase):
             self.assertIn(path, EVALUATOR["protected_paths"]["files"])
             self.assertIn(path, EVALUATOR["controller_files"])
 
-    def test_cache_diagnostic_complete_object_is_exact_and_unexecuted(self) -> None:
+    def test_cache_diagnostic_and_v2_objects_are_exact_and_bound(self) -> None:
         self.assertEqual(
             EVALUATOR["catalytic_swarm_1_cache_diagnostic"],
             build_cache_diagnostic_contract(),
@@ -460,8 +466,21 @@ class EvaluatorGateTests(unittest.TestCase):
             neo_loop.catalytic_swarm_1_cache_diagnostic_hash(EVALUATOR),
             "be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b",
         )
-        self.assertNotIn(
-            "catalytic_swarm_1_cache_diagnostic_evidence", EVALUATOR
+        self.assertEqual(
+            EVALUATOR["catalytic_swarm_1_cache_diagnostic_evidence"],
+            build_cache_diagnostic_evidence_binding(),
+        )
+        self.assertEqual(
+            neo_loop.catalytic_swarm_1_cache_diagnostic_evidence_hash(EVALUATOR),
+            DIAGNOSTIC_EVIDENCE_SHA256,
+        )
+        self.assertEqual(
+            EVALUATOR["catalytic_swarm_1_v2"],
+            build_catalytic_swarm_1_v2_contract(),
+        )
+        self.assertEqual(
+            neo_loop.catalytic_swarm_1_v2_hash(EVALUATOR),
+            EXPECTED_CONTRACT_SHA256,
         )
         self.assertEqual(
             EVALUATOR["catalytic_swarm_1_cache_diagnostic"]["one_shot"]["paths"],
@@ -490,6 +509,17 @@ class EvaluatorGateTests(unittest.TestCase):
             "scripts/catalytic_swarm_1_cache_diagnostic_protocol.py",
             "scripts/test_catalytic_swarm_1_cache_diagnostic.py",
             "scripts/test_catalytic_swarm_1_cache_diagnostic_protocol.py",
+        ):
+            self.assertIn(path, EVALUATOR["protected_paths"]["files"])
+            self.assertIn(path, EVALUATOR["controller_files"])
+
+    def test_v2_connector_surface_is_protected(self) -> None:
+        for path in (
+            "scripts/catalytic_swarm_1_v2_root_law.py",
+            "scripts/test_catalytic_swarm_1_v2_root_law.py",
+            "scripts/catalytic_swarm_1_v2_protocol.py",
+            "scripts/test_catalytic_swarm_1_v2_protocol.py",
+            "scripts/test_catalytic_swarm_1_v2_controller.py",
         ):
             self.assertIn(path, EVALUATOR["protected_paths"]["files"])
             self.assertIn(path, EVALUATOR["controller_files"])

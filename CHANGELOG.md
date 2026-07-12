@@ -6,6 +6,10 @@ It is intentionally not a raw dump of every administrative commit. Small documen
 
 ## Current state
 
+### CatalyticSwarm-1 cache-law successor
+
+The CS1 cache diagnostic executed once with `reviewable-accept`, proving complete public-root reuse for both probes and retiring the legacy common-prefix threshold as admission authority. Evidence binding is `a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031`. CS1-v2 is integrated but not executed under exact contract `911242c74509f1d2d8c6a3c8aa82948c452dac5f4646dd97d70d7b27b750e984`; no task-advantage or automatic-promotion claim changed.
+
 Current state is defined by the pushed task board, checkpoint ledger, evaluator lock, and evidence records rather than a fragile changelog commit pointer.
 
 ```text

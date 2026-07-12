@@ -33,6 +33,8 @@ Neo3000 starts from a pinned source import of the runtime portions of `llama.cpp
 
 ## Current protected boundary
 
+CS1-v1 is immutable (`EXECUTED ONCE / INCONCLUSIVE / NO RETRY`). Its separately versioned cache diagnostic executed once and returned `reviewable-accept`: both probes reused the complete public root (4,822 cached tokens covering terminal 4,820), while the former 4,825-token threshold was overextended. CS1-v2 is integrated but unexecuted at contract `911242c74509f1d2d8c6a3c8aa82948c452dac5f4646dd97d70d7b27b750e984`; it changes only cache admission to the exact root-terminal law. Task advantage, SOTA, broader HoloState, restart persistence, and automatic promotion remain locked.
+
 Checkpoint 0 and the supervised RSI substrate are closed. Checkpoint 1A tracing is paused, and Checkpoint 2 is active. CatalyticSwarm-0 v2 proved the bounded 32-worker, one-slot control plane at `reviewable-accept`; it did not prove task advantage.
 
 CatalyticSwarm-1 v1 is **EXECUTED ONCE / INCONCLUSIVE**. Control, readiness, the generation-free parser canary, and one common-root warm passed. The first serial-chain comparison then stopped because its response did not prove reuse of the complete public root. The audit ended after 2 model requests: 1 warm, 1 comparison, and 0 completed tasks. Equal-budget advantage was not completed.
