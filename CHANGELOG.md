@@ -8,7 +8,7 @@ It is intentionally not a raw dump of every administrative commit. Small documen
 
 ### CatalyticSwarm-1 cache-law successor
 
-The CS1 cache diagnostic executed once with `reviewable-accept`, proving complete public-root reuse for both probes and retiring the legacy common-prefix threshold as admission authority. Evidence binding is `a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031`. CS1-v2 is integrated but not executed under exact contract `911242c74509f1d2d8c6a3c8aa82948c452dac5f4646dd97d70d7b27b750e984`; no task-advantage or automatic-promotion claim changed.
+The CS1 cache diagnostic executed once with `reviewable-accept`, proving complete public-root reuse for both probes and retiring the legacy common-prefix threshold as admission authority. Evidence binding is `a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031`. CS1-v2 is consumed preclaim fail-closed; CS1-v3 is integrated but not executed with separately locked claim, scheduler, and runtime-evidence identities (`09d3c7753d3840b568d85642791425931dedc7bd34c017a16e84e606b7d3d681`). No task-advantage or automatic-promotion claim changed.
 
 Current state is defined by the pushed task board, checkpoint ledger, evaluator lock, and evidence records rather than a fragile changelog commit pointer.
 

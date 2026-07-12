@@ -487,6 +487,7 @@ reconciled, but no worker capability request has yet executed.
 - V3 binds the immutable consumed v2 preclaim boundary `dc64c8dff9dc129a3002629bdf97dd9114fc89f7fa01bd0744af7b8fbd3adb1e` and applies only active-version one-shot path qualification.
 - Its effective contract hash is `433b4d4e418614c2e9c2b177f46b68d24710921b11d8d7e848a226da22c1fd27`; the root-terminal cache law, 8-task / 4-arm geometry, 1,032-request schedule, limits, and locked claims are unchanged.
 - `audit-catalytic-swarm-1-v3` requires exact `--model` and `--authorized-main`. It has not been executed, launched no sidecar, made no model request, and its seven-path `state/catalytic_swarm_1_v3/` root remains absent.
+- Static preauthorization review found that the shared v1 scheduler would otherwise persist v1 schema, operation, and verdict identity before the wrapper renamed its returned object. This was repaired without executing v3: runtime-evidence binding `09d3c7753d3840b568d85642791425931dedc7bd34c017a16e84e606b7d3d681` now applies v3 identity before every artifact write and every metadata-ledger record, while recording the immutable v1 scheduler hash separately.
 
 ### Durable persistence boundary
 

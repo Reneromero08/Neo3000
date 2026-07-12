@@ -56,6 +56,7 @@ from neo_loop import (  # noqa: E402
     catalytic_swarm_1_v2_hash,
     catalytic_swarm_1_v2_preclaim_boundary_hash,
     catalytic_swarm_1_v3_hash,
+    catalytic_swarm_1_v3_runtime_evidence_binding_hash,
     listener_pids,
     load_json,
     verify_lock,
@@ -183,6 +184,20 @@ from catalytic_swarm_1_v3_protocol import (  # noqa: E402
     build_v2_preclaim_boundary,
     sha256_object as catalytic_swarm_1_v3_sha256_object,
     validate_v2_preclaim_boundary,
+)
+from catalytic_swarm_1_v3_runtime_binding import (  # noqa: E402
+    V3RuntimeBinding,
+    V3RuntimeBindingError,
+    apply_stage_identity,
+    build_v3_runtime_binding,
+    validate_persisted_v3_record,
+    validate_runtime_contract_bindings,
+)
+from catalytic_swarm_1_v3_runtime_binding_protocol import (  # noqa: E402
+    EXPECTED_RUNTIME_EVIDENCE_CONTRACT_SHA256,
+    build_v3_runtime_evidence_contract,
+    sha256_object as v3_runtime_evidence_sha256_object,
+    validate_v3_runtime_evidence_contract,
 )
 from holostate_swarm_adapter import (  # noqa: E402
     HoloStateSwarmAdapterError,
@@ -419,6 +434,7 @@ CATALYTIC_SWARM_1_V2_ADMISSION_FIELDS = frozenset({
 })
 CATALYTIC_SWARM_1_RUNTIME_VERSION = "v1"
 CATALYTIC_SWARM_1_ACTIVE_VERSIONED_CONTRACT: dict[str, Any] | None = None
+CATALYTIC_SWARM_1_ACTIVE_RUNTIME_BINDING: V3RuntimeBinding | None = None
 EVALUATOR_PATH = ROOT / "lab" / "EVALUATOR.json"
 DEFAULT_BINARY = ROOT / "build" / "stable" / "bin" / "Release" / "llama-server.exe"
 EXPECTED_BINARY_SHA256 = "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
@@ -576,8 +592,11 @@ def catalytic_swarm_1_v2_runtime_namespace() -> Any:
 
 
 @contextmanager
-def catalytic_swarm_1_v3_runtime_namespace(contract: dict[str, Any]) -> Any:
+def catalytic_swarm_1_v3_runtime_namespace(
+    contract: dict[str, Any], runtime_binding: V3RuntimeBinding | None = None
+) -> Any:
     """Route the inherited scheduler through the explicit v3 custody tuple."""
+    runtime_binding = runtime_binding or build_v3_runtime_binding()
     names = (
         "CATALYTIC_SWARM_1_STATE_ROOT",
         "CATALYTIC_SWARM_1_CONTROL_PATH",
@@ -590,6 +609,7 @@ def catalytic_swarm_1_v3_runtime_namespace(contract: dict[str, Any]) -> Any:
         "CATALYTIC_SWARM_1_ARTIFACT_PATHS",
         "CATALYTIC_SWARM_1_RUNTIME_VERSION",
         "CATALYTIC_SWARM_1_ACTIVE_VERSIONED_CONTRACT",
+        "CATALYTIC_SWARM_1_ACTIVE_RUNTIME_BINDING",
     )
     saved = {name: globals()[name] for name in names}
     try:
@@ -605,6 +625,7 @@ def catalytic_swarm_1_v3_runtime_namespace(contract: dict[str, Any]) -> Any:
             "CATALYTIC_SWARM_1_ARTIFACT_PATHS": CATALYTIC_SWARM_1_V3_ARTIFACT_PATHS,
             "CATALYTIC_SWARM_1_RUNTIME_VERSION": "v3",
             "CATALYTIC_SWARM_1_ACTIVE_VERSIONED_CONTRACT": contract,
+            "CATALYTIC_SWARM_1_ACTIVE_RUNTIME_BINDING": runtime_binding,
         })
         yield
     finally:
@@ -695,16 +716,90 @@ def claim_catalytic_runtime_json_once(
         raise
 
 
+def _catalytic_swarm_1_runtime_stage(path: Path) -> str:
+    stages = {
+        CATALYTIC_SWARM_1_V3_CONTROL_PATH.resolve(): "control",
+        CATALYTIC_SWARM_1_V3_READINESS_PATH.resolve(): "readiness",
+        CATALYTIC_SWARM_1_V3_PARSER_CANARY_PATH.resolve(): "parser_canary",
+        CATALYTIC_SWARM_1_V3_ATTEMPT_PATH.resolve(): "attempt",
+        CATALYTIC_SWARM_1_V3_RESULT_PATH.resolve(): "result",
+        CATALYTIC_SWARM_1_V3_TASK_RESULTS_PATH.resolve(): "task_results",
+    }
+    try:
+        return stages[path.resolve()]
+    except KeyError as exc:
+        raise NeoLoopError(f"unknown CatalyticSwarm-1 runtime artifact: {path}") from exc
+
+
+def bind_catalytic_swarm_1_runtime_record(
+    path: Path,
+    value: Any,
+    runtime_binding: V3RuntimeBinding | None,
+) -> Any:
+    """Apply v3 identity before a claim-bearing artifact is first persisted."""
+    if runtime_binding is None:
+        runtime_binding = CATALYTIC_SWARM_1_ACTIVE_RUNTIME_BINDING
+    if runtime_binding is None:
+        return value
+    if not isinstance(value, dict):
+        raise NeoLoopError("CatalyticSwarm-1 v3 runtime artifact must be an object")
+    stage = _catalytic_swarm_1_runtime_stage(path)
+    record = dict(value)
+    legacy_field = {
+        "control": "control_qualification_v1",
+        "readiness": "readiness_v1",
+        "parser_canary": "parser_canary_v1",
+        "attempt": "catalytic_swarm_1",
+        "result": "catalytic_swarm_1",
+        "task_results": "catalytic_swarm_1",
+    }[stage]
+    expected_field = {
+        "control": "control_qualification_v3",
+        "readiness": "readiness_v3",
+        "parser_canary": "parser_canary_v3",
+        "attempt": "catalytic_swarm_1_v3",
+        "result": "catalytic_swarm_1_v3",
+        "task_results": "catalytic_swarm_1_v3",
+    }[stage]
+    for old, new in (
+        ("control_qualification_v1", "control_qualification_v3"),
+        ("readiness_v1", "readiness_v3"),
+        ("parser_canary_v1", "parser_canary_v3"),
+    ):
+        if old in record:
+            if new in record and record[new] != record[old]:
+                raise NeoLoopError("CatalyticSwarm-1 v3 stage verdict identity conflicts")
+            record[new] = record.pop(old)
+    if legacy_field in record:
+        if expected_field in record and record[expected_field] != record[legacy_field]:
+            raise NeoLoopError("CatalyticSwarm-1 v3 verdict identity conflicts before persistence")
+        record[expected_field] = record.pop(legacy_field)
+    for forbidden in ("catalytic_swarm_1", "catalytic_swarm_1_v2"):
+        if forbidden != expected_field:
+            record.pop(forbidden, None)
+    record["contract_sha256"] = runtime_binding.claim_contract_sha256
+    try:
+        bound = apply_stage_identity(record, stage)
+        validate_persisted_v3_record(bound, stage)
+    except V3RuntimeBindingError as exc:
+        raise NeoLoopError(f"CatalyticSwarm-1 v3 runtime identity failed: {exc}") from exc
+    return bound
+
+
 def write_catalytic_swarm_1_runtime_json(
     path: Path,
     value: Any,
     *,
     max_bytes: int = 2 * MIB,
+    runtime_binding: V3RuntimeBinding | None = None,
 ) -> None:
     """Atomically replace one bounded CatalyticSwarm-1 runtime document."""
     path = require_catalytic_swarm_1_runtime_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    encoded = _bounded_json_document(value, max_bytes=max_bytes)
+    encoded = _bounded_json_document(
+        bind_catalytic_swarm_1_runtime_record(path, value, runtime_binding),
+        max_bytes=max_bytes,
+    )
     temporary = require_catalytic_swarm_1_runtime_path(
         path.with_name(path.name + f".{os.getpid()}.tmp")
     )
@@ -723,11 +818,15 @@ def claim_catalytic_swarm_1_runtime_json_once(
     value: Any,
     *,
     max_bytes: int = 2 * MIB,
+    runtime_binding: V3RuntimeBinding | None = None,
 ) -> None:
     """Atomically claim one bounded CatalyticSwarm-1 one-shot document."""
     path = require_catalytic_swarm_1_runtime_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    encoded = _bounded_json_document(value, max_bytes=max_bytes)
+    encoded = _bounded_json_document(
+        bind_catalytic_swarm_1_runtime_record(path, value, runtime_binding),
+        max_bytes=max_bytes,
+    )
     try:
         descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
     except FileExistsError as exc:
@@ -748,11 +847,14 @@ def write_owned_catalytic_swarm_1_runtime_json(
     *,
     claimed: bool,
     max_bytes: int = 2 * MIB,
+    runtime_binding: V3RuntimeBinding | None = None,
 ) -> bool:
     """Write a terminal update only for an artifact claimed by this process."""
     if claimed is not True:
         return False
-    write_catalytic_swarm_1_runtime_json(path, value, max_bytes=max_bytes)
+    write_catalytic_swarm_1_runtime_json(
+        path, value, max_bytes=max_bytes, runtime_binding=runtime_binding
+    )
     return True
 
 
@@ -903,6 +1005,7 @@ class BoundedStreamLedger:
         max_bytes: int,
         max_records: int,
         state_root: Path | None = None,
+        record_transform: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
     ) -> None:
         self.state_root = state_root
         self.path = (
@@ -917,6 +1020,7 @@ class BoundedStreamLedger:
             raise NeoLoopError(f"one-shot stream ledger already exists: {self.path.name}") from exc
         self.max_bytes = max_bytes
         self.max_records = max_records
+        self.record_transform = record_transform
         self.bytes_written = 0
         self.record_count = 0
         self.failure: str | None = None
@@ -941,6 +1045,8 @@ class BoundedStreamLedger:
         if self.failure is not None:
             raise NeoLoopError(self.failure)
         item = dict(record)
+        if self.record_transform is not None:
+            item = self.record_transform(item)
         item["global_record_index"] = self.record_count + 1
         item["request_sequence_index"] = request_sequence_index
         item["request_label"] = request_label
@@ -7860,7 +7966,11 @@ def qualify_catalytic_swarm_1_control(
     }
 
 
-def prepare_catalytic_swarm_1_claim(args: argparse.Namespace) -> dict[str, Any]:
+def prepare_catalytic_swarm_1_claim(
+    args: argparse.Namespace,
+    *,
+    runtime_binding: V3RuntimeBinding | None = None,
+) -> dict[str, Any]:
     """Close every static CS1 gate before atomically claiming control."""
     assert_catalytic_swarm_1_artifact_stage()
     (
@@ -7964,6 +8074,7 @@ def prepare_catalytic_swarm_1_claim(args: argparse.Namespace) -> dict[str, Any]:
         "lock": lock,
         "predecessor_artifacts": predecessor_artifacts,
         "control_qualification": control_qualification,
+        "runtime_binding": runtime_binding,
         "stable_branch": stable_branch,
         "stable_head": stable_head,
         "stable_status": stable_status,
@@ -12231,7 +12342,27 @@ def catalytic_swarm_1_parser_canary(task: AdvantageTask) -> dict[str, Any]:
     }
 
 
-def validate_catalytic_swarm_1_ledger_record(record: dict[str, Any]) -> None:
+def bind_catalytic_swarm_1_ledger_record(
+    record: dict[str, Any],
+    runtime_binding: V3RuntimeBinding | None,
+) -> dict[str, Any]:
+    if runtime_binding is None:
+        return dict(record)
+    value = dict(record)
+    value.update({
+        "runtime_version": runtime_binding.runtime_version,
+        "artifact_schema_version": runtime_binding.schema_version,
+        "claim_contract_sha256": runtime_binding.claim_contract_sha256,
+        "scheduler_contract_sha256": runtime_binding.scheduler_contract_sha256,
+    })
+    return value
+
+
+def validate_catalytic_swarm_1_ledger_record(
+    record: dict[str, Any],
+    *,
+    runtime_binding: V3RuntimeBinding | None = None,
+) -> None:
     expected_fields = CATALYTIC_SWARM_1_LEDGER_FIELDS
     if (
         CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v2", "v3"}
@@ -12239,6 +12370,13 @@ def validate_catalytic_swarm_1_ledger_record(record: dict[str, Any]) -> None:
         and record.get("arm") != "common-root-warm"
     ):
         expected_fields = expected_fields | CATALYTIC_SWARM_1_V2_ADMISSION_FIELDS
+    if runtime_binding is not None:
+        expected_fields = expected_fields | {
+            "runtime_version",
+            "artifact_schema_version",
+            "claim_contract_sha256",
+            "scheduler_contract_sha256",
+        }
     if not isinstance(record, dict) or set(record) != expected_fields:
         raise NeoLoopError("CatalyticSwarm-1 metadata ledger field set changed")
     encoded = canonical_json_bytes(record).lower()
@@ -12253,6 +12391,15 @@ def validate_catalytic_swarm_1_ledger_record(record: dict[str, Any]) -> None:
             raise NeoLoopError("CatalyticSwarm-1 metadata ledger contains forbidden data")
     if record["arm"] not in (*CATALYTIC_SWARM_1_ARMS, "common-root-warm"):
         raise NeoLoopError("CatalyticSwarm-1 metadata ledger has an unknown arm")
+    if runtime_binding is not None and (
+        record["runtime_version"] != runtime_binding.runtime_version
+        or record["artifact_schema_version"] != runtime_binding.schema_version
+        or str(record["claim_contract_sha256"]).lower()
+        != runtime_binding.claim_contract_sha256
+        or str(record["scheduler_contract_sha256"]).lower()
+        != runtime_binding.scheduler_contract_sha256
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 v3 ledger runtime identity changed")
     for field in (
         "prompt_tokens",
         "cached_prompt_tokens",
@@ -12324,6 +12471,7 @@ def reconcile_catalytic_swarm_1_ledger(
     snapshot: dict[str, Any],
     *,
     expected_records: int,
+    runtime_binding: V3RuntimeBinding | None = None,
 ) -> dict[str, Any]:
     reasons: list[str] = []
     records: list[dict[str, Any]] = []
@@ -12345,7 +12493,17 @@ def reconcile_catalytic_swarm_1_ledger(
     if len(records) != expected_records:
         reasons.append("ledger-request-count")
     for index, item in enumerate(records, start=1):
-        if set(item) != CATALYTIC_SWARM_1_LEDGER_FIELDS | CATALYTIC_SWARM_1_LEDGER_ENVELOPE_FIELDS:
+        expected_fields = CATALYTIC_SWARM_1_LEDGER_FIELDS | CATALYTIC_SWARM_1_LEDGER_ENVELOPE_FIELDS
+        if CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v2", "v3"} and item.get("arm") != "common-root-warm":
+            expected_fields = expected_fields | CATALYTIC_SWARM_1_V2_ADMISSION_FIELDS
+        if runtime_binding is not None:
+            expected_fields = expected_fields | {
+                "runtime_version",
+                "artifact_schema_version",
+                "claim_contract_sha256",
+                "scheduler_contract_sha256",
+            }
+        if set(item) != expected_fields:
             reasons.append(f"ledger-envelope:{index}")
             continue
         if (
@@ -12361,7 +12519,9 @@ def reconcile_catalytic_swarm_1_ledger(
             if key not in CATALYTIC_SWARM_1_LEDGER_ENVELOPE_FIELDS
         }
         try:
-            validate_catalytic_swarm_1_ledger_record(base)
+            validate_catalytic_swarm_1_ledger_record(
+                base, runtime_binding=runtime_binding
+            )
         except Exception as exc:
             reasons.append(f"ledger-metadata:{index}:{exc}")
     actual_sha256 = sha256_bytes(raw)
@@ -14402,7 +14562,11 @@ def _run_cache_diagnostic(
     return result
 
 
-def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
+def run_catalytic_swarm_1_audit(
+    args: argparse.Namespace,
+    *,
+    runtime_binding: V3RuntimeBinding | None = None,
+) -> dict[str, Any]:
     """Execute CS1 under a cleanup owner spanning the complete live lifetime."""
     cleanup_state: dict[str, Any] = {"callback": None}
     post_parser_cleanup = ArmedCleanup(
@@ -14410,7 +14574,7 @@ def run_catalytic_swarm_1_audit(args: argparse.Namespace) -> dict[str, Any]:
     )
     try:
         return _run_catalytic_swarm_1_audit(
-            args, post_parser_cleanup, cleanup_state
+            args, post_parser_cleanup, cleanup_state, runtime_binding=runtime_binding
         )
     finally:
         post_parser_cleanup.run()
@@ -14480,7 +14644,9 @@ def run_catalytic_swarm_1_v2_audit(args: argparse.Namespace) -> dict[str, Any]:
     raise NeoLoopError("CatalyticSwarm-1 v2 command attempt is consumed and must not be rerun")
 
 
-def prepare_catalytic_swarm_1_v3_claim(args: argparse.Namespace) -> dict[str, Any]:
+def prepare_catalytic_swarm_1_v3_claim(
+    args: argparse.Namespace,
+) -> tuple[dict[str, Any], V3RuntimeBinding]:
     """Close v3 static custody before network, sidecar, or artifact access."""
     assert_catalytic_swarm_1_v2_artifacts_absent()
     assert_catalytic_swarm_1_v3_artifacts_absent()
@@ -14497,15 +14663,39 @@ def prepare_catalytic_swarm_1_v3_claim(args: argparse.Namespace) -> dict[str, An
         raise NeoLoopError("CatalyticSwarm-1 v3 contract differs from canonical overlay")
     if (
         catalytic_swarm_1_v3_sha256_object(contract) != EXPECTED_V3_CONTRACT_SHA256
-        or catalytic_swarm_1_v3_hash(evaluator) != EXPECTED_V3_CONTRACT_SHA256.upper()
-        or lock.get("catalytic_swarm_1_v3_sha256") != EXPECTED_V3_CONTRACT_SHA256.upper()
+        or catalytic_swarm_1_v3_hash(evaluator) != EXPECTED_V3_CONTRACT_SHA256
+        or lock.get("catalytic_swarm_1_v3_sha256") != EXPECTED_V3_CONTRACT_SHA256
     ):
         raise NeoLoopError("CatalyticSwarm-1 v3 contract is not exact")
+    runtime_evidence = evaluator.get("catalytic_swarm_1_v3_runtime_evidence_binding")
+    try:
+        validate_v3_runtime_evidence_contract(runtime_evidence)
+        if (
+            v3_runtime_evidence_sha256_object(runtime_evidence)
+            != EXPECTED_RUNTIME_EVIDENCE_CONTRACT_SHA256
+            or catalytic_swarm_1_v3_runtime_evidence_binding_hash(evaluator)
+            != EXPECTED_RUNTIME_EVIDENCE_CONTRACT_SHA256
+            or lock.get("catalytic_swarm_1_v3_runtime_evidence_binding_sha256")
+            != EXPECTED_RUNTIME_EVIDENCE_CONTRACT_SHA256
+        ):
+            raise ValueError("runtime-evidence binding hash changed")
+        runtime_binding = build_v3_runtime_binding()
+        validate_runtime_contract_bindings(
+            evaluator,
+            lock,
+            object_sha256=lambda value: sha256_bytes(
+                canonical_json_bytes(value)
+            ).lower(),
+        )
+    except Exception as exc:
+        raise NeoLoopError(
+            f"CatalyticSwarm-1 v3 runtime-evidence binding is not exact: {exc}"
+        ) from exc
     if (
         catalytic_swarm_1_v2_preclaim_boundary_hash(evaluator)
-        != V2_PRECLAIM_BOUNDARY_SHA256.upper()
+        != V2_PRECLAIM_BOUNDARY_SHA256
         or lock.get("catalytic_swarm_1_v2_preclaim_boundary_sha256")
-        != V2_PRECLAIM_BOUNDARY_SHA256.upper()
+        != V2_PRECLAIM_BOUNDARY_SHA256
     ):
         raise NeoLoopError("CatalyticSwarm-1 v2 consumed boundary is not exact")
     if not isinstance(getattr(args, "authorized_main", None), str) or not args.authorized_main:
@@ -14539,31 +14729,36 @@ def prepare_catalytic_swarm_1_v3_claim(args: argparse.Namespace) -> dict[str, An
         )
     except VersionedPathLawError as exc:
         raise NeoLoopError(f"CatalyticSwarm-1 v3 one-shot path law changed: {exc}") from exc
-    return contract
+    return contract, runtime_binding
 
 
 def run_catalytic_swarm_1_v3_audit(args: argparse.Namespace) -> dict[str, Any]:
     """Execute only a future authorized v3 invocation through active-version custody."""
-    contract = prepare_catalytic_swarm_1_v3_claim(args)
-    with catalytic_swarm_1_v3_runtime_namespace(contract):
-        result = run_catalytic_swarm_1_audit(args)
-    result["catalytic_swarm_1_v3"] = result.pop("catalytic_swarm_1", "inconclusive")
-    result["automatic_promotion"] = False
-    return result
+    contract, runtime_binding = prepare_catalytic_swarm_1_v3_claim(args)
+    with catalytic_swarm_1_v3_runtime_namespace(contract, runtime_binding):
+        return run_catalytic_swarm_1_audit(args, runtime_binding=runtime_binding)
 
 
 def _run_catalytic_swarm_1_audit(
     args: argparse.Namespace,
     post_parser_cleanup: ArmedCleanup,
     cleanup_state: dict[str, Any],
+    *,
+    runtime_binding: V3RuntimeBinding | None = None,
 ) -> dict[str, Any]:
     """Inner CS1 runner; the public wrapper owns unhandled cleanup."""
-    preclaim = prepare_catalytic_swarm_1_claim(args)
+    preclaim = prepare_catalytic_swarm_1_claim(
+        args, runtime_binding=runtime_binding
+    )
     contract = preclaim["contract"]
     protocol_v4 = preclaim["protocol_v4"]
     predecessor_contract = preclaim["predecessor_contract"]
     lock = preclaim["lock"]
-    contract_hash = lock["catalytic_swarm_1_sha256"]
+    contract_hash = (
+        runtime_binding.scheduler_contract_sha256
+        if runtime_binding is not None
+        else lock["catalytic_swarm_1_sha256"]
+    )
     runtime_custody_expected = {
         "stable": git_read(
             ROOT, "status", "--porcelain=v2", "--branch", "--untracked-files=all"
@@ -14704,7 +14899,9 @@ def _run_catalytic_swarm_1_audit(
             CATALYTIC_SWARM_1_CONTROL_PATH, control_record
         )
         assert_catalytic_swarm_1_artifact_stage(allow_through="control")
-        return control_record
+        return bind_catalytic_swarm_1_runtime_record(
+            CATALYTIC_SWARM_1_CONTROL_PATH, control_record, runtime_binding
+        )
     except BaseException as exc:
         if control_claimed or CATALYTIC_SWARM_1_CONTROL_PATH.exists():
             control_record.update({
@@ -14846,7 +15043,9 @@ def _run_catalytic_swarm_1_audit(
             CATALYTIC_SWARM_1_READINESS_PATH, readiness_record
         )
         assert_catalytic_swarm_1_artifact_stage(allow_through="readiness")
-        return readiness_record
+        return bind_catalytic_swarm_1_runtime_record(
+            CATALYTIC_SWARM_1_READINESS_PATH, readiness_record, runtime_binding
+        )
     except BaseException as exc:
         cleanup = (
             post_parser_cleanup.run()
@@ -15007,7 +15206,9 @@ def _run_catalytic_swarm_1_audit(
                 CATALYTIC_SWARM_1_PARSER_CANARY_PATH, parser_record
             )
         assert_catalytic_swarm_1_artifact_stage(allow_through="parser_canary")
-        return parser_record
+        return bind_catalytic_swarm_1_runtime_record(
+            CATALYTIC_SWARM_1_PARSER_CANARY_PATH, parser_record, runtime_binding
+        )
     except BaseException as exc:
         cleanup = (
             post_parser_cleanup.run()
@@ -15103,8 +15304,16 @@ def _run_catalytic_swarm_1_audit(
             max_bytes=CATALYTIC_SWARM_1_LEDGER_MAX_BYTES,
             max_records=CATALYTIC_SWARM_1_LEDGER_MAX_RECORDS,
             state_root=CATALYTIC_SWARM_1_STATE_ROOT,
+            record_transform=lambda record: bind_catalytic_swarm_1_ledger_record(
+                record, runtime_binding
+            ),
         )
-        validate_catalytic_swarm_1_ledger_record(first_warm_metadata)  # type: ignore[arg-type]
+        first_warm_metadata = bind_catalytic_swarm_1_ledger_record(
+            first_warm_metadata, runtime_binding  # type: ignore[arg-type]
+        )
+        validate_catalytic_swarm_1_ledger_record(
+            first_warm_metadata, runtime_binding=runtime_binding
+        )
         ledger.append(
             first_warm_metadata,  # type: ignore[arg-type]
             request_label=f"{build_frozen_task_suite().tasks[0].task_id}:common-root-warm",
@@ -15141,8 +15350,14 @@ def _run_catalytic_swarm_1_audit(
                             model_request_completed=record_common_root_warm_completion,
                         )
                     warm_summaries.append(completed[0])
+                    completed_metadata = bind_catalytic_swarm_1_ledger_record(
+                        completed[1], runtime_binding
+                    )
+                    validate_catalytic_swarm_1_ledger_record(
+                        completed_metadata, runtime_binding=runtime_binding
+                    )
                     ledger.append(
-                        completed[1],
+                        completed_metadata,
                         request_label=f"{task.task_id}:common-root-warm",
                         request_sequence_index=request_sequence_index,
                     )
@@ -15194,7 +15409,12 @@ def _run_catalytic_swarm_1_audit(
                         result["comparison_request_count"] += 1
 
                     def record_completed_request(metadata: dict[str, Any]) -> None:
-                        validate_catalytic_swarm_1_ledger_record(metadata)
+                        metadata = bind_catalytic_swarm_1_ledger_record(
+                            metadata, runtime_binding
+                        )
+                        validate_catalytic_swarm_1_ledger_record(
+                            metadata, runtime_binding=runtime_binding
+                        )
                         ledger.append(
                             metadata,
                             request_label=(
@@ -15368,6 +15588,7 @@ def _run_catalytic_swarm_1_audit(
                     CATALYTIC_SWARM_1_LEDGER_PATH,
                     ledger_snapshot,
                     expected_records=int(result.get("live_request_count", -1)),
+                    runtime_binding=runtime_binding,
                 )
             except Exception as exc:
                 result["ledger"] = {"error": str(exc), "metadata_only": False}
@@ -15500,7 +15721,9 @@ def _run_catalytic_swarm_1_audit(
             )
     if interruption is not None:
         raise interruption
-    return result
+    return bind_catalytic_swarm_1_runtime_record(
+        CATALYTIC_SWARM_1_RESULT_PATH, result, runtime_binding
+    )
 
 
 def run_budget_qualification(args: argparse.Namespace) -> dict[str, Any]:

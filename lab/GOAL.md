@@ -66,7 +66,7 @@ Both probes cached 4,822 tokens, covering public-root terminal 4,820 by two toke
 
 CS1-v2 is `COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / NO RETRY`. It stopped before artifact claim because inherited v1 qualification compared its v2 contract/runtime tuple with v1 paths. It made zero model requests, launched zero sidecars, claimed zero artifacts, and its seven-path root remains absent.
 
-CS1-v3 is `INTEGRATED / NOT EXECUTED` at complete contract SHA-256 `433b4d4e418614c2e9c2b177f46b68d24710921b11d8d7e848a226da22c1fd27`. It binds the consumed v2 boundary `dc64c8dff9dc129a3002629bdf97dd9114fc89f7fa01bd0744af7b8fbd3adb1e` and changes only active-version one-shot path qualification. Its separate seven-path root remains absent; future execution requires separate exact-main/model authority.
+CS1-v3 is `INTEGRATED / NOT EXECUTED` at complete claim contract SHA-256 `433b4d4e418614c2e9c2b177f46b68d24710921b11d8d7e848a226da22c1fd27`. It binds the consumed v2 boundary `dc64c8dff9dc129a3002629bdf97dd9114fc89f7fa01bd0744af7b8fbd3adb1e`, active-version one-shot qualification, and runtime-evidence binding `09d3c7753d3840b568d85642791425931dedc7bd34c017a16e84e606b7d3d681`. Every prospective v3 artifact carries that claim hash plus the distinct immutable v1 scheduler hash; its separate seven-path root remains absent.
 
 ## Active bounded objective
 
@@ -96,6 +96,7 @@ CS1 cache-admission diagnostic artifacts: 5 ABSENT / STATE DIRECTORY ABSENT
 CS1 cache-admission diagnostic authority: FUTURE EXACT-MAIN AUTHORIZATION REQUIRED
 CS1-v2: COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / ZERO REQUESTS / ZERO ARTIFACTS / NO RETRY
 CS1-v3: INTEGRATED / NOT EXECUTED
+CS1-v3 runtime-evidence binding: 09d3c7753d3840b568d85642791425931dedc7bd34c017a16e84e606b7d3d681
 CATALYTIC_SWARM_READINESS: PASS
 STRUCTURED_HOLOSTATE_MICROWORKER: reviewable-accept
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED

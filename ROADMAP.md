@@ -108,7 +108,7 @@ RSI-0: CLOSED
 -> CatalyticSwarm-1: executed once; inconclusive on the first serial-chain comparison before any task completed
 -> CatalyticSwarm-1 cache-admission diagnostic: executed once / reviewable-accept / no retry; exact public-root reuse proven for both probes
 -> CatalyticSwarm-1 v2: command attempt consumed / preclaim fail-closed / zero requests / no retry
--> CatalyticSwarm-1 v3: integrated / not executed; active-version one-shot path qualification only
+-> CatalyticSwarm-1 v3: integrated / not executed; active-version path law plus runtime-evidence identity binding
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -128,7 +128,7 @@ this section is only its navigation capsule.
 - **Executed successor:** CatalyticSwarm-1 ran exactly once from protected commit `556bb4d57a05bb81fa101a98092472170b50c0dd` at unchanged complete-contract SHA-256 `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. Control, readiness, the generation-free parser canary, and the first common-root warm passed. The first serial-chain comparison completed a response but did not prove reuse of the complete public root, so the fail-fast law stopped after 2 model requests: 1 warm, 1 comparison, and 0 completed tasks.
 - **Executed diagnostic:** the separately versioned cache diagnostic executed exactly once: 3 requests, `reviewable-accept`, cache 4,822 covering root terminal 4,820 for both probes, and legacy threshold 4,825 overextended by five tokens. It is diagnostic-only and cannot unlock task advantage or SOTA.
 - **Consumed boundary:** CS1-v2 stopped before artifact claim because inherited v1 qualification compared its v2 tuple against v1 paths. It made zero model requests, launched zero sidecars, claimed zero artifacts, and is no-retry.
-- **Next boundary:** CS1-v3 is statically integrated only. Its only causal change is active-version one-shot path qualification; root-terminal admission, suite, arms, budgets, and claim limits are unchanged. Any live v3 invocation requires new explicit exact-main/model authority.
+- **Next boundary:** CS1-v3 is statically integrated only. Its active-version path law and runtime-evidence identity binding separate v3 claim authority from immutable v1 scheduler authority; root-terminal admission, suite, arms, budgets, and claim limits are unchanged. Any live v3 invocation requires new explicit exact-main/model authority.
 
 | Swarm stage | Architectural purpose | Unlock boundary |
 |---|---|---|
