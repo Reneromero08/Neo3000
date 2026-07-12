@@ -44,6 +44,10 @@ class DiagnosticEvidenceBindingTests(unittest.TestCase):
 class CatalyticSwarm1V2ContractTests(unittest.TestCase):
     def test_contract_hash_is_exact(self):
         contract = build_catalytic_swarm_1_v2_contract()
+        self.assertEqual(
+            EXPECTED_CONTRACT_SHA256,
+            "911242c74509f1d2d8c6a3c8aa82948c452dac5f4646dd97d70d7b27b750e984",
+        )
         self.assertEqual(sha256_object(contract), EXPECTED_CONTRACT_SHA256)
         validate_catalytic_swarm_1_v2_contract(contract)
 
