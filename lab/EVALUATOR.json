@@ -60,6 +60,8 @@
     "files": [
       "lab/EVALUATOR.json",
       "lab/BASELINE_PROTOCOL.md",
+      "CATALYTIC.md",
+      "docs/CATALYTIC_RUNTIME_ROADMAP.md",
       "scripts/baseline_harness.py",
       "scripts/context_matrix.py",
       "scripts/rolling_decode.py",

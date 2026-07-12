@@ -7,8 +7,10 @@ import copy
 import importlib.util
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from catalytic_swarm_advantage_protocol import (
     ONE_SHOT_PATHS as CATALYTIC_SWARM_1_PATHS,
@@ -83,6 +85,42 @@ class HarnessTransportTests(unittest.TestCase):
 
 
 class EvaluatorGateTests(unittest.TestCase):
+    def test_protected_hash_is_checkout_eol_independent(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            lf = root / "lf.txt"
+            crlf = root / "crlf.txt"
+            lf.write_bytes(b"alpha\nbeta\n")
+            crlf.write_bytes(b"alpha\r\nbeta\r\n")
+            self.assertEqual(
+                neo_loop.sha256_protected_text_file(lf),
+                neo_loop.sha256_protected_text_file(crlf),
+            )
+
+    def test_protected_lock_rejects_missing_or_unknown_text_hash_mode(self) -> None:
+        lock = neo_loop.load_json(neo_loop.LOCK_PATH)
+        for mode in (None, "raw-bytes-v1"):
+            changed = copy.deepcopy(lock)
+            changed["protected_text_hash_mode"] = mode
+            with mock.patch.object(neo_loop, "load_json", return_value=changed):
+                with self.assertRaisesRegex(
+                    neo_loop.NeoLoopError, "unsupported protected text hash mode"
+                ):
+                    neo_loop.verify_lock(EVALUATOR)
+
+    def test_failed_preflight_is_read_only(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            results = Path(temp) / "results.jsonl"
+            with mock.patch.object(
+                neo_loop.sys, "argv", ["neo_loop.py", "--preflight"]
+            ), mock.patch.object(
+                neo_loop, "load_json", side_effect=neo_loop.NeoLoopError("blocked")
+            ), mock.patch.object(
+                neo_loop, "RESULTS_PATH", results
+            ), mock.patch("builtins.print"):
+                self.assertEqual(neo_loop.main(), 1)
+            self.assertFalse(results.exists())
+
     def test_full_canonical_gate_identity_changes_hash(self) -> None:
         baseline = neo_loop.gate_definition_hashes(EVALUATOR)
         mutations = [

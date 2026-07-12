@@ -18,7 +18,7 @@ The central objective is not merely to make ordinary inference cheaper. It is to
 
 # 1. Current proven boundary
 
-CS1 cache diagnostic evidence is bounded: a single authorized three-request diagnostic returned `reviewable-accept`, proving complete public-root cache reuse for two probes. It does not measure task advantage. The separately versioned CS1-v2 successor is integrated but unexecuted; it preserves all frozen evaluation geometry and uses the exact public-root terminal index, not the superseded legacy threshold, for cache admission. Broader HoloState, restart persistence, SOTA, and automatic promotion remain locked.
+CS1 cache diagnostic evidence is bounded: a single authorized three-request diagnostic returned `reviewable-accept`, proving complete public-root cache reuse for two probes. It does not measure task advantage. The separately versioned CS1-v2 command attempt was consumed preclaim fail-closed with zero model requests, sidecars, or artifacts and no retry. CS1-v3 is statically integrated but unexecuted; it preserves all frozen evaluation geometry and uses the exact public-root terminal index, not the superseded legacy threshold, for cache admission. Broader HoloState, restart persistence, SOTA, and automatic promotion remain locked.
 
 The strongest supported mechanism claims are:
 
@@ -479,7 +479,9 @@ Unlock target:
 CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN
 ```
 
-### CatalyticSwarm-1 cache-admission diagnostic: INTEGRATED / NOT EXECUTED
+### CatalyticSwarm-1 cache-admission diagnostic [HISTORICAL PRE-EXECUTION SNAPSHOT]
+
+This section preserves the diagnostic's static integration boundary. Current status is the later `EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY` record, followed by the consumed CS1-v2 preclaim boundary and static CS1-v3 successor.
 
 CatalyticSwarm-1 v1 remains `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`.
 The separately versioned cache-admission diagnostic is integrated at canonical
@@ -664,18 +666,19 @@ completed: CatalyticSwarm-0 v2 bounded control proof
 completed: repair and integrate the CatalyticSwarm-1 equal-total-budget runner without execution
 completed: execute CatalyticSwarm-1 v1 exactly once; inconclusive before one task completed
 completed: adjudicate and bind the partial no-retry evidence without broadening the exact suite scope
-completed: integrate the separately versioned CS1 cache-admission diagnostic without execution
-current: preserve CatalyticSwarm-1 v1 and the non-executed three-request diagnostic boundary
-1. Execute the cache diagnostic only under new exact-main and exact-model explicit authority
-2. Adaptive population and verifier allocation, only after verified task advantage
-3. HoloState multi-root admission and eviction policy
-4. HoloState-v2 durable checkpoint-list persistence
-5. Expert residency and routing cache, if compute-map evidence selects it
-6. Exact recurrent-state snapshot and restore experiments
-8. Sparse recurrent checkpoints and state shadows
-9. True overlapping orthogonal-state experiment
-10. Native catalytic kernels selected from measured carriers
-11. Recursive compute amplification across tasks and sessions
+completed: integrate and execute the separately versioned CS1 cache-admission diagnostic exactly once
+completed: consume the CS1-v2 command attempt preclaim fail-closed with zero requests, sidecars, or artifacts
+completed: integrate CS1-v3 with active-version path qualification and pre-persistence runtime-evidence identity
+current: preserve CS1-v3 static custody until separately authorized exact-main and exact-model live evaluation
+1. Adaptive population and verifier allocation, only after verified task advantage
+2. HoloState multi-root admission and eviction policy
+3. HoloState-v2 durable checkpoint-list persistence
+4. Expert residency and routing cache, if compute-map evidence selects it
+5. Exact recurrent-state snapshot and restore experiments
+6. Sparse recurrent checkpoints and state shadows
+7. True overlapping orthogonal-state experiment
+8. Native catalytic kernels selected from measured carriers
+9. Recursive compute amplification across tasks and sessions
 ```
 
 Checkpoint 1 tracing remains available as a diagnostic lane, but instrumentation work should not displace a proven catalytic boundary unless the next intervention requires a causally localized low-level bottleneck.
@@ -704,11 +707,14 @@ comparison failed the complete-public-root cache proof, so the run stopped after
 task results are absent, cleanup passed, and the authority is consumed with no
 retry. Equal-budget task advantage remains incomplete and locked.
 
-The separately versioned CS1 cache-admission diagnostic is integrated but not
-executed. Its prospective sequence contains exactly 3 model requests and is
-diagnostic-only. It has not identified a root cause. A future invocation needs
-new exact-main authorization; task advantage and SOTA remain locked and
-automatic promotion remains disabled.
+The separately versioned CS1 cache-admission diagnostic executed exactly once
+and returned reviewable-accept after 3 model requests. Both probes recorded
+4,822 cached tokens covering public-root terminal 4,820; the former 4,825
+threshold is overextended provenance only. CS1-v2 then consumed its command
+attempt preclaim fail-closed with zero requests, sidecars, or artifacts and no
+retry. CS1-v3 is integrated but unexecuted with distinct claim, immutable
+scheduler, and runtime-evidence identities. Task advantage and SOTA remain
+locked and automatic promotion remains disabled.
 ```
 
 Not yet allowed:

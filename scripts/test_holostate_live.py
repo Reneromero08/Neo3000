@@ -8,6 +8,7 @@ import copy
 import hashlib
 import inspect
 import json
+import os
 import tempfile
 import time
 import unittest
@@ -56,6 +57,22 @@ class RuntimePathTests(unittest.TestCase):
                 with self.assertRaises(KeyboardInterrupt):
                     holo.claim_catalytic_runtime_json_once(path, {"status": "running"})
             self.assertFalse(path.exists())
+
+    def test_v3_invocation_claim_preserves_partial_on_sync_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, mock.patch.object(
+            holo, "CATALYTIC_SWARM_1_STATE_ROOT", Path(temp)
+        ):
+            path = Path(temp) / "control-qualification-v3.json"
+            with mock.patch.object(holo.os, "fsync", side_effect=KeyboardInterrupt):
+                with self.assertRaises(KeyboardInterrupt):
+                    holo.claim_catalytic_swarm_1_runtime_json_once(
+                        path,
+                        {"status": "preclaim", "command_invocation_consumed": True},
+                        preserve_partial_on_failure=True,
+                    )
+            self.assertTrue(path.exists())
+            with self.assertRaisesRegex(holo.NeoLoopError, "already claimed"):
+                holo.claim_catalytic_swarm_1_runtime_json_once(path, {})
 
     def test_preclaim_memory_ledger_is_bounded_and_has_no_file(self) -> None:
         ledger = holo.BoundedInMemoryLedger(max_bytes=2048, max_records=2)
@@ -1351,7 +1368,7 @@ class WorkerProtocolV3ContractTests(unittest.TestCase):
             with self.assertRaises(holo.HoloStateReadinessError):
                 holo.listener_retry_options(control, deadline_at=100.0)
 
-    def test_v3_reuses_preclaim_runtime_identity_without_rehashing_model(self) -> None:
+    def test_v3_rehashes_preclaim_runtime_identity_immediately_before_launch(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             binary = root / "llama-server.exe"
@@ -1363,6 +1380,7 @@ class WorkerProtocolV3ContractTests(unittest.TestCase):
             sidecar.model = model.resolve()
             sidecar.evaluator = self.evaluator
             sidecar.readiness_control = self.protocol["readiness_control"]
+            sidecar.runtime_identity_lock_handles = []
             sidecar.preverified_binary_identity = {
                 "path": str(binary.resolve()),
                 "sha256": holo.EXPECTED_BINARY_SHA256,
@@ -1376,12 +1394,149 @@ class WorkerProtocolV3ContractTests(unittest.TestCase):
             with mock.patch.object(holo, "EXPECTED_MODEL_SIZE", 4), mock.patch.object(
                 holo,
                 "verify_binary_identity",
-            ) as binary_verify, mock.patch.object(holo, "verify_model") as model_verify:
+                return_value=sidecar.preverified_binary_identity,
+            ) as binary_verify, mock.patch.object(
+                holo,
+                "verify_model",
+                return_value=sidecar.preverified_model_identity,
+            ) as model_verify:
                 binary_identity, model_identity = sidecar.runtime_identities()
-            binary_verify.assert_not_called()
-            model_verify.assert_not_called()
+            sidecar.release_runtime_identity_locks()
+            binary_verify.assert_called_once_with(binary.resolve())
+            model_verify.assert_called_once_with(model.resolve(), self.evaluator)
             self.assertEqual(binary_identity["sha256"], holo.EXPECTED_BINARY_SHA256)
             self.assertEqual(model_identity["sha256"], holo.EXPECTED_MODEL_SHA256)
+
+    @unittest.skipUnless(os.name == "nt", "Windows replacement custody")
+    def test_runtime_identity_locks_block_replacement_until_released(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "workspace"
+            binary = root / "bin" / "llama-server.exe"
+            model = root / "models" / "model.gguf"
+            binary.parent.mkdir(parents=True)
+            model.parent.mkdir(parents=True)
+            binary_replacement = binary.parent / "replacement.exe"
+            model_replacement = model.parent / "replacement.gguf"
+            binary.write_bytes(b"original")
+            model.write_bytes(b"model")
+            binary_replacement.write_bytes(b"replacement")
+            model_replacement.write_bytes(b"new-model")
+            sidecar = object.__new__(holo.LiveSidecar)
+            sidecar.binary = binary.resolve()
+            sidecar.model = model.resolve()
+            sidecar.runtime_identity_lock_handles = []
+            sidecar.runtime_identity_file_ids = {}
+            sidecar.acquire_runtime_identity_locks()
+            try:
+                with self.assertRaises(OSError):
+                    os.replace(binary_replacement, binary)
+                with self.assertRaises(OSError):
+                    os.replace(model_replacement, model)
+                with self.assertRaises(OSError):
+                    os.rename(root, Path(temp) / "renamed-workspace")
+            finally:
+                sidecar.release_runtime_identity_locks()
+            os.replace(binary_replacement, binary)
+            os.replace(model_replacement, model)
+            self.assertEqual(binary.read_bytes(), b"replacement")
+            self.assertEqual(model.read_bytes(), b"new-model")
+            os.rename(root, Path(temp) / "renamed-workspace")
+
+    def test_runtime_identity_close_failure_is_retained_and_fail_closed(self) -> None:
+        sidecar = object.__new__(holo.LiveSidecar)
+        first = Path("first")
+        second = Path("second")
+        sidecar.runtime_identity_lock_handles = [(first, 101), (second, 202)]
+        sidecar.runtime_identity_file_ids = {"first": {"file_index_low": 1}}
+        close_handle = mock.Mock(side_effect=[False, True])
+        kernel32 = SimpleNamespace(CloseHandle=close_handle)
+        with mock.patch.object(holo.ctypes, "WinDLL", return_value=kernel32), mock.patch.object(
+            holo.ctypes, "get_last_error", return_value=5
+        ):
+            with self.assertRaisesRegex(
+                holo.HoloStateReadinessError, "runtime-identity-lock-close-failed"
+            ):
+                sidecar.release_runtime_identity_locks()
+        self.assertEqual(sidecar.runtime_identity_lock_handles, [(second, 202)])
+        self.assertTrue(sidecar.runtime_identity_file_ids)
+
+    def test_runtime_identity_validation_close_failure_is_retained(self) -> None:
+        sidecar = object.__new__(holo.LiveSidecar)
+        sidecar.readiness_control = {"enabled": True}
+        sidecar.binary = Path("binary.exe").resolve()
+        sidecar.model = Path("model.gguf").resolve()
+        identity = {
+            "volume_serial_number": 1,
+            "file_index_high": 2,
+            "file_index_low": 3,
+        }
+        sidecar.runtime_identity_file_ids = {
+            str(sidecar.binary): identity,
+            str(sidecar.model): identity,
+        }
+        sidecar.runtime_identity_lock_handles = []
+        create_file = mock.Mock(return_value=303)
+        close_handle = mock.Mock(return_value=False)
+        kernel32 = SimpleNamespace(
+            CreateFileW=create_file,
+            CloseHandle=close_handle,
+        )
+        with mock.patch.object(holo.ctypes, "WinDLL", return_value=kernel32), mock.patch.object(
+            holo.ctypes, "get_last_error", return_value=5
+        ), mock.patch.object(
+            sidecar, "_runtime_file_identity", return_value=identity
+        ):
+            with self.assertRaisesRegex(
+                holo.HoloStateReadinessError,
+                "runtime-identity-path-reopen-close-failed",
+            ):
+                sidecar.assert_runtime_identity_paths_still_bound()
+        self.assertEqual(
+            sidecar.runtime_identity_lock_handles,
+            [(sidecar.binary, 303)],
+        )
+
+    def test_guarded_distinguishes_completed_and_incomplete_request_errors(self) -> None:
+        sidecar = object.__new__(holo.LiveSidecar)
+        sidecar.wddm_policy = holo.WddmTelemetryPolicy()
+        sidecar.wait_for_fresh_wddm = mock.Mock(return_value={"passed": True})
+        sidecar.process = mock.Mock()
+        sidecar.process.poll.return_value = None
+        completed = False
+
+        def fail_after_response() -> None:
+            nonlocal completed
+            completed = True
+            raise holo.NeoLoopError("post-response-parse-failed")
+
+        with self.assertRaisesRegex(holo.NeoLoopError, "post-response-parse-failed"):
+            sidecar.guarded(
+                "cs1-task:arm:turn",
+                fail_after_response,
+                request_completed=lambda: completed,
+            )
+        self.assertEqual(
+            [call.args[0] for call in sidecar.wait_for_fresh_wddm.call_args_list],
+            [
+                "pre-request:cs1-task:arm:turn",
+                "post-request:cs1-task:arm:turn",
+            ],
+        )
+
+        sidecar.wait_for_fresh_wddm.reset_mock()
+        with self.assertRaisesRegex(holo.NeoLoopError, "pre-response-failed"):
+            sidecar.guarded(
+                "cs1-task:arm:next",
+                lambda: (_ for _ in ()).throw(holo.NeoLoopError("pre-response-failed")),
+                request_completed=lambda: False,
+            )
+        self.assertEqual(
+            [call.args[0] for call in sidecar.wait_for_fresh_wddm.call_args_list],
+            [
+                "pre-request:cs1-task:arm:next",
+                "post-request-error:cs1-task:arm:next",
+            ],
+        )
 
     def test_v3_canary_failures_preserve_inherited_instrumentation_verdict(self) -> None:
         base = {
@@ -1933,6 +2088,30 @@ class CleanupGateTests(unittest.TestCase):
             self.assertTrue(cleanup["process_stopped"])
             self.assertTrue(cleanup["runtime_removed"])
             self.assertIn("telemetry failed", cleanup["cleanup_error"])
+
+    def test_cleanup_fallback_releases_identity_locks_after_interrupt(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            runtime = Path(temp) / "runtime"
+            runtime.mkdir()
+            process = mock.Mock(pid=124)
+            process.poll.side_effect = [None, 0]
+            release = mock.Mock()
+            sidecar = SimpleNamespace(
+                stop=mock.Mock(side_effect=KeyboardInterrupt()),
+                process=process,
+                log_handle=None,
+                runtime=runtime,
+                release_runtime_identity_locks=release,
+            )
+            with mock.patch.object(holo, "listener_pids", return_value=set()), mock.patch.object(
+                holo, "stable_snapshot", return_value={"healthy": True, "listener_pids": [42]}
+            ):
+                cleanup = holo.safe_sidecar_cleanup(sidecar)
+            process.terminate.assert_called_once()
+            release.assert_called_once()
+            self.assertTrue(cleanup["process_stopped"])
+            self.assertTrue(cleanup["runtime_removed"])
+            self.assertEqual(cleanup["cleanup_error"], "KeyboardInterrupt")
 
     def valid_cleanup(self) -> dict:
         return {
@@ -4343,7 +4522,16 @@ class CatalyticSwarm1ProtectedRunnerTests(unittest.TestCase):
                     self.assertFalse(gate["passed"])
                     self.assertIn(f"{name}-mismatch", gate["reasons"])
         source = inspect.getsource(holo._run_catalytic_swarm_1_audit)
-        self.assertIn("build_live_boundary_gate(runtime_boundary_stats)", source)
+        self.assertIn(
+            "attempted_model_requests = completed_model_requests + incomplete_model_requests",
+            source,
+        )
+        self.assertIn(
+            "expected_custody_checks=2 * attempted_model_requests", source
+        )
+        self.assertIn(
+            "expected_host_memory_checks=attempted_model_requests", source
+        )
         self.assertIn('and live_boundary_gate["passed"] is True', source)
 
     def test_direct_controller_cpu_regression_launches_no_real_model_or_process(self) -> None:
@@ -4632,6 +4820,25 @@ class CatalyticSwarm1ProtectedRunnerTests(unittest.TestCase):
             cleanup, expected_model_requests=1
         )
         self.assertTrue(gate["passed"], gate["reasons"])
+        self.assertEqual(gate["incomplete_model_request_count"], 0)
+        incomplete = copy.deepcopy(cleanup)
+        incomplete["wddm"]["freshness_boundaries"][-1:-1] = [
+            {
+                "boundary": "pre-request:cs1-task-01:serial-chain:sc-02",
+                "passed": True,
+                "telemetry": {"last_valid_sample_age_seconds": 1.0},
+            },
+            {
+                "boundary": "post-request-error:cs1-task-01:serial-chain:sc-02",
+                "passed": True,
+                "telemetry": {"last_valid_sample_age_seconds": 1.0},
+            },
+        ]
+        incomplete_gate = holo.reconcile_catalytic_swarm_1_freshness(
+            incomplete, expected_model_requests=1
+        )
+        self.assertTrue(incomplete_gate["passed"], incomplete_gate["reasons"])
+        self.assertEqual(incomplete_gate["incomplete_model_request_count"], 1)
         broken = copy.deepcopy(cleanup)
         broken["wddm"]["freshness_boundaries"].pop(-2)
         self.assertFalse(

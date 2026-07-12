@@ -659,7 +659,9 @@ The metadata-only ledger contains the warm record only: 2 responses completed bu
 
 Cleanup and observed runtime integrity passed. Sidecar PID `30848` stopped, runtime state was removed, port 9494 became free, five exact-PID retirement samples were empty, stable PID `32684` remained healthy, and candidate custody remained intact. Full-schedule custody, host, parity, request, ledger, and terminal-WDDM gates remain non-pass after the early stop rather than being rewritten as successful completion. `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, SOTA, broader process-local HoloState, restart persistence, and automatic promotion remain locked. CatalyticSwarm-1 v1 must not be rerun.
 
-### CatalyticSwarm-1 cache-admission diagnostic: INTEGRATED / NOT EXECUTED
+### CatalyticSwarm-1 cache-admission diagnostic [HISTORICAL PRE-EXECUTION SNAPSHOT]
+
+This section preserves the diagnostic's static integration boundary before its separately authorized execution. It is superseded for current status by the executed diagnostic, consumed CS1-v2 boundary, and static CS1-v3 custody recorded in the architecture summary above and `lab/CHECKPOINT.md`.
 
 CatalyticSwarm-1 v1 remains `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`. The separately versioned cache diagnostic is statically integrated under complete-contract SHA-256 `be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b`. No diagnostic evidence object or runtime artifact exists, and no live request was made during integration.
 

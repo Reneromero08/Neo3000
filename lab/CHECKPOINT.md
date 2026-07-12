@@ -215,7 +215,9 @@ Trace-enabled WDDM telemetry is invalid: the sampler interpolated `pid_` without
 
 Later subphases map backend placement/fallback, CUDA graph lifecycle and synchronization, MoE geometry, Gated Delta Net recurrent state, and finally causal bottleneck selection. No bottleneck or optimization is claimed from correlation alone.
 
-### Immediate parallel boundary: HoloState-0 [CAPABILITY AUDIT]
+### Immediate parallel boundary: HoloState-0 [HISTORICAL PRE-EXECUTION CAPABILITY-AUDIT SNAPSHOT]
+
+This preserved authorization snapshot is superseded by the executed HoloState-0 result immediately below.
 
 Checkpoint 1A is not closed. Proven trace properties are trace-disabled compile-out, bounded aggregation, exact-PID protected launch control, and explicit truncation/drop detection. Trace overhead, a completed workload compute map, and a model-runtime bottleneck remain unproven.
 
@@ -241,7 +243,7 @@ The phase classification is corrected from capability audit to operational integ
 ```text
 Global claim ceiling: NEO3000_BASELINE_OPERATIONAL
 Mechanism status: EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN
-Current intervention: HoloState-v1 Live Prefix Lattice
+Intervention at Checkpoint 2 activation: HoloState-v1 Live Prefix Lattice
 Future intervention: HoloState-v2 Durable Capsule
 ```
 
@@ -285,12 +287,12 @@ RESTART_PERSISTENT_HOLOSTATE_AVAILABLE: LOCKED
 
 No literal infinity claim is made. Accepted cumulative avoided evaluations, accepted state reuse yield, and accepted holographic branch density are all zero because no branch closed the deterministic gate. The A1 performance-only observation corresponds to 7,017 avoided evaluations, 2.882 avoided tokens per MiB of Root A's conservative 2,552,915,136-byte cache-budget estimate, and 43.151x prompt-time amplification.
 
-### Active repaired-contract boundary
+### Repaired-contract boundary [HISTORICAL / SUPERSEDED]
 
 ```text
 HoloState-v1 reuse mechanism: succeeded
 HoloState-v1 raw /completion gate: no literal final marker through 2048
-Current action: preserve the completed CatalyticSwarm-0 v2 control boundary; no further live work is authorized without separate explicit authorization
+Action at that boundary: preserve the completed CatalyticSwarm-0 v2 control boundary; no further live work was authorized without separate explicit authorization
 HoloState-v2 persistence: separate future intervention
 ```
 
@@ -321,7 +323,7 @@ Qualification sidecar PID/listener `44652` produced 239 exact-PID WDDM samples, 
 - Root A warm returned byte-exact `HOLOSTATE ROOT WARM` (SHA-256 `84C0CFD85D4774E2BD67BC8FAE1C756ECB15C0E3CF58DD69891DD6B69FCD649B`), empty reasoning metadata, `finish_reason=stop`, 7 completion tokens, and exact prompt-token identity. Prompt processing was 145,519.789 ms at 53.642 TPS; decode was 18.981 TPS and total time 145.939 seconds.
 - The parser observed zero complete generated-token IDs and classified the warm `completion-token-evidence-missing`. The fast-failure law stopped the audit before Fast A1/A2, Root B, or Deep A1.
 - Pinned source inspection diagnoses an instrumentation defect: partial streaming responses assign one token ID, while the final streaming response assigns an empty token array. The executed parser replaced its array on every event, so the final empty array erased the preceding token evidence. Raw SSE events were not persisted, so the run itself proves only that the parser retained zero IDs; the overwrite explanation is source-based.
-- `FAST_PROCESS_LOCAL_HOLOSTATE=reject`; `DEEP_PROCESS_LOCAL_HOLOSTATE=inconclusive`. `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`, broader process-local, restart-persistent, and CatalyticSwarm-0 states remain locked. Automatic promotion remains disabled.
+- At the worker-v1 evidence boundary, `FAST_PROCESS_LOCAL_HOLOSTATE=reject`; `DEEP_PROCESS_LOCAL_HOLOSTATE=inconclusive`. `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE`, broader process-local, restart-persistent, and CatalyticSwarm-0 states remained locked. Automatic promotion remained disabled.
 - Sidecar PID `34580` produced 73 exact-PID WDDM samples with a 2,362,318,848-byte / 2,252.88 MiB peak. Cleanup, runtime removal, free port 9494, five empty retirement samples, stable PID `32684`, archived-candidate isolation, and prior evidence preservation all passed.
 - Attempt SHA-256 is `F634CA2732CEBBE424D4634F8EFAD035C6E11EAABB0D34E40A0F1EC09A2DF975`; result SHA-256 is `72F4BA4FA256836456B5ACA47FBD4CD5DE7789EB59F222B687B677010B7869A2`. This attempt must not be rerun.
 - A future separately authorized protocol version may accumulate partial token arrays and use new versioned evidence paths. No repair is promoted from this rejected audit.
@@ -343,7 +345,7 @@ The ignored v1 result and its original Fast=`reject` / Deep=`inconclusive` field
 - The one authorized invocation launched sidecar PID `37804` but stopped during readiness when the protected stable-listener ownership query timed out. No listener was admitted, the parser canary was not attempted, and root warm, Fast, repeat, and Deep request counts all remained zero.
 - No streaming token array was observed. The exclusive ledger contains 0 records and 0 bytes; its empty SHA-256 is `E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855`. No token merge mode or completion-count agreement is claimable.
 - Exact-PID WDDM captured 7 samples with a 97,349,632-byte / 92.84 MiB peak before cleanup. Sidecar retirement, runtime removal, free port 9494, five empty retirement samples, stable PID `32684`, candidate isolation, and all five historical hashes passed.
-- Attempt SHA-256 is `09A849AC35692A49DCC349110426FBD5ED9EF4BD146E723C8E750445916DE8F9`; result SHA-256 is `D08C4638179D6A2F0BFABE22DA2C8879377BDC6306E41ED22816FB95F45A84A7`. Fast and Deep are untested/inconclusive, all availability states remain locked, and v2 must not be retried.
+- Attempt SHA-256 is `09A849AC35692A49DCC349110426FBD5ED9EF4BD146E723C8E750445916DE8F9`; result SHA-256 is `D08C4638179D6A2F0BFABE22DA2C8879377BDC6306E41ED22816FB95F45A84A7`. At the worker-v2 evidence boundary, Fast and Deep were untested/inconclusive, all availability states remained locked, and v2 became no-retry.
 - Post-audit evidence binding passed 86 HoloState, 11 trace-controller, 9 evaluator-gate, and 5 WDDM tests plus Python compilation.
 
 ### HoloState worker protocol v3 [EXECUTED / INSTRUMENTATION REJECT]
@@ -362,7 +364,7 @@ The ignored v1 result and its original Fast=`reject` / Deep=`inconclusive` field
 - The 5,173-byte ledger contains 10 bounded reasoning-redacted records and passed. Final WDDM evidence contains 14 exact-PID samples, a 2,360,221,696-byte / 2,250.88 MiB peak, no telemetry failure, and 153,636,864 bytes host-private growth.
 - Every required ownership boundary, cleanup, isolation, frozen readiness hash, and prior-evidence check passed. PID `42236` stopped, runtime was removed, port 9494 was empty, five retirement samples were empty, stable PID `32684` remained healthy, and candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf` remained clean.
 - Readiness/attempt/result/ledger SHA-256 values are `6C761F40E6EBCD43B608218CC84D0AA1F75D2E1FDCEB15EB9DC103168E6EFCBF`, `4D70D8E53056A2BB2A00320051855B4D612547150A5FC68C068D17DEC66EFBFE`, `387E82B02BA8F6992111722595AEE05055A979A54A8D2EE6D9F5A1EE38C645E3`, and `26D65B9F474EF84B3F9483D6DDB1838280F1D54D476FDF14B5595A624EA5A583`.
-- `readiness_v3=pass`; `worker_protocol_v3=instrumentation-reject`; Fast/Deep=`inconclusive`. Every HoloState availability state and CatalyticSwarm-0 remain locked; automatic promotion remains disabled.
+- At the worker-v3 evidence boundary, `readiness_v3=pass`; `worker_protocol_v3=instrumentation-reject`; Fast/Deep=`inconclusive`. Every HoloState availability state and CatalyticSwarm-0 remained locked; automatic promotion remained disabled.
 
 ### HoloState worker protocol v4 [HISTORICAL PRE-EXECUTION SNAPSHOT]
 
@@ -414,7 +416,7 @@ reconciled, but no worker capability request has yet executed.
 - Readiness launched sidecar PID `44748` and admitted 6 exact-PID WDDM samples with a 92.84 MiB peak. A subsequent exact-PID counter query timed out; the sampler classified `candidate-vram-telemetry-lost`, so readiness stopped as `inconclusive`.
 - The structured parser canary and capability attempt were not attempted. `parser-canary-v1.json`, `attempt-v1.json`, `result-v1.json`, `ledger-v1.jsonl`, and `blackboard-v1.json` are absent. No logical worker request, physical lease, ledger record, or blackboard entry was created.
 - Lifecycle cleanup succeeded despite the resource-gate stop: PID `44748` exited, runtime state was removed, port 9494 is free, and stable PID `32684` remains healthy. The composite cleanup/resource gate remained non-pass only because exact-PID WDDM telemetry was lost.
-- `readiness_v1=inconclusive`; `STRUCTURED_HOLOSTATE_MICROWORKER=inconclusive`; `CATALYTIC_SWARM_CONTROL=inconclusive`. `STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE` and `CATALYTIC_SWARM_CONTROL_AVAILABLE` remain locked.
+- At the CatalyticSwarm-0-v1 evidence boundary, `readiness_v1=inconclusive`; `STRUCTURED_HOLOSTATE_MICROWORKER=inconclusive`; `CATALYTIC_SWARM_CONTROL=inconclusive`. `STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE` and `CATALYTIC_SWARM_CONTROL_AVAILABLE` remained locked.
 - `PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE` remains unlocked from v4. Broader process-local HoloState, restart-persistent HoloState, task advantage, and SOTA claims remain locked. V4 evidence is preserved and automatic promotion remains false.
 - The exact early-stop evidence is bound as `neo-exp-0019`: control qualification SHA-256 `864F74F58792E120422BB4078439E40AAE96546D58282DED38BB7665678A3E53` and readiness SHA-256 `76351D413785D6E239F1E20FB152EDF78DF312EEBE85D86FC343C6B25D7C1CCC` are recorded in the protected evaluator/result/lock for the evidence commit.
 - This version is no-retry. At the v1 evidence boundary no further live work was authorized; the separately versioned v2 successor below is the later explicit authorization and must not alter or retry v1.
@@ -458,7 +460,9 @@ reconciled, but no worker capability request has yet executed.
 - Cleanup, isolation, frozen control/readiness/parser evidence, and predecessor preservation passed. PID `30848` stopped, runtime state was removed, port 9494 became free, five retirement samples were empty, stable PID `32684` remained healthy, and candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf` remained clean and unchanged.
 - `CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN`, `SOTA_SWARM_CLAIM`, broader process-local HoloState, restart persistence, and automatic promotion remain locked. CatalyticSwarm-1 v1 is no-retry; any successor requires a separately versioned contract, evidence paths, and new explicit authority.
 
-### CatalyticSwarm-1 cache-admission diagnostic [INTEGRATED / NOT EXECUTED]
+### CatalyticSwarm-1 cache-admission diagnostic [HISTORICAL PRE-EXECUTION SNAPSHOT]
+
+This preserved integration snapshot is superseded for current status by the executed diagnostic record below, the consumed CS1-v2 preclaim boundary, and static CS1-v3 custody.
 
 - CatalyticSwarm-1 v1 remains `EXECUTED ONCE / INCONCLUSIVE / NO RETRY`.
 - The separately versioned diagnostic contract is integrated at canonical SHA-256 `be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b`. Its connector source, protocol, CPU-only tests, controller, and complete evaluator object are protected by the evaluator lock.
@@ -488,6 +492,14 @@ reconciled, but no worker capability request has yet executed.
 - Its effective contract hash is `433b4d4e418614c2e9c2b177f46b68d24710921b11d8d7e848a226da22c1fd27`; the root-terminal cache law, 8-task / 4-arm geometry, 1,032-request schedule, limits, and locked claims are unchanged.
 - `audit-catalytic-swarm-1-v3` requires exact `--model` and `--authorized-main`. It has not been executed, launched no sidecar, made no model request, and its seven-path `state/catalytic_swarm_1_v3/` root remains absent.
 - Static preauthorization review found that the shared v1 scheduler would otherwise persist v1 schema, operation, and verdict identity before the wrapper renamed its returned object. This was repaired without executing v3: runtime-evidence binding `09d3c7753d3840b568d85642791425931dedc7bd34c017a16e84e606b7d3d681` now applies v3 identity before every artifact write and every metadata-ledger record, while recording the immutable v1 scheduler hash separately.
+
+### CatalyticSwarm-1 v3 static preauthorization audit [PASS / NO LIVE EXECUTION]
+
+- Claim contract `433b4d4e418614c2e9c2b177f46b68d24710921b11d8d7e848a226da22c1fd27`, immutable scheduler contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`, runtime-evidence binding `09d3c7753d3840b568d85642791425931dedc7bd34c017a16e84e606b7d3d681`, and consumed v2 boundary `dc64c8dff9dc129a3002629bdf97dd9114fc89f7fa01bd0744af7b8fbd3adb1e` remain exact and independently bound.
+- Static audit found and repaired bounded controller defects only: post-claim control had fallen back to v1 paths; fallible state checks and failed marker sync could escape durable authority consumption; an empty ledger could precede identity; the v2/v3 root-terminal transport did not fit the immutable scheduler schema; terminal WDDM used CatalyticSwarm-0 labels and could misclassify completed responses that failed later parsing; early-stop counters required the full schedule; model/binary path identity was not namespace-pinned from final verification through model readiness; failed preflight could append a result; and protected-lock hashes depended on checkout line endings.
+- The repairs preserve the exact eight-task suite, four arm plans, candidate programs, prompts, public-root construction, hidden-data boundary, Latin-square order, 1,024 comparison requests, eight warms, 1,032 total requests, one physical slot, 32-token request ceiling, equal-budget thresholds, root-terminal cache law, advantage gate, no-retry law, locked claims, and automatic-promotion prohibition.
+- The exact local Agents-A1 file remains 21,166,757,632 bytes with SHA-256 `31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2`. The protected binary remains version `13 (417e1d6)` with SHA-256 `5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B`.
+- Static work made zero model requests, launched zero sidecars, claimed zero one-shot artifacts, created no `state/catalytic_swarm_1_v3/` root, did not run Deep, and did not promote anything. A live v3 invocation remains separately authorized work only.
 
 ### Durable persistence boundary
 

@@ -10,6 +10,8 @@ It is intentionally not a raw dump of every administrative commit. Small documen
 
 The CS1 cache diagnostic executed once with `reviewable-accept`, proving complete public-root reuse for both probes and retiring the legacy common-prefix threshold as admission authority. Evidence binding is `a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031`. CS1-v2 is consumed preclaim fail-closed; CS1-v3 is integrated but not executed with separately locked claim, scheduler, and runtime-evidence identities (`09d3c7753d3840b568d85642791425931dedc7bd34c017a16e84e606b7d3d681`). No task-advantage or automatic-promotion claim changed.
 
+Static CS1-v3 preauthorization review repaired controller-only custody defects without changing the frozen experiment: active v3 path reuse at live control; durable invocation consumption before every fallible preclaim check; identity-bearing first-ledger creation; root-terminal transport projection into the immutable scheduler schema; completed-response-aware CS1-native terminal WDDM and exact partial-count reconciliation; and final model/binary rehashing under Windows leaf and directory-chain locks with stable file IDs held through model readiness. Protected preflight failures are read-only. No live command, model request, sidecar, artifact claim, Deep request, or promotion occurred.
+
 Current state is defined by the pushed task board, checkpoint ledger, evaluator lock, and evidence records rather than a fragile changelog commit pointer.
 
 ```text
@@ -38,9 +40,11 @@ CatalyticSwarm-1 live model requests: 2
 CatalyticSwarm-1 common-root warm / comparison / completed tasks: 1 / 1 / 0
 CatalyticSwarm-1 sidecar launches: 1
 CatalyticSwarm-1 one-shot artifacts: 6 PRESENT / TASK RESULTS ABSENT
-CS1 cache-admission diagnostic: INTEGRATED / NOT EXECUTED
-CS1 cache-admission diagnostic prospective model requests: 3
-CS1 cache-admission diagnostic artifacts: 5 ABSENT / STATE DIRECTORY ABSENT
+CS1 cache-admission diagnostic: EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY
+CS1 cache-admission diagnostic completed model requests: 3
+CS1 cache-admission diagnostic artifacts: 5 PRESENT / IMMUTABLE
+CS1-v2: COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / ZERO REQUESTS / ZERO ARTIFACTS / NO RETRY
+CS1-v3: INTEGRATED / NOT EXECUTED / SEPARATE CLAIM-SCHEDULER-RUNTIME IDENTITIES
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_CONTROL_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN: LOCKED
@@ -71,11 +75,11 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - CatalyticSwarm-0 ran exactly once from protected integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`. Control qualification passed, then readiness stopped inconclusively on exact-PID WDDM telemetry loss before the parser canary or any worker request. This version cannot be retried.
 - The separately versioned CatalyticSwarm-0 v2 successor completed one artifact-claiming live execution and returned `reviewable-accept` for structured micro-workers and bounded swarm control. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests. V2 changed only exact-PID WDDM transient-gap resilience plus fresh-sample admission and preserved the exact v1 plan and prompt bytes.
 - CatalyticSwarm-1 v1 executed exactly once and stopped `inconclusive` on the first serial-chain comparison's complete-public-root cache proof. Exactly 2 model requests completed: 1 common-root warm, 1 comparison, and 0 completed tasks. Its authority is consumed and v1 is no-retry. Equal-budget task advantage, Deep, persistence, SOTA, and promotion claims remain locked.
-- The separately versioned CS1 cache-admission diagnostic is integrated but not executed. Its exact prospective sequence is 3 model requests, all five diagnostic paths remain absent, and any live invocation requires new explicit authorization bound to the then-exact pushed protected `main` and exact model path. Static integration does not identify the root cause.
+- The separately versioned CS1 cache-admission diagnostic executed exactly once and returned `reviewable-accept` after 3 requests; all five artifacts are immutable. CS1-v2 then consumed its command attempt preclaim fail-closed with zero requests, sidecars, or artifacts and no retry. CS1-v3 is statically integrated but unexecuted and requires separate exact-main/model authority.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 
-### CatalyticSwarm-1 cache-admission diagnostic integrated
+### CatalyticSwarm-1 cache-admission diagnostic integrated (historical milestone)
 
 - Integrated the separately versioned diagnostic contract at canonical SHA-256 `be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b` without changing the CatalyticSwarm-1 v1 contract, evidence object, artifacts, or absent task-results path.
 - Added the separate `audit-catalytic-swarm-1-cache-diagnostic` command and five isolated one-shot paths under `state/catalytic_swarm_1_cache_diagnostic/`. The v1 command remains hard-retired. The diagnostic directory and every diagnostic path remained absent throughout integration.

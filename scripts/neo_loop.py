@@ -84,6 +84,13 @@ def sha256_file(path: Path) -> str:
     return sha256_bytes(path.read_bytes()) if path.is_file() else "MISSING"
 
 
+def sha256_protected_text_file(path: Path) -> str:
+    """Hash protected source semantics independently of checkout EOL policy."""
+    if not path.is_file():
+        return "MISSING"
+    return sha256_bytes(path.read_bytes().replace(b"\r\n", b"\n"))
+
+
 def canonical_json_bytes(value: Any) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
@@ -364,14 +371,15 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     hashed_files = protected_lock_paths(evaluator)
     protected_hashes: dict[str, str] = {}
     for path in hashed_files:
-        digest = sha256_file(ROOT / path)
+        digest = sha256_protected_text_file(ROOT / path)
         if digest == "MISSING":
             raise NeoLoopError(f"protected file is missing during lock generation: {path}")
         protected_hashes[path] = digest
     lock = {
         "schema_version": 2,
         "generated_at": utc_now(),
-        "evaluator_sha256": sha256_file(EVALUATOR_PATH),
+        "evaluator_sha256": sha256_protected_text_file(EVALUATOR_PATH),
+        "protected_text_hash_mode": "crlf-to-lf-v1",
         "protected_file_hashes": protected_hashes,
         "benchmark_prompt_hashes": {
             prompt["id"]: sha256_bytes(prompt["text"].encode("utf-8"))
@@ -448,7 +456,9 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     lock = load_json(LOCK_PATH)
     if lock.get("schema_version") != 2:
         raise NeoLoopError("unsupported evaluator lock schema")
-    if lock.get("evaluator_sha256") != sha256_file(EVALUATOR_PATH):
+    if lock.get("protected_text_hash_mode") != "crlf-to-lf-v1":
+        raise NeoLoopError("unsupported protected text hash mode")
+    if lock.get("evaluator_sha256") != sha256_protected_text_file(EVALUATOR_PATH):
         raise NeoLoopError("evaluator manifest differs from its lockfile")
     duplicated_bindings = {
         "model_identity": evaluator["model"],
@@ -473,7 +483,7 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
             f"(missing={missing}, extra={extra})"
         )
     for path, expected in expected_hashes.items():
-        actual = sha256_file(ROOT / path)
+        actual = sha256_protected_text_file(ROOT / path)
         if expected == "MISSING" or actual == "MISSING":
             raise NeoLoopError(f"protected file is missing: {path}")
         if actual != expected:
@@ -1408,6 +1418,9 @@ def main() -> int:
             return 0
         result = cycle(args.hypothesis)
     except (NeoLoopError, OSError, json.JSONDecodeError, subprocess.TimeoutExpired) as exc:
+        if args.preflight:
+            print(json.dumps({"preflight": "reject", "reason": str(exc)}, indent=2))
+            return 1
         result = CycleResult("reject", str(exc), "unknown", {})
     record = {"id": f"neo-loop-{utc_now().replace(':', '').replace('-', '')[:15]}", "timestamp": utc_now(), "hypothesis": args.hypothesis, "verdict": result.verdict, "reason": result.reason, "commit": result.commit, "evidence": result.evidence}
     print(json.dumps(record, indent=2))

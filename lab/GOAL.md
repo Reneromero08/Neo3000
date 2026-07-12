@@ -28,13 +28,13 @@ V3 ran once. Readiness passed; the exact, normal-stop canary exposed zero token 
 
 V4 ran exactly once with no retry. Readiness, tokenizer, canary, both roots, and all six Fast requests passed; A1/B1 repeats and cross-root isolation were exact. Deep A1 independently rejected on a 768-token length stop, so its failure does not erase the completed Fast proof. Do not rerun v4.
 
-## Executed CatalyticSwarm-0 boundary
+## Executed CatalyticSwarm-0 v1 boundary [HISTORICAL VERSION BOUNDARY]
 
 The control substrate was integrated and pushed at exact commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`; protected preflight passed before one invocation. Generation-free control qualification passed. Readiness then stopped inconclusively on an exact-PID WDDM counter-query timeout classified as `candidate-vram-telemetry-lost`. Sidecar PID `44748` produced 6 valid samples and a 92.84 MiB peak before telemetry was lost.
 
 The parser canary, capability attempt, all 32 worker requests, physical leases, ledger, and blackboard were unattempted or absent. Lifecycle teardown and retirement passed: PID `44748` stopped, port 9494 is free, and stable PID `32684` remains healthy. The composite cleanup/resource gate is false because exact-PID WDDM telemetry was lost. Readiness, structured-micro-worker capability, and swarm-control capability are inconclusive; both new availability states remain locked. The existing process-local micro-worker unlock and all v4 evidence are preserved.
 
-## Executed v2 boundary
+## Executed CatalyticSwarm-0 v2 boundary
 
 `catalytic_swarm_0_v2` was integrated at exact protected commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666` and completed one artifact-claiming live invocation. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests. Its sole causal intervention remained bounded resilience to transient exact-PID WDDM counter-query failures plus fresh-sample admission. No Deep request occurred.
 
@@ -58,9 +58,9 @@ Cleanup and observed runtime integrity passed. Sidecar PID `30848` stopped, runt
 
 The separately versioned CS1 cache-admission diagnostic executed exactly once from protected `95f869136efbe8921c15933a792b911ad40997d6`: `reviewable-accept`, no retry, three model requests, and exact evidence binding `a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031`. Its five artifacts are immutable.
 
-The prospective sequence contains exactly three model requests: the exact common-public-root warm, a minimal exact `{"candidate_id":"C00"}` branch, and the unchanged `serial-chain / cs1-chain-t01` realistic first turn. Thinking is disabled, temperature is zero, one physical slot is permitted, and Deep request count is zero.
+The frozen sequence contained exactly three model requests: the exact common-public-root warm, a minimal exact `{"candidate_id":"C00"}` branch, and the unchanged `serial-chain / cs1-chain-t01` realistic first turn. Thinking was disabled, temperature was zero, one physical slot was permitted, and Deep request count was zero.
 
-The diagnostic must persist each completed branch observation before applying a cache-admission class. It measures the exact public-root terminal token index, exact warm/branch common-token prefix, inherited v1 proof threshold, actual cached tokens, and fresh-token accounting. A negative first cache class does not suppress the second probe unless an independent safety gate fails. Terminal reconciliation uses CS1-native `pre-request:cs1-cache-diagnostic-*` and `post-request:cs1-cache-diagnostic-*` labels and exact observed completed-request counts on lawful early safety stops.
+The diagnostic contract required each completed branch observation to be persisted before applying a cache-admission class. It measured the exact public-root terminal token index, exact warm/branch common-token prefix, inherited v1 proof threshold, actual cached tokens, and fresh-token accounting. A negative first cache class could not suppress the second probe unless an independent safety gate failed. Terminal reconciliation used CS1-native `pre-request:cs1-cache-diagnostic-*` and `post-request:cs1-cache-diagnostic-*` labels and exact observed completed-request counts on lawful early safety stops.
 
 Both probes cached 4,822 tokens, covering public-root terminal 4,820 by two tokens while missing legacy threshold 4,825 by three. The legacy threshold therefore overreaches the root by five tokens and is retired as admission authority.
 
@@ -90,14 +90,14 @@ CatalyticSwarm-1 comparison requests: 1
 CatalyticSwarm-1 completed task comparisons: 0
 CatalyticSwarm-1 sidecar launches: 1
 CatalyticSwarm-1 one-shot artifacts: 6 PRESENT / TASK RESULTS ABSENT
-CS1 cache-admission diagnostic: INTEGRATED / NOT EXECUTED
-CS1 cache-admission diagnostic prospective model requests: 3
-CS1 cache-admission diagnostic artifacts: 5 ABSENT / STATE DIRECTORY ABSENT
-CS1 cache-admission diagnostic authority: FUTURE EXACT-MAIN AUTHORIZATION REQUIRED
+CS1 cache-admission diagnostic: EXECUTED ONCE / REVIEWABLE ACCEPT / NO RETRY
+CS1 cache-admission diagnostic completed model requests: 3
+CS1 cache-admission diagnostic artifacts: 5 PRESENT / IMMUTABLE
+CS1 cache-admission diagnostic evidence: a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031
 CS1-v2: COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / ZERO REQUESTS / ZERO ARTIFACTS / NO RETRY
 CS1-v3: INTEGRATED / NOT EXECUTED
 CS1-v3 runtime-evidence binding: 09d3c7753d3840b568d85642791425931dedc7bd34c017a16e84e606b7d3d681
-CATALYTIC_SWARM_READINESS: PASS
+CatalyticSwarm-0 v2 readiness: PASS
 STRUCTURED_HOLOSTATE_MICROWORKER: reviewable-accept
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_CONTROL: reviewable-accept

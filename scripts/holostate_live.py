@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+from ctypes import wintypes
 import hashlib
 import json
 import os
@@ -59,6 +60,7 @@ from neo_loop import (  # noqa: E402
     catalytic_swarm_1_v3_runtime_evidence_binding_hash,
     listener_pids,
     load_json,
+    sha256_protected_text_file,
     verify_lock,
     verify_model_identity,
     wddm_pid_memory_sample,
@@ -819,6 +821,7 @@ def claim_catalytic_swarm_1_runtime_json_once(
     *,
     max_bytes: int = 2 * MIB,
     runtime_binding: V3RuntimeBinding | None = None,
+    preserve_partial_on_failure: bool = False,
 ) -> None:
     """Atomically claim one bounded CatalyticSwarm-1 one-shot document."""
     path = require_catalytic_swarm_1_runtime_path(path)
@@ -837,7 +840,8 @@ def claim_catalytic_swarm_1_runtime_json_once(
             handle.flush()
             os.fsync(handle.fileno())
     except BaseException:
-        path.unlink(missing_ok=True)
+        if not preserve_partial_on_failure:
+            path.unlink(missing_ok=True)
         raise
 
 
@@ -1006,6 +1010,9 @@ class BoundedStreamLedger:
         max_records: int,
         state_root: Path | None = None,
         record_transform: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+        initial_record: dict[str, Any] | None = None,
+        initial_request_label: str | None = None,
+        initial_request_sequence_index: int | None = None,
     ) -> None:
         self.state_root = state_root
         self.path = (
@@ -1013,11 +1020,6 @@ class BoundedStreamLedger:
             if state_root is None
             else require_resolved_state_path(path, state_root, str(state_root))
         )
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            self._handle = self.path.open("xb")
-        except FileExistsError as exc:
-            raise NeoLoopError(f"one-shot stream ledger already exists: {self.path.name}") from exc
         self.max_bytes = max_bytes
         self.max_records = max_records
         self.record_transform = record_transform
@@ -1026,6 +1028,52 @@ class BoundedStreamLedger:
         self.failure: str | None = None
         self.closed = False
         self.request_ranges: dict[str, dict[str, int]] = {}
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if initial_record is None:
+            if initial_request_label is not None or initial_request_sequence_index is not None:
+                raise NeoLoopError("initial stream-ledger envelope lacks a record")
+            try:
+                self._handle = self.path.open("xb")
+            except FileExistsError as exc:
+                raise NeoLoopError(
+                    f"one-shot stream ledger already exists: {self.path.name}"
+                ) from exc
+            return
+        if not isinstance(initial_request_label, str) or not initial_request_label:
+            raise NeoLoopError("initial stream-ledger request label is invalid")
+        if type(initial_request_sequence_index) is not int or initial_request_sequence_index < 1:
+            raise NeoLoopError("initial stream-ledger request index is invalid")
+        item = dict(initial_record)
+        if self.record_transform is not None:
+            item = self.record_transform(item)
+        item["global_record_index"] = 1
+        item["request_sequence_index"] = initial_request_sequence_index
+        item["request_label"] = initial_request_label
+        encoded = canonical_json_bytes(item) + b"\n"
+        if max_records < 1 or len(encoded) > max_bytes:
+            raise NeoLoopError("stream-ledger-ceiling-exceeded")
+        try:
+            descriptor = os.open(self.path, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+        except FileExistsError as exc:
+            raise NeoLoopError(
+                f"one-shot stream ledger already exists: {self.path.name}"
+            ) from exc
+        try:
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(encoded)
+                handle.flush()
+                os.fsync(handle.fileno())
+            self._handle = self.path.open("ab")
+        except BaseException:
+            self.path.unlink(missing_ok=True)
+            raise
+        self.record_count = 1
+        self.bytes_written = len(encoded)
+        self.request_ranges[initial_request_label] = {
+            "request_sequence_index": initial_request_sequence_index,
+            "first_record_index": 1,
+            "last_record_index": 1,
+        }
 
     def recorder(self, request_label: str, request_sequence_index: int) -> Callable[[dict[str, Any]], None]:
         def append(record: dict[str, Any]) -> None:
@@ -3149,7 +3197,9 @@ def prepare_cache_diagnostic_claim(args: argparse.Namespace) -> dict[str, Any]:
     for relative in CACHE_DIAGNOSTIC_CONNECTOR_FILES:
         if relative not in protected:
             raise NeoLoopError(f"cache diagnostic source is not protected: {relative}")
-        if sha256_file(ROOT / relative).lower() != str(protected[relative]).lower():
+        if sha256_protected_text_file(ROOT / relative).lower() != str(
+            protected[relative]
+        ).lower():
             raise NeoLoopError(f"cache diagnostic source differs from lock: {relative}")
     v1_artifacts = preserved_catalytic_swarm_1_v1_evidence(diagnostic)
     qualification = qualify_cache_diagnostic_control(diagnostic)
@@ -3637,6 +3687,8 @@ class LiveSidecar:
         self.process: subprocess.Popen[str] | None = None
         self.sampler: CandidateVramSampler | None = None
         self.log_handle: Any = None
+        self.runtime_identity_lock_handles: list[tuple[Path, int]] = []
+        self.runtime_identity_file_ids: dict[str, dict[str, int]] = {}
         self.state_root = state_root.resolve() if state_root is not None else STATE_ROOT.resolve()
         self.runtime_root = (
             self.state_root / "runtime" if state_root is not None else RUNTIME_ROOT
@@ -3785,6 +3837,188 @@ class LiveSidecar:
                 f"{boundary}: {exc}", evidence=evidence
             ) from exc
 
+    def acquire_runtime_identity_locks(self) -> None:
+        """Pin the audited path namespace and leaf objects through model readiness."""
+        if getattr(self, "runtime_identity_lock_handles", []):
+            return
+        if os.name != "nt":
+            raise HoloStateReadinessError(
+                "runtime-identity-file-locking-requires-windows"
+            )
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        create_file = kernel32.CreateFileW
+        create_file.argtypes = (
+            wintypes.LPCWSTR,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.LPVOID,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.HANDLE,
+        )
+        create_file.restype = wintypes.HANDLE
+        generic_read = 0x80000000
+        file_read_attributes = 0x00000080
+        file_share_read = 0x00000001
+        file_share_write = 0x00000002
+        open_existing = 3
+        file_attribute_normal = 0x00000080
+        file_flag_backup_semantics = 0x02000000
+        invalid_handle_value = wintypes.HANDLE(-1).value
+        acquired: list[tuple[Path, int]] = []
+        file_ids: dict[str, dict[str, int]] = {}
+        directory_map: dict[str, Path] = {}
+        for leaf in (self.binary, self.model):
+            current = leaf.parent
+            while True:
+                directory_map[os.path.normcase(str(current))] = current
+                parent = current.parent
+                if parent == current:
+                    break
+                current = parent
+        directories = sorted(
+            directory_map.values(), key=lambda path: (len(path.parts), str(path).lower())
+        )
+        entries = [
+            (
+                path,
+                file_read_attributes,
+                file_share_read | file_share_write,
+                file_flag_backup_semantics,
+                False,
+            )
+            for path in directories
+        ] + [
+            (path, generic_read, file_share_read, file_attribute_normal, True)
+            for path in (self.binary, self.model)
+        ]
+        try:
+            for path, access, share, flags, capture_identity in entries:
+                handle = create_file(
+                    str(path),
+                    access,
+                    share,
+                    None,
+                    open_existing,
+                    flags,
+                    None,
+                )
+                if handle == invalid_handle_value:
+                    error = ctypes.get_last_error()
+                    raise HoloStateReadinessError(
+                        f"runtime-identity-file-lock-failed:{path}:{error}"
+                    )
+                acquired.append((path, int(handle)))
+                if capture_identity:
+                    file_ids[str(path)] = self._runtime_file_identity(
+                        kernel32, int(handle)
+                    )
+        except BaseException as exc:
+            self.runtime_identity_lock_handles = acquired
+            self.runtime_identity_file_ids = file_ids
+            try:
+                self.release_runtime_identity_locks()
+            except BaseException as close_exc:
+                raise HoloStateReadinessError(
+                    f"runtime-identity-partial-lock-cleanup-failed:{close_exc}"
+                ) from exc
+            raise
+        self.runtime_identity_lock_handles = acquired
+        self.runtime_identity_file_ids = file_ids
+
+    @staticmethod
+    def _runtime_file_identity(kernel32: Any, handle: int) -> dict[str, int]:
+        class ByHandleFileInformation(ctypes.Structure):
+            _fields_ = [
+                ("dwFileAttributes", wintypes.DWORD),
+                ("ftCreationTime", wintypes.FILETIME),
+                ("ftLastAccessTime", wintypes.FILETIME),
+                ("ftLastWriteTime", wintypes.FILETIME),
+                ("dwVolumeSerialNumber", wintypes.DWORD),
+                ("nFileSizeHigh", wintypes.DWORD),
+                ("nFileSizeLow", wintypes.DWORD),
+                ("nNumberOfLinks", wintypes.DWORD),
+                ("nFileIndexHigh", wintypes.DWORD),
+                ("nFileIndexLow", wintypes.DWORD),
+            ]
+
+        get_info = kernel32.GetFileInformationByHandle
+        get_info.argtypes = (wintypes.HANDLE, ctypes.POINTER(ByHandleFileInformation))
+        get_info.restype = wintypes.BOOL
+        info = ByHandleFileInformation()
+        if not get_info(wintypes.HANDLE(handle), ctypes.byref(info)):
+            raise HoloStateReadinessError(
+                f"runtime-identity-file-id-failed:{ctypes.get_last_error()}"
+            )
+        return {
+            "volume_serial_number": int(info.dwVolumeSerialNumber),
+            "file_index_high": int(info.nFileIndexHigh),
+            "file_index_low": int(info.nFileIndexLow),
+        }
+
+    def assert_runtime_identity_paths_still_bound(self) -> None:
+        if self.readiness_control is None:
+            return
+        if os.name != "nt" or len(self.runtime_identity_file_ids) != 2:
+            raise HoloStateReadinessError("runtime-identity-path-binding-missing")
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        create_file = kernel32.CreateFileW
+        create_file.argtypes = (
+            wintypes.LPCWSTR,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.LPVOID,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.HANDLE,
+        )
+        create_file.restype = wintypes.HANDLE
+        close_handle = kernel32.CloseHandle
+        close_handle.argtypes = (wintypes.HANDLE,)
+        close_handle.restype = wintypes.BOOL
+        invalid_handle_value = wintypes.HANDLE(-1).value
+        for path in (self.binary, self.model):
+            handle = create_file(
+                str(path), 0x80000000, 0x00000001, None, 3, 0x00000080, None
+            )
+            if handle == invalid_handle_value:
+                raise HoloStateReadinessError(
+                    f"runtime-identity-path-reopen-failed:{path}:{ctypes.get_last_error()}"
+                )
+            try:
+                observed = self._runtime_file_identity(kernel32, int(handle))
+                if observed != self.runtime_identity_file_ids.get(str(path)):
+                    raise HoloStateReadinessError(
+                        f"runtime-identity-path-rebound:{path}"
+                    )
+            finally:
+                if not close_handle(wintypes.HANDLE(handle)):
+                    self.runtime_identity_lock_handles.append((path, int(handle)))
+                    raise HoloStateReadinessError(
+                        f"runtime-identity-path-reopen-close-failed:{ctypes.get_last_error()}"
+                    )
+
+    def release_runtime_identity_locks(self) -> None:
+        handles = list(getattr(self, "runtime_identity_lock_handles", []))
+        if not handles or os.name != "nt":
+            return
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        close_handle = kernel32.CloseHandle
+        close_handle.argtypes = (wintypes.HANDLE,)
+        close_handle.restype = wintypes.BOOL
+        failed: list[tuple[Path, int]] = []
+        errors: list[str] = []
+        for path, handle in reversed(handles):
+            if not close_handle(wintypes.HANDLE(handle)):
+                failed.append((path, handle))
+                errors.append(f"{path}:{ctypes.get_last_error()}")
+        self.runtime_identity_lock_handles = list(reversed(failed))
+        if failed:
+            raise HoloStateReadinessError(
+                "runtime-identity-lock-close-failed:" + ",".join(errors)
+            )
+        self.runtime_identity_file_ids = {}
+
     def runtime_identities(self) -> tuple[dict[str, Any], dict[str, Any]]:
         if self.readiness_control is None:
             return verify_binary_identity(self.binary), verify_model(self.model, self.evaluator)
@@ -3807,7 +4041,18 @@ class LiveSidecar:
             or self.model.stat().st_size != EXPECTED_MODEL_SIZE
         ):
             raise HoloStateReadinessError("preverified-model-identity-changed")
-        return dict(binary), dict(model)
+        self.acquire_runtime_identity_locks()
+        try:
+            current_binary = verify_binary_identity(self.binary)
+            current_model = verify_model(self.model, self.evaluator)
+            if canonical_json_bytes(current_binary) != canonical_json_bytes(binary):
+                raise HoloStateReadinessError("binary-identity-changed-before-launch")
+            if canonical_json_bytes(current_model) != canonical_json_bytes(model):
+                raise HoloStateReadinessError("model-identity-changed-before-launch")
+            return current_binary, current_model
+        except BaseException:
+            self.release_runtime_identity_locks()
+            raise
 
     def exact_ownership(
         self,
@@ -3947,6 +4192,7 @@ class LiveSidecar:
         creationflags = 0
         if self.detached and os.name == "nt":
             creationflags = subprocess.CREATE_NEW_PROCESS_GROUP | 0x00000008
+        self.assert_runtime_identity_paths_still_bound()
         started = time.monotonic()
         self.process = subprocess.Popen(
             args,
@@ -4061,6 +4307,7 @@ class LiveSidecar:
             "readiness_seconds": round(time.monotonic() - started, 3),
             "binary": binary_identity,
             "model": model_identity,
+            "runtime_identity_file_ids": dict(self.runtime_identity_file_ids),
             "model_ids": model_ids,
             "chat_template_sha256": sha256_bytes(str(props.get("chat_template", "")).encode("utf-8")),
             "chat_template_caps": props.get("chat_template_caps"),
@@ -4075,6 +4322,8 @@ class LiveSidecar:
         }
         if self.readiness["chat_template_sha256"] != self.contract["chat_template_identity"]["sha256"]:
             raise NeoLoopError("sidecar chat-template identity differs from the locked HoloState contract")
+        self.assert_runtime_identity_paths_still_bound()
+        self.release_runtime_identity_locks()
         return self.readiness
 
     def require_active(
@@ -4109,7 +4358,14 @@ class LiveSidecar:
         if require_listener:
             self.exact_ownership("require-active")
 
-    def guarded(self, name: str, call: Callable[[], Any], timeout: float = 1_200) -> Any:
+    def guarded(
+        self,
+        name: str,
+        call: Callable[[], Any],
+        timeout: float = 1_200,
+        *,
+        request_completed: Callable[[], bool] | None = None,
+    ) -> Any:
         wddm_policy = getattr(self, "wddm_policy", None)
         if name == "catalytic-parser-canary":
             pre_wddm_boundary = "before-parser-canary"
@@ -4153,8 +4409,16 @@ class LiveSidecar:
                 try:
                     if wddm_policy is not None:
                         remaining = max(0.001, deadline - time.monotonic())
+                        if request_completed is None:
+                            error_boundary = f"{post_wddm_boundary}:error"
+                        else:
+                            error_boundary = (
+                                post_wddm_boundary
+                                if request_completed()
+                                else f"post-request-error:{name}"
+                            )
                         self.wait_for_fresh_wddm(
-                            f"{post_wddm_boundary}:error",
+                            error_boundary,
                             min(
                                 wddm_policy.max_valid_sample_gap_seconds,
                                 remaining,
@@ -4258,6 +4522,7 @@ class LiveSidecar:
             except subprocess.TimeoutExpired:
                 self.process.kill()
                 self.process.wait(timeout=10)
+        self.release_runtime_identity_locks()
         if self.log_handle:
             self.log_handle.close()
         shutil.rmtree(self.runtime, ignore_errors=True)
@@ -6923,7 +7188,7 @@ def safe_sidecar_cleanup(sidecar: LiveSidecar | None) -> dict[str, Any]:
         return {"not_launched": True, "port_free": not listener_pids(PORT), "stable_after": stable_snapshot()}
     try:
         return sidecar.stop()
-    except Exception as exc:
+    except BaseException as exc:
         pid = sidecar.process.pid if sidecar.process else None
         fallback_error: str | None = None
         try:
@@ -6934,12 +7199,24 @@ def safe_sidecar_cleanup(sidecar: LiveSidecar | None) -> dict[str, Any]:
                 except subprocess.TimeoutExpired:
                     sidecar.process.kill()
                     sidecar.process.wait(timeout=10)
-        except Exception as fallback_exc:
+        except BaseException as fallback_exc:
             fallback_error = str(fallback_exc)
+        release_identity_locks = getattr(
+            sidecar, "release_runtime_identity_locks", None
+        )
+        if callable(release_identity_locks):
+            try:
+                release_identity_locks()
+            except BaseException as release_exc:
+                fallback_error = "; ".join(
+                    value
+                    for value in (fallback_error, str(release_exc))
+                    if value
+                )
         try:
             if sidecar.log_handle and not sidecar.log_handle.closed:
                 sidecar.log_handle.close()
-        except Exception:
+        except BaseException:
             pass
         shutil.rmtree(sidecar.runtime, ignore_errors=True)
         readiness_control = getattr(sidecar, "readiness_control", None)
@@ -6983,7 +7260,7 @@ def safe_sidecar_cleanup(sidecar: LiveSidecar | None) -> dict[str, Any]:
                 }
                 ownership = {"passed": False, "error": str(ownership_exc)}
         return {
-            "cleanup_error": str(exc),
+            "cleanup_error": str(exc) or type(exc).__name__,
             "fallback_error": fallback_error,
             "readiness_controlled": readiness_control is not None,
             "readiness_admitted": bool(getattr(sidecar, "admitted", False)),
@@ -7569,6 +7846,9 @@ def verify_worker_v4_source_authority(
     blobs: dict[str, Any] = {}
     for relative, expected in source["worktree_source_files"].items():
         path = ROOT / relative
+        # This executed worker-v4 contract deliberately binds historical raw
+        # worktree bytes. It is not the current protected-lock text hash mode
+        # and must not be normalized without a separately versioned contract.
         actual = sha256_file(path)
         if actual != expected:
             raise NeoLoopError(f"worker v4 source-authority worktree hash changed: {relative}")
@@ -7766,7 +8046,7 @@ def prepare_catalytic_swarm_0_v2_claim(args: argparse.Namespace) -> dict[str, An
             raise NeoLoopError(
                 f"CatalyticSwarm-0 v2 connector source is not protected: {relative}"
             )
-        if sha256_file(ROOT / relative).lower() != str(
+        if sha256_protected_text_file(ROOT / relative).lower() != str(
             lock["protected_file_hashes"][relative]
         ).lower():
             raise NeoLoopError(
@@ -7966,13 +8246,43 @@ def qualify_catalytic_swarm_1_control(
     }
 
 
+def qualify_active_catalytic_swarm_1_control(
+    contract: dict[str, Any],
+    *,
+    stable_tokenizer: bool = False,
+) -> dict[str, Any]:
+    """Qualify the active runtime namespace without falling back to v1 paths."""
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION != "v3":
+        return qualify_catalytic_swarm_1_control(
+            contract, stable_tokenizer=stable_tokenizer
+        )
+    active_contract = CATALYTIC_SWARM_1_ACTIVE_VERSIONED_CONTRACT
+    if not isinstance(active_contract, dict):
+        raise NeoLoopError("CatalyticSwarm-1 v3 active contract is missing")
+    return qualify_catalytic_swarm_1_control(
+        contract,
+        stable_tokenizer=stable_tokenizer,
+        contract_paths=active_contract["one_shot"]["paths"],
+        active_artifact_paths=CATALYTIC_SWARM_1_ARTIFACT_PATHS,
+        required_namespace="state/catalytic_swarm_1_v3",
+        forbidden_namespaces=(
+            "state/catalytic_swarm_1",
+            "state/catalytic_swarm_1_cache_diagnostic",
+            "state/catalytic_swarm_1_v2",
+        ),
+        protocol_label="CatalyticSwarm-1 v3",
+    )
+
+
 def prepare_catalytic_swarm_1_claim(
     args: argparse.Namespace,
     *,
     runtime_binding: V3RuntimeBinding | None = None,
+    preclaimed_control: bool = False,
 ) -> dict[str, Any]:
     """Close every static CS1 gate before atomically claiming control."""
-    assert_catalytic_swarm_1_artifact_stage()
+    allowed_stage = "control" if preclaimed_control else None
+    assert_catalytic_swarm_1_artifact_stage(allow_through=allowed_stage)
     (
         evaluator,
         live_contract,
@@ -7988,7 +8298,9 @@ def prepare_catalytic_swarm_1_claim(
             raise NeoLoopError(
                 f"CatalyticSwarm-1 connector source is not protected: {relative}"
             )
-        if sha256_file(ROOT / relative).lower() != str(protected[relative]).lower():
+        if sha256_protected_text_file(ROOT / relative).lower() != str(
+            protected[relative]
+        ).lower():
             raise NeoLoopError(
                 f"CatalyticSwarm-1 connector source differs from lock: {relative}"
             )
@@ -7999,23 +8311,8 @@ def prepare_catalytic_swarm_1_claim(
         if git_read(ROOT, "rev-parse", f"{expected}^{{commit}}") != expected:
             raise NeoLoopError(f"CatalyticSwarm-1 predecessor {label} is unavailable")
     predecessor_artifacts = preserved_catalytic_swarm_0_v2_evidence(predecessor)
-    active_contract = CATALYTIC_SWARM_1_ACTIVE_VERSIONED_CONTRACT or contract
-    if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v3":
-        control_qualification = qualify_catalytic_swarm_1_control(
-            contract,
-            contract_paths=active_contract["one_shot"]["paths"],
-            active_artifact_paths=CATALYTIC_SWARM_1_ARTIFACT_PATHS,
-            required_namespace="state/catalytic_swarm_1_v3",
-            forbidden_namespaces=(
-                "state/catalytic_swarm_1",
-                "state/catalytic_swarm_1_cache_diagnostic",
-                "state/catalytic_swarm_1_v2",
-            ),
-            protocol_label="CatalyticSwarm-1 v3",
-        )
-    else:
-        control_qualification = qualify_catalytic_swarm_1_control(contract)
-    assert_catalytic_swarm_1_artifact_stage()
+    control_qualification = qualify_active_catalytic_swarm_1_control(contract)
+    assert_catalytic_swarm_1_artifact_stage(allow_through=allowed_stage)
 
     stable_branch = git_read(ROOT, "branch", "--show-current")
     if stable_branch != "main":
@@ -8064,7 +8361,7 @@ def prepare_catalytic_swarm_1_claim(
     ]
     if stable_template_sha256 != expected_template:
         raise NeoLoopError("stable chat-template identity differs from CatalyticSwarm-1")
-    assert_catalytic_swarm_1_artifact_stage()
+    assert_catalytic_swarm_1_artifact_stage(allow_through=allowed_stage)
     return {
         "evaluator": evaluator,
         "live_contract": live_contract,
@@ -9345,6 +9642,63 @@ def reconcile_cache_diagnostic_terminal_wddm(
         cleanup,
         required_boundaries=required_boundaries,
     )
+
+
+def catalytic_swarm_1_request_labels() -> list[str]:
+    """Return the exact frozen 1,032-request order used by the CS1 scheduler."""
+    suite = build_frozen_task_suite()
+    plans = {plan.arm: plan for plan in build_all_arm_plans()}
+    execution_order = counterbalanced_arm_order()
+    labels: list[str] = []
+    for task in suite.tasks:
+        labels.append(f"{task.task_id}:common-root-warm")
+        for arm in execution_order[task.task_id]:
+            plan = plans[arm]
+            labels.extend(
+                f"{task.task_id}:{turn.arm}:{turn.turn_id}"
+                for turn in plan.turns
+            )
+    if len(labels) != 1032 or len(set(labels)) != 1032:
+        raise NeoLoopError("CatalyticSwarm-1 frozen request labels changed")
+    return labels
+
+
+def reconcile_catalytic_swarm_1_terminal_wddm(
+    predecessor_contract: dict[str, Any],
+    cleanup: dict[str, Any],
+    *,
+    completed_model_requests: int,
+) -> dict[str, Any]:
+    """Reconcile CS1-native request boundaries at a full or lawful partial stop."""
+    labels = catalytic_swarm_1_request_labels()
+    if (
+        isinstance(completed_model_requests, bool)
+        or not isinstance(completed_model_requests, int)
+        or not 0 <= completed_model_requests <= len(labels)
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 WDDM request count is invalid")
+    request_boundaries = [
+        value
+        for label in labels[:completed_model_requests]
+        for value in (f"pre-request:{label}", f"post-request:{label}")
+    ]
+    required_boundaries = [
+        "readiness-admission",
+        "before-parser-canary",
+        "after-parser-canary",
+        *request_boundaries[:2],
+        "before-capability-attempt",
+        *request_boundaries[2:],
+        "before-teardown",
+    ]
+    result = reconcile_terminal_wddm(
+        predecessor_contract["readiness_control"]["wddm_transient_gap_policy"],
+        cleanup,
+        required_boundaries=required_boundaries,
+    )
+    result["completed_model_requests_reconciled"] = completed_model_requests
+    result["request_boundary_law"] = "cs1-native"
+    return result
 
 
 def execute_catalytic_swarm_sequence(
@@ -12602,6 +12956,13 @@ def catalytic_swarm_1_warm_request(
     transient = BoundedInMemoryLedger(max_bytes=MIB, max_records=10_000)
     started_at = utc_now()
     warm_request_label = f"{task.task_id}:common-root-warm"
+    warm_model_completed = False
+
+    def record_warm_model_completion() -> None:
+        nonlocal warm_model_completed
+        warm_model_completed = True
+        if model_request_completed is not None:
+            model_request_completed(warm_request_label)
 
     def execute_warm_model_request() -> dict[str, Any]:
         return run_worker_v4_chat_request(
@@ -12618,16 +12979,13 @@ def catalytic_swarm_1_warm_request(
             request_label=warm_request_label,
             request_sequence_index=request_sequence_index,
             warm=True,
-            request_completed=(
-                lambda: model_request_completed(warm_request_label)
-                if model_request_completed is not None
-                else None
-            ),
+            request_completed=record_warm_model_completion,
         )
 
     result = sidecar.guarded(
-        f"cs1-warm:{task.task_id}",
+        warm_request_label,
         execute_warm_model_request,
+        request_completed=lambda: warm_model_completed,
     )
     finished_at = utc_now()
     resource = worker_resource_gate(sidecar, readiness, predecessor_contract)
@@ -12872,6 +13230,48 @@ def stream_catalytic_swarm_1_candidate(
     return transport, metadata
 
 
+def adapt_catalytic_swarm_1_transport_for_scheduler(
+    transport: dict[str, Any],
+) -> dict[str, Any]:
+    """Project v2/v3 cache proof into the immutable v1 scheduler schema."""
+    required = {
+        "content",
+        "prompt_tokens",
+        "cached_prompt_tokens",
+        "required_cached_prompt_tokens",
+        "fresh_prompt_tokens",
+        "completion_tokens",
+        "finish_reason",
+        "reasoning_content",
+        "tool_calls",
+        "transport_passed",
+        "token_evidence_scope",
+    }
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION not in {"v2", "v3"}:
+        if set(transport) != required:
+            raise NeoLoopError("CatalyticSwarm-1 scheduler transport schema changed")
+        return dict(transport)
+    admission = transport.get("cache_admission")
+    root_terminal = transport.get("public_root_terminal_token_index")
+    cached_prompt_tokens = transport.get("cached_prompt_tokens")
+    if (
+        not isinstance(admission, dict)
+        or admission.get("admitted") is not True
+        or isinstance(root_terminal, bool)
+        or not isinstance(root_terminal, int)
+        or root_terminal <= 0
+        or isinstance(cached_prompt_tokens, bool)
+        or not isinstance(cached_prompt_tokens, int)
+        or cached_prompt_tokens < root_terminal
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 root-terminal scheduler admission failed")
+    projected = {key: transport[key] for key in required}
+    projected["required_cached_prompt_tokens"] = root_terminal
+    if set(projected) != required:
+        raise NeoLoopError("CatalyticSwarm-1 scheduler transport projection changed")
+    return projected
+
+
 def catalytic_swarm_1_availability(
     *,
     predecessor_preserved: bool,
@@ -12958,10 +13358,17 @@ def reconcile_catalytic_swarm_1_freshness(
         for label in labels
         if isinstance(label, str) and label.startswith("post-request:cs1-")
     ]
-    if len(request_pre) != expected_model_requests:
+    request_errors = [
+        label
+        for label in labels
+        if isinstance(label, str) and label.startswith("post-request-error:cs1-")
+    ]
+    if len(request_pre) != expected_model_requests + len(request_errors):
         reasons.append("freshness-pre-request-count")
     if len(request_post) != expected_model_requests:
         reasons.append("freshness-post-request-count")
+    if len(request_errors) > 1:
+        reasons.append("freshness-error-request-count")
     required = {
         "readiness-admission",
         "before-parser-canary",
@@ -12988,6 +13395,7 @@ def reconcile_catalytic_swarm_1_freshness(
         "boundary_count": len(valid),
         "model_request_pre_boundary_count": len(request_pre),
         "model_request_post_boundary_count": len(request_post),
+        "incomplete_model_request_count": len(request_errors),
         "required_stage_boundaries": sorted(required),
         "maximum_sample_age_seconds": max(ages, default=None),
     }
@@ -14566,6 +14974,7 @@ def run_catalytic_swarm_1_audit(
     args: argparse.Namespace,
     *,
     runtime_binding: V3RuntimeBinding | None = None,
+    preclaimed_control: bool = False,
 ) -> dict[str, Any]:
     """Execute CS1 under a cleanup owner spanning the complete live lifetime."""
     cleanup_state: dict[str, Any] = {"callback": None}
@@ -14574,7 +14983,11 @@ def run_catalytic_swarm_1_audit(
     )
     try:
         return _run_catalytic_swarm_1_audit(
-            args, post_parser_cleanup, cleanup_state, runtime_binding=runtime_binding
+            args,
+            post_parser_cleanup,
+            cleanup_state,
+            runtime_binding=runtime_binding,
+            preclaimed_control=preclaimed_control,
         )
     finally:
         post_parser_cleanup.run()
@@ -14646,10 +15059,17 @@ def run_catalytic_swarm_1_v2_audit(args: argparse.Namespace) -> dict[str, Any]:
 
 def prepare_catalytic_swarm_1_v3_claim(
     args: argparse.Namespace,
+    *,
+    preclaimed_control: bool = False,
 ) -> tuple[dict[str, Any], V3RuntimeBinding]:
     """Close v3 static custody before network, sidecar, or artifact access."""
     assert_catalytic_swarm_1_v2_artifacts_absent()
-    assert_catalytic_swarm_1_v3_artifacts_absent()
+    if preclaimed_control:
+        if not CATALYTIC_SWARM_1_V3_CONTROL_PATH.is_file():
+            raise NeoLoopError("CatalyticSwarm-1 v3 invocation claim is missing")
+        assert_catalytic_swarm_1_artifact_stage(allow_through="control")
+    else:
+        assert_catalytic_swarm_1_v3_artifacts_absent()
     evaluator = load_json(EVALUATOR_PATH)
     lock = verify_lock(evaluator)
     boundary = evaluator.get("catalytic_swarm_1_v2_preclaim_boundary")
@@ -14734,9 +15154,87 @@ def prepare_catalytic_swarm_1_v3_claim(
 
 def run_catalytic_swarm_1_v3_audit(args: argparse.Namespace) -> dict[str, Any]:
     """Execute only a future authorized v3 invocation through active-version custody."""
-    contract, runtime_binding = prepare_catalytic_swarm_1_v3_claim(args)
+    contract = build_catalytic_swarm_1_v3_contract()
+    runtime_binding = build_v3_runtime_binding()
     with catalytic_swarm_1_v3_runtime_namespace(contract, runtime_binding):
-        return run_catalytic_swarm_1_audit(args, runtime_binding=runtime_binding)
+        invocation_claimed_at = utc_now()
+        invocation_record = {
+            "schema_version": 3,
+            "attempt_version": 3,
+            "operation": "catalytic-swarm-1-v3-control-qualification-v3",
+            "started_at": invocation_claimed_at,
+            "status": "preclaim",
+            "control_qualification_v3": "inconclusive",
+            "authorized_main": getattr(args, "authorized_main", None),
+            "model_path_supplied": bool(getattr(args, "model", None)),
+            "command_invocation_consumed": True,
+            "no_retry": True,
+            "live_model_requests": 0,
+            "sidecar_launches": 0,
+            "automatic_promotion": False,
+        }
+        claim_catalytic_swarm_1_runtime_json_once(
+            CATALYTIC_SWARM_1_CONTROL_PATH,
+            invocation_record,
+            runtime_binding=runtime_binding,
+            preserve_partial_on_failure=True,
+        )
+        try:
+            contract, runtime_binding = prepare_catalytic_swarm_1_v3_claim(
+                args, preclaimed_control=True
+            )
+        except BaseException as exc:
+            invocation_record.update({
+                "status": "complete",
+                "error": f"{type(exc).__name__}: {exc}",
+                "failure_stage": "preclaim",
+                "finished_at": utc_now(),
+            })
+            write_catalytic_swarm_1_runtime_json(
+                CATALYTIC_SWARM_1_CONTROL_PATH,
+                invocation_record,
+                runtime_binding=runtime_binding,
+            )
+            raise
+        try:
+            return run_catalytic_swarm_1_audit(
+                args,
+                runtime_binding=runtime_binding,
+                preclaimed_control=True,
+            )
+        except BaseException as exc:
+            latest_paths = (
+                CATALYTIC_SWARM_1_RESULT_PATH,
+                CATALYTIC_SWARM_1_TASK_RESULTS_PATH,
+                CATALYTIC_SWARM_1_ATTEMPT_PATH,
+                CATALYTIC_SWARM_1_PARSER_CANARY_PATH,
+                CATALYTIC_SWARM_1_READINESS_PATH,
+                CATALYTIC_SWARM_1_CONTROL_PATH,
+            )
+            for path in latest_paths:
+                if not path.is_file():
+                    continue
+                try:
+                    current = load_json(path)
+                except Exception:
+                    continue
+                current.update({
+                    "status": "complete",
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "failure_stage": (
+                        "runtime-preclaim"
+                        if current.get("status") == "preclaim"
+                        else "runtime-unhandled"
+                    ),
+                    "finished_at": utc_now(),
+                })
+                write_catalytic_swarm_1_runtime_json(
+                    path,
+                    current,
+                    runtime_binding=runtime_binding,
+                )
+                break
+            raise
 
 
 def _run_catalytic_swarm_1_audit(
@@ -14745,10 +15243,13 @@ def _run_catalytic_swarm_1_audit(
     cleanup_state: dict[str, Any],
     *,
     runtime_binding: V3RuntimeBinding | None = None,
+    preclaimed_control: bool = False,
 ) -> dict[str, Any]:
     """Inner CS1 runner; the public wrapper owns unhandled cleanup."""
     preclaim = prepare_catalytic_swarm_1_claim(
-        args, runtime_binding=runtime_binding
+        args,
+        runtime_binding=runtime_binding,
+        preclaimed_control=preclaimed_control,
     )
     contract = preclaim["contract"]
     protocol_v4 = preclaim["protocol_v4"]
@@ -14778,8 +15279,10 @@ def _run_catalytic_swarm_1_audit(
         "completed_model_requests": 0,
         "maximum_host_private_growth_bytes": 0,
         "last_completed_model_request": None,
+        "completed_model_request_labels": [],
         "last_boundary": None,
     }
+    expected_request_labels = catalytic_swarm_1_request_labels()
 
     def require_live_boundary(boundary: str, *, require_host: bool) -> dict[str, Any]:
         observed = {
@@ -14840,8 +15343,15 @@ def _run_catalytic_swarm_1_audit(
     def record_model_request_completion(request_label: str) -> None:
         if not isinstance(request_label, str) or not request_label:
             raise NeoLoopError("CatalyticSwarm-1 completed request label is invalid")
+        expected_index = int(runtime_boundary_stats["completed_model_requests"])
+        if (
+            expected_index >= len(expected_request_labels)
+            or request_label != expected_request_labels[expected_index]
+        ):
+            raise NeoLoopError("CatalyticSwarm-1 completed request order changed")
         runtime_boundary_stats["completed_model_requests"] += 1
         runtime_boundary_stats["last_completed_model_request"] = request_label
+        runtime_boundary_stats["completed_model_request_labels"].append(request_label)
 
     control_record: dict[str, Any] = {
         "schema_version": 1,
@@ -14861,10 +15371,24 @@ def _run_catalytic_swarm_1_audit(
     }
     control_claimed = False
     try:
-        claim_catalytic_swarm_1_runtime_json_once(
-            CATALYTIC_SWARM_1_CONTROL_PATH, control_record
-        )
-        control_claimed = True
+        if preclaimed_control:
+            invocation_record = load_json(CATALYTIC_SWARM_1_CONTROL_PATH)
+            control_record["command_invocation_claimed_at"] = invocation_record.get(
+                "started_at"
+            )
+            control_record["command_invocation_consumed"] = True
+            control_record["no_retry"] = True
+            write_catalytic_swarm_1_runtime_json(
+                CATALYTIC_SWARM_1_CONTROL_PATH,
+                control_record,
+                runtime_binding=runtime_binding,
+            )
+            control_claimed = True
+        else:
+            claim_catalytic_swarm_1_runtime_json_once(
+                CATALYTIC_SWARM_1_CONTROL_PATH, control_record
+            )
+            control_claimed = True
         predecessor_now = preserved_catalytic_swarm_0_v2_evidence(
             contract["predecessor"]
         )
@@ -14872,7 +15396,7 @@ def _run_catalytic_swarm_1_audit(
             preclaim["predecessor_artifacts"]
         ):
             raise NeoLoopError("CatalyticSwarm-0 v2 evidence changed during CS1 control")
-        qualification = qualify_catalytic_swarm_1_control(
+        qualification = qualify_active_catalytic_swarm_1_control(
             contract, stable_tokenizer=True
         )
         control_record.update({
@@ -15299,6 +15823,15 @@ def _run_catalytic_swarm_1_audit(
             CATALYTIC_SWARM_1_RESULT_PATH, result
         )
         result_claimed = True
+        first_warm_metadata = bind_catalytic_swarm_1_ledger_record(
+            first_warm_metadata, runtime_binding  # type: ignore[arg-type]
+        )
+        validate_catalytic_swarm_1_ledger_record(
+            first_warm_metadata, runtime_binding=runtime_binding
+        )
+        first_request_label = (
+            f"{build_frozen_task_suite().tasks[0].task_id}:common-root-warm"
+        )
         ledger = BoundedStreamLedger(
             CATALYTIC_SWARM_1_LEDGER_PATH,
             max_bytes=CATALYTIC_SWARM_1_LEDGER_MAX_BYTES,
@@ -15307,17 +15840,9 @@ def _run_catalytic_swarm_1_audit(
             record_transform=lambda record: bind_catalytic_swarm_1_ledger_record(
                 record, runtime_binding
             ),
-        )
-        first_warm_metadata = bind_catalytic_swarm_1_ledger_record(
-            first_warm_metadata, runtime_binding  # type: ignore[arg-type]
-        )
-        validate_catalytic_swarm_1_ledger_record(
-            first_warm_metadata, runtime_binding=runtime_binding
-        )
-        ledger.append(
-            first_warm_metadata,  # type: ignore[arg-type]
-            request_label=f"{build_frozen_task_suite().tasks[0].task_id}:common-root-warm",
-            request_sequence_index=1,
+            initial_record=first_warm_metadata,  # type: ignore[arg-type]
+            initial_request_label=first_request_label,
+            initial_request_sequence_index=1,
         )
         suite = build_frozen_task_suite()
         plans = {plan.arm: plan for plan in build_all_arm_plans()}
@@ -15400,10 +15925,13 @@ def _run_catalytic_swarm_1_audit(
                     ]:
                         raise NeoLoopError("CatalyticSwarm-1 arm received a different root")
                     request_sequence_index += 1
+                    comparison_model_completed = False
 
                     def record_comparison_model_completion(
                         request_label: str,
                     ) -> None:
+                        nonlocal comparison_model_completed
+                        comparison_model_completed = True
                         record_model_request_completion(request_label)
                         result["live_request_count"] += 1
                         result["comparison_request_count"] += 1
@@ -15427,7 +15955,7 @@ def _run_catalytic_swarm_1_audit(
                         with lease_pool.lease() as lease_id:
                             try:
                                 transport, metadata = sidecar.guarded(
-                                    f"cs1-request:{_task.task_id}:{turn.arm}:{turn.turn_id}",
+                                    f"{_task.task_id}:{turn.arm}:{turn.turn_id}",
                                     lambda: stream_catalytic_swarm_1_candidate(
                                         protocol_v4,
                                         _task,
@@ -15440,6 +15968,9 @@ def _run_catalytic_swarm_1_audit(
                                         model_request_completed=(
                                             record_comparison_model_completion
                                         ),
+                                    ),
+                                    request_completed=(
+                                        lambda: comparison_model_completed
                                     ),
                                 )
                             except CompletedRequestBoundaryError as boundary_exc:
@@ -15464,7 +15995,9 @@ def _run_catalytic_swarm_1_audit(
                                     "CatalyticSwarm-1 v2 cache admission rejected "
                                     "after completed-response persistence"
                                 )
-                        return transport
+                        return adapt_catalytic_swarm_1_transport_for_scheduler(
+                            transport
+                        )
 
                     return run_request_with_boundaries(
                         before=lambda: require_live_boundary(
@@ -15617,10 +16150,17 @@ def _run_catalytic_swarm_1_audit(
             "passed": all(frozen.values()),
             "stages": frozen,
         }
-        terminal_wddm = reconcile_v2_terminal_wddm(predecessor_contract, cleanup)
+        completed_model_requests = int(
+            runtime_boundary_stats.get("completed_model_requests", 0)
+        )
+        terminal_wddm = reconcile_catalytic_swarm_1_terminal_wddm(
+            predecessor_contract,
+            cleanup,
+            completed_model_requests=completed_model_requests,
+        )
         result["terminal_wddm_gate"] = terminal_wddm
         freshness_gate = reconcile_catalytic_swarm_1_freshness(
-            cleanup, expected_model_requests=1032
+            cleanup, expected_model_requests=completed_model_requests
         )
         result["freshness_gate"] = freshness_gate
         ledger_gate = (
@@ -15634,7 +16174,20 @@ def _run_catalytic_swarm_1_audit(
             and result.get("task_comparison_count") == 8
             and runtime_boundary_stats.get("completed_model_requests") == 1032
         )
-        live_boundary_gate = build_live_boundary_gate(runtime_boundary_stats)
+        completed_tasks = int(result.get("task_comparison_count", 0))
+        incomplete_model_requests = int(
+            freshness_gate.get("incomplete_model_request_count", 0)
+        )
+        attempted_model_requests = completed_model_requests + incomplete_model_requests
+        live_boundary_gate = build_live_boundary_gate(
+            runtime_boundary_stats,
+            expected_custody_checks=2 * attempted_model_requests,
+            expected_host_memory_checks=attempted_model_requests,
+            expected_task_parity_checks=completed_tasks,
+        )
+        live_boundary_gate["attempted_model_requests_reconciled"] = (
+            attempted_model_requests
+        )
         result["live_boundary_gate"] = live_boundary_gate
         safety = (
             cleanup_gate["passed"] is True
