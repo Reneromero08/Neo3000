@@ -23,6 +23,7 @@ if str(SCRIPT_ROOT) not in sys.path:
 from catalytic_inference_bench_0_runtime import (  # noqa: E402
     CLAIMS_LOCKED,
     CatalyticInferenceRuntimeError,
+    _normalized_transport,
     _path_is_link_or_reparse,
     _porcelain_v2_status_is_clean,
     run_catalytic_inference_bench_0,
@@ -418,9 +419,21 @@ class FakeExecution:
         self.prompt_tokens = 7
         self.cached_prompt_tokens = 0 if warm else 5
         self.completion_tokens = 1
+        self.generated_token_ids = [42]
         self.generated_token_count = 1
         self.completion_token_count_match = True
-        self.generated_token_sha256 = "D" * 64
+        self.generated_token_sha256 = hashlib.sha256(b"[42]").hexdigest().upper()
+        self.nonempty_token_array_event_count = 1
+        self.empty_token_array_event_count = 1
+        self.token_merge_modes = {"initial": 1, "ignored-empty": 1, "absent": 1}
+        self.terminal_stop_evidence = {
+            "observed": True,
+            "stop": True,
+            "stop_type": "eos",
+            "stopping_word": "",
+            "verbose_token_array_length": 0,
+            "event_index": 1,
+        }
         self.finish_reason = "stop"
         self.http_status = 200
         self.event_count = 3
@@ -620,6 +633,54 @@ class CatalyticInferenceBench0RuntimeTests(unittest.TestCase):
         self.assertTrue(closure_present)
         self.assertTrue(run_lock_absent)
         self.assertIsInstance(result["terminal_checkpoint_sha256"], str)
+        with self.subTest(case="optional-empty-generated-token-array"):
+            execution = FakeExecution("{}", warm=True)
+            execution.generated_token_ids = []
+            execution.generated_token_count = 0
+            execution.completion_token_count_match = False
+            execution.generated_token_sha256 = hashlib.sha256(b"[]").hexdigest().upper()
+            execution.nonempty_token_array_event_count = 0
+            execution.empty_token_array_event_count = 1
+            execution.token_merge_modes = {"absent": 2, "ignored-empty": 1}
+            normalized = _normalized_transport(
+                execution, rendered_tokens=7, max_tokens=128
+            )
+            self.assertEqual(
+                normalized["metadata"]["generated_token_evidence_mode"],
+                "usage-plus-source-bound-terminal-eos",
+            )
+            self.assertIs(
+                normalized["metadata"]["full_generated_sequence_known"], False
+            )
+            self.assertIs(
+                normalized["metadata"]["completion_token_count_match"], False
+            )
+        with self.subTest(case="contradictory-nonempty-generated-token-array"):
+            execution = FakeExecution("{}", warm=True)
+            execution.generated_token_ids = [42, 43]
+            execution.generated_token_count = 2
+            execution.completion_token_count_match = False
+            execution.generated_token_sha256 = hashlib.sha256(
+                b"[42,43]"
+            ).hexdigest().upper()
+            with self.assertRaisesRegex(
+                CatalyticInferenceRuntimeError, "contradicts usage accounting"
+            ):
+                _normalized_transport(execution, rendered_tokens=7, max_tokens=128)
+        with self.subTest(case="empty-array-without-terminal-eos"):
+            execution = FakeExecution("{}", warm=True)
+            execution.generated_token_ids = []
+            execution.generated_token_count = 0
+            execution.completion_token_count_match = False
+            execution.generated_token_sha256 = hashlib.sha256(b"[]").hexdigest().upper()
+            execution.nonempty_token_array_event_count = 0
+            execution.empty_token_array_event_count = 1
+            execution.token_merge_modes = {"absent": 2, "ignored-empty": 1}
+            execution.terminal_stop_evidence = None
+            with self.assertRaisesRegex(
+                CatalyticInferenceRuntimeError, "terminal EOS evidence"
+            ):
+                _normalized_transport(execution, rendered_tokens=7, max_tokens=128)
         self.assertEqual(
             sum(record["cache_adjudication"]["adjudicated"] is True for record in result["request_records"]),
             13,

@@ -362,8 +362,14 @@ def _normalized_transport(execution: Any, *, rendered_tokens: int, max_tokens: i
     prompt_tokens = _get(execution, "prompt_tokens")
     cached_tokens = _get(execution, "cached_prompt_tokens")
     completion_tokens = _get(execution, "completion_tokens")
+    generated_ids = _get(execution, "generated_token_ids")
     generated_count = _get(execution, "generated_token_count")
     count_match = _get(execution, "completion_token_count_match")
+    generated_sha256 = _get(execution, "generated_token_sha256")
+    nonempty_array_events = _get(execution, "nonempty_token_array_event_count")
+    empty_array_events = _get(execution, "empty_token_array_event_count")
+    token_merge_modes = _get(execution, "token_merge_modes")
+    terminal_stop = _get(execution, "terminal_stop_evidence")
     finish_reason = _get(execution, "finish_reason")
     http_status = _get(execution, "http_status")
     event_count = _get(execution, "event_count")
@@ -375,15 +381,64 @@ def _normalized_transport(execution: Any, *, rendered_tokens: int, max_tokens: i
         raise CatalyticInferenceRuntimeError("tool calls are forbidden in the bench")
     if http_status != 200 or finish_reason != "stop":
         raise CatalyticInferenceRuntimeError("stream transport did not finish with HTTP 200 / stop")
-    integer_fields = (prompt_tokens, cached_tokens, completion_tokens, generated_count, event_count)
+    integer_fields = (
+        prompt_tokens,
+        cached_tokens,
+        completion_tokens,
+        generated_count,
+        event_count,
+        nonempty_array_events,
+        empty_array_events,
+    )
     if any(isinstance(item, bool) or not isinstance(item, int) for item in integer_fields):
         raise CatalyticInferenceRuntimeError("stream token/event accounting is incomplete")
     if prompt_tokens != rendered_tokens or cached_tokens < 0 or cached_tokens > prompt_tokens:
         raise CatalyticInferenceRuntimeError("rendered/prompt/cache token accounting differs")
     if completion_tokens <= 0 or completion_tokens > max_tokens:
         raise CatalyticInferenceRuntimeError("completion token bound failed")
-    if generated_count <= 0 or count_match is not True or generated_count != completion_tokens:
-        raise CatalyticInferenceRuntimeError("accepted generated-token evidence is unavailable")
+    if (
+        not isinstance(generated_ids, list)
+        or any(isinstance(item, bool) or not isinstance(item, int) for item in generated_ids)
+        or len(generated_ids) != generated_count
+        or generated_sha256 != _json_sha256(generated_ids)
+        or not isinstance(token_merge_modes, Mapping)
+    ):
+        raise CatalyticInferenceRuntimeError(
+            "in-memory generated-token evidence is internally inconsistent"
+        )
+    if generated_count == 0 and count_match is False:
+        if (
+            generated_sha256 != _json_sha256([])
+            or nonempty_array_events != 0
+            or empty_array_events != 1
+            or not isinstance(token_merge_modes, Mapping)
+            or token_merge_modes.get("ignored-empty") != 1
+            or any(
+                name not in {"absent", "ignored-empty"}
+                for name in token_merge_modes
+            )
+            or not isinstance(terminal_stop, Mapping)
+            or terminal_stop.get("observed") is not True
+            or terminal_stop.get("stop") is not True
+            or terminal_stop.get("stop_type") != "eos"
+            or terminal_stop.get("stopping_word") != ""
+            or terminal_stop.get("verbose_token_array_length") != 0
+            or isinstance(terminal_stop.get("event_index"), bool)
+            or not isinstance(terminal_stop.get("event_index"), int)
+            or not 1 <= terminal_stop["event_index"] <= event_count
+        ):
+            raise CatalyticInferenceRuntimeError(
+                "empty token-array fallback lacks exact terminal EOS evidence"
+            )
+        generated_token_evidence_mode = "usage-plus-source-bound-terminal-eos"
+        full_generated_sequence_known = False
+    elif count_match is True and generated_count == completion_tokens:
+        generated_token_evidence_mode = "exact-count-match"
+        full_generated_sequence_known = True
+    else:
+        raise CatalyticInferenceRuntimeError(
+            "nonempty generated-token evidence contradicts usage accounting"
+        )
     if event_count <= 0:
         raise CatalyticInferenceRuntimeError("in-memory SSE stream contained no events")
     return {
@@ -397,7 +452,16 @@ def _normalized_transport(execution: Any, *, rendered_tokens: int, max_tokens: i
             "completion_tokens": completion_tokens,
             "finish_reason": finish_reason,
             "generated_token_count": generated_count,
-            "generated_token_sha256": str(_get(execution, "generated_token_sha256", "")),
+            "generated_token_sha256": generated_sha256,
+            "generated_token_evidence_mode": generated_token_evidence_mode,
+            "completion_token_count_match": count_match,
+            "full_generated_sequence_known": full_generated_sequence_known,
+            "nonempty_token_array_event_count": nonempty_array_events,
+            "empty_token_array_event_count": empty_array_events,
+            "token_merge_modes": dict(token_merge_modes),
+            "terminal_stop_evidence": dict(terminal_stop)
+            if isinstance(terminal_stop, Mapping)
+            else None,
             "reasoning_channel_empty": True,
             "tool_call_count": 0,
             "total_time_seconds": float(_get(execution, "total_time_s", 0.0) or 0.0),
@@ -518,6 +582,8 @@ def _build_payload(
         raise CatalyticInferenceRuntimeError("runtime changed the exact public system root")
     if payload.get("stream") is not True:
         raise CatalyticInferenceRuntimeError("runtime requires in-memory SSE streaming")
+    if "stop" in payload:
+        raise CatalyticInferenceRuntimeError("runtime forbids request stop sequences")
     if payload.get("stream_options") != {"include_usage": True}:
         raise CatalyticInferenceRuntimeError("runtime requires terminal SSE usage accounting")
     if payload.get("cache_prompt") is not True:
