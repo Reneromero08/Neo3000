@@ -18,7 +18,7 @@ The central objective is not merely to make ordinary inference cheaper. It is to
 
 # 1. Current proven boundary
 
-CS1 cache diagnostic evidence is bounded: a single authorized three-request diagnostic returned `reviewable-accept`, proving complete public-root cache reuse for two probes. It does not measure task advantage. CS1-v2 and CS1-v3 are consumed preclaim fail-closed boundaries. CS1-v4 executed once and stopped inconclusively after 775 completed model responses at task 7's common-root warm; the exact failed member of its compound predicate is unavailable because bounded metadata was constructed only after that predicate passed. Canonical consumed boundary is `5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a`. CS1-v5 is statically integrated and unexecuted; it changes evidence closure only and preserves the frozen experiment. Broader HoloState, task advantage, restart persistence, SOTA, and automatic promotion remain locked.
+CS1 cache diagnostic evidence is bounded: a single authorized three-request diagnostic returned `reviewable-accept`, proving complete public-root cache reuse for two probes. It does not measure task advantage. CS1-v2 and CS1-v3 are consumed preclaim fail-closed boundaries. CS1-v4 and CS1-v5 each executed once and are consumed no-retry evidence. V5 ran from protected `241d99e403926b8ef7814c894808922b7cb8cd8e`: 775 model responses completed, all 775 have ledger records, no result fallback was used, and record 775 was rejected. Host success accounting is 774 / 775, while every measured host value remained below the 4,096 MiB ceiling, so the exact failed member of the compound live boundary is unavailable. Canonical V5 boundary is `897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9`; V5 is hard-retired. CS1-v6 is statically integrated but unexecuted and changes only independent post-request attribution. Broader HoloState, task advantage, restart persistence, SOTA, and automatic promotion remain locked.
 
 The strongest supported mechanism claims are:
 
@@ -672,7 +672,9 @@ completed: integrate CS1-v3 with active-version path qualification and pre-persi
 completed: consume CS1-v3 preclaim fail-closed on insertion-order-sensitive mapping admission and bind its sole control artifact
 completed: execute CS1-v4 once; bind its 775-response partial inconclusive boundary and hard-retire it
 completed: statically integrate CS1-v5 completed-response evidence closure without changing experiment geometry
-current: preserve consumed v4 evidence and absent v5 state until separately authorized exact-main/model v5 live evaluation
+completed: execute CS1-v5 once from protected 241d99e; bind its 775-response consumed boundary and hard-retire it
+completed: statically integrate CS1-v6 independent WDDM/stable/candidate/host post-request closure without changing experiment geometry
+current: preserve consumed v5 evidence and absent v6 state until a separately authorized exact-main/model v6 live evaluation from final pushed protected main
 1. Adaptive population and verifier allocation, only after verified task advantage
 2. HoloState multi-root admission and eviction policy
 3. HoloState-v2 durable checkpoint-list persistence
@@ -718,10 +720,46 @@ attempt preclaim fail-closed with zero requests, sidecars, or artifacts and no
 retry. CS1-v3 is consumed preclaim fail-closed with one exact control artifact.
 CS1-v4 is consumed partial evidence: 775 completed responses, 774 ledger and
 host-memory records, six completed parity-passing tasks, no suite adjudication,
-and no retry. CS1-v5 is statically integrated but unexecuted with distinct
-claim, immutable scheduler, and runtime-evidence identities. Task advantage and
-SOTA remain locked and automatic promotion remains disabled.
+and no retry. CS1-v5 then executed once from protected `241d99e`, closed 775 / 775
+completed responses into the ledger with zero fallback, and rejected record 775.
+Its host-success accounting is 774 / 775, but all measured host values were below
+the ceiling; exact compound cause and task advantage remain unavailable. V5 is
+bound by `897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9`
+and hard-retired. CS1-v6 is static-only and unexecuted. Its distinct claim is
+`8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8`, its
+runtime binding is `3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3`,
+and the immutable scheduler is
+`fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
+All seven v6 runtime paths are absent; no v6 authority or execution exists.
+Task advantage and SOTA remain locked and automatic promotion remains disabled.
 ```
+
+### CS1-v6 independent completed-response closure [STATIC ONLY]
+
+For every model-completed warm or comparison request, V6 starts one ordered
+post-request group and represents four required sub-boundaries independently:
+`wddm`, `stable_custody`, `candidate_custody`, and `host_memory`. Every entry has
+the exact required fields `name`, `required`, `attempted`, `attempt_ordinal`,
+`attempted_at`, `observation_completed`, `state`, `blocked`, `passed`,
+`reason_code`, `blocked_by`, `exception_type`, `exception_message_sha256`, and
+`measurement`. The attempt fields are populated before the observer call. State
+is one of `passed`, `failed-invariant`, `observation-error`, `unavailable`,
+`interrupted`, or `blocked`. An earlier non-pass cannot short-circuit later safe
+observations.
+
+The accounting separates groups started from each sub-boundary's attempts,
+completed observations, passes, and blocked-before-attempt cases. On a normal
+run with `N` completed responses, every required attempt count must equal `N`;
+the representation law is `attempts + blocked-before-attempt = N`, observations
+cannot exceed attempts, and passes cannot exceed completed observations.
+
+Ordering is fixed: model completion, structural capture, independent boundary
+group, response disposition, exactly one fsynced identity-bound ledger or result
+fallback representation, lease release, then acceptance/rejection or deferred
+interruption enforcement. A rejected response remains rejected and cannot start
+the next model request. V6 preserves the seven-artifact topology and frozen
+1,032-request geometry. Static integration created none of the seven runtime
+paths and grants no live authority.
 
 Not yet allowed:
 

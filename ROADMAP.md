@@ -110,7 +110,8 @@ RSI-0: CLOSED
 -> CatalyticSwarm-1 v2: command attempt consumed / preclaim fail-closed / zero requests / no retry
 -> CatalyticSwarm-1 v3: command invocation consumed / preclaim fail-closed / one control artifact / no retry
 -> CatalyticSwarm-1 v4: executed once / partial 775 requests / inconclusive / consumed / no retry
--> CatalyticSwarm-1 v5: static-only completed-response evidence closure / not executed
+-> CatalyticSwarm-1 v5: executed once / 775 completed and durably represented / record 775 rejected / consumed / no retry
+-> CatalyticSwarm-1 v6: static-only independent post-request sub-boundary closure / not executed
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -132,7 +133,8 @@ this section is only its navigation capsule.
 - **Consumed boundary:** CS1-v2 stopped before artifact claim because inherited v1 qualification compared its v2 tuple against v1 paths. It made zero model requests, launched zero sidecars, claimed zero artifacts, and is no-retry.
 - **Consumed v3 boundary:** the one authorized CS1-v3 invocation persisted its 960-byte control marker, then failed closed before network or inference because sorted evaluator key order did not equal the helper's runtime-stage tuple. Canonical tracked boundary SHA-256 is `fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14`; task advantage was not adjudicated.
 - **Consumed v4 boundary:** v4 completed 775 model responses and all four arms for six tasks, then stopped on task 7's common-root warm after model completion but before its metadata ledger and host-memory records. The exact failed member of the compound warm predicate is unavailable. Canonical boundary SHA-256 is `5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a`; all seven raw artifacts are immutable and v4 is hard-retired.
-- **Next boundary:** CS1-v5 repairs evidence closure only. Every completed response must close bounded metadata, post-request resources, and one fsynced identity-bound ledger record before acceptance enforcement. Claim `6238ff09ba290e55ad6c5cc2c93b4cbc239d573644192cf101696416a7083e3c` and runtime binding `2b2bcfaadf80d15d2972a4952f4b66026f2dd6979427f6cc32f197c6692903d9` remain distinct from immutable scheduler authority. V5 is not executed.
+- **Consumed v5 boundary:** V5 ran exactly once from protected `241d99e403926b8ef7814c894808922b7cb8cd8e`, closed 775 completed responses into 775 ledger records with zero fallback, and rejected record 775. Host success accounting is 774 / 775, but every measured host value remained below the 4,096 MiB ceiling; the exact compound live cause is unavailable. Canonical boundary `897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9` is consumed and hard-retired. No task advantage was established.
+- **Next boundary:** CS1-v6 preserves the immutable scheduler and changes only post-request evidence attribution. It independently records WDDM, stable custody, candidate custody, and host memory using explicit attempt, observation, pass, blocked, state, reason, bounded exception, and measured-field evidence; persists exactly one fsynced ledger-or-fallback representation before lease release and enforcement; and continues later safe observations after an earlier non-pass. Claim `8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8` and runtime binding `3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3` remain distinct from immutable scheduler `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. V6 is static-only, has no authority, and has not executed; its seven runtime paths are absent.
 
 | Swarm stage | Architectural purpose | Unlock boundary |
 |---|---|---|

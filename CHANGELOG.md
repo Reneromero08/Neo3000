@@ -6,13 +6,17 @@ It is intentionally not a raw dump of every administrative commit. Small documen
 
 ## Current state
 
-### CatalyticSwarm-1 completed-response closure successor
+### CatalyticSwarm-1 independent post-request closure successor
 
 The CS1 cache diagnostic executed once with `reviewable-accept`, proving complete public-root reuse for both probes and retiring the legacy common-prefix threshold as admission authority. Evidence binding is `a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031`. CS1-v2 and CS1-v3 are consumed preclaim fail-closed boundaries. V3 persisted one exact control marker and stopped before live work because mapping insertion order was treated as contract identity; canonical boundary SHA-256 is `fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14`.
 
 CS1-v4 executed exactly once and is permanently consumed. It completed 775 model responses and six equal-budget tasks, then stopped on task 7's common-root warm before the 775th ledger and host-memory records. The exact failed compound-predicate member is unavailable. All seven artifacts are immutable; canonical boundary SHA-256 is `5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a`; the public v4 command is hard-retired.
 
-CS1-v5 is statically integrated and unexecuted. Its only causal change is completed-response evidence closure: bounded metadata, post-request resources, exact reason codes, and one identity-bound fsynced ledger record must close before lease release and acceptance enforcement. Claim contract `6238ff09ba290e55ad6c5cc2c93b4cbc239d573644192cf101696416a7083e3c` and runtime binding `2b2bcfaadf80d15d2972a4952f4b66026f2dd6979427f6cc32f197c6692903d9` remain separate from immutable scheduler `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. No task-advantage or automatic-promotion claim changed.
+CS1-v5 executed exactly once from protected `241d99e403926b8ef7814c894808922b7cb8cd8e`. It completed 775 responses, persisted 775 ledger records, used zero fallback records, and rejected record 775. Host success accounting is 774 / 775, but all measured host values remained below the 4,096 MiB ceiling. The exact failed member of the compound live boundary is unavailable and no task advantage was established. Canonical consumed boundary is `897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9`; V5 is hard-retired.
+
+CS1-v6 is statically integrated and unexecuted. It independently records WDDM, stable custody, candidate custody, and host-memory attempts, observations, outcomes, bounded exceptions, and measurements without allowing an earlier non-pass to erase later safe evidence. Its states are `passed`, `failed-invariant`, `observation-error`, `unavailable`, `interrupted`, and `blocked`; counters distinguish groups, attempts, completed observations, passes, and blocked-before-attempt cases. Exactly one identity-bound ledger-or-fallback representation is fsynced before lease release and enforcement. Claim `8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8` and runtime binding `3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3` remain separate from immutable scheduler `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. All seven V6 runtime paths are absent; no V6 authority or execution exists. Claims remain unchanged.
+
+The final static audit removed hidden warm/final compound resource observations, revalidates all consumed V5 artifacts at terminal, binds expected runtime identity in the consumed control marker, and closes ledger/fallback ambiguity with rollback-before-fallback plus fail-closed indeterminate durability. The complete 723-test CPU suite, changed-file compilation, evaluator lock, JSON/JSONL validation, protected diff checks, and protected preflight pass without a model request or sidecar launch.
 
 Static CS1-v3 preauthorization review repaired controller-only custody defects without changing the frozen experiment: active v3 path reuse at live control; durable invocation consumption before every fallible preclaim check; identity-bearing first-ledger creation; root-terminal transport projection into the immutable scheduler schema; completed-response-aware CS1-native terminal WDDM and exact partial-count reconciliation; and final model/binary rehashing under Windows leaf and directory-chain locks with stable file IDs held through model readiness. Protected preflight failures are read-only. No live command, model request, sidecar, artifact claim, Deep request, or promotion occurred.
 
@@ -50,7 +54,8 @@ CS1 cache-admission diagnostic artifacts: 5 PRESENT / IMMUTABLE
 CS1-v2: COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / ZERO REQUESTS / ZERO ARTIFACTS / NO RETRY
 CS1-v3: COMMAND INVOCATION CONSUMED / PRECLAIM FAIL-CLOSED / ZERO REQUESTS / ONE CONTROL ARTIFACT / NO RETRY
 CS1-v4: EXECUTED ONCE / PARTIAL 775 REQUESTS / INCONCLUSIVE / NO RETRY
-CS1-v5: STATICALLY INTEGRATED / NOT EXECUTED / COMPLETED-RESPONSE CLOSURE
+CS1-v5: EXECUTED ONCE / 775 LEDGER RECORDS / INCONCLUSIVE / NO RETRY
+CS1-v6: STATICALLY INTEGRATED / NOT EXECUTED / INDEPENDENT POST-REQUEST CLOSURE
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_CONTROL_AVAILABLE: UNLOCKED
 CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN: LOCKED
@@ -81,7 +86,7 @@ The authorized inert-fixture RSI-0G cycle returned `reviewable-accept`. Candidat
 - CatalyticSwarm-0 ran exactly once from protected integration commit `8e2a14cc11be31c29d75c5738a3cd0dc9e2ab280`. Control qualification passed, then readiness stopped inconclusively on exact-PID WDDM telemetry loss before the parser canary or any worker request. This version cannot be retried.
 - The separately versioned CatalyticSwarm-0 v2 successor completed one artifact-claiming live execution and returned `reviewable-accept` for structured micro-workers and bounded swarm control. No retry occurred after claim; one earlier pre-claim command refusal created zero artifacts and made zero model requests. V2 changed only exact-PID WDDM transient-gap resilience plus fresh-sample admission and preserved the exact v1 plan and prompt bytes.
 - CatalyticSwarm-1 v1 executed exactly once and stopped `inconclusive` on the first serial-chain comparison's complete-public-root cache proof. Exactly 2 model requests completed: 1 common-root warm, 1 comparison, and 0 completed tasks. Its authority is consumed and v1 is no-retry. Equal-budget task advantage, Deep, persistence, SOTA, and promotion claims remain locked.
-- The separately versioned CS1 cache-admission diagnostic executed exactly once and returned `reviewable-accept` after 3 requests; all five artifacts are immutable. CS1-v2 and v3 are consumed preclaim boundaries. CS1-v4 executed once, stopped inconclusively after 775 completed responses, and is hard-retired. CS1-v5 is static-only and requires separate exact-main/model live authority.
+- The separately versioned CS1 cache-admission diagnostic executed exactly once and returned `reviewable-accept` after 3 requests; all five artifacts are immutable. CS1-v2 and v3 are consumed preclaim boundaries. CS1-v4 and CS1-v5 each executed once, stopped inconclusively after 775 completed responses, and are hard-retired. CS1-v6 is static-only; a live V6 run requires separate exact-main/model one-shot authority from final pushed protected `main`.
 - HoloState-v2 Durable Capsule remains the separate, unproven restart-persistence intervention. The current integration must not claim restart persistence.
 - Preserve human review and the automatic-promotion prohibition throughout Level 1.
 

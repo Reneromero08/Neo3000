@@ -68,16 +68,17 @@ class V5ControllerTests(unittest.TestCase):
         with self.assertRaisesRegex(holo.NeoLoopError, "consumed / no retry"):
             holo.command_audit_catalytic_swarm_1_v4(object())
 
-    def test_v5_cli_requires_model_and_authorized_main(self) -> None:
+    def test_v5_cli_is_hard_retired_without_runtime_arguments(self) -> None:
         parser = holo.build_parser()
-        with self.assertRaises(SystemExit):
-            parser.parse_args(["audit-catalytic-swarm-1-v5"])
-        with self.assertRaises(SystemExit):
-            parser.parse_args(["audit-catalytic-swarm-1-v5", "--model", "model.gguf"])
+        args = parser.parse_args(["audit-catalytic-swarm-1-v5"])
+        self.assertIs(args.handler, holo.command_audit_catalytic_swarm_1_v5)
+        with self.assertRaisesRegex(holo.NeoLoopError, "consumed / no retry"):
+            args.handler(args)
 
-    def test_v5_state_is_absent_and_ignored(self) -> None:
-        self.assertFalse(holo.CATALYTIC_SWARM_1_V5_STATE_ROOT.exists())
+    def test_consumed_v5_state_is_present_and_ignored(self) -> None:
+        self.assertTrue(holo.CATALYTIC_SWARM_1_V5_STATE_ROOT.is_dir())
         for path in holo.CATALYTIC_SWARM_1_V5_ARTIFACT_PATHS:
+            self.assertTrue(path.is_file())
             relative = path.relative_to(ROOT).as_posix()
             self.assertEqual(
                 subprocess.run(["git", "check-ignore", "--quiet", relative], cwd=ROOT, check=False).returncode,

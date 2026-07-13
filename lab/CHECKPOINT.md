@@ -534,7 +534,7 @@ This preserved integration snapshot is superseded for current status by the exec
 - All seven v4 artifacts remain byte-exact. Canonical tracked boundary `catalytic_swarm_1_v4_partial_execution_boundary` has SHA-256 `5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a`. The public v4 command is hard-retired.
 - The exact failed member of the compound warm predicate is unavailable. Source proves only that completed-request accounting can advance before summary, ledger, and outer host evidence close. This is a controller evidence-closure defect, not a task-advantage result.
 
-### CatalyticSwarm-1 v5 completed-response closure [STATIC PASS / NOT EXECUTED]
+### CatalyticSwarm-1 v5 completed-response closure [EXECUTED ONCE / INCONCLUSIVE / NO RETRY]
 
 - V5 changes evidence closure only. Every completed warm or comparison response closes bounded metadata, post-request WDDM/custody/host outcomes, exact gate/reason codes, and one identity-bound fsynced ledger record before lease release and acceptance enforcement.
 - The generation-free parser canary no longer performs a warm before the ledger exists. Attempt, result, and an empty fsynced ledger are claimed before v5's first model request.
@@ -542,7 +542,27 @@ This preserved integration snapshot is superseded for current status by the exec
 - Ledger persistence failure is represented by an identity-bound result fallback; successful ledger append is fsynced before enforcement. Keyboard/SystemExit-style post-completion interruptions close evidence before propagation.
 - Claim contract is `6238ff09ba290e55ad6c5cc2c93b4cbc239d573644192cf101696416a7083e3c`; runtime binding is `2b2bcfaadf80d15d2972a4952f4b66026f2dd6979427f6cc32f197c6692903d9`; immutable scheduler remains `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
 - The eight-task suite, candidate programs, prompts, hidden boundary, four arms, arm hashes, Latin square, 32 requests per arm/task, eight warms, 1,024 comparisons, 1,032 total requests, token ceilings, equal-budget law, root-terminal cache law, hidden-scoring timing, scoring, parity, acceptance thresholds, no-Deep law, and claim limits are unchanged.
-- All seven `state/catalytic_swarm_1_v5` paths remain absent. Static integration made zero model requests and launched zero sidecars. Live execution requires later exact-main/model one-shot authority.
+- V5 executed exactly once from protected main `241d99e403926b8ef7814c894808922b7cb8cd8e`. It completed 775 responses, persisted all 775 in the ledger, and used zero result fallback records.
+- Ledger record 775 preserves a structurally accepted task-7 warm response and rejects it on the post-request compound boundary. No next model request began.
+- Host success accounting is 774 / 775. All measured host values remained below the 4,096 MiB ceiling; maximum observed growth was 4,160,516,096 bytes (3,967.77734375 MiB), leaving 128.22265625 MiB. The evidence does not prove a host ceiling breach.
+- Source audit establishes that V5's combined callback and success-only counters collapse stable custody, candidate custody, and host observation attribution. The exact failed operation is unavailable; no repository mutation or narrower host cause may be claimed.
+- Six tasks completed with parity, but suite advantage is null. V5 established no task advantage, broader HoloState, restart persistence, SOTA, Deep, or promotion claim.
+- Canonical consumed boundary `catalytic_swarm_1_v5_partial_execution_boundary` is `897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9`. V5 is hard-retired and cannot be retried.
+
+### CatalyticSwarm-1 v6 independent post-request closure [STATIC PASS / NOT EXECUTED]
+
+- V6 changes only post-request evidence attribution. It independently represents `wddm`, `stable_custody`, `candidate_custody`, and `host_memory` for every completed warm and comparison response.
+- Every required member records an attempt and timestamp before callback invocation, observation completion, tri-state pass meaning, one of `passed`, `failed-invariant`, `observation-error`, `unavailable`, `interrupted`, or `blocked`, a bounded reason and exception identity, and bounded measured fields.
+- Group-start, attempt, completed-observation, pass, and blocked-before-attempt counters are distinct. Earlier non-pass outcomes do not suppress later safe read-only observations.
+- Terminal representation requires `attempts + blocked-before-attempt = completed groups`; normal execution requires every required attempt count to equal completed groups, observations cannot exceed attempts, and passes cannot exceed completed observations.
+- Ordering is model completion, structural capture, independent post-request group, disposition, exactly one fsynced identity-bound ledger-or-result-fallback representation, lease release, then rejection/acceptance or deferred interruption enforcement. Rejected remains rejected.
+- V6 claim is `8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8`; runtime binding is `3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3`; immutable scheduler remains `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
+- Frozen tasks, prompts, arms, Latin square, eight warms, 1,024 comparisons, 1,032 total requests, one slot, token budgets, hidden boundary, scoring, parity, thresholds, no-Deep law, and claims are unchanged.
+- All seven `state/catalytic_swarm_1_v6` paths remain absent. No V6 live authority, execution, model request, or sidecar launch exists. The next action requires a separately authorized one-shot V6 live prompt bound to final pushed protected `main` and the exact model/binary identities.
+- Static verification passed: 723 CPU-only tests across 44 test modules, focused V5/V6 closure and controller matrices, compilation of every changed Python file, evaluator/lock verification, 15 JSON documents plus three JSONL ledgers, whitespace/diff checks, and protected preflight.
+- The fallback path now commits a ledger row and fsync as one rollback-capable operation. A proven-absent failed append may use the result fallback; indeterminate durability forbids fallback and fails closed. Fallback evidence is reread and identity-validated before terminal accounting.
+- Terminal reconciliation recomputes completion IDs, authenticates request order, boundary and reason projections, disposition, durable route, group/attempt/observation/pass/blocked counters, and completed-response lease closure. Pre-completion request failures remain outside completed-response group counts while physical lease cleanup is reported separately.
+- Post-test custody reverified the exact V3 control artifact, all seven V4 artifacts, and all seven V5 artifacts. V6 state remains absent, stable PID `32684` remains the sole healthy 9292 listener, ports 9393/9494 remain listener-free, and candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf` remains clean.
 
 ### Durable persistence boundary
 

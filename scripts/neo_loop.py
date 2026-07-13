@@ -349,6 +349,38 @@ def catalytic_swarm_1_v5_runtime_evidence_binding_hash(
     return sha256_bytes(canonical_json_bytes(contract))
 
 
+def catalytic_swarm_1_v5_partial_execution_boundary_hash(
+    evaluator: dict[str, Any],
+) -> str:
+    """Hash the canonical consumed partial CS1-v5 execution boundary."""
+    boundary = evaluator.get("catalytic_swarm_1_v5_partial_execution_boundary")
+    if not isinstance(boundary, dict):
+        raise NeoLoopError(
+            "evaluator is missing catalytic_swarm_1_v5_partial_execution_boundary"
+        )
+    return sha256_bytes(canonical_json_bytes(boundary))
+
+
+def catalytic_swarm_1_v6_hash(evaluator: dict[str, Any]) -> str:
+    """Hash the complete separately versioned CS1-v6 claim contract."""
+    contract = evaluator.get("catalytic_swarm_1_v6")
+    if not isinstance(contract, dict):
+        raise NeoLoopError("evaluator is missing catalytic_swarm_1_v6")
+    return sha256_bytes(canonical_json_bytes(contract))
+
+
+def catalytic_swarm_1_v6_runtime_evidence_binding_hash(
+    evaluator: dict[str, Any],
+) -> str:
+    """Hash the complete CS1-v6 runtime-evidence identity binding."""
+    contract = evaluator.get("catalytic_swarm_1_v6_runtime_evidence_binding")
+    if not isinstance(contract, dict):
+        raise NeoLoopError(
+            "evaluator is missing catalytic_swarm_1_v6_runtime_evidence_binding"
+        )
+    return sha256_bytes(canonical_json_bytes(contract))
+
+
 def load_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise NeoLoopError(f"missing required file: {path}")
@@ -483,6 +515,13 @@ def make_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
         "catalytic_swarm_1_v5_sha256": catalytic_swarm_1_v5_hash(evaluator),
         "catalytic_swarm_1_v5_runtime_evidence_binding_sha256": (
             catalytic_swarm_1_v5_runtime_evidence_binding_hash(evaluator)
+        ),
+        "catalytic_swarm_1_v5_partial_execution_boundary_sha256": (
+            catalytic_swarm_1_v5_partial_execution_boundary_hash(evaluator)
+        ),
+        "catalytic_swarm_1_v6_sha256": catalytic_swarm_1_v6_hash(evaluator),
+        "catalytic_swarm_1_v6_runtime_evidence_binding_sha256": (
+            catalytic_swarm_1_v6_runtime_evidence_binding_hash(evaluator)
         ),
         "model_identity": evaluator["model"],
         "baseline_source_commit": git(ROOT, "rev-parse", "HEAD"),
@@ -776,6 +815,32 @@ def verify_lock(evaluator: dict[str, Any]) -> dict[str, Any]:
     if expected_v5_runtime_binding != actual_v5_runtime_binding:
         raise NeoLoopError(
             "CatalyticSwarm-1 v5 runtime-evidence binding differs from its locked complete-object hash"
+        )
+    expected_v5_partial = lock.get(
+        "catalytic_swarm_1_v5_partial_execution_boundary_sha256"
+    )
+    actual_v5_partial = catalytic_swarm_1_v5_partial_execution_boundary_hash(
+        evaluator
+    )
+    if expected_v5_partial != actual_v5_partial:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 v5 partial execution boundary differs from its locked complete-object hash"
+        )
+    expected_swarm_1_v6 = lock.get("catalytic_swarm_1_v6_sha256")
+    actual_swarm_1_v6 = catalytic_swarm_1_v6_hash(evaluator)
+    if expected_swarm_1_v6 != actual_swarm_1_v6:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 v6 contract differs from its locked complete-object hash"
+        )
+    expected_v6_runtime_binding = lock.get(
+        "catalytic_swarm_1_v6_runtime_evidence_binding_sha256"
+    )
+    actual_v6_runtime_binding = catalytic_swarm_1_v6_runtime_evidence_binding_hash(
+        evaluator
+    )
+    if expected_v6_runtime_binding != actual_v6_runtime_binding:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 v6 runtime-evidence binding differs from its locked complete-object hash"
         )
     return lock
 

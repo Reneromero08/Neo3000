@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. CS1-v1 through CS1-v4 are immutable consumed evidence. The partial v4 run is canonically bound; CS1-v5 is a static-only completed-response evidence-closure successor.
-**Next exact action:** preserve the consumed v4 boundary and static v5 custody without invoking any CS1 command. V5 claim contract `6238ff09ba290e55ad6c5cc2c93b4cbc239d573644192cf101696416a7083e3c`, runtime binding `2b2bcfaadf80d15d2972a4952f4b66026f2dd6979427f6cc32f197c6692903d9`, and immutable scheduler `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e` remain separate. A live `audit-catalytic-swarm-1-v5` invocation requires later exact-main/model one-shot authority. Do not rerun predecessors, run Deep, claim task advantage or SOTA, or promote automatically.
+**Active bounded objective:** Checkpoint 1A tracing remains active and paused. CS1-v1 through CS1-v5 are immutable consumed evidence. CS1-v5 is canonically bound and hard-retired; CS1-v6 is a static-only independent post-request sub-boundary closure successor.
+**Next exact action:** separately authorize one CS1-v6 live execution from the final pushed protected `main`, bound to the exact model and binary identities. V6 claim `8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8`, runtime binding `3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3`, and immutable scheduler `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e` remain separate. Do not rerun V5 or predecessors, run Deep, claim task advantage or SOTA, or promote automatically.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -462,7 +462,7 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Bind canonical consumed-boundary evidence `catalytic_swarm_1_v3_preclaim_boundary` at SHA-256 `fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14`; preserve the raw ignored control artifact exactly and keep the other six v3 paths absent.
 - [x] Hard-retire `audit-catalytic-swarm-1-v3` with an explicit consumed/no-retry tombstone.
 
-### CatalyticSwarm-1 v4 [STATICALLY INTEGRATED / NOT EXECUTED]
+### CatalyticSwarm-1 v4 [EXECUTED ONCE / PARTIAL / INCONCLUSIVE / NO RETRY]
 
 - [x] Add separately versioned semantic mapping admission: require the exact seven-key set, then project explicitly into `control, readiness, parser_canary, attempt, result, ledger, task_results` order without granting source insertion order authority.
 - [x] Freeze v4 claim contract `2ba862a097da4b3c6bb2e2fbececa49296b38a8c9b5b047f6c281b84c3111ece`, immutable scheduler `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`, and runtime-evidence binding `d7949912512316d551bf6466895fe7d52b44fe568590782b85e23c4cbd6e53e4` separately.
@@ -472,14 +472,26 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Execute v4 exactly once under separate authority; preserve all seven artifacts and classify the partial 775-request run as `inconclusive / no retry` without inventing the exact failed warm predicate.
 - [x] Bind canonical partial-execution object `5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a`; hard-retire the public v4 command.
 
-### CatalyticSwarm-1 v5 [STATICALLY INTEGRATED / NOT EXECUTED]
+### CatalyticSwarm-1 v5 [EXECUTED ONCE / PARTIAL / INCONCLUSIVE / NO RETRY]
 
 - [x] Preserve the exact eight-task, four-arm, 1,032-request geometry, prompts, hidden boundary, scoring, parity, cache law, budgets, acceptance thresholds, one-slot law, no-Deep law, and claim ceiling.
 - [x] Require every completed warm or comparison response to close one bounded metadata-only observation, post-request WDDM/custody/host boundary, and identity-bound fsynced ledger record before lease release and acceptance enforcement.
 - [x] Persist exact bounded rejection and boundary reason codes; distinguish pre-completion failure, completed acceptance, completed rejection, post-response instrumentation failure, and post-request boundary failure.
 - [x] Claim attempt, result, and an empty durable ledger before the first v5 model warm; preserve the seven-artifact shape and use result fallback only for adjudicated ledger-persistence failure.
 - [x] Freeze v5 claim `6238ff09ba290e55ad6c5cc2c93b4cbc239d573644192cf101696416a7083e3c` and runtime binding `2b2bcfaadf80d15d2972a4952f4b66026f2dd6979427f6cc32f197c6692903d9` separately from the immutable scheduler.
-- [ ] Preserve v5 static custody. Do not execute `audit-catalytic-swarm-1-v5` without the separately authorized exact live prompt bound to final pushed protected main.
+- [x] Invoke V5 exactly once from protected main `241d99e403926b8ef7814c894808922b7cb8cd8e`; preserve 775 completed responses, 775 ledger records, zero fallback records, and rejected record 775 without retry.
+- [x] Bind canonical consumed boundary `897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9` and hard-retire `audit-catalytic-swarm-1-v5`.
+- [x] Record the attribution ceiling: host success accounting is 774 / 775, every measured host value is below the 4,096 MiB ceiling, and the exact failed member of the compound live boundary is unavailable. No task advantage was established.
+
+### CatalyticSwarm-1 v6 [STATICALLY INTEGRATED / NOT EXECUTED]
+
+- [x] Preserve the frozen eight-task, four-arm, one-slot, 1,032-request scheduler geometry and immutable scheduler identity `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
+- [x] Replace the compound post-request observation with independently represented `wddm`, `stable_custody`, `candidate_custody`, and `host_memory` sub-boundaries.
+- [x] Record each required sub-boundary's attempt before its callback, attempt timestamp, observation completion, pass value, state, reason, bounded exception identity, and bounded measured fields. States are `passed`, `failed-invariant`, `observation-error`, `unavailable`, `interrupted`, and `blocked`.
+- [x] Count groups started and per-sub-boundary attempts, completed observations, passes, and blocked-before-attempt cases; later safe observations continue after an earlier non-pass.
+- [x] Preserve ordering: model completion, structural capture, independent post-request group, disposition, exactly one fsynced ledger-or-result-fallback representation, lease release, then enforcement. Rejected remains rejected.
+- [x] Freeze V6 claim `8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8` and runtime binding `3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3` separately from the immutable scheduler.
+- [ ] Obtain separate exact-main/model one-shot authority and execute CS1-v6 once from the final pushed protected `main`. Until then all seven `state/catalytic_swarm_1_v6` paths must remain absent.
 
 Preserved v1 executed boundary:
 
@@ -510,4 +522,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: preserve all consumed predecessors and CS1-v5 at `STATICALLY INTEGRATED / NOT EXECUTED`; all seven v5 paths must remain absent. Any live v5 evaluation requires a separate exact-main/model one-shot authorization. Task advantage and SOTA remain locked; Deep and automatic promotion remain disabled.
+Next task: preserve all consumed predecessors, including hard-retired CS1-v5, and obtain separate exact-main/model one-shot authority for CS1-v6 from the final pushed protected `main`. All seven v6 paths remain absent until that execution. Task advantage and SOTA remain locked; Deep and automatic promotion remain disabled.

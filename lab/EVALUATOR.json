@@ -141,6 +141,17 @@
       "scripts/test_catalytic_swarm_1_v5_runtime_binding_protocol.py",
       "scripts/test_catalytic_swarm_1_v5_completion_closure.py",
       "scripts/test_catalytic_swarm_1_v5_controller.py",
+      "scripts/catalytic_swarm_1_v5_partial_execution_boundary.py",
+      "scripts/test_catalytic_swarm_1_v5_partial_execution_boundary.py",
+      "scripts/catalytic_swarm_1_v6_protocol.py",
+      "scripts/catalytic_swarm_1_v6_runtime_binding.py",
+      "scripts/catalytic_swarm_1_v6_runtime_binding_protocol.py",
+      "scripts/catalytic_swarm_1_v6_post_request_closure.py",
+      "scripts/test_catalytic_swarm_1_v6_protocol.py",
+      "scripts/test_catalytic_swarm_1_v6_runtime_binding.py",
+      "scripts/test_catalytic_swarm_1_v6_runtime_binding_protocol.py",
+      "scripts/test_catalytic_swarm_1_v6_post_request_closure.py",
+      "scripts/test_catalytic_swarm_1_v6_controller.py",
       "tools/server/server-context.cpp",
       "tools/server/server-task.cpp",
       ".gitignore",
@@ -228,6 +239,17 @@
     ,"scripts/test_catalytic_swarm_1_v5_runtime_binding_protocol.py"
     ,"scripts/test_catalytic_swarm_1_v5_completion_closure.py"
     ,"scripts/test_catalytic_swarm_1_v5_controller.py"
+    ,"scripts/catalytic_swarm_1_v5_partial_execution_boundary.py"
+    ,"scripts/test_catalytic_swarm_1_v5_partial_execution_boundary.py"
+    ,"scripts/catalytic_swarm_1_v6_protocol.py"
+    ,"scripts/catalytic_swarm_1_v6_runtime_binding.py"
+    ,"scripts/catalytic_swarm_1_v6_runtime_binding_protocol.py"
+    ,"scripts/catalytic_swarm_1_v6_post_request_closure.py"
+    ,"scripts/test_catalytic_swarm_1_v6_protocol.py"
+    ,"scripts/test_catalytic_swarm_1_v6_runtime_binding.py"
+    ,"scripts/test_catalytic_swarm_1_v6_runtime_binding_protocol.py"
+    ,"scripts/test_catalytic_swarm_1_v6_post_request_closure.py"
+    ,"scripts/test_catalytic_swarm_1_v6_controller.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"
@@ -3001,6 +3023,831 @@
       "task_results": {
         "operation": "catalytic-swarm-1-v5-task-results",
         "verdict_field": "catalytic_swarm_1_v5"
+      }
+    }
+  },
+  "catalytic_swarm_1_v5_partial_execution_boundary": {
+    "artifacts": [
+      {
+        "path": "state/catalytic_swarm_1_v5/control-qualification-v5.json",
+        "sha256": "5A4C7DECF1190E6CD1BEF8205E40420ED16FA28DBC021D504E5F666892A366E2",
+        "size_bytes": 18868,
+        "stage": "control"
+      },
+      {
+        "path": "state/catalytic_swarm_1_v5/readiness-v5.json",
+        "sha256": "05B090E6B97C00934D6628137064E897B68E86876ECB3FB2A89FE72695127621",
+        "size_bytes": 14342,
+        "stage": "readiness"
+      },
+      {
+        "path": "state/catalytic_swarm_1_v5/parser-canary-v5.json",
+        "sha256": "3C7F1CDF0AC50D4E140A048018F50C37690E42BB006F5A1E3EDD6AEFCB27D558",
+        "size_bytes": 9426,
+        "stage": "parser_canary"
+      },
+      {
+        "path": "state/catalytic_swarm_1_v5/attempt-v5.json",
+        "sha256": "3C589B32730CDD213163F46053B3AF4E697F44977102493F2F0CC2F282EC7567",
+        "size_bytes": 1629,
+        "stage": "attempt"
+      },
+      {
+        "path": "state/catalytic_swarm_1_v5/result-v5.json",
+        "sha256": "23B47854746FDE825DCF2EA1681960EE8BFBB69693DDBD0645C9D9F728ADC97B",
+        "size_bytes": 258394,
+        "stage": "result"
+      },
+      {
+        "path": "state/catalytic_swarm_1_v5/ledger-v5.jsonl",
+        "sha256": "49213BA77829A3ACE0E445DD9177A3114972BCCBCFD91E130A5FF369667FB9F9",
+        "size_bytes": 1292013,
+        "stage": "ledger"
+      },
+      {
+        "path": "state/catalytic_swarm_1_v5/task-results-v5.json",
+        "sha256": "191FDA69F019BD20607816ED7B31592EA03C0B1D860319E3B330255619B42938",
+        "size_bytes": 784226,
+        "stage": "task_results"
+      }
+    ],
+    "causal_diagnosis": {
+      "candidate_mutation_proved": false,
+      "defect": "compound-post-request-sub-boundary-accounting-and-diagnosability",
+      "directly_observed": "record 775 durably represents a structurally accepted task-7 warm rejected by one combined post-request custody/host boundary; host accounting reconciles only 774 of 775 completed responses",
+      "host_ceiling_breach_proved": false,
+      "inferred": "one operation inside the compound custody/host path failed or raised before successful host-accounting completion",
+      "repository_mutation_proved": false,
+      "stable_mutation_proved": false,
+      "statically_proved": "v5 invokes one compound after callback; any exception marks both custody and host false, and host_memory_checks increments only after the complete host observation succeeds",
+      "unavailable": "which substantive custody or host-memory invariant, query, or observation failed; no narrower live cause is established"
+    },
+    "claims": {
+      "CATALYTIC_SWARM_CONTROL_AVAILABLE": "UNLOCKED",
+      "CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN": "LOCKED",
+      "NEO3000_BASELINE_OPERATIONAL": "UNLOCKED",
+      "PROCESS_LOCAL_HOLOSTATE_AVAILABLE": "LOCKED",
+      "PROCESS_LOCAL_HOLOSTATE_MICROWORKER_AVAILABLE": "UNLOCKED",
+      "RESTART_PERSISTENT_HOLOSTATE_AVAILABLE": "LOCKED",
+      "SOTA_SWARM_CLAIM": "LOCKED",
+      "STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE": "UNLOCKED",
+      "automatic_promotion": false
+    },
+    "cleanup_and_custody": {
+      "candidate": {
+        "clean": true,
+        "commit": "14de9c71593e5aea4fcfcadeda47ba5c623fadcf",
+        "path": "D:\\CCC 2.0\\AI\\Neo3000-candidate"
+      },
+      "candidate_port_9393_free": true,
+      "port_9494_free": true,
+      "protected_repository_unchanged": true,
+      "retirement_samples_without_pid_instance": 5,
+      "runtime_state_removed": true,
+      "sampler_stopped_cleanly": true,
+      "sidecar_pid": 53184,
+      "sidecar_stopped": true,
+      "stable": {
+        "healthy": true,
+        "pid": 32684,
+        "port": 9292,
+        "sole_listener": true
+      }
+    },
+    "command": {
+      "authority_consumed": true,
+      "exact": "python -B scripts/holostate_live.py audit-catalytic-swarm-1-v5 --binary \"D:\\CCC 2.0\\AI\\Neo3000\\build\\stable\\bin\\Release\\llama-server.exe\" --model \"D:\\Reneshizzle\\Apps\\LM Studio\\InternScience\\Agents-A1-Q4_K_M-GGUF\\Agents-A1-Q4_K_M.gguf\" --authorized-main 241d99e403926b8ef7814c894808922b7cb8cd8e",
+      "invocation_count": 1,
+      "name": "audit-catalytic-swarm-1-v5",
+      "no_retry": true,
+      "retired": true,
+      "retry_count": 0
+    },
+    "completed_latin_square_prefix": [
+      {
+        "arms": [
+          "serial-chain",
+          "best-of-n",
+          "sparse-swarm",
+          "verified-swarm"
+        ],
+        "task_id": "cs1-task-01"
+      },
+      {
+        "arms": [
+          "best-of-n",
+          "sparse-swarm",
+          "verified-swarm",
+          "serial-chain"
+        ],
+        "task_id": "cs1-task-02"
+      },
+      {
+        "arms": [
+          "sparse-swarm",
+          "verified-swarm",
+          "serial-chain",
+          "best-of-n"
+        ],
+        "task_id": "cs1-task-03"
+      },
+      {
+        "arms": [
+          "verified-swarm",
+          "serial-chain",
+          "best-of-n",
+          "sparse-swarm"
+        ],
+        "task_id": "cs1-task-04"
+      },
+      {
+        "arms": [
+          "serial-chain",
+          "best-of-n",
+          "sparse-swarm",
+          "verified-swarm"
+        ],
+        "task_id": "cs1-task-05"
+      },
+      {
+        "arms": [
+          "best-of-n",
+          "sparse-swarm",
+          "verified-swarm",
+          "serial-chain"
+        ],
+        "task_id": "cs1-task-06"
+      }
+    ],
+    "completion_reconciliation": {
+      "accepted_records": 774,
+      "all_artifact_schema_version": 5,
+      "all_lease_ids": [
+        0
+      ],
+      "all_model_boundary_completed": true,
+      "all_runtime_version": "v5",
+      "claim_identity_mismatches": 0,
+      "completed_responses": 775,
+      "duplicate_records": 0,
+      "durable_equation_passed": true,
+      "fallback_records": 0,
+      "ledger_record_range": [
+        1,
+        775
+      ],
+      "ledger_records": 775,
+      "ledger_records_contiguous": true,
+      "rejected_records": 1,
+      "scheduler_identity_mismatches": 0
+    },
+    "gates": {
+      "cleanup": true,
+      "control_qualification": true,
+      "freshness": true,
+      "frozen_stage": true,
+      "isolation": true,
+      "live_boundaries": false,
+      "metadata_ledger": true,
+      "parser_canary": true,
+      "protocol_safety": false,
+      "readiness": true,
+      "request_law": false,
+      "terminal_wddm": true
+    },
+    "id": "catalytic_swarm_1_v5_partial_execution_boundary",
+    "identities": {
+      "binary": {
+        "path": "D:\\CCC 2.0\\AI\\Neo3000\\build\\stable\\bin\\Release\\llama-server.exe",
+        "sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B",
+        "version": "13 (417e1d6)"
+      },
+      "consumed_v2_boundary_sha256": "dc64c8dff9dc129a3002629bdf97dd9114fc89f7fa01bd0744af7b8fbd3adb1e",
+      "consumed_v3_boundary_sha256": "fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14",
+      "consumed_v4_boundary_sha256": "5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a",
+      "immutable_scheduler_sha256": "fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e",
+      "model": {
+        "path": "D:\\Reneshizzle\\Apps\\LM Studio\\InternScience\\Agents-A1-Q4_K_M-GGUF\\Agents-A1-Q4_K_M.gguf",
+        "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+        "size_bytes": 21166757632
+      },
+      "v5_claim_contract_sha256": "6238ff09ba290e55ad6c5cc2c93b4cbc239d573644192cf101696416a7083e3c",
+      "v5_runtime_evidence_binding_sha256": "2b2bcfaadf80d15d2972a4952f4b66026f2dd6979427f6cc32f197c6692903d9"
+    },
+    "ledger_safety": {
+      "answer_key_fields_present": false,
+      "hidden_data_fields_present": false,
+      "metadata_only": true,
+      "raw_sse_persisted": false,
+      "reasoning_fields_present": false
+    },
+    "live_authority_constraints": {
+      "automatic_promotion": false,
+      "code_repair_during_live_authority": false,
+      "contract_repair_during_live_authority": false,
+      "deep_requests": 0
+    },
+    "outcome": {
+      "classification": "inconclusive",
+      "error": "cs1-task-07:common-root-warm: completed response rejected: post-request-custody-or-host-boundary-failed",
+      "process_exit_code": 1,
+      "stop_request_label": "cs1-task-07:common-root-warm",
+      "suite_advantage": null,
+      "task_advantage_adjudicated": false,
+      "verdict": "inconclusive"
+    },
+    "parity": {
+      "completed_tasks_passed": 6,
+    "maximum_completion_ratio": 1.0,
+      "maximum_fresh_prompt_ratio": 1.045611827618748,
+      "maximum_total_model_token_ratio": 1.0436352693349382,
+      "ratio_limit": 1.1
+    },
+    "partial_hidden_observations": {
+      "best_of_n_exact_hidden_successes": 1,
+      "best_of_n_success_task": "cs1-task-06",
+      "not_extrapolatable_to_tasks": [
+        "cs1-task-07",
+        "cs1-task-08"
+      ],
+      "per_task_final_hidden_passed": {
+        "cs1-task-01": {
+          "best-of-n": 0,
+          "serial-chain": 0,
+          "sparse-swarm": 0,
+          "verified-swarm": 0
+        },
+        "cs1-task-02": {
+          "best-of-n": 7,
+          "serial-chain": 7,
+          "sparse-swarm": 7,
+          "verified-swarm": 7
+        },
+        "cs1-task-03": {
+          "best-of-n": 0,
+          "serial-chain": 0,
+          "sparse-swarm": 0,
+          "verified-swarm": 0
+        },
+        "cs1-task-04": {
+          "best-of-n": 3,
+          "serial-chain": 3,
+          "sparse-swarm": 3,
+          "verified-swarm": 3
+        },
+        "cs1-task-05": {
+          "best-of-n": 0,
+          "serial-chain": 0,
+          "sparse-swarm": 0,
+          "verified-swarm": 0
+        },
+        "cs1-task-06": {
+          "best-of-n": 16,
+          "serial-chain": 10,
+          "sparse-swarm": 10,
+          "verified-swarm": 10
+        }
+      },
+      "scope": "six-completed-tasks-only",
+      "verified_swarm_exact_hidden_successes": 0
+    },
+    "post_request_reconciliation": {
+      "custody_checks": 1550,
+      "expected_custody_checks": 1550,
+      "expected_host_memory_checks": 775,
+      "expected_task_parity_checks": 6,
+      "host_memory_checks": 774,
+      "passed": false,
+      "post_request_freshness_boundaries": 775,
+      "pre_request_freshness_boundaries": 775,
+      "record_775": {
+        "completion_persistence": "ledger",
+        "custody_passed": false,
+        "finish_reason_stop": true,
+        "host_memory_passed": false,
+        "lease_id": 0,
+        "logical_prompt_count_matches": true,
+        "model_boundary_completed": true,
+        "reasoning_absent": true,
+        "resource_gate_passed": false,
+        "response_disposition": "rejected",
+        "response_reason_code": "post-request-custody-or-host-boundary-failed",
+        "result_accepted": true,
+        "token_evidence_accepted": true,
+        "tool_calls_empty": true,
+        "wddm_passed": true
+      },
+      "task_parity_checks": 6,
+      "terminal_reason": "host_memory_checks-mismatch"
+    },
+    "predecessor_preservation": {
+      "v3": {
+        "artifact": {
+          "path": "state/catalytic_swarm_1_v3/control-qualification-v3.json",
+          "sha256": "FCAD4C71807DCC61409A09720A092DD50D8DD96AB76A8946BF418EEBF74DE8A6",
+          "size_bytes": 960
+        },
+        "other_artifacts_present": 0
+      },
+      "v4_artifacts": [
+        {
+          "path": "state/catalytic_swarm_1_v4/control-qualification-v4.json",
+          "sha256": "E1AF7889F052F5E2EC05F9C289E99BBBFAF009F974FBFDB85C74619086080FED",
+          "size_bytes": 18868,
+          "stage": "control"
+        },
+        {
+          "path": "state/catalytic_swarm_1_v4/readiness-v4.json",
+          "sha256": "97AF7C671A0933090FCADF16DE6BE2387E87AB51E4FBAF3ED113FE89628CBE6A",
+          "size_bytes": 14390,
+          "stage": "readiness"
+        },
+        {
+          "path": "state/catalytic_swarm_1_v4/parser-canary-v4.json",
+          "sha256": "152612378EBC0DE30B7DB0479D7F51EE6ECB1543DB09FBC1B882027E5F544C7F",
+          "size_bytes": 16223,
+          "stage": "parser_canary"
+        },
+        {
+          "path": "state/catalytic_swarm_1_v4/attempt-v4.json",
+          "sha256": "AD9E044EAA3F445DBC6008D8D40DB636BC4E2108E5F0398A3AF9EBDF06DA5924",
+          "size_bytes": 1629,
+          "stage": "attempt"
+        },
+        {
+          "path": "state/catalytic_swarm_1_v4/result-v4.json",
+          "sha256": "B109AAE9FDC251FE53675610C6D7C3E0BFDEC8C677F2C1F1B27ADEA012BFF6E2",
+          "size_bytes": 258105,
+          "stage": "result"
+        },
+        {
+          "path": "state/catalytic_swarm_1_v4/ledger-v4.jsonl",
+          "sha256": "26FC4168D7C21AF42E87D1C6E7580813C30EB73A6C8664145E38FC053679532B",
+          "size_bytes": 931098,
+          "stage": "ledger"
+        },
+        {
+          "path": "state/catalytic_swarm_1_v4/task-results-v4.json",
+          "sha256": "4F78999CB3F30EC52D25A49204FD6557E66B8399DFA9B6C3A5A67AD8C06BB394",
+          "size_bytes": 784226,
+          "stage": "task_results"
+        }
+      ]
+    },
+    "protected_execution_commit": "241d99e403926b8ef7814c894808922b7cb8cd8e",
+    "request_accounting": {
+      "common_root_warms_completed": 7,
+      "common_root_warms_scheduled": 8,
+      "comparison_requests_completed": 768,
+      "comparison_requests_scheduled": 1024,
+      "completed_arms": 24,
+      "completed_model_responses": 775,
+      "completed_tasks": 6,
+      "full_schedule_requests": 1032,
+      "ledger_records": 775,
+      "remaining_requests": 257,
+      "result_fallback_records": 0,
+      "scheduled_arms": 32,
+      "scheduled_tasks": 8,
+      "task_7": {
+        "comparison_requests_started": 0,
+        "warm_ledger_record": 775,
+        "warm_model_response_completed": true
+      },
+      "task_8_started": false
+    },
+    "resource_evidence": {
+      "host_private_ceiling_mib": 4096,
+      "host_private_growth_bytes": 4160516096,
+      "host_private_growth_mib": 3967.77734375,
+      "host_private_margin_bytes": 134451200,
+      "host_private_margin_mib": 128.22265625,
+      "leases": {
+        "acquisitions": 775,
+        "active_after_cleanup": 0,
+        "maximum_concurrency": 1,
+        "persisted_lease_ids": [
+          0
+        ],
+        "physical_slots": 1
+      },
+      "missing_775th_host_accounting_record": true,
+      "observed_values_below_ceiling": true,
+      "wddm": {
+        "ceiling_mib": 6000,
+        "first_valid_sample_seconds": 2.187000000005355,
+        "freshness_boundaries_passed": 2337,
+        "freshness_boundaries_total": 2337,
+        "maximum_freshness_age_seconds": 3.312000000005355,
+        "maximum_valid_sample_gap_seconds": 3.422000000020489,
+        "peak_dedicated_bytes": 2364416000,
+        "peak_dedicated_mib": 2254.88,
+        "recovery_events": 0,
+        "sidecar_pid": 53184,
+        "telemetry_failures": 0,
+        "unavailable_events": 0,
+        "valid_samples": 1907
+      }
+    },
+    "schema_version": 1,
+    "timestamps": {
+      "authority_claimed_utc": "2026-07-13T00:15:41.502650Z",
+      "controller_duration": "1:25:56.760805",
+      "controller_finish_utc": "2026-07-13T01:44:24.217572Z",
+      "controller_start_utc": "2026-07-13T00:18:27.456767Z",
+      "shell_duration": "1:28:43.460537",
+      "shell_finish_utc": "2026-07-13T01:44:24.5435092Z",
+      "shell_start_utc": "2026-07-13T00:15:41.0829727Z"
+    }
+  },
+  "catalytic_swarm_1_v6": {
+    "advantage_gate": {
+      "all_8_tasks_and_4_arms_complete": true,
+      "all_budget_parity_required": true,
+      "paired_hidden_score_wins_must_exceed_losses": true,
+      "verified_exact_hidden_success_minimum": 6,
+      "verified_success_margin_over_each_baseline": 2
+    },
+    "attempt_version": 6,
+    "cache_admission_law": {
+      "actual_cache_must_cover_root_terminal": true,
+      "legacy_common_prefix_threshold_is_not_admission_authority": true,
+      "negative_admission_persisted_before_stop": true,
+      "record_fields": [
+        "public_root_terminal_token_index",
+        "common_prefix_tokens",
+        "legacy_required_cached_prompt_tokens",
+        "actual_cached_prompt_tokens",
+        "fresh_prompt_tokens",
+        "completion_tokens",
+        "transport_passed",
+        "token_evidence_passed"
+      ],
+      "root_terminal_authority": "smallest exact rendered token prefix whose detokenized text reaches the final character of the complete system/reference/public-root message",
+      "warm_branch_terminal_indices_must_agree": true,
+      "warm_branch_token_prefix_must_cover_root_terminal": true
+    },
+    "causal_intervention": {
+      "diagnostic_measurements": {
+        "actual_cache_margin_over_root_tokens": 2,
+        "actual_cache_shortfall_to_legacy_threshold_tokens": 3,
+        "actual_cached_prompt_tokens": 4822,
+        "legacy_required_cached_prompt_tokens": 4825,
+        "legacy_threshold_overreach_tokens": 5,
+        "public_root_terminal_token_index": 4820
+      },
+      "legacy_gate": "actual_cached_prompt_tokens >= legacy_required_cached_prompt_tokens",
+      "legacy_threshold_retained_as_provenance_only": true,
+      "only_change": "replace the legacy full warm/branch common-prefix cache threshold with the exact public-root terminal token threshold",
+      "persist_completed_response_before_gate": true,
+      "successor_gate": "actual_cached_prompt_tokens >= public_root_terminal_token_index"
+    },
+    "claim_limits": {
+      "CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN": "unlock only on exact advantage gate",
+      "PROCESS_LOCAL_HOLOSTATE_AVAILABLE": "LOCKED",
+      "RESTART_PERSISTENT_HOLOSTATE_AVAILABLE": "LOCKED",
+      "SOTA_SWARM_CLAIM": "LOCKED",
+      "automatic_promotion": false
+    },
+    "execution_safety": {
+      "cleanup_owned_across_complete_live_lifetime": true,
+      "hidden_data_persisted": false,
+      "host_growth_ceiling_mib": 4096,
+      "host_private_check_after_every_completed_request": true,
+      "metadata_only_ledger": true,
+      "raw_sse_persisted": false,
+      "stable_candidate_custody_before_and_after_every_request": true,
+      "task_budget_parity_before_next_task": true,
+      "wddm_ceiling_mib": 6000,
+      "wddm_freshness_before_and_after_every_request": true
+    },
+    "frozen_geometry": {
+      "actual_budget_ratio_max": 1.1,
+      "arm_order": "unchanged four-position Latin square repeated over eight tasks",
+      "arm_plan_hashes": {
+        "best-of-n": "E989ECB8A53E9AD24885759627D3E3BA9A16E76A41A770E70784644A9A96696A",
+        "serial-chain": "99FE4402A487EEAF07FAEE7A64CAB241A888E1CB916D09C62BDA493AB08EEF53",
+        "sparse-swarm": "9289DE195D12AB93A9A9DD70949C92FC55D40E0D930CAD521605FC1707E116DE",
+        "verified-swarm": "46A2CEADA66217AC2DD3E0BD6D1C20A052EFE9D76EE236887AF18428409A772C"
+      },
+      "candidate_count_per_task": 64,
+      "common_root_warm_requests": 8,
+      "comparison_requests": 1024,
+      "deep_requests": 0,
+      "maximum_completion_tokens_per_arm_per_task": 1024,
+      "maximum_fresh_prompt_tokens_per_arm_per_task": 8192,
+      "maximum_tokens_per_request": 32,
+      "one_physical_slot": true,
+      "requests_per_arm_per_task": 32,
+      "task_count": 8,
+      "task_suite_sha256": "4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92",
+      "temperature": 0,
+      "thinking_disabled": true,
+      "total_model_requests": 1032
+    },
+    "id": "catalytic_swarm_1_v6",
+    "independent_post_request_sub_boundary_closure": {
+      "accepted_model_behavior_unchanged": true,
+      "answer_keys_persisted": false,
+      "attempt_counter_advances_before_observer_call": true,
+      "base_contract_sha256": "6238ff09ba290e55ad6c5cc2c93b4cbc239d573644192cf101696416a7083e3c",
+      "candidate_programs_and_arm_plans_unchanged": true,
+      "complete_ordered_reason_list_preserved": true,
+      "deterministic_primary_reason_uses_sub_boundary_order": true,
+      "explicit_canonical_projection": true,
+      "forbidden_namespaces": [
+        "state/catalytic_swarm_1",
+        "state/catalytic_swarm_1_cache_diagnostic",
+        "state/catalytic_swarm_1_v2",
+        "state/catalytic_swarm_1_v3",
+        "state/catalytic_swarm_1_v4",
+        "state/catalytic_swarm_1_v5"
+      ],
+      "groups_started_counter_required": true,
+      "hidden_examples_persisted": false,
+      "later_safe_observations_continue_after_earlier_nonpass": true,
+      "latin_square_order_unchanged": true,
+      "metadata_only": true,
+      "no_next_request_after_required_nonpass": true,
+      "normal_equality_law": "completed_model_requests == post_request_groups_started == attempts[wddm] == attempts[stable_custody] == attempts[candidate_custody] == attempts[host_memory] == ledger_records + result_fallback_records",
+      "observation_law": "passes[sub_boundary] <= observations_completed[sub_boundary] <= attempts[sub_boundary]",
+      "only_change": "independently close WDDM, stable custody, candidate custody, and host memory after every completed model response",
+      "ordered_sub_boundaries": [
+        "wddm",
+        "stable_custody",
+        "candidate_custody",
+        "host_memory"
+      ],
+      "overlay_sha256": "6f55a0ae5a75da3f0bef9f8e9b77e604b252305728fe8312f60288859b9d705b",
+      "per_sub_boundary_attempt_observation_and_pass_counters_required": true,
+      "persistence_before_lease_release_and_enforcement": true,
+      "raw_payloads_persisted": false,
+      "raw_sse_persisted": false,
+      "reasoning_text_persisted": false,
+      "rejected_response_remains_rejected": true,
+      "representation_law": "attempts[sub_boundary] + blocked_before_attempt[sub_boundary] == post_request_groups_started",
+      "request_and_token_budgets_unchanged": true,
+      "required_fields": [
+        "name",
+        "required",
+        "attempted",
+        "attempt_ordinal",
+        "attempted_at",
+        "observation_completed",
+        "state",
+        "blocked",
+        "passed",
+        "reason_code",
+        "blocked_by",
+        "exception_type",
+        "exception_message_sha256",
+        "measurement"
+      ],
+      "required_namespace": "state/catalytic_swarm_1_v6",
+      "root_terminal_cache_law_unchanged": true,
+      "runtime_identity_bound_before_any_persistence": true,
+      "scoring_parity_and_acceptance_thresholds_unchanged": true,
+      "semantic_key_set_exact": true,
+      "states": [
+        "passed",
+        "failed-invariant",
+        "observation-error",
+        "unavailable",
+        "interrupted",
+        "blocked"
+      ],
+      "task_suite_prompts_hidden_data_unchanged": true,
+      "unattempted_or_unavailable_never_encoded_as_false": true,
+      "v5_persistence_and_result_fallback_law_preserved": true
+    },
+    "objective": "Run the unchanged equal-budget CatalyticSwarm task-advantage comparison with cache admission corrected to the exact public-root terminal token law proven by the separately authorized diagnostic. The v3 successor repairs only active-version one-shot namespace qualification. The v4 successor repairs only insertion-order-sensitive one-shot mapping admission. The v5 successor repairs completed-response evidence closure only. The v6 successor independently closes each post-request sub-boundary.",
+    "one_shot": {
+      "no_retry": true,
+      "partial_evidence_preserved": true,
+      "paths": {
+        "attempt": "state/catalytic_swarm_1_v6/attempt-v6.json",
+        "control": "state/catalytic_swarm_1_v6/control-qualification-v6.json",
+        "ledger": "state/catalytic_swarm_1_v6/ledger-v6.jsonl",
+        "parser_canary": "state/catalytic_swarm_1_v6/parser-canary-v6.json",
+        "readiness": "state/catalytic_swarm_1_v6/readiness-v6.json",
+        "result": "state/catalytic_swarm_1_v6/result-v6.json",
+        "task_results": "state/catalytic_swarm_1_v6/task-results-v6.json"
+      }
+    },
+    "predecessors": {
+      "cache_diagnostic": {
+        "authority_consumed": true,
+        "cache_admission": "root-reuse-proven-proof-law-repair-required",
+        "contract_sha256": "be66da770d4396e6f825f51bc0bca2abee5c03f6c03d9ef74e932c09ca330f7b",
+        "evidence_object_sha256": "a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031",
+        "integration_commit": "95f869136efbe8921c15933a792b911ad40997d6",
+        "no_retry": true,
+        "verdict": "reviewable-accept"
+      },
+      "catalytic_swarm_1_v1": {
+        "authority_consumed": true,
+        "contract_sha256": "fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e",
+        "evidence_commit": "ca99f5560b9bf7a5a745c1156c43a64c3733fca9",
+        "evidence_object_sha256": "e308b5953b90d5a28b902b728292440443a9299e58db8049f756557d5693a3d5",
+        "no_retry": true,
+        "protocol_commit": "556bb4d57a05bb81fa101a98092472170b50c0dd",
+        "verdict": "inconclusive"
+      },
+      "catalytic_swarm_1_v2_preclaim": {
+        "artifacts_claimed": 0,
+        "authority_consumed": true,
+        "id": "catalytic_swarm_1_v2_preclaim_boundary",
+        "model_requests": 0,
+        "no_retry": true,
+        "sha256": "dc64c8dff9dc129a3002629bdf97dd9114fc89f7fa01bd0744af7b8fbd3adb1e",
+        "sidecar_launches": 0
+      },
+      "catalytic_swarm_1_v3_preclaim": {
+        "artifacts_claimed": 1,
+        "authority_consumed": true,
+        "id": "catalytic_swarm_1_v3_preclaim_boundary",
+        "model_requests": 0,
+        "no_retry": true,
+        "sha256": "fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14",
+        "sidecar_launches": 0
+      },
+      "catalytic_swarm_1_v4_partial_execution": {
+        "artifacts_claimed": 7,
+        "authority_consumed": true,
+        "completed_model_requests": 775,
+        "host_memory_checks": 774,
+        "id": "catalytic_swarm_1_v4_partial_execution_boundary",
+        "ledger_records": 774,
+        "no_retry": true,
+        "sha256": "5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a",
+        "task_advantage_adjudicated": false
+      },
+      "catalytic_swarm_1_v5_partial_execution": {
+        "artifacts_claimed": 7,
+        "authority_consumed": true,
+        "completed_model_requests": 775,
+        "exact_compound_failure_cause_available": false,
+        "host_memory_success_accounting": 774,
+        "id": "catalytic_swarm_1_v5_partial_execution_boundary",
+        "ledger_records": 775,
+        "no_retry": true,
+        "result_fallback_records": 0,
+        "sha256": "897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9",
+        "task_advantage_adjudicated": false
+      }
+    },
+    "schema_version": 6,
+    "verdicts": [
+      "reviewable-accept",
+      "no-advantage",
+      "instrumentation-reject",
+      "inconclusive"
+    ]
+  },
+  "catalytic_swarm_1_v6_runtime_evidence_binding": {
+    "artifact_paths": {
+      "attempt": "state/catalytic_swarm_1_v6/attempt-v6.json",
+      "control": "state/catalytic_swarm_1_v6/control-qualification-v6.json",
+      "ledger": "state/catalytic_swarm_1_v6/ledger-v6.jsonl",
+      "parser_canary": "state/catalytic_swarm_1_v6/parser-canary-v6.json",
+      "readiness": "state/catalytic_swarm_1_v6/readiness-v6.json",
+      "result": "state/catalytic_swarm_1_v6/result-v6.json",
+      "task_results": "state/catalytic_swarm_1_v6/task-results-v6.json"
+    },
+    "claim_contract": {
+      "authoritative_for": [
+        "independent post-request sub-boundary closure",
+        "v6 namespace",
+        "artifact identity",
+        "claim limits",
+        "successor version"
+      ],
+      "evaluator_key": "catalytic_swarm_1_v6",
+      "lock_key": "catalytic_swarm_1_v6_sha256",
+      "sha256": "8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8"
+    },
+    "claim_limits": {
+      "CATALYTIC_SWARM_TASK_ADVANTAGE_PROVEN": "LOCKED until exact v6 advantage gate",
+      "PROCESS_LOCAL_HOLOSTATE_AVAILABLE": "LOCKED",
+      "RESTART_PERSISTENT_HOLOSTATE_AVAILABLE": "LOCKED",
+      "SOTA_SWARM_CLAIM": "LOCKED",
+      "automatic_promotion": false
+    },
+    "evidence_law": {
+      "automatic_promotion": false,
+      "claim_contract_hash_recorded_in_every_artifact": true,
+      "empty_ledger_claimed_before_first_model_request": true,
+      "every_completed_response_identity_bound_before_append": true,
+      "ledger_or_result_fallback_persisted_before_acceptance_enforcement": true,
+      "ledger_or_result_fallback_persisted_before_lease_release": true,
+      "partial_v5_evidence_preserved": true,
+      "post_persistence_verdict_rename_forbidden": true,
+      "predecessor_boundary_hash_recorded_in_every_artifact": true,
+      "predecessor_verdict_and_stage_keys_v1_through_v5_forbidden": true,
+      "scheduler_contract_hash_recorded_in_every_artifact": true,
+      "v5_persistence_and_result_fallback_law_preserved": true,
+      "v6_runtime_identity_present_before_first_persist": true,
+      "wrapper_return_identity_equals_persisted_identity": true
+    },
+    "execution_geometry": {
+      "candidate_custody_attempts": 1032,
+      "common_root_warm_requests": 8,
+      "comparison_requests": 1024,
+      "deep_requests": 0,
+      "host_memory_attempts": 1032,
+      "max_tokens_per_request": 32,
+      "physical_slots": 1,
+      "post_request_groups": 1032,
+      "stable_custody_attempts": 1032,
+      "task_parity_checks": 8,
+      "total_model_requests": 1032,
+      "wddm_attempts": 1032
+    },
+    "id": "catalytic_swarm_1_v6_runtime_evidence_binding",
+    "post_request_boundary_law": {
+      "attempt_observation_and_pass_counts_are_distinct": true,
+      "attempt_recorded_before_each_observer_call": true,
+      "bounded_exception_identity_required_for_errors": true,
+      "full_ordered_reason_list_preserved": true,
+      "group_started_before_first_observer": true,
+      "later_safe_observations_do_not_short_circuit": true,
+      "measured_fields_preserved_when_available": true,
+      "ordered_sub_boundaries": [
+        "wddm",
+        "stable_custody",
+        "candidate_custody",
+        "host_memory"
+      ],
+      "rejected_response_remains_rejected": true,
+      "states": [
+        "passed",
+        "failed-invariant",
+        "observation-error",
+        "unavailable",
+        "interrupted",
+        "blocked"
+      ]
+    },
+    "predecessor": {
+      "authority_consumed": true,
+      "completed_model_requests": 775,
+      "id": "catalytic_swarm_1_v5_partial_execution_boundary",
+      "ledger_records": 775,
+      "no_retry": true,
+      "result_fallback_records": 0,
+      "sha256": "897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9"
+    },
+    "purpose": "bind CS1-v6 independent post-request sub-boundary closure before persistence while preserving immutable CS1-v1 evaluation geometry",
+    "runtime_identity": {
+      "artifact_schema_version": 6,
+      "attempt_version": 6,
+      "operation": "catalytic-swarm-1-v6",
+      "runtime_version": "v6",
+      "state_root": "state/catalytic_swarm_1_v6",
+      "verdict_key": "catalytic_swarm_1_v6"
+    },
+    "scheduler_contract": {
+      "authoritative_for": [
+        "task suite",
+        "four arm plans",
+        "counterbalanced execution order",
+        "request and token budgets",
+        "hidden scoring",
+        "advantage gate"
+      ],
+      "evaluator_key": "catalytic_swarm_1",
+      "lock_key": "catalytic_swarm_1_sha256",
+      "sha256": "fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e"
+    },
+    "schema_version": 1,
+    "stage_bindings": {
+      "attempt": {
+        "operation": "catalytic-swarm-1-v6",
+        "verdict_field": "catalytic_swarm_1_v6"
+      },
+      "control": {
+        "operation": "catalytic-swarm-1-v6-control-qualification-v6",
+        "verdict_field": "control_qualification_v6"
+      },
+      "ledger": {
+        "operation": "catalytic-swarm-1-v6",
+        "verdict_field": "catalytic_swarm_1_v6"
+      },
+      "parser_canary": {
+        "operation": "catalytic-swarm-1-v6-parser-canary-v6",
+        "verdict_field": "parser_canary_v6"
+      },
+      "readiness": {
+        "operation": "catalytic-swarm-1-v6-readiness-v6",
+        "verdict_field": "readiness_v6"
+      },
+      "result": {
+        "operation": "catalytic-swarm-1-v6",
+        "verdict_field": "catalytic_swarm_1_v6"
+      },
+      "task_results": {
+        "operation": "catalytic-swarm-1-v6-task-results",
+        "verdict_field": "catalytic_swarm_1_v6"
       }
     }
   }
