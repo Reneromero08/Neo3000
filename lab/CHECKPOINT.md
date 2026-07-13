@@ -521,6 +521,29 @@ This preserved integration snapshot is superseded for current status by the exec
 - The exclusive v4 control marker is created before fallible contract construction and preclaim validation. A second public invocation fails on the existing marker before preparation or sidecar construction. The full `state/catalytic_swarm_1_v4/` namespace is ignored raw runtime state.
 - Static integration made zero model requests, launched zero sidecars, did not contact an inference endpoint, did not run Deep, and did not promote anything. Live execution requires a later exact-main/exact-model authorization.
 
+### CatalyticSwarm-1 v4 consumed partial execution [INCONCLUSIVE / NO RETRY]
+
+- V4 executed exactly once from protected main `cc3f43579d6abf05e10e6c52484a9e6b3eee8fb8`; process exit was 1 and authority is permanently consumed.
+- The model boundary completed 775 / 1,032 requests: seven warms and 768 comparisons. Six tasks and 24 arms completed; task 7 stopped during its warm and task 8 did not start.
+- The persisted ledger contains sequential records 1 through 774. Host-memory checks are 774. The task-7 response completed and advanced completed-request accounting to 775, but no 775th ledger or post-request host-memory record exists.
+- All six completed tasks passed parity. Maximum ratios were completion `1.0`, fresh prompt `1.045611827618748`, and total model tokens `1.0436352693349382`, under the frozen `1.10` ceiling.
+- Partial observations only: verified-swarm exact hidden successes were 0 / 6 completed tasks; best-of-N had one exact hidden success on task 6. Suite advantage is null and cannot be extrapolated to tasks 7 or 8.
+- Frozen stage, freshness, isolation, cleanup, and terminal WDDM gates passed. Overall protocol safety failed because 775 completed responses did not equal 774 host and ledger records.
+- Host-private growth peaked at 4,160,815,104 bytes (3,968.0625 MiB), 127.9375 MiB below the 4,096 MiB ceiling. Exact-PID WDDM peak was 2,254.88 MiB over 1,846 valid samples; all 2,337 freshness boundaries passed.
+- Sidecar PID `38564` stopped, runtime state was removed, port 9494 was released, five retirement samples found no PID instance, stable PID `32684` remained healthy and sole listener on 9292, port 9393 remained free, and candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf` remained clean.
+- All seven v4 artifacts remain byte-exact. Canonical tracked boundary `catalytic_swarm_1_v4_partial_execution_boundary` has SHA-256 `5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a`. The public v4 command is hard-retired.
+- The exact failed member of the compound warm predicate is unavailable. Source proves only that completed-request accounting can advance before summary, ledger, and outer host evidence close. This is a controller evidence-closure defect, not a task-advantage result.
+
+### CatalyticSwarm-1 v5 completed-response closure [STATIC PASS / NOT EXECUTED]
+
+- V5 changes evidence closure only. Every completed warm or comparison response closes bounded metadata, post-request WDDM/custody/host outcomes, exact gate/reason codes, and one identity-bound fsynced ledger record before lease release and acceptance enforcement.
+- The generation-free parser canary no longer performs a warm before the ledger exists. Attempt, result, and an empty fsynced ledger are claimed before v5's first model request.
+- Pre-completion failure claims no completed-response record. Completed acceptance, completed rejection, post-response instrumentation failure, and post-request resource failure have distinct bounded classifications. Rejected behavior remains rejected and no next request can start after a failed gate.
+- Ledger persistence failure is represented by an identity-bound result fallback; successful ledger append is fsynced before enforcement. Keyboard/SystemExit-style post-completion interruptions close evidence before propagation.
+- Claim contract is `6238ff09ba290e55ad6c5cc2c93b4cbc239d573644192cf101696416a7083e3c`; runtime binding is `2b2bcfaadf80d15d2972a4952f4b66026f2dd6979427f6cc32f197c6692903d9`; immutable scheduler remains `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
+- The eight-task suite, candidate programs, prompts, hidden boundary, four arms, arm hashes, Latin square, 32 requests per arm/task, eight warms, 1,024 comparisons, 1,032 total requests, token ceilings, equal-budget law, root-terminal cache law, hidden-scoring timing, scoring, parity, acceptance thresholds, no-Deep law, and claim limits are unchanged.
+- All seven `state/catalytic_swarm_1_v5` paths remain absent. Static integration made zero model requests and launched zero sidecars. Live execution requires later exact-main/model one-shot authority.
+
 ### Durable persistence boundary
 
 The built-in slot file persists active KV/recurrent state and token history, but does not persist the server prompt-checkpoint list required for hybrid recurrent prefix selection after restart.

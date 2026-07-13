@@ -61,6 +61,9 @@ from neo_loop import (  # noqa: E402
     catalytic_swarm_1_v3_preclaim_boundary_hash,
     catalytic_swarm_1_v4_hash,
     catalytic_swarm_1_v4_runtime_evidence_binding_hash,
+    catalytic_swarm_1_v4_partial_execution_boundary_hash,
+    catalytic_swarm_1_v5_hash,
+    catalytic_swarm_1_v5_runtime_evidence_binding_hash,
     listener_pids,
     load_json,
     sha256_protected_text_file,
@@ -230,6 +233,36 @@ from catalytic_swarm_1_v4_runtime_binding_protocol import (  # noqa: E402
     build_v4_runtime_evidence_contract,
     sha256_object as v4_runtime_evidence_sha256_object,
     validate_v4_runtime_evidence_contract,
+)
+from catalytic_swarm_1_v4_partial_execution_boundary import (  # noqa: E402
+    EXPECTED_V4_PARTIAL_EXECUTION_BOUNDARY_SHA256,
+    build_catalytic_swarm_1_v4_partial_execution_boundary,
+    validate_catalytic_swarm_1_v4_partial_execution_boundary,
+)
+from catalytic_swarm_1_v5_protocol import (  # noqa: E402
+    EXPECTED_V5_CONTRACT_SHA256,
+    build_catalytic_swarm_1_v5_contract,
+    sha256_object as catalytic_swarm_1_v5_sha256_object,
+)
+from catalytic_swarm_1_v5_runtime_binding import (  # noqa: E402
+    V5RuntimeBinding,
+    V5RuntimeBindingError,
+    apply_stage_identity as apply_v5_stage_identity,
+    build_v5_runtime_binding,
+    validate_persisted_v5_record,
+    validate_runtime_contract_bindings as validate_v5_runtime_contract_bindings,
+)
+from catalytic_swarm_1_v5_runtime_binding_protocol import (  # noqa: E402
+    EXPECTED_RUNTIME_EVIDENCE_CONTRACT_SHA256 as EXPECTED_V5_RUNTIME_EVIDENCE_CONTRACT_SHA256,
+    build_v5_runtime_evidence_contract,
+    sha256_object as v5_runtime_evidence_sha256_object,
+    validate_v5_runtime_evidence_contract,
+)
+from catalytic_swarm_1_v5_completion_closure import (  # noqa: E402
+    COMPARISON_GATE_ORDER,
+    WARM_GATE_ORDER,
+    CompletedResponseClosure,
+    CompletedResponseRejected,
 )
 from holostate_swarm_adapter import (  # noqa: E402
     HoloStateSwarmAdapterError,
@@ -420,6 +453,23 @@ CATALYTIC_SWARM_1_V4_ARTIFACT_PATHS = (
     CATALYTIC_SWARM_1_V4_LEDGER_PATH,
     CATALYTIC_SWARM_1_V4_TASK_RESULTS_PATH,
 )
+CATALYTIC_SWARM_1_V5_STATE_ROOT = ROOT / "state" / "catalytic_swarm_1_v5"
+CATALYTIC_SWARM_1_V5_CONTROL_PATH = CATALYTIC_SWARM_1_V5_STATE_ROOT / "control-qualification-v5.json"
+CATALYTIC_SWARM_1_V5_READINESS_PATH = CATALYTIC_SWARM_1_V5_STATE_ROOT / "readiness-v5.json"
+CATALYTIC_SWARM_1_V5_PARSER_CANARY_PATH = CATALYTIC_SWARM_1_V5_STATE_ROOT / "parser-canary-v5.json"
+CATALYTIC_SWARM_1_V5_ATTEMPT_PATH = CATALYTIC_SWARM_1_V5_STATE_ROOT / "attempt-v5.json"
+CATALYTIC_SWARM_1_V5_RESULT_PATH = CATALYTIC_SWARM_1_V5_STATE_ROOT / "result-v5.json"
+CATALYTIC_SWARM_1_V5_LEDGER_PATH = CATALYTIC_SWARM_1_V5_STATE_ROOT / "ledger-v5.jsonl"
+CATALYTIC_SWARM_1_V5_TASK_RESULTS_PATH = CATALYTIC_SWARM_1_V5_STATE_ROOT / "task-results-v5.json"
+CATALYTIC_SWARM_1_V5_ARTIFACT_PATHS = (
+    CATALYTIC_SWARM_1_V5_CONTROL_PATH,
+    CATALYTIC_SWARM_1_V5_READINESS_PATH,
+    CATALYTIC_SWARM_1_V5_PARSER_CANARY_PATH,
+    CATALYTIC_SWARM_1_V5_ATTEMPT_PATH,
+    CATALYTIC_SWARM_1_V5_RESULT_PATH,
+    CATALYTIC_SWARM_1_V5_LEDGER_PATH,
+    CATALYTIC_SWARM_1_V5_TASK_RESULTS_PATH,
+)
 CATALYTIC_SWARM_1_V2_CONNECTOR_FILES = (
     "scripts/catalytic_swarm_1_v2_root_law.py",
     "scripts/test_catalytic_swarm_1_v2_root_law.py",
@@ -481,9 +531,17 @@ CATALYTIC_SWARM_1_V2_ADMISSION_FIELDS = frozenset({
     "transport_passed",
     "token_evidence_passed",
 })
+CATALYTIC_SWARM_1_V5_COMPLETION_FIELDS = frozenset({
+    "model_boundary_completed",
+    "response_disposition",
+    "response_reason_code",
+    "gate_outcomes",
+    "post_request_boundary",
+    "completion_persistence",
+})
 CATALYTIC_SWARM_1_RUNTIME_VERSION = "v1"
 CATALYTIC_SWARM_1_ACTIVE_VERSIONED_CONTRACT: dict[str, Any] | None = None
-CATALYTIC_SWARM_1_ACTIVE_RUNTIME_BINDING: V3RuntimeBinding | V4RuntimeBinding | None = None
+CATALYTIC_SWARM_1_ACTIVE_RUNTIME_BINDING: V3RuntimeBinding | V4RuntimeBinding | V5RuntimeBinding | None = None
 EVALUATOR_PATH = ROOT / "lab" / "EVALUATOR.json"
 DEFAULT_BINARY = ROOT / "build" / "stable" / "bin" / "Release" / "llama-server.exe"
 EXPECTED_BINARY_SHA256 = "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
@@ -618,6 +676,20 @@ def assert_catalytic_swarm_1_v4_artifacts_absent() -> None:
         )
 
 
+def assert_catalytic_swarm_1_v5_artifacts_absent() -> None:
+    present = [
+        path.relative_to(ROOT).as_posix()
+        for path in CATALYTIC_SWARM_1_V5_ARTIFACT_PATHS
+        if path.exists()
+    ]
+    if CATALYTIC_SWARM_1_V5_STATE_ROOT.exists() and not present:
+        present.append("state/catalytic_swarm_1_v5/")
+    if present:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 v5 one-shot state already exists: " + ", ".join(present)
+        )
+
+
 @contextmanager
 def catalytic_swarm_1_v2_runtime_namespace() -> Any:
     """Route the inherited full scheduler into v2-only state and root law."""
@@ -736,6 +808,47 @@ def catalytic_swarm_1_v4_runtime_namespace(
         globals().update(saved)
 
 
+@contextmanager
+def catalytic_swarm_1_v5_runtime_namespace(
+    contract: dict[str, Any], runtime_binding: V5RuntimeBinding | None = None
+) -> Any:
+    """Route the immutable scheduler through the explicit v5 custody tuple."""
+    runtime_binding = runtime_binding or build_v5_runtime_binding()
+    names = (
+        "CATALYTIC_SWARM_1_STATE_ROOT",
+        "CATALYTIC_SWARM_1_CONTROL_PATH",
+        "CATALYTIC_SWARM_1_READINESS_PATH",
+        "CATALYTIC_SWARM_1_PARSER_CANARY_PATH",
+        "CATALYTIC_SWARM_1_ATTEMPT_PATH",
+        "CATALYTIC_SWARM_1_RESULT_PATH",
+        "CATALYTIC_SWARM_1_LEDGER_PATH",
+        "CATALYTIC_SWARM_1_TASK_RESULTS_PATH",
+        "CATALYTIC_SWARM_1_ARTIFACT_PATHS",
+        "CATALYTIC_SWARM_1_RUNTIME_VERSION",
+        "CATALYTIC_SWARM_1_ACTIVE_VERSIONED_CONTRACT",
+        "CATALYTIC_SWARM_1_ACTIVE_RUNTIME_BINDING",
+    )
+    saved = {name: globals()[name] for name in names}
+    try:
+        globals().update({
+            "CATALYTIC_SWARM_1_STATE_ROOT": CATALYTIC_SWARM_1_V5_STATE_ROOT,
+            "CATALYTIC_SWARM_1_CONTROL_PATH": CATALYTIC_SWARM_1_V5_CONTROL_PATH,
+            "CATALYTIC_SWARM_1_READINESS_PATH": CATALYTIC_SWARM_1_V5_READINESS_PATH,
+            "CATALYTIC_SWARM_1_PARSER_CANARY_PATH": CATALYTIC_SWARM_1_V5_PARSER_CANARY_PATH,
+            "CATALYTIC_SWARM_1_ATTEMPT_PATH": CATALYTIC_SWARM_1_V5_ATTEMPT_PATH,
+            "CATALYTIC_SWARM_1_RESULT_PATH": CATALYTIC_SWARM_1_V5_RESULT_PATH,
+            "CATALYTIC_SWARM_1_LEDGER_PATH": CATALYTIC_SWARM_1_V5_LEDGER_PATH,
+            "CATALYTIC_SWARM_1_TASK_RESULTS_PATH": CATALYTIC_SWARM_1_V5_TASK_RESULTS_PATH,
+            "CATALYTIC_SWARM_1_ARTIFACT_PATHS": CATALYTIC_SWARM_1_V5_ARTIFACT_PATHS,
+            "CATALYTIC_SWARM_1_RUNTIME_VERSION": "v5",
+            "CATALYTIC_SWARM_1_ACTIVE_VERSIONED_CONTRACT": contract,
+            "CATALYTIC_SWARM_1_ACTIVE_RUNTIME_BINDING": runtime_binding,
+        })
+        yield
+    finally:
+        globals().update(saved)
+
+
 def require_cache_diagnostic_runtime_path(path: Path) -> Path:
     return require_resolved_state_path(
         path,
@@ -834,6 +947,12 @@ def _catalytic_swarm_1_runtime_stage(path: Path) -> str:
         CATALYTIC_SWARM_1_V4_ATTEMPT_PATH.resolve(): "attempt",
         CATALYTIC_SWARM_1_V4_RESULT_PATH.resolve(): "result",
         CATALYTIC_SWARM_1_V4_TASK_RESULTS_PATH.resolve(): "task_results",
+        CATALYTIC_SWARM_1_V5_CONTROL_PATH.resolve(): "control",
+        CATALYTIC_SWARM_1_V5_READINESS_PATH.resolve(): "readiness",
+        CATALYTIC_SWARM_1_V5_PARSER_CANARY_PATH.resolve(): "parser_canary",
+        CATALYTIC_SWARM_1_V5_ATTEMPT_PATH.resolve(): "attempt",
+        CATALYTIC_SWARM_1_V5_RESULT_PATH.resolve(): "result",
+        CATALYTIC_SWARM_1_V5_TASK_RESULTS_PATH.resolve(): "task_results",
     }
     try:
         return stages[path.resolve()]
@@ -844,7 +963,7 @@ def _catalytic_swarm_1_runtime_stage(path: Path) -> str:
 def bind_catalytic_swarm_1_runtime_record(
     path: Path,
     value: Any,
-    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | None,
+    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | V5RuntimeBinding | None,
 ) -> Any:
     """Apply v3 identity before a claim-bearing artifact is first persisted."""
     if runtime_binding is None:
@@ -873,7 +992,7 @@ def bind_catalytic_swarm_1_runtime_record(
         "task_results": f"catalytic_swarm_1_{version}",
     }[stage]
     stage_renames = []
-    for predecessor_version in ("v1", "v2", "v3"):
+    for predecessor_version in ("v1", "v2", "v3", "v4"):
         stage_renames.extend((
             (f"control_qualification_{predecessor_version}", f"control_qualification_{version}"),
             (f"readiness_{predecessor_version}", f"readiness_{version}"),
@@ -894,12 +1013,16 @@ def bind_catalytic_swarm_1_runtime_record(
         "catalytic_swarm_1",
         "catalytic_swarm_1_v2",
         "catalytic_swarm_1_v3",
+        "catalytic_swarm_1_v4",
     ):
         if forbidden != expected_field:
             record.pop(forbidden, None)
     record["contract_sha256"] = runtime_binding.claim_contract_sha256
     try:
-        if version == "v4":
+        if version == "v5":
+            bound = apply_v5_stage_identity(record, stage)
+            validate_persisted_v5_record(bound, stage)
+        elif version == "v4":
             bound = apply_v4_stage_identity(record, stage)
             validate_persisted_v4_record(bound, stage)
         elif version == "v3":
@@ -907,7 +1030,7 @@ def bind_catalytic_swarm_1_runtime_record(
             validate_persisted_v3_record(bound, stage)
         else:
             raise NeoLoopError(f"unsupported CatalyticSwarm-1 runtime binding: {version}")
-    except (V3RuntimeBindingError, V4RuntimeBindingError) as exc:
+    except (V3RuntimeBindingError, V4RuntimeBindingError, V5RuntimeBindingError) as exc:
         raise NeoLoopError(f"CatalyticSwarm-1 {version} runtime identity failed: {exc}") from exc
     return bound
 
@@ -917,7 +1040,7 @@ def write_catalytic_swarm_1_runtime_json(
     value: Any,
     *,
     max_bytes: int = 2 * MIB,
-    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | None = None,
+    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | V5RuntimeBinding | None = None,
 ) -> None:
     """Atomically replace one bounded CatalyticSwarm-1 runtime document."""
     path = require_catalytic_swarm_1_runtime_path(path)
@@ -944,7 +1067,7 @@ def claim_catalytic_swarm_1_runtime_json_once(
     value: Any,
     *,
     max_bytes: int = 2 * MIB,
-    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | None = None,
+    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | V5RuntimeBinding | None = None,
     preserve_partial_on_failure: bool = False,
 ) -> None:
     """Atomically claim one bounded CatalyticSwarm-1 one-shot document."""
@@ -975,7 +1098,7 @@ def write_owned_catalytic_swarm_1_runtime_json(
     *,
     claimed: bool,
     max_bytes: int = 2 * MIB,
-    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | None = None,
+    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | V5RuntimeBinding | None = None,
 ) -> bool:
     """Write a terminal update only for an artifact claimed by this process."""
     if claimed is not True:
@@ -1242,6 +1365,13 @@ class BoundedStreamLedger:
             os.fsync(self._handle.fileno())
             self._handle.close()
             self.closed = True
+
+    def sync(self) -> None:
+        """Durably flush an open ledger without closing it."""
+        if self.closed:
+            raise NeoLoopError("stream-ledger-invalid: writer is closed")
+        self._handle.flush()
+        os.fsync(self._handle.fileno())
 
     def snapshot(self) -> dict[str, Any]:
         try:
@@ -3088,7 +3218,7 @@ def load_locked_catalytic_swarm_1() -> tuple[
         raise NeoLoopError("CatalyticSwarm-1 canonical contract hash differs from lock")
     if (
         "catalytic_swarm_1_evidence" in evaluator
-        and CATALYTIC_SWARM_1_RUNTIME_VERSION not in {"v2", "v3", "v4"}
+        and CATALYTIC_SWARM_1_RUNTIME_VERSION not in {"v2", "v3", "v4", "v5"}
     ):
         raise NeoLoopError("CatalyticSwarm-1 v1 has executed and is retired")
     predecessor_contract = contract["predecessor"]
@@ -8343,7 +8473,7 @@ def qualify_catalytic_swarm_1_control(
     try:
         path_qualifier = (
             qualify_v4_one_shot_paths
-            if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v4"
+            if CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v4", "v5"}
             else qualify_versioned_one_shot_paths
         )
         path_qualification = path_qualifier(
@@ -8381,7 +8511,7 @@ def qualify_active_catalytic_swarm_1_control(
     stable_tokenizer: bool = False,
 ) -> dict[str, Any]:
     """Qualify the active runtime namespace without falling back to v1 paths."""
-    if CATALYTIC_SWARM_1_RUNTIME_VERSION not in {"v3", "v4"}:
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION not in {"v3", "v4", "v5"}:
         return qualify_catalytic_swarm_1_control(
             contract, stable_tokenizer=stable_tokenizer
         )
@@ -8399,6 +8529,8 @@ def qualify_active_catalytic_swarm_1_control(
     ]
     if version == "v4":
         forbidden.append("state/catalytic_swarm_1_v3")
+    elif version == "v5":
+        forbidden.extend(("state/catalytic_swarm_1_v3", "state/catalytic_swarm_1_v4"))
     return qualify_catalytic_swarm_1_control(
         contract,
         stable_tokenizer=stable_tokenizer,
@@ -8413,7 +8545,7 @@ def qualify_active_catalytic_swarm_1_control(
 def prepare_catalytic_swarm_1_claim(
     args: argparse.Namespace,
     *,
-    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | None = None,
+    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | V5RuntimeBinding | None = None,
     preclaimed_control: bool = False,
 ) -> dict[str, Any]:
     """Close every static CS1 gate before atomically claiming control."""
@@ -9818,15 +9950,25 @@ def reconcile_catalytic_swarm_1_terminal_wddm(
         for label in labels[:completed_model_requests]
         for value in (f"pre-request:{label}", f"post-request:{label}")
     ]
-    required_boundaries = [
-        "readiness-admission",
-        "before-parser-canary",
-        "after-parser-canary",
-        *request_boundaries[:2],
-        "before-capability-attempt",
-        *request_boundaries[2:],
-        "before-teardown",
-    ]
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5":
+        required_boundaries = [
+            "readiness-admission",
+            "before-parser-canary",
+            "after-parser-canary",
+            "before-capability-attempt",
+            *request_boundaries,
+            "before-teardown",
+        ]
+    else:
+        required_boundaries = [
+            "readiness-admission",
+            "before-parser-canary",
+            "after-parser-canary",
+            *request_boundaries[:2],
+            "before-capability-attempt",
+            *request_boundaries[2:],
+            "before-teardown",
+        ]
     result = reconcile_terminal_wddm(
         predecessor_contract["readiness_control"]["wddm_transient_gap_policy"],
         cleanup,
@@ -12834,7 +12976,7 @@ def catalytic_swarm_1_parser_canary(task: AdvantageTask) -> dict[str, Any]:
 
 def bind_catalytic_swarm_1_ledger_record(
     record: dict[str, Any],
-    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | None,
+    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | V5RuntimeBinding | None,
 ) -> dict[str, Any]:
     if runtime_binding is None:
         return dict(record)
@@ -12851,11 +12993,16 @@ def bind_catalytic_swarm_1_ledger_record(
 def validate_catalytic_swarm_1_ledger_record(
     record: dict[str, Any],
     *,
-    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | None = None,
+    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | V5RuntimeBinding | None = None,
 ) -> None:
+    runtime_version = (
+        runtime_binding.runtime_version
+        if runtime_binding is not None
+        else CATALYTIC_SWARM_1_RUNTIME_VERSION
+    )
     expected_fields = CATALYTIC_SWARM_1_LEDGER_FIELDS
     if (
-        CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v2", "v3", "v4"}
+        runtime_version in {"v2", "v3", "v4", "v5"}
         and isinstance(record, dict)
         and record.get("arm") != "common-root-warm"
     ):
@@ -12867,6 +13014,8 @@ def validate_catalytic_swarm_1_ledger_record(
             "claim_contract_sha256",
             "scheduler_contract_sha256",
         }
+    if runtime_version == "v5":
+        expected_fields = expected_fields | CATALYTIC_SWARM_1_V5_COMPLETION_FIELDS
     if not isinstance(record, dict) or set(record) != expected_fields:
         raise NeoLoopError("CatalyticSwarm-1 metadata ledger field set changed")
     encoded = canonical_json_bytes(record).lower()
@@ -12909,7 +13058,7 @@ def validate_catalytic_swarm_1_ledger_record(
         ):
             raise NeoLoopError("CatalyticSwarm-1 warm metadata is invalid")
     else:
-        if CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v2", "v3", "v4"}:
+        if runtime_version in {"v2", "v3", "v4", "v5"}:
             admission = adjudicate_root_cache(RootCacheObservation(
                 public_root_terminal_token_index=record[
                     "public_root_terminal_token_index"
@@ -12937,23 +13086,47 @@ def validate_catalytic_swarm_1_ledger_record(
             raise NeoLoopError(
                 "CatalyticSwarm-1 metadata does not prove complete root reuse"
             )
-        if record["arm"] == "best-of-n":
-            if record["public_pass_count"] is not None:
-                raise NeoLoopError(
-                    "CatalyticSwarm-1 best-of-N metadata was scored early"
-                )
-        elif (
-            isinstance(record["public_pass_count"], bool)
-            or not isinstance(record["public_pass_count"], int)
-            or record["public_pass_count"] < 0
-        ):
-            raise NeoLoopError("CatalyticSwarm-1 public score metadata is invalid")
+        rejected_v5 = (
+            runtime_version == "v5"
+            and record.get("response_disposition") == "rejected"
+        )
+        if not rejected_v5:
+            if record["arm"] == "best-of-n":
+                if record["public_pass_count"] is not None:
+                    raise NeoLoopError(
+                        "CatalyticSwarm-1 best-of-N metadata was scored early"
+                    )
+            elif (
+                isinstance(record["public_pass_count"], bool)
+                or not isinstance(record["public_pass_count"], int)
+                or record["public_pass_count"] < 0
+            ):
+                raise NeoLoopError("CatalyticSwarm-1 public score metadata is invalid")
     if type(record["lease_id"]) is not int or record["lease_id"] != 0:
         raise NeoLoopError("CatalyticSwarm-1 metadata ledger has a non-single-slot lease")
     if not isinstance(record["assigned_parents"], list) or any(
         not isinstance(parent, str) for parent in record["assigned_parents"]
     ):
         raise NeoLoopError("CatalyticSwarm-1 assigned-parent metadata is malformed")
+    if runtime_version == "v5":
+        if record["model_boundary_completed"] is not True:
+            raise NeoLoopError("CatalyticSwarm-1 v5 ledger claimed an incomplete response")
+        if record["response_disposition"] not in {"accepted", "rejected"}:
+            raise NeoLoopError("CatalyticSwarm-1 v5 response disposition is invalid")
+        if not isinstance(record["response_reason_code"], str) or not record["response_reason_code"]:
+            raise NeoLoopError("CatalyticSwarm-1 v5 response reason code is invalid")
+        if not isinstance(record["gate_outcomes"], dict) or any(
+            not isinstance(name, str) or type(passed) is not bool
+            for name, passed in record["gate_outcomes"].items()
+        ):
+            raise NeoLoopError("CatalyticSwarm-1 v5 gate outcomes are invalid")
+        boundary = record["post_request_boundary"]
+        if not isinstance(boundary, dict) or set(boundary) != {
+            "passed", "wddm_passed", "custody_passed", "host_memory_passed"
+        } or any(type(value) is not bool for value in boundary.values()):
+            raise NeoLoopError("CatalyticSwarm-1 v5 post-request boundary is invalid")
+        if record["completion_persistence"] not in {"ledger", "result-fallback"}:
+            raise NeoLoopError("CatalyticSwarm-1 v5 completion persistence is invalid")
 
 
 def reconcile_catalytic_swarm_1_ledger(
@@ -12961,7 +13134,7 @@ def reconcile_catalytic_swarm_1_ledger(
     snapshot: dict[str, Any],
     *,
     expected_records: int,
-    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | None = None,
+    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | V5RuntimeBinding | None = None,
 ) -> dict[str, Any]:
     reasons: list[str] = []
     records: list[dict[str, Any]] = []
@@ -12984,7 +13157,7 @@ def reconcile_catalytic_swarm_1_ledger(
         reasons.append("ledger-request-count")
     for index, item in enumerate(records, start=1):
         expected_fields = CATALYTIC_SWARM_1_LEDGER_FIELDS | CATALYTIC_SWARM_1_LEDGER_ENVELOPE_FIELDS
-        if CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v2", "v3", "v4"} and item.get("arm") != "common-root-warm":
+        if CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v2", "v3", "v4", "v5"} and item.get("arm") != "common-root-warm":
             expected_fields = expected_fields | CATALYTIC_SWARM_1_V2_ADMISSION_FIELDS
         if runtime_binding is not None:
             expected_fields = expected_fields | {
@@ -12993,6 +13166,8 @@ def reconcile_catalytic_swarm_1_ledger(
                 "claim_contract_sha256",
                 "scheduler_contract_sha256",
             }
+        if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5":
+            expected_fields = expected_fields | CATALYTIC_SWARM_1_V5_COMPLETION_FIELDS
         if set(item) != expected_fields:
             reasons.append(f"ledger-envelope:{index}")
             continue
@@ -13083,7 +13258,7 @@ def catalytic_swarm_1_warm_request(
     system_identity["warm_rendered_prompt_token_count"] = len(
         warm_prompt_token_ids
     )
-    if CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v2", "v3", "v4"}:
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v2", "v3", "v4", "v5"}:
         system_identity["public_root_terminal_token_index"] = (
             locate_public_root_terminal_token_index(
                 warm_rendered_prompt, warm_prompt_token_ids, system_message
@@ -13126,16 +13301,28 @@ def catalytic_swarm_1_warm_request(
     finished_at = utc_now()
     resource = worker_resource_gate(sidecar, readiness, predecessor_contract)
     evidence = result.get("visible_token_evidence", {})
-    if (
-        result.get("accepted") is not True
-        or resource.get("passed") is not True
-        or result.get("finish_reason") != "stop"
-        or result.get("reasoning_content", {}).get("present") is not False
-        or result.get("tool_calls") != []
-        or evidence.get("accepted") is not True
-        or result.get("logical_prompt_tokens") != len(warm_prompt_token_ids)
-    ):
+    gate_outcomes = {
+        "result_accepted": result.get("accepted") is True,
+        "resource_gate_passed": resource.get("passed") is True,
+        "finish_reason_stop": result.get("finish_reason") == "stop",
+        "reasoning_absent": result.get("reasoning_content", {}).get("present") is False,
+        "tool_calls_empty": result.get("tool_calls") == [],
+        "token_evidence_accepted": evidence.get("accepted") is True,
+        "logical_prompt_count_matches": result.get("logical_prompt_tokens") == len(warm_prompt_token_ids),
+    }
+    warm_accepted = all(gate_outcomes.values())
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION != "v5" and not warm_accepted:
         raise NeoLoopError(f"CatalyticSwarm-1 common root warm failed: {task.task_id}")
+    assistant_content = result.get("assistant_content")
+    content_sha256 = (
+        assistant_content.get("sha256")
+        if isinstance(assistant_content, dict)
+        and isinstance(assistant_content.get("sha256"), str)
+        else sha256_bytes(b"")
+    )
+    def bounded_count(name: str) -> int:
+        value = result.get(name)
+        return value if type(value) is int and value >= 0 else 0
     summary = {
         "task_id": task.task_id,
         "public_root_sha256": system_identity["public_root_sha256"],
@@ -13145,12 +13332,12 @@ def catalytic_swarm_1_warm_request(
             "warm_rendered_prompt_sha256"
         ],
         "warm_rendered_prompt_token_count": len(warm_prompt_token_ids),
-        "prompt_tokens": result["logical_prompt_tokens"],
-        "cached_prompt_tokens": result["cached_prompt_tokens"],
+        "prompt_tokens": bounded_count("logical_prompt_tokens"),
+        "cached_prompt_tokens": bounded_count("cached_prompt_tokens"),
         "required_cached_prompt_tokens": 0,
-        "fresh_prompt_tokens": result["fresh_prompt_tokens"],
-        "completion_tokens": result["completion_tokens"],
-        "content_sha256": result["assistant_content"]["sha256"],
+        "fresh_prompt_tokens": bounded_count("fresh_prompt_tokens"),
+        "completion_tokens": bounded_count("completion_tokens"),
+        "content_sha256": content_sha256,
         "token_evidence_scope": evidence.get("claim_scope"),
         "stream_provenance": transient.snapshot(include_records=False),
         "resource_gate": resource,
@@ -13167,19 +13354,22 @@ def catalytic_swarm_1_warm_request(
         "assigned_parents": [],
         "candidate_id": "",
         "public_pass_count": None,
-        "content_sha256": result["assistant_content"]["sha256"],
-        "prompt_tokens": result["logical_prompt_tokens"],
-        "cached_prompt_tokens": result["cached_prompt_tokens"],
+        "content_sha256": content_sha256,
+        "prompt_tokens": bounded_count("logical_prompt_tokens"),
+        "cached_prompt_tokens": bounded_count("cached_prompt_tokens"),
         "required_cached_prompt_tokens": 0,
-        "fresh_prompt_tokens": result["fresh_prompt_tokens"],
-        "completion_tokens": result["completion_tokens"],
+        "fresh_prompt_tokens": bounded_count("fresh_prompt_tokens"),
+        "completion_tokens": bounded_count("completion_tokens"),
         "token_evidence_scope": evidence.get("claim_scope"),
         "wddm_freshness_boundary": boundary,
         "lease_id": lease_id,
         "request_started_at": started_at,
         "request_finished_at": finished_at,
     }
-    validate_catalytic_swarm_1_ledger_record(metadata)
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION != "v5":
+        validate_catalytic_swarm_1_ledger_record(metadata)
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5":
+        return summary, metadata, system_message, system_identity, gate_outcomes  # type: ignore[return-value]
     return summary, metadata, system_message, system_identity
 
 
@@ -13228,7 +13418,7 @@ def stream_catalytic_swarm_1_candidate(
     )
     public_root_terminal_token_index: int | None = None
     common_prefix_tokens: int | None = None
-    if CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v2", "v3", "v4"}:
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v2", "v3", "v4", "v5"}:
         public_root_terminal_token_index = system_identity.get(
             "public_root_terminal_token_index"
         )
@@ -13261,7 +13451,14 @@ def stream_catalytic_swarm_1_candidate(
     if model_request_completed is not None:
         model_request_completed(request_label)
     content = measurement.content
-    candidate_id = parse_candidate_content(content, task)
+    candidate_parse_passed = True
+    candidate_id = ""
+    try:
+        candidate_id = parse_candidate_content(content, task)
+    except Exception:
+        if CATALYTIC_SWARM_1_RUNTIME_VERSION != "v5":
+            raise
+        candidate_parse_passed = False
     compact = compact_worker_v4_measurement(
         measurement,
         root_name=task.task_id,
@@ -13286,7 +13483,11 @@ def stream_catalytic_swarm_1_candidate(
     classification = classify_worker_v4_channels(
         compact, lane, warm=False, token_evidence_required=True
     )
-    if classification != "accepted" or evidence.get("accepted") is not True:
+    transport_accepted = classification == "accepted"
+    token_evidence_accepted = evidence.get("accepted") is True
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION != "v5" and (
+        not transport_accepted or not token_evidence_accepted
+    ):
         raise NeoLoopError(
             f"CatalyticSwarm-1 candidate transport failed: {classification}"
         )
@@ -13295,25 +13496,34 @@ def stream_catalytic_swarm_1_candidate(
         isinstance(cached_prompt_tokens, bool)
         or not isinstance(cached_prompt_tokens, int)
     ):
-        raise NeoLoopError("CatalyticSwarm-1 candidate cache accounting is invalid")
+        if CATALYTIC_SWARM_1_RUNTIME_VERSION != "v5":
+            raise NeoLoopError("CatalyticSwarm-1 candidate cache accounting is invalid")
+        cached_prompt_tokens = 0
     admission = None
-    if CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v2", "v3", "v4"}:
-        admission = adjudicate_root_cache(RootCacheObservation(
-            public_root_terminal_token_index=public_root_terminal_token_index,
-            common_prefix_tokens=common_prefix_tokens,
-            legacy_required_cached_prompt_tokens=required_cached_prompt_tokens,
-            actual_cached_prompt_tokens=cached_prompt_tokens,
-            branch_prompt_tokens=compact["logical_prompt_tokens"],
-            fresh_prompt_tokens=compact["fresh_prompt_tokens"],
-            completion_tokens=compact["completion_tokens"],
-            response_completed=compact["finish_reason"] == "stop",
-            transport_passed=True,
-            token_evidence_passed=evidence.get("accepted") is True,
-        ))
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION in {"v2", "v3", "v4", "v5"}:
+        try:
+            admission = adjudicate_root_cache(RootCacheObservation(
+                public_root_terminal_token_index=public_root_terminal_token_index,
+                common_prefix_tokens=common_prefix_tokens,
+                legacy_required_cached_prompt_tokens=required_cached_prompt_tokens,
+                actual_cached_prompt_tokens=cached_prompt_tokens,
+                branch_prompt_tokens=compact["logical_prompt_tokens"],
+                fresh_prompt_tokens=compact["fresh_prompt_tokens"],
+                completion_tokens=compact["completion_tokens"],
+                response_completed=compact["finish_reason"] == "stop",
+                transport_passed=transport_accepted,
+                token_evidence_passed=token_evidence_accepted,
+            ))
+        except Exception:
+            if CATALYTIC_SWARM_1_RUNTIME_VERSION != "v5":
+                raise
+            admission = None
     elif cached_prompt_tokens < required_cached_prompt_tokens:
         raise NeoLoopError("CatalyticSwarm-1 candidate did not reuse the complete public root")
-    public_passed = catalytic_swarm_1_public_pass_for_ledger(
-        task, turn, candidate_id
+    public_passed = (
+        catalytic_swarm_1_public_pass_for_ledger(task, turn, candidate_id)
+        if candidate_parse_passed
+        else None
     )
     scope = evidence.get("claim_scope")
     transport = {
@@ -13326,7 +13536,7 @@ def stream_catalytic_swarm_1_candidate(
         "finish_reason": compact["finish_reason"],
         "reasoning_content": "" if compact["reasoning_content"]["present"] is False else "present",
         "tool_calls": compact["tool_calls"],
-        "transport_passed": True,
+        "transport_passed": transport_accepted,
         "token_evidence_scope": scope,
     }
     if admission is not None:
@@ -13359,10 +13569,23 @@ def stream_catalytic_swarm_1_candidate(
             "public_root_terminal_token_index": public_root_terminal_token_index,
             "common_prefix_tokens": common_prefix_tokens,
             "response_completed": compact["finish_reason"] == "stop",
-            "transport_passed": True,
-            "token_evidence_passed": evidence.get("accepted") is True,
+            "transport_passed": transport_accepted,
+            "token_evidence_passed": token_evidence_accepted,
         })
-    validate_catalytic_swarm_1_ledger_record(metadata)
+    gate_outcomes = {
+        "candidate_parse_passed": candidate_parse_passed,
+        "transport_accepted": transport_accepted,
+        "finish_reason_stop": compact.get("finish_reason") == "stop",
+        "reasoning_absent": compact.get("reasoning_content", {}).get("present") is False,
+        "tool_calls_empty": compact.get("tool_calls") == [],
+        "token_evidence_accepted": token_evidence_accepted,
+        "prompt_token_identity_matches": compact.get("prompt_token_identity_matches") is True,
+        "root_terminal_admitted": isinstance(admission, object) and admission is not None and admission.to_dict().get("admitted") is True,
+    }
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION != "v5":
+        validate_catalytic_swarm_1_ledger_record(metadata)
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5":
+        return transport, metadata, gate_outcomes  # type: ignore[return-value]
     return transport, metadata
 
 
@@ -13383,7 +13606,7 @@ def adapt_catalytic_swarm_1_transport_for_scheduler(
         "transport_passed",
         "token_evidence_scope",
     }
-    if CATALYTIC_SWARM_1_RUNTIME_VERSION not in {"v2", "v3", "v4"}:
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION not in {"v2", "v3", "v4", "v5"}:
         if set(transport) != required:
             raise NeoLoopError("CatalyticSwarm-1 scheduler transport schema changed")
         return dict(transport)
@@ -13406,6 +13629,160 @@ def adapt_catalytic_swarm_1_transport_for_scheduler(
     if set(projected) != required:
         raise NeoLoopError("CatalyticSwarm-1 scheduler transport projection changed")
     return projected
+
+
+def run_catalytic_swarm_1_v5_completed_request(
+    *,
+    kind: str,
+    request_label: str,
+    request_sequence_index: int,
+    lease_pool: PhysicalLeasePool,
+    before: Callable[[], Any],
+    request: Callable[[int, Callable[[str], None]], Any],
+    after: Callable[[], Any],
+    on_model_completed: Callable[[str], None],
+    failure_metadata: Callable[[int], dict[str, Any]],
+    ledger: BoundedStreamLedger,
+    runtime_binding: V5RuntimeBinding,
+    persist_result_fallback: Callable[[dict[str, Any], str], None],
+) -> Any:
+    """Close one v5 completed response before enforcing any response gate."""
+    closure = CompletedResponseClosure(request_label, request_sequence_index, kind)
+    before()
+    value: Any = None
+    transport: dict[str, Any] | None = None
+    interruption: BaseException | None = None
+    post_error: BaseException | None = None
+    persistence_error: BaseException | None = None
+    wddm_passed = True
+
+    def mark_completed(observed_label: str) -> None:
+        if observed_label != request_label:
+            raise NeoLoopError("CatalyticSwarm-1 v5 completed request label changed")
+        closure.mark_model_completed()
+        on_model_completed(observed_label)
+
+    with lease_pool.lease() as lease_id:
+        if lease_id != 0:
+            raise NeoLoopError("CatalyticSwarm-1 v5 acquired a non-single-slot lease")
+        try:
+            try:
+                value = request(lease_id, mark_completed)
+            except CompletedRequestBoundaryError as exc:
+                if not closure.model_completed:
+                    raise
+                value = exc.completed_value
+                wddm_passed = False
+                post_error = exc.boundary_error
+            except BaseException as exc:
+                if not closure.model_completed:
+                    try:
+                        after()
+                    except BaseException as boundary_exc:
+                        if hasattr(exc, "add_note"):
+                            exc.add_note(
+                                "CatalyticSwarm-1 v5 pre-completion error boundary also failed: "
+                                f"{boundary_exc}"
+                            )
+                    raise
+                interruption = exc
+
+            if interruption is None:
+                try:
+                    if kind == "warm":
+                        if not isinstance(value, tuple) or len(value) != 5:
+                            raise NeoLoopError("CatalyticSwarm-1 v5 warm observation shape changed")
+                        _summary, metadata, _system_message, _system_identity, gates = value
+                    else:
+                        if not isinstance(value, tuple) or len(value) != 3:
+                            raise NeoLoopError("CatalyticSwarm-1 v5 comparison observation shape changed")
+                        transport, metadata, gates = value
+                    closure.capture(metadata, gates)
+                except BaseException as exc:
+                    interruption = exc
+                    closure.capture_instrumentation_failure(
+                        failure_metadata(lease_id),
+                        reason_code="post-response-instrumentation-failed",
+                    )
+            else:
+                closure.capture_instrumentation_failure(
+                    failure_metadata(lease_id),
+                    reason_code=(
+                        "post-response-keyboard-interruption"
+                        if isinstance(interruption, KeyboardInterrupt)
+                        else "post-response-process-interruption"
+                        if isinstance(interruption, SystemExit)
+                        else "post-response-instrumentation-failed"
+                    ),
+                )
+
+            custody_passed = host_memory_passed = True
+            if post_error is None:
+                try:
+                    after()
+                except BaseException as exc:
+                    post_error = exc
+                    custody_passed = False
+                    host_memory_passed = False
+            else:
+                # The outer custody/host boundary still runs after a WDDM failure.
+                try:
+                    after()
+                except BaseException as exc:
+                    if hasattr(post_error, "add_note"):
+                        post_error.add_note(f"outer post-request boundary also failed: {exc}")
+                    custody_passed = False
+                    host_memory_passed = False
+            closure.record_post_request_boundary(
+                wddm_passed=wddm_passed,
+                custody_passed=custody_passed,
+                host_memory_passed=host_memory_passed,
+                reason_code=(
+                    "post-request-wddm-boundary-failed"
+                    if not wddm_passed
+                    else "post-request-custody-or-host-boundary-failed"
+                    if post_error is not None
+                    else None
+                ),
+            )
+
+            def append_identity_bound(record: dict[str, Any]) -> None:
+                bound = bind_catalytic_swarm_1_ledger_record(record, runtime_binding)
+                validate_catalytic_swarm_1_ledger_record(
+                    bound, runtime_binding=runtime_binding
+                )
+                ledger.append(
+                    bound,
+                    request_label=request_label,
+                    request_sequence_index=request_sequence_index,
+                )
+
+            try:
+                closure.persist(
+                    append_ledger=append_identity_bound,
+                    sync_ledger=ledger.sync,
+                    persist_result_fallback=persist_result_fallback,
+                )
+            except BaseException as exc:
+                persistence_error = exc
+        finally:
+            pass
+    closure.mark_lease_released()
+    if persistence_error is not None:
+        raise persistence_error
+    if interruption is not None:
+        raise interruption
+    if post_error is not None:
+        try:
+            closure.enforce()
+        except CompletedResponseRejected as exc:
+            raise exc from post_error
+    closure.enforce()
+    if kind == "warm":
+        return value[:4]
+    if transport is None:
+        raise NeoLoopError("CatalyticSwarm-1 v5 accepted comparison lacks transport")
+    return adapt_catalytic_swarm_1_transport_for_scheduler(transport)
 
 
 def catalytic_swarm_1_availability(
@@ -15109,7 +15486,7 @@ def _run_cache_diagnostic(
 def run_catalytic_swarm_1_audit(
     args: argparse.Namespace,
     *,
-    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | None = None,
+    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | V5RuntimeBinding | None = None,
     preclaimed_control: bool = False,
 ) -> dict[str, Any]:
     """Execute CS1 under a cleanup owner spanning the complete live lifetime."""
@@ -15496,7 +15873,212 @@ def run_catalytic_swarm_1_v4_audit(args: argparse.Namespace) -> dict[str, Any]:
                     "failure_stage": "runtime-preclaim" if current.get("status") == "preclaim" else "runtime-unhandled",
                     "finished_at": utc_now(),
                 })
-                write_catalytic_swarm_1_runtime_json(path, current, runtime_binding=runtime_binding)
+                write_catalytic_swarm_1_runtime_json(
+                    path, current, runtime_binding=runtime_binding
+                )
+                break
+            raise
+
+
+def validate_consumed_catalytic_swarm_1_v4_boundary(
+    evaluator: dict[str, Any], lock: dict[str, Any]
+) -> dict[str, Any]:
+    """Bind all immutable raw v4 artifacts to the tracked canonical boundary."""
+    boundary = evaluator.get("catalytic_swarm_1_v4_partial_execution_boundary")
+    try:
+        validate_catalytic_swarm_1_v4_partial_execution_boundary(boundary)
+    except Exception as exc:
+        raise NeoLoopError(
+            f"CatalyticSwarm-1 v4 partial execution boundary is not canonical: {exc}"
+        ) from exc
+    if (
+        catalytic_swarm_1_v4_partial_execution_boundary_hash(evaluator)
+        != EXPECTED_V4_PARTIAL_EXECUTION_BOUNDARY_SHA256
+        or lock.get("catalytic_swarm_1_v4_partial_execution_boundary_sha256")
+        != EXPECTED_V4_PARTIAL_EXECUTION_BOUNDARY_SHA256
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 v4 partial execution boundary is not exact")
+    for artifact in boundary["artifacts"]:
+        path = ROOT / artifact["path"]
+        if not path.is_file():
+            raise NeoLoopError(f"CatalyticSwarm-1 v4 artifact is missing: {artifact['path']}")
+        if path.stat().st_size != artifact["size_bytes"]:
+            raise NeoLoopError(f"CatalyticSwarm-1 v4 artifact size changed: {artifact['path']}")
+        if sha256_file(path) != artifact["sha256"]:
+            raise NeoLoopError(f"CatalyticSwarm-1 v4 artifact hash changed: {artifact['path']}")
+    validate_consumed_catalytic_swarm_1_v3_boundary(evaluator, lock)
+    return dict(boundary)
+
+
+def prepare_catalytic_swarm_1_v5_claim(
+    args: argparse.Namespace,
+    *,
+    preclaimed_control: bool = False,
+) -> tuple[dict[str, Any], V5RuntimeBinding]:
+    """Close v5 static custody before network, sidecar, or model access."""
+    if preclaimed_control:
+        if not CATALYTIC_SWARM_1_V5_CONTROL_PATH.is_file():
+            raise NeoLoopError("CatalyticSwarm-1 v5 invocation claim is missing")
+        assert_catalytic_swarm_1_artifact_stage(allow_through="control")
+    else:
+        assert_catalytic_swarm_1_v5_artifacts_absent()
+    evaluator = load_json(EVALUATOR_PATH)
+    lock = verify_lock(evaluator)
+    validate_consumed_catalytic_swarm_1_v4_boundary(evaluator, lock)
+    contract = evaluator.get("catalytic_swarm_1_v5")
+    expected_contract = build_catalytic_swarm_1_v5_contract()
+    if canonical_json_bytes(contract) != canonical_json_bytes(expected_contract):
+        raise NeoLoopError("CatalyticSwarm-1 v5 contract differs from canonical overlay")
+    if (
+        catalytic_swarm_1_v5_sha256_object(contract) != EXPECTED_V5_CONTRACT_SHA256
+        or catalytic_swarm_1_v5_hash(evaluator) != EXPECTED_V5_CONTRACT_SHA256
+        or lock.get("catalytic_swarm_1_v5_sha256") != EXPECTED_V5_CONTRACT_SHA256
+    ):
+        raise NeoLoopError("CatalyticSwarm-1 v5 contract is not exact")
+    runtime_evidence = evaluator.get("catalytic_swarm_1_v5_runtime_evidence_binding")
+    try:
+        validate_v5_runtime_evidence_contract(runtime_evidence)
+        if (
+            v5_runtime_evidence_sha256_object(runtime_evidence)
+            != EXPECTED_V5_RUNTIME_EVIDENCE_CONTRACT_SHA256
+            or catalytic_swarm_1_v5_runtime_evidence_binding_hash(evaluator)
+            != EXPECTED_V5_RUNTIME_EVIDENCE_CONTRACT_SHA256
+            or lock.get("catalytic_swarm_1_v5_runtime_evidence_binding_sha256")
+            != EXPECTED_V5_RUNTIME_EVIDENCE_CONTRACT_SHA256
+        ):
+            raise ValueError("runtime-evidence binding hash changed")
+        runtime_binding = build_v5_runtime_binding()
+        validate_v5_runtime_contract_bindings(
+            evaluator,
+            lock,
+            object_sha256=lambda value: sha256_bytes(canonical_json_bytes(value)).lower(),
+        )
+    except Exception as exc:
+        raise NeoLoopError(
+            f"CatalyticSwarm-1 v5 runtime-evidence binding is not exact: {exc}"
+        ) from exc
+    if not isinstance(getattr(args, "authorized_main", None), str) or not args.authorized_main:
+        raise NeoLoopError("CatalyticSwarm-1 v5 requires --authorized-main")
+    if not isinstance(getattr(args, "model", None), str) or not args.model:
+        raise NeoLoopError("CatalyticSwarm-1 v5 requires --model")
+    authorized_main = args.authorized_main.lower()
+    observed = {
+        git_read(ROOT, "rev-parse", "HEAD").lower(),
+        git_read(ROOT, "rev-parse", "main").lower(),
+        git_read(ROOT, "rev-parse", "origin/main").lower(),
+        git_read(ROOT, "ls-remote", "origin", "refs/heads/main").split()[0].lower(),
+    }
+    if observed != {authorized_main}:
+        raise NeoLoopError(
+            "CatalyticSwarm-1 v5 requires --authorized-main to equal protected main"
+        )
+    if contract["one_shot"]["no_retry"] is not True:
+        raise NeoLoopError("CatalyticSwarm-1 v5 no-retry law changed")
+    try:
+        qualify_v4_one_shot_paths(
+            repo_root=ROOT,
+            contract_paths=contract["one_shot"]["paths"],
+            active_artifact_paths=CATALYTIC_SWARM_1_V5_ARTIFACT_PATHS,
+            required_namespace="state/catalytic_swarm_1_v5",
+            forbidden_namespaces=(
+                "state/catalytic_swarm_1",
+                "state/catalytic_swarm_1_cache_diagnostic",
+                "state/catalytic_swarm_1_v2",
+                "state/catalytic_swarm_1_v3",
+                "state/catalytic_swarm_1_v4",
+            ),
+        )
+    except V4VersionedPathLawError as exc:
+        raise NeoLoopError(f"CatalyticSwarm-1 v5 one-shot path law changed: {exc}") from exc
+    return contract, runtime_binding
+
+
+def run_catalytic_swarm_1_v5_audit(args: argparse.Namespace) -> dict[str, Any]:
+    """Execute a future separately authorized v5 invocation exactly once."""
+    runtime_binding = build_v5_runtime_binding()
+    preclaim_contract = {"one_shot": {"paths": {
+        "control": "state/catalytic_swarm_1_v5/control-qualification-v5.json",
+        "readiness": "state/catalytic_swarm_1_v5/readiness-v5.json",
+        "parser_canary": "state/catalytic_swarm_1_v5/parser-canary-v5.json",
+        "attempt": "state/catalytic_swarm_1_v5/attempt-v5.json",
+        "result": "state/catalytic_swarm_1_v5/result-v5.json",
+        "ledger": "state/catalytic_swarm_1_v5/ledger-v5.jsonl",
+        "task_results": "state/catalytic_swarm_1_v5/task-results-v5.json",
+    }}}
+    with catalytic_swarm_1_v5_runtime_namespace(preclaim_contract, runtime_binding):
+        invocation_record = {
+            "schema_version": 5,
+            "attempt_version": 5,
+            "operation": "catalytic-swarm-1-v5-control-qualification-v5",
+            "started_at": utc_now(),
+            "status": "preclaim",
+            "control_qualification_v5": "inconclusive",
+            "authorized_main": getattr(args, "authorized_main", None),
+            "model_path_supplied": bool(getattr(args, "model", None)),
+            "command_invocation_consumed": True,
+            "no_retry": True,
+            "live_model_requests": 0,
+            "sidecar_launches": 0,
+            "automatic_promotion": False,
+        }
+        claim_catalytic_swarm_1_runtime_json_once(
+            CATALYTIC_SWARM_1_CONTROL_PATH,
+            invocation_record,
+            runtime_binding=runtime_binding,
+            preserve_partial_on_failure=True,
+        )
+        try:
+            contract, runtime_binding = prepare_catalytic_swarm_1_v5_claim(
+                args, preclaimed_control=True
+            )
+            if canonical_json_bytes(preclaim_contract["one_shot"]["paths"]) != canonical_json_bytes(contract["one_shot"]["paths"]):
+                raise NeoLoopError(
+                    "CatalyticSwarm-1 v5 preclaim namespace differs from canonical contract"
+                )
+        except BaseException as exc:
+            invocation_record.update({
+                "status": "complete",
+                "error": f"{type(exc).__name__}: {exc}",
+                "failure_stage": "preclaim",
+                "finished_at": utc_now(),
+            })
+            write_catalytic_swarm_1_runtime_json(
+                CATALYTIC_SWARM_1_CONTROL_PATH,
+                invocation_record,
+                runtime_binding=runtime_binding,
+            )
+            raise
+    with catalytic_swarm_1_v5_runtime_namespace(contract, runtime_binding):
+        try:
+            return run_catalytic_swarm_1_audit(
+                args,
+                runtime_binding=runtime_binding,
+                preclaimed_control=True,
+            )
+        except BaseException as exc:
+            for path in (
+                CATALYTIC_SWARM_1_RESULT_PATH,
+                CATALYTIC_SWARM_1_TASK_RESULTS_PATH,
+                CATALYTIC_SWARM_1_ATTEMPT_PATH,
+                CATALYTIC_SWARM_1_PARSER_CANARY_PATH,
+                CATALYTIC_SWARM_1_READINESS_PATH,
+                CATALYTIC_SWARM_1_CONTROL_PATH,
+            ):
+                if not path.is_file():
+                    continue
+                try:
+                    current = load_json(path)
+                except Exception:
+                    continue
+                current.update({
+                    "status": "complete",
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "failure_stage": "runtime-preclaim" if current.get("status") == "preclaim" else "runtime-unhandled",
+                    "finished_at": utc_now(),
+                })
+                write_catalytic_swarm_1_runtime_json(
+                    path, current, runtime_binding=runtime_binding
+                )
                 break
             raise
 def _run_catalytic_swarm_1_audit(
@@ -15504,7 +16086,7 @@ def _run_catalytic_swarm_1_audit(
     post_parser_cleanup: ArmedCleanup,
     cleanup_state: dict[str, Any],
     *,
-    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | None = None,
+    runtime_binding: V3RuntimeBinding | V4RuntimeBinding | V5RuntimeBinding | None = None,
     preclaimed_control: bool = False,
 ) -> dict[str, Any]:
     """Inner CS1 runner; the public wrapper owns unhandled cleanup."""
@@ -15918,50 +16500,57 @@ def _run_catalytic_swarm_1_audit(
             raise NeoLoopError("CatalyticSwarm-1 strict candidate JSON parser canary failed")
         parser_record["parser_canary"] = canary
 
-        def record_first_warm_completion(request_label: str) -> None:
-            record_model_request_completion(request_label)
-            mark_catalytic_swarm_1_first_warm_executed(parser_record)
+        if CATALYTIC_SWARM_1_RUNTIME_VERSION != "v5":
+            def record_first_warm_completion(request_label: str) -> None:
+                record_model_request_completion(request_label)
+                mark_catalytic_swarm_1_first_warm_executed(parser_record)
 
-        def execute_first_common_root_warm() -> tuple[
-            dict[str, Any], dict[str, Any], str, dict[str, Any]
-        ]:
-            with lease_pool.lease() as lease_id:
-                completed = catalytic_swarm_1_warm_request(
-                    sidecar,
-                    protocol_v4,
-                    predecessor_contract,
-                    readiness,
-                    suite.tasks[0],
-                    request_sequence_index=1,
-                    lease_id=lease_id,
-                    model_request_completed=record_first_warm_completion,
-                )
-            parser_record["first_common_root_warm"] = completed[0]
-            return completed
+            def execute_first_common_root_warm() -> tuple[
+                dict[str, Any], dict[str, Any], str, dict[str, Any]
+            ]:
+                with lease_pool.lease() as lease_id:
+                    completed = catalytic_swarm_1_warm_request(
+                        sidecar,
+                        protocol_v4,
+                        predecessor_contract,
+                        readiness,
+                        suite.tasks[0],
+                        request_sequence_index=1,
+                        lease_id=lease_id,
+                        model_request_completed=record_first_warm_completion,
+                    )
+                parser_record["first_common_root_warm"] = completed[0]
+                return completed
 
-        (
-            first_warm_summary,
-            first_warm_metadata,
-            first_system_message,
-            first_system_identity,
-        ) = run_request_with_boundaries(
-            before=lambda: require_live_boundary(
-                f"pre-request:{suite.tasks[0].task_id}:common-root-warm",
-                require_host=False,
-            ),
-            request=execute_first_common_root_warm,
-            after=lambda: require_live_boundary(
-                f"post-request:{suite.tasks[0].task_id}:common-root-warm",
-                require_host=True,
-            ),
-        )
+            (
+                first_warm_summary,
+                first_warm_metadata,
+                first_system_message,
+                first_system_identity,
+            ) = run_request_with_boundaries(
+                before=lambda: require_live_boundary(
+                    f"pre-request:{suite.tasks[0].task_id}:common-root-warm",
+                    require_host=False,
+                ),
+                request=execute_first_common_root_warm,
+                after=lambda: require_live_boundary(
+                    f"post-request:{suite.tasks[0].task_id}:common-root-warm",
+                    require_host=True,
+                ),
+            )
+        else:
+            parser_record["first_common_root_warm"] = "deferred-until-ledger-claim"
         parser_record["before_capability_attempt_wddm"] = sidecar.wait_for_fresh_wddm(
             "before-capability-attempt", maximum_wait
         )
         parser_record.update({
             "status": "complete",
             "parser_canary_v1": "pass",
-            "first_task_root_warm_v1": "pass",
+            "first_task_root_warm_v1": (
+                "deferred-until-ledger-claim"
+                if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5"
+                else "pass"
+            ),
             "finished_at": utc_now(),
         })
         write_catalytic_swarm_1_runtime_json(
@@ -16018,7 +16607,7 @@ def _run_catalytic_swarm_1_audit(
             )
         raise
 
-    if any(
+    if CATALYTIC_SWARM_1_RUNTIME_VERSION != "v5" and any(
         item is None
         for item in (
             first_warm_summary,
@@ -16059,16 +16648,20 @@ def _run_catalytic_swarm_1_audit(
         "readiness_v1": "pass",
         "parser_canary_v1": "pass",
         "catalytic_swarm_1": "inconclusive",
-        "live_request_count": 1,
-        "common_root_warm_count": 1,
+        "live_request_count": 0 if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5" else 1,
+        "common_root_warm_count": 0 if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5" else 1,
         "comparison_request_count": 0,
         "task_comparison_count": 0,
         "automatic_promotion": False,
     }
     ledger: BoundedStreamLedger | None = None
     comparisons: list[Any] = []
-    warm_summaries: list[dict[str, Any]] = [first_warm_summary]  # type: ignore[list-item]
-    request_sequence_index = 1
+    warm_summaries: list[dict[str, Any]] = (
+        []
+        if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5"
+        else [first_warm_summary]  # type: ignore[list-item]
+    )
+    request_sequence_index = 0 if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5" else 1
     interruption: BaseException | None = None
     attempt_claimed = result_claimed = False
     task_results_claimed = False
@@ -16085,33 +16678,62 @@ def _run_catalytic_swarm_1_audit(
             CATALYTIC_SWARM_1_RESULT_PATH, result
         )
         result_claimed = True
-        first_warm_metadata = bind_catalytic_swarm_1_ledger_record(
-            first_warm_metadata, runtime_binding  # type: ignore[arg-type]
-        )
-        validate_catalytic_swarm_1_ledger_record(
-            first_warm_metadata, runtime_binding=runtime_binding
-        )
-        first_request_label = (
-            f"{build_frozen_task_suite().tasks[0].task_id}:common-root-warm"
-        )
-        ledger = BoundedStreamLedger(
-            CATALYTIC_SWARM_1_LEDGER_PATH,
-            max_bytes=CATALYTIC_SWARM_1_LEDGER_MAX_BYTES,
-            max_records=CATALYTIC_SWARM_1_LEDGER_MAX_RECORDS,
-            state_root=CATALYTIC_SWARM_1_STATE_ROOT,
-            record_transform=lambda record: bind_catalytic_swarm_1_ledger_record(
-                record, runtime_binding
-            ),
-            initial_record=first_warm_metadata,  # type: ignore[arg-type]
-            initial_request_label=first_request_label,
-            initial_request_sequence_index=1,
-        )
+        if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5":
+            ledger = BoundedStreamLedger(
+                CATALYTIC_SWARM_1_LEDGER_PATH,
+                max_bytes=CATALYTIC_SWARM_1_LEDGER_MAX_BYTES,
+                max_records=CATALYTIC_SWARM_1_LEDGER_MAX_RECORDS,
+                state_root=CATALYTIC_SWARM_1_STATE_ROOT,
+                record_transform=lambda record: bind_catalytic_swarm_1_ledger_record(
+                    record, runtime_binding
+                ),
+            )
+            ledger.sync()
+        else:
+            first_warm_metadata = bind_catalytic_swarm_1_ledger_record(
+                first_warm_metadata, runtime_binding  # type: ignore[arg-type]
+            )
+            validate_catalytic_swarm_1_ledger_record(
+                first_warm_metadata, runtime_binding=runtime_binding
+            )
+            first_request_label = (
+                f"{build_frozen_task_suite().tasks[0].task_id}:common-root-warm"
+            )
+            ledger = BoundedStreamLedger(
+                CATALYTIC_SWARM_1_LEDGER_PATH,
+                max_bytes=CATALYTIC_SWARM_1_LEDGER_MAX_BYTES,
+                max_records=CATALYTIC_SWARM_1_LEDGER_MAX_RECORDS,
+                state_root=CATALYTIC_SWARM_1_STATE_ROOT,
+                record_transform=lambda record: bind_catalytic_swarm_1_ledger_record(
+                    record, runtime_binding
+                ),
+                initial_record=first_warm_metadata,  # type: ignore[arg-type]
+                initial_request_label=first_request_label,
+                initial_request_sequence_index=1,
+            )
+
+        def persist_completion_fallback(record: dict[str, Any], error: str) -> None:
+            record = bind_catalytic_swarm_1_ledger_record(record, runtime_binding)
+            validate_catalytic_swarm_1_ledger_record(
+                record, runtime_binding=runtime_binding
+            )
+            result["completion_persistence_failure"] = {
+                "record": record,
+                "ledger_error": error,
+                "adjudication": "completed-response-durably-represented-in-result",
+            }
+            write_owned_catalytic_swarm_1_runtime_json(
+                CATALYTIC_SWARM_1_RESULT_PATH,
+                result,
+                claimed=result_claimed,
+                runtime_binding=runtime_binding,
+            )
         suite = build_frozen_task_suite()
         plans = {plan.arm: plan for plan in build_all_arm_plans()}
         execution_order = counterbalanced_arm_order()
 
         for task_index, task in enumerate(suite.tasks):
-            if task_index == 0:
+            if task_index == 0 and CATALYTIC_SWARM_1_RUNTIME_VERSION != "v5":
                 system_message = first_system_message  # type: ignore[assignment]
                 system_identity = first_system_identity  # type: ignore[assignment]
             else:
@@ -16122,11 +16744,45 @@ def _run_catalytic_swarm_1_audit(
                     result["live_request_count"] += 1
                     result["common_root_warm_count"] += 1
 
-                def execute_common_root_warm() -> tuple[
-                    dict[str, Any], dict[str, Any], str, dict[str, Any]
-                ]:
-                    with lease_pool.lease() as lease_id:
-                        completed = catalytic_swarm_1_warm_request(
+                if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5":
+                    warm_label = f"{task.task_id}:common-root-warm"
+                    def warm_failure_metadata(lease_id: int) -> dict[str, Any]:
+                        now = utc_now()
+                        return {
+                            "task_id": task.task_id,
+                            "arm": "common-root-warm",
+                            "turn_id": f"{task.task_id}-warm",
+                            "phase": "warm",
+                            "role": "root",
+                            "assigned_parents": [],
+                            "candidate_id": "",
+                            "public_pass_count": None,
+                            "content_sha256": sha256_bytes(b""),
+                            "prompt_tokens": 0,
+                            "cached_prompt_tokens": 0,
+                            "required_cached_prompt_tokens": 0,
+                            "fresh_prompt_tokens": 0,
+                            "completion_tokens": 0,
+                            "token_evidence_scope": "post-response-instrumentation-unavailable",
+                            "wddm_freshness_boundary": "post-response-instrumentation-failed",
+                            "lease_id": lease_id,
+                            "request_started_at": now,
+                            "request_finished_at": now,
+                        }
+                    (
+                        warm_summary,
+                        warm_metadata,
+                        system_message,
+                        system_identity,
+                    ) = run_catalytic_swarm_1_v5_completed_request(
+                        kind="warm",
+                        request_label=warm_label,
+                        request_sequence_index=request_sequence_index,
+                        lease_pool=lease_pool,
+                        before=lambda: require_live_boundary(
+                            f"pre-request:{warm_label}", require_host=False
+                        ),
+                        request=lambda lease_id, completed: catalytic_swarm_1_warm_request(
                             sidecar,
                             protocol_v4,
                             predecessor_contract,
@@ -16134,38 +16790,63 @@ def _run_catalytic_swarm_1_audit(
                             task,
                             request_sequence_index=request_sequence_index,
                             lease_id=lease_id,
-                            model_request_completed=record_common_root_warm_completion,
+                            model_request_completed=completed,
+                        ),
+                        after=lambda: require_live_boundary(
+                            f"post-request:{warm_label}", require_host=True
+                        ),
+                        on_model_completed=record_common_root_warm_completion,
+                        failure_metadata=warm_failure_metadata,
+                        ledger=ledger,
+                        runtime_binding=runtime_binding,  # type: ignore[arg-type]
+                        persist_result_fallback=persist_completion_fallback,
+                    )
+                    warm_summaries.append(warm_summary)
+                else:
+                    def execute_common_root_warm() -> tuple[
+                        dict[str, Any], dict[str, Any], str, dict[str, Any]
+                    ]:
+                        with lease_pool.lease() as lease_id:
+                            completed = catalytic_swarm_1_warm_request(
+                                sidecar,
+                                protocol_v4,
+                                predecessor_contract,
+                                readiness,
+                                task,
+                                request_sequence_index=request_sequence_index,
+                                lease_id=lease_id,
+                                model_request_completed=record_common_root_warm_completion,
+                            )
+                        warm_summaries.append(completed[0])
+                        completed_metadata = bind_catalytic_swarm_1_ledger_record(
+                            completed[1], runtime_binding
                         )
-                    warm_summaries.append(completed[0])
-                    completed_metadata = bind_catalytic_swarm_1_ledger_record(
-                        completed[1], runtime_binding
-                    )
-                    validate_catalytic_swarm_1_ledger_record(
-                        completed_metadata, runtime_binding=runtime_binding
-                    )
-                    ledger.append(
-                        completed_metadata,
-                        request_label=f"{task.task_id}:common-root-warm",
-                        request_sequence_index=request_sequence_index,
-                    )
-                    return completed
+                        validate_catalytic_swarm_1_ledger_record(
+                            completed_metadata, runtime_binding=runtime_binding
+                        )
+                        ledger.append(
+                            completed_metadata,
+                            request_label=f"{task.task_id}:common-root-warm",
+                            request_sequence_index=request_sequence_index,
+                        )
+                        return completed
 
-                (
-                    warm_summary,
-                    warm_metadata,
-                    system_message,
-                    system_identity,
-                ) = run_request_with_boundaries(
-                    before=lambda: require_live_boundary(
-                        f"pre-request:{task.task_id}:common-root-warm",
-                        require_host=False,
-                    ),
-                    request=execute_common_root_warm,
-                    after=lambda: require_live_boundary(
-                        f"post-request:{task.task_id}:common-root-warm",
-                        require_host=True,
-                    ),
-                )
+                    (
+                        warm_summary,
+                        warm_metadata,
+                        system_message,
+                        system_identity,
+                    ) = run_request_with_boundaries(
+                        before=lambda: require_live_boundary(
+                            f"pre-request:{task.task_id}:common-root-warm",
+                            require_host=False,
+                        ),
+                        request=execute_common_root_warm,
+                        after=lambda: require_live_boundary(
+                            f"post-request:{task.task_id}:common-root-warm",
+                            require_host=True,
+                        ),
+                    )
 
             outcomes: list[Any] = []
             for arm in execution_order[task.task_id]:
@@ -16197,6 +16878,85 @@ def _run_catalytic_swarm_1_audit(
                         record_model_request_completion(request_label)
                         result["live_request_count"] += 1
                         result["comparison_request_count"] += 1
+
+                    if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5":
+                        comparison_label = f"{_task.task_id}:{turn.arm}:{turn.turn_id}"
+                        def comparison_failure_metadata(lease_id: int) -> dict[str, Any]:
+                            now = utc_now()
+                            terminal = _system_identity.get(
+                                "public_root_terminal_token_index", 1
+                            )
+                            if type(terminal) is not int or terminal <= 0:
+                                terminal = 1
+                            return {
+                                "task_id": _task.task_id,
+                                "arm": turn.arm,
+                                "turn_id": turn.turn_id,
+                                "phase": turn.phase,
+                                "role": turn.role,
+                                "assigned_parents": list(turn.parent_turn_ids),
+                                "candidate_id": "",
+                                "public_pass_count": None,
+                                "content_sha256": sha256_bytes(b""),
+                                "prompt_tokens": terminal,
+                                "cached_prompt_tokens": 0,
+                                "required_cached_prompt_tokens": terminal,
+                                "fresh_prompt_tokens": terminal,
+                                "completion_tokens": 0,
+                                "token_evidence_scope": "post-response-instrumentation-unavailable",
+                                "wddm_freshness_boundary": "post-response-instrumentation-failed",
+                                "lease_id": lease_id,
+                                "request_started_at": now,
+                                "request_finished_at": now,
+                                "public_root_terminal_token_index": terminal,
+                                "common_prefix_tokens": 0,
+                                "response_completed": True,
+                                "transport_passed": False,
+                                "token_evidence_passed": False,
+                            }
+
+                        def execute_v5_comparison(
+                            lease_id: int, completed: Callable[[str], None]
+                        ) -> Any:
+                            model_completed = False
+                            def mark(label: str) -> None:
+                                nonlocal model_completed
+                                model_completed = True
+                                completed(label)
+                            return sidecar.guarded(
+                                comparison_label,
+                                lambda: stream_catalytic_swarm_1_candidate(
+                                    protocol_v4,
+                                    _task,
+                                    turn,
+                                    _system_message,
+                                    _system_identity,
+                                    assignment,
+                                    request_sequence_index=request_sequence_index,
+                                    lease_id=lease_id,
+                                    model_request_completed=mark,
+                                ),
+                                request_completed=lambda: model_completed,
+                            )
+
+                        return run_catalytic_swarm_1_v5_completed_request(
+                            kind="comparison",
+                            request_label=comparison_label,
+                            request_sequence_index=request_sequence_index,
+                            lease_pool=lease_pool,
+                            before=lambda: require_live_boundary(
+                                f"pre-request:{comparison_label}", require_host=False
+                            ),
+                            request=execute_v5_comparison,
+                            after=lambda: require_live_boundary(
+                                f"post-request:{comparison_label}", require_host=True
+                            ),
+                            on_model_completed=record_comparison_model_completion,
+                            failure_metadata=comparison_failure_metadata,
+                            ledger=ledger,
+                            runtime_binding=runtime_binding,  # type: ignore[arg-type]
+                            persist_result_fallback=persist_completion_fallback,
+                        )
 
                     def record_completed_request(metadata: dict[str, Any]) -> None:
                         metadata = bind_catalytic_swarm_1_ledger_record(
@@ -16415,6 +17175,13 @@ def _run_catalytic_swarm_1_audit(
         completed_model_requests = int(
             runtime_boundary_stats.get("completed_model_requests", 0)
         )
+        if CATALYTIC_SWARM_1_RUNTIME_VERSION == "v5":
+            result["lease_evidence"] = {
+                "physical_slots": lease_pool.physical_slots,
+                "max_concurrent": lease_pool.max_concurrent,
+                "lease_count": lease_pool.lease_count,
+                "active_after": lease_pool.active_count,
+            }
         terminal_wddm = reconcile_catalytic_swarm_1_terminal_wddm(
             predecessor_contract,
             cleanup,
@@ -17072,7 +17839,14 @@ def command_audit_catalytic_swarm_1_v3(args: argparse.Namespace) -> dict[str, An
 
 
 def command_audit_catalytic_swarm_1_v4(args: argparse.Namespace) -> dict[str, Any]:
-    return run_catalytic_swarm_1_v4_audit(args)
+    del args
+    raise NeoLoopError(
+        "CatalyticSwarm-1 v4 command invocation is consumed / no retry and must not be rerun"
+    )
+
+
+def command_audit_catalytic_swarm_1_v5(args: argparse.Namespace) -> dict[str, Any]:
+    return run_catalytic_swarm_1_v5_audit(args)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -17131,6 +17905,11 @@ def build_parser() -> argparse.ArgumentParser:
     catalytic_swarm_1_v4.add_argument("--model", required=True)
     catalytic_swarm_1_v4.add_argument("--authorized-main", required=True)
     catalytic_swarm_1_v4.set_defaults(handler=command_audit_catalytic_swarm_1_v4)
+    catalytic_swarm_1_v5 = subparsers.add_parser("audit-catalytic-swarm-1-v5")
+    catalytic_swarm_1_v5.add_argument("--binary", default=str(DEFAULT_BINARY))
+    catalytic_swarm_1_v5.add_argument("--model", required=True)
+    catalytic_swarm_1_v5.add_argument("--authorized-main", required=True)
+    catalytic_swarm_1_v5.set_defaults(handler=command_audit_catalytic_swarm_1_v5)
     return parser
 
 
@@ -17142,6 +17921,7 @@ def main() -> int:
         "audit-catalytic-swarm-1-cache-diagnostic",
         "audit-catalytic-swarm-1-v2",
         "audit-catalytic-swarm-1-v4",
+        "audit-catalytic-swarm-1-v5",
     } and not args.model:
         raise SystemExit("set NEO3000_MODEL or pass --model with the exact Agents-A1 GGUF path")
     try:
@@ -17167,6 +17947,10 @@ def main() -> int:
             } else 1
         if args.command == "audit-catalytic-swarm-1-v4":
             return 0 if result.get("catalytic_swarm_1_v4") in {
+                "reviewable-accept", "no-advantage",
+            } else 1
+        if args.command == "audit-catalytic-swarm-1-v5":
+            return 0 if result.get("catalytic_swarm_1_v5") in {
                 "reviewable-accept", "no-advantage",
             } else 1
         if args.command == "audit-catalytic-swarm-0":

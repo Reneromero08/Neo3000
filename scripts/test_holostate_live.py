@@ -190,6 +190,7 @@ class StaticCapabilityTests(unittest.TestCase):
                 "audit-catalytic-swarm-1-v2",
                 "audit-catalytic-swarm-1-v3",
                 "audit-catalytic-swarm-1-v4",
+                "audit-catalytic-swarm-1-v5",
             },
         )
 

@@ -18,7 +18,7 @@ The central objective is not merely to make ordinary inference cheaper. It is to
 
 # 1. Current proven boundary
 
-CS1 cache diagnostic evidence is bounded: a single authorized three-request diagnostic returned `reviewable-accept`, proving complete public-root cache reuse for two probes. It does not measure task advantage. CS1-v2 and CS1-v3 are consumed preclaim fail-closed boundaries; v3 persisted only its exact control marker before insertion-order-sensitive mapping admission stopped. CS1-v4 is statically integrated but unexecuted; it preserves all frozen evaluation geometry, treats exact semantic stage identity rather than source-object insertion order as authority, and uses the exact public-root terminal index for cache admission. Broader HoloState, restart persistence, SOTA, and automatic promotion remain locked.
+CS1 cache diagnostic evidence is bounded: a single authorized three-request diagnostic returned `reviewable-accept`, proving complete public-root cache reuse for two probes. It does not measure task advantage. CS1-v2 and CS1-v3 are consumed preclaim fail-closed boundaries. CS1-v4 executed once and stopped inconclusively after 775 completed model responses at task 7's common-root warm; the exact failed member of its compound predicate is unavailable because bounded metadata was constructed only after that predicate passed. Canonical consumed boundary is `5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a`. CS1-v5 is statically integrated and unexecuted; it changes evidence closure only and preserves the frozen experiment. Broader HoloState, task advantage, restart persistence, SOTA, and automatic promotion remain locked.
 
 The strongest supported mechanism claims are:
 
@@ -670,8 +670,9 @@ completed: integrate and execute the separately versioned CS1 cache-admission di
 completed: consume the CS1-v2 command attempt preclaim fail-closed with zero requests, sidecars, or artifacts
 completed: integrate CS1-v3 with active-version path qualification and pre-persistence runtime-evidence identity
 completed: consume CS1-v3 preclaim fail-closed on insertion-order-sensitive mapping admission and bind its sole control artifact
-completed: statically integrate CS1-v4 with exact semantic key-set admission and explicit canonical stage projection
-current: preserve CS1-v4 static custody until separately authorized exact-main and exact-model live evaluation
+completed: execute CS1-v4 once; bind its 775-response partial inconclusive boundary and hard-retire it
+completed: statically integrate CS1-v5 completed-response evidence closure without changing experiment geometry
+current: preserve consumed v4 evidence and absent v5 state until separately authorized exact-main/model v5 live evaluation
 1. Adaptive population and verifier allocation, only after verified task advantage
 2. HoloState multi-root admission and eviction policy
 3. HoloState-v2 durable checkpoint-list persistence
@@ -715,9 +716,11 @@ and returned reviewable-accept after 3 model requests. Both probes recorded
 threshold is overextended provenance only. CS1-v2 then consumed its command
 attempt preclaim fail-closed with zero requests, sidecars, or artifacts and no
 retry. CS1-v3 is consumed preclaim fail-closed with one exact control artifact.
-CS1-v4 is integrated but unexecuted with distinct claim, immutable scheduler,
-and runtime-evidence identities. Task advantage and SOTA remain
-locked and automatic promotion remains disabled.
+CS1-v4 is consumed partial evidence: 775 completed responses, 774 ledger and
+host-memory records, six completed parity-passing tasks, no suite adjudication,
+and no retry. CS1-v5 is statically integrated but unexecuted with distinct
+claim, immutable scheduler, and runtime-evidence identities. Task advantage and
+SOTA remain locked and automatic promotion remains disabled.
 ```
 
 Not yet allowed:

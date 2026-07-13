@@ -46,6 +46,59 @@ Older paragraphs that call this diagnostic `INTEGRATED / NOT EXECUTED` are
 superseded by the executed record, the current `TASKS.md` boundary, and the
 later checkpoint/goal entries. The diagnostic is immutable and no-retry.
 
+### Consumed CS1-v4 and static CS1-v5 reconciliation
+
+CS1-v4 executed exactly once from protected main
+`cc3f43579d6abf05e10e6c52484a9e6b3eee8fb8`. It completed 775 of 1,032 model
+requests, including all four arms for six tasks. All six completed tasks passed
+equal-budget parity. The run then stopped at task 7's common-root warm after the
+model response completed but before its ledger and outer host-memory records.
+Suite advantage was not adjudicated. The seven raw artifacts are immutable and
+canonically bound by:
+
+```text
+catalytic_swarm_1_v4_partial_execution_boundary
+SHA-256: 5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a
+```
+
+The strongest supported diagnosis is an evidence-closure defect. The v4 warm
+path advanced completed-request accounting, then evaluated one compound
+predicate before constructing bounded summary and ledger metadata. Therefore:
+
+| Candidate predicate | Evidence available | Pass/fail proved | Classification | Scientific meaning |
+|---|---|---:|---|---|
+| model response reached completion | completed-request label/count 775 | yes, completed | directly observed | the failing request was not incomplete |
+| aggregate warm predicate | generic task-7 warm error | yes, failed | directly observed | at least one member failed |
+| result accepted | no task-7 bounded summary | no | unavailable | cannot attribute failure to content acceptance |
+| inline resource gate passed | post-response summary absent; terminal cleanup/resource evidence survives | no for the request-local gate | unavailable | cannot claim memory caused the stop |
+| finish reason was `stop` | task-7 response metadata absent | no | unavailable | cannot claim a length/transport stop |
+| reasoning absent | task-7 response metadata absent | no | unavailable | cannot claim reasoning-channel leakage |
+| tool calls empty | task-7 response metadata absent | no | unavailable | cannot claim tool-call leakage |
+| visible token evidence accepted | task-7 response metadata absent | no | unavailable | cannot claim token evidence failed |
+| logical prompt count matched rendered warm count | task-7 response metadata absent | no | unavailable | cannot claim tokenizer/count mismatch |
+| summary/ledger construction occurs only after predicate pass | v4 source ordering | yes | statically proved from source | the exact failed member was erased from durable evidence |
+
+Comparison requests had the same wider class of gap: model completion preceded
+strict parse, channel classification, token evidence, and cache admission, while
+some rejection paths could raise before final bounded metadata closure. V5
+repairs all model-request types rather than special-casing warm requests.
+
+CS1-v5 is separately versioned, static-only, and unexecuted:
+
+```text
+claim contract: 6238ff09ba290e55ad6c5cc2c93b4cbc239d573644192cf101696416a7083e3c
+runtime binding: 2b2bcfaadf80d15d2972a4952f4b66026f2dd6979427f6cc32f197c6692903d9
+immutable scheduler: fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e
+```
+
+Its sole intervention is: after each completed model boundary, capture one
+metadata-only observation, execute WDDM/custody/host post-request boundaries,
+append and fsync one identity-bound ledger record with exact bounded gate and
+reason fields, release the one physical lease, and only then enforce acceptance
+or stop. A rejected response remains rejected. Task suite, prompts, candidates,
+hidden material, arms, ordering, budgets, cache law, scoring, parity, thresholds,
+claim limits, and no-Deep/no-promotion laws are unchanged.
+
 ---
 
 ## 1. Objective
@@ -199,9 +252,9 @@ The current evidence supports:
   exact control artifact and zero model requests or sidecars. Its canonical
   consumed-boundary identity is
   `fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14`.
-- CS1-v4 is statically integrated only. Its semantic mapping repair, claim
-  contract, immutable v1 scheduler, and runtime-evidence identities are
-  separately bound before every prospective persistence operation.
+- CS1-v4 is consumed partial evidence and cannot be rerun. CS1-v5 is statically
+  integrated only; its evidence-closure claim, immutable v1 scheduler, and
+  runtime-evidence identities are separately bound before persistence.
 
 ### Locked
 
@@ -214,10 +267,10 @@ PHYSICAL_ORTHOGONAL_STATE_SHARING_PROVEN
 AUTOMATIC_PROMOTION
 ```
 
-The current exact action remains preservation of CS1-v4 static custody without
-invoking it. No consumed command may be rerun. A live CS1-v4 invocation requires
-new explicit authority bound to the then-exact pushed protected `main` and exact
-model path.
+The current exact action remains preservation of consumed v4 evidence and
+static v5 custody without invoking it. No consumed command may be rerun. A live
+CS1-v5 invocation requires new explicit one-shot authority bound to the
+then-exact pushed protected `main` and exact model path.
 
 ---
 

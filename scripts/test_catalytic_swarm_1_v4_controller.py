@@ -215,27 +215,17 @@ class V4ControllerTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             parser.parse_args(["audit-catalytic-swarm-1-v4", "--model", "model.gguf"])
 
-    def test_v4_preclaim_rejects_missing_model_before_live_access(self) -> None:
+    def test_v4_preclaim_rejects_consumed_state_before_live_access(self) -> None:
         with mock.patch.object(holo, "LiveSidecar") as sidecar:
-            with self.assertRaisesRegex(holo.NeoLoopError, "requires --model"):
+            with self.assertRaisesRegex(holo.NeoLoopError, "state already exists"):
                 holo.prepare_catalytic_swarm_1_v4_claim(
                     SimpleNamespace(authorized_main="a" * 40, model="")
                 )
         sidecar.assert_not_called()
 
-    def test_v4_preclaim_rejects_nonexact_authorized_main_before_live_access(self) -> None:
-        with mock.patch.object(holo, "git_read", return_value="b" * 40), mock.patch.object(
-            holo, "LiveSidecar"
-        ) as sidecar:
-            with self.assertRaisesRegex(holo.NeoLoopError, "equal protected main"):
-                holo.prepare_catalytic_swarm_1_v4_claim(
-                    SimpleNamespace(authorized_main="a" * 40, model="model.gguf")
-                )
-        sidecar.assert_not_called()
-
-    def test_v4_state_root_and_all_artifacts_are_absent(self) -> None:
-        self.assertFalse(holo.CATALYTIC_SWARM_1_V4_STATE_ROOT.exists())
-        self.assertFalse(any(path.exists() for path in holo.CATALYTIC_SWARM_1_V4_ARTIFACT_PATHS))
+    def test_v4_state_root_and_all_artifacts_are_preserved(self) -> None:
+        self.assertTrue(holo.CATALYTIC_SWARM_1_V4_STATE_ROOT.exists())
+        self.assertTrue(all(path.exists() for path in holo.CATALYTIC_SWARM_1_V4_ARTIFACT_PATHS))
 
     def test_all_v4_runtime_artifacts_are_ignored_raw_state(self) -> None:
         for path in holo.CATALYTIC_SWARM_1_V4_ARTIFACT_PATHS:

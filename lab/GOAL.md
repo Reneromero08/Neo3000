@@ -1,8 +1,12 @@
 # Active Goal
 
-## Checkpoint 2: Preserve consumed CS1 predecessors and static CS1-v4 custody
+## Checkpoint 2: Bind consumed CS1-v4 and preserve static CS1-v5 custody
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse and the bounded process-local HoloState micro-worker are proven; broader process-local and restart-persistent availability remain locked.
+
+CS1-v4 is now immutable consumed partial evidence: 775 completed responses, 774 ledger records, 774 host-memory checks, six completed equal-budget tasks, and no suite adjudication. The exact task-7 warm predicate failure is unavailable. Canonical boundary SHA-256 is `5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a`.
+
+CS1-v5 is static-only and unexecuted. Its sole intervention closes every completed response through bounded observation, post-request resource evidence, and one durable identity-bound ledger record before acceptance enforcement. V5 claim SHA-256 is `6238ff09ba290e55ad6c5cc2c93b4cbc239d573644192cf101696416a7083e3c`; runtime binding is `2b2bcfaadf80d15d2972a4952f4b66026f2dd6979427f6cc32f197c6692903d9`; immutable scheduler remains `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
 
 ## Preserved boundary
 
@@ -99,9 +103,13 @@ CS1 cache-admission diagnostic evidence: a32b0b08e67e3e219a709c9493bddb31aa19539
 CS1-v2: COMMAND ATTEMPT CONSUMED / PRECLAIM FAIL-CLOSED / ZERO REQUESTS / ZERO ARTIFACTS / NO RETRY
 CS1-v3: COMMAND INVOCATION CONSUMED / PRECLAIM FAIL-CLOSED / ZERO REQUESTS / ONE CONTROL ARTIFACT / NO RETRY
 CS1-v3 preclaim boundary: fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14
-CS1-v4: STATICALLY INTEGRATED / NOT EXECUTED
+CS1-v4: EXECUTED ONCE / PARTIAL 775 REQUESTS / INCONCLUSIVE / NO RETRY
 CS1-v4 claim contract: 2ba862a097da4b3c6bb2e2fbececa49296b38a8c9b5b047f6c281b84c3111ece
 CS1-v4 runtime-evidence binding: d7949912512316d551bf6466895fe7d52b44fe568590782b85e23c4cbd6e53e4
+CS1-v4 partial boundary: 5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a
+CS1-v5: STATICALLY INTEGRATED / NOT EXECUTED
+CS1-v5 claim contract: 6238ff09ba290e55ad6c5cc2c93b4cbc239d573644192cf101696416a7083e3c
+CS1-v5 runtime-evidence binding: 2b2bcfaadf80d15d2972a4952f4b66026f2dd6979427f6cc32f197c6692903d9
 CatalyticSwarm-0 v2 readiness: PASS
 STRUCTURED_HOLOSTATE_MICROWORKER: reviewable-accept
 STRUCTURED_HOLOSTATE_MICROWORKER_AVAILABLE: UNLOCKED

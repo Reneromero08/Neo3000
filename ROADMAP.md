@@ -109,7 +109,8 @@ RSI-0: CLOSED
 -> CatalyticSwarm-1 cache-admission diagnostic: executed once / reviewable-accept / no retry; exact public-root reuse proven for both probes
 -> CatalyticSwarm-1 v2: command attempt consumed / preclaim fail-closed / zero requests / no retry
 -> CatalyticSwarm-1 v3: command invocation consumed / preclaim fail-closed / one control artifact / no retry
--> CatalyticSwarm-1 v4: statically integrated / not executed; semantic key-set admission plus explicit canonical stage projection
+-> CatalyticSwarm-1 v4: executed once / partial 775 requests / inconclusive / consumed / no retry
+-> CatalyticSwarm-1 v5: static-only completed-response evidence closure / not executed
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -130,7 +131,8 @@ this section is only its navigation capsule.
 - **Executed diagnostic:** the separately versioned cache diagnostic executed exactly once: 3 requests, `reviewable-accept`, cache 4,822 covering root terminal 4,820 for both probes, and legacy threshold 4,825 overextended by five tokens. It is diagnostic-only and cannot unlock task advantage or SOTA.
 - **Consumed boundary:** CS1-v2 stopped before artifact claim because inherited v1 qualification compared its v2 tuple against v1 paths. It made zero model requests, launched zero sidecars, claimed zero artifacts, and is no-retry.
 - **Consumed v3 boundary:** the one authorized CS1-v3 invocation persisted its 960-byte control marker, then failed closed before network or inference because sorted evaluator key order did not equal the helper's runtime-stage tuple. Canonical tracked boundary SHA-256 is `fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14`; task advantage was not adjudicated.
-- **Next boundary:** CS1-v4 is statically integrated only. It changes only insertion-order-sensitive mapping admission into exact semantic key-set validation followed by explicit canonical stage projection. Claim contract `2ba862a097da4b3c6bb2e2fbececa49296b38a8c9b5b047f6c281b84c3111ece` and runtime-evidence binding `d7949912512316d551bf6466895fe7d52b44fe568590782b85e23c4cbd6e53e4` remain distinct from immutable scheduler authority. Any live v4 invocation requires new explicit exact-main/model authority.
+- **Consumed v4 boundary:** v4 completed 775 model responses and all four arms for six tasks, then stopped on task 7's common-root warm after model completion but before its metadata ledger and host-memory records. The exact failed member of the compound warm predicate is unavailable. Canonical boundary SHA-256 is `5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a`; all seven raw artifacts are immutable and v4 is hard-retired.
+- **Next boundary:** CS1-v5 repairs evidence closure only. Every completed response must close bounded metadata, post-request resources, and one fsynced identity-bound ledger record before acceptance enforcement. Claim `6238ff09ba290e55ad6c5cc2c93b4cbc239d573644192cf101696416a7083e3c` and runtime binding `2b2bcfaadf80d15d2972a4952f4b66026f2dd6979427f6cc32f197c6692903d9` remain distinct from immutable scheduler authority. V5 is not executed.
 
 | Swarm stage | Architectural purpose | Unlock boundary |
 |---|---|---|
