@@ -193,8 +193,13 @@ class StaticCapabilityTests(unittest.TestCase):
                 "audit-catalytic-swarm-1-v5",
                 "audit-catalytic-swarm-1-v6",
                 "explore-catalytic-inference-0",
+                "run-catalytic-kernel-0",
             },
         )
+
+    def test_catalytic_inference_bench_0_is_hard_frozen(self) -> None:
+        with self.assertRaises(holo.NeoLoopError):
+            holo.command_explore_catalytic_inference_0(SimpleNamespace())
 
     def test_catalytic_swarm_v1_command_is_hard_retired(self) -> None:
         with self.assertRaises(holo.NeoLoopError):

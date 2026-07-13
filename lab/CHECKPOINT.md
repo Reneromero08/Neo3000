@@ -1,6 +1,23 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: CS1 loop closed and Catalytic Inference Bench 0 statically ready
+## Checkpoint 2: CIB0 frozen and Catalytic Kernel 0 statically implemented
+
+**Status:** CIB0 FROZEN / MINIMAL KERNEL STATIC VERIFICATION CLOSED / LIVE CYCLE PENDING
+
+- [x] Preserve all six CIB0 run namespaces a1 through a6 exactly; no CIB0 repair or rerun is authorized.
+- [x] Record the bounded CIB0 conclusion: exact root borrowing repeatedly passed through the accepted prefix, advisory resource observation no longer blocked exploration, and no catalytic transform completed.
+- [x] Record the transform-collapse signal: all three seeds repeated one ranking; a6 retained it and proposed only self-relations; the auxiliary `structural_reason_codes` schema rejected the transform before mechanism classification.
+- [x] Pause CIB0 as `INCONCLUSIVE / OVER-SPECIFIED / TRANSFORM-COLLAPSE SIGNAL`; claims remain unchanged.
+- [x] Implement Catalytic Kernel 0 as one six-request, one-slot, one-sidecar primitive with complementary public evidence shards and no protected evaluator material in requests.
+- [x] Limit model-authored semantics to branch rankings, transform operator/ranking, extraction candidate, and carrier acknowledgements; derive all transform bookkeeping and restoration evidence in the controller.
+- [x] Keep runtime persistence to a manifest, one bounded normalized result, one closure, and a transient run lock. Raw SSE, model text, reasoning, token streams, and protected evaluator data are not retained.
+- [x] Pin the exact 30-entry CIB0 a1-a6 namespace at SHA-256 `57CE7FFFEBBB925BBD3B37F55A9394037720018748776C2C42DD17961D8ECCBD` before state creation and again at closure.
+- [x] Pass 8 / 8 focused kernel tests and changed-file compilation. The single complete CPU-only discovery ran 779 tests: 778 passed and only the intentionally stale evaluator-lock identity errored; after refreshing the required protected-file hashes, that exact failed test passed 1 / 1.
+- [x] Refresh the evaluator lock for the two new protected files and changed protected sources; protected preflight passes. Static verification launched zero sidecars and made zero model requests.
+
+**Next exact action:** create and fast-forward push `Add minimal Catalytic Kernel 0`, then execute one fresh six-request run. Preserve visible, collapsed, or inconclusive evidence without semantic repair or tuning.
+
+## Historical checkpoint: CS1 loop closed and Catalytic Inference Bench 0 statically ready
 
 **Status:** STATIC ARCHITECTURE VERIFIED / FIRST LIVE EXPLORATION PENDING
 

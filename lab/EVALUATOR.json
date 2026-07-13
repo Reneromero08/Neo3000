@@ -160,6 +160,8 @@
       "scripts/test_catalytic_inference_bench_0.py",
       "scripts/catalytic_inference_bench_0_runtime.py",
       "scripts/test_catalytic_inference_bench_0_runtime.py",
+      "scripts/catalytic_kernel_0.py",
+      "scripts/test_catalytic_kernel_0.py",
       "tools/server/server-context.cpp",
       "tools/server/server-task.cpp",
       ".gitignore",
@@ -266,6 +268,8 @@
     ,"scripts/test_catalytic_inference_bench_0.py"
     ,"scripts/catalytic_inference_bench_0_runtime.py"
     ,"scripts/test_catalytic_inference_bench_0_runtime.py"
+    ,"scripts/catalytic_kernel_0.py"
+    ,"scripts/test_catalytic_kernel_0.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"

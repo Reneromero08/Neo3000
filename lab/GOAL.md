@@ -1,6 +1,14 @@
 # Active Goal
 
-## Checkpoint 2: Close CS1 and activate bounded mechanism discovery
+## Checkpoint 2: Freeze CIB0 and execute minimal Catalytic Kernel 0
+
+Catalytic Inference Bench 0 is paused as `INCONCLUSIVE / OVER-SPECIFIED / TRANSFORM-COLLAPSE SIGNAL`. Preserve runs a1 through a6 exactly and do not repair `structural_reason_codes` or rerun the bench. The accepted prefix proved repeated exact public-root borrowing and kept resource telemetry off the exploratory critical path. It did not establish catalytic transformation: the three seeds repeated one ranking, the final transform retained it and proposed only self-relations, and an auxiliary reason-code schema rejected the response before mechanism classification. No production claim changes.
+
+The active primitive is Catalytic Kernel 0: one immutable `cs1-task-06` carrier, complementary public evidence shards A=`1,2,3` and B=`3,4,5`, one physical slot, one process-local sidecar epoch, and exactly six prospective model requests: borrow, branch A, branch B, transform, extract, restore. The model authors only branch rankings, one allowed transform operator and ranking, one extracted candidate, and minimal carrier acknowledgements. The controller derives scores, parent hashes, deterministic two-parent edges, rank deltas, candidate-set changes, extraction binding, and trusted restoration.
+
+The next exact action is to statically verify and fast-forward push the single architectural commit `Add minimal Catalytic Kernel 0`, then execute one fresh run ID. A collapsed complete cycle is preserved without tuning; model-authored semantic failure is not repaired; an incomplete cycle is `INCONCLUSIVE`. No successor version, benchmark, claim contract, Deep request, hidden scoring, automatic promotion, or CIB0/CS1 live command is authorized.
+
+## Historical checkpoint: Close CS1 and activate bounded mechanism discovery
 
 Track A claim verification is paused. CS1-v1 through CS1-v6 are consumed and hard-retired; no CS1-v7 is authorized or planned. V6 consumed its one invocation at `runtime-preclaim` because its own unignored control marker contaminated the later clean-worktree check. It launched zero sidecars, made zero model requests, produced only the exact 1,577-byte control artifact at SHA-256 `9172468FB5D102C36BC78E553C8FD804394C4BE5FFE98E94CA18314F1E2BC9A4`, and left six later artifacts absent. Canonical boundary `64c296f8332afc2fd224fc9d3510c2d12395d5d4c9cdc7955b659fadaa2f8eb3` is `HARNESS SELF-CONTAMINATION / PRE-INFERENCE / SCIENTIFICALLY NON-ADJUDICATING`.
 

@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Track A claim verification is paused. CS1-v1 through CS1-v6 are immutable consumed evidence; V6 is a pre-inference harness-self-contamination boundary, not a scientific result. Track B mechanism discovery is active through repeatable Catalytic Inference Bench 0.
-**Next exact action:** after the architectural commit is statically verified and pushed, run one bounded 13-request `explore-catalytic-inference-0` attempt on `cs1-task-06`. Do not execute any CS1 live command, create CS1-v7, expose hidden data, claim task advantage or SOTA, run Deep, or promote automatically.
+**Active bounded objective:** Track A claim verification is paused. CS1-v1 through CS1-v6 are immutable consumed evidence. Catalytic Inference Bench 0 is paused as `INCONCLUSIVE / OVER-SPECIFIED / TRANSFORM-COLLAPSE SIGNAL`; runs a1 through a6 are immutable. Catalytic Kernel 0 is the active minimal mechanism primitive.
+**Next exact action:** after the single Catalytic Kernel 0 architectural commit is statically verified and pushed, execute one fresh six-request `run-catalytic-kernel-0` cycle. Do not repair or rerun CIB0, execute any CS1 command, create a successor protocol, expose protected evaluator data, run Deep, change claims, or promote automatically.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -502,7 +502,18 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Require exact public-root-terminal reuse, bounded strict schemas, parent/ancestor lineage, extraction before restoration, metadata-only persistence, hidden scoring only after extraction, zero raw SSE/reasoning persistence, lease return to zero, and stable/candidate cleanup custody.
 - [x] Pin task-suite/root identity; hash-bind dependent responses to the sent assignment and ordered consumed artifacts; require evidence-linked parent-rank deltas; and accept restoration only from a run-ID-bound runtime receipt covering cache/root identity, zero leases, cleanup, port retirement, and custody.
 - [x] Keep task-advantage, SOTA, broader HoloState, restart persistence, Deep, and automatic promotion locked regardless of exploratory classification.
-- [ ] From the pushed architectural commit, execute the first bounded `cs1-task-06` run and record either direct borrow → transform → extract → restore evidence or one concrete mechanism-level blocker. At most three attempts are allowed for this goal.
+- [x] Preserve runs a1 through a6 exactly. The accepted a6 prefix proved repeated exact root borrowing and removed resource telemetry from the exploratory critical path, but did not establish catalytic transformation.
+- [x] Record the transform-collapse signal without schema repair: the three seeds repeated one ranking; the final attempted transform retained it, proposed only self-relations, and stopped on the auxiliary reason-code schema before mechanism classification.
+- [x] Pause CIB0 as `INCONCLUSIVE / OVER-SPECIFIED / TRANSFORM-COLLAPSE SIGNAL`. No production claim changes and no further field-by-field repair or rerun is authorized.
+
+### Catalytic Kernel 0 [ACTIVE / MINIMAL PRIMITIVE]
+
+- [x] Define one immutable `cs1-task-06` carrier with candidate programs and kernel instructions but no public examples, branch artifacts, prior evidence, or protected evaluator material.
+- [x] Define complementary public shards A=`1,2,3` and B=`3,4,5`, with shared example 3 as the calibration boundary and no forced disagreement.
+- [x] Define exactly six requests on one physical slot and one process-local sidecar: borrow, branch A, branch B, transform, extract, restore.
+- [x] Keep model-authored semantics minimal: branch rankings, transform operator/ranking, extracted candidate, and carrier acknowledgements. Derive scores, hashes, edges, deltas, set changes, bindings, and trusted restoration in the controller.
+- [x] Statically verify the kernel: 8 / 8 focused tests pass; changed files compile; the one 779-test CPU-only run passed 778 and exposed only the intentionally stale evaluator lock; after lock refresh that exact failed lock test passes and protected preflight passes.
+- [ ] Push commit `Add minimal Catalytic Kernel 0`, then execute one fresh kernel run without tuning a collapsed result or repairing model-authored output.
 
 Preserved v1 executed boundary:
 

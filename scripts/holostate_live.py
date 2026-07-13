@@ -4126,6 +4126,7 @@ class LiveSidecar:
         preverified_model_identity: dict[str, Any] | None = None,
         state_root: Path | None = None,
         wddm_policy: WddmTelemetryPolicy | None = None,
+        advisory_wddm: bool = False,
     ):
         self.binary = binary.resolve()
         self.model = model.resolve()
@@ -4168,6 +4169,7 @@ class LiveSidecar:
         self.readiness: dict[str, Any] = {}
         self.private_at_readiness: int | None = None
         self.wddm_policy = wddm_policy
+        self.advisory_wddm = advisory_wddm
 
     def readiness_timeout(self, ceiling_seconds: float) -> float:
         if self.readiness_deadline_at is None:
@@ -4686,8 +4688,13 @@ class LiveSidecar:
                 ready = (
                     health_ok(PORT, timeout=2)
                     and listener_pids(PORT) == {self.process.pid}
-                    and self.sampler.has_valid_sample()
-                    and self.sampler.failure_reason() is None
+                    and (
+                        self.advisory_wddm
+                        or (
+                            self.sampler.has_valid_sample()
+                            and self.sampler.failure_reason() is None
+                        )
+                    )
                 )
                 if ready:
                     break
@@ -4721,8 +4728,17 @@ class LiveSidecar:
                         PORT,
                         timeout=self.readiness_timeout(2),
                     ),
-                    wddm_has_valid_sample=lambda: self.sampler is not None and self.sampler.has_valid_sample(),
-                    wddm_failure_reason=lambda: self.sampler.failure_reason() if self.sampler else "WDDM-sampler-missing",
+                    wddm_has_valid_sample=lambda: (
+                        self.advisory_wddm
+                        or (self.sampler is not None and self.sampler.has_valid_sample())
+                    ),
+                    wddm_failure_reason=lambda: (
+                        None
+                        if self.advisory_wddm
+                        else self.sampler.failure_reason()
+                        if self.sampler
+                        else "WDDM-sampler-missing"
+                    ),
                     wddm_has_fresh_valid_sample=(
                         (lambda: self.sampler is not None and self.sampler.has_fresh_valid_sample())
                         if self.wddm_policy is not None
@@ -4811,7 +4827,11 @@ class LiveSidecar:
             health_timeout = min(health_timeout, remaining)
         if not health_ok(STABLE_PORT, timeout=health_timeout):
             raise NeoLoopError("stable health lost while HoloState sidecar is active")
-        if self.sampler and self.sampler.failure_reason():
+        if (
+            self.sampler
+            and not self.advisory_wddm
+            and self.sampler.failure_reason()
+        ):
             raise NeoLoopError(self.sampler.failure_reason() or "WDDM failure")
         if require_health:
             if deadline_at is not None:
@@ -18864,10 +18884,18 @@ def command_audit_catalytic_swarm_1_v6(args: argparse.Namespace) -> dict[str, An
 
 
 def command_explore_catalytic_inference_0(args: argparse.Namespace) -> dict[str, Any]:
-    """Run the repeatable, explicitly non-claiming Catalytic Inference Bench 0."""
-    from catalytic_inference_bench_0_runtime import run_catalytic_inference_bench_0
+    """Refuse reuse of frozen CIB0 evidence."""
+    del args
+    raise NeoLoopError(
+        "Catalytic Inference Bench 0 is frozen after a1-a6 / no repair or rerun"
+    )
 
-    return run_catalytic_inference_bench_0(args)
+
+def command_run_catalytic_kernel_0(args: argparse.Namespace) -> dict[str, Any]:
+    """Run the minimal six-request catalytic computing kernel."""
+    from catalytic_kernel_0 import run_catalytic_kernel_0
+
+    return run_catalytic_kernel_0(args)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -18944,6 +18972,11 @@ def build_parser() -> argparse.ArgumentParser:
     catalytic_inference_bench_0.set_defaults(
         handler=command_explore_catalytic_inference_0
     )
+    catalytic_kernel_0 = subparsers.add_parser("run-catalytic-kernel-0")
+    catalytic_kernel_0.add_argument("--binary", default=str(DEFAULT_BINARY))
+    catalytic_kernel_0.add_argument("--model", required=True)
+    catalytic_kernel_0.add_argument("--run-id", required=True)
+    catalytic_kernel_0.set_defaults(handler=command_run_catalytic_kernel_0)
     return parser
 
 
@@ -18956,7 +18989,7 @@ def main() -> int:
         "audit-catalytic-swarm-1-v2",
         "audit-catalytic-swarm-1-v4",
         "audit-catalytic-swarm-1-v6",
-        "explore-catalytic-inference-0",
+        "run-catalytic-kernel-0",
     } and not args.model:
         raise SystemExit("set NEO3000_MODEL or pass --model with the exact Agents-A1 GGUF path")
     try:
@@ -18997,6 +19030,12 @@ def main() -> int:
                 result.get("status") == "complete"
                 and result.get("mechanism_classification")
                 in {"MECHANISM_VISIBLE", "MECHANISM_WEAK", "MECHANISM_COLLAPSED"}
+            ) else 1
+        if args.command == "run-catalytic-kernel-0":
+            return 0 if (
+                result.get("status") == "complete"
+                and result.get("mechanism_classification")
+                in {"CATALYTIC_KERNEL_VISIBLE", "CATALYTIC_KERNEL_COLLAPSED"}
             ) else 1
         if args.command == "audit-catalytic-swarm-0":
             return 1
