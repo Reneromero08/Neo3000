@@ -349,6 +349,129 @@ def _safe_exception(exc: BaseException, *, boundary: str) -> dict[str, Any]:
     }
 
 
+def _valid_resource_bytes(value: Any) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    return value
+
+
+def _bounded_resource_exception(exc: BaseException) -> dict[str, str]:
+    message = str(exc)
+    return {
+        "exception_type": type(exc).__name__[:128] or "Exception",
+        "exception_message_sha256": _sha256(
+            message.encode("utf-8", errors="replace")
+        ),
+    }
+
+
+def _resource_error_observation(
+    *, boundary: str, exc: BaseException
+) -> dict[str, Any]:
+    return {
+        "boundary": boundary,
+        "observation_state": "observation-error",
+        **_bounded_resource_exception(exc),
+        "observed_at": _utc_now(),
+    }
+
+
+def _normalize_resource_observation(
+    value: Mapping[str, Any], *, boundary: str
+) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise TypeError("resource observer returned a non-object")
+    observed_at = value.get("observed_at")
+    if isinstance(observed_at, str) and 1 <= len(observed_at) <= 64:
+        try:
+            parsed_observed_at = datetime.fromisoformat(observed_at)
+            if parsed_observed_at.tzinfo is None:
+                raise ValueError("resource timestamp has no timezone")
+        except ValueError:
+            observed_at = None
+    else:
+        observed_at = None
+    result: dict[str, Any] = {
+        "boundary": boundary,
+        "observed_at": observed_at or _utc_now(),
+    }
+    host = _valid_resource_bytes(value.get("host_private_bytes"))
+    wddm = _valid_resource_bytes(value.get("wddm_peak_bytes"))
+    if host is not None:
+        result["host_private_bytes"] = host
+        if type(value.get("host_private_ceiling_exceeded")) is bool:
+            result["host_private_ceiling_exceeded"] = value[
+                "host_private_ceiling_exceeded"
+            ]
+    if wddm is not None:
+        result["wddm_peak_bytes"] = wddm
+        result["wddm_ceiling_exceeded"] = (
+            value.get("wddm_ceiling_exceeded") is True
+            or wddm > WDDM_PEAK_CEILING_BYTES
+        )
+
+    exception_type = value.get("exception_type")
+    exception_sha = value.get("exception_message_sha256")
+    bounded_error = (
+        isinstance(exception_type, str)
+        and 1 <= len(exception_type) <= 128
+        and isinstance(exception_sha, str)
+        and re.fullmatch(r"[0-9A-Fa-f]{64}", exception_sha) is not None
+    )
+    if bounded_error:
+        result["exception_type"] = exception_type
+        result["exception_message_sha256"] = exception_sha.upper()
+
+    declared_state = value.get("observation_state")
+    if bounded_error or declared_state == "observation-error":
+        result["observation_state"] = "observation-error"
+        if not bounded_error:
+            result.update(
+                _bounded_resource_exception(
+                    RuntimeError("resource observation error had no bounded identity")
+                )
+            )
+    elif declared_state not in {None, "measured", "unavailable"}:
+        result["observation_state"] = "observation-error"
+        result.update(
+            _bounded_resource_exception(
+                RuntimeError("resource observation declared an invalid state")
+            )
+        )
+    elif declared_state == "unavailable":
+        result["observation_state"] = "unavailable"
+    elif host is not None and wddm is not None:
+        result["observation_state"] = "measured"
+    else:
+        result["observation_state"] = "unavailable"
+    return result
+
+
+def _observe_resource(
+    live: RuntimeAdapter, *, sidecar: Any, boundary: str
+) -> dict[str, Any]:
+    try:
+        value = live.resource_summary(sidecar=sidecar, boundary=boundary)
+        return _normalize_resource_observation(value, boundary=boundary)
+    except Exception as exc:
+        return _resource_error_observation(boundary=boundary, exc=exc)
+
+
+def _validated_persisted_resource_observation(
+    value: Any, *, boundary: str
+) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise CatalyticInferenceRuntimeError(
+            "checkpoint resource observation is not an object"
+        )
+    normalized = _normalize_resource_observation(value, boundary=boundary)
+    if dict(value) != normalized:
+        raise CatalyticInferenceRuntimeError(
+            "checkpoint resource observation is not exact normalized metadata"
+        )
+    return normalized
+
+
 def _get(value: Any, name: str, default: Any = None) -> Any:
     if isinstance(value, Mapping):
         return value.get(name, default)
@@ -653,6 +776,7 @@ def _require_request_safety(
     after_custody: Mapping[str, Any],
     before_resource: Mapping[str, Any],
     after_resource: Mapping[str, Any],
+    host_baseline_bytes: int | None = None,
 ) -> None:
     for label, custody in (
         ("before", before_custody),
@@ -662,37 +786,54 @@ def _require_request_safety(
             raise CatalyticInferenceRuntimeError(
                 f"{request_id}: {label} custody boundary failed"
             )
-    resources: list[tuple[str, Mapping[str, Any]]] = []
-    for label, resource in (
-        ("before", before_resource),
-        ("after", after_resource),
-    ):
+    resources: list[Mapping[str, Any]] = []
+    for resource in (before_resource, after_resource):
         if not isinstance(resource, Mapping):
-            raise CatalyticInferenceRuntimeError(
-                f"{request_id}: {label} resource boundary is unavailable"
-            )
-        host = resource.get("host_private_bytes")
-        peak = resource.get("wddm_peak_bytes")
-        if (
-            isinstance(host, bool)
-            or not isinstance(host, int)
-            or host < 0
-            or isinstance(peak, bool)
-            or not isinstance(peak, int)
-            or peak < 0
-            or resource.get("wddm_failure") is not False
-        ):
-            raise CatalyticInferenceRuntimeError(
-                f"{request_id}: {label} resource boundary failed"
-            )
-        resources.append((label, resource))
-    before_host = int(resources[0][1]["host_private_bytes"])
-    after_host = int(resources[1][1]["host_private_bytes"])
-    if after_host - before_host > HOST_PRIVATE_GROWTH_CEILING_BYTES:
+            continue
+        _require_measured_resource_ceiling(
+            request_id=request_id,
+            resource=resource,
+            host_baseline_bytes=host_baseline_bytes,
+        )
+        resources.append(resource)
+    hosts = [
+        _valid_resource_bytes(resource.get("host_private_bytes"))
+        for resource in resources
+    ]
+    if (
+        len(hosts) == 2
+        and hosts[0] is not None
+        and hosts[1] is not None
+        and hosts[1] - hosts[0] > HOST_PRIVATE_GROWTH_CEILING_BYTES
+    ):
         raise CatalyticInferenceRuntimeError(
             f"{request_id}: host-private growth exceeded exploratory ceiling"
         )
-    if max(int(resource["wddm_peak_bytes"]) for _, resource in resources) > WDDM_PEAK_CEILING_BYTES:
+
+
+def _require_measured_resource_ceiling(
+    *,
+    request_id: str,
+    resource: Mapping[str, Any],
+    host_baseline_bytes: int | None = None,
+) -> None:
+    host = _valid_resource_bytes(resource.get("host_private_bytes"))
+    peak = _valid_resource_bytes(resource.get("wddm_peak_bytes"))
+    baseline = _valid_resource_bytes(host_baseline_bytes)
+    if host is not None and (
+        resource.get("host_private_ceiling_exceeded") is True
+        or (
+            baseline is not None
+            and host - baseline > HOST_PRIVATE_GROWTH_CEILING_BYTES
+        )
+    ):
+        raise CatalyticInferenceRuntimeError(
+            f"{request_id}: host-private growth exceeded exploratory ceiling"
+        )
+    if peak is not None and (
+        peak > WDDM_PEAK_CEILING_BYTES
+        or resource.get("wddm_ceiling_exceeded") is True
+    ):
         raise CatalyticInferenceRuntimeError(
             f"{request_id}: WDDM peak exceeded exploratory ceiling"
         )
@@ -788,11 +929,17 @@ def _lease_accounting(pool: Any) -> dict[str, Any]:
     }
 
 
-def _aggregate_cost(request_records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+def _aggregate_cost(
+    request_records: Sequence[Mapping[str, Any]],
+    resource_observations: Sequence[Mapping[str, Any]],
+    *,
+    readiness: Mapping[str, Any] | None,
+) -> dict[str, Any]:
     cached = fresh = completion = 0
     wall = 0.0
-    peak_wddm = 0
-    maximum_host_growth = 0
+    host_values: list[int] = []
+    wddm_values: list[int] = []
+    per_request_host_growth: list[int] = []
     for record in request_records:
         transport = record.get("transport", {})
         resources = record.get("resources", {})
@@ -802,32 +949,81 @@ def _aggregate_cost(request_records: Sequence[Mapping[str, Any]]) -> dict[str, A
         fresh += int(transport.get("fresh_prompt_tokens", 0))
         completion += int(transport.get("completion_tokens", 0))
         wall += float(transport.get("total_time_seconds", 0.0))
-        peaks = [
-            value
-            for value in (
-                before.get("wddm_peak_bytes"),
-                after.get("wddm_peak_bytes"),
-            )
-            if isinstance(value, int) and not isinstance(value, bool)
-        ]
-        if peaks:
-            peak_wddm = max(peak_wddm, *peaks)
-        before_host = before.get("host_private_bytes")
-        after_host = after.get("host_private_bytes")
-        if all(
-            isinstance(value, int) and not isinstance(value, bool)
-            for value in (before_host, after_host)
+        before_host = _valid_resource_bytes(before.get("host_private_bytes"))
+        after_host = _valid_resource_bytes(after.get("host_private_bytes"))
+        if before_host is not None and after_host is not None:
+            per_request_host_growth.append(max(0, after_host - before_host))
+
+    complete_observations = 0
+    observation_errors = 0
+    for observation in resource_observations:
+        host = _valid_resource_bytes(observation.get("host_private_bytes"))
+        wddm = _valid_resource_bytes(observation.get("wddm_peak_bytes"))
+        if host is not None:
+            host_values.append(host)
+        if wddm is not None:
+            wddm_values.append(wddm)
+        if (
+            host is not None
+            and wddm is not None
+            and observation.get("observation_state") == "measured"
         ):
-            maximum_host_growth = max(
-                maximum_host_growth, int(after_host) - int(before_host)
-            )
+            complete_observations += 1
+        if observation.get("observation_state") == "observation-error":
+            observation_errors += 1
+
+    if not host_values and not wddm_values:
+        observability = "unavailable"
+    elif (
+        len(resource_observations) == 2 * len(request_records)
+        and len(resource_observations) > 0
+        and complete_observations == len(resource_observations)
+    ):
+        observability = "complete"
+    else:
+        observability = "partial"
+    readiness_baseline = _valid_resource_bytes(
+        readiness.get("private_bytes") if isinstance(readiness, Mapping) else None
+    )
+    readiness_growth = (
+        [max(0, value - readiness_baseline) for value in host_values]
+        if readiness_baseline is not None
+        else []
+    )
+    measured_host_breach = any(
+        observation.get("host_private_ceiling_exceeded") is True
+        and _valid_resource_bytes(observation.get("host_private_bytes")) is not None
+        for observation in resource_observations
+    ) or any(value > HOST_PRIVATE_GROWTH_CEILING_BYTES for value in readiness_growth)
+    measured_wddm_breach = any(
+        value > WDDM_PEAK_CEILING_BYTES for value in wddm_values
+    ) or any(
+        observation.get("wddm_ceiling_exceeded") is True
+        and _valid_resource_bytes(observation.get("wddm_peak_bytes")) is not None
+        for observation in resource_observations
+    )
     return {
         "fresh_prompt_tokens": fresh,
         "cached_prompt_tokens": cached,
         "completion_tokens": completion,
         "model_wall_time_seconds": round(wall, 6),
-        "peak_wddm_bytes": peak_wddm,
-        "maximum_per_request_host_private_growth_bytes": maximum_host_growth,
+        "resource_observability": observability,
+        "resource_observation_count": len(resource_observations),
+        "complete_resource_observation_count": complete_observations,
+        "resource_observation_error_count": observation_errors,
+        "host_private_measurement_count": len(host_values),
+        "wddm_measurement_count": len(wddm_values),
+        "host_private_baseline_bytes": readiness_baseline,
+        "maximum_host_private_bytes": max(host_values) if host_values else None,
+        "peak_wddm_bytes": max(wddm_values) if wddm_values else None,
+        "maximum_per_request_host_private_growth_bytes": (
+            max(per_request_host_growth) if per_request_host_growth else None
+        ),
+        "maximum_host_private_growth_from_readiness_bytes": (
+            max(readiness_growth) if readiness_growth else None
+        ),
+        "measured_host_ceiling_breach": measured_host_breach,
+        "measured_wddm_ceiling_breach": measured_wddm_breach,
     }
 
 
@@ -839,6 +1035,7 @@ def _checkpoint(
     status: str,
     observations: Sequence[Any],
     request_records: Sequence[Mapping[str, Any]],
+    resource_observations: Sequence[Mapping[str, Any]],
     artifacts: Mapping[str, Mapping[str, Any]],
     public_scores: Mapping[str, Mapping[str, Any]],
     hidden_score: Mapping[str, Any] | None,
@@ -872,6 +1069,7 @@ def _checkpoint(
         "inflight_request_id": inflight_request_id,
         "observations": [_observation_dict(item) for item in observations],
         "request_records": list(request_records),
+        "resource_observations": list(resource_observations),
         "artifact_index": artifact_index,
         "public_scores": dict(public_scores),
         "post_extraction_hidden_score": dict(hidden_score) if hidden_score else None,
@@ -1009,6 +1207,10 @@ def _load_prefix(protocol: Any, checkpoint: Mapping[str, Any], plan: Any) -> tup
     expected_ids = [item.request_id for item in plan.requests[: len(observations)]]
     if [item.request_id for item in observations] != expected_ids:
         raise CatalyticInferenceRuntimeError("checkpoint is not an exact request prefix")
+    if [record.get("request_id") for record in records] != expected_ids:
+        raise CatalyticInferenceRuntimeError(
+            "checkpoint request records are not an exact request prefix"
+        )
     if checkpoint.get("next_request_ordinal") != len(observations) + 1:
         raise CatalyticInferenceRuntimeError("checkpoint boundary ordinal is inconsistent")
     return observations, [dict(item) for item in records]
@@ -1027,6 +1229,7 @@ class _HoloStateAdapter:
         self.custody = importlib.import_module("catalytic_runtime_custody")
         self.swarm = importlib.import_module("catalytic_swarm")
         self.harness = importlib.import_module("baseline_harness")
+        self._host_private_baseline_bytes: int | None = None
 
     def preflight(self, *, args: Any, repository_root: Path, run_root: Path, allowed_paths: Sequence[Path]) -> Mapping[str, Any]:
         if repository_root.resolve() != self.repository_root:
@@ -1161,10 +1364,16 @@ class _HoloStateAdapter:
             wddm_policy=self.h.catalytic_swarm_1_wddm_policy(predecessor),
         )
         readiness = sidecar.launch()
+        readiness_private = _valid_resource_bytes(
+            readiness.get("process_memory", {}).get("private_bytes")
+            if isinstance(readiness.get("process_memory"), Mapping)
+            else None
+        )
+        self._host_private_baseline_bytes = readiness_private
         return sidecar, {
             "sidecar_pid": int(readiness["pid"]),
             "readiness_seconds": float(readiness["readiness_seconds"]),
-            "private_bytes": int(readiness["process_memory"]["private_bytes"]),
+            "private_bytes": readiness_private,
             "stable_pids": list(readiness["stable_pids"]),
             "chat_template_sha256": str(readiness["chat_template_sha256"]),
         }
@@ -1224,15 +1433,51 @@ class _HoloStateAdapter:
         }
 
     def resource_summary(self, *, sidecar: Any, boundary: str) -> Mapping[str, Any]:
-        info = self.h.process_info(sidecar.process.pid) if sidecar.process else None
-        telemetry = sidecar.telemetry()
-        return {
+        result: dict[str, Any] = {
             "boundary": boundary,
-            "sidecar_pid": sidecar.process.pid if sidecar.process else None,
-            "host_private_bytes": int(info["private_bytes"]) if info else None,
-            "wddm_peak_bytes": int(telemetry["peak_bytes"]) if isinstance(telemetry.get("peak_bytes"), int) else None,
-            "wddm_failure": telemetry.get("failure_reason") is not None,
+            "observed_at": _utc_now(),
         }
+        first_error: BaseException | None = None
+        host: int | None = None
+        try:
+            info = self.h.process_info(sidecar.process.pid) if sidecar.process else None
+            host = _valid_resource_bytes(
+                info.get("private_bytes") if isinstance(info, Mapping) else None
+            )
+        except Exception as exc:
+            first_error = exc
+        if host is not None:
+            result["host_private_bytes"] = host
+            if self._host_private_baseline_bytes is not None:
+                result["host_private_ceiling_exceeded"] = (
+                    host - self._host_private_baseline_bytes
+                    > HOST_PRIVATE_GROWTH_CEILING_BYTES
+                )
+
+        wddm: int | None = None
+        try:
+            telemetry = sidecar.telemetry()
+            if not isinstance(telemetry, Mapping):
+                raise TypeError("WDDM telemetry returned a non-object")
+            wddm = _valid_resource_bytes(telemetry.get("peak_bytes"))
+            failure_reason = telemetry.get("failure_reason")
+            if failure_reason is not None and first_error is None:
+                first_error = RuntimeError(str(failure_reason))
+        except Exception as exc:
+            if first_error is None:
+                first_error = exc
+        if wddm is not None:
+            result["wddm_peak_bytes"] = wddm
+            result["wddm_ceiling_exceeded"] = wddm > WDDM_PEAK_CEILING_BYTES
+
+        if first_error is not None:
+            result["observation_state"] = "observation-error"
+            result.update(_bounded_resource_exception(first_error))
+        elif host is not None and wddm is not None:
+            result["observation_state"] = "measured"
+        else:
+            result["observation_state"] = "unavailable"
+        return result
 
     def cleanup(self, *, sidecar: Any | None, preflight: Mapping[str, Any]) -> Mapping[str, Any]:
         runtime = preflight["runtime"]
@@ -1377,6 +1622,7 @@ def run_catalytic_inference_bench_0(
 
         observations: list[Any] = []
         request_records: list[dict[str, Any]] = []
+        resource_observations: list[dict[str, Any]] = []
         artifacts: dict[str, dict[str, Any]] = {}
         public_scores: dict[str, dict[str, Any]] = {}
         hidden_score: dict[str, Any] | None = None
@@ -1411,11 +1657,35 @@ def run_catalytic_inference_bench_0(
                 live.postflight(preflight=preflight)
                 return terminal_result
             observations, request_records = _load_prefix(protocol, prior, plan)
-            start_ordinal = len(observations) + 1
             if prior.get("resume_safe") is not True or prior.get("inflight_request_id") is not None:
                 raise CatalyticInferenceRuntimeError(
                     "run stopped with an uncertain in-flight request; use a new run ID"
                 )
+            reconstructed_resources: list[dict[str, Any]] = []
+            for record in request_records:
+                request_id = record.get("request_id")
+                resources = record.get("resources")
+                if (
+                    not isinstance(request_id, str)
+                    or not isinstance(resources, Mapping)
+                    or set(resources) != {"before", "after"}
+                ):
+                    raise CatalyticInferenceRuntimeError(
+                        "checkpoint request resource boundary is malformed"
+                    )
+                for label in ("before", "after"):
+                    reconstructed_resources.append(
+                        _validated_persisted_resource_observation(
+                            resources[label], boundary=f"{label}:{request_id}"
+                        )
+                    )
+            prior_resources = prior.get("resource_observations")
+            if prior_resources != reconstructed_resources:
+                raise CatalyticInferenceRuntimeError(
+                    "checkpoint resource-observation prefix is inconsistent"
+                )
+            resource_observations = reconstructed_resources
+            start_ordinal = len(observations) + 1
             resume_method = getattr(live, "supports_request_boundary_resume", None)
             resume = (
                 resume_method(checkpoint=prior)
@@ -1469,10 +1739,16 @@ def run_catalytic_inference_bench_0(
         task = protocol.frozen_task()
         warm_tokens: list[int] | None = None
         warm_terminal: int | None = None
+        host_baseline_bytes: int | None = None
 
         try:
             sidecar, readiness = live.launch_sidecar(preflight=preflight, run_id=run_id)
             sidecar_instances += 1
+            host_baseline_bytes = _valid_resource_bytes(
+                readiness.get("private_bytes")
+                if isinstance(readiness, Mapping)
+                else None
+            )
             warm_payload, warm_parents = _build_payload(
                 protocol, plan.requests[0], observations, artifacts
             )
@@ -1505,8 +1781,16 @@ def run_catalytic_inference_bench_0(
                     sidecar=sidecar,
                     boundary=f"before:{request.request_id}",
                 )
-                before_resource = live.resource_summary(
-                    sidecar=sidecar, boundary=f"before:{request.request_id}"
+                before_resource = _observe_resource(
+                    live,
+                    sidecar=sidecar,
+                    boundary=f"before:{request.request_id}",
+                )
+                resource_observations.append(before_resource)
+                _require_measured_resource_ceiling(
+                    request_id=request.request_id,
+                    resource=before_resource,
+                    host_baseline_bytes=host_baseline_bytes,
                 )
                 inflight = request.request_id
                 safe_boundary = False
@@ -1519,6 +1803,7 @@ def run_catalytic_inference_bench_0(
                         status="running",
                         observations=observations,
                         request_records=request_records,
+                        resource_observations=resource_observations,
                         artifacts=artifacts,
                         public_scores=public_scores,
                         hidden_score=hidden_score,
@@ -1572,9 +1857,12 @@ def run_catalytic_inference_bench_0(
                     _score(scorer_fn, task, ranked_id, hidden=False)
                     for ranked_id in ranked_candidate_ids
                 ]
-                after_resource = live.resource_summary(
-                    sidecar=sidecar, boundary=f"after:{request.request_id}"
+                after_resource = _observe_resource(
+                    live,
+                    sidecar=sidecar,
+                    boundary=f"after:{request.request_id}",
                 )
+                resource_observations.append(after_resource)
                 after_custody = live.boundary_custody(
                     preflight=preflight,
                     sidecar=sidecar,
@@ -1586,6 +1874,7 @@ def run_catalytic_inference_bench_0(
                     after_custody=after_custody,
                     before_resource=before_resource,
                     after_resource=after_resource,
+                    host_baseline_bytes=host_baseline_bytes,
                 )
                 normalize_kwargs = {
                     "completed": True,
@@ -1722,6 +2011,7 @@ def run_catalytic_inference_bench_0(
                         status="running",
                         observations=observations,
                         request_records=request_records,
+                        resource_observations=resource_observations,
                         artifacts=artifacts,
                         public_scores=public_scores,
                         hidden_score=hidden_score,
@@ -1809,6 +2099,11 @@ def run_catalytic_inference_bench_0(
             if success
             else protocol.MECHANISM_INCONCLUSIVE
         )
+        resource_summary = _aggregate_cost(
+            request_records,
+            resource_observations,
+            readiness=readiness,
+        )
         result = {
             **summary,
             "run_id": run_id,
@@ -1817,7 +2112,9 @@ def run_catalytic_inference_bench_0(
             "preflight": preflight_metadata,
             "readiness": dict(readiness) if readiness else None,
             "request_records": request_records,
-            "resource_summary": _aggregate_cost(request_records),
+            "resource_observations": resource_observations,
+            "resource_summary": resource_summary,
+            "resource_observability": resource_summary["resource_observability"],
             "post_extraction_hidden_score": hidden_score,
             "lease_accounting": lease,
             "lease_gate_passed": lease_passed,
@@ -1839,6 +2136,7 @@ def run_catalytic_inference_bench_0(
             status=status,
             observations=observations,
             request_records=request_records,
+            resource_observations=resource_observations,
             artifacts=artifacts,
             public_scores=public_scores,
             hidden_score=hidden_score,
@@ -1887,6 +2185,7 @@ def run_catalytic_inference_bench_0(
                 status="failed",
                 observations=observations,
                 request_records=request_records,
+                resource_observations=resource_observations,
                 artifacts=artifacts,
                 public_scores=public_scores,
                 hidden_score=hidden_score,

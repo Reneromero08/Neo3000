@@ -22,10 +22,16 @@ if str(SCRIPT_ROOT) not in sys.path:
 
 from catalytic_inference_bench_0_runtime import (  # noqa: E402
     CLAIMS_LOCKED,
+    HOST_PRIVATE_GROWTH_CEILING_BYTES,
+    WDDM_PEAK_CEILING_BYTES,
     CatalyticInferenceRuntimeError,
+    _HoloStateAdapter,
+    _aggregate_cost,
+    _normalize_resource_observation,
     _normalized_transport,
     _path_is_link_or_reparse,
     _porcelain_v2_status_is_clean,
+    _require_request_safety,
     run_catalytic_inference_bench_0,
 )
 from catalytic_swarm import PhysicalLeasePool  # noqa: E402
@@ -565,11 +571,15 @@ class FakeAdapter:
         return {"passed": not self.unsafe_custody, "boundary_sha256": hashlib.sha256(boundary.encode()).hexdigest().upper()}
 
     def resource_summary(self, *, sidecar: Any, boundary: str) -> Mapping[str, Any]:
+        unsafe = self.unsafe_resources
         return {
             "boundary": boundary,
-            "host_private_bytes": 10**15 if self.unsafe_resources else 1000,
-            "wddm_peak_bytes": 10**15 if self.unsafe_resources else 2000,
-            "wddm_failure": self.unsafe_resources,
+            "observation_state": "measured",
+            "host_private_bytes": 10**15 if unsafe else 1000,
+            "host_private_ceiling_exceeded": unsafe,
+            "wddm_peak_bytes": 10**15 if unsafe else 2000,
+            "wddm_ceiling_exceeded": unsafe,
+            "observed_at": "2026-07-13T00:00:00+00:00",
         }
 
     def cleanup(self, *, sidecar: Any | None, preflight: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -593,6 +603,209 @@ class FakeAdapter:
 
 
 class CatalyticInferenceBench0RuntimeTests(unittest.TestCase):
+    @staticmethod
+    def _resource(
+        boundary: str,
+        *,
+        host: int | None = 1000,
+        wddm: int | None = 2000,
+        state: str = "measured",
+        host_breach: bool = False,
+        wddm_breach: bool = False,
+    ) -> dict[str, Any]:
+        value: dict[str, Any] = {
+            "boundary": boundary,
+            "observation_state": state,
+            "observed_at": "2026-07-13T00:00:00+00:00",
+        }
+        if host is not None:
+            value["host_private_bytes"] = host
+            value["host_private_ceiling_exceeded"] = host_breach
+        if wddm is not None:
+            value["wddm_peak_bytes"] = wddm
+            value["wddm_ceiling_exceeded"] = wddm_breach
+        return value
+
+    def test_complete_resource_measurements_under_ceilings_pass(self) -> None:
+        before = self._resource("before:warm", host=1000, wddm=2000)
+        after = self._resource("after:warm", host=1200, wddm=2500)
+        _require_request_safety(
+            request_id="warm",
+            before_custody={"passed": True},
+            after_custody={"passed": True},
+            before_resource=before,
+            after_resource=after,
+        )
+        summary = _aggregate_cost(
+            [{"transport": {}, "resources": {"before": before, "after": after}}],
+            [before, after],
+            readiness={"private_bytes": 900},
+        )
+        self.assertEqual(summary["resource_observability"], "complete")
+        self.assertEqual(summary["maximum_host_private_bytes"], 1200)
+        self.assertEqual(summary["peak_wddm_bytes"], 2500)
+        self.assertFalse(summary["measured_host_ceiling_breach"])
+        self.assertFalse(summary["measured_wddm_ceiling_breach"])
+
+    def test_unavailable_pre_request_wddm_is_advisory(self) -> None:
+        stale_numeric = _normalize_resource_observation(
+            self._resource(
+                "before:warm", host=1000, wddm=2000, state="unavailable"
+            ),
+            boundary="before:warm",
+        )
+        self.assertEqual(stale_numeric["observation_state"], "unavailable")
+        before = self._resource(
+            "before:warm", host=1000, wddm=None, state="unavailable"
+        )
+        after = self._resource("after:warm", host=1200, wddm=2500)
+        _require_request_safety(
+            request_id="warm",
+            before_custody={"passed": True},
+            after_custody={"passed": True},
+            before_resource=before,
+            after_resource=after,
+        )
+        summary = _aggregate_cost(
+            [{"transport": {}, "resources": {"before": before, "after": after}}],
+            [before, after],
+            readiness={"private_bytes": 900},
+        )
+        self.assertEqual(summary["resource_observability"], "partial")
+        self.assertEqual(summary["wddm_measurement_count"], 1)
+
+    def test_unavailable_host_private_measurement_is_advisory(self) -> None:
+        before = self._resource(
+            "before:warm", host=None, wddm=2000, state="unavailable"
+        )
+        after = self._resource("after:warm", host=1200, wddm=2500)
+        _require_request_safety(
+            request_id="warm",
+            before_custody={"passed": True},
+            after_custody={"passed": True},
+            before_resource=before,
+            after_resource=after,
+        )
+        summary = _aggregate_cost(
+            [{"transport": {}, "resources": {"before": before, "after": after}}],
+            [before, after],
+            readiness={"private_bytes": 900},
+        )
+        self.assertEqual(summary["resource_observability"], "partial")
+        self.assertEqual(summary["host_private_measurement_count"], 1)
+
+    def test_memory_error_from_resource_inspection_is_bounded_and_advisory(self) -> None:
+        adapter = object.__new__(_HoloStateAdapter)
+        adapter._host_private_baseline_bytes = 900
+        adapter.h = types.SimpleNamespace(
+            process_info=mock.Mock(side_effect=MemoryError("private sample unavailable"))
+        )
+        sidecar = types.SimpleNamespace(
+            process=types.SimpleNamespace(pid=1234),
+            telemetry=lambda: {"peak_bytes": 2000, "failure_reason": None},
+        )
+        observation = adapter.resource_summary(sidecar=sidecar, boundary="before:warm")
+        _require_request_safety(
+            request_id="warm",
+            before_custody={"passed": True},
+            after_custody={"passed": True},
+            before_resource=observation,
+            after_resource=observation,
+        )
+        self.assertEqual(observation["observation_state"], "observation-error")
+        self.assertEqual(observation["exception_type"], "MemoryError")
+        self.assertRegex(observation["exception_message_sha256"], r"^[0-9A-F]{64}$")
+        self.assertNotIn("private sample unavailable", canonical(observation))
+
+    def test_ordinary_resource_exception_is_bounded_and_advisory(self) -> None:
+        adapter = object.__new__(_HoloStateAdapter)
+        adapter._host_private_baseline_bytes = 900
+        adapter.h = types.SimpleNamespace(
+            process_info=mock.Mock(side_effect=OSError("inspection temporarily failed"))
+        )
+        sidecar = types.SimpleNamespace(
+            process=types.SimpleNamespace(pid=1234),
+            telemetry=lambda: {"peak_bytes": 2000, "failure_reason": None},
+        )
+        observation = adapter.resource_summary(sidecar=sidecar, boundary="before:warm")
+        _require_request_safety(
+            request_id="warm",
+            before_custody={"passed": True},
+            after_custody={"passed": True},
+            before_resource=observation,
+            after_resource=observation,
+        )
+        self.assertEqual(observation["exception_type"], "OSError")
+        self.assertNotIn("inspection temporarily failed", canonical(observation))
+
+    def test_measured_host_ceiling_breach_stops(self) -> None:
+        before = self._resource("before:warm")
+        after = self._resource(
+            "after:warm",
+            host=1000 + HOST_PRIVATE_GROWTH_CEILING_BYTES + 1,
+            host_breach=False,
+        )
+        with self.assertRaisesRegex(
+            CatalyticInferenceRuntimeError, "host-private growth exceeded"
+        ):
+            _require_request_safety(
+                request_id="warm",
+                before_custody={"passed": True},
+                after_custody={"passed": True},
+                before_resource=before,
+                after_resource=after,
+                host_baseline_bytes=1000,
+            )
+
+    def test_measured_wddm_ceiling_breach_stops(self) -> None:
+        before = self._resource("before:warm")
+        after = self._resource(
+            "after:warm", wddm=WDDM_PEAK_CEILING_BYTES + 1, wddm_breach=True
+        )
+        with self.assertRaisesRegex(
+            CatalyticInferenceRuntimeError, "WDDM peak exceeded"
+        ):
+            _require_request_safety(
+                request_id="warm",
+                before_custody={"passed": True},
+                after_custody={"passed": True},
+                before_resource=before,
+                after_resource=after,
+            )
+
+    def test_mechanism_classification_is_independent_from_partial_resources(self) -> None:
+        class PartialResourceAdapter(FakeAdapter):
+            def resource_summary(
+                self, *, sidecar: Any, boundary: str
+            ) -> Mapping[str, Any]:
+                return {
+                    "boundary": boundary,
+                    "observation_state": "unavailable",
+                    "host_private_bytes": 1000,
+                    "host_private_ceiling_exceeded": False,
+                    "observed_at": "2026-07-13T00:00:00+00:00",
+                }
+
+        protocol = fake_protocol()
+        with tempfile.TemporaryDirectory() as temporary, mock.patch.dict(
+            sys.modules, {"catalytic_inference_bench_0": protocol}
+        ):
+            root = Path(temporary)
+            result = run_catalytic_inference_bench_0(
+                argparse.Namespace(run_id="partial-resources", binary="B", model="M"),
+                adapter=PartialResourceAdapter([]),
+                repository_root=root,
+                state_root=root / "state" / "catalytic_inference_bench_0",
+                scorer=lambda *_args, hidden=False, **_kwargs: (
+                    (16, 16) if hidden else (5, 5)
+                ),
+            )
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["mechanism_classification"], "MECHANISM_VISIBLE")
+        self.assertEqual(result["resource_observability"], "partial")
+        self.assertFalse(result["resource_summary"]["measured_host_ceiling_breach"])
+        self.assertFalse(result["resource_summary"]["measured_wddm_ceiling_breach"])
+
     def test_complete_epoch_ranked_parent_artifacts_and_nonclaiming_persistence(self) -> None:
         protocol = fake_protocol()
         events: list[str] = []
