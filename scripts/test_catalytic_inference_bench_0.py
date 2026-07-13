@@ -133,38 +133,10 @@ class CatalyticInferenceBench0Tests(unittest.TestCase):
                 for parent in request.parent_ids
             ]
             relational_changes = []
-            for result_position, candidate_id in enumerate(ranking, start=1):
-                positions = [
-                    parent_ranking.index(candidate_id) + 1
-                    if candidate_id in parent_ranking
-                    else 0
-                    for parent_ranking in parent_rankings
-                ]
-                present = [position for position in positions if position > 0]
-                if not present:
-                    change_kind = "introduced"
-                elif result_position < min(present):
-                    change_kind = "promoted"
-                elif result_position > max(present):
-                    change_kind = "demoted"
-                elif len(set(present)) > 1 or any(
-                    position != result_position for position in present
-                ):
-                    change_kind = "reconciled"
-                else:
-                    change_kind = "retained"
+            for candidate_id in ranking:
                 relational_changes.append(
                     {
                         "candidate_id": candidate_id,
-                        "parent_rank_positions": [
-                            {
-                                "parent_artifact_id": parent_id,
-                                "rank_position": positions[index],
-                            }
-                            for index, parent_id in enumerate(request.parent_ids)
-                        ],
-                        "resulting_rank_position": result_position,
-                        "change_kind": change_kind,
                         "public_evidence_refs": [
                             PUBLIC_EVIDENCE_REFS[0],
                             PUBLIC_EVIDENCE_REFS[2],
@@ -186,7 +158,7 @@ class CatalyticInferenceBench0Tests(unittest.TestCase):
                 for candidate in parent_ranking
             ]
             relation_edges = []
-            for edge_index, candidate_id in enumerate(ranking, start=1):
+            for candidate_id in ranking:
                 alternatives = [
                     candidate
                     for candidate in (*ranking, *parent_union)
@@ -197,14 +169,8 @@ class CatalyticInferenceBench0Tests(unittest.TestCase):
                 )
                 relation_edges.append(
                     {
-                        "edge_id": f"{request_id}-edge-{edge_index}",
                         "subject_candidate_id": candidate_id,
                         "object_candidate_id": object_candidate_id,
-                        "relation_operator": relation_operator,
-                        "structural_effect": RELATION_EFFECT_BY_OPERATOR[
-                            relation_operator
-                        ],
-                        "parent_artifact_ids": list(request.parent_ids),
                         "public_evidence_refs": [
                             PUBLIC_EVIDENCE_REFS[0],
                             PUBLIC_EVIDENCE_REFS[2],
@@ -226,10 +192,6 @@ class CatalyticInferenceBench0Tests(unittest.TestCase):
                     STRUCTURAL_REASON_CODES[5],
                     STRUCTURAL_REASON_CODES[9],
                 ],
-                "changed_from_parents": all(
-                    ranking != parent_ranking
-                    for parent_ranking in parent_rankings
-                ),
                 "relational_changes": relational_changes,
                 "relation_edges": relation_edges,
                 "assignment_body_sha256": binding["assignment_body_sha256"],
@@ -380,6 +342,36 @@ class CatalyticInferenceBench0Tests(unittest.TestCase):
             )
         return tuple(observations), payloads
 
+    def _model_transform_fixture(
+        self,
+        request_id: str = "transform-1",
+    ) -> tuple[tuple[Any, ...], dict[str, Any]]:
+        observations, _ = self._observations_for()
+        artifact = copy.deepcopy(
+            next(
+                item.artifact
+                for item in observations
+                if item.request_id == request_id
+            )
+        )
+        artifact.pop("changed_from_parents")
+        for item in artifact["relational_changes"]:
+            for key in (
+                "parent_rank_positions",
+                "resulting_rank_position",
+                "change_kind",
+            ):
+                item.pop(key)
+        for edge in artifact["relation_edges"]:
+            for key in (
+                "edge_id",
+                "relation_operator",
+                "structural_effect",
+                "parent_artifact_ids",
+            ):
+                edge.pop(key)
+        return observations, artifact
+
     def test_plan_schemas_dag_and_dynamic_actual_parent_context(self) -> None:
         self.assertEqual(
             REQUEST_IDS,
@@ -512,10 +504,28 @@ class CatalyticInferenceBench0Tests(unittest.TestCase):
         )
         for request in self.plan.requests:
             self.assertIs(request.response_schema["additionalProperties"], False)
-            self.assertEqual(
-                set(request.response_schema["required"]),
-                set(request.response_schema["properties"]),
-            )
+            expected_required = set(request.response_schema["properties"])
+            if request.request_id in TRANSFORM_IDS:
+                expected_required.remove("changed_from_parents")
+                change_items = request.response_schema["properties"][
+                    "relational_changes"
+                ]["items"]
+                edge_items = request.response_schema["properties"][
+                    "relation_edges"
+                ]["items"]
+                self.assertEqual(
+                    set(change_items["required"]),
+                    {"candidate_id", "public_evidence_refs"},
+                )
+                self.assertEqual(
+                    set(edge_items["required"]),
+                    {
+                        "subject_candidate_id",
+                        "object_candidate_id",
+                        "public_evidence_refs",
+                    },
+                )
+            self.assertEqual(set(request.response_schema["required"]), expected_required)
         report = validate_dag(self.plan)
         self.assertTrue(report.valid)
         self.assertEqual(report.max_depth, 4)
@@ -590,6 +600,160 @@ class CatalyticInferenceBench0Tests(unittest.TestCase):
             "required actual artifact unavailable",
         ):
             build_model_request(self.plan.request("transform-1"))
+
+    def test_reordered_relational_changes_canonicalize_to_output_ranking(self) -> None:
+        observations, transform = self._model_transform_fixture()
+        transform["relational_changes"].reverse()
+        normalized = validate_structured_response(
+            self.plan.request("transform-1"),
+            transform,
+            parent_observations=observations,
+        )
+        self.assertEqual(
+            [item["candidate_id"] for item in normalized["relational_changes"]],
+            normalized["candidate_ranking"],
+        )
+
+    def test_missing_relational_change_candidate_rejects(self) -> None:
+        observations, transform = self._model_transform_fixture()
+        transform["relational_changes"].pop()
+        with self.assertRaisesRegex(
+            CatalyticInferenceBench0Error,
+            "exactly cover",
+        ):
+            validate_structured_response(
+                self.plan.request("transform-1"),
+                transform,
+                parent_observations=observations,
+            )
+
+    def test_extra_relational_change_candidate_rejects(self) -> None:
+        observations, transform = self._model_transform_fixture()
+        transform["relational_changes"][-1]["candidate_id"] = "C63"
+        with self.assertRaisesRegex(
+            CatalyticInferenceBench0Error,
+            "exactly cover",
+        ):
+            validate_structured_response(
+                self.plan.request("transform-1"),
+                transform,
+                parent_observations=observations,
+            )
+
+    def test_duplicate_relational_change_candidate_rejects(self) -> None:
+        observations, transform = self._model_transform_fixture()
+        transform["relational_changes"][-1]["candidate_id"] = transform[
+            "relational_changes"
+        ][0]["candidate_id"]
+        with self.assertRaisesRegex(
+            CatalyticInferenceBench0Error,
+            "duplicate candidate",
+        ):
+            validate_structured_response(
+                self.plan.request("transform-1"),
+                transform,
+                parent_observations=observations,
+            )
+
+    def test_parent_rank_positions_are_derived_from_actual_parents(self) -> None:
+        observations, transform = self._model_transform_fixture()
+        for item in transform["relational_changes"]:
+            item["parent_rank_positions"] = []
+        normalized = validate_structured_response(
+            self.plan.request("transform-1"),
+            transform,
+            parent_observations=observations,
+        )
+        self.assertEqual(
+            normalized["relational_changes"][0]["parent_rank_positions"],
+            [
+                {"parent_artifact_id": "seed-1", "rank_position": 2},
+                {"parent_artifact_id": "seed-2", "rank_position": 1},
+            ],
+        )
+
+    def test_result_positions_and_change_kinds_are_derived(self) -> None:
+        observations, transform = self._model_transform_fixture()
+        for item in transform["relational_changes"]:
+            item["resulting_rank_position"] = 3
+            item["change_kind"] = "introduced"
+        normalized = validate_structured_response(
+            self.plan.request("transform-1"),
+            transform,
+            parent_observations=observations,
+        )
+        self.assertEqual(
+            [
+                (item["resulting_rank_position"], item["change_kind"])
+                for item in normalized["relational_changes"]
+            ],
+            [(1, "reconciled"), (2, "demoted"), (3, "demoted")],
+        )
+
+    def test_semantic_edges_canonicalize_independently_of_source_order(self) -> None:
+        observations, transform = self._model_transform_fixture()
+        first = validate_structured_response(
+            self.plan.request("transform-1"),
+            transform,
+            parent_observations=observations,
+        )
+        transform["relation_edges"].reverse()
+        for edge in transform["relation_edges"]:
+            edge["edge_id"] = "transform-1-edge-3"
+            edge["parent_artifact_ids"] = []
+            edge["structural_effect"] = "opposition"
+        second = validate_structured_response(
+            self.plan.request("transform-1"),
+            transform,
+            parent_observations=observations,
+        )
+        self.assertEqual(second["relation_edges"], first["relation_edges"])
+        self.assertEqual(
+            [edge["edge_id"] for edge in second["relation_edges"]],
+            ["transform-1-edge-1", "transform-1-edge-2", "transform-1-edge-3"],
+        )
+        self.assertTrue(
+            all(
+                edge["parent_artifact_ids"] == ["seed-1", "seed-2"]
+                and edge["relation_operator"] == second["relation_operator"]
+                and edge["structural_effect"]
+                == RELATION_EFFECT_BY_OPERATOR[second["relation_operator"]]
+                for edge in second["relation_edges"]
+            )
+        )
+
+    def test_missing_edge_coverage_rejects_without_inventing_an_edge(self) -> None:
+        observations, transform = self._model_transform_fixture()
+        transform["relation_edges"].pop()
+        with self.assertRaisesRegex(
+            CatalyticInferenceBench0Error,
+            "do not cover",
+        ) as caught:
+            validate_structured_response(
+                self.plan.request("transform-1"),
+                transform,
+                parent_observations=observations,
+            )
+        diagnostic = caught.exception.semantic_diagnostic
+        self.assertEqual(diagnostic["failed_semantic_gate"], "relation-edge-coverage")
+        self.assertEqual(len(diagnostic["relation_edge_pairs"]), 2)
+
+        no_edges = copy.deepcopy(transform)
+        no_edges["relation_edges"] = []
+        with self.assertRaisesRegex(
+            CatalyticInferenceBench0Error,
+            "relation edges are malformed",
+        ) as empty_caught:
+            validate_structured_response(
+                self.plan.request("transform-1"),
+                no_edges,
+                parent_observations=observations,
+            )
+        self.assertEqual(no_edges["relation_edges"], [])
+        self.assertEqual(
+            empty_caught.exception.semantic_diagnostic["relation_edge_pairs"],
+            [],
+        )
 
     def test_strict_artifact_validation_normalization_and_hidden_boundaries(self) -> None:
         observations, payloads = self._observations_for()

@@ -33,6 +33,28 @@ MIB = 1024 * 1024
 HOST_PRIVATE_GROWTH_CEILING_BYTES = 4096 * MIB
 WDDM_PEAK_CEILING_BYTES = 6000 * MIB
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+TRANSFORM_REQUEST_IDS = frozenset({"transform-1", "transform-2", "transform-3"})
+TRANSFORM_RELATION_OPERATORS = frozenset(
+    {"combine", "oppose", "eliminate", "refine", "reconcile"}
+)
+TRANSFORM_SEMANTIC_GATES = frozenset(
+    {
+        "transform-static-schema",
+        "transform-parent-context",
+        "transform-consumption-binding",
+        "relational-change-schema",
+        "relational-change-candidate-duplicates",
+        "relational-change-candidate-coverage",
+        "relational-change-public-evidence",
+        "relation-edge-schema",
+        "relation-edge-candidate-membership",
+        "relation-edge-duplicates",
+        "relation-edge-public-evidence",
+        "relation-edge-coverage",
+    }
+)
+CANDIDATE_ID_PATTERN = re.compile(r"^C(?:[0-5][0-9]|6[0-3])$")
+SHA256_PATTERN = re.compile(r"^[A-F0-9]{64}$")
 STATE_FILENAMES = (
     "manifest.json",
     "checkpoint.json",
@@ -339,14 +361,115 @@ def _restore_observation(protocol: Any, value: Mapping[str, Any]) -> Any:
     return observation
 
 
+def _validated_semantic_diagnostic(
+    exc: BaseException,
+    *,
+    boundary: str,
+    error_message_sha256: str,
+) -> dict[str, Any] | None:
+    semantic_diagnostic = getattr(exc, "semantic_diagnostic", None)
+    exception_class = type(exc)
+    if (
+        not isinstance(semantic_diagnostic, Mapping)
+        or exception_class.__name__ != "CatalyticInferenceBench0Error"
+        or exception_class.__module__.split(".")[-1]
+        != "catalytic_inference_bench_0"
+    ):
+        return None
+    try:
+        normalized = json.loads(_canonical_json_bytes(semantic_diagnostic))
+        if set(normalized) != {
+            "request_id",
+            "output_candidate_ranking",
+            "relational_change_candidate_ids",
+            "relation_operator",
+            "relation_edge_pairs",
+            "failed_semantic_gate",
+            "error_message_sha256",
+        }:
+            return None
+        request_id = normalized["request_id"]
+        ranking = normalized["output_candidate_ranking"]
+        change_ids = normalized["relational_change_candidate_ids"]
+        operator = normalized["relation_operator"]
+        edge_pairs = normalized["relation_edge_pairs"]
+        gate = normalized["failed_semantic_gate"]
+        diagnostic_sha256 = normalized["error_message_sha256"]
+        valid_ranking = (
+            isinstance(ranking, list)
+            and 0 <= len(ranking) <= 3
+            and all(
+                isinstance(item, str)
+                and CANDIDATE_ID_PATTERN.fullmatch(item) is not None
+                for item in ranking
+            )
+            and len(set(ranking)) == len(ranking)
+        )
+        valid_change_ids = (
+            isinstance(change_ids, list)
+            and 0 <= len(change_ids) <= 3
+            and all(
+                isinstance(item, str)
+                and CANDIDATE_ID_PATTERN.fullmatch(item) is not None
+                for item in change_ids
+            )
+        )
+        if (
+            not isinstance(request_id, str)
+            or request_id not in TRANSFORM_REQUEST_IDS
+            or request_id != boundary
+            or not valid_ranking
+            or not valid_change_ids
+            or (
+                operator is not None
+                and (
+                    not isinstance(operator, str)
+                    or operator not in TRANSFORM_RELATION_OPERATORS
+                )
+            )
+            or not isinstance(edge_pairs, list)
+            or not 0 <= len(edge_pairs) <= 3
+            or not isinstance(gate, str)
+            or gate not in TRANSFORM_SEMANTIC_GATES
+            or not isinstance(diagnostic_sha256, str)
+            or SHA256_PATTERN.fullmatch(diagnostic_sha256) is None
+            or diagnostic_sha256 != error_message_sha256
+        ):
+            return None
+        for pair in edge_pairs:
+            if not isinstance(pair, Mapping) or set(pair) != {
+                "subject_candidate_id",
+                "object_candidate_id",
+            }:
+                return None
+            for candidate_id in pair.values():
+                if candidate_id is not None and (
+                    not isinstance(candidate_id, str)
+                    or CANDIDATE_ID_PATTERN.fullmatch(candidate_id) is None
+                ):
+                    return None
+        _validate_persistable(normalized)
+        return normalized
+    except (CatalyticInferenceRuntimeError, TypeError, ValueError, OverflowError):
+        return None
+
+
 def _safe_exception(exc: BaseException, *, boundary: str) -> dict[str, Any]:
     message = str(exc)
-    return {
+    result = {
         "boundary": boundary,
         "error_type": type(exc).__name__,
         "error_message_sha256": _sha256(message.encode("utf-8", errors="replace")),
         "error_message_characters": len(message),
     }
+    semantic_diagnostic = _validated_semantic_diagnostic(
+        exc,
+        boundary=boundary,
+        error_message_sha256=result["error_message_sha256"],
+    )
+    if semantic_diagnostic is not None:
+        result["semantic_diagnostic"] = semantic_diagnostic
+    return result
 
 
 def _valid_resource_bytes(value: Any) -> int | None:
@@ -1203,7 +1326,23 @@ def _load_prefix(protocol: Any, checkpoint: Mapping[str, Any], plan: Any) -> tup
     records = checkpoint.get("request_records")
     if not isinstance(raw, list) or not isinstance(records, list) or len(raw) != len(records):
         raise CatalyticInferenceRuntimeError("checkpoint request prefix is malformed")
-    observations = [_restore_observation(protocol, item) for item in raw]
+    observations = []
+    canonical_validator = getattr(protocol, "validate_structured_response", None)
+    for index, item in enumerate(raw):
+        observation = _restore_observation(protocol, item)
+        request = plan.requests[index]
+        artifact = getattr(observation, "artifact", None)
+        if isinstance(artifact, Mapping) and callable(canonical_validator):
+            canonical_artifact = canonical_validator(
+                request,
+                artifact,
+                parent_observations=tuple(observations),
+            )
+            if canonical_artifact != artifact:
+                raise CatalyticInferenceRuntimeError(
+                    "checkpoint artifact is not the canonical protocol projection"
+                )
+        observations.append(observation)
     expected_ids = [item.request_id for item in plan.requests[: len(observations)]]
     if [item.request_id for item in observations] != expected_ids:
         raise CatalyticInferenceRuntimeError("checkpoint is not an exact request prefix")

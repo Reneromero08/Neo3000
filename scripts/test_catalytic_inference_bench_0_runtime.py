@@ -32,7 +32,11 @@ from catalytic_inference_bench_0_runtime import (  # noqa: E402
     _path_is_link_or_reparse,
     _porcelain_v2_status_is_clean,
     _require_request_safety,
+    _safe_exception,
     run_catalytic_inference_bench_0,
+)
+from catalytic_inference_bench_0 import (  # noqa: E402
+    CatalyticInferenceBench0Error,
 )
 from catalytic_swarm import PhysicalLeasePool  # noqa: E402
 
@@ -625,6 +629,57 @@ class CatalyticInferenceBench0RuntimeTests(unittest.TestCase):
             value["wddm_peak_bytes"] = wddm
             value["wddm_ceiling_exceeded"] = wddm_breach
         return value
+
+    def test_bounded_transform_diagnostic_is_preserved_without_error_text(self) -> None:
+        error_text = "private free-form error text"
+        error_sha256 = hashlib.sha256(error_text.encode("utf-8")).hexdigest().upper()
+        diagnostic = {
+            "request_id": "transform-1",
+            "output_candidate_ranking": ["C01", "C00", "C03"],
+            "relational_change_candidate_ids": ["C03", "C01", "C00"],
+            "relation_operator": "combine",
+            "relation_edge_pairs": [
+                {
+                    "subject_candidate_id": "C01",
+                    "object_candidate_id": "C00",
+                }
+            ],
+            "failed_semantic_gate": "relation-edge-coverage",
+            "error_message_sha256": error_sha256,
+        }
+        error = CatalyticInferenceBench0Error(
+            error_text,
+            semantic_diagnostic=diagnostic,
+        )
+        persisted = _safe_exception(error, boundary="transform-1")
+        self.assertEqual(persisted["semantic_diagnostic"], diagnostic)
+        self.assertNotIn(error_text, canonical(persisted))
+        self.assertEqual(
+            set(persisted["semantic_diagnostic"]),
+            {
+                "request_id",
+                "output_candidate_ranking",
+                "relational_change_candidate_ids",
+                "relation_operator",
+                "relation_edge_pairs",
+                "failed_semantic_gate",
+                "error_message_sha256",
+            },
+        )
+        injected = RuntimeError(error_text)
+        injected.semantic_diagnostic = diagnostic
+        self.assertNotIn(
+            "semantic_diagnostic",
+            _safe_exception(injected, boundary="transform-1"),
+        )
+        malformed = CatalyticInferenceBench0Error(
+            error_text,
+            semantic_diagnostic={**diagnostic, "error_message_sha256": "B" * 64},
+        )
+        self.assertNotIn(
+            "semantic_diagnostic",
+            _safe_exception(malformed, boundary="transform-1"),
+        )
 
     def test_complete_resource_measurements_under_ceilings_pass(self) -> None:
         before = self._resource("before:warm", host=1000, wddm=2000)

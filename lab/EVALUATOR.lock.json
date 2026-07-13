@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "767ba6100063e76f15185134e5bedb21e2d2d689",
+  "baseline_source_commit": "df5992cdc95bcd611b0bee1c717f7c2a927e084c",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -141,7 +141,7 @@
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-13T08:28:12.200484+00:00",
+  "generated_at": "2026-07-13T09:22:35.039067+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
@@ -178,8 +178,8 @@
     "scripts/build_cuda.ps1": "50803f75dbd9006237b95b779bc6e16325bfa0170c356bc1849bd73ae17d99d2",
     "scripts/catalytic_advantage_tasks.py": "1b5c50b496be83670d2338131ecc33cdad35f3e8eb6c8f545f0ce5b60c906458",
     "scripts/catalytic_blackboard.py": "64c32329de2f80c724d105fe1934ee894e3fa96144f0aff550c0c1ec9acd1094",
-    "scripts/catalytic_inference_bench_0.py": "f115460478457e03ebfceffbedb55b780441d5e3c94a61375be5ca49f7431bd0",
-    "scripts/catalytic_inference_bench_0_runtime.py": "8db149f78fea8e0501a3369eedc2d17609b6f32f7025e8603a2b96e1c069f1a3",
+    "scripts/catalytic_inference_bench_0.py": "3fadbbfd7e10a79c4e5ce66aee78f47f4a9adcb1ca175a3d61d539bb98c5bc6f",
+    "scripts/catalytic_inference_bench_0_runtime.py": "5e72711a674b68678fde5e2065514df2d277757b17e8ac7e0b0eca8425764b4f",
     "scripts/catalytic_runtime_custody.py": "96af9123227482060912689e4336775e092e2ae49f1a026b60fe3689474d7e6f",
     "scripts/catalytic_swarm.py": "cb81e91722ab335dc3737a25fb944dd7c7a44c84d41745a32c00896f5399b298",
     "scripts/catalytic_swarm_1_cache_diagnostic.py": "27af84056d312fe3de0ac76f680297411f8e54fe8b6b30e17e0a863205cbe688",
@@ -222,8 +222,8 @@
     "scripts/rolling_decode.py": "29c6e23e226a13cebbb3eedaec9339765db86a69893898ff4ea86971916e290a",
     "scripts/run_candidate.ps1": "04b28fca1d2aae754bb3bca0f1efcb3f8166a8b2fd38da2a37252affb70394a0",
     "scripts/run_server.ps1": "5f1ce7b76615d4434c859ad94e17801a2f246548c9016a5047db1b2939ddede1",
-    "scripts/test_catalytic_inference_bench_0.py": "8580eb28baa31f36466eec61ca91ea9e41914939244268fd08416963075d8c78",
-    "scripts/test_catalytic_inference_bench_0_runtime.py": "25a71774e30a39a6e6b0f5a4626323770b9ac0e758d207ace041144a1bcdca15",
+    "scripts/test_catalytic_inference_bench_0.py": "bb9ad7283f0533511b16666d89ab4d5408fe831181a4d6239203d410fb65d044",
+    "scripts/test_catalytic_inference_bench_0_runtime.py": "b597358db6ac6ebd521d60d97620d55c3df6a1bf9db6ae4381fe8f93084dd79e",
     "scripts/test_catalytic_runtime_custody.py": "202dbc04c4d9995b97e13cd88a20b0085ee9d78bf11a44325e993b7eeddd3a4c",
     "scripts/test_catalytic_swarm_1_cache_diagnostic.py": "c569128f4bd674830b2ed2b54c124a183ae92dc1ba9a7e579425025b7d93c042",
     "scripts/test_catalytic_swarm_1_cache_diagnostic_protocol.py": "87c21f6ff5a3ade1a546175f90d0260d3217a4669bb0d643ac126634d3838152",

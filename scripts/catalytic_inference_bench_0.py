@@ -183,6 +183,15 @@ _FINISH_REASONS = {"stop", "length", "error", "cancelled", "not-started"}
 class CatalyticInferenceBench0Error(RuntimeError):
     """The frozen plan, typed artifact, context, or metadata is malformed."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        semantic_diagnostic: Mapping[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.semantic_diagnostic = semantic_diagnostic
+
 
 def canonical_json_bytes(value: Any) -> bytes:
     try:
@@ -310,6 +319,114 @@ def validate_metadata_only(value: Any) -> None:
     validate_no_hidden_leak(value)
     walk(value)
     canonical_json_bytes(value)
+
+
+_TRANSFORM_SEMANTIC_GATES = {
+    "transform-static-schema",
+    "transform-parent-context",
+    "transform-consumption-binding",
+    "relational-change-schema",
+    "relational-change-candidate-duplicates",
+    "relational-change-candidate-coverage",
+    "relational-change-public-evidence",
+    "relation-edge-schema",
+    "relation-edge-candidate-membership",
+    "relation-edge-duplicates",
+    "relation-edge-public-evidence",
+    "relation-edge-coverage",
+}
+
+
+def _bounded_transform_diagnostic(
+    request: BenchRequestSpec,
+    response: Mapping[str, Any],
+    *,
+    semantic_gate: str,
+    error_message: str,
+) -> dict[str, Any]:
+    if semantic_gate not in _TRANSFORM_SEMANTIC_GATES:
+        raise CatalyticInferenceBench0Error("transform semantic gate is not bounded")
+
+    ranking = response.get("candidate_ranking")
+    output_ranking = (
+        [
+            item
+            for item in ranking[:3]
+            if isinstance(item, str) and item in CANDIDATE_IDS
+        ]
+        if isinstance(ranking, list)
+        else []
+    )
+    changes = response.get("relational_changes")
+    change_candidate_ids = (
+        [
+            item.get("candidate_id")
+            for item in changes[:3]
+            if isinstance(item, Mapping)
+            and isinstance(item.get("candidate_id"), str)
+            and item.get("candidate_id") in CANDIDATE_IDS
+        ]
+        if isinstance(changes, list)
+        else []
+    )
+    edges = response.get("relation_edges")
+    edge_pairs = []
+    if isinstance(edges, list):
+        for item in edges[:3]:
+            if not isinstance(item, Mapping):
+                continue
+            subject = item.get("subject_candidate_id")
+            obj = item.get("object_candidate_id")
+            edge_pairs.append(
+                {
+                    "subject_candidate_id": (
+                        subject
+                        if isinstance(subject, str) and subject in CANDIDATE_IDS
+                        else None
+                    ),
+                    "object_candidate_id": (
+                        obj
+                        if isinstance(obj, str) and obj in CANDIDATE_IDS
+                        else None
+                    ),
+                }
+            )
+    operator = response.get("relation_operator")
+    diagnostic = {
+        "request_id": request.request_id,
+        "output_candidate_ranking": output_ranking,
+        "relational_change_candidate_ids": change_candidate_ids,
+        "relation_operator": (
+            operator
+            if isinstance(operator, str) and operator in RELATION_OPERATORS
+            else None
+        ),
+        "relation_edge_pairs": edge_pairs,
+        "failed_semantic_gate": semantic_gate,
+        "error_message_sha256": sha256_bytes(
+            error_message.encode("utf-8", errors="replace")
+        ),
+    }
+    validate_metadata_only(diagnostic)
+    return diagnostic
+
+
+def _transform_semantic_error(
+    request: BenchRequestSpec,
+    response: Mapping[str, Any],
+    *,
+    semantic_gate: str,
+    message: str,
+) -> CatalyticInferenceBench0Error:
+    return CatalyticInferenceBench0Error(
+        message,
+        semantic_diagnostic=_bounded_transform_diagnostic(
+            request,
+            response,
+            semantic_gate=semantic_gate,
+            error_message=message,
+        ),
+    )
 
 
 _PARENTS: dict[str, tuple[str, ...]] = {
@@ -446,9 +563,6 @@ def _relational_changes_schema(request_id: str) -> dict[str, Any]:
             },
             "required": [
                 "candidate_id",
-                "parent_rank_positions",
-                "resulting_rank_position",
-                "change_kind",
                 "public_evidence_refs",
             ],
         },
@@ -496,12 +610,8 @@ def _relation_edges_schema(request_id: str) -> dict[str, Any]:
                 ),
             },
             "required": [
-                "edge_id",
                 "subject_candidate_id",
                 "object_candidate_id",
-                "relation_operator",
-                "structural_effect",
-                "parent_artifact_ids",
                 "public_evidence_refs",
             ],
         },
@@ -667,11 +777,14 @@ def _response_schema(request_id: str, root_sha256: str) -> dict[str, Any]:
         }
     else:
         raise CatalyticInferenceBench0Error(f"unknown request ID {request_id!r}")
+    required = list(properties)
+    if request_id in TRANSFORM_IDS:
+        required.remove("changed_from_parents")
     return {
         "type": "object",
         "additionalProperties": False,
         "properties": properties,
-        "required": list(properties),
+        "required": required,
     }
 
 
@@ -1115,7 +1228,13 @@ def _validate_response_static(
         raise CatalyticInferenceBench0Error("structured response exceeds byte bound")
     validate_metadata_only(response)
     properties = request.response_schema.get("properties")
-    if not isinstance(properties, Mapping) or set(response) != set(properties):
+    required = request.response_schema.get("required")
+    if (
+        not isinstance(properties, Mapping)
+        or not isinstance(required, list)
+        or not set(required).issubset(response)
+        or not set(response).issubset(properties)
+    ):
         raise CatalyticInferenceBench0Error("structured response key set mismatch")
     value = json.loads(canonical.decode("utf-8"))
     if value.get("artifact_id") != request.request_id:
@@ -1150,18 +1269,76 @@ def _validate_response_static(
             maximum=4,
             label="structural_reason_codes",
         )
-        _require_bool(value.get("changed_from_parents"), "changed_from_parents")
         changes = value.get("relational_changes")
         if not isinstance(changes, list) or not 1 <= len(changes) <= 3:
-            raise CatalyticInferenceBench0Error("relational changes are malformed")
+            raise _transform_semantic_error(
+                request,
+                value,
+                semantic_gate="relational-change-schema",
+                message="relational changes are malformed",
+            )
+        change_schema = _relational_changes_schema(request.request_id)["items"]
+        change_properties = set(change_schema["properties"])
+        change_required = set(change_schema["required"])
+        for item in changes:
+            if (
+                not isinstance(item, Mapping)
+                or not change_required.issubset(item)
+                or not set(item).issubset(change_properties)
+                or not isinstance(item.get("candidate_id"), str)
+                or item.get("candidate_id") not in CANDIDATE_IDS
+            ):
+                raise _transform_semantic_error(
+                    request,
+                    value,
+                    semantic_gate="relational-change-schema",
+                    message="relational change semantic fields are malformed",
+                )
+            try:
+                _public_evidence(item.get("public_evidence_refs"))
+            except CatalyticInferenceBench0Error as exc:
+                raise _transform_semantic_error(
+                    request,
+                    value,
+                    semantic_gate="relational-change-public-evidence",
+                    message=str(exc),
+                ) from exc
         edges = value.get("relation_edges")
-        if (
-            not isinstance(edges, list)
-            or not 1 <= len(edges) <= 3
-            or len({item.get("edge_id") for item in edges if isinstance(item, Mapping)})
-            != len(edges)
-        ):
-            raise CatalyticInferenceBench0Error("relation edges are malformed")
+        if not isinstance(edges, list) or not 1 <= len(edges) <= 3:
+            raise _transform_semantic_error(
+                request,
+                value,
+                semantic_gate="relation-edge-schema",
+                message="relation edges are malformed",
+            )
+        edge_schema = _relation_edges_schema(request.request_id)["items"]
+        edge_properties = set(edge_schema["properties"])
+        edge_required = set(edge_schema["required"])
+        for edge in edges:
+            if (
+                not isinstance(edge, Mapping)
+                or not edge_required.issubset(edge)
+                or not set(edge).issubset(edge_properties)
+                or not isinstance(edge.get("subject_candidate_id"), str)
+                or edge.get("subject_candidate_id") not in CANDIDATE_IDS
+                or not isinstance(edge.get("object_candidate_id"), str)
+                or edge.get("object_candidate_id") not in CANDIDATE_IDS
+            ):
+                raise _transform_semantic_error(
+                    request,
+                    value,
+                    semantic_gate="relation-edge-schema",
+                    message="relation edge semantic fields are malformed",
+                )
+            try:
+                _public_evidence(edge.get("public_evidence_refs"))
+            except CatalyticInferenceBench0Error as exc:
+                raise _transform_semantic_error(
+                    request,
+                    value,
+                    semantic_gate="relation-edge-public-evidence",
+                    message=str(exc),
+                ) from exc
         _validate_consumption_binding_static(request, value)
     elif request.request_id in VERIFY_IDS:
         if value.get("parent_artifact_ids") != list(request.parent_ids):
@@ -1354,8 +1531,32 @@ def validate_structured_response(
     *,
     parent_observations: Sequence[NormalizedObservation] = (),
 ) -> dict[str, Any]:
-    value = _validate_response_static(request, response)
-    actual = _required_observations(request, parent_observations)
+    try:
+        value = _validate_response_static(request, response)
+    except CatalyticInferenceBench0Error as exc:
+        if (
+            request.request_id in TRANSFORM_IDS
+            and isinstance(response, Mapping)
+            and exc.semantic_diagnostic is None
+        ):
+            raise _transform_semantic_error(
+                request,
+                response,
+                semantic_gate="transform-static-schema",
+                message=str(exc),
+            ) from exc
+        raise
+    try:
+        actual = _required_observations(request, parent_observations)
+    except CatalyticInferenceBench0Error as exc:
+        if request.request_id in TRANSFORM_IDS:
+            raise _transform_semantic_error(
+                request,
+                value,
+                semantic_gate="transform-parent-context",
+                message=str(exc),
+            ) from exc
+        raise
     actual_by_id = {item.request_id: item for item in actual}
 
     if request.request_id in TRANSFORM_IDS:
@@ -1370,13 +1571,28 @@ def validate_structured_response(
         # an unchanged transform remains valid collapsed evidence.
         value["changed_from_parents"] = changed
         changes = value["relational_changes"]
-        if [item.get("candidate_id") for item in changes] != list(ranking):
-            raise CatalyticInferenceBench0Error(
-                "relational changes do not cover the resulting ranking in order"
+        change_candidate_ids = [item["candidate_id"] for item in changes]
+        if len(set(change_candidate_ids)) != len(change_candidate_ids):
+            raise _transform_semantic_error(
+                request,
+                value,
+                semantic_gate="relational-change-candidate-duplicates",
+                message="relational changes contain duplicate candidate records",
+            )
+        if set(change_candidate_ids) != set(ranking):
+            raise _transform_semantic_error(
+                request,
+                value,
+                semantic_gate="relational-change-candidate-coverage",
+                message=(
+                    "relational changes do not exactly cover the resulting candidate set"
+                ),
             )
         top_level_evidence = set(value["public_evidence_refs"])
-        for result_position, item in enumerate(changes, start=1):
-            candidate_id = item["candidate_id"]
+        changes_by_candidate = {item["candidate_id"]: item for item in changes}
+        normalized_changes = []
+        for result_position, candidate_id in enumerate(ranking, start=1):
+            item = changes_by_candidate[candidate_id]
             expected_positions = [
                 {
                     "parent_artifact_id": parent_id,
@@ -1388,54 +1604,108 @@ def validate_structured_response(
                 }
                 for index, parent_id in enumerate(request.parent_ids)
             ]
-            if item.get("parent_rank_positions") != expected_positions:
-                raise CatalyticInferenceBench0Error(
-                    "relational change parent ranks differ from actual parents"
-                )
             parent_positions = [entry["rank_position"] for entry in expected_positions]
-            if (
-                item.get("resulting_rank_position") != result_position
-                or item.get("change_kind")
-                != _expected_relational_change_kind(
-                    parent_positions, result_position
+            public_evidence_refs = list(
+                _public_evidence(item["public_evidence_refs"])
+            )
+            if not set(public_evidence_refs).issubset(top_level_evidence):
+                raise _transform_semantic_error(
+                    request,
+                    value,
+                    semantic_gate="relational-change-public-evidence",
+                    message=(
+                        "relational change public evidence is not bound to the transform"
+                    ),
                 )
-                or not set(item.get("public_evidence_refs", ())).issubset(
-                    top_level_evidence
-                )
-            ):
-                raise CatalyticInferenceBench0Error(
-                    "relational change is not evidence-bound to rank deltas"
-                )
+            normalized_changes.append(
+                {
+                    "candidate_id": candidate_id,
+                    "parent_rank_positions": expected_positions,
+                    "resulting_rank_position": result_position,
+                    "change_kind": _expected_relational_change_kind(
+                        parent_positions, result_position
+                    ),
+                    "public_evidence_refs": public_evidence_refs,
+                }
+            )
+        value["relational_changes"] = normalized_changes
         parent_union = set().union(*(set(parent) for parent in parent_rankings))
         result_set = set(ranking)
         relation_edges = value["relation_edges"]
         covered_results: set[str] = set()
-        for edge_index, edge in enumerate(relation_edges, start=1):
-            subject = edge.get("subject_candidate_id")
-            obj = edge.get("object_candidate_id")
-            operator = edge.get("relation_operator")
+        semantic_edges = []
+        semantic_pairs: set[tuple[str, str]] = set()
+        for edge in relation_edges:
+            subject = edge["subject_candidate_id"]
+            obj = edge["object_candidate_id"]
+            pair = (subject, obj)
+            if pair in semantic_pairs:
+                raise _transform_semantic_error(
+                    request,
+                    value,
+                    semantic_gate="relation-edge-duplicates",
+                    message="relation edges contain a duplicate semantic edge",
+                )
+            semantic_pairs.add(pair)
             if (
-                edge.get("edge_id") != f"{request.request_id}-edge-{edge_index}"
-                or operator != value["relation_operator"]
-                or edge.get("structural_effect")
-                != RELATION_EFFECT_BY_OPERATOR[value["relation_operator"]]
-                or edge.get("parent_artifact_ids") != list(request.parent_ids)
-                or subject not in parent_union | result_set
+                subject not in parent_union | result_set
                 or obj not in parent_union | result_set
                 or not ({subject, obj} & result_set)
                 or not ({subject, obj} & parent_union)
-                or not set(edge.get("public_evidence_refs", ())).issubset(
-                    top_level_evidence
-                )
             ):
-                raise CatalyticInferenceBench0Error(
-                    "relation edge is not bound to operator, parents, and evidence"
+                raise _transform_semantic_error(
+                    request,
+                    value,
+                    semantic_gate="relation-edge-candidate-membership",
+                    message=(
+                        "relation edge is not bound to transformed and parent candidates"
+                    ),
                 )
+            public_evidence_refs = list(
+                _public_evidence(edge["public_evidence_refs"])
+            )
+            if not set(public_evidence_refs).issubset(top_level_evidence):
+                raise _transform_semantic_error(
+                    request,
+                    value,
+                    semantic_gate="relation-edge-public-evidence",
+                    message="relation edge public evidence is not bound to the transform",
+                )
+            semantic_edges.append(
+                {
+                    "subject_candidate_id": subject,
+                    "object_candidate_id": obj,
+                    "public_evidence_refs": public_evidence_refs,
+                }
+            )
             covered_results.update({subject, obj} & result_set)
         if covered_results != result_set:
-            raise CatalyticInferenceBench0Error(
-                "relation edges do not cover the transformed ranking"
+            raise _transform_semantic_error(
+                request,
+                value,
+                semantic_gate="relation-edge-coverage",
+                message="relation edges do not cover the transformed ranking",
             )
+        semantic_edges.sort(
+            key=lambda edge: (
+                edge["subject_candidate_id"],
+                edge["object_candidate_id"],
+            )
+        )
+        value["relation_edges"] = [
+            {
+                "edge_id": f"{request.request_id}-edge-{edge_index}",
+                "subject_candidate_id": edge["subject_candidate_id"],
+                "object_candidate_id": edge["object_candidate_id"],
+                "relation_operator": value["relation_operator"],
+                "structural_effect": RELATION_EFFECT_BY_OPERATOR[
+                    value["relation_operator"]
+                ],
+                "parent_artifact_ids": list(request.parent_ids),
+                "public_evidence_refs": edge["public_evidence_refs"],
+            }
+            for edge_index, edge in enumerate(semantic_edges, start=1)
+        ]
     elif request.request_id in VERIFY_IDS:
         parent_union = {
             candidate
@@ -1512,6 +1782,15 @@ def validate_structured_response(
             value.get("assignment_body_sha256")
             != expected_binding["assignment_body_sha256"]
         ):
+            if request.request_id in TRANSFORM_IDS:
+                raise _transform_semantic_error(
+                    request,
+                    value,
+                    semantic_gate="transform-consumption-binding",
+                    message=(
+                        "response consumption binding differs from the sent parent context"
+                    ),
+                )
             raise CatalyticInferenceBench0Error(
                 "response consumption binding differs from the sent parent context"
             )
