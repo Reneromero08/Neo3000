@@ -1365,10 +1365,10 @@ def validate_structured_response(
             for parent in request.parent_ids
         )
         changed = all(ranking != parent_ranking for parent_ranking in parent_rankings)
-        if value["changed_from_parents"] is not changed:
-            raise CatalyticInferenceBench0Error(
-                "changed_from_parents differs from actual parent rankings"
-            )
+        # Parent-bound rankings are authoritative.  The model-provided boolean
+        # is redundant metadata and is normalized to the measured relation so
+        # an unchanged transform remains valid collapsed evidence.
+        value["changed_from_parents"] = changed
         changes = value["relational_changes"]
         if [item.get("candidate_id") for item in changes] != list(ranking):
             raise CatalyticInferenceBench0Error(

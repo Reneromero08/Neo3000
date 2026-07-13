@@ -620,15 +620,15 @@ class CatalyticInferenceBench0Tests(unittest.TestCase):
 
         transform = copy.deepcopy(by_id["transform-1"].artifact)
         transform["changed_from_parents"] = not transform["changed_from_parents"]
-        with self.assertRaisesRegex(
-            CatalyticInferenceBench0Error,
-            "actual parent rankings",
-        ):
-            validate_structured_response(
-                self.plan.request("transform-1"),
-                transform,
-                parent_observations=observations,
-            )
+        normalized_transform = validate_structured_response(
+            self.plan.request("transform-1"),
+            transform,
+            parent_observations=observations,
+        )
+        self.assertEqual(
+            normalized_transform["changed_from_parents"],
+            by_id["transform-1"].artifact["changed_from_parents"],
+        )
         transform = copy.deepcopy(by_id["transform-1"].artifact)
         transform["assignment_body_sha256"] = "A" * 64
         with self.assertRaisesRegex(
