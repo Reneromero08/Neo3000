@@ -155,6 +155,11 @@ from catalytic_swarm_1_runtime_safety import (  # noqa: E402
     require_task_budget_parity,
     run_request_with_boundaries,
 )
+from catalytic_runtime_custody import (  # noqa: E402
+    CustodyViolation as CatalyticRuntimeCustodyViolation,
+    capture_preclaim_custody,
+    validate_postclaim_custody,
+)
 from catalytic_swarm_1_cache_diagnostic import (  # noqa: E402
     CacheProbeObservation,
     classify_diagnostic as classify_cache_diagnostic,
@@ -16715,6 +16720,14 @@ def run_catalytic_swarm_1_v6_audit(args: argparse.Namespace) -> dict[str, Any]:
         "ledger": "state/catalytic_swarm_1_v6/ledger-v6.jsonl",
         "task_results": "state/catalytic_swarm_1_v6/task-results-v6.json",
     }}}
+    try:
+        runtime_custody = capture_preclaim_custody(
+            ROOT,
+            authorized_root="state/catalytic_swarm_1_v6",
+            allowed_paths=preclaim_contract["one_shot"]["paths"].values(),
+        )
+    except CatalyticRuntimeCustodyViolation as exc:
+        raise NeoLoopError(f"CatalyticSwarm-1 preclaim custody failed: {exc}") from exc
     with catalytic_swarm_1_v6_runtime_namespace(preclaim_contract, runtime_binding):
         invocation_record = {
             "schema_version": 6,
@@ -16748,6 +16761,12 @@ def run_catalytic_swarm_1_v6_audit(args: argparse.Namespace) -> dict[str, Any]:
             preserve_partial_on_failure=True,
         )
         try:
+            try:
+                validate_postclaim_custody(runtime_custody)
+            except CatalyticRuntimeCustodyViolation as exc:
+                raise NeoLoopError(
+                    f"CatalyticSwarm-1 postclaim custody failed: {exc}"
+                ) from exc
             contract, runtime_binding = prepare_catalytic_swarm_1_v6_claim(
                 args, preclaimed_control=True
             )
@@ -18838,7 +18857,17 @@ def command_audit_catalytic_swarm_1_v5(args: argparse.Namespace) -> dict[str, An
 
 
 def command_audit_catalytic_swarm_1_v6(args: argparse.Namespace) -> dict[str, Any]:
-    return run_catalytic_swarm_1_v6_audit(args)
+    del args
+    raise NeoLoopError(
+        "CatalyticSwarm-1 v6 command invocation is consumed / no retry and must not be rerun"
+    )
+
+
+def command_explore_catalytic_inference_0(args: argparse.Namespace) -> dict[str, Any]:
+    """Run the repeatable, explicitly non-claiming Catalytic Inference Bench 0."""
+    from catalytic_inference_bench_0_runtime import run_catalytic_inference_bench_0
+
+    return run_catalytic_inference_bench_0(args)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -18904,6 +18933,17 @@ def build_parser() -> argparse.ArgumentParser:
     catalytic_swarm_1_v6.add_argument("--model", required=True)
     catalytic_swarm_1_v6.add_argument("--authorized-main", required=True)
     catalytic_swarm_1_v6.set_defaults(handler=command_audit_catalytic_swarm_1_v6)
+    catalytic_inference_bench_0 = subparsers.add_parser(
+        "explore-catalytic-inference-0"
+    )
+    catalytic_inference_bench_0.add_argument(
+        "--binary", default=str(DEFAULT_BINARY)
+    )
+    catalytic_inference_bench_0.add_argument("--model", required=True)
+    catalytic_inference_bench_0.add_argument("--run-id", required=True)
+    catalytic_inference_bench_0.set_defaults(
+        handler=command_explore_catalytic_inference_0
+    )
     return parser
 
 
@@ -18916,6 +18956,7 @@ def main() -> int:
         "audit-catalytic-swarm-1-v2",
         "audit-catalytic-swarm-1-v4",
         "audit-catalytic-swarm-1-v6",
+        "explore-catalytic-inference-0",
     } and not args.model:
         raise SystemExit("set NEO3000_MODEL or pass --model with the exact Agents-A1 GGUF path")
     try:
@@ -18951,6 +18992,12 @@ def main() -> int:
             return 0 if result.get("catalytic_swarm_1_v6") in {
                 "reviewable-accept", "no-advantage",
             } else 1
+        if args.command == "explore-catalytic-inference-0":
+            return 0 if (
+                result.get("status") == "complete"
+                and result.get("mechanism_classification")
+                in {"MECHANISM_VISIBLE", "MECHANISM_WEAK", "MECHANISM_COLLAPSED"}
+            ) else 1
         if args.command == "audit-catalytic-swarm-0":
             return 1
         return 0 if result.get("verdict") != "inconclusive" else 1

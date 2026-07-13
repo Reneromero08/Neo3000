@@ -1,6 +1,18 @@
 # Active Goal
 
-## Checkpoint 2: Bind consumed CS1-v5 and preserve static CS1-v6 custody
+## Checkpoint 2: Close CS1 and activate bounded mechanism discovery
+
+Track A claim verification is paused. CS1-v1 through CS1-v6 are consumed and hard-retired; no CS1-v7 is authorized or planned. V6 consumed its one invocation at `runtime-preclaim` because its own unignored control marker contaminated the later clean-worktree check. It launched zero sidecars, made zero model requests, produced only the exact 1,577-byte control artifact at SHA-256 `9172468FB5D102C36BC78E553C8FD804394C4BE5FFE98E94CA18314F1E2BC9A4`, and left six later artifacts absent. Canonical boundary `64c296f8332afc2fd224fc9d3510c2d12395d5d4c9cdc7955b659fadaa2f8eb3` is `HARNESS SELF-CONTAMINATION / PRE-INFERENCE / SCIENTIFICALLY NON-ADJUDICATING`.
+
+The generic custody repair captures a clean ordinary/tracked/staged baseline and explicit byte inventories of all ignored historical CS1 namespaces before claim. After claim it permits only exact allowlisted paths in the authorized runtime root and rejects any tracked/staged change, outside untracked path, predecessor mutation, unknown successor namespace, symlinked root, or historical evidence drift. The ignore law is now `/state/catalytic_swarm_1_v*/`, not a broad `state/` exclusion.
+
+Track B mechanism discovery is active through Catalytic Inference Bench 0. A complete epoch uses one physical slot and exactly 13 requests on `cs1-task-06`: warm, direct baseline, three seed proposals, three relational transforms, three verifier/reconcilers, final extraction, and restoration. Runs are repeatable and run-ID-addressed, persist bounded normalized metadata only, never send hidden examples or answer keys to the model, and cannot unlock task advantage, SOTA, broader HoloState, restart persistence, Deep, or automatic promotion. The next exact action is to push the statically verified architecture and execute the first bounded run.
+
+The exploratory contract pins the suite/root hashes, binds every dependent observation to the exact sent assignment and ordered consumed-artifact hashes, binds evidence-linked parent-rank deltas to explicit relation-graph edges, requires extraction to name the edges it consumed, and treats missing borrow, lineage, extraction, or trusted restoration as inconclusive. Restoration requires a hashed run-ID-bound runtime receipt for root/cache identity, zero leases, cleanup, port retirement, and custody; model self-attestation is insufficient. Terminal closure binds the manifest, result, checkpoint, final custody, and absent run lock.
+
+The older CS1-v5/static-v6 material below is retained as historical design context and is superseded wherever it describes V6 as unexecuted or future authority.
+
+## Historical checkpoint: Bind consumed CS1-v5 and preserve static CS1-v6 custody
 
 Checkpoint 0 and RSI-0 are closed; Checkpoint 1A is paused. Exact process-local prefix reuse and the bounded process-local HoloState micro-worker are proven; broader process-local and restart-persistent availability remain locked.
 
@@ -8,7 +20,7 @@ CS1-v4 is immutable consumed partial evidence: 775 completed responses, 774 ledg
 
 CS1-v5 executed exactly once from protected main `241d99e403926b8ef7814c894808922b7cb8cd8e`. It completed 775 responses, persisted 775 ledger records, used zero fallback records, and rejected record 775. Host success accounting is 774 / 775; every measured host value remained below the 4,096 MiB ceiling, so the exact compound live cause is unavailable. No task advantage was established. Canonical boundary SHA-256 is `897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9`; V5 is hard-retired.
 
-CS1-v6 is static-only and unexecuted. Its sole intervention independently closes WDDM, stable custody, candidate custody, and host memory after every completed response, with attempt-before-call evidence, explicit observation/pass/state accounting, continued later safe observations, and exactly one fsynced ledger-or-fallback representation before lease release and enforcement. V6 claim SHA-256 is `8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8`; runtime binding is `3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3`; immutable scheduler remains `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. All seven V6 runtime paths are absent and no V6 authority exists.
+The static V6 design independently closed WDDM, stable custody, candidate custody, and host memory after every completed response, with attempt-before-call evidence, explicit observation/pass/state accounting, continued later safe observations, and exactly one fsynced ledger-or-fallback representation before lease release and enforcement. V6 claim SHA-256 is `8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8`; runtime binding is `3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3`; immutable scheduler remains `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. Its later consumed runtime-preclaim boundary is stated above.
 
 ## Preserved boundary
 
@@ -78,7 +90,7 @@ CS1-v4 is `EXECUTED ONCE / PARTIAL / INCONCLUSIVE / NO RETRY`. Its semantic seve
 
 ## Active bounded objective
 
-Preserve CS1-v1 through CS1-v5 as consumed no-retry evidence and CS1-v6 as `STATICALLY INTEGRATED / NOT EXECUTED`. Do not invoke any consumed command. The next exact action is a separately authorized one-shot V6 live execution from final pushed protected `main`, bound to exact model and binary identities. Task advantage, SOTA, broader process-local HoloState, restart persistence, Deep, and automatic promotion remain locked.
+Preserve CS1-v1 through CS1-v6 as consumed no-retry evidence. Do not invoke any consumed command. The next exact action is the repeatable, non-claiming Catalytic Inference Bench 0 from final pushed protected `main`, bound to exact model and binary identities. Task advantage, SOTA, broader process-local HoloState, restart persistence, Deep, and automatic promotion remain locked.
 
 ## Claim state
 
@@ -111,7 +123,7 @@ CS1-v4 runtime-evidence binding: d7949912512316d551bf6466895fe7d52b44fe568590782
 CS1-v4 partial boundary: 5305192d4509028dbf4cf71d42af04d9703e3320d47cf1000cd60358f8a5044a
 CS1-v5: EXECUTED ONCE / PARTIAL 775 RESPONSES / INCONCLUSIVE / NO RETRY
 CS1-v5 partial boundary: 897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9
-CS1-v6: STATICALLY INTEGRATED / NOT EXECUTED / ZERO ARTIFACTS / NO AUTHORITY
+CS1-v6: CONSUMED / RUNTIME-PRECLAIM / ONE CONTROL ARTIFACT / ZERO REQUESTS / NO RETRY
 CS1-v6 claim contract: 8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8
 CS1-v6 runtime-evidence binding: 3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3
 CatalyticSwarm-0 v2 readiness: PASS

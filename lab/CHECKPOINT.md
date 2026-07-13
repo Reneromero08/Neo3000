@@ -1,5 +1,24 @@
 # Checkpoint Ledger
 
+## Checkpoint 2: CS1 loop closed and Catalytic Inference Bench 0 statically ready
+
+**Status:** STATIC ARCHITECTURE VERIFIED / FIRST LIVE EXPLORATION PENDING
+
+- [x] Consumed CS1-v6 is bound at canonical SHA-256 `64c296f8332afc2fd224fc9d3510c2d12395d5d4c9cdc7955b659fadaa2f8eb3` as `HARNESS SELF-CONTAMINATION / PRE-INFERENCE / SCIENTIFICALLY NON-ADJUDICATING`.
+- [x] V6 and every predecessor CS1 live command are hard-retired; no CS1-v7 is authorized or planned.
+- [x] Generic preclaim/postclaim custody permits only an exact authorized runtime namespace while independently preserving tracked, staged, untracked, ignored, predecessor, successor, and symlink/reparse boundaries.
+- [x] Track A's 1,032-request claim protocol is paused. Track B mechanism discovery is active and cannot mutate claims.
+- [x] Catalytic Inference Bench 0 is frozen at plan SHA-256 `629FDF011326330614CA9E6EA1497BD48298CA62F7F230647B8709AE82FCA408`, suite SHA-256 `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`, and public-root SHA-256 `E1F38ED8E9CBC6E47A413B31F8A435BE35E84469439426D31470A9617436F4F5`.
+- [x] The bench uses one physical slot and exactly 13 requests: warm, direct baseline, three parentless seeds, three relational transforms, three verifier/reconcilers, extraction, and restoration.
+- [x] Dependent responses bind the exact sent assignment and ordered consumed-artifact hashes. Transform rank deltas bind to explicit typed relation-graph edges, and extraction names the edges it uses.
+- [x] Restoration derives from a hashed runtime receipt rather than model self-attestation. Terminal closure cross-binds result, checkpoint, final custody, and absent run lock for both successful and failed terminal states.
+- [x] Raw SSE and reasoning text are not persisted; hidden examples and answer keys never enter model requests; hidden scoring occurs only after extraction.
+- [x] New focused tests: 30 / 30 pass. Relevant legacy safety/controller/dispatch tests: 236 / 236 pass. Complete CPU-only suite: 753 / 753 pass in 46.913 seconds, executed once.
+- [x] Changed bench/custody Python files compile; evaluator lock validation and protected preflight pass.
+- [x] Static verification launched zero sidecars and made zero model requests.
+
+**Next exact action:** commit and fast-forward push the verified architecture, then execute one repeatable `explore-catalytic-inference-0` run on `cs1-task-06` under a new run ID. Do not execute any CS1 command, expose hidden data, claim task advantage or SOTA, run Deep, or promote automatically.
+
 ## Checkpoint 0: Baseline parity
 
 **Status:** CLOSED

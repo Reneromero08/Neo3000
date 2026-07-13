@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Checkpoint 1A tracing remains active and paused. CS1-v1 through CS1-v5 are immutable consumed evidence. CS1-v5 is canonically bound and hard-retired; CS1-v6 is a static-only independent post-request sub-boundary closure successor.
-**Next exact action:** separately authorize one CS1-v6 live execution from the final pushed protected `main`, bound to the exact model and binary identities. V6 claim `8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8`, runtime binding `3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3`, and immutable scheduler `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e` remain separate. Do not rerun V5 or predecessors, run Deep, claim task advantage or SOTA, or promote automatically.
+**Active bounded objective:** Track A claim verification is paused. CS1-v1 through CS1-v6 are immutable consumed evidence; V6 is a pre-inference harness-self-contamination boundary, not a scientific result. Track B mechanism discovery is active through repeatable Catalytic Inference Bench 0.
+**Next exact action:** after the architectural commit is statically verified and pushed, run one bounded 13-request `explore-catalytic-inference-0` attempt on `cs1-task-06`. Do not execute any CS1 live command, create CS1-v7, expose hidden data, claim task advantage or SOTA, run Deep, or promote automatically.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -483,7 +483,7 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Bind canonical consumed boundary `897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9` and hard-retire `audit-catalytic-swarm-1-v5`.
 - [x] Record the attribution ceiling: host success accounting is 774 / 775, every measured host value is below the 4,096 MiB ceiling, and the exact failed member of the compound live boundary is unavailable. No task advantage was established.
 
-### CatalyticSwarm-1 v6 [STATICALLY INTEGRATED / NOT EXECUTED]
+### CatalyticSwarm-1 v6 [CONSUMED / PRE-INFERENCE / NO RETRY]
 
 - [x] Preserve the frozen eight-task, four-arm, one-slot, 1,032-request scheduler geometry and immutable scheduler identity `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
 - [x] Replace the compound post-request observation with independently represented `wddm`, `stable_custody`, `candidate_custody`, and `host_memory` sub-boundaries.
@@ -491,7 +491,18 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Count groups started and per-sub-boundary attempts, completed observations, passes, and blocked-before-attempt cases; later safe observations continue after an earlier non-pass.
 - [x] Preserve ordering: model completion, structural capture, independent post-request group, disposition, exactly one fsynced ledger-or-result-fallback representation, lease release, then enforcement. Rejected remains rejected.
 - [x] Freeze V6 claim `8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8` and runtime binding `3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3` separately from the immutable scheduler.
-- [ ] Obtain separate exact-main/model one-shot authority and execute CS1-v6 once from the final pushed protected `main`. Until then all seven `state/catalytic_swarm_1_v6` paths must remain absent.
+- [x] Preserve the sole 1,577-byte control marker at SHA-256 `9172468FB5D102C36BC78E553C8FD804394C4BE5FFE98E94CA18314F1E2BC9A4`; keep the other six V6 artifacts absent. The invocation made zero model requests and launched zero sidecars.
+- [x] Classify V6 as `HARNESS SELF-CONTAMINATION / PRE-INFERENCE / SCIENTIFICALLY NON-ADJUDICATING`, bind canonical boundary `64c296f8332afc2fd224fc9d3510c2d12395d5d4c9cdc7955b659fadaa2f8eb3`, and hard-retire its command with every predecessor command.
+- [x] Replace per-version ignore churn with `/state/catalytic_swarm_1_v*/`; capture clean Git and explicit ignored-evidence inventories before claim; after claim allow only exact authorized paths while rejecting tracked, staged, outside, predecessor, and historical mutations.
+- [x] Pause the full 1,032-request claim-verification track. No CS1-v7 is authorized or planned.
+
+### Catalytic Inference Bench 0 [TRACK B / NON-CLAIMING]
+
+- [x] Implement a repeatable, run-ID-addressed one-slot bench with exactly 13 requests per complete epoch: warm, direct baseline, three seeds, three relational transforms, three verifier/reconcilers, final extraction, and restoration.
+- [x] Require exact public-root-terminal reuse, bounded strict schemas, parent/ancestor lineage, extraction before restoration, metadata-only persistence, hidden scoring only after extraction, zero raw SSE/reasoning persistence, lease return to zero, and stable/candidate cleanup custody.
+- [x] Pin task-suite/root identity; hash-bind dependent responses to the sent assignment and ordered consumed artifacts; require evidence-linked parent-rank deltas; and accept restoration only from a run-ID-bound runtime receipt covering cache/root identity, zero leases, cleanup, port retirement, and custody.
+- [x] Keep task-advantage, SOTA, broader HoloState, restart persistence, Deep, and automatic promotion locked regardless of exploratory classification.
+- [ ] From the pushed architectural commit, execute the first bounded `cs1-task-06` run and record either direct borrow → transform → extract → restore evidence or one concrete mechanism-level blocker. At most three attempts are allowed for this goal.
 
 Preserved v1 executed boundary:
 
@@ -522,4 +533,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: preserve all consumed predecessors, including hard-retired CS1-v5, and obtain separate exact-main/model one-shot authority for CS1-v6 from the final pushed protected `main`. All seven v6 paths remain absent until that execution. Task advantage and SOTA remain locked; Deep and automatic promotion remain disabled.
+Next task: push the statically verified architectural commit, then execute one repeatable 13-request Catalytic Inference Bench 0 run on `cs1-task-06`. CS1-v6 and every predecessor remain consumed/no-retry; no CS1-v7 or CS1 live successor is permitted. Task advantage and SOTA remain locked; Deep and automatic promotion remain disabled.

@@ -4,9 +4,17 @@ This changelog records the architectural history of Neo3000: what became operati
 
 It is intentionally not a raw dump of every administrative commit. Small documentation and pointer updates are compressed into the milestone they served.
 
+## CS1 proof-loop closure and Catalytic Inference Bench 0
+
+- Bound the consumed CS1-v6 runtime-preclaim artifact as canonical boundary `64c296f8332afc2fd224fc9d3510c2d12395d5d4c9cdc7955b659fadaa2f8eb3`: one 1,577-byte control marker, six absent later artifacts, zero sidecars, zero model requests, no retry, and `HARNESS SELF-CONTAMINATION / PRE-INFERENCE / SCIENTIFICALLY NON-ADJUDICATING`.
+- Hard-retired V6 and every predecessor CS1 live command. Track A's 1,032-request claim protocol is paused; no CS1-v7 is authorized or planned.
+- Replaced version-by-version runtime ignores with `/state/catalytic_swarm_1_v*/` and added explicit preclaim/postclaim custody that independently inventories ignored historical evidence and rejects tracked, staged, outside, predecessor, successor, symlink, and allowlist escapes.
+- Added repeatable Catalytic Inference Bench 0 for one-slot, 13-request borrow → transform → extract → restore exploration on `cs1-task-06`. It is metadata-only, hidden-data isolated, run-ID-addressed, and cannot unlock claims or automatic promotion.
+- Pinned the frozen task-suite and public-root identities, bound each dependent response to its exact sent assignment and consumed artifact hashes, bound evidence-linked parent-rank deltas to explicit relation-graph edges consumed by extraction, made missing borrow/lineage/restoration inconclusive, and required a hashed runtime cleanup/lease/custody receipt plus terminal state closure before restoration can pass.
+
 ## Current state
 
-### CatalyticSwarm-1 independent post-request closure successor
+### Consumed CS1 chain and active Track B
 
 The CS1 cache diagnostic executed once with `reviewable-accept`, proving complete public-root reuse for both probes and retiring the legacy common-prefix threshold as admission authority. Evidence binding is `a32b0b08e67e3e219a709c9493bddb31aa195392a92714f8f0be99ed48555031`. CS1-v2 and CS1-v3 are consumed preclaim fail-closed boundaries. V3 persisted one exact control marker and stopped before live work because mapping insertion order was treated as contract identity; canonical boundary SHA-256 is `fb8d4270320f73e9307da5b67325cc30edeaab04e7e1ac4a01068a5a94107e14`.
 
@@ -14,7 +22,7 @@ CS1-v4 executed exactly once and is permanently consumed. It completed 775 model
 
 CS1-v5 executed exactly once from protected `241d99e403926b8ef7814c894808922b7cb8cd8e`. It completed 775 responses, persisted 775 ledger records, used zero fallback records, and rejected record 775. Host success accounting is 774 / 775, but all measured host values remained below the 4,096 MiB ceiling. The exact failed member of the compound live boundary is unavailable and no task advantage was established. Canonical consumed boundary is `897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9`; V5 is hard-retired.
 
-CS1-v6 is statically integrated and unexecuted. It independently records WDDM, stable custody, candidate custody, and host-memory attempts, observations, outcomes, bounded exceptions, and measurements without allowing an earlier non-pass to erase later safe evidence. Its states are `passed`, `failed-invariant`, `observation-error`, `unavailable`, `interrupted`, and `blocked`; counters distinguish groups, attempts, completed observations, passes, and blocked-before-attempt cases. Exactly one identity-bound ledger-or-fallback representation is fsynced before lease release and enforcement. Claim `8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8` and runtime binding `3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3` remain separate from immutable scheduler `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`. All seven V6 runtime paths are absent; no V6 authority or execution exists. Claims remain unchanged.
+The V6 static design independently records WDDM, stable custody, candidate custody, and host-memory attempts, observations, outcomes, bounded exceptions, and measurements without allowing an earlier non-pass to erase later safe evidence. Its one authority was later consumed before those mechanisms ran: the controller created its control marker before a clean-worktree gate that treated that unignored marker as contamination. The exact result is one immutable control artifact, six absent later paths, zero live work, and no retry. Claims remain unchanged.
 
 The final static audit removed hidden warm/final compound resource observations, revalidates all consumed V5 artifacts at terminal, binds expected runtime identity in the consumed control marker, and closes ledger/fallback ambiguity with rollback-before-fallback plus fail-closed indeterminate durability. The complete 723-test CPU suite, changed-file compilation, evaluator lock, JSON/JSONL validation, protected diff checks, and protected preflight pass without a model request or sidecar launch.
 

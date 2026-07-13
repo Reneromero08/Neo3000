@@ -484,7 +484,7 @@ class V6ClaimAndCommandTests(unittest.TestCase):
             "3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3",
         )
 
-    def test_parser_dispatches_v6_and_v5_command_is_retired(self) -> None:
+    def test_parser_dispatches_retired_v6_and_v5_commands(self) -> None:
         args = live.build_parser().parse_args([
             "audit-catalytic-swarm-1-v6",
             "--model",
@@ -495,10 +495,20 @@ class V6ClaimAndCommandTests(unittest.TestCase):
         self.assertIs(args.handler, live.command_audit_catalytic_swarm_1_v6)
         with self.assertRaisesRegex(live.NeoLoopError, "consumed / no retry"):
             live.command_audit_catalytic_swarm_1_v5(SimpleNamespace())
+        with (
+            patch.object(
+                live,
+                "run_catalytic_swarm_1_v6_audit",
+                side_effect=AssertionError("retired runner must stay unreachable"),
+            ),
+            self.assertRaisesRegex(live.NeoLoopError, "consumed / no retry"),
+        ):
+            live.command_audit_catalytic_swarm_1_v6(SimpleNamespace())
 
     def test_invocation_is_claimed_before_fallible_preclaim(self) -> None:
         events: list[str] = []
         claimed: list[dict[str, object]] = []
+        custody = object()
 
         def claim(_path, record, **_kwargs):
             events.append("claim")
@@ -509,7 +519,21 @@ class V6ClaimAndCommandTests(unittest.TestCase):
             raise live.NeoLoopError("preclaim failed")
 
         with (
+            patch.object(
+                live,
+                "capture_preclaim_custody",
+                side_effect=lambda *_args, **_kwargs: events.append(
+                    "capture-custody"
+                ) or custody,
+            ),
             patch.object(live, "claim_catalytic_swarm_1_runtime_json_once", claim),
+            patch.object(
+                live,
+                "validate_postclaim_custody",
+                side_effect=lambda observed: events.append("validate-custody")
+                if observed is custody
+                else (_ for _ in ()).throw(AssertionError("wrong custody")),
+            ),
             patch.object(live, "prepare_catalytic_swarm_1_v6_claim", fail_prepare),
             patch.object(live, "write_catalytic_swarm_1_runtime_json"),
         ):
@@ -519,7 +543,10 @@ class V6ClaimAndCommandTests(unittest.TestCase):
                     model="model.gguf",
                     binary="server.exe",
                 ))
-        self.assertEqual(events, ["claim", "prepare"])
+        self.assertEqual(
+            events,
+            ["capture-custody", "claim", "validate-custody", "prepare"],
+        )
         self.assertEqual(claimed[0]["supplied_model_path"], "model.gguf")
         self.assertEqual(claimed[0]["supplied_binary_path"], "server.exe")
         self.assertEqual(

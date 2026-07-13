@@ -18,7 +18,7 @@ The central objective is not merely to make ordinary inference cheaper. It is to
 
 # 1. Current proven boundary
 
-CS1 cache diagnostic evidence is bounded: a single authorized three-request diagnostic returned `reviewable-accept`, proving complete public-root cache reuse for two probes. It does not measure task advantage. CS1-v2 and CS1-v3 are consumed preclaim fail-closed boundaries. CS1-v4 and CS1-v5 each executed once and are consumed no-retry evidence. V5 ran from protected `241d99e403926b8ef7814c894808922b7cb8cd8e`: 775 model responses completed, all 775 have ledger records, no result fallback was used, and record 775 was rejected. Host success accounting is 774 / 775, while every measured host value remained below the 4,096 MiB ceiling, so the exact failed member of the compound live boundary is unavailable. Canonical V5 boundary is `897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9`; V5 is hard-retired. CS1-v6 is statically integrated but unexecuted and changes only independent post-request attribution. Broader HoloState, task advantage, restart persistence, SOTA, and automatic promotion remain locked.
+CS1 cache diagnostic evidence is bounded: a single authorized three-request diagnostic returned `reviewable-accept`, proving complete public-root cache reuse for two probes. It does not measure task advantage. CS1-v2 and CS1-v3 are consumed preclaim fail-closed boundaries. CS1-v4 and CS1-v5 each executed once and are consumed no-retry evidence. V5 ran from protected `241d99e403926b8ef7814c894808922b7cb8cd8e`: 775 model responses completed, all 775 have ledger records, no result fallback was used, and record 775 was rejected. Host success accounting is 774 / 775, while every measured host value remained below the 4,096 MiB ceiling, so the exact failed member of the compound live boundary is unavailable. Canonical V5 boundary is `897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9`; V5 is hard-retired. CS1-v6 then consumed its one invocation at runtime-preclaim because its unignored control marker contaminated the later clean-worktree check. Canonical V6 boundary `64c296f8332afc2fd224fc9d3510c2d12395d5d4c9cdc7955b659fadaa2f8eb3` binds one control artifact, six absent later artifacts, zero sidecars, zero model requests, and no retry. Track A claim verification is paused; Track B mechanism discovery is active through Catalytic Inference Bench 0. Broader HoloState, task advantage, restart persistence, SOTA, and automatic promotion remain locked.
 
 The strongest supported mechanism claims are:
 
@@ -659,6 +659,36 @@ Metrics must distinguish observed versus accepted reuse, process-local versus du
 
 ---
 
+## Catalytic Inference Bench 0
+
+The active exploratory lane uses one physical Agents-A1 slot and one immutable
+public `cs1-task-06` root. A complete epoch contains exactly 13 model requests:
+one warm, one direct baseline, three parentless seed proposals, three transforms
+whose typed artifacts name prior parents, three verifier/reconcilers, one final
+extraction from complete transformed lineage, and one selection-free restoration
+probe. Every request uses the same system root and must admit cache reuse through
+the exact public-root terminal law.
+
+The persisted surface is bounded normalized metadata: typed artifact IDs,
+candidate IDs, parent/ancestor edges, reason codes, public scores, post-extraction
+hidden diagnostics, token/time/resource counts, root identity, lease accounting,
+cleanup, and hashes. Raw SSE, raw model output, free-form reasoning, hidden
+examples, and answer keys are never persisted; hidden material never enters a
+model request. Runs are repeatable and run-ID-addressed. Their only classifications
+are `MECHANISM_VISIBLE`, `MECHANISM_WEAK`, `MECHANISM_COLLAPSED`, and
+`INCONCLUSIVE`; none changes a production claim.
+
+The frozen suite and public root are pinned independently of the builders.
+Each transform binds evidence-linked rank deltas against exact parent positions
+to typed relation-graph edges, and extraction names the relation edges it uses.
+Dependent observations preserve the sent-assignment digest and ordered
+consumed-artifact hashes. Missing root reuse, valid lineage, extraction, or
+trusted restoration is `INCONCLUSIVE`. A restoration response is only model
+acknowledgement; the pass bit comes from a hashed run-ID-bound runtime receipt
+proving cache/root identity, zero active leases, cleanup, free sidecar port, and
+stable/candidate custody. Terminal closure additionally binds the manifest,
+result, checkpoint, final custody, and absent run lock.
+
 # 12. Phase order from the current boundary
 
 ```text
@@ -674,7 +704,9 @@ completed: execute CS1-v4 once; bind its 775-response partial inconclusive bound
 completed: statically integrate CS1-v5 completed-response evidence closure without changing experiment geometry
 completed: execute CS1-v5 once from protected 241d99e; bind its 775-response consumed boundary and hard-retire it
 completed: statically integrate CS1-v6 independent WDDM/stable/candidate/host post-request closure without changing experiment geometry
-current: preserve consumed v5 evidence and absent v6 state until a separately authorized exact-main/model v6 live evaluation from final pushed protected main
+completed: consume CS1-v6 at runtime-preclaim with one exact control artifact, zero live work, and no retry
+completed: repair runtime-state custody generically and hard-retire the complete CS1 live-command chain without V7
+current: Track A claim verification paused; Track B repeatable Catalytic Inference Bench 0 active on cs1-task-06
 1. Adaptive population and verifier allocation, only after verified task advantage
 2. HoloState multi-root admission and eviction policy
 3. HoloState-v2 durable checkpoint-list persistence
@@ -725,12 +757,12 @@ completed responses into the ledger with zero fallback, and rejected record 775.
 Its host-success accounting is 774 / 775, but all measured host values were below
 the ceiling; exact compound cause and task advantage remain unavailable. V5 is
 bound by `897148680e426caf58b9581f06224f904cb8ff5cd1a389b83c1ceedfc427f9d9`
-and hard-retired. CS1-v6 is static-only and unexecuted. Its distinct claim is
+and hard-retired. CS1-v6 is consumed at runtime-preclaim. Its distinct static claim contract is
 `8136be5c402497b539595eeccf1329807eba59fab9813891f0293fd1d271acd8`, its
 runtime binding is `3ccb810684824a5935c89150e0f84ca820f8402f7650d3fdcf027e84ac9f9ad3`,
 and the immutable scheduler is
 `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
-All seven v6 runtime paths are absent; no v6 authority or execution exists.
+Its sole control marker is preserved, the other six paths are absent, zero live work occurred, and its authority is consumed with no retry.
 Task advantage and SOTA remain locked and automatic promotion remains disabled.
 ```
 

@@ -24,6 +24,34 @@ When files disagree, use this precedence:
 Historical evidence remains immutable. A stale narrative paragraph does not
 overrule a later executed result.
 
+### Current two-track boundary
+
+CS1-v6 consumed its one invocation at `runtime-preclaim` when its unignored
+control marker invalidated the later clean-worktree gate. The run launched zero
+sidecars, made zero model requests, and is canonically bound as
+`64c296f8332afc2fd224fc9d3510c2d12395d5d4c9cdc7955b659fadaa2f8eb3`:
+`HARNESS SELF-CONTAMINATION / PRE-INFERENCE / SCIENTIFICALLY
+NON-ADJUDICATING`. V6 and all predecessor commands are hard-retired. No CS1-v7
+is authorized or planned.
+
+Track A claim verification is paused. Track B mechanism discovery is active
+through repeatable Catalytic Inference Bench 0: one physical slot, one exact
+public root, and a 13-request `cs1-task-06` process of warm → direct baseline →
+three proposals → three relational transforms → three verifier/reconcilers →
+extraction → restoration. Track B may expose or falsify a process mechanism,
+but cannot unlock task advantage, SOTA, broader HoloState, restart persistence,
+Deep, or automatic promotion.
+
+The task-suite and public-root hashes are independently pinned. Transform
+artifacts bind parent-ranked, evidence-referenced deltas to explicit relation
+graph edges, and extraction names the edges it actually consumes. Every
+dependent observation retains the exact sent-assignment hash and ordered
+consumed-artifact hashes. Restoration is accepted only from a hashed runtime
+receipt covering root/cache identity, zero leases, cleanup, port retirement,
+and stable/candidate custody—not from the model's acknowledgement alone. A
+terminal closure binds the manifest, result, checkpoint, final custody, and
+absence of the run lock.
+
 ### Current reconciliation note
 
 The CS1 cache-admission diagnostic executed exactly once and returned
@@ -295,10 +323,10 @@ PHYSICAL_ORTHOGONAL_STATE_SHARING_PROVEN
 AUTOMATIC_PROMOTION
 ```
 
-The current exact action is a separately authorized one-shot CS1-v6 live
-execution bound to the final pushed protected `main` and exact model/binary
-identities. No consumed command may be rerun. Static integration itself grants
-no V6 authority.
+The current exact action is the repeatable, non-claiming Catalytic Inference
+Bench 0 run from final pushed protected `main`, bound to exact model/binary
+identities. No consumed command may be rerun, and exploratory evidence grants
+no proof authority.
 
 ---
 

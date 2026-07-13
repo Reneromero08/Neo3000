@@ -192,6 +192,7 @@ class StaticCapabilityTests(unittest.TestCase):
                 "audit-catalytic-swarm-1-v4",
                 "audit-catalytic-swarm-1-v5",
                 "audit-catalytic-swarm-1-v6",
+                "explore-catalytic-inference-0",
             },
         )
 
@@ -207,18 +208,25 @@ class StaticCapabilityTests(unittest.TestCase):
                 SimpleNamespace(binary="x", model="y")
             )
 
-    def test_catalytic_swarm_1_command_is_hard_retired(self) -> None:
+    def test_all_catalytic_swarm_1_live_commands_are_hard_retired(self) -> None:
         with mock.patch.object(
             holo, "assert_catalytic_swarm_1_artifact_stage", return_value=None
         ), mock.patch.object(holo, "LiveSidecar") as sidecar, mock.patch.object(
             holo, "stream_completion"
         ) as stream:
-            with self.assertRaisesRegex(
-                holo.NeoLoopError, "CatalyticSwarm-1 v1 is executed and must not be rerun"
+            for handler in (
+                holo.command_audit_catalytic_swarm_1,
+                holo.command_audit_catalytic_swarm_1_cache_diagnostic,
+                holo.command_audit_catalytic_swarm_1_v2,
+                holo.command_audit_catalytic_swarm_1_v3,
+                holo.command_audit_catalytic_swarm_1_v4,
+                holo.command_audit_catalytic_swarm_1_v5,
+                holo.command_audit_catalytic_swarm_1_v6,
             ):
-                holo.command_audit_catalytic_swarm_1(
-                    SimpleNamespace(binary="x", model="y")
-                )
+                with self.subTest(handler=handler.__name__), self.assertRaisesRegex(
+                    holo.NeoLoopError, "must not be rerun"
+                ):
+                    handler(SimpleNamespace(binary="x", model="y"))
         sidecar.assert_not_called()
         stream.assert_not_called()
 
