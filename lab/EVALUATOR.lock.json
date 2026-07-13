@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "7cd25bbf2a17f3ac2acc374cc99421163f67d4a3",
+  "baseline_source_commit": "8b3f2eacf25109bb2e75e86ac0f22e9e8710cd61",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -143,7 +143,7 @@
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-13T23:37:06.794463+00:00",
+  "generated_at": "2026-07-13T23:50:14.552084+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
@@ -168,13 +168,13 @@
     "CHANGELOG.md": "5909a88928728d99764d486a9ae225df926ccd937473034f74ab291bcd3ac0c7",
     "NEO3000.md": "b7ba87065f942d47abed19330197a843577bbd6b2fd58057a6df9de9cd7d2905",
     "README.md": "78708a68121242f8c0d48bc8218da2776985a2f8d3854e6a85be1b16050d3427",
-    "ROADMAP.md": "8343ca96caded07e75c6e9a06d77d4e22c84a25655df83f23b3f947d2308f160",
-    "TASKS.md": "304661174114d42c1924b85b6c135e095046d1a8febd151e04dc8a53da669439",
+    "ROADMAP.md": "2144a5c40fbd01f225b385ea9dd13836b27086394e9835aa5593f54aebf5a331",
+    "TASKS.md": "ef933791b9c8517382f6400148f2ada0e56b4cbbe7d44c1555d33b07387b25c0",
     "docs/CATALYTIC_RUNTIME_ROADMAP.md": "b425fc553a78997964dff09851ade15262cd3eb59de0b8f751e66ff8b97ea923",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "e2319317ae7ef80d017e0419087c7eccaeeb15d15e75c0eab74b0cfa00a5c382",
+    "lab/CHECKPOINT.md": "614cc65dfa1cbd60556cafc637367d77b29ff8e1d3efe7bd31aea5a9cad97fa1",
     "lab/EVALUATOR.json": "ab94b2c50fe4e8c6ea642f1829c2204ca64c3b4181c0a7f4f3d13e08f4a71172",
-    "lab/GOAL.md": "d7f24fec18ac9a2266cea1f1e56fdb0dccaec3318166d881a9e911e373d31cd2",
+    "lab/GOAL.md": "6844ed994ca9146efb002139bc6be771952bfca71ce54216420f3f30fde7b56c",
     "scripts/baseline_harness.py": "3924efc2e8f9f8b64929c2e2c6d8453a45a49d17277c2622d293a6cb3350b618",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "50803f75dbd9006237b95b779bc6e16325bfa0170c356bc1849bd73ae17d99d2",

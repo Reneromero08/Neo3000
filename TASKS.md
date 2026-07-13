@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Track A claim verification is paused. CS1-v1 through CS1-v6 are immutable consumed evidence. Catalytic Inference Bench 0 is paused as `INCONCLUSIVE / OVER-SPECIFIED / TRANSFORM-COLLAPSE SIGNAL`; runs a1 through a6 are immutable. Catalytic Kernel 0 is the active minimal mechanism primitive.
-**Next exact action:** after the single Catalytic Kernel 0 architectural commit is statically verified and pushed, execute one fresh six-request `run-catalytic-kernel-0` cycle. Do not repair or rerun CIB0, execute any CS1 command, create a successor protocol, expose protected evaluator data, run Deep, change claims, or promote automatically.
+**Active bounded objective:** Track A claim verification is paused. CS1-v1 through CS1-v6 and CIB0 a1 through a6 are immutable consumed evidence. Catalytic Kernel 0 run a1 is preserved inconclusive and run a2 is preserved complete as `CATALYTIC_KERNEL_COLLAPSED`; the one authorized live cycle is closed.
+**Next exact action:** preserve CK0 a1 and a2 exactly. No CK0 rerun, tuning, successor, CIB0 repair, CS1 command, Deep request, claim change, or automatic promotion is authorized. Any further mechanism work requires a separately authorized static boundary derived from the collapsed evidence.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -506,14 +506,15 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Record the transform-collapse signal without schema repair: the three seeds repeated one ranking; the final attempted transform retained it, proposed only self-relations, and stopped on the auxiliary reason-code schema before mechanism classification.
 - [x] Pause CIB0 as `INCONCLUSIVE / OVER-SPECIFIED / TRANSFORM-COLLAPSE SIGNAL`. No production claim changes and no further field-by-field repair or rerun is authorized.
 
-### Catalytic Kernel 0 [ACTIVE / MINIMAL PRIMITIVE]
+### Catalytic Kernel 0 [CLOSED / COLLAPSED]
 
 - [x] Define one immutable `cs1-task-06` carrier with candidate programs and kernel instructions but no public examples, branch artifacts, prior evidence, or protected evaluator material.
 - [x] Define complementary public shards A=`1,2,3` and B=`3,4,5`, with shared example 3 as the calibration boundary and no forced disagreement.
 - [x] Define exactly six requests on one physical slot and one process-local sidecar: borrow, branch A, branch B, transform, extract, restore.
 - [x] Keep model-authored semantics minimal: branch rankings, transform operator/ranking, extracted candidate, and carrier acknowledgements. Derive scores, hashes, edges, deltas, set changes, bindings, and trusted restoration in the controller.
 - [x] Statically verify the kernel: 8 / 8 focused tests pass; changed files compile; the one 779-test CPU-only run passed 778 and exposed only the intentionally stale evaluator lock; after lock refresh that exact failed lock test passes and protected preflight passes.
-- [ ] Push commit `Add minimal Catalytic Kernel 0`, then execute one fresh kernel run without tuning a collapsed result or repairing model-authored output.
+- [x] Push the minimal kernel and bounded startup-health repair, then execute exactly one fresh cycle without retry. Run `ck0-20260713T234035Z-a2` completed all six requests with exact custody, restoration, and cleanup and classified `CATALYTIC_KERNEL_COLLAPSED`.
+- [x] Preserve the collapsed semantics exactly: Branch A `C58,C56,C08`; Branch B `C58,C56,C41`; `combine` transform `C58,C08,C56`; extraction `C58` at 5 / 5 public examples. No production or promotion claim changed.
 
 Preserved v1 executed boundary:
 

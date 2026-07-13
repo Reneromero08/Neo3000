@@ -1,12 +1,12 @@
 # Active Goal
 
-## Checkpoint 2: Freeze CIB0 and execute minimal Catalytic Kernel 0
+## Checkpoint 2: Preserve completed, collapsed Catalytic Kernel 0
 
 Catalytic Inference Bench 0 is paused as `INCONCLUSIVE / OVER-SPECIFIED / TRANSFORM-COLLAPSE SIGNAL`. Preserve runs a1 through a6 exactly and do not repair `structural_reason_codes` or rerun the bench. The accepted prefix proved repeated exact public-root borrowing and kept resource telemetry off the exploratory critical path. It did not establish catalytic transformation: the three seeds repeated one ranking, the final transform retained it and proposed only self-relations, and an auxiliary reason-code schema rejected the response before mechanism classification. No production claim changes.
 
-The active primitive is Catalytic Kernel 0: one immutable `cs1-task-06` carrier, complementary public evidence shards A=`1,2,3` and B=`3,4,5`, one physical slot, one process-local sidecar epoch, and exactly six prospective model requests: borrow, branch A, branch B, transform, extract, restore. The model authors only branch rankings, one allowed transform operator and ranking, one extracted candidate, and minimal carrier acknowledgements. The controller derives scores, parent hashes, deterministic two-parent edges, rank deltas, candidate-set changes, extraction binding, and trusted restoration.
+Catalytic Kernel 0 run `ck0-20260713T234035Z-a2` completed the fixed six-request cycle over one immutable `cs1-task-06` carrier, complementary public evidence shards A=`1,2,3` and B=`3,4,5`, one physical slot, and one process-local sidecar epoch. Readiness took 33.813 seconds; 116 stable-health probes all passed; stable PID and listener ownership were preserved. Branch A ranked `C58,C56,C08`, Branch B ranked `C58,C56,C41`, the `combine` transform ranked `C58,C08,C56`, extraction selected `C58` at 5 / 5 public examples, and trusted restoration and cleanup passed with zero active leases.
 
-The next exact action is to statically verify and fast-forward push the single architectural commit `Add minimal Catalytic Kernel 0`, then execute one fresh run ID. A collapsed complete cycle is preserved without tuning; model-authored semantic failure is not repaired; an incomplete cycle is `INCONCLUSIVE`. No successor version, benchmark, claim contract, Deep request, hidden scoring, automatic promotion, or CIB0/CS1 live command is authorized.
+The exact mechanism classification is `CATALYTIC_KERNEL_COLLAPSED`. Preserve a1 and a2 without tuning or retry. No successor version, benchmark, claim contract, Deep request, hidden scoring, automatic promotion, or CIB0/CS1/CK0 live command is authorized. Any follow-on requires a separately authorized static boundary.
 
 ## Historical checkpoint: Close CS1 and activate bounded mechanism discovery
 

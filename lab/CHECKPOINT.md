@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: CIB0 frozen and Catalytic Kernel 0 statically implemented
+## Checkpoint 2: CIB0 frozen and Catalytic Kernel 0 cycle closed
 
-**Status:** CIB0 FROZEN / MINIMAL KERNEL STATIC VERIFICATION CLOSED / LIVE CYCLE PENDING
+**Status:** CIB0 FROZEN / CK0 A2 COMPLETE / `CATALYTIC_KERNEL_COLLAPSED` / NO CLAIM CHANGE
 
 - [x] Preserve all six CIB0 run namespaces a1 through a6 exactly; no CIB0 repair or rerun is authorized.
 - [x] Record the bounded CIB0 conclusion: exact root borrowing repeatedly passed through the accepted prefix, advisory resource observation no longer blocked exploration, and no catalytic transform completed.
@@ -14,8 +14,13 @@
 - [x] Pin the exact 30-entry CIB0 a1-a6 namespace at SHA-256 `57CE7FFFEBBB925BBD3B37F55A9394037720018748776C2C42DD17961D8ECCBD` before state creation and again at closure.
 - [x] Pass 8 / 8 focused kernel tests and changed-file compilation. The single complete CPU-only discovery ran 779 tests: 778 passed and only the intentionally stale evaluator-lock identity errored; after refreshing the required protected-file hashes, that exact failed test passed 1 / 1.
 - [x] Refresh the evaluator lock for the two new protected files and changed protected sources; protected preflight passes. Static verification launched zero sidecars and made zero model requests.
+- [x] Add opt-in startup-only stable-health recovery at commit `8b3f2eacf25109bb2e75e86ac0f22e9e8710cd61` while keeping strict readiness as the default. Readiness tests pass 19 / 19, focused CK0 tests pass 8 / 8, changed files compile, the complete CPU-only suite passes 785 / 785 once, and protected preflight passes once.
+- [x] Preserve failed run `ck0-20260713T230841Z-a1` exactly. Execute fresh run `ck0-20260713T234035Z-a2` exactly once: readiness 33.813 seconds, 116 stable-health attempts, zero failures, zero recovery events, stable PID `37084` and listener ownership preserved.
+- [x] Complete all six model responses. Borrow established the immutable process-local root; Branch A ranked `C58,C56,C08`; Branch B ranked `C58,C56,C41`; `combine` transformed to `C58,C08,C56`; extraction selected `C58` and passed 5 / 5 public examples.
+- [x] Trusted restoration passed with zero active leases, identical carrier/root identities, CIB0 tree preserved, sidecar retired, port 9494 free, stable server preserved, and all temporary state removed.
+- [x] Bind result SHA-256 `3161D42296E6CEB4E2803D00ADB790A23E98CD7556FDBD17FA1C4EC4B44EC85F`, manifest SHA-256 `3E2FB2040513EF44CA02A5D0EFFE91A1AC60C3D0357E18820526402C12409E8E`, and closure SHA-256 `6F179087C48F98A0E0BF88B7D264AD55D9068E74643C6C9EAB1C56ACA3335AD4` as `CATALYTIC_KERNEL_COLLAPSED`. All production, advantage, SOTA, broader HoloState, persistence, Deep, and promotion claims remain locked.
 
-**Next exact action:** create and fast-forward push `Add minimal Catalytic Kernel 0`, then execute one fresh six-request run. Preserve visible, collapsed, or inconclusive evidence without semantic repair or tuning.
+**Next exact action:** preserve CK0 a1 and a2 exactly. No further live execution, tuning, semantic repair, successor, or claim action is authorized; any follow-on requires a separately authorized static boundary.
 
 ## Historical checkpoint: CS1 loop closed and Catalytic Inference Bench 0 statically ready
 
