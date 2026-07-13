@@ -504,6 +504,7 @@ def _build_payload(
     # flags.  The corrected spec intentionally rejects transport extensions.
     protocol.validate_model_request(request, payload, **validator_kwargs)
     payload = dict(payload)
+    payload["stream_options"] = {"include_usage": True}
     payload["cache_prompt"] = True
     payload["return_tokens"] = True
     payload["return_progress"] = True
@@ -517,6 +518,8 @@ def _build_payload(
         raise CatalyticInferenceRuntimeError("runtime changed the exact public system root")
     if payload.get("stream") is not True:
         raise CatalyticInferenceRuntimeError("runtime requires in-memory SSE streaming")
+    if payload.get("stream_options") != {"include_usage": True}:
+        raise CatalyticInferenceRuntimeError("runtime requires terminal SSE usage accounting")
     if payload.get("cache_prompt") is not True:
         raise CatalyticInferenceRuntimeError("protocol request must enable exact prompt caching")
     if payload.get("return_tokens") is not True:

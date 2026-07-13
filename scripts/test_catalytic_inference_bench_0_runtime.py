@@ -630,6 +630,7 @@ class CatalyticInferenceBench0RuntimeTests(unittest.TestCase):
             encoded = canonical(payload)
             self.assertNotIn("hidden_examples", encoded)
             self.assertNotIn("answer_candidate_id", encoded)
+            self.assertEqual(payload["stream_options"], {"include_usage": True})
             self.assertIs(payload["response_format"]["json_schema"]["strict"], True)
         for request_id in (*[f"transform-{i}" for i in range(1, 4)], *[f"verify-{i}" for i in range(1, 4)]):
             payload = adapter.payloads[REQUEST_IDS.index(request_id)]
