@@ -35,6 +35,17 @@ def ownership(
     )
 
 
+class FakeClock:
+    def __init__(self) -> None:
+        self.value = 0.0
+
+    def monotonic(self) -> float:
+        return self.value
+
+    def sleep(self, delay: float) -> None:
+        self.value += delay
+
+
 class ReadinessTests(unittest.TestCase):
     def test_long_model_load_does_not_query_listeners_in_poll_loop(self) -> None:
         sidecar_health = deque([False] * 30 + [True])
@@ -403,6 +414,225 @@ class ReadinessTests(unittest.TestCase):
                 sleep_fn=lambda delay: clock.__setitem__(0, clock[0] + delay),
             )
         self.assertEqual(qualifier_calls, 0)
+
+
+class StableHealthRecoveryTests(unittest.TestCase):
+    def test_one_transient_failed_stable_health_probe_recovers(self) -> None:
+        clock = FakeClock()
+        health = deque([False, True, True, True, True, True])
+
+        result = readiness.wait_for_holostate_readiness(
+            sidecar_pid=2,
+            stable_pids={1},
+            stable_port=9292,
+            sidecar_port=9494,
+            deadline_seconds=5,
+            process_alive=lambda: True,
+            stable_process_alive=lambda: True,
+            stable_listener_ownership=lambda: ownership(passed=True, expected={1}),
+            stable_health_ok=lambda: health.popleft() if health else True,
+            sidecar_health_ok=lambda: True,
+            wddm_has_valid_sample=lambda: True,
+            wddm_failure_reason=lambda: None,
+            listener_qualifier=lambda _port, expected, **_kwargs: ownership(
+                passed=True, expected=expected
+            ),
+            stable_health_recovery_policy=readiness.StableHealthRecoveryPolicy(
+                maximum_consecutive_failure_seconds=1.0,
+                required_consecutive_successes=3,
+            ),
+            monotonic=clock.monotonic,
+            sleep_fn=clock.sleep,
+        )
+
+        evidence = result.stable_health_recovery
+        self.assertEqual(evidence["failed_stable_health_probes"], 1)
+        self.assertEqual(evidence["recovery_events"], 1)
+        self.assertTrue(evidence["final_stable_health_ok"])
+
+    def test_several_failures_inside_grace_window_recover(self) -> None:
+        clock = FakeClock()
+        health = deque([False, False, False, True, True, True, True, True])
+
+        result = readiness.wait_for_holostate_readiness(
+            sidecar_pid=2,
+            stable_pids={1},
+            stable_port=9292,
+            sidecar_port=9494,
+            deadline_seconds=5,
+            process_alive=lambda: True,
+            stable_process_alive=lambda: True,
+            stable_listener_ownership=lambda: ownership(passed=True, expected={1}),
+            stable_health_ok=lambda: health.popleft() if health else True,
+            sidecar_health_ok=lambda: True,
+            wddm_has_valid_sample=lambda: True,
+            wddm_failure_reason=lambda: None,
+            listener_qualifier=lambda _port, expected, **_kwargs: ownership(
+                passed=True, expected=expected
+            ),
+            stable_health_recovery_policy=readiness.StableHealthRecoveryPolicy(
+                maximum_consecutive_failure_seconds=2.0,
+                required_consecutive_successes=3,
+            ),
+            monotonic=clock.monotonic,
+            sleep_fn=clock.sleep,
+        )
+
+        evidence = result.stable_health_recovery
+        self.assertEqual(evidence["failed_stable_health_probes"], 3)
+        self.assertEqual(evidence["recovery_events"], 1)
+        self.assertLessEqual(
+            evidence["maximum_consecutive_failure_duration_seconds"], 2.0
+        )
+
+    def test_health_recovery_grace_deadline_is_fatal(self) -> None:
+        clock = FakeClock()
+
+        with self.assertRaisesRegex(
+            readiness.HoloStateReadinessError,
+            "stable-health-recovery-timeout",
+        ) as caught:
+            readiness.wait_for_holostate_readiness(
+                sidecar_pid=2,
+                stable_pids={1},
+                stable_port=9292,
+                sidecar_port=9494,
+                deadline_seconds=5,
+                process_alive=lambda: True,
+                stable_process_alive=lambda: True,
+                stable_listener_ownership=lambda: ownership(
+                    passed=True, expected={1}
+                ),
+                stable_health_ok=lambda: False,
+                sidecar_health_ok=lambda: True,
+                wddm_has_valid_sample=lambda: True,
+                wddm_failure_reason=lambda: None,
+                listener_qualifier=lambda _port, expected, **_kwargs: ownership(
+                    passed=True, expected=expected
+                ),
+                stable_health_recovery_policy=readiness.StableHealthRecoveryPolicy(
+                    maximum_consecutive_failure_seconds=0.5,
+                    required_consecutive_successes=3,
+                ),
+                monotonic=clock.monotonic,
+                sleep_fn=clock.sleep,
+            )
+
+        evidence = caught.exception.evidence["stable_health_recovery"]
+        self.assertGreater(
+            evidence["maximum_consecutive_failure_duration_seconds"], 0.5
+        )
+        self.assertFalse(evidence["final_stable_health_ok"])
+
+    def test_stable_pid_loss_is_immediately_fatal(self) -> None:
+        clock = FakeClock()
+
+        with self.assertRaisesRegex(
+            readiness.HoloStateReadinessError,
+            "stable-pid-lost-before-readiness",
+        ) as caught:
+            readiness.wait_for_holostate_readiness(
+                sidecar_pid=2,
+                stable_pids={1},
+                stable_port=9292,
+                sidecar_port=9494,
+                deadline_seconds=5,
+                process_alive=lambda: True,
+                stable_process_alive=lambda: False,
+                stable_listener_ownership=lambda: ownership(
+                    passed=True, expected={1}
+                ),
+                stable_health_ok=lambda: True,
+                sidecar_health_ok=lambda: True,
+                wddm_has_valid_sample=lambda: True,
+                wddm_failure_reason=lambda: None,
+                stable_health_recovery_policy=readiness.StableHealthRecoveryPolicy(),
+                monotonic=clock.monotonic,
+                sleep_fn=clock.sleep,
+            )
+
+        evidence = caught.exception.evidence["stable_health_recovery"]
+        self.assertEqual(evidence["stable_pid_checks"], 1)
+        self.assertEqual(evidence["stable_health_probe_attempts"], 0)
+
+    def test_stable_listener_ownership_change_is_immediately_fatal(self) -> None:
+        clock = FakeClock()
+
+        with self.assertRaisesRegex(
+            readiness.HoloStateReadinessError,
+            "stable_startup-listener-pid-mismatch",
+        ) as caught:
+            readiness.wait_for_holostate_readiness(
+                sidecar_pid=2,
+                stable_pids={1},
+                stable_port=9292,
+                sidecar_port=9494,
+                deadline_seconds=5,
+                process_alive=lambda: True,
+                stable_process_alive=lambda: True,
+                stable_listener_ownership=lambda: ownership(
+                    passed=False,
+                    expected={1},
+                    actual={9},
+                    hard_mismatch=True,
+                    final_error="listener-pid-mismatch",
+                ),
+                stable_health_ok=lambda: True,
+                sidecar_health_ok=lambda: True,
+                wddm_has_valid_sample=lambda: True,
+                wddm_failure_reason=lambda: None,
+                stable_health_recovery_policy=readiness.StableHealthRecoveryPolicy(),
+                monotonic=clock.monotonic,
+                sleep_fn=clock.sleep,
+            )
+
+        evidence = caught.exception.evidence["stable_health_recovery"]
+        self.assertEqual(evidence["stable_listener_checks"], 1)
+        self.assertEqual(evidence["stable_health_probe_attempts"], 0)
+
+    def test_readiness_waits_for_required_consecutive_health_successes(self) -> None:
+        clock = FakeClock()
+        health_attempts = 0
+        qualification_health_counts: list[int] = []
+
+        def health_ok() -> bool:
+            nonlocal health_attempts
+            health_attempts += 1
+            return True
+
+        def qualifier(_port: int, expected: set[int], **_kwargs):
+            qualification_health_counts.append(health_attempts)
+            return ownership(passed=True, expected=expected)
+
+        result = readiness.wait_for_holostate_readiness(
+            sidecar_pid=2,
+            stable_pids={1},
+            stable_port=9292,
+            sidecar_port=9494,
+            deadline_seconds=5,
+            process_alive=lambda: True,
+            stable_process_alive=lambda: True,
+            stable_listener_ownership=lambda: ownership(passed=True, expected={1}),
+            stable_health_ok=health_ok,
+            sidecar_health_ok=lambda: True,
+            wddm_has_valid_sample=lambda: True,
+            wddm_failure_reason=lambda: None,
+            listener_qualifier=qualifier,
+            stable_health_recovery_policy=readiness.StableHealthRecoveryPolicy(
+                required_consecutive_successes=3
+            ),
+            monotonic=clock.monotonic,
+            sleep_fn=clock.sleep,
+        )
+
+        self.assertTrue(result.passed)
+        self.assertGreaterEqual(min(qualification_health_counts), 3)
+        self.assertGreaterEqual(
+            result.stable_health_recovery[
+                "consecutive_successes_before_admission"
+            ],
+            3,
+        )
 
 
 if __name__ == "__main__":

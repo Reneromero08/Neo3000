@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "802093fde1afe679209bd135f4ec47803fc66f00",
+  "baseline_source_commit": "7cd25bbf2a17f3ac2acc374cc99421163f67d4a3",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -143,7 +143,7 @@
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-13T23:04:52.596792+00:00",
+  "generated_at": "2026-07-13T23:37:06.794463+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
@@ -182,7 +182,7 @@
     "scripts/catalytic_blackboard.py": "64c32329de2f80c724d105fe1934ee894e3fa96144f0aff550c0c1ec9acd1094",
     "scripts/catalytic_inference_bench_0.py": "3fadbbfd7e10a79c4e5ce66aee78f47f4a9adcb1ca175a3d61d539bb98c5bc6f",
     "scripts/catalytic_inference_bench_0_runtime.py": "5e72711a674b68678fde5e2065514df2d277757b17e8ac7e0b0eca8425764b4f",
-    "scripts/catalytic_kernel_0.py": "dea40d1d41aba0a2d6aa95beb2fa6f979ac26eaf0b6897ae9cfbf3327af12e90",
+    "scripts/catalytic_kernel_0.py": "3968aeeacd837755bffdb0a6cf16a1843a592074a2cd6add0cad468c3e5d1eb7",
     "scripts/catalytic_runtime_custody.py": "96af9123227482060912689e4336775e092e2ae49f1a026b60fe3689474d7e6f",
     "scripts/catalytic_swarm.py": "cb81e91722ab335dc3737a25fb944dd7c7a44c84d41745a32c00896f5399b298",
     "scripts/catalytic_swarm_1_cache_diagnostic.py": "27af84056d312fe3de0ac76f680297411f8e54fe8b6b30e17e0a863205cbe688",
@@ -216,8 +216,8 @@
     "scripts/chat_token_evidence.py": "15c4b54b7a29d33e2d32ae358eb0cf378a910a6cb449a86bfe8681f3ea524b1b",
     "scripts/context_matrix.py": "92ee85869afc2b87d98cd70f06b5e0ddfdb481ae89eb65561154dfcab0cae1ed",
     "scripts/holostate_fast_token_evidence.py": "4a3789464fd9a527d578974df0e388d835f996f12910ccda8c96f4fb6d7ec920",
-    "scripts/holostate_live.py": "379b8ba0d40d9a782fee8a7eab30bd7fcedb9ed7e72c6079fc8b0f4283c2503f",
-    "scripts/holostate_readiness.py": "4134c8e0f164f115e1c39d57d9742dbf6a944c92bcf1b7a19d904c32e9ebf3c5",
+    "scripts/holostate_live.py": "5cb663dccbd6c2f80baf8696761485ec62fb7e595b2347539dda18504d65cfdc",
+    "scripts/holostate_readiness.py": "549ff38c04490a6a3cb4cac3a8b5997b89b25752bae52924c9387e272703e47b",
     "scripts/holostate_swarm_adapter.py": "a6f044602c9d018905cc5f31f35ef494b54596999e20eb015664da272c791fe5",
     "scripts/listener_probe.py": "6c7bdb440aa6fc21444efe7a6385f830dfada31a3a2adb7540754963bd13c02d",
     "scripts/neo_loop.py": "2885e739322e172658d574d94f7c5639af5c16436bf4527ecdc2c7f5fdae64b5",
@@ -269,7 +269,7 @@
     "scripts/test_evaluator_gates.py": "f18a03bd397b42596cb6a796d771cf9e5b37cd12c359a6209e4b90cca50b769a",
     "scripts/test_holostate_fast_token_evidence.py": "6caf6d24eb7a9fd9bcca9cd96369fd9964ea375544c835ba46fc5a3542fe57d0",
     "scripts/test_holostate_live.py": "ee12a18f12770e4caeb4ea93e090fe657dd425b16f9fc15e2c60536c42f00e5b",
-    "scripts/test_holostate_readiness.py": "ad910532234ea8c7dabdbc710281d2b1b08f7883fac955e87c54facb5c8a3417",
+    "scripts/test_holostate_readiness.py": "36d09414c7d503c82a61b037e046be251b229be3da0b0d0f0a0d299175488aad",
     "scripts/test_listener_probe.py": "582b0a7943a44a5dc6fd59de1547d8d436bbc97e35c14d8718c1d7cc959e8547",
     "scripts/test_neo_loop_vram.py": "e4e29a1265d615411fa4b47dc38f43b526b83752e94338d6ebea52976ce2eef5",
     "scripts/test_trace_diagnostic.py": "4359240c665d149157bea5c811e3011edeee9ff12fa56b100a3464e32de50a8d",

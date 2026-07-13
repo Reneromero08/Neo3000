@@ -230,6 +230,10 @@ class CatalyticKernel0Adapter(_HoloStateAdapter):
             state_root=temp_root,
             wddm_policy=None,
             advisory_wddm=True,
+            stable_health_recovery_policy=self.h.StableHealthRecoveryPolicy(
+                maximum_consecutive_failure_seconds=15.0,
+                required_consecutive_successes=3,
+            ),
         )
         try:
             readiness = sidecar.launch()
@@ -240,12 +244,16 @@ class CatalyticKernel0Adapter(_HoloStateAdapter):
         self._host_private_baseline_bytes = (
             int(readiness_private) if isinstance(readiness_private, int) else None
         )
+        recovery = readiness.get("readiness_ownership", {}).get(
+            "stable_health_recovery", {}
+        )
         return sidecar, {
             "sidecar_pid": int(readiness["pid"]),
             "readiness_seconds": float(readiness["readiness_seconds"]),
             "private_bytes": self._host_private_baseline_bytes,
             "stable_pids": list(readiness["stable_pids"]),
             "chat_template_sha256": str(readiness["chat_template_sha256"]),
+            "stable_health_recovery": dict(recovery),
             "resource_telemetry_mode": "advisory-except-valid-measured-ceiling-breach",
         }
 

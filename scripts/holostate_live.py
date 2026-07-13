@@ -78,6 +78,7 @@ from neo_loop import (  # noqa: E402
 )
 from holostate_readiness import (  # noqa: E402
     HoloStateReadinessError,
+    StableHealthRecoveryPolicy,
     qualify_runtime_ownership,
     wait_for_holostate_readiness,
 )
@@ -3902,6 +3903,36 @@ if ($null -eq $P -or $null -eq $G) {{ exit 3 }}
     return json.loads(completed.stdout)
 
 
+def process_is_alive(pid: int) -> bool:
+    """Return exact process liveness without spawning a readiness subprocess."""
+    if not isinstance(pid, int) or isinstance(pid, bool) or pid <= 0:
+        return False
+    if os.name != "nt":
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            return False
+        return True
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    open_process = kernel32.OpenProcess
+    open_process.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    open_process.restype = wintypes.HANDLE
+    get_exit_code = kernel32.GetExitCodeProcess
+    get_exit_code.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
+    get_exit_code.restype = wintypes.BOOL
+    close_handle = kernel32.CloseHandle
+    close_handle.argtypes = (wintypes.HANDLE,)
+    close_handle.restype = wintypes.BOOL
+    handle = open_process(0x1000, False, pid)
+    if not handle:
+        return False
+    try:
+        exit_code = wintypes.DWORD()
+        return bool(get_exit_code(handle, ctypes.byref(exit_code))) and exit_code.value == 259
+    finally:
+        close_handle(handle)
+
+
 def binary_version(binary: Path) -> str:
     completed = subprocess.run([str(binary), "--version"], capture_output=True, text=True, timeout=30)
     if completed.returncode:
@@ -4127,6 +4158,7 @@ class LiveSidecar:
         state_root: Path | None = None,
         wddm_policy: WddmTelemetryPolicy | None = None,
         advisory_wddm: bool = False,
+        stable_health_recovery_policy: StableHealthRecoveryPolicy | None = None,
     ):
         self.binary = binary.resolve()
         self.model = model.resolve()
@@ -4170,6 +4202,7 @@ class LiveSidecar:
         self.private_at_readiness: int | None = None
         self.wddm_policy = wddm_policy
         self.advisory_wddm = advisory_wddm
+        self.stable_health_recovery_policy = stable_health_recovery_policy
 
     def readiness_timeout(self, ceiling_seconds: float) -> float:
         if self.readiness_deadline_at is None:
@@ -4587,6 +4620,17 @@ class LiveSidecar:
         else:
             if self.readiness_deadline_at is not None and time.monotonic() >= self.readiness_deadline_at:
                 raise HoloStateReadinessError("holostate-sidecar-readiness-timeout")
+            if self.stable_health_recovery_policy is not None:
+                if len(self.stable_pids) != 1:
+                    raise HoloStateReadinessError(
+                        "stable-listener-cardinality-before-sidecar-launch",
+                        evidence={"stable_pids": sorted(self.stable_pids)},
+                    )
+                if not all(process_is_alive(pid) for pid in self.stable_pids):
+                    raise HoloStateReadinessError(
+                        "stable-pid-lost-before-sidecar-launch",
+                        evidence={"stable_pids": sorted(self.stable_pids)},
+                    )
             if not health_ok(STABLE_PORT, timeout=self.readiness_timeout(3)):
                 raise HoloStateReadinessError(
                     "stable-health-unavailable-before-sidecar-launch",
@@ -4713,6 +4757,18 @@ class LiveSidecar:
                 )
                 if remaining_readiness <= 0:
                     raise HoloStateReadinessError("holostate-sidecar-readiness-timeout")
+
+                def stable_listener_during_startup() -> Any:
+                    query_window = self.readiness_timeout(1.0)
+                    return qualify_listener_ownership(
+                        STABLE_PORT,
+                        self.stable_pids,
+                        max_attempts=1,
+                        timeout_seconds=query_window,
+                        backoff_seconds=(),
+                        max_window_seconds=query_window,
+                    )
+
                 checked_readiness = wait_for_holostate_readiness(
                     sidecar_pid=self.process.pid,
                     stable_pids=self.stable_pids,
@@ -4754,6 +4810,17 @@ class LiveSidecar:
                         self.readiness_control,
                         shared_boundary=True,
                         deadline_at=self.readiness_deadline_at,
+                    ),
+                    stable_health_recovery_policy=self.stable_health_recovery_policy,
+                    stable_process_alive=(
+                        lambda: all(process_is_alive(pid) for pid in self.stable_pids)
+                    )
+                    if self.stable_health_recovery_policy is not None
+                    else None,
+                    stable_listener_ownership=(
+                        stable_listener_during_startup
+                        if self.stable_health_recovery_policy is not None
+                        else None
                     ),
                     poll_interval_seconds=float(self.readiness_control["model_load_poll_interval_seconds"]),
                 )

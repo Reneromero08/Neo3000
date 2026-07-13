@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Any, Callable
 
 from listener_probe import ListenerOwnershipEvidence, qualify_listener_ownership
@@ -16,6 +16,23 @@ class HoloStateReadinessError(RuntimeError):
     def __init__(self, message: str, *, evidence: dict[str, Any] | None = None) -> None:
         super().__init__(message)
         self.evidence = dict(evidence or {})
+
+
+@dataclass(frozen=True)
+class StableHealthRecoveryPolicy:
+    """Optional startup-only recovery for bounded stable HTTP probe loss."""
+
+    maximum_consecutive_failure_seconds: float = 15.0
+    required_consecutive_successes: int = 3
+
+    def __post_init__(self) -> None:
+        if self.maximum_consecutive_failure_seconds <= 0:
+            raise ValueError("stable-health recovery window must be positive")
+        if self.required_consecutive_successes <= 0:
+            raise ValueError("stable-health recovery success count must be positive")
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 @dataclass(frozen=True)
@@ -32,6 +49,7 @@ class HoloStateReadinessEvidence:
     stable_listener: ListenerOwnershipEvidence
     sidecar_listener: ListenerOwnershipEvidence
     stable_listener_confirmation: ListenerOwnershipEvidence
+    stable_health_recovery: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -39,6 +57,8 @@ class HoloStateReadinessEvidence:
         payload["stable_listener"] = self.stable_listener.to_dict()
         payload["sidecar_listener"] = self.sidecar_listener.to_dict()
         payload["stable_listener_confirmation"] = self.stable_listener_confirmation.to_dict()
+        if not self.stable_health_recovery:
+            payload.pop("stable_health_recovery", None)
         return payload
 
 
@@ -123,6 +143,9 @@ def wait_for_holostate_readiness(
     wddm_snapshot: Callable[[], dict[str, Any]] | None = None,
     listener_qualifier: Callable[..., ListenerOwnershipEvidence] = qualify_listener_ownership,
     listener_kwargs: dict[str, Any] | None = None,
+    stable_health_recovery_policy: StableHealthRecoveryPolicy | None = None,
+    stable_process_alive: Callable[[], bool] | None = None,
+    stable_listener_ownership: Callable[[], ListenerOwnershipEvidence] | None = None,
     poll_interval_seconds: float = 0.25,
     monotonic: Callable[[], float] = time.monotonic,
     sleep_fn: Callable[[float], None] = time.sleep,
@@ -140,6 +163,36 @@ def wait_for_holostate_readiness(
         raise ValueError("stable_pids must contain positive integers")
     if deadline_seconds <= 0 or poll_interval_seconds <= 0:
         raise ValueError("readiness timing values must be positive")
+
+    if stable_health_recovery_policy is not None:
+        if stable_process_alive is None or stable_listener_ownership is None:
+            raise ValueError(
+                "startup stable-health recovery requires stable process and listener checks"
+            )
+        if wddm_has_fresh_valid_sample is not None:
+            raise ValueError(
+                "startup stable-health recovery is not defined for resilient WDDM readiness"
+            )
+        return _wait_for_startup_health_recovery_readiness(
+            sidecar_pid=sidecar_pid,
+            stable_pids=stable,
+            stable_port=stable_port,
+            sidecar_port=sidecar_port,
+            deadline_seconds=deadline_seconds,
+            process_alive=process_alive,
+            stable_process_alive=stable_process_alive,
+            stable_listener_ownership=stable_listener_ownership,
+            stable_health_ok=stable_health_ok,
+            sidecar_health_ok=sidecar_health_ok,
+            wddm_has_valid_sample=wddm_has_valid_sample,
+            wddm_failure_reason=wddm_failure_reason,
+            listener_qualifier=listener_qualifier,
+            listener_kwargs=listener_kwargs,
+            policy=stable_health_recovery_policy,
+            poll_interval_seconds=poll_interval_seconds,
+            monotonic=monotonic,
+            sleep_fn=sleep_fn,
+        )
 
     if wddm_has_fresh_valid_sample is not None:
         return _wait_for_resilient_holostate_readiness(
@@ -301,6 +354,291 @@ def wait_for_holostate_readiness(
         sidecar_listener,
         stable_listener_confirmation,
     )
+
+
+def _wait_for_startup_health_recovery_readiness(
+    *,
+    sidecar_pid: int,
+    stable_pids: frozenset[int],
+    stable_port: int,
+    sidecar_port: int,
+    deadline_seconds: float,
+    process_alive: Callable[[], bool],
+    stable_process_alive: Callable[[], bool],
+    stable_listener_ownership: Callable[[], ListenerOwnershipEvidence],
+    stable_health_ok: Callable[[], bool],
+    sidecar_health_ok: Callable[[], bool],
+    wddm_has_valid_sample: Callable[[], bool],
+    wddm_failure_reason: Callable[[], str | None],
+    listener_qualifier: Callable[..., ListenerOwnershipEvidence],
+    listener_kwargs: dict[str, Any] | None,
+    policy: StableHealthRecoveryPolicy,
+    poll_interval_seconds: float,
+    monotonic: Callable[[], float],
+    sleep_fn: Callable[[float], None],
+) -> HoloStateReadinessEvidence:
+    """Keep identity strict while allowing only bounded startup HTTP recovery."""
+
+    started = monotonic()
+    deadline = started + deadline_seconds
+    polls = 0
+    stable_pid_checks = 0
+    stable_listener_checks = 0
+    health_attempts = 0
+    failed_health_probes = 0
+    recovery_events = 0
+    consecutive_successes = 0
+    first_failure_elapsed: float | None = None
+    last_failure_elapsed: float | None = None
+    failure_streak_started: float | None = None
+    maximum_failure_duration = 0.0
+    last_recovery_duration = 0.0
+    last_process_alive = False
+    last_stable_process_alive = False
+    last_stable_listener: ListenerOwnershipEvidence | None = None
+    last_stable_health = False
+    last_sidecar_health = False
+    last_wddm_attributed = False
+
+    def recovery_metadata(now: float | None = None) -> dict[str, Any]:
+        observed = monotonic() if now is None else now
+        current_duration = (
+            max(0.0, observed - failure_streak_started)
+            if failure_streak_started is not None
+            else 0.0
+        )
+        return {
+            "enabled": True,
+            "policy": policy.to_dict(),
+            "stable_health_probe_attempts": health_attempts,
+            "failed_stable_health_probes": failed_health_probes,
+            "recovery_events": recovery_events,
+            "first_failure_elapsed_seconds": (
+                round(first_failure_elapsed, 6)
+                if first_failure_elapsed is not None
+                else None
+            ),
+            "last_failure_elapsed_seconds": (
+                round(last_failure_elapsed, 6)
+                if last_failure_elapsed is not None
+                else None
+            ),
+            "maximum_consecutive_failure_duration_seconds": round(
+                max(maximum_failure_duration, current_duration), 6
+            ),
+            "last_recovery_duration_seconds": round(last_recovery_duration, 6),
+            "consecutive_successes_before_admission": consecutive_successes,
+            "stable_pid_checks": stable_pid_checks,
+            "stable_listener_checks": stable_listener_checks,
+            "stable_pid_preserved": last_stable_process_alive,
+            "stable_listener_preserved": bool(
+                last_stable_listener is not None and last_stable_listener.passed
+            ),
+            "final_stable_health_ok": last_stable_health,
+        }
+
+    def fail(reason: str, *, extra: dict[str, Any] | None = None) -> None:
+        raise HoloStateReadinessError(
+            reason,
+            evidence={
+                "poll_count": polls,
+                "readiness_seconds": max(0.0, monotonic() - started),
+                "process_alive": last_process_alive,
+                "stable_health_ok": last_stable_health,
+                "sidecar_health_ok": last_sidecar_health,
+                "wddm_attributed": last_wddm_attributed,
+                "stable_health_recovery": recovery_metadata(),
+                **(extra or {}),
+            },
+        )
+
+    def check_stable_identity() -> None:
+        nonlocal stable_pid_checks, stable_listener_checks
+        nonlocal last_stable_process_alive, last_stable_listener
+        stable_pid_checks += 1
+        last_stable_process_alive = stable_process_alive()
+        if not last_stable_process_alive:
+            fail("stable-pid-lost-before-readiness")
+        stable_listener_checks += 1
+        try:
+            last_stable_listener = stable_listener_ownership()
+            _require_listener_evidence("stable_startup", last_stable_listener)
+        except HoloStateReadinessError as exc:
+            fail(str(exc), extra=exc.evidence)
+
+    def probe_stable_health() -> bool:
+        nonlocal health_attempts, failed_health_probes, recovery_events
+        nonlocal consecutive_successes, first_failure_elapsed, last_failure_elapsed
+        nonlocal failure_streak_started, maximum_failure_duration
+        nonlocal last_recovery_duration, last_stable_health
+        health_attempts += 1
+        probe_started = monotonic()
+        last_stable_health = stable_health_ok()
+        now = monotonic()
+        if last_stable_health:
+            if failure_streak_started is not None:
+                duration = max(0.0, now - failure_streak_started)
+                maximum_failure_duration = max(maximum_failure_duration, duration)
+                last_recovery_duration = duration
+                recovery_events += 1
+                failure_streak_started = None
+            consecutive_successes += 1
+            return True
+
+        failed_health_probes += 1
+        consecutive_successes = 0
+        elapsed = max(0.0, probe_started - started)
+        if first_failure_elapsed is None:
+            first_failure_elapsed = elapsed
+        last_failure_elapsed = max(0.0, now - started)
+        if failure_streak_started is None:
+            failure_streak_started = probe_started
+        duration = max(0.0, now - failure_streak_started)
+        maximum_failure_duration = max(maximum_failure_duration, duration)
+        if duration > policy.maximum_consecutive_failure_seconds:
+            fail("stable-health-recovery-timeout")
+        return False
+
+    def refresh_loading_conditions() -> float:
+        nonlocal polls, last_process_alive, last_sidecar_health, last_wddm_attributed
+        polls += 1
+        last_process_alive = process_alive()
+        if not last_process_alive:
+            fail("sidecar-process-exited-before-readiness")
+        check_stable_identity()
+        stable_health = probe_stable_health()
+        failure = wddm_failure_reason()
+        if failure:
+            fail(failure)
+        last_sidecar_health = sidecar_health_ok()
+        last_wddm_attributed = wddm_has_valid_sample()
+        now = monotonic()
+        if now >= deadline:
+            fail("holostate-sidecar-readiness-timeout")
+        if (
+            stable_health
+            and last_sidecar_health
+            and last_wddm_attributed
+            and consecutive_successes >= policy.required_consecutive_successes
+        ):
+            return now
+        sleep_fn(min(poll_interval_seconds, max(0.0, deadline - now)))
+        return now
+
+    listener_options = dict(listener_kwargs or {})
+    maximum_total_window = listener_options.pop(
+        "maximum_total_query_window_seconds", None
+    )
+    while True:
+        while True:
+            refresh_loading_conditions()
+            if (
+                last_stable_health
+                and last_sidecar_health
+                and last_wddm_attributed
+                and consecutive_successes >= policy.required_consecutive_successes
+            ):
+                break
+
+        ownership_deadline = deadline
+        if maximum_total_window is not None:
+            total_window = float(maximum_total_window)
+            if total_window <= 0:
+                raise ValueError("maximum total listener-query window must be positive")
+            ownership_deadline = min(deadline, monotonic() + total_window)
+        try:
+            stable_listener, sidecar_listener = qualify_runtime_ownership(
+                stable_port=stable_port,
+                stable_pids=stable_pids,
+                sidecar_port=sidecar_port,
+                sidecar_pid=sidecar_pid,
+                listener_qualifier=listener_qualifier,
+                listener_kwargs=listener_options,
+                deadline_at=ownership_deadline,
+                monotonic=monotonic,
+            )
+        except HoloStateReadinessError as exc:
+            fail(str(exc), extra=exc.evidence)
+
+        last_process_alive = process_alive()
+        if not last_process_alive:
+            fail("sidecar-process-exited-during-listener-qualification")
+        check_stable_identity()
+        if not probe_stable_health():
+            continue
+        last_sidecar_health = sidecar_health_ok()
+        last_wddm_attributed = wddm_has_valid_sample()
+        failure = wddm_failure_reason()
+        if not last_sidecar_health:
+            fail("sidecar-health-lost-during-listener-qualification")
+        if failure:
+            fail(failure)
+        if not last_wddm_attributed:
+            fail("candidate-vram-attribution-lost-during-listener-qualification")
+
+        remaining = ownership_deadline - monotonic()
+        if remaining <= 0:
+            fail("holostate-listener-qualification-timeout")
+        confirmation_options = dict(listener_options)
+        confirmation_options["max_window_seconds"] = min(
+            float(confirmation_options.get("max_window_seconds", remaining)),
+            remaining,
+        )
+        stable_listener_confirmation = listener_qualifier(
+            stable_port,
+            set(stable_pids),
+            **confirmation_options,
+        )
+        try:
+            _require_listener_evidence(
+                "stable_confirmation", stable_listener_confirmation
+            )
+        except HoloStateReadinessError as exc:
+            fail(
+                str(exc),
+                extra={
+                    "stable_listener": stable_listener.to_dict(),
+                    "sidecar_listener": sidecar_listener.to_dict(),
+                    **exc.evidence,
+                },
+            )
+
+        last_process_alive = process_alive()
+        if not last_process_alive:
+            fail("sidecar-process-exited-after-listener-qualification")
+        check_stable_identity()
+        if not probe_stable_health():
+            continue
+        last_sidecar_health = sidecar_health_ok()
+        last_wddm_attributed = wddm_has_valid_sample()
+        failure = wddm_failure_reason()
+        if not last_sidecar_health:
+            fail("sidecar-health-lost-after-listener-qualification")
+        if failure:
+            fail(failure)
+        if not last_wddm_attributed:
+            fail("candidate-vram-attribution-lost-after-listener-qualification")
+        if consecutive_successes < policy.required_consecutive_successes:
+            continue
+        recovery = recovery_metadata()
+        recovery["stable_pid_preserved"] = True
+        recovery["stable_listener_preserved"] = True
+        recovery["final_stable_health_ok"] = True
+        return HoloStateReadinessEvidence(
+            True,
+            sidecar_pid,
+            stable_pids,
+            polls,
+            max(0.0, monotonic() - started),
+            last_process_alive,
+            last_stable_health,
+            last_sidecar_health,
+            last_wddm_attributed,
+            stable_listener,
+            sidecar_listener,
+            stable_listener_confirmation,
+            recovery,
+        )
 
 
 def _wait_for_resilient_holostate_readiness(
