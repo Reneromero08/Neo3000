@@ -1,6 +1,14 @@
 # Active Goal
 
-## Checkpoint 2: Preserve completed unresolved complementary CK0 evidence
+## Checkpoint 2: Preserve replicated unresolved-support CK0 evidence
+
+Preregistration artifact `lab/ck0_unresolved_replication_1.json` froze run `ck0-20260714T005256Z-a4` at canonical object SHA-256 `6BAA531FA1DF58FB22FCD6ED7A7052E90E5B85ED749C5D0C282BA8E6FB8BCA6D` and pushed commit `7f3f64a76a3c2a16fa1acbc6a550a1a380ef3936` before execution. The exact frozen implementation, carrier, model, binary, template, seeds, schemas, six-request process, one-slot/one-sidecar law, and no-retry/no-repair boundary were admitted statically; protected preflight ran exactly once.
+
+The sole authorized invocation completed 6 / 6 requests and reproduced the reference primary outcome. Both model branches again ranked `C00,C01,C02`; normalized supports remained A=`{C42,C56}`, B=`{C09,C34,C42}`, F=`{C42}`. The bound `combine` transform ranked `C42,C56,C09`, extraction selected `C42` at 5 / 5, and Tier-1 relational uncertainty reduced from support sizes 2 and 3, union 4, to the correct singleton. Restoration and cleanup passed with zero active leases, exact root reuse, stable/candidate custody, and preserved CIB0/CK0 history. Classification is `REPLICATION_VISIBLE` / `CATALYTIC_KERNEL_VISIBLE`.
+
+Preserve CK0 a1-a4 exactly. The only unlocked status is non-production `BOUNDED_RELATIONAL_UNCERTAINTY_REDUCTION_REPLICATED`: “The bounded CK0 unresolved-support catalytic mechanism reproduced once under the exact frozen carrier, implementation, model, binary, seeds, and six-request process.” This does not establish task advantage, superiority, SOTA, general catalytic inference, broader or restart persistence, Deep, or promotion. No further run or causal follow-on is authorized.
+
+## Historical checkpoint: Preserve completed unresolved complementary CK0 evidence
 
 The separately authorized carrier revision preserves CK0 a1/a2 and CIB0 a1-a6 exactly while correcting only the impossible unique-winner carrier law. Frozen public-only selection chose Tier-1 profile `complementary-unresolved-public-v1` on `cs1-task-05`: A=`1,2,4` with support `{C42,C56}`, B=`2,3,5` with support `{C09,C34,C42}`, shared example 2, and singleton full-public/intersection winner `C42`. Branch and full-public margins are 1; scan SHA-256 is `77B7306249DDE9188C327B615CBE95DAC3A5AC7D778AAB189CFFD203A6D40DF2`.
 

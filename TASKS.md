@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Track A remains paused. CIB0 a1-a6 and CK0 a1-a3 are immutable consumed evidence. The unresolved-support carrier cycle completed as `CATALYTIC_KERNEL_VISIBLE`, proving only bounded relational uncertainty reduction in this run; claims remain unchanged.
-**Next exact action:** preserve CK0 a1-a3 exactly. No rerun, second profile, tuning, CIB0/CS1 command, Deep request, claim change, or automatic promotion is authorized. Any replication or causal follow-on requires a separately authorized static boundary.
+**Active bounded objective:** Track A remains paused. CIB0 a1-a6 and CK0 a1-a4 are immutable consumed evidence. The exact frozen unresolved-support carrier reproduced `CATALYTIC_KERNEL_VISIBLE` once as `REPLICATION_VISIBLE`, unlocking only non-production status `BOUNDED_RELATIONAL_UNCERTAINTY_REDUCTION_REPLICATED`; broad claims remain locked.
+**Next exact action:** preserve CK0 a1-a4 exactly. No rerun, second profile, tuning, CIB0/CS1 command, Deep request, broad claim change, or automatic promotion is authorized. Any causal follow-on requires a separately authorized static boundary.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -528,6 +528,16 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Classify the bounded mechanism `CATALYTIC_KERNEL_VISIBLE`: Tier-1 support uncertainty reduced from branch sizes 2 and 3 (union 4) to the correct singleton. Restoration, cleanup, stable/candidate custody, historical CIB0/CK0 preservation, and zero active leases passed.
 - [x] Bind result SHA-256 `EB6BA8376D2B594D31A86478BC409E7EB4734C5AF3B6082F6292721B26BDFD4B`, manifest SHA-256 `CA4B5781F9023380AA218E6E881F98706A2077BB420359095E0C0C2043FEF389`, and closure SHA-256 `34825DE4069B63E5A03E380A9580926EEFFE4746611FADC49757524CF3EA6B4D`; no task-advantage, superiority, SOTA, general catalytic-inference, Deep, or promotion claim changed.
 
+### Catalytic Kernel 0 unresolved-carrier replication [PREREGISTERED / EXECUTED ONCE / VISIBLE]
+
+- [x] Preregister exact replication run `ck0-20260714T005256Z-a4` at canonical object SHA-256 `6BAA531FA1DF58FB22FCD6ED7A7052E90E5B85ED749C5D0C282BA8E6FB8BCA6D` and pushed commit `7f3f64a76a3c2a16fa1acbc6a550a1a380ef3936` before live execution.
+- [x] Freeze implementation `b19a4b4d6147bc10459c7d1d144021a1ff3d8eed`, carrier/profile, model, binary, chat template, request schemas, six seeds, six requests, one slot, one sidecar epoch, and no-retry/no-repair law. Canonical preregistration validation, evaluator-lock validation, and the sole protected preflight passed before execution.
+- [x] Invoke the exact CK0 command once. Run a4 completed 6 / 6 responses with Branch A and B again ranking `C00,C01,C02`; normalized supports remained A=`{C42,C56}`, B=`{C09,C34,C42}`, F=`{C42}`.
+- [x] Reproduce the exact primary mechanism: `combine` consumed both branch artifacts and ranked `C42,C56,C09`; extraction consumed the transform and selected `C42` at 5 / 5; support uncertainty reduced from 2 and 3, union 4, to the correct singleton.
+- [x] Restoration and cleanup passed with zero active leases, maximum concurrency one, exact carrier/root reuse, stable PID `37084`, candidate custody, free port 9494, and preserved historical CIB0/CK0 evidence.
+- [x] Bind a4 result SHA-256 `A4353263BDDDE0FC7A7A8CBDEA47C3224448919D56E1B15D18AE530D98C6A3FD`, manifest SHA-256 `D72BD718D5E6798DA065342C717963AF0797CF48AEE69AE32DC4EA19AC46BFA3`, and closure-file SHA-256 `58B0A40BD676D008A8D25098435F4B8E26E485BE0595AB9FE8E93F3FA1029925` as `REPLICATION_VISIBLE` / `CATALYTIC_KERNEL_VISIBLE`.
+- [x] Unlock only non-production status `BOUNDED_RELATIONAL_UNCERTAINTY_REDUCTION_REPLICATED`: “The bounded CK0 unresolved-support catalytic mechanism reproduced once under the exact frozen carrier, implementation, model, binary, seeds, and six-request process.” Task advantage, superiority, SOTA, general catalytic inference, broader/restart persistence, Deep, and promotion remain locked.
+
 Preserved v1 executed boundary:
 
 - Root A rendered 7,806 tokens and returned exact visible content `HOLOSTATE ROOT WARM`, empty reasoning metadata, `finish_reason=stop`, and 7 completion tokens. Prompt processing was 145,519.789 ms at 53.642 TPS.
@@ -557,4 +567,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: push the statically verified architectural commit, then execute one repeatable 13-request Catalytic Inference Bench 0 run on `cs1-task-06`. CS1-v6 and every predecessor remain consumed/no-retry; no CS1-v7 or CS1 live successor is permitted. Task advantage and SOTA remain locked; Deep and automatic promotion remain disabled.
+Next task: preserve CIB0 a1-a6 and CK0 a1-a4 exactly. The sole preregistered replication is consumed; no rerun or further live action is authorized. Task advantage, superiority, SOTA, general catalytic inference, persistence, Deep, and automatic promotion remain locked.

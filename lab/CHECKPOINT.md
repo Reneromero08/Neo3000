@@ -1,6 +1,22 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: CK0 unresolved complementary carrier executed once
+## Checkpoint 2: CK0 unresolved-support exact replication complete
+
+**Status:** RUN A4 COMPLETE / `REPLICATION_VISIBLE` / `CATALYTIC_KERNEL_VISIBLE` / `BOUNDED_RELATIONAL_UNCERTAINTY_REDUCTION_REPLICATED` / NON-PRODUCTION
+
+- [x] Preregister run `ck0-20260714T005256Z-a4` before execution at canonical object SHA-256 `6BAA531FA1DF58FB22FCD6ED7A7052E90E5B85ED749C5D0C282BA8E6FB8BCA6D`; commit `7f3f64a76a3c2a16fa1acbc6a550a1a380ef3936` was fast-forward pushed and all main refs matched.
+- [x] Freeze implementation `b19a4b4d6147bc10459c7d1d144021a1ff3d8eed`, reference run a3, exact carrier/profile, score matrix, scan, model, binary, template, six schemas, six seeds, one slot, one sidecar epoch, and no retry/repair/change law.
+- [x] Pass canonical preregistration validation, standalone evaluator-lock validation, exact evidence rehash and custody, then protected preflight exactly once. No compilation or test suite was run.
+- [x] Execute exactly one live invocation. All six requests completed; Branch A and B again ranked `C00,C01,C02`, while supports remained A=`{C42,C56}`, B=`{C09,C34,C42}`, F=`{C42}`.
+- [x] Reproduce the reference primary outcome: `combine` consumed both exact branch artifacts and ranked `C42,C56,C09`; extraction consumed the transform and selected `C42` at 5 / 5. Tier-1 uncertainty reduced from branch support sizes 2 and 3, union 4, to the correct singleton.
+- [x] Restoration and cleanup passed with zero active leases, six total leases, maximum concurrency one, exact carrier/root reuse, stable PID `37084`, preserved candidate, free port 9494, and unchanged historical evidence.
+- [x] Bind a4 manifest SHA-256 `D72BD718D5E6798DA065342C717963AF0797CF48AEE69AE32DC4EA19AC46BFA3`, result SHA-256 `A4353263BDDDE0FC7A7A8CBDEA47C3224448919D56E1B15D18AE530D98C6A3FD`, and closure-file SHA-256 `58B0A40BD676D008A8D25098435F4B8E26E485BE0595AB9FE8E93F3FA1029925`.
+- [x] Unlock only non-production status `BOUNDED_RELATIONAL_UNCERTAINTY_REDUCTION_REPLICATED`. Exact statement: “The bounded CK0 unresolved-support catalytic mechanism reproduced once under the exact frozen carrier, implementation, model, binary, seeds, and six-request process.”
+- [x] Keep task advantage, superiority, SOTA, general catalytic inference, broader process-local/restart persistence, Deep, and automatic promotion locked.
+
+**Next exact action:** preserve CIB0 a1-a6 and CK0 a1-a4 exactly. The sole preregistered replication authorization is consumed; no further run or causal follow-on is authorized.
+
+## Historical checkpoint: CK0 unresolved complementary carrier executed once
 
 **Status:** RUN A3 COMPLETE / `CATALYTIC_KERNEL_VISIBLE` / BOUNDED UNCERTAINTY REDUCTION / NO CLAIM CHANGE
 
