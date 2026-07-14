@@ -23,7 +23,16 @@ from catalytic_kernel_0 import (
     normalize_transform,
     parse_response,
     run_catalytic_kernel_0,
+    unresolved_relation_observables,
 )
+from catalytic_kernel_0_carrier_scan import (
+    PROFILE_ID,
+    PublicCarrierScanError,
+    _scan_profile,
+    scan_public_projections,
+    selected_unresolved_public_profile,
+)
+from catalytic_advantage_tasks import EXPECTED_SUITE_SHA256, build_frozen_task_suite
 from catalytic_swarm import PhysicalLeasePool
 
 
@@ -61,11 +70,12 @@ class FakeExecution:
 
 
 class FakeAdapter:
-    def __init__(self) -> None:
+    def __init__(self, *, unresolved_profile: bool = False) -> None:
         self.request_ids: list[str] = []
         self.payloads: list[dict[str, Any]] = []
         self.pool_sizes: list[int] = []
         self.cleanup_calls = 0
+        self.unresolved_profile = unresolved_profile
 
     def preflight(
         self,
@@ -111,14 +121,27 @@ class FakeAdapter:
     ) -> FakeExecution:
         self.request_ids.append(request.request_id)
         self.payloads.append(json.loads(json.dumps(payload)))
-        values = {
-            "borrow": {"carrier_id": CARRIER_ID},
-            "branch-a": {"ranking": ["C00", "C01", "C02"]},
-            "branch-b": {"ranking": ["C01", "C00", "C02"]},
-            "transform": {"operator": "reconcile", "ranking": ["C01", "C02", "C00"]},
-            "extract": {"candidate_id": "C01"},
-            "restore": {"carrier_id": CARRIER_ID},
-        }
+        carrier_id = payload["response_format"]["json_schema"]["schema"].get(
+            "properties", {}
+        ).get("carrier_id", {}).get("const", CARRIER_ID)
+        if self.unresolved_profile:
+            values = {
+                "borrow": {"carrier_id": carrier_id},
+                "branch-a": {"ranking": ["C42", "C56"]},
+                "branch-b": {"ranking": ["C09", "C34", "C42"]},
+                "transform": {"operator": "reconcile", "ranking": ["C42", "C56", "C09"]},
+                "extract": {"candidate_id": "C42"},
+                "restore": {"carrier_id": carrier_id},
+            }
+        else:
+            values = {
+                "borrow": {"carrier_id": carrier_id},
+                "branch-a": {"ranking": ["C00", "C01", "C02"]},
+                "branch-b": {"ranking": ["C01", "C00", "C02"]},
+                "transform": {"operator": "reconcile", "ranking": ["C01", "C02", "C00"]},
+                "extract": {"candidate_id": "C01"},
+                "restore": {"carrier_id": carrier_id},
+            }
         return FakeExecution(
             json.dumps(values[request.request_id], separators=(",", ":")),
             warm=request.request_id == "borrow",
@@ -177,9 +200,29 @@ class CatalyticKernel0Tests(unittest.TestCase):
         ):
             with self.assertRaises(CatalyticKernel0Error):
                 parse_response("branch-a", invalid)
+        profile = selected_unresolved_public_profile()
+        carrier = build_carrier(profile)
+        self.assertEqual(
+            parse_response(
+                "borrow",
+                json.dumps({"carrier_id": carrier["carrier_id"]}),
+                profile=profile,
+                carrier_id=carrier["carrier_id"],
+            ),
+            {"carrier_id": carrier["carrier_id"]},
+        )
 
     def test_complementary_shard_isolation(self) -> None:
-        carrier = json.loads(build_carrier()["carrier_root"])
+        historical = build_carrier()
+        self.assertEqual(
+            historical["carrier_content_sha256"],
+            "5A5C9AAF6B7830986957D8D4D6EEF6EE133B1FC320A706E5ADF315BDCCE37454",
+        )
+        self.assertEqual(
+            historical["carrier_root_sha256"],
+            "48E9EDDF63D9EF5B355C2EBEB150A451E43B8C28C3917A08D1CC4D6965209123",
+        )
+        carrier = json.loads(historical["carrier_root"])
         encoded = json.dumps(carrier, sort_keys=True)
         self.assertEqual(
             set(carrier),
@@ -198,9 +241,19 @@ class CatalyticKernel0Tests(unittest.TestCase):
         self.assertEqual(left["example_ids"], ["public-example-1", "public-example-2", "public-example-3"])
         self.assertEqual(right["example_ids"], ["public-example-3", "public-example-4", "public-example-5"])
         self.assertEqual(left["public_examples"][2], right["public_examples"][0])
+        profile = selected_unresolved_public_profile()
+        profile_left = build_public_shard("branch-a", profile)
+        profile_right = build_public_shard("branch-b", profile)
+        self.assertEqual(profile_left["example_ids"], ["public-example-1", "public-example-2", "public-example-4"])
+        self.assertEqual(profile_right["example_ids"], ["public-example-2", "public-example-3", "public-example-5"])
+        self.assertEqual(
+            set(profile_left["example_ids"]) & set(profile_right["example_ids"]),
+            {"public-example-2"},
+        )
 
     def test_no_protected_data_leak(self) -> None:
-        carrier = build_carrier()
+        profile = selected_unresolved_public_profile()
+        carrier = build_carrier(profile)
         artifacts: dict[str, dict[str, Any]] = {}
         payloads: dict[str, dict[str, Any]] = {}
         for request_id in ("borrow", "branch-a", "branch-b"):
@@ -210,17 +263,18 @@ class CatalyticKernel0Tests(unittest.TestCase):
             self.assertNotIn("hidden_examples", lowered)
             self.assertNotIn("answer_candidate_id", lowered)
             if request_id == "branch-a":
-                artifacts[request_id] = normalize_branch(request_id, ["C00", "C01", "C02"])
+                artifacts[request_id] = normalize_branch(request_id, ["C42", "C56"], profile)
             if request_id == "branch-b":
-                artifacts[request_id] = normalize_branch(request_id, ["C01", "C00", "C02"])
+                artifacts[request_id] = normalize_branch(request_id, ["C09", "C34", "C42"], profile)
         transform = normalize_transform(
             artifacts["branch-a"],
             artifacts["branch-b"],
             operator="reconcile",
-            ranking=["C01", "C02", "C00"],
+            ranking=["C42", "C56", "C09"],
+            profile=profile,
         )
         artifacts["transform"] = transform
-        artifacts["extract"] = normalize_extraction("C01", transform)
+        artifacts["extract"] = normalize_extraction("C42", transform, profile)
         for request_id in ("transform", "extract", "restore"):
             payloads[request_id] = build_model_request(
                 request_id, carrier=carrier, artifacts=artifacts
@@ -229,12 +283,22 @@ class CatalyticKernel0Tests(unittest.TestCase):
             lowered = json.dumps(payload, sort_keys=True).casefold()
             self.assertNotIn("hidden_examples", lowered, request_id)
             self.assertNotIn("answer_candidate_id", lowered, request_id)
+            self.assertNotIn("full_public_argmax_set", lowered, request_id)
+            self.assertNotIn("unique_full_public_winner", lowered, request_id)
         branch_a_assignment = json.loads(payloads["branch-a"]["messages"][1]["content"])
         branch_b_assignment = json.loads(payloads["branch-b"]["messages"][1]["content"])
         restore_assignment = json.loads(payloads["restore"]["messages"][1]["content"])
         self.assertEqual(set(branch_a_assignment), {"request_id", "instruction", "evidence_shard"})
         self.assertEqual(set(branch_b_assignment), {"request_id", "instruction", "evidence_shard"})
         self.assertEqual(set(restore_assignment), {"request_id", "carrier_id", "instruction"})
+        suite = build_frozen_task_suite()
+        projections = [task.public_projection() for task in suite.tasks]
+        projections[0] = {**projections[0], "hidden_examples": []}
+        with self.assertRaises(PublicCarrierScanError):
+            scan_public_projections(
+                projections,
+                task_suite_sha256=EXPECTED_SUITE_SHA256,
+            )
 
     def test_exact_two_parent_transform_binding(self) -> None:
         left = normalize_branch("branch-a", ["C00", "C01", "C02"])
@@ -251,6 +315,24 @@ class CatalyticKernel0Tests(unittest.TestCase):
         self.assertEqual(delta["introduced"], ["C03"])
         self.assertEqual(delta["removed"], ["C02"])
         self.assertEqual(delta, derive_rank_delta(["C00", "C01", "C02"], ["C01", "C03", "C00"]))
+        tier_2 = _scan_profile(
+            task_index=0,
+            task_id="score-fixture-only",
+            rows=(
+                {"candidate_id": "C00", "public_pass_vector": [True, True, False, True, True]},
+                {"candidate_id": "C01", "public_pass_vector": [True, False, True, True, False]},
+                {"candidate_id": "C02", "public_pass_vector": [True, True, False, False, False]},
+                {"candidate_id": "C03", "public_pass_vector": [False, False, False, True, True]},
+            ),
+            branch_a=(0, 1, 2),
+            branch_b=(2, 3, 4),
+        )
+        self.assertEqual(tier_2["eligible_tier"], 2)
+        self.assertEqual(tier_2["support_intersection"], ["C00", "C01"])
+        self.assertEqual(tier_2["full_support"], ["C00"])
+        self.assertEqual(tier_2["joint_public_support"], ["C00"])
+        self.assertTrue(tier_2["branch_a_exclusive_contributes"])
+        self.assertTrue(tier_2["branch_b_exclusive_contributes"])
 
     def test_extraction_must_select_from_transform(self) -> None:
         left = normalize_branch("branch-a", ["C00", "C01", "C02"])
@@ -260,18 +342,88 @@ class CatalyticKernel0Tests(unittest.TestCase):
         self.assertEqual(extraction["transform_artifact_sha256_consumed"], transform["artifact_sha256"])
         with self.assertRaises(CatalyticKernel0Error):
             parse_response("extract", '{"candidate_id":"C03"}', transform_artifact=transform)
+        first = selected_unresolved_public_profile()
+        second = selected_unresolved_public_profile()
+        self.assertEqual(first, second)
+        self.assertEqual(first["eligibility_tier"], 1)
+        self.assertGreater(first["scan_population"]["tier_1_eligible"], 0)
+
+    def test_public_unresolved_profile_selection(self) -> None:
+        profile = selected_unresolved_public_profile()
+        self.assertEqual(profile["profile_id"], PROFILE_ID)
+        self.assertEqual(profile["task_id"], "cs1-task-05")
+        self.assertEqual(profile["eligibility_tier"], 1)
+        self.assertEqual(profile["public_argmax_sets"]["branch-a"], ["C42", "C56"])
+        self.assertEqual(profile["public_argmax_sets"]["branch-b"], ["C09", "C34", "C42"])
+        self.assertEqual(profile["support_intersection"], ["C42"])
+        self.assertEqual(profile["full_public_argmax_set"], ["C42"])
+        self.assertTrue(profile["support_exclusive"]["branch-a"])
+        self.assertTrue(profile["support_exclusive"]["branch-b"])
+        self.assertTrue(all(2 <= len(value) <= 3 for value in profile["public_argmax_sets"].values()))
+        self.assertEqual(profile["full_public_margin"], 1)
+        self.assertEqual(min(profile["public_plateau_gaps"].values()), 1)
+        self.assertEqual(
+            profile["scan_sha256"],
+            "77B7306249DDE9188C327B615CBE95DAC3A5AC7D778AAB189CFFD203A6D40DF2",
+        )
+        self.assertEqual(
+            profile["public_score_matrix_sha256"],
+            "F2758458B3302F9CCE4A0BB719A14B1130299A31FDA2201FB12CBEED1BD20A63",
+        )
+
+    def test_unresolved_branch_metadata_projection(self) -> None:
+        profile = selected_unresolved_public_profile()
+        left = normalize_branch("branch-a", ["C42", "C56"], profile)
+        right = normalize_branch("branch-b", ["C09", "C34", "C42"], profile)
+        for branch_id, artifact in (("branch-a", left), ("branch-b", right)):
+            self.assertEqual(artifact["public_argmax_set"], profile["public_argmax_sets"][branch_id])
+            self.assertEqual(artifact["public_top_score"], 3)
+            self.assertEqual(artifact["public_plateau_gap"], 1)
+            self.assertTrue(artifact["model_ranking_contains_public_argmax_set"])
+            self.assertEqual(
+                [item["candidate_id"] for item in artifact["public_argmax_evidence"]],
+                artifact["public_argmax_set"],
+            )
+        transform = normalize_transform(
+            left,
+            right,
+            operator="reconcile",
+            ranking=["C42", "C56", "C09"],
+            profile=profile,
+        )
+        extraction = normalize_extraction("C42", transform, profile)
+        relation = unresolved_relation_observables(profile, left, right, transform, extraction)
+        self.assertEqual(relation["branch_support_intersection"], ["C42"])
+        self.assertEqual(relation["uncertainty_before"]["branch_a_support_size"], 2)
+        self.assertEqual(relation["uncertainty_before"]["branch_b_support_size"], 3)
+        self.assertEqual(relation["uncertainty_after"]["resolved_support_size"], 1)
+        self.assertTrue(relation["relational_uncertainty_reduced"])
 
     def test_carrier_restoration_and_six_request_runtime(self) -> None:
         from holostate_live import build_parser
 
         parsed = build_parser().parse_args(
-            ["run-catalytic-kernel-0", "--model", "model.gguf", "--run-id", "ck0-parser"]
+            [
+                "run-catalytic-kernel-0",
+                "--model",
+                "model.gguf",
+                "--run-id",
+                "ck0-parser",
+                "--carrier-profile",
+                PROFILE_ID,
+            ]
         )
         self.assertEqual(parsed.handler.__name__, "command_run_catalytic_kernel_0")
-        adapter = FakeAdapter()
+        self.assertEqual(parsed.carrier_profile, PROFILE_ID)
+        adapter = FakeAdapter(unresolved_profile=True)
         with tempfile.TemporaryDirectory(dir=ROOT / "state") as temporary:
             result = run_catalytic_kernel_0(
-                {"run_id": "ck0-test-complete", "binary": "X", "model": "Y"},
+                {
+                    "run_id": "ck0-test-complete",
+                    "binary": "X",
+                    "model": "Y",
+                    "carrier_profile": PROFILE_ID,
+                },
                 adapter=adapter,
                 repository_root=ROOT,
                 state_root=temporary,
@@ -285,23 +437,75 @@ class CatalyticKernel0Tests(unittest.TestCase):
         self.assertEqual(result["lease_accounting"]["active_leases"], 0)
         self.assertEqual(result["lease_accounting"]["lease_count"], 6)
         self.assertEqual(result["lease_accounting"]["maximum_concurrent_leases"], 1)
+        self.assertEqual(result["mechanism_classification"], "CATALYTIC_KERNEL_VISIBLE")
+        self.assertEqual(result["carrier"]["profile"]["profile_id"], PROFILE_ID)
+        self.assertTrue(result["restoration"]["historical_ck0_preserved"])
+        self.assertIn("RELATIONAL_UNCERTAINTY_REDUCED", result["diagnostics"])
         self.assertNotIn("RAW_SENTINEL", persisted)
 
     def test_collapse_versus_visible_classification(self) -> None:
-        identical_a = normalize_branch("branch-a", ["C00", "C01", "C02"])
-        identical_b = normalize_branch("branch-b", ["C00", "C01", "C02"])
-        identity = normalize_transform(identical_a, identical_b, operator="reconcile", ranking=["C00", "C01", "C02"])
-        copied = normalize_extraction("C00", identity)
+        historical_a = normalize_branch("branch-a", ["C58", "C56", "C08"])
+        historical_b = normalize_branch("branch-b", ["C58", "C56", "C41"])
+        historical_transform = normalize_transform(
+            historical_a,
+            historical_b,
+            operator="combine",
+            ranking=["C58", "C08", "C56"],
+        )
+        historical_extract = normalize_extraction("C58", historical_transform)
         self.assertEqual(
-            classify_kernel(identical_a, identical_b, identity, copied, restoration_passed=True, completed_request_count=6),
+            classify_kernel(
+                historical_a,
+                historical_b,
+                historical_transform,
+                historical_extract,
+                restoration_passed=True,
+                completed_request_count=6,
+            ),
             "CATALYTIC_KERNEL_COLLAPSED",
         )
-        different_b = normalize_branch("branch-b", ["C01", "C00", "C02"])
-        changed = normalize_transform(identical_a, different_b, operator="combine", ranking=["C01", "C02", "C00"])
-        extracted = normalize_extraction("C01", changed)
+        profile = selected_unresolved_public_profile()
+        left = normalize_branch("branch-a", ["C42", "C56"], profile)
+        right = normalize_branch("branch-b", ["C09", "C34", "C42"], profile)
+        resolved = normalize_transform(
+            left,
+            right,
+            operator="reconcile",
+            ranking=["C42", "C56", "C09"],
+            profile=profile,
+        )
+        extracted = normalize_extraction("C42", resolved, profile)
         self.assertEqual(
-            classify_kernel(identical_a, different_b, changed, extracted, restoration_passed=True, completed_request_count=6),
+            classify_kernel(
+                left,
+                right,
+                resolved,
+                extracted,
+                restoration_passed=True,
+                completed_request_count=6,
+                profile=profile,
+            ),
             "CATALYTIC_KERNEL_VISIBLE",
+        )
+        unresolved = normalize_transform(
+            left,
+            right,
+            operator="reconcile",
+            ranking=["C56", "C42", "C09"],
+            profile=profile,
+        )
+        wrong_extract = normalize_extraction("C56", unresolved, profile)
+        self.assertEqual(
+            classify_kernel(
+                left,
+                right,
+                unresolved,
+                wrong_extract,
+                restoration_passed=True,
+                completed_request_count=6,
+                profile=profile,
+            ),
+            "CATALYTIC_KERNEL_COLLAPSED",
         )
 
 

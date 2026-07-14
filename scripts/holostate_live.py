@@ -19043,6 +19043,10 @@ def build_parser() -> argparse.ArgumentParser:
     catalytic_kernel_0.add_argument("--binary", default=str(DEFAULT_BINARY))
     catalytic_kernel_0.add_argument("--model", required=True)
     catalytic_kernel_0.add_argument("--run-id", required=True)
+    catalytic_kernel_0.add_argument(
+        "--carrier-profile",
+        choices=("complementary-unresolved-public-v1",),
+    )
     catalytic_kernel_0.set_defaults(handler=command_run_catalytic_kernel_0)
     return parser
 

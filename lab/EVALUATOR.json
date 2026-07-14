@@ -160,6 +160,7 @@
       "scripts/test_catalytic_inference_bench_0.py",
       "scripts/catalytic_inference_bench_0_runtime.py",
       "scripts/test_catalytic_inference_bench_0_runtime.py",
+      "scripts/catalytic_kernel_0_carrier_scan.py",
       "scripts/catalytic_kernel_0.py",
       "scripts/test_catalytic_kernel_0.py",
       "tools/server/server-context.cpp",
@@ -268,6 +269,7 @@
     ,"scripts/test_catalytic_inference_bench_0.py"
     ,"scripts/catalytic_inference_bench_0_runtime.py"
     ,"scripts/test_catalytic_inference_bench_0_runtime.py"
+    ,"scripts/catalytic_kernel_0_carrier_scan.py"
     ,"scripts/catalytic_kernel_0.py"
     ,"scripts/test_catalytic_kernel_0.py"
   ],

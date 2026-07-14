@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Track A claim verification is paused. CS1-v1 through CS1-v6 and CIB0 a1 through a6 are immutable consumed evidence. Catalytic Kernel 0 run a1 is preserved inconclusive and run a2 is preserved complete as `CATALYTIC_KERNEL_COLLAPSED`; the one authorized live cycle is closed.
-**Next exact action:** preserve CK0 a1 and a2 exactly. No CK0 rerun, tuning, successor, CIB0 repair, CS1 command, Deep request, claim change, or automatic promotion is authorized. Any further mechanism work requires a separately authorized static boundary derived from the collapsed evidence.
+**Active bounded objective:** Preserve all CK0 and CIB0 evidence. The separately authorized `complementary-unresolved-public-v1` revision replaces the impossible different-unique-winner carrier law with complementary unresolved public support sets while retaining the exact six-request kernel.
+**Next exact action:** close static verification, commit and fast-forward push the unresolved carrier implementation, then execute exactly one fresh CK0 cycle with no retry or repair. No other CK0 profile, CIB0/CS1 command, Deep request, claim change, or automatic promotion is authorized.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -515,6 +515,15 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Statically verify the kernel: 8 / 8 focused tests pass; changed files compile; the one 779-test CPU-only run passed 778 and exposed only the intentionally stale evaluator lock; after lock refresh that exact failed lock test passes and protected preflight passes.
 - [x] Push the minimal kernel and bounded startup-health repair, then execute exactly one fresh cycle without retry. Run `ck0-20260713T234035Z-a2` completed all six requests with exact custody, restoration, and cleanup and classified `CATALYTIC_KERNEL_COLLAPSED`.
 - [x] Preserve the collapsed semantics exactly: Branch A `C58,C56,C08`; Branch B `C58,C56,C41`; `combine` transform `C58,C08,C56`; extraction `C58` at 5 / 5 public examples. No production or promotion claim changed.
+
+### Catalytic Kernel 0 unresolved complementary carrier [STATIC IMPLEMENTED / LIVE PENDING]
+
+- [x] Preserve CK0 a1/a2 and CIB0 a1-a6 exactly; retain the historical default carrier bytes and a2 `CATALYTIC_KERNEL_COLLAPSED` classification.
+- [x] Freeze the public-only unresolved-support selector before selection. Across all 240 ordered 3+3 shard pairs it found six Tier-1 and zero Tier-2 profiles and deterministically selected task `cs1-task-05`, A=`1,2,4`, B=`2,3,5`, shared=`2`.
+- [x] Bind profile `complementary-unresolved-public-v1`: A=`{C42,C56}`, B=`{C09,C34,C42}`, F=`{C42}`, branch plateau gaps 1, full margin 1, scan SHA-256 `77B7306249DDE9188C327B615CBE95DAC3A5AC7D778AAB189CFFD203A6D40DF2`.
+- [x] Add bounded branch-local unresolved support metadata and profile-specific uncertainty-reduction classification without changing requests, response schemas, lifecycle, custody, restoration, or claims. Focused tests pass 10 / 10.
+- [x] Pass changed-file compilation, the complete CPU-only suite exactly once at 787 / 787 in 42.5 seconds, and protected preflight exactly once.
+- [ ] Commit and fast-forward push `Add unresolved complementary carrier to Catalytic Kernel 0`, verify all main refs, then execute exactly one fresh six-request run with no retry or repair.
 
 Preserved v1 executed boundary:
 

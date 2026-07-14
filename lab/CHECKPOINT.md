@@ -1,6 +1,17 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: CIB0 frozen and Catalytic Kernel 0 cycle closed
+## Checkpoint 2: CK0 unresolved complementary carrier statically implemented
+
+**Status:** PUBLIC-ONLY TIER-1 CARRIER FROZEN / STATICALLY VERIFIED / ONE LIVE RUN PENDING / NO CLAIM CHANGE
+
+- [x] Preserve the exact CIB0 a1-a6 tree at SHA-256 `57CE7FFFEBBB925BBD3B37F55A9394037720018748776C2C42DD17961D8ECCBD` and CK0 a1/a2 tree at SHA-256 `BB15C248EFBF075F77899161FC6EEDCD28830097CB6D0B67D7BB7F368ADCC249`.
+- [x] Freeze the selection source before observing the result. The 240-profile public-only scan selected Tier-1 `complementary-unresolved-public-v1` on `cs1-task-05`, shards A=`1,2,4`, B=`2,3,5`, shared=`2`; A=`{C42,C56}`, B=`{C09,C34,C42}`, F=`{C42}`.
+- [x] Bind score-matrix SHA-256 `F2758458B3302F9CCE4A0BB719A14B1130299A31FDA2201FB12CBEED1BD20A63` and scan SHA-256 `77B7306249DDE9188C327B615CBE95DAC3A5AC7D778AAB189CFFD203A6D40DF2`; both branch plateau gaps and the full-public margin equal 1.
+- [x] Keep the six-request kernel and historical default classification unchanged; add only bounded branch-local support projections, controller-derived uncertainty observables, diagnostics, and the profile-specific visibility law. Focused tests pass 10 / 10.
+- [x] Pass 10 / 10 focused tests, changed-file compilation, the one complete CPU-only suite at 787 / 787 in 42.5 seconds, and protected preflight exactly once.
+- [ ] Commit/push the implementation, then consume exactly one live profile run.
+
+## Historical checkpoint: CIB0 frozen and Catalytic Kernel 0 cycle closed
 
 **Status:** CIB0 FROZEN / CK0 A2 COMPLETE / `CATALYTIC_KERNEL_COLLAPSED` / NO CLAIM CHANGE
 

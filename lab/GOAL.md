@@ -1,6 +1,12 @@
 # Active Goal
 
-## Checkpoint 2: Preserve completed, collapsed Catalytic Kernel 0
+## Checkpoint 2: Execute one unresolved complementary Catalytic Kernel 0 carrier
+
+The separately authorized carrier revision preserves CK0 a1/a2 and CIB0 a1-a6 exactly while correcting only the impossible unique-winner carrier law. Frozen public-only selection chose Tier-1 profile `complementary-unresolved-public-v1` on `cs1-task-05`: A=`1,2,4` with support `{C42,C56}`, B=`2,3,5` with support `{C09,C34,C42}`, shared example 2, and singleton full-public/intersection winner `C42`. Branch and full-public margins are 1; scan SHA-256 is `77B7306249DDE9188C327B615CBE95DAC3A5AC7D778AAB189CFFD203A6D40DF2`.
+
+The six requests, one slot, one sidecar, response schemas, cache/root law, restoration, custody, metadata-only persistence, and claim locks remain unchanged. Focused tests pass 10 / 10, changed Python files compile, the one complete CPU-only suite passes 787 / 787, and protected preflight passes exactly once. The next exact action is to commit and push the implementation, then execute the profile exactly once without repair or retry. One visible result may establish only bounded relational uncertainty reduction in this run; it cannot establish task advantage, superiority, SOTA, or general catalytic inference.
+
+## Historical checkpoint: Preserve completed, collapsed Catalytic Kernel 0
 
 Catalytic Inference Bench 0 is paused as `INCONCLUSIVE / OVER-SPECIFIED / TRANSFORM-COLLAPSE SIGNAL`. Preserve runs a1 through a6 exactly and do not repair `structural_reason_codes` or rerun the bench. The accepted prefix proved repeated exact public-root borrowing and kept resource telemetry off the exploratory critical path. It did not establish catalytic transformation: the three seeds repeated one ranking, the final transform retained it and proposed only self-relations, and an auxiliary reason-code schema rejected the response before mechanism classification. No production claim changes.
 

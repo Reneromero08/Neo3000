@@ -28,6 +28,10 @@ from catalytic_advantage_tasks import (
     build_frozen_task_suite,
     execute_program,
 )
+from catalytic_kernel_0_carrier_scan import (
+    PROFILE_ID as UNRESOLVED_PROFILE_ID,
+    selected_unresolved_public_profile,
+)
 from catalytic_inference_bench_0 import validate_metadata_only
 from catalytic_inference_bench_0_runtime import (
     MODEL_ALIAS,
@@ -60,6 +64,19 @@ EXPECTED_CIB0_RUN_IDS = (
     "cib0-20260713T092633Z-a6",
 )
 EXPECTED_CIB0_TREE_SHA256 = "57CE7FFFEBBB925BBD3B37F55A9394037720018748776C2C42DD17961D8ECCBD"
+EXPECTED_CK0_HISTORY = {
+    "ck0-20260713T230841Z-a1": {
+        "closure.json": "95C1F19309E293EB1421EE4E1941C411AAA670F659F6236EEE31EB1DABE18DAA",
+        "manifest.json": "DC7E1B045BE85C0513A73AF22E5718F73F36753B271E874E5EFBB0FE05E6E2CD",
+        "result.json": "2C8A3B05EAC4829A903FAAD43C4D602737B0D86C0720291901D2D241D4AB9402",
+    },
+    "ck0-20260713T234035Z-a2": {
+        "closure.json": "6F179087C48F98A0E0BF88B7D264AD55D9068E74643C6C9EAB1C56ACA3335AD4",
+        "manifest.json": "3E2FB2040513EF44CA02A5D0EFFE91A1AC60C3D0357E18820526402C12409E8E",
+        "result.json": "3161D42296E6CEB4E2803D00ADB790A23E98CD7556FDBD17FA1C4EC4B44EC85F",
+    },
+}
+EXPECTED_CK0_HISTORY_SHA256 = "BB15C248EFBF075F77899161FC6EEDCD28830097CB6D0B67D7BB7F368ADCC249"
 STATE_FILENAMES = ("manifest.json", "result.json", "closure.json", "run.lock")
 FORBIDDEN_PRIVATE_FIELDS = frozenset(
     {"hidden_examples", "answer_candidate_id", "hidden_score", "private_evaluator_data"}
@@ -330,12 +347,97 @@ def _snapshot_tree(root: Path) -> dict[str, Any]:
     return snapshot
 
 
-def public_task() -> PublicKernelTask:
+def _snapshot_historical_ck0(root: Path) -> dict[str, Any]:
+    if not root.is_dir() or root.is_symlink():
+        raise CatalyticKernel0Error("CK0 evidence root is missing or unsafe")
+    entries: list[dict[str, Any]] = []
+    for run_id, files in EXPECTED_CK0_HISTORY.items():
+        run_root = root / run_id
+        if not run_root.is_dir() or run_root.is_symlink():
+            raise CatalyticKernel0Error("historical CK0 run is missing or unsafe")
+        if {path.name for path in run_root.iterdir()} != set(files):
+            raise CatalyticKernel0Error("historical CK0 file set changed")
+        for filename, expected_sha256 in files.items():
+            path = run_root / filename
+            if not path.is_file() or path.is_symlink():
+                raise CatalyticKernel0Error("historical CK0 evidence file is unsafe")
+            data = path.read_bytes()
+            actual_sha256 = sha256_bytes(data)
+            if actual_sha256 != expected_sha256:
+                raise CatalyticKernel0Error("historical CK0 evidence changed")
+            entries.append(
+                {
+                    "path": f"{run_id}/{filename}",
+                    "bytes": len(data),
+                    "sha256": actual_sha256,
+                }
+            )
+    entries.sort(key=lambda item: item["path"])
+    snapshot = {
+        "run_ids": list(EXPECTED_CK0_HISTORY),
+        "file_count": len(entries),
+        "tree_sha256": json_sha256(entries),
+    }
+    if snapshot["tree_sha256"] != EXPECTED_CK0_HISTORY_SHA256:
+        raise CatalyticKernel0Error("historical CK0 tree identity changed")
+    return snapshot
+
+
+def _validated_profile(profile: Mapping[str, Any] | None) -> dict[str, Any] | None:
+    if profile is None:
+        return None
+    expected = selected_unresolved_public_profile()
+    supplied = dict(profile)
+    supplied.pop("carrier_content_sha256", None)
+    supplied.pop("carrier_root_sha256", None)
+    if supplied != expected:
+        raise CatalyticKernel0Error("unresolved carrier profile identity drift")
+    return expected
+
+
+def _profile_indices(profile: Mapping[str, Any] | None) -> dict[str, tuple[int, ...]]:
+    if profile is None:
+        return {key: tuple(value) for key, value in BRANCH_SHARDS.items()}
+    validated = _validated_profile(profile)
+    assert validated is not None
+    return {
+        branch_id: tuple(int(index) for index in validated["branch_indices"][branch_id])
+        for branch_id in BRANCH_SHARDS
+    }
+
+
+def _profile_carrier_id(profile: Mapping[str, Any] | None) -> str:
+    if profile is None:
+        return CARRIER_ID
+    validated = _validated_profile(profile)
+    assert validated is not None
+    return f"ck0:{validated['task_id']}:{validated['profile_id']}:public-carrier"
+
+
+def _model_visible_profile_identity(profile: Mapping[str, Any]) -> dict[str, Any]:
+    validated = _validated_profile(profile)
+    assert validated is not None
+    return {
+        "profile_id": validated["profile_id"],
+        "task_suite_sha256": validated["task_suite_sha256"],
+        "task_id": validated["task_id"],
+        "branch_shards": dict(validated["branch_shards"]),
+        "shared_calibration_example_id": validated["shared_calibration_example_id"],
+        "eligibility_tier": validated["eligibility_tier"],
+        "public_score_matrix_sha256": validated["public_score_matrix_sha256"],
+        "scan_sha256": validated["scan_sha256"],
+    }
+
+
+def public_task(profile: Mapping[str, Any] | None = None) -> PublicKernelTask:
+    profile = _validated_profile(profile)
     suite = build_frozen_task_suite()
     if suite.suite_sha256 != EXPECTED_SUITE_SHA256:
         raise CatalyticKernel0Error("task-suite identity drift")
-    task = suite.tasks[5]
-    if task.task_id != TASK_ID or len(task.public_examples) != 5 or len(task.candidates) != 64:
+    task_index = 5 if profile is None else int(profile["task_index"])
+    expected_task_id = TASK_ID if profile is None else profile["task_id"]
+    task = suite.tasks[task_index]
+    if task.task_id != expected_task_id or len(task.public_examples) != 5 or len(task.candidates) != 64:
         raise CatalyticKernel0Error("kernel task geometry drift")
     projection = task.public_projection()
     if "hidden_examples" in projection or "answer_candidate_id" in projection:
@@ -348,10 +450,12 @@ def public_task() -> PublicKernelTask:
     )
 
 
-def build_carrier() -> dict[str, Any]:
-    task = public_task()
+def build_carrier(profile: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    profile = _validated_profile(profile)
+    task = public_task(profile)
+    carrier_id = _profile_carrier_id(profile)
     content = {
-        "carrier_id": CARRIER_ID,
+        "carrier_id": carrier_id,
         "task_definition": {
             "task_id": task.task_id,
             "semantics": dict(task.semantics),
@@ -376,18 +480,27 @@ def build_carrier() -> dict[str, Any]:
             "controller_authorship": "all hashes, edges, rank deltas, scores, bindings, and restoration gates",
         },
     }
+    if profile is not None:
+        content["profile_identity"] = _model_visible_profile_identity(profile)
     content_sha256 = json_sha256(content)
     root_object = {**content, "carrier_content_sha256": content_sha256}
     root = canonical_json_text(root_object)
     if len(root.encode("utf-8")) > MAX_CARRIER_BYTES:
         raise CatalyticKernel0Error("immutable carrier root exceeds its bound")
     validate_metadata_only(root_object)
-    return {
-        "carrier_id": CARRIER_ID,
+    carrier = {
+        "carrier_id": carrier_id,
         "carrier_content_sha256": content_sha256,
         "carrier_root": root,
         "carrier_root_sha256": sha256_bytes(root.encode("utf-8")),
     }
+    if profile is not None:
+        carrier["profile"] = {
+            **profile,
+            "carrier_content_sha256": content_sha256,
+            "carrier_root_sha256": carrier["carrier_root_sha256"],
+        }
+    return carrier
 
 
 def _carrier_is_pristine(carrier: Mapping[str, Any]) -> bool:
@@ -406,6 +519,9 @@ def _carrier_is_pristine(carrier: Mapping[str, Any]) -> bool:
         "kernel_instructions",
         "carrier_content_sha256",
     }
+    profile = carrier.get("profile")
+    if profile is not None:
+        expected_keys.add("profile_identity")
     if not isinstance(root, dict) or set(root) != expected_keys:
         return False
     claimed_content_sha = root.pop("carrier_content_sha256")
@@ -416,7 +532,7 @@ def _carrier_is_pristine(carrier: Mapping[str, Any]) -> bool:
         and claimed_content_sha == carrier.get("carrier_content_sha256")
         and sha256_bytes(root_text.encode("utf-8"))
         == carrier.get("carrier_root_sha256")
-        and root.get("carrier_id") == CARRIER_ID
+        and root.get("carrier_id") == carrier.get("carrier_id")
         and isinstance(task_definition, dict)
         and set(task_definition) == {"task_id", "semantics"}
         and isinstance(programs, list)
@@ -427,14 +543,21 @@ def _carrier_is_pristine(carrier: Mapping[str, Any]) -> bool:
             for item in programs
         )
         and root.get("candidate_ids") == [item["candidate_id"] for item in programs]
+        and (
+            profile is None
+            or root.get("profile_identity") == _model_visible_profile_identity(profile)
+        )
     )
 
 
-def build_public_shard(branch_id: str) -> dict[str, Any]:
+def build_public_shard(
+    branch_id: str, profile: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
     if branch_id not in BRANCH_SHARDS:
         raise CatalyticKernel0Error("unknown branch shard")
-    task = public_task()
-    ordinals = BRANCH_SHARDS[branch_id]
+    profile = _validated_profile(profile)
+    task = public_task(profile)
+    ordinals = _profile_indices(profile)[branch_id]
     return {
         "branch_id": branch_id,
         "example_ids": [f"public-example-{index + 1}" for index in ordinals],
@@ -459,13 +582,13 @@ def _ranking_schema() -> dict[str, Any]:
     }
 
 
-def response_schema(request_id: str) -> dict[str, Any]:
+def response_schema(request_id: str, *, carrier_id: str = CARRIER_ID) -> dict[str, Any]:
     if request_id in {"borrow", "restore"}:
         return {
             "type": "object",
             "additionalProperties": False,
             "required": ["carrier_id"],
-            "properties": {"carrier_id": {"type": "string", "const": CARRIER_ID}},
+            "properties": {"carrier_id": {"type": "string", "const": carrier_id}},
         }
     if request_id in BRANCH_SHARDS:
         return _ranking_schema()
@@ -491,8 +614,10 @@ def response_schema(request_id: str) -> dict[str, Any]:
     raise CatalyticKernel0Error("unknown kernel request")
 
 
-def _require_ranking(value: Any) -> list[str]:
-    valid_ids = {item.candidate_id for item in public_task().candidates}
+def _require_ranking(
+    value: Any, profile: Mapping[str, Any] | None = None
+) -> list[str]:
+    valid_ids = {item.candidate_id for item in public_task(profile).candidates}
     if (
         not isinstance(value, list)
         or not 1 <= len(value) <= 3
@@ -508,7 +633,10 @@ def parse_response(
     content: str,
     *,
     transform_artifact: Mapping[str, Any] | None = None,
+    profile: Mapping[str, Any] | None = None,
+    carrier_id: str = CARRIER_ID,
 ) -> dict[str, Any]:
+    profile = _validated_profile(profile)
     if not isinstance(content, str) or not content or len(content.encode("utf-8")) > MAX_STRUCTURED_BYTES:
         raise CatalyticKernel0Error("structured response is empty or over its bound")
     try:
@@ -518,16 +646,19 @@ def parse_response(
     if not isinstance(value, dict):
         raise CatalyticKernel0Error("structured response is not an object")
     if request_id in {"borrow", "restore"}:
-        if set(value) != {"carrier_id"} or value["carrier_id"] != CARRIER_ID:
+        if set(value) != {"carrier_id"} or value["carrier_id"] != carrier_id:
             raise CatalyticKernel0Error("carrier acknowledgement is invalid")
     elif request_id in BRANCH_SHARDS:
         if set(value) != {"ranking"}:
             raise CatalyticKernel0Error("branch response field set changed")
-        value = {"ranking": _require_ranking(value["ranking"])}
+        value = {"ranking": _require_ranking(value["ranking"], profile)}
     elif request_id == "transform":
         if set(value) != {"operator", "ranking"} or value.get("operator") not in ALLOWED_OPERATORS:
             raise CatalyticKernel0Error("transform response is invalid")
-        value = {"operator": value["operator"], "ranking": _require_ranking(value["ranking"])}
+        value = {
+            "operator": value["operator"],
+            "ranking": _require_ranking(value["ranking"], profile),
+        }
     elif request_id == "extract":
         if set(value) != {"candidate_id"} or not isinstance(value.get("candidate_id"), str):
             raise CatalyticKernel0Error("extraction response is invalid")
@@ -560,17 +691,53 @@ def _score_examples(
     }
 
 
-def normalize_branch(branch_id: str, ranking: Sequence[str]) -> dict[str, Any]:
-    ranking = _require_ranking(list(ranking))
-    task = public_task()
-    examples = [(index, task.public_examples[index]) for index in BRANCH_SHARDS[branch_id]]
+def normalize_branch(
+    branch_id: str,
+    ranking: Sequence[str],
+    profile: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    profile = _validated_profile(profile)
+    ranking = _require_ranking(list(ranking), profile)
+    task = public_task(profile)
+    indices = _profile_indices(profile)[branch_id]
+    examples = [(index, task.public_examples[index]) for index in indices]
     body = {
         "artifact_id": branch_id,
         "artifact_kind": "public-evidence-branch",
         "ranking": ranking,
-        "public_shard_ids": [f"public-example-{index + 1}" for index in BRANCH_SHARDS[branch_id]],
+        "public_shard_ids": [f"public-example-{index + 1}" for index in indices],
         "shard_scores": [_score_examples(task, candidate_id, examples) for candidate_id in ranking],
     }
+    if profile is not None:
+        all_scores = [
+            _score_examples(task, candidate.candidate_id, examples)
+            for candidate in task.candidates
+        ]
+        top_score = max(score["passed"] for score in all_scores)
+        public_argmax_set = [
+            score["candidate_id"] for score in all_scores if score["passed"] == top_score
+        ]
+        lower_scores = [score["passed"] for score in all_scores if score["passed"] < top_score]
+        plateau_gap = top_score - max(lower_scores) if lower_scores else 0
+        if (
+            public_argmax_set != profile["public_argmax_sets"][branch_id]
+            or top_score != profile["public_top_scores"][branch_id]
+            or plateau_gap != profile["public_plateau_gaps"][branch_id]
+        ):
+            raise CatalyticKernel0Error("branch unresolved-support identity drift")
+        body.update(
+            {
+                "carrier_profile_id": profile["profile_id"],
+                "shared_calibration_example_id": profile["shared_calibration_example_id"],
+                "public_argmax_set": public_argmax_set,
+                "public_top_score": top_score,
+                "public_plateau_gap": plateau_gap,
+                "public_argmax_evidence": [
+                    score for score in all_scores if score["candidate_id"] in public_argmax_set
+                ],
+                "model_ranking_contains_public_argmax_set": set(public_argmax_set).issubset(ranking),
+            }
+        )
     artifact = {**body, "artifact_sha256": json_sha256(body)}
     if len(canonical_json_bytes(artifact)) > MAX_ARTIFACT_BYTES:
         raise CatalyticKernel0Error("branch artifact exceeds its bound")
@@ -579,18 +746,23 @@ def normalize_branch(branch_id: str, ranking: Sequence[str]) -> dict[str, Any]:
 
 
 def shared_example_consistency(branch_a: Mapping[str, Any], branch_b: Mapping[str, Any]) -> dict[str, Any]:
+    shared_ids = sorted(set(branch_a["public_shard_ids"]) & set(branch_b["public_shard_ids"]))
+    if len(shared_ids) != 1:
+        raise CatalyticKernel0Error("branch artifacts do not share exactly one calibration example")
+    shared_id = shared_ids[0]
+
     def shared(artifact: Mapping[str, Any]) -> dict[str, bool]:
         result: dict[str, bool] = {}
         for score in artifact["shard_scores"]:
             for example in score["example_results"]:
-                if example["example_id"] == "public-example-3":
+                if example["example_id"] == shared_id:
                     result[score["candidate_id"]] = example["passed"]
         return result
 
     left, right = shared(branch_a), shared(branch_b)
     common = sorted(set(left) & set(right))
     return {
-        "shared_example_id": "public-example-3",
+        "shared_example_id": shared_id,
         "overlapping_candidate_ids": common,
         "overlap_consistent": all(left[item] == right[item] for item in common),
         "branch_a_top_passed": left[branch_a["ranking"][0]],
@@ -639,10 +811,12 @@ def normalize_transform(
     *,
     operator: str,
     ranking: Sequence[str],
+    profile: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    profile = _validated_profile(profile)
     if operator not in ALLOWED_OPERATORS:
         raise CatalyticKernel0Error("unknown transform operator")
-    ranking = _require_ranking(list(ranking))
+    ranking = _require_ranking(list(ranking), profile)
     parents = (branch_a, branch_b)
     for expected, parent in zip(BRANCH_SHARDS, parents):
         if parent.get("artifact_id") != expected or parent.get("artifact_sha256") != json_sha256(
@@ -692,10 +866,15 @@ def normalize_transform(
     return artifact
 
 
-def normalize_extraction(candidate_id: str, transform: Mapping[str, Any]) -> dict[str, Any]:
+def normalize_extraction(
+    candidate_id: str,
+    transform: Mapping[str, Any],
+    profile: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    profile = _validated_profile(profile)
     if candidate_id not in transform.get("ranking", []):
         raise CatalyticKernel0Error("extraction candidate is absent from transform")
-    task = public_task()
+    task = public_task(profile)
     examples = list(enumerate(task.public_examples))
     score = _score_examples(task, candidate_id, examples)
     body = {
@@ -713,6 +892,132 @@ def normalize_extraction(candidate_id: str, transform: Mapping[str, Any]) -> dic
     return artifact
 
 
+def unresolved_relation_observables(
+    profile: Mapping[str, Any],
+    branch_a: Mapping[str, Any],
+    branch_b: Mapping[str, Any],
+    transform: Mapping[str, Any],
+    extraction: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    profile = _validated_profile(profile)
+    assert profile is not None
+    support_a = tuple(branch_a.get("public_argmax_set", ()))
+    support_b = tuple(branch_b.get("public_argmax_set", ()))
+    intersection = tuple(sorted(set(support_a) & set(support_b)))
+    union = tuple(sorted(set(support_a) | set(support_b)))
+    a_only = tuple(sorted(set(support_a) - set(support_b)))
+    b_only = tuple(sorted(set(support_b) - set(support_a)))
+    full_support = tuple(profile["full_public_argmax_set"])
+    winner = full_support[0]
+    transform_top = transform["ranking"][0] if transform.get("ranking") else None
+    extracted = extraction.get("candidate_id") if isinstance(extraction, Mapping) else None
+    parent_binding = transform.get("parent_artifact_sha256") == [
+        branch_a.get("artifact_sha256"),
+        branch_b.get("artifact_sha256"),
+    ]
+    extraction_binding = (
+        isinstance(extraction, Mapping)
+        and extraction.get("transform_artifact_sha256_consumed")
+        == transform.get("artifact_sha256")
+    )
+    profile_valid = all(
+        (
+            branch_a.get("carrier_profile_id") == profile["profile_id"],
+            branch_b.get("carrier_profile_id") == profile["profile_id"],
+            list(support_a) == profile["public_argmax_sets"]["branch-a"],
+            list(support_b) == profile["public_argmax_sets"]["branch-b"],
+            len(full_support) == 1,
+            2 <= len(support_a) <= 3,
+            2 <= len(support_b) <= 3,
+            support_a != support_b,
+            bool(a_only),
+            bool(b_only),
+            branch_a.get("public_plateau_gap", 0) > 0,
+            branch_b.get("public_plateau_gap", 0) > 0,
+        )
+    )
+    if profile["eligibility_tier"] == 1:
+        resolution_law_satisfied = intersection == full_support
+        resolution_law = "tier-1-singleton-intersection"
+    else:
+        resolution_law_satisfied = (
+            set(full_support) < set(intersection)
+            and tuple(profile["joint_public_argmax_set"]) == full_support
+            and all(profile["branch_exclusive_contribution"].values())
+        )
+        resolution_law = "tier-2-deduplicated-joint-score"
+    output_recovers_resolution = transform_top == winner and extracted == winner
+    uncertainty_reduced = all(
+        (
+            profile_valid,
+            parent_binding,
+            extraction_binding,
+            resolution_law_satisfied,
+            output_recovers_resolution,
+        )
+    )
+    exclusive = tuple(sorted(set(a_only) | set(b_only)))
+    return {
+        "carrier_profile_valid": profile_valid,
+        "eligibility_tier": profile["eligibility_tier"],
+        "resolution_law": resolution_law,
+        "resolution_law_satisfied": resolution_law_satisfied,
+        "branch_support_sets_differ": support_a != support_b,
+        "branch_support_intersection": list(intersection),
+        "branch_support_union": list(union),
+        "branch_a_exclusive_support": list(a_only),
+        "branch_b_exclusive_support": list(b_only),
+        "transform_consumed_both_branches": parent_binding,
+        "extraction_consumed_transform": extraction_binding,
+        "transform_top_candidate": transform_top,
+        "unique_full_public_winner": winner,
+        "transform_top_equals_full_public_winner": transform_top == winner,
+        "extracted_candidate": extracted,
+        "full_public_winner_recovered": output_recovers_resolution,
+        "branch_exclusive_alternatives_suppressed_from_top": all(
+            candidate_id != transform_top for candidate_id in exclusive
+        ),
+        "branch_exclusive_alternatives_absent_from_transform": all(
+            candidate_id not in transform.get("ranking", []) for candidate_id in exclusive
+        ),
+        "uncertainty_before": {
+            "branch_a_support_size": len(support_a),
+            "branch_b_support_size": len(support_b),
+            "support_union_size": len(union),
+        },
+        "uncertainty_after": {
+            "resolved_support_size": 1 if uncertainty_reduced else len(union),
+            "resolved_to_full_public_winner": uncertainty_reduced,
+        },
+        "relational_uncertainty_reduced": uncertainty_reduced,
+    }
+
+
+def _profile_diagnostics(observables: Mapping[str, Any]) -> list[str]:
+    diagnostics = ["CARRIER_COMPLEMENTARITY_PRESENT", "BRANCH_SUPPORT_SETS_DIFFER"]
+    diagnostics.append(
+        "MODEL_BRANCH_RANKINGS_DIFFER"
+        if observables.get("model_branch_rankings_differ") is True
+        else "MODEL_BRANCH_RANKINGS_COLLAPSE"
+    )
+    diagnostics.append(
+        "TIER_1_INTERSECTION_RESOLUTION"
+        if observables.get("eligibility_tier") == 1
+        else "TIER_2_JOINT_SCORE_RESOLUTION"
+    )
+    diagnostics.append(
+        "RELATIONAL_UNCERTAINTY_REDUCED"
+        if observables.get("relational_uncertainty_reduced") is True
+        else "RELATIONAL_UNCERTAINTY_NOT_REDUCED"
+    )
+    diagnostics.append(
+        "FULL_PUBLIC_WINNER_RECOVERED"
+        if observables.get("full_public_winner_recovered") is True
+        else "FULL_PUBLIC_WINNER_NOT_RECOVERED"
+    )
+    return diagnostics
+
+
 def classify_kernel(
     branch_a: Mapping[str, Any] | None,
     branch_b: Mapping[str, Any] | None,
@@ -721,7 +1026,9 @@ def classify_kernel(
     *,
     restoration_passed: bool,
     completed_request_count: int,
+    profile: Mapping[str, Any] | None = None,
 ) -> str:
+    profile = _validated_profile(profile)
     if (
         completed_request_count != 6
         or not restoration_passed
@@ -734,6 +1041,17 @@ def classify_kernel(
         branch_b.get("artifact_sha256"),
     ] or extraction.get("transform_artifact_sha256_consumed") != transform.get("artifact_sha256"):
         return "INCONCLUSIVE"
+    if profile is not None:
+        observables = unresolved_relation_observables(
+            profile,
+            branch_a,
+            branch_b,
+            transform,
+            extraction,
+        )
+        if observables["relational_uncertainty_reduced"] is True:
+            return "CATALYTIC_KERNEL_VISIBLE"
+        return "CATALYTIC_KERNEL_COLLAPSED"
     selected = extraction["candidate_id"]
     result_rank = transform["ranking"].index(selected) + 1
     selected_relation_changed = any(
@@ -753,6 +1071,7 @@ def _assignment(
     carrier: Mapping[str, Any],
     artifacts: Mapping[str, Mapping[str, Any]],
 ) -> dict[str, Any]:
+    profile = _validated_profile(carrier.get("profile"))
     if request_id == "borrow":
         return {
             "request_id": request_id,
@@ -764,7 +1083,7 @@ def _assignment(
         return {
             "request_id": request_id,
             "instruction": instruction,
-            "evidence_shard": build_public_shard(request_id),
+            "evidence_shard": build_public_shard(request_id, profile),
         }
     if request_id == "transform":
         return {
@@ -812,7 +1131,10 @@ def build_model_request(
             "json_schema": {
                 "name": f"ck0_{request_id.replace('-', '_')}",
                 "strict": True,
-                "schema": response_schema(request_id),
+                "schema": response_schema(
+                    request_id,
+                    carrier_id=str(carrier["carrier_id"]),
+                ),
             },
         },
         "stream_options": {"include_usage": True},
@@ -922,6 +1244,7 @@ def _result_projection(
     carrier: Mapping[str, Any],
     preflight: Mapping[str, Any],
     cib0_snapshot: Mapping[str, Any],
+    ck0_snapshot: Mapping[str, Any],
     readiness: Mapping[str, Any] | None,
     outcomes: Sequence[Mapping[str, Any]],
     artifacts: Mapping[str, Mapping[str, Any]],
@@ -932,6 +1255,7 @@ def _result_projection(
     restoration: Mapping[str, Any] | None,
     failure: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
+    profile = _validated_profile(carrier.get("profile"))
     classification = classify_kernel(
         artifacts.get("branch-a"),
         artifacts.get("branch-b"),
@@ -939,15 +1263,40 @@ def _result_projection(
         artifacts.get("extract"),
         restoration_passed=isinstance(restoration, Mapping) and restoration.get("passed") is True,
         completed_request_count=len(outcomes),
+        profile=profile,
     )
     complete = len(outcomes) == 6 and completed_responses == 6 and failure is None
     status = "complete" if complete and classification != "INCONCLUSIVE" else "failed"
     branch_relation = None
+    relational_observables = None
+    diagnostics = None
     if "branch-a" in artifacts and "branch-b" in artifacts:
         branch_relation = {
             "rankings_differ": artifacts["branch-a"]["ranking"] != artifacts["branch-b"]["ranking"],
             "shared_example_consistency": shared_example_consistency(artifacts["branch-a"], artifacts["branch-b"]),
         }
+    if (
+        profile is not None
+        and all(key in artifacts for key in ("branch-a", "branch-b", "transform"))
+    ):
+        relational_observables = unresolved_relation_observables(
+            profile,
+            artifacts["branch-a"],
+            artifacts["branch-b"],
+            artifacts["transform"],
+            artifacts.get("extract"),
+        )
+        relational_observables["model_branch_rankings_differ"] = (
+            artifacts["branch-a"]["ranking"] != artifacts["branch-b"]["ranking"]
+        )
+        diagnostics = _profile_diagnostics(relational_observables)
+    carrier_projection = {
+        "carrier_id": carrier["carrier_id"],
+        "carrier_content_sha256": carrier["carrier_content_sha256"],
+        "carrier_root_sha256": carrier["carrier_root_sha256"],
+    }
+    if profile is not None:
+        carrier_projection["profile"] = dict(carrier["profile"])
     result = {
         "schema_version": STATE_SCHEMA_VERSION,
         "kernel_id": KERNEL_ID,
@@ -955,18 +1304,18 @@ def _result_projection(
         "implementation_sha": implementation_sha,
         "status": status,
         "mechanism_classification": classification if status == "complete" else "INCONCLUSIVE",
-        "carrier": {
-            "carrier_id": carrier["carrier_id"],
-            "carrier_content_sha256": carrier["carrier_content_sha256"],
-            "carrier_root_sha256": carrier["carrier_root_sha256"],
-        },
+        "carrier": carrier_projection,
         "historical_cib0": dict(cib0_snapshot),
+        "historical_ck0": dict(ck0_snapshot),
         "preflight": dict(preflight),
         "readiness": dict(readiness) if isinstance(readiness, Mapping) else None,
         "request_count_required": 6,
         "completed_model_responses": completed_responses,
         "request_outcomes": [dict(item) for item in outcomes],
         "branch_relation": branch_relation,
+        "carrier_suitability": dict(carrier["profile"]) if profile is not None else None,
+        "relational_observables": relational_observables,
+        "diagnostics": diagnostics,
         "branch_a": artifacts.get("branch-a"),
         "branch_b": artifacts.get("branch-b"),
         "transform": artifacts.get("transform"),
@@ -994,6 +1343,14 @@ def run_catalytic_kernel_0(
     state_root: str | os.PathLike[str] | None = None,
 ) -> dict[str, Any]:
     run_id = validate_run_id(_arg(args, "run_id"))
+    requested_profile = _arg(args, "carrier_profile")
+    if requested_profile not in {None, UNRESOLVED_PROFILE_ID}:
+        raise CatalyticKernel0Error("unknown or unauthorized carrier profile")
+    profile = (
+        selected_unresolved_public_profile()
+        if requested_profile == UNRESOLVED_PROFILE_ID
+        else None
+    )
     repository = Path(repository_root).resolve() if repository_root is not None else Path(__file__).resolve().parents[1]
     state_base = Path(state_root).resolve() if state_root is not None else repository / "state" / "catalytic_kernel_0"
     run_root = state_base / run_id
@@ -1003,8 +1360,9 @@ def run_catalytic_kernel_0(
         raise CatalyticKernel0Error("kernel state must remain below the repository") from exc
     if run_root.exists():
         raise CatalyticKernel0Error("kernel run ID already exists")
-    carrier = build_carrier()
+    carrier = build_carrier(profile)
     cib0_before = _snapshot_tree(repository / "state" / "catalytic_inference_bench_0")
+    ck0_before = _snapshot_historical_ck0(repository / "state" / "catalytic_kernel_0")
     paths = {name: run_root / name for name in STATE_FILENAMES}
     live = adapter if adapter is not None else CatalyticKernel0Adapter(repository)
     preflight_full = live.preflight(
@@ -1023,7 +1381,7 @@ def run_catalytic_kernel_0(
         "schema_version": STATE_SCHEMA_VERSION,
         "kernel_id": KERNEL_ID,
         "run_id": run_id,
-        "task_id": TASK_ID,
+        "task_id": TASK_ID if profile is None else profile["task_id"],
         "carrier_id": carrier["carrier_id"],
         "carrier_content_sha256": carrier["carrier_content_sha256"],
         "carrier_root_sha256": carrier["carrier_root_sha256"],
@@ -1031,11 +1389,14 @@ def run_catalytic_kernel_0(
         "request_ids": list(REQUEST_IDS),
         "physical_slots": 1,
         "historical_cib0_tree_sha256": cib0_before["tree_sha256"],
+        "historical_ck0_tree_sha256": ck0_before["tree_sha256"],
         "preflight": preflight,
         "claims": dict(CLAIMS),
         "claiming": False,
         "automatic_promotion": False,
     }
+    if profile is not None:
+        manifest["carrier_profile"] = dict(carrier["profile"])
     _atomic_json(paths["manifest.json"], manifest)
 
     pool = live.create_lease_pool(1)
@@ -1112,19 +1473,26 @@ def run_catalytic_kernel_0(
                 request_id,
                 transport["structured_content"],
                 transform_artifact=artifacts.get("transform"),
+                profile=profile,
+                carrier_id=carrier["carrier_id"],
             )
             if request_id in BRANCH_SHARDS:
-                artifacts[request_id] = normalize_branch(request_id, structured["ranking"])
+                artifacts[request_id] = normalize_branch(
+                    request_id,
+                    structured["ranking"],
+                    profile,
+                )
             elif request_id == "transform":
                 artifacts[request_id] = normalize_transform(
                     artifacts["branch-a"],
                     artifacts["branch-b"],
                     operator=structured["operator"],
                     ranking=structured["ranking"],
+                    profile=profile,
                 )
             elif request_id == "extract":
                 artifacts[request_id] = normalize_extraction(
-                    structured["candidate_id"], artifacts["transform"]
+                    structured["candidate_id"], artifacts["transform"], profile
                 )
             if request_id == "borrow":
                 cache_admission = {
@@ -1195,11 +1563,18 @@ def run_catalytic_kernel_0(
 
     lease = _lease_accounting(pool)
     cib0_after = _snapshot_tree(repository / "state" / "catalytic_inference_bench_0")
+    ck0_after = _snapshot_historical_ck0(repository / "state" / "catalytic_kernel_0")
     cib0_preserved = cib0_after == cib0_before
+    ck0_preserved = ck0_after == ck0_before
     if not cib0_preserved:
         failure = failure or _safe_failure(
             CatalyticKernel0Error("historical CIB0 evidence changed"),
             boundary="historical-cib0",
+        )
+    if not ck0_preserved:
+        failure = failure or _safe_failure(
+            CatalyticKernel0Error("historical CK0 evidence changed"),
+            boundary="historical-ck0",
         )
     if completed_responses == 6 and outcomes and outcomes[-1].get("request_id") == "restore":
         restoration_body = {
@@ -1225,6 +1600,7 @@ def run_catalytic_kernel_0(
                 and isinstance(postflight.get("candidate_status_sha256"), str)
             ),
             "historical_cib0_preserved": cib0_preserved,
+            "historical_ck0_preserved": ck0_preserved,
         }
         restoration = {
             **restoration_body,
@@ -1244,6 +1620,7 @@ def run_catalytic_kernel_0(
                     restoration_body["stable_preserved"],
                     restoration_body["candidate_preserved"],
                     restoration_body["historical_cib0_preserved"],
+                    restoration_body["historical_ck0_preserved"],
                 )
             ),
             "receipt_sha256": json_sha256(restoration_body),
@@ -1261,6 +1638,7 @@ def run_catalytic_kernel_0(
         carrier=carrier,
         preflight=preflight,
         cib0_snapshot=cib0_before,
+        ck0_snapshot=ck0_before,
         readiness=readiness,
         outcomes=outcomes,
         artifacts=artifacts,
@@ -1280,6 +1658,8 @@ def run_catalytic_kernel_0(
             raise CatalyticKernel0Error("final custody did not pass")
         if _snapshot_tree(repository / "state" / "catalytic_inference_bench_0") != cib0_before:
             raise CatalyticKernel0Error("historical CIB0 evidence changed at closure")
+        if _snapshot_historical_ck0(repository / "state" / "catalytic_kernel_0") != ck0_before:
+            raise CatalyticKernel0Error("historical CK0 evidence changed at closure")
     except BaseException as exc:
         result["status"] = "failed"
         result["mechanism_classification"] = "INCONCLUSIVE"
@@ -1294,6 +1674,7 @@ def run_catalytic_kernel_0(
         "run_lock_absent": not paths["run.lock"].exists(),
         "terminal_custody": final_postflight,
         "historical_cib0_tree_sha256": cib0_before["tree_sha256"],
+        "historical_ck0_tree_sha256": ck0_before["tree_sha256"],
     }
     _atomic_json(paths["closure.json"], closure_body)
     return result
