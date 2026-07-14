@@ -1,10 +1,12 @@
 # Active Goal
 
-## Checkpoint 2: Execute one unresolved complementary Catalytic Kernel 0 carrier
+## Checkpoint 2: Preserve completed unresolved complementary CK0 evidence
 
 The separately authorized carrier revision preserves CK0 a1/a2 and CIB0 a1-a6 exactly while correcting only the impossible unique-winner carrier law. Frozen public-only selection chose Tier-1 profile `complementary-unresolved-public-v1` on `cs1-task-05`: A=`1,2,4` with support `{C42,C56}`, B=`2,3,5` with support `{C09,C34,C42}`, shared example 2, and singleton full-public/intersection winner `C42`. Branch and full-public margins are 1; scan SHA-256 is `77B7306249DDE9188C327B615CBE95DAC3A5AC7D778AAB189CFFD203A6D40DF2`.
 
-The six requests, one slot, one sidecar, response schemas, cache/root law, restoration, custody, metadata-only persistence, and claim locks remain unchanged. Focused tests pass 10 / 10, changed Python files compile, the one complete CPU-only suite passes 787 / 787, and protected preflight passes exactly once. The next exact action is to commit and push the implementation, then execute the profile exactly once without repair or retry. One visible result may establish only bounded relational uncertainty reduction in this run; it cannot establish task advantage, superiority, SOTA, or general catalytic inference.
+Implementation `b19a4b4d6147bc10459c7d1d144021a1ff3d8eed` was fast-forward pushed and run `ck0-20260714T002941Z-a3` consumed the sole authorization without retry or repair. All six requests completed. Both model branches collapsed to ranking `C00,C01,C02`, but their normalized deterministic support sets remained different; the bound `combine` transform ranked `C42,C56,C09`, extraction selected `C42` at 5 / 5, and relational uncertainty reduced to the Tier-1 singleton. Restoration and cleanup passed with zero active leases and exact historical evidence preservation. Classification is `CATALYTIC_KERNEL_VISIBLE`.
+
+Preserve CK0 a1-a3 exactly. This result establishes only bounded relational uncertainty reduction for the executed carrier. It does not establish task advantage, superiority, SOTA, general catalytic inference, Deep, broader persistence, or promotion. Any replication or causal follow-on requires a separately authorized static boundary.
 
 ## Historical checkpoint: Preserve completed, collapsed Catalytic Kernel 0
 

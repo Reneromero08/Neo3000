@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Preserve all CK0 and CIB0 evidence. The separately authorized `complementary-unresolved-public-v1` revision replaces the impossible different-unique-winner carrier law with complementary unresolved public support sets while retaining the exact six-request kernel.
-**Next exact action:** close static verification, commit and fast-forward push the unresolved carrier implementation, then execute exactly one fresh CK0 cycle with no retry or repair. No other CK0 profile, CIB0/CS1 command, Deep request, claim change, or automatic promotion is authorized.
+**Active bounded objective:** Track A remains paused. CIB0 a1-a6 and CK0 a1-a3 are immutable consumed evidence. The unresolved-support carrier cycle completed as `CATALYTIC_KERNEL_VISIBLE`, proving only bounded relational uncertainty reduction in this run; claims remain unchanged.
+**Next exact action:** preserve CK0 a1-a3 exactly. No rerun, second profile, tuning, CIB0/CS1 command, Deep request, claim change, or automatic promotion is authorized. Any replication or causal follow-on requires a separately authorized static boundary.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -516,14 +516,17 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Push the minimal kernel and bounded startup-health repair, then execute exactly one fresh cycle without retry. Run `ck0-20260713T234035Z-a2` completed all six requests with exact custody, restoration, and cleanup and classified `CATALYTIC_KERNEL_COLLAPSED`.
 - [x] Preserve the collapsed semantics exactly: Branch A `C58,C56,C08`; Branch B `C58,C56,C41`; `combine` transform `C58,C08,C56`; extraction `C58` at 5 / 5 public examples. No production or promotion claim changed.
 
-### Catalytic Kernel 0 unresolved complementary carrier [STATIC IMPLEMENTED / LIVE PENDING]
+### Catalytic Kernel 0 unresolved complementary carrier [EXECUTED ONCE / VISIBLE]
 
 - [x] Preserve CK0 a1/a2 and CIB0 a1-a6 exactly; retain the historical default carrier bytes and a2 `CATALYTIC_KERNEL_COLLAPSED` classification.
 - [x] Freeze the public-only unresolved-support selector before selection. Across all 240 ordered 3+3 shard pairs it found six Tier-1 and zero Tier-2 profiles and deterministically selected task `cs1-task-05`, A=`1,2,4`, B=`2,3,5`, shared=`2`.
 - [x] Bind profile `complementary-unresolved-public-v1`: A=`{C42,C56}`, B=`{C09,C34,C42}`, F=`{C42}`, branch plateau gaps 1, full margin 1, scan SHA-256 `77B7306249DDE9188C327B615CBE95DAC3A5AC7D778AAB189CFFD203A6D40DF2`.
 - [x] Add bounded branch-local unresolved support metadata and profile-specific uncertainty-reduction classification without changing requests, response schemas, lifecycle, custody, restoration, or claims. Focused tests pass 10 / 10.
 - [x] Pass changed-file compilation, the complete CPU-only suite exactly once at 787 / 787 in 42.5 seconds, and protected preflight exactly once.
-- [ ] Commit and fast-forward push `Add unresolved complementary carrier to Catalytic Kernel 0`, verify all main refs, then execute exactly one fresh six-request run with no retry or repair.
+- [x] Commit and fast-forward push implementation `b19a4b4d6147bc10459c7d1d144021a1ff3d8eed`, verify all main refs, then execute exactly one fresh six-request run with no retry or repair: `ck0-20260714T002941Z-a3` completed 6 / 6.
+- [x] Preserve the model-side negative signal: both branches ranked `C00,C01,C02` and omitted their deterministic top sets. The normalized supports still differed, and the bound `combine` transform ranked `C42,C56,C09`; extraction selected `C42` at 5 / 5.
+- [x] Classify the bounded mechanism `CATALYTIC_KERNEL_VISIBLE`: Tier-1 support uncertainty reduced from branch sizes 2 and 3 (union 4) to the correct singleton. Restoration, cleanup, stable/candidate custody, historical CIB0/CK0 preservation, and zero active leases passed.
+- [x] Bind result SHA-256 `EB6BA8376D2B594D31A86478BC409E7EB4734C5AF3B6082F6292721B26BDFD4B`, manifest SHA-256 `CA4B5781F9023380AA218E6E881F98706A2077BB420359095E0C0C2043FEF389`, and closure SHA-256 `34825DE4069B63E5A03E380A9580926EEFFE4746611FADC49757524CF3EA6B4D`; no task-advantage, superiority, SOTA, general catalytic-inference, Deep, or promotion claim changed.
 
 Preserved v1 executed boundary:
 

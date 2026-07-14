@@ -1,15 +1,21 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: CK0 unresolved complementary carrier statically implemented
+## Checkpoint 2: CK0 unresolved complementary carrier executed once
 
-**Status:** PUBLIC-ONLY TIER-1 CARRIER FROZEN / STATICALLY VERIFIED / ONE LIVE RUN PENDING / NO CLAIM CHANGE
+**Status:** RUN A3 COMPLETE / `CATALYTIC_KERNEL_VISIBLE` / BOUNDED UNCERTAINTY REDUCTION / NO CLAIM CHANGE
 
 - [x] Preserve the exact CIB0 a1-a6 tree at SHA-256 `57CE7FFFEBBB925BBD3B37F55A9394037720018748776C2C42DD17961D8ECCBD` and CK0 a1/a2 tree at SHA-256 `BB15C248EFBF075F77899161FC6EEDCD28830097CB6D0B67D7BB7F368ADCC249`.
 - [x] Freeze the selection source before observing the result. The 240-profile public-only scan selected Tier-1 `complementary-unresolved-public-v1` on `cs1-task-05`, shards A=`1,2,4`, B=`2,3,5`, shared=`2`; A=`{C42,C56}`, B=`{C09,C34,C42}`, F=`{C42}`.
 - [x] Bind score-matrix SHA-256 `F2758458B3302F9CCE4A0BB719A14B1130299A31FDA2201FB12CBEED1BD20A63` and scan SHA-256 `77B7306249DDE9188C327B615CBE95DAC3A5AC7D778AAB189CFFD203A6D40DF2`; both branch plateau gaps and the full-public margin equal 1.
 - [x] Keep the six-request kernel and historical default classification unchanged; add only bounded branch-local support projections, controller-derived uncertainty observables, diagnostics, and the profile-specific visibility law. Focused tests pass 10 / 10.
 - [x] Pass 10 / 10 focused tests, changed-file compilation, the one complete CPU-only suite at 787 / 787 in 42.5 seconds, and protected preflight exactly once.
-- [ ] Commit/push the implementation, then consume exactly one live profile run.
+- [x] Fast-forward push implementation `b19a4b4d6147bc10459c7d1d144021a1ff3d8eed`, then execute exactly one live profile run with no retry or repair. Run `ck0-20260714T002941Z-a3` completed all six requests.
+- [x] Record model Branch A and B rankings `C00,C01,C02`; both omitted their branch-local public argmax sets, so `MODEL_BRANCH_RANKINGS_COLLAPSE` is preserved rather than tuned away.
+- [x] Bind the two normalized supports into the transform. `combine` ranked `C42,C56,C09`; extraction consumed it and selected the unique full-public winner `C42` at 5 / 5. Tier-1 relational uncertainty reduced from support sizes 2 and 3, union 4, to the correct singleton.
+- [x] Restoration and cleanup passed with zero active leases, identical carrier/root identity, exact root reuse, free port 9494, stable PID `37084`, archived candidate custody, historical CIB0 tree `57CE7FFFEBBB925BBD3B37F55A9394037720018748776C2C42DD17961D8ECCBD`, and historical CK0 a1/a2 tree `BB15C248EFBF075F77899161FC6EEDCD28830097CB6D0B67D7BB7F368ADCC249` preserved.
+- [x] Bind manifest `CA4B5781F9023380AA218E6E881F98706A2077BB420359095E0C0C2043FEF389`, result `EB6BA8376D2B594D31A86478BC409E7EB4734C5AF3B6082F6292721B26BDFD4B`, and closure-file `34825DE4069B63E5A03E380A9580926EEFFE4746611FADC49757524CF3EA6B4D`. Classification is `CATALYTIC_KERNEL_VISIBLE`; all task-advantage, superiority, SOTA, general catalytic inference, persistence, Deep, and promotion claims remain locked.
+
+**Next exact action:** preserve CK0 a1-a3 exactly. No rerun or additional carrier profile is authorized.
 
 ## Historical checkpoint: CIB0 frozen and Catalytic Kernel 0 cycle closed
 
