@@ -1,0 +1,269 @@
+{
+  "preregistered": {
+    "authorized_replication_runs": 1,
+    "carrier": {
+      "carrier_content_sha256": "1A35B29875BECF4084B21C86B656E79C5221350EF53B9855C56D2C510071E29A",
+      "carrier_root_sha256": "14EA07DE66F16D44FAAF6D7ADFF70E1B11953CB940133449B7B962F56C50221C",
+      "eligibility_tier": 1,
+      "profile_id": "complementary-unresolved-public-v1",
+      "public_score_matrix_sha256": "F2758458B3302F9CCE4A0BB719A14B1130299A31FDA2201FB12CBEED1BD20A63",
+      "scan_sha256": "77B7306249DDE9188C327B615CBE95DAC3A5AC7D778AAB189CFFD203A6D40DF2",
+      "shared_calibration_example_id": "public-example-2",
+      "shards": {
+        "branch_a": [
+          "public-example-1",
+          "public-example-2",
+          "public-example-4"
+        ],
+        "branch_b": [
+          "public-example-2",
+          "public-example-3",
+          "public-example-5"
+        ]
+      },
+      "support_sets": {
+        "A": [
+          "C42",
+          "C56"
+        ],
+        "B": [
+          "C09",
+          "C34",
+          "C42"
+        ],
+        "F": [
+          "C42"
+        ]
+      },
+      "task_id": "cs1-task-05"
+    },
+    "claims": {
+      "automatic_promotion": "LOCKED",
+      "broader_process_local_holostate": "LOCKED",
+      "deep": "DISABLED",
+      "general_catalytic_inference": "LOCKED",
+      "restart_persistent_holostate": "LOCKED",
+      "sota": "LOCKED",
+      "superiority": "LOCKED",
+      "task_advantage": "LOCKED"
+    },
+    "created_at": "2026-07-14T00:52:56Z",
+    "execution_run_id": "ck0-20260714T005256Z-a4",
+    "failure_outcomes": {
+      "REPLICATION_COLLAPSED": "All six requests complete and restoration passes, but transform or extraction does not recover the unique support resolution.",
+      "REPLICATION_INCONCLUSIVE": "The six-request cycle does not complete safely.",
+      "REPLICATION_VISIBLE": "Every primary replication criterion passes."
+    },
+    "frozen_controls": {
+      "classification_law_changes": 0,
+      "deep_requests": 0,
+      "implementation_changes": 0,
+      "mechanism_changes": 0,
+      "physical_slots": 1,
+      "profile_changes": 0,
+      "prompt_changes": 0,
+      "retry_count": 0,
+      "runtime_changes": 0,
+      "seed_changes": 0,
+      "sidecar_epochs": 1
+    },
+    "frozen_implementation_sha": "b19a4b4d6147bc10459c7d1d144021a1ff3d8eed",
+    "primary_outcome": {
+      "classification": "REPLICATION_VISIBLE",
+      "criteria": [
+        "all six requests complete",
+        "exact carrier borrowing passes",
+        "support sets remain A={C42,C56}, B={C09,C34,C42}, F={C42}",
+        "transform consumes both exact normalized branch artifacts",
+        "transform top-ranked candidate is C42",
+        "extraction consumes the transform and selects C42",
+        "C42 scores 5/5 on the frozen public examples",
+        "relational uncertainty reduces to the unique Tier-1 intersection",
+        "restoration passes",
+        "active leases return to zero",
+        "cleanup and final custody pass",
+        "mechanism classification is CATALYTIC_KERNEL_VISIBLE"
+      ],
+      "required_mechanism_classification": "CATALYTIC_KERNEL_VISIBLE"
+    },
+    "reference_run": {
+      "result_sha256": "EB6BA8376D2B594D31A86478BC409E7EB4734C5AF3B6082F6292721B26BDFD4B",
+      "run_id": "ck0-20260714T002941Z-a3"
+    },
+    "request_sequence": [
+      {
+        "max_tokens": 64,
+        "ordinal": 1,
+        "request_id": "borrow",
+        "response_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "carrier_id": {
+              "const": "ck0:cs1-task-05:complementary-unresolved-public-v1:public-carrier",
+              "type": "string"
+            }
+          },
+          "required": [
+            "carrier_id"
+          ],
+          "type": "object"
+        },
+        "seed": 496024832
+      },
+      {
+        "max_tokens": 64,
+        "ordinal": 2,
+        "request_id": "branch-a",
+        "response_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "ranking": {
+              "items": {
+                "pattern": "^C(?:[0-5][0-9]|6[0-3])$",
+                "type": "string"
+              },
+              "maxItems": 3,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ranking"
+          ],
+          "type": "object"
+        },
+        "seed": 2341901482
+      },
+      {
+        "max_tokens": 64,
+        "ordinal": 3,
+        "request_id": "branch-b",
+        "response_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "ranking": {
+              "items": {
+                "pattern": "^C(?:[0-5][0-9]|6[0-3])$",
+                "type": "string"
+              },
+              "maxItems": 3,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ranking"
+          ],
+          "type": "object"
+        },
+        "seed": 3118559568
+      },
+      {
+        "max_tokens": 64,
+        "ordinal": 4,
+        "request_id": "transform",
+        "response_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "operator": {
+              "enum": [
+                "combine",
+                "eliminate",
+                "oppose",
+                "reconcile",
+                "refine"
+              ],
+              "type": "string"
+            },
+            "ranking": {
+              "items": {
+                "pattern": "^C(?:[0-5][0-9]|6[0-3])$",
+                "type": "string"
+              },
+              "maxItems": 3,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "operator",
+            "ranking"
+          ],
+          "type": "object"
+        },
+        "seed": 3609227325
+      },
+      {
+        "max_tokens": 64,
+        "ordinal": 5,
+        "request_id": "extract",
+        "response_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "pattern": "^C(?:[0-5][0-9]|6[0-3])$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "candidate_id"
+          ],
+          "type": "object"
+        },
+        "seed": 2381573611
+      },
+      {
+        "max_tokens": 64,
+        "ordinal": 6,
+        "request_id": "restore",
+        "response_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "carrier_id": {
+              "const": "ck0:cs1-task-05:complementary-unresolved-public-v1:public-carrier",
+              "type": "string"
+            }
+          },
+          "required": [
+            "carrier_id"
+          ],
+          "type": "object"
+        },
+        "seed": 3162446570
+      }
+    ],
+    "runtime_identities": {
+      "binary": {
+        "relative_path": "build/stable/bin/Release/llama-server.exe",
+        "runtime_version": "13 (417e1d6)",
+        "sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B",
+        "size_bytes": 10752
+      },
+      "chat_template_sha256": "A4AEE8AFCF2E0711942CF848899BE66016F8D14A889FF9EDE07BCA099C28F715",
+      "model": {
+        "filename": "Agents-A1-Q4_K_M.gguf",
+        "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+        "size_bytes": 21166757632
+      },
+      "model_alias": "agents-a1-holostate"
+    },
+    "schema_version": 1,
+    "secondary_outcomes": [
+      "model Branch-A ranking",
+      "model Branch-B ranking",
+      "whether model branch rankings collapse again",
+      "transform operator",
+      "complete transform ranking",
+      "readiness time",
+      "cache reuse",
+      "token counts",
+      "advisory resource observability"
+    ],
+    "starting_protected_main": "3d90a1ae433e0e207e530cbc86d609da636e7af5",
+    "status": "preregistered"
+  },
+  "schema_version": 1
+}
