@@ -12,15 +12,18 @@ from typing import Any, Mapping
 from catalytic_kernel_0 import (
     CARRIER_ID,
     PARENT_A_INFORMATION_DELETION_CONTROL,
-    PARENT_A_CONTROL_RUN_ID,
+    PARENT_B_INFORMATION_DELETION_CONTROL,
+    PARENT_B_CONTROL_RUN_ID,
     REQUEST_IDS,
     CatalyticKernel0Error,
     build_carrier,
     build_model_request,
     build_parent_a_commitment_receipt,
+    build_parent_b_commitment_receipt,
     build_public_shard,
     classify_kernel,
     classify_parent_a_information_control,
+    classify_parent_b_information_control,
     derive_rank_delta,
     normalize_branch,
     normalize_extraction,
@@ -29,6 +32,7 @@ from catalytic_kernel_0 import (
     run_catalytic_kernel_0,
     unresolved_relation_observables,
     validate_parent_a_information_deletion_projection,
+    validate_parent_b_information_deletion_projection,
 )
 from catalytic_kernel_0_carrier_scan import (
     PROFILE_ID,
@@ -350,6 +354,73 @@ class CatalyticKernel0Tests(unittest.TestCase):
         )
         self.assertTrue(evidence["projection_verified"])
         self.assertTrue(evidence["branch_b_full_artifact_unchanged"])
+        self.assertEqual(
+            hashlib.sha256(
+                json.dumps(
+                    payload,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                ).encode("utf-8")
+            ).hexdigest().upper(),
+            "C34B70F9F574DBC33BD2ED47644032C9976375680615180DDA6721383A6CF1BA",
+        )
+        self.assertEqual(
+            evidence["blinded_parent_receipt_sha256"],
+            "714789D52A0AB4A1E465789C681E9ACDB7CB1BCE97BA45ED323E9CE07437FED7",
+        )
+        self.assertEqual(
+            evidence["model_visible_parent_projection_sha256"],
+            "0CA75F828ABEE5874A5D951555CBC87EA2CF4BB7352BEE0D67D2DB8C56DB411E",
+        )
+
+        branch_b_receipt = build_parent_b_commitment_receipt(branch_b, profile)
+        self.assertEqual(set(branch_b_receipt), set(receipt))
+        self.assertEqual(branch_b_receipt["artifact_id"], "branch-b")
+        for forbidden in (
+            "ranking",
+            "public_argmax_set",
+            "shard_scores",
+            "public_top_score",
+            "public_plateau_gap",
+            "public_shard_ids",
+            "public_argmax_evidence",
+        ):
+            self.assertNotIn(forbidden, branch_b_receipt)
+        self.assertNotIn(
+            "C42",
+            [
+                value
+                for key, value in branch_b_receipt.items()
+                if key != "artifact_sha256"
+            ],
+        )
+        branch_b_payload = build_model_request(
+            "transform",
+            carrier=carrier,
+            artifacts=artifacts,
+            control=PARENT_B_INFORMATION_DELETION_CONTROL,
+        )
+        branch_b_assignment = json.loads(
+            branch_b_payload["messages"][1]["content"]
+        )
+        self.assertEqual(branch_b_assignment["parent_artifacts"][0], branch_a)
+        self.assertEqual(
+            branch_b_assignment["parent_artifacts"][1], branch_b_receipt
+        )
+        self.assertNotEqual(
+            branch_b_assignment["parent_artifacts"][1], branch_b
+        )
+        branch_b_evidence = validate_parent_b_information_deletion_projection(
+            branch_b_payload,
+            carrier=carrier,
+            artifacts=artifacts,
+        )
+        self.assertTrue(branch_b_evidence["projection_verified"])
+        self.assertTrue(branch_b_evidence["branch_a_full_artifact_unchanged"])
+        self.assertTrue(
+            branch_b_evidence["branch_b_informative_content_withheld"]
+        )
 
     def test_exact_two_parent_transform_binding(self) -> None:
         left = normalize_branch("branch-a", ["C00", "C01", "C02"])
@@ -423,6 +494,59 @@ class CatalyticKernel0Tests(unittest.TestCase):
                 blocked_transform,
                 blocked_extract,
                 {**intervention, "projection_verified": False},
+                restoration_passed=True,
+                completed_request_count=6,
+                profile=profile,
+            ),
+            "CAUSAL_CONTROL_INCONCLUSIVE",
+        )
+        branch_b_payload = build_model_request(
+            "transform",
+            carrier=carrier,
+            artifacts=artifacts,
+            control=PARENT_B_INFORMATION_DELETION_CONTROL,
+        )
+        branch_b_intervention = validate_parent_b_information_deletion_projection(
+            branch_b_payload,
+            carrier=carrier,
+            artifacts=artifacts,
+        )
+        self.assertEqual(
+            classify_parent_b_information_control(
+                branch_a,
+                branch_b,
+                recovered_transform,
+                recovered_extract,
+                branch_b_intervention,
+                restoration_passed=True,
+                completed_request_count=6,
+                profile=profile,
+            ),
+            "PARENT_B_INFORMATION_NOT_SHOWN_NECESSARY",
+        )
+        self.assertEqual(
+            classify_parent_b_information_control(
+                branch_a,
+                branch_b,
+                blocked_transform,
+                blocked_extract,
+                branch_b_intervention,
+                restoration_passed=True,
+                completed_request_count=6,
+                profile=profile,
+            ),
+            "PARENT_B_INFORMATION_NECESSITY_SUPPORTED",
+        )
+        self.assertEqual(
+            classify_parent_b_information_control(
+                branch_a,
+                branch_b,
+                blocked_transform,
+                blocked_extract,
+                {
+                    **branch_b_intervention,
+                    "branch_a_full_artifact_unchanged": False,
+                },
                 restoration_passed=True,
                 completed_request_count=6,
                 profile=profile,
@@ -553,6 +677,23 @@ class CatalyticKernel0Tests(unittest.TestCase):
         self.assertEqual(
             control_parsed.control, PARENT_A_INFORMATION_DELETION_CONTROL
         )
+        branch_b_control_parsed = build_parser().parse_args(
+            [
+                "run-catalytic-kernel-0",
+                "--model",
+                "model.gguf",
+                "--run-id",
+                "ck0-branch-b-control-parser",
+                "--carrier-profile",
+                PROFILE_ID,
+                "--control",
+                PARENT_B_INFORMATION_DELETION_CONTROL,
+            ]
+        )
+        self.assertEqual(
+            branch_b_control_parsed.control,
+            PARENT_B_INFORMATION_DELETION_CONTROL,
+        )
         adapter = FakeAdapter(unresolved_profile=True)
         with tempfile.TemporaryDirectory(dir=ROOT / "state") as temporary:
             result = run_catalytic_kernel_0(
@@ -586,11 +727,11 @@ class CatalyticKernel0Tests(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=ROOT / "state") as temporary:
             control_result = run_catalytic_kernel_0(
                 {
-                    "run_id": PARENT_A_CONTROL_RUN_ID,
+                    "run_id": PARENT_B_CONTROL_RUN_ID,
                     "binary": "X",
                     "model": "Y",
                     "carrier_profile": PROFILE_ID,
-                    "control": PARENT_A_INFORMATION_DELETION_CONTROL,
+                    "control": PARENT_B_INFORMATION_DELETION_CONTROL,
                 },
                 adapter=control_adapter,
                 repository_root=ROOT,
@@ -600,7 +741,7 @@ class CatalyticKernel0Tests(unittest.TestCase):
         self.assertIsNone(control_result["mechanism_classification"])
         self.assertEqual(
             control_result["control_classification"],
-            "PARENT_A_INFORMATION_NOT_SHOWN_NECESSARY",
+            "PARENT_B_INFORMATION_NOT_SHOWN_NECESSARY",
         )
         self.assertIsNone(control_result["relational_observables"])
         self.assertTrue(
@@ -608,14 +749,19 @@ class CatalyticKernel0Tests(unittest.TestCase):
         )
         self.assertEqual(
             control_result["control_preregistration"]["execution_run_id"],
-            PARENT_A_CONTROL_RUN_ID,
+            PARENT_B_CONTROL_RUN_ID,
         )
         transform_payload = control_adapter.payloads[3]
         transform_assignment = json.loads(
             transform_payload["messages"][1]["content"]
         )
         self.assertEqual(
-            set(transform_assignment["parent_artifacts"][0]),
+            transform_assignment["parent_artifacts"][0]["artifact_id"],
+            "branch-a",
+        )
+        self.assertIn("ranking", transform_assignment["parent_artifacts"][0])
+        self.assertEqual(
+            set(transform_assignment["parent_artifacts"][1]),
             {
                 "artifact_id",
                 "artifact_sha256",

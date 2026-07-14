@@ -19049,7 +19049,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     catalytic_kernel_0.add_argument(
         "--control",
-        choices=("parent-a-information-deletion",),
+        choices=(
+            "parent-a-information-deletion",
+            "parent-b-information-deletion",
+        ),
     )
     catalytic_kernel_0.set_defaults(handler=command_run_catalytic_kernel_0)
     return parser

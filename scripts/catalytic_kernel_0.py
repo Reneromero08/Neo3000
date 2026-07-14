@@ -99,6 +99,27 @@ PARENT_A_CONTROL_CLASSIFICATIONS = (
     "PARENT_A_INFORMATION_NOT_SHOWN_NECESSARY",
     "CAUSAL_CONTROL_INCONCLUSIVE",
 )
+PARENT_B_INFORMATION_DELETION_CONTROL = "parent-b-information-deletion"
+PARENT_B_CONTROL_RUN_ID = "ck0-20260714T222830Z-a6"
+PARENT_B_CONTROL_PREREGISTRATION = "lab/ck0_parent_b_information_deletion_1.json"
+PARENT_B_CONTROL_STARTING_MAIN = "122c232f42a1426a4db6f2b3c93d7699e6505d6a"
+PARENT_B_CONTROL_FROZEN_IMPLEMENTATION = "b19a4b4d6147bc10459c7d1d144021a1ff3d8eed"
+PARENT_B_CONTROL_PREREGISTERED_SHA256 = "D8029D511028F1025ADB21DEA432256AB126887BC74632A7A72CCCDEEBA4F677"
+PARENT_B_CONTROL_CLASSIFICATIONS = (
+    "PARENT_B_INFORMATION_NECESSITY_SUPPORTED",
+    "PARENT_B_INFORMATION_NOT_SHOWN_NECESSARY",
+    "CAUSAL_CONTROL_INCONCLUSIVE",
+)
+INFORMATION_DELETION_CONTROLS = frozenset(
+    {
+        PARENT_A_INFORMATION_DELETION_CONTROL,
+        PARENT_B_INFORMATION_DELETION_CONTROL,
+    }
+)
+CONTROL_DIRECTIONS = {
+    PARENT_A_INFORMATION_DELETION_CONTROL: ("branch-a", "branch-b"),
+    PARENT_B_INFORMATION_DELETION_CONTROL: ("branch-b", "branch-a"),
+}
 CONTROL_TRANSFORM_INSTRUCTION = (
     "Operate on the supplied parent projections. Author one allowed operator and one candidate ranking."
 )
@@ -422,14 +443,21 @@ def _validated_control(
 ) -> str | None:
     if control is None:
         return None
-    if control != PARENT_A_INFORMATION_DELETION_CONTROL:
+    if control not in INFORMATION_DELETION_CONTROLS:
         raise CatalyticKernel0Error("unknown or unauthorized CK0 control")
     validated = _validated_profile(profile)
     if validated is None or validated["profile_id"] != UNRESOLVED_PROFILE_ID:
         raise CatalyticKernel0Error(
-            "parent-A information deletion requires the frozen unresolved profile"
+            "parent information deletion requires the frozen unresolved profile"
         )
     return control
+
+
+def _control_direction(control: str) -> tuple[str, str]:
+    try:
+        return CONTROL_DIRECTIONS[control]
+    except KeyError as exc:
+        raise CatalyticKernel0Error("unknown or unauthorized CK0 control") from exc
 
 
 def _profile_indices(profile: Mapping[str, Any] | None) -> dict[str, tuple[int, ...]]:
@@ -1102,45 +1130,80 @@ def classify_kernel(
     return "CATALYTIC_KERNEL_COLLAPSED"
 
 
-def build_parent_a_commitment_receipt(
-    branch_a: Mapping[str, Any], profile: Mapping[str, Any]
+def _build_parent_commitment_receipt(
+    branch: Mapping[str, Any],
+    profile: Mapping[str, Any],
+    *,
+    branch_id: str,
 ) -> dict[str, Any]:
     profile = _validated_profile(profile)
     assert profile is not None
-    if branch_a.get("artifact_id") != "branch-a" or branch_a.get(
+    if branch_id not in BRANCH_SHARDS:
+        raise CatalyticKernel0Error("unknown blinded parent")
+    label = "Branch-A" if branch_id == "branch-a" else "Branch-B"
+    if branch.get("artifact_id") != branch_id or branch.get(
         "artifact_sha256"
     ) != json_sha256(
-        {key: value for key, value in branch_a.items() if key != "artifact_sha256"}
+        {key: value for key, value in branch.items() if key != "artifact_sha256"}
     ):
-        raise CatalyticKernel0Error("Branch-A artifact binding is invalid")
-    if branch_a.get("carrier_profile_id") != profile["profile_id"]:
-        raise CatalyticKernel0Error("Branch-A carrier profile identity drift")
+        raise CatalyticKernel0Error(f"{label} artifact binding is invalid")
+    if branch.get("carrier_profile_id") != profile["profile_id"]:
+        raise CatalyticKernel0Error(f"{label} carrier profile identity drift")
     receipt = {
-        "artifact_id": "branch-a",
-        "artifact_sha256": branch_a["artifact_sha256"],
+        "artifact_id": branch_id,
+        "artifact_sha256": branch["artifact_sha256"],
         "carrier_profile_id": profile["profile_id"],
         "projection_mode": "commitment-only",
         "informative_content_withheld": True,
     }
     if set(receipt) != BLINDED_PARENT_RECEIPT_FIELDS:
-        raise CatalyticKernel0Error("blinded Branch-A receipt field set changed")
+        raise CatalyticKernel0Error(f"blinded {label} receipt field set changed")
     validate_metadata_only(receipt)
     return receipt
 
 
-def validate_parent_a_information_deletion_projection(
+def build_parent_a_commitment_receipt(
+    branch_a: Mapping[str, Any], profile: Mapping[str, Any]
+) -> dict[str, Any]:
+    return _build_parent_commitment_receipt(
+        branch_a, profile, branch_id="branch-a"
+    )
+
+
+def build_parent_b_commitment_receipt(
+    branch_b: Mapping[str, Any], profile: Mapping[str, Any]
+) -> dict[str, Any]:
+    return _build_parent_commitment_receipt(
+        branch_b, profile, branch_id="branch-b"
+    )
+
+
+def _validate_information_deletion_projection(
     payload: Mapping[str, Any],
     *,
     carrier: Mapping[str, Any],
     artifacts: Mapping[str, Mapping[str, Any]],
+    control: str,
 ) -> dict[str, Any]:
     profile = _validated_profile(carrier.get("profile"))
-    _validated_control(PARENT_A_INFORMATION_DELETION_CONTROL, profile)
+    control = _validated_control(control, profile)
+    assert control is not None
     if profile is None or not all(key in artifacts for key in ("branch-a", "branch-b")):
         raise CatalyticKernel0Error("control transform parents are incomplete")
     branch_a = artifacts["branch-a"]
     branch_b = artifacts["branch-b"]
-    receipt = build_parent_a_commitment_receipt(branch_a, profile)
+    deleted_parent, retained_parent = _control_direction(control)
+    deleted_artifact = artifacts[deleted_parent]
+    retained_artifact = artifacts[retained_parent]
+    receipt = _build_parent_commitment_receipt(
+        deleted_artifact,
+        profile,
+        branch_id=deleted_parent,
+    )
+    expected_parents = [
+        receipt if deleted_parent == "branch-a" else branch_a,
+        receipt if deleted_parent == "branch-b" else branch_b,
+    ]
     messages = payload.get("messages")
     try:
         assignment = json.loads(messages[1]["content"])
@@ -1154,34 +1217,40 @@ def validate_parent_a_information_deletion_projection(
         or assignment.get("instruction") != CONTROL_TRANSFORM_INSTRUCTION
         or not isinstance(parents, list)
         or len(parents) != 2
-        or parents[0] != receipt
-        or parents[1] != branch_b
+        or parents != expected_parents
     ):
         raise CatalyticKernel0Error("control transform projection differs from preregistration")
-    if set(parents[0]) != BLINDED_PARENT_RECEIPT_FIELDS:
-        raise CatalyticKernel0Error("Branch-A informative fields entered the control projection")
+    blinded_index = 0 if deleted_parent == "branch-a" else 1
+    if set(parents[blinded_index]) != BLINDED_PARENT_RECEIPT_FIELDS:
+        raise CatalyticKernel0Error(
+            f"{deleted_parent} informative fields entered the control projection"
+        )
     winner = profile["full_public_argmax_set"][0]
     if winner in assignment["instruction"] or any(
         value == winner
-        for key, value in parents[0].items()
+        for key, value in parents[blinded_index].items()
         if key != "artifact_sha256"
     ):
         raise CatalyticKernel0Error("expected winner entered the blinded control projection")
-    if branch_b.get("artifact_sha256") != json_sha256(
-        {key: value for key, value in branch_b.items() if key != "artifact_sha256"}
+    if retained_artifact.get("artifact_sha256") != json_sha256(
+        {
+            key: value
+            for key, value in retained_artifact.items()
+            if key != "artifact_sha256"
+        }
     ):
-        raise CatalyticKernel0Error("full Branch-B artifact binding changed")
+        raise CatalyticKernel0Error(f"full {retained_parent} artifact binding changed")
     evidence = {
-        "control_id": PARENT_A_INFORMATION_DELETION_CONTROL,
-        "deleted_parent": "branch-a",
-        "retained_informative_parent": "branch-b",
+        "control_id": control,
+        "deleted_parent": deleted_parent,
+        "retained_informative_parent": retained_parent,
         "blinded_parent_receipt": receipt,
         "blinded_parent_receipt_sha256": json_sha256(receipt),
         "branch_a_artifact_sha256": branch_a["artifact_sha256"],
         "branch_b_artifact_sha256": branch_b["artifact_sha256"],
         "model_visible_parent_projection_sha256": json_sha256(parents),
-        "branch_a_informative_content_withheld": True,
-        "branch_b_full_artifact_unchanged": True,
+        f"{deleted_parent.replace('-', '_')}_informative_content_withheld": True,
+        f"{retained_parent.replace('-', '_')}_full_artifact_unchanged": True,
         "neutral_instruction_verified": True,
         "projection_verified": True,
     }
@@ -1189,7 +1258,35 @@ def validate_parent_a_information_deletion_projection(
     return evidence
 
 
-def classify_parent_a_information_control(
+def validate_parent_a_information_deletion_projection(
+    payload: Mapping[str, Any],
+    *,
+    carrier: Mapping[str, Any],
+    artifacts: Mapping[str, Mapping[str, Any]],
+) -> dict[str, Any]:
+    return _validate_information_deletion_projection(
+        payload,
+        carrier=carrier,
+        artifacts=artifacts,
+        control=PARENT_A_INFORMATION_DELETION_CONTROL,
+    )
+
+
+def validate_parent_b_information_deletion_projection(
+    payload: Mapping[str, Any],
+    *,
+    carrier: Mapping[str, Any],
+    artifacts: Mapping[str, Mapping[str, Any]],
+) -> dict[str, Any]:
+    return _validate_information_deletion_projection(
+        payload,
+        carrier=carrier,
+        artifacts=artifacts,
+        control=PARENT_B_INFORMATION_DELETION_CONTROL,
+    )
+
+
+def _classify_parent_information_control(
     branch_a: Mapping[str, Any] | None,
     branch_b: Mapping[str, Any] | None,
     transform: Mapping[str, Any] | None,
@@ -1199,9 +1296,12 @@ def classify_parent_a_information_control(
     restoration_passed: bool,
     completed_request_count: int,
     profile: Mapping[str, Any],
+    control: str,
 ) -> str:
     profile = _validated_profile(profile)
     assert profile is not None
+    control = _validated_control(control, profile)
+    assert control is not None
     if (
         completed_request_count != 6
         or not restoration_passed
@@ -1216,12 +1316,15 @@ def classify_parent_a_information_control(
     assert transform is not None
     assert extraction is not None
     assert intervention is not None
+    deleted_parent, retained_parent = _control_direction(control)
+    deleted_flag = f"{deleted_parent.replace('-', '_')}_informative_content_withheld"
+    retained_flag = f"{retained_parent.replace('-', '_')}_full_artifact_unchanged"
     if not all(
         (
-            intervention.get("control_id") == PARENT_A_INFORMATION_DELETION_CONTROL,
+            intervention.get("control_id") == control,
             intervention.get("projection_verified") is True,
-            intervention.get("branch_a_informative_content_withheld") is True,
-            intervention.get("branch_b_full_artifact_unchanged") is True,
+            intervention.get(deleted_flag) is True,
+            intervention.get(retained_flag) is True,
             intervention.get("branch_a_artifact_sha256")
             == branch_a.get("artifact_sha256"),
             intervention.get("branch_b_artifact_sha256")
@@ -1244,10 +1347,59 @@ def classify_parent_a_information_control(
             score.get("total") == 5,
         )
     )
+    prefix = "PARENT_A" if deleted_parent == "branch-a" else "PARENT_B"
     return (
-        "PARENT_A_INFORMATION_NOT_SHOWN_NECESSARY"
+        f"{prefix}_INFORMATION_NOT_SHOWN_NECESSARY"
         if fully_recovered
-        else "PARENT_A_INFORMATION_NECESSITY_SUPPORTED"
+        else f"{prefix}_INFORMATION_NECESSITY_SUPPORTED"
+    )
+
+
+def classify_parent_a_information_control(
+    branch_a: Mapping[str, Any] | None,
+    branch_b: Mapping[str, Any] | None,
+    transform: Mapping[str, Any] | None,
+    extraction: Mapping[str, Any] | None,
+    intervention: Mapping[str, Any] | None,
+    *,
+    restoration_passed: bool,
+    completed_request_count: int,
+    profile: Mapping[str, Any],
+) -> str:
+    return _classify_parent_information_control(
+        branch_a,
+        branch_b,
+        transform,
+        extraction,
+        intervention,
+        restoration_passed=restoration_passed,
+        completed_request_count=completed_request_count,
+        profile=profile,
+        control=PARENT_A_INFORMATION_DELETION_CONTROL,
+    )
+
+
+def classify_parent_b_information_control(
+    branch_a: Mapping[str, Any] | None,
+    branch_b: Mapping[str, Any] | None,
+    transform: Mapping[str, Any] | None,
+    extraction: Mapping[str, Any] | None,
+    intervention: Mapping[str, Any] | None,
+    *,
+    restoration_passed: bool,
+    completed_request_count: int,
+    profile: Mapping[str, Any],
+) -> str:
+    return _classify_parent_information_control(
+        branch_a,
+        branch_b,
+        transform,
+        extraction,
+        intervention,
+        restoration_passed=restoration_passed,
+        completed_request_count=completed_request_count,
+        profile=profile,
+        control=PARENT_B_INFORMATION_DELETION_CONTROL,
     )
 
 
@@ -1274,14 +1426,28 @@ def _assignment(
             "evidence_shard": build_public_shard(request_id, profile),
         }
     if request_id == "transform":
-        if control == PARENT_A_INFORMATION_DELETION_CONTROL:
+        if control in INFORMATION_DELETION_CONTROLS:
             assert profile is not None
+            assert control is not None
+            deleted_parent, _ = _control_direction(control)
             return {
                 "request_id": request_id,
                 "instruction": CONTROL_TRANSFORM_INSTRUCTION,
                 "parent_artifacts": [
-                    build_parent_a_commitment_receipt(artifacts["branch-a"], profile),
-                    artifacts["branch-b"],
+                    _build_parent_commitment_receipt(
+                        artifacts["branch-a"],
+                        profile,
+                        branch_id="branch-a",
+                    )
+                    if deleted_parent == "branch-a"
+                    else artifacts["branch-a"],
+                    _build_parent_commitment_receipt(
+                        artifacts["branch-b"],
+                        profile,
+                        branch_id="branch-b",
+                    )
+                    if deleted_parent == "branch-b"
+                    else artifacts["branch-b"],
                 ],
             }
         return {
@@ -1396,14 +1562,13 @@ def validate_model_request(
         raise CatalyticKernel0Error("restore request contains branch state")
     if payload.get("chat_template_kwargs") != {"enable_thinking": False}:
         raise CatalyticKernel0Error("kernel requests must remain thinking-disabled")
-    if (
-        request_id == "transform"
-        and control == PARENT_A_INFORMATION_DELETION_CONTROL
-    ):
-        validate_parent_a_information_deletion_projection(
+    if request_id == "transform" and control in INFORMATION_DELETION_CONTROLS:
+        assert control is not None
+        _validate_information_deletion_projection(
             payload,
             carrier=carrier,
             artifacts=artifacts,
+            control=control,
         )
     _reject_private_prompt_fields(payload)
     validate_metadata_only(expected)
@@ -1565,6 +1730,184 @@ def validate_parent_a_control_preregistration(
     return projection
 
 
+def validate_parent_b_control_preregistration(
+    repository: Path,
+    *,
+    run_id: str,
+    carrier: Mapping[str, Any],
+) -> dict[str, Any]:
+    path = repository / PARENT_B_CONTROL_PREREGISTRATION
+    if not path.is_file() or path.is_symlink():
+        raise CatalyticKernel0Error("Branch-B control preregistration is missing or unsafe")
+    raw = path.read_bytes()
+    try:
+        document = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise CatalyticKernel0Error("Branch-B control preregistration is invalid JSON") from exc
+    if not isinstance(document, dict) or set(document) != {
+        "schema_version",
+        "preregistered",
+    }:
+        raise CatalyticKernel0Error(
+            "Branch-B control preregistration must remain pre-execution only"
+        )
+    preregistered = document.get("preregistered")
+    if (
+        not isinstance(preregistered, dict)
+        or json_sha256(preregistered) != PARENT_B_CONTROL_PREREGISTERED_SHA256
+    ):
+        raise CatalyticKernel0Error("Branch-B control preregistration identity drift")
+    profile = _validated_profile(carrier.get("profile"))
+    assert profile is not None
+    expected_requests = [
+        {
+            "max_tokens": 64,
+            "ordinal": ordinal,
+            "request_id": request_id,
+            "response_schema": response_schema(
+                request_id, carrier_id=str(carrier["carrier_id"])
+            ),
+            "seed": int.from_bytes(
+                hashlib.sha256(f"ck0:{request_id}".encode()).digest()[:4],
+                "big",
+            ),
+        }
+        for ordinal, request_id in enumerate(REQUEST_IDS, 1)
+    ]
+    frozen_carrier = preregistered.get("frozen_carrier")
+    deletion_direction = preregistered.get("deletion_direction")
+    transform_projection = preregistered.get("transform_projection")
+    receipt_schema = (
+        transform_projection.get("blinded_branch_b_receipt_schema")
+        if isinstance(transform_projection, Mapping)
+        else None
+    )
+    references = preregistered.get("reference_runs")
+    exit_policy = preregistered.get("generic_exit_code_non_adjudication")
+    if not all(
+        (
+            document.get("schema_version") == 1,
+            preregistered.get("schema_version") == 1,
+            preregistered.get("status") == "preregistered",
+            preregistered.get("created_at") == "2026-07-14T22:28:30Z",
+            preregistered.get("starting_protected_main")
+            == PARENT_B_CONTROL_STARTING_MAIN,
+            preregistered.get("frozen_implementation_sha")
+            == PARENT_B_CONTROL_FROZEN_IMPLEMENTATION,
+            preregistered.get("execution_run_id") == PARENT_B_CONTROL_RUN_ID,
+            run_id == PARENT_B_CONTROL_RUN_ID,
+            preregistered.get("authorized_invocations") == 1,
+            preregistered.get("retry_count") == 0,
+            preregistered.get("request_sequence") == expected_requests,
+            preregistered.get("request_runtime")
+            == {
+                "cache_prompt": True,
+                "chat_template_kwargs": {"enable_thinking": False},
+                "temperature": 0.0,
+            },
+            isinstance(frozen_carrier, Mapping),
+            frozen_carrier.get("profile_id") == profile["profile_id"],
+            frozen_carrier.get("task_id") == profile["task_id"],
+            frozen_carrier.get("scan_sha256") == profile["scan_sha256"],
+            frozen_carrier.get("public_score_matrix_sha256")
+            == profile["public_score_matrix_sha256"],
+            frozen_carrier.get("carrier_content_sha256")
+            == carrier["carrier_content_sha256"],
+            frozen_carrier.get("carrier_root_sha256")
+            == carrier["carrier_root_sha256"],
+            isinstance(deletion_direction, Mapping),
+            deletion_direction.get("deleted_parent") == "branch-b",
+            deletion_direction.get("retained_informative_parent") == "branch-a",
+            deletion_direction.get("frozen_before_output") is True,
+            isinstance(receipt_schema, Mapping),
+            receipt_schema.get("additionalProperties") is False,
+            receipt_schema.get("required")
+            == [
+                "artifact_id",
+                "artifact_sha256",
+                "carrier_profile_id",
+                "projection_mode",
+                "informative_content_withheld",
+            ],
+            receipt_schema.get("properties", {})
+            .get("artifact_id", {})
+            .get("const")
+            == "branch-b",
+            transform_projection.get("instruction")
+            == CONTROL_TRANSFORM_INSTRUCTION,
+            transform_projection.get("ordinary_mechanism_classifier_applied")
+            is False,
+            isinstance(references, Mapping),
+            set(references)
+            == {"branch_a_deletion_control", "discovery", "replication"},
+            set(preregistered.get("control_classifications", {}))
+            == set(PARENT_B_CONTROL_CLASSIFICATIONS),
+            isinstance(exit_policy, Mapping),
+            exit_policy.get("process_exit_code_recorded") is True,
+            exit_policy.get("process_exit_code_overrides_complete_control_result")
+            is False,
+            exit_policy.get("ordinary_classifier_remains_unused") is True,
+            exit_policy.get("repair_before_execution") is False,
+        )
+    ):
+        raise CatalyticKernel0Error("Branch-B control preregistration boundary drift")
+    for reference in references.values():
+        run_root = repository / "state" / "catalytic_kernel_0" / reference["run_id"]
+        for filename in ("manifest.json", "result.json", "closure.json"):
+            expected_hash = reference[f"{filename.removesuffix('.json')}_sha256"]
+            evidence_path = run_root / filename
+            if (
+                not evidence_path.is_file()
+                or evidence_path.is_symlink()
+                or sha256_bytes(evidence_path.read_bytes()) != expected_hash
+            ):
+                raise CatalyticKernel0Error("frozen CK0 reference evidence changed")
+    artifact_checks = (
+        (
+            repository / "lab" / "ck0_unresolved_replication_1.json",
+            references["replication"],
+            None,
+        ),
+        (
+            repository / PARENT_A_CONTROL_PREREGISTRATION,
+            references["branch_a_deletion_control"],
+            "PARENT_A_INFORMATION_NECESSITY_SUPPORTED",
+        ),
+    )
+    for artifact_path, reference, classification in artifact_checks:
+        if (
+            not artifact_path.is_file()
+            or artifact_path.is_symlink()
+            or sha256_bytes(artifact_path.read_bytes())
+            != reference["artifact_sha256"]
+        ):
+            raise CatalyticKernel0Error("frozen CK0 reference artifact changed")
+        artifact_document = json.loads(artifact_path.read_bytes())
+        artifact_preregistered = artifact_document.get("preregistered")
+        if (
+            not isinstance(artifact_preregistered, Mapping)
+            or json_sha256(artifact_preregistered)
+            != reference["preregistered_sha256"]
+        ):
+            raise CatalyticKernel0Error("frozen CK0 preregistration identity changed")
+        if classification is not None and (
+            artifact_document.get("observed_result", {}).get(
+                "control_classification"
+            )
+            != classification
+        ):
+            raise CatalyticKernel0Error("frozen Branch-A control classification changed")
+    projection = {
+        "relative_path": PARENT_B_CONTROL_PREREGISTRATION,
+        "artifact_sha256": sha256_bytes(raw),
+        "preregistered_sha256": json_sha256(preregistered),
+        "execution_run_id": run_id,
+        "status": "validated-preregistered",
+    }
+    validate_metadata_only(projection)
+    return projection
+
+
 def _common_prefix(left: Sequence[int], right: Sequence[int]) -> int:
     count = 0
     for a, b in zip(left, right):
@@ -1640,6 +1983,19 @@ def _result_projection(
     if control == PARENT_A_INFORMATION_DELETION_CONTROL:
         assert profile is not None
         control_classification = classify_parent_a_information_control(
+            artifacts.get("branch-a"),
+            artifacts.get("branch-b"),
+            artifacts.get("transform"),
+            artifacts.get("extract"),
+            control_intervention,
+            restoration_passed=isinstance(restoration, Mapping)
+            and restoration.get("passed") is True,
+            completed_request_count=len(outcomes),
+            profile=profile,
+        )
+    elif control == PARENT_B_INFORMATION_DELETION_CONTROL:
+        assert profile is not None
+        control_classification = classify_parent_b_information_control(
             artifacts.get("branch-a"),
             artifacts.get("branch-b"),
             artifacts.get("transform"),
@@ -1797,15 +2153,19 @@ def run_catalytic_kernel_0(
     if run_root.exists():
         raise CatalyticKernel0Error("kernel run ID already exists")
     carrier = build_carrier(profile)
-    control_preregistration = (
-        validate_parent_a_control_preregistration(
+    control_preregistration = None
+    if control == PARENT_A_INFORMATION_DELETION_CONTROL:
+        control_preregistration = validate_parent_a_control_preregistration(
             repository,
             run_id=run_id,
             carrier=carrier,
         )
-        if control == PARENT_A_INFORMATION_DELETION_CONTROL
-        else None
-    )
+    elif control == PARENT_B_INFORMATION_DELETION_CONTROL:
+        control_preregistration = validate_parent_b_control_preregistration(
+            repository,
+            run_id=run_id,
+            carrier=carrier,
+        )
     cib0_before = _snapshot_tree(repository / "state" / "catalytic_inference_bench_0")
     ck0_before = _snapshot_historical_ck0(repository / "state" / "catalytic_kernel_0")
     paths = {name: run_root / name for name in STATE_FILENAMES}
@@ -1843,10 +2203,11 @@ def run_catalytic_kernel_0(
     if profile is not None:
         manifest["carrier_profile"] = dict(carrier["profile"])
     if control is not None:
+        deleted_parent, retained_parent = _control_direction(control)
         manifest["control"] = {
             "control_id": control,
-            "deleted_parent": "branch-a",
-            "retained_informative_parent": "branch-b",
+            "deleted_parent": deleted_parent,
+            "retained_informative_parent": retained_parent,
             "ordinary_mechanism_classifier_applied": False,
         }
         manifest["control_preregistration"] = dict(control_preregistration)
@@ -1889,16 +2250,13 @@ def run_catalytic_kernel_0(
                 artifacts=artifacts,
                 control=control,
             )
-            if (
-                request_id == "transform"
-                and control == PARENT_A_INFORMATION_DELETION_CONTROL
-            ):
-                control_intervention = (
-                    validate_parent_a_information_deletion_projection(
-                        payload,
-                        carrier=carrier,
-                        artifacts=artifacts,
-                    )
+            if request_id == "transform" and control in INFORMATION_DELETION_CONTROLS:
+                assert control is not None
+                control_intervention = _validate_information_deletion_projection(
+                    payload,
+                    carrier=carrier,
+                    artifacts=artifacts,
+                    control=control,
                 )
             geometry = live.prompt_geometry(sidecar=sidecar, payload=payload)
             token_ids = list(geometry["token_ids"])
@@ -2164,15 +2522,20 @@ __all__ = [
     "PARENT_A_CONTROL_CLASSIFICATIONS",
     "PARENT_A_INFORMATION_DELETION_CONTROL",
     "PARENT_A_CONTROL_RUN_ID",
+    "PARENT_B_CONTROL_CLASSIFICATIONS",
+    "PARENT_B_INFORMATION_DELETION_CONTROL",
+    "PARENT_B_CONTROL_RUN_ID",
     "CatalyticKernel0Error",
     "KERNEL_ID",
     "REQUEST_IDS",
     "build_carrier",
     "build_parent_a_commitment_receipt",
+    "build_parent_b_commitment_receipt",
     "build_model_request",
     "build_public_shard",
     "classify_kernel",
     "classify_parent_a_information_control",
+    "classify_parent_b_information_control",
     "derive_rank_delta",
     "normalize_branch",
     "normalize_extraction",
@@ -2184,4 +2547,6 @@ __all__ = [
     "validate_model_request",
     "validate_parent_a_information_deletion_projection",
     "validate_parent_a_control_preregistration",
+    "validate_parent_b_information_deletion_projection",
+    "validate_parent_b_control_preregistration",
 ]

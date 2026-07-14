@@ -1,0 +1,388 @@
+{
+  "preregistered": {
+    "authorized_invocations": 1,
+    "causal_question": "Does the frozen CK0 transform still recover C42 when the informative content of Branch B is withheld from the transform while every other admissible condition remains fixed?",
+    "claims": {
+      "automatic_promotion": "LOCKED",
+      "bilateral_parent_information_dependence_supported_on_frozen_carrier": "LOCKED_PENDING_CONTROL",
+      "branch_a_information_dependence_supported_on_frozen_carrier": "PRESERVED_SUPPORTED",
+      "branch_b_information_dependence_supported_on_frozen_carrier": "LOCKED_PENDING_CONTROL",
+      "broader_process_local_holostate": "LOCKED",
+      "deep": "DISABLED",
+      "general_catalytic_inference": "LOCKED",
+      "general_two_parent_necessity": "LOCKED",
+      "restart_persistent_holostate": "LOCKED",
+      "sota": "LOCKED",
+      "superiority": "LOCKED",
+      "task_advantage": "LOCKED",
+      "transfer": "LOCKED"
+    },
+    "control_classifications": {
+      "CAUSAL_CONTROL_INCONCLUSIVE": {
+        "requires_any": [
+          "execution incomplete",
+          "transform projection differs from preregistration",
+          "Branch-B information leaks into transform",
+          "Branch A is not complete and exact",
+          "transport or parsing failure",
+          "custody failure",
+          "extraction unbound",
+          "restoration or cleanup failure"
+        ],
+        "status": "non-production"
+      },
+      "PARENT_B_INFORMATION_NECESSITY_SUPPORTED": {
+        "interpretation": "Under the frozen CK0 carrier and deterministic execution, removing Branch-B informative content prevented reproduction of the previously replicated resolution.",
+        "requires": [
+          "all six requests complete",
+          "borrowing passes",
+          "Branch A and Branch B execute normally",
+          "transform receives full Branch A plus only the blinded Branch-B commitment",
+          "extraction consumes the resulting transform",
+          "restoration, cleanup, custody, and zero-lease checks pass",
+          "transform or extraction does not fully recover C42 at 5/5"
+        ],
+        "status": "non-production"
+      },
+      "PARENT_B_INFORMATION_NOT_SHOWN_NECESSARY": {
+        "interpretation": "Branch-B information was not shown necessary under this frozen control.",
+        "requires": [
+          "all six requests complete safely",
+          "exact deletion intervention verified",
+          "transform top candidate remains C42",
+          "extraction selects C42",
+          "C42 scores 5/5",
+          "restoration, cleanup, custody, and zero-lease checks pass"
+        ],
+        "status": "non-production"
+      }
+    },
+    "created_at": "2026-07-14T22:28:30Z",
+    "deletion_direction": {
+      "deleted_parent": "branch-b",
+      "deterministic_law": "Apply the symmetric companion intervention by withholding Branch-B informative content while preserving full Branch A and every frozen mechanism variable.",
+      "frozen_before_output": true,
+      "reason": "Branch-A information dependence is already supported; the symmetric companion deletes Branch B while retaining complete Branch A.",
+      "retained_informative_parent": "branch-a"
+    },
+    "execution_run_id": "ck0-20260714T222830Z-a6",
+    "frozen_carrier": {
+      "carrier_content_sha256": "1A35B29875BECF4084B21C86B656E79C5221350EF53B9855C56D2C510071E29A",
+      "carrier_root_sha256": "14EA07DE66F16D44FAAF6D7ADFF70E1B11953CB940133449B7B962F56C50221C",
+      "eligibility_tier": 1,
+      "profile_id": "complementary-unresolved-public-v1",
+      "public_score_matrix_sha256": "F2758458B3302F9CCE4A0BB719A14B1130299A31FDA2201FB12CBEED1BD20A63",
+      "scan_sha256": "77B7306249DDE9188C327B615CBE95DAC3A5AC7D778AAB189CFFD203A6D40DF2",
+      "shared_calibration_example_id": "public-example-2",
+      "shards": {
+        "branch_a": [
+          "public-example-1",
+          "public-example-2",
+          "public-example-4"
+        ],
+        "branch_b": [
+          "public-example-2",
+          "public-example-3",
+          "public-example-5"
+        ]
+      },
+      "task_id": "cs1-task-05",
+      "task_suite_sha256": "4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92"
+    },
+    "frozen_controls": {
+      "branch_prompt_changes": 0,
+      "cache_root_law_changes": 0,
+      "carrier_changes": 0,
+      "classification_law_changes_to_ordinary_ck0": 0,
+      "deep_requests": 0,
+      "deletion_direction_changes": 0,
+      "extraction_changes": 0,
+      "model_changes": 0,
+      "physical_slots": 1,
+      "prompt_changes_outside_control_transform_projection": 0,
+      "response_schema_changes": 0,
+      "retry_count": 0,
+      "seed_changes": 0,
+      "sidecar_epochs": 1,
+      "task_changes": 0,
+      "telemetry_policy_changes": 0
+    },
+    "frozen_implementation_sha": "b19a4b4d6147bc10459c7d1d144021a1ff3d8eed",
+    "reference_runs": {
+      "branch_a_deletion_control": {
+        "artifact_sha256": "A5B5C651EC5E542154283723BC727AA68CFD589125DBEC3FF1624C0D31C0087B",
+        "closure_sha256": "E86DC79CE32FFF5B1740CE8D2A733C7D304156F7E775541BF705263A267C729F",
+        "control_classification": "PARENT_A_INFORMATION_NECESSITY_SUPPORTED",
+        "evidence_commit": "122c232f42a1426a4db6f2b3c93d7699e6505d6a",
+        "manifest_sha256": "DB8E28F898E4D9342CB53077FF416B84AA5F71596F71294E661AA36CCAE2F00B",
+        "preexecution_artifact_sha256": "F9B6ADE027F4C92632C322E49A13A3671D5CCCD9E292A0276367B7173B1E7D86",
+        "preregistered_sha256": "A5E053E99A94D150265C743CA81661EF764237DC0D209C9A0BE011D6502A00C6",
+        "preregistration_commit": "e97ada1fd8cbddcb09ce92fb451e69ba761b36f3",
+        "result_sha256": "60C8BE5B5F9634FA9C30311BC7CEEDFD822C5A882E83BEDBA3B0257EEC024AFB",
+        "run_id": "ck0-20260714T215806Z-a5"
+      },
+      "discovery": {
+        "closure_sha256": "34825DE4069B63E5A03E380A9580926EEFFE4746611FADC49757524CF3EA6B4D",
+        "manifest_sha256": "CA4B5781F9023380AA218E6E881F98706A2077BB420359095E0C0C2043FEF389",
+        "result_sha256": "EB6BA8376D2B594D31A86478BC409E7EB4734C5AF3B6082F6292721B26BDFD4B",
+        "run_id": "ck0-20260714T002941Z-a3"
+      },
+      "replication": {
+        "artifact_sha256": "1CEF59F1C19774568AAD0910622BA4C53E216A9FE3FBFA8F7EF2D571505F7234",
+        "closure_sha256": "58B0A40BD676D008A8D25098435F4B8E26E485BE0595AB9FE8E93F3FA1029925",
+        "manifest_sha256": "D72BD718D5E6798DA065342C717963AF0797CF48AEE69AE32DC4EA19AC46BFA3",
+        "preregistered_sha256": "6BAA531FA1DF58FB22FCD6ED7A7052E90E5B85ED749C5D0C282BA8E6FB8BCA6D",
+        "result_sha256": "A4353263BDDDE0FC7A7A8CBDEA47C3224448919D56E1B15D18AE530D98C6A3FD",
+        "run_id": "ck0-20260714T005256Z-a4"
+      }
+    },
+    "request_sequence": [
+      {
+        "max_tokens": 64,
+        "ordinal": 1,
+        "request_id": "borrow",
+        "response_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "carrier_id": {
+              "const": "ck0:cs1-task-05:complementary-unresolved-public-v1:public-carrier",
+              "type": "string"
+            }
+          },
+          "required": [
+            "carrier_id"
+          ],
+          "type": "object"
+        },
+        "seed": 496024832
+      },
+      {
+        "max_tokens": 64,
+        "ordinal": 2,
+        "request_id": "branch-a",
+        "response_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "ranking": {
+              "items": {
+                "pattern": "^C(?:[0-5][0-9]|6[0-3])$",
+                "type": "string"
+              },
+              "maxItems": 3,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ranking"
+          ],
+          "type": "object"
+        },
+        "seed": 2341901482
+      },
+      {
+        "max_tokens": 64,
+        "ordinal": 3,
+        "request_id": "branch-b",
+        "response_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "ranking": {
+              "items": {
+                "pattern": "^C(?:[0-5][0-9]|6[0-3])$",
+                "type": "string"
+              },
+              "maxItems": 3,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ranking"
+          ],
+          "type": "object"
+        },
+        "seed": 3118559568
+      },
+      {
+        "max_tokens": 64,
+        "ordinal": 4,
+        "request_id": "transform",
+        "response_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "operator": {
+              "enum": [
+                "combine",
+                "eliminate",
+                "oppose",
+                "reconcile",
+                "refine"
+              ],
+              "type": "string"
+            },
+            "ranking": {
+              "items": {
+                "pattern": "^C(?:[0-5][0-9]|6[0-3])$",
+                "type": "string"
+              },
+              "maxItems": 3,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "operator",
+            "ranking"
+          ],
+          "type": "object"
+        },
+        "seed": 3609227325
+      },
+      {
+        "max_tokens": 64,
+        "ordinal": 5,
+        "request_id": "extract",
+        "response_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "pattern": "^C(?:[0-5][0-9]|6[0-3])$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "candidate_id"
+          ],
+          "type": "object"
+        },
+        "seed": 2381573611
+      },
+      {
+        "max_tokens": 64,
+        "ordinal": 6,
+        "request_id": "restore",
+        "response_schema": {
+          "additionalProperties": false,
+          "properties": {
+            "carrier_id": {
+              "const": "ck0:cs1-task-05:complementary-unresolved-public-v1:public-carrier",
+              "type": "string"
+            }
+          },
+          "required": [
+            "carrier_id"
+          ],
+          "type": "object"
+        },
+        "seed": 3162446570
+      }
+    ],
+    "retry_count": 0,
+    "runtime_identities": {
+      "binary": {
+        "relative_path": "build/stable/bin/Release/llama-server.exe",
+        "runtime_version": "13 (417e1d6)",
+        "sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B",
+        "size_bytes": 10752
+      },
+      "chat_template_sha256": "A4AEE8AFCF2E0711942CF848899BE66016F8D14A889FF9EDE07BCA099C28F715",
+      "model": {
+        "filename": "Agents-A1-Q4_K_M.gguf",
+        "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+        "size_bytes": 21166757632
+      },
+      "model_alias": "agents-a1-holostate"
+    },
+    "schema_version": 1,
+    "starting_protected_main": "122c232f42a1426a4db6f2b3c93d7699e6505d6a",
+    "status": "preregistered",
+    "support_relation": {
+      "branch_a": [
+        "C42",
+        "C56"
+      ],
+      "branch_b": [
+        "C09",
+        "C34",
+        "C42"
+      ],
+      "full": [
+        "C42"
+      ],
+      "resolution_law": "tier-1-singleton-intersection"
+    },
+    "transform_projection": {
+      "blinded_branch_b_receipt_binding_law": "artifact_sha256 must equal the privately retained exact normalized Branch-B artifact SHA-256.",
+      "blinded_branch_b_receipt_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_id": {
+            "const": "branch-b",
+            "type": "string"
+          },
+          "artifact_sha256": {
+            "pattern": "^[0-9A-F]{64}$",
+            "type": "string"
+          },
+          "carrier_profile_id": {
+            "const": "complementary-unresolved-public-v1",
+            "type": "string"
+          },
+          "informative_content_withheld": {
+            "const": true,
+            "type": "boolean"
+          },
+          "projection_mode": {
+            "const": "commitment-only",
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifact_id",
+          "artifact_sha256",
+          "carrier_profile_id",
+          "projection_mode",
+          "informative_content_withheld"
+        ],
+        "type": "object"
+      },
+      "branch_a_projection": "The complete exact normalized Branch-A artifact is supplied unchanged.",
+      "branch_b_private_controller_retention": "The complete exact normalized Branch-B artifact remains controller-private for custody and causal verification.",
+      "forbidden_branch_b_fields": [
+        "ranking",
+        "public_argmax_set",
+        "shard_scores",
+        "public_top_score",
+        "public_plateau_gap",
+        "public_shard_ids",
+        "public_argmax_evidence",
+        "public examples",
+        "pass vectors",
+        "singleton intersection",
+        "expected winner",
+        "full-public scores"
+      ],
+      "instruction": "Operate on the supplied parent projections. Author one allowed operator and one candidate ranking.",
+      "ordinary_mechanism_classifier_applied": false
+    },
+    "generic_exit_code_non_adjudication": {
+      "dedicated_control_result_authoritative_when_complete": true,
+      "ordinary_classifier_remains_unused": true,
+      "process_exit_code_overrides_complete_control_result": false,
+      "process_exit_code_recorded": true,
+      "repair_before_execution": false
+    },
+    "request_runtime": {
+      "cache_prompt": true,
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      },
+      "temperature": 0
+    }
+  },
+  "schema_version": 1
+}
