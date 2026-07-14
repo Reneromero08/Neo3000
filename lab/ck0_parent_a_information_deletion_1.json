@@ -355,5 +355,151 @@
       "ordinary_mechanism_classifier_applied": false
     }
   },
+  "observed_result": {
+    "branch_results": {
+      "branch_a": {
+        "artifact_sha256": "4EA236EB983F20F1EB890ECBC425E423BA1B27270FF89C9D1646791EA7465BC4",
+        "public_argmax_set": [
+          "C42",
+          "C56"
+        ],
+        "ranking": [
+          "C00",
+          "C01",
+          "C02"
+        ]
+      },
+      "branch_b": {
+        "artifact_sha256": "93AE76AC41481B4A637B5AAEF112725C7112BD9BE3A7CD73A601B84DCF988DA0",
+        "public_argmax_set": [
+          "C09",
+          "C34",
+          "C42"
+        ],
+        "ranking": [
+          "C00",
+          "C01",
+          "C02"
+        ]
+      }
+    },
+    "carrier": {
+      "carrier_content_sha256": "1A35B29875BECF4084B21C86B656E79C5221350EF53B9855C56D2C510071E29A",
+      "carrier_id": "ck0:cs1-task-05:complementary-unresolved-public-v1:public-carrier",
+      "carrier_root_sha256": "14EA07DE66F16D44FAAF6D7ADFF70E1B11953CB940133449B7B962F56C50221C",
+      "profile_id": "complementary-unresolved-public-v1",
+      "task_id": "cs1-task-05"
+    },
+    "claims": {
+      "automatic_promotion": "LOCKED",
+      "branch_a_information_dependence_supported_on_frozen_carrier": "UNLOCKED",
+      "branch_b_necessity": "LOCKED",
+      "broader_process_local_holostate": "LOCKED",
+      "deep": "DISABLED",
+      "general_catalytic_inference": "LOCKED",
+      "general_two_parent_necessity": "LOCKED",
+      "restart_persistent_holostate": "LOCKED",
+      "sota": "LOCKED",
+      "superiority": "LOCKED",
+      "task_advantage": "LOCKED",
+      "transfer": "LOCKED"
+    },
+    "cleanup": {
+      "passed": true,
+      "port_9494_free": true,
+      "process_stopped": true,
+      "runtime_removed": true,
+      "stable_preserved": true,
+      "temporary_state_removed": true
+    },
+    "control_classification": "PARENT_A_INFORMATION_NECESSITY_SUPPORTED",
+    "custody": {
+      "candidate_head": "14de9c71593e5aea4fcfcadeda47ba5c623fadcf",
+      "historical_cib0_tree_sha256": "57CE7FFFEBBB925BBD3B37F55A9394037720018748776C2C42DD17961D8ECCBD",
+      "historical_ck0_tree_sha256": "BB15C248EFBF075F77899161FC6EEDCD28830097CB6D0B67D7BB7F368ADCC249",
+      "postflight_passed": true,
+      "run_lock_absent": true,
+      "stable_listener_pids": [
+        20388
+      ]
+    },
+    "evidence": {
+      "closure_sha256": "E86DC79CE32FFF5B1740CE8D2A733C7D304156F7E775541BF705263A267C729F",
+      "manifest_sha256": "DB8E28F898E4D9342CB53077FF416B84AA5F71596F71294E661AA36CCAE2F00B",
+      "result_sha256": "60C8BE5B5F9634FA9C30311BC7CEEDFD822C5A882E83BEDBA3B0257EEC024AFB"
+    },
+    "execution": {
+      "authorized_invocations": 1,
+      "command_exit_code": 1,
+      "command_exit_interpretation": "The generic CK0 CLI exit law checks the ordinary mechanism classifier, which is intentionally null for this separately classified completed control.",
+      "completed_model_responses": 6,
+      "execution_commit": "e97ada1fd8cbddcb09ce92fb451e69ba761b36f3",
+      "invocations_consumed": 1,
+      "repair_count": 0,
+      "retry_count": 0,
+      "run_id": "ck0-20260714T215806Z-a5",
+      "status": "complete"
+    },
+    "extraction": {
+      "all_public_score": {
+        "passed": 4,
+        "total": 5
+      },
+      "artifact_sha256": "4AA1B4F7235BC8BE1B8BACE2A89B6EDE2A7BEFD1A8F0B6C25C69D2099767E90C",
+      "candidate_id": "C09",
+      "transform_artifact_sha256_consumed": "C82D622227374E0DB04BD5C7F6C68A556178C9800DFBF231CAEF830E6516EA33",
+      "transform_rank_consumed": 1
+    },
+    "identities": {
+      "binary": {
+        "runtime_version": "13 (417e1d6)",
+        "sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
+      },
+      "model": {
+        "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+        "size_bytes": 21166757632
+      }
+    },
+    "intervention": {
+      "blinded_parent_receipt": {
+        "artifact_id": "branch-a",
+        "artifact_sha256": "4EA236EB983F20F1EB890ECBC425E423BA1B27270FF89C9D1646791EA7465BC4",
+        "carrier_profile_id": "complementary-unresolved-public-v1",
+        "informative_content_withheld": true,
+        "projection_mode": "commitment-only"
+      },
+      "blinded_parent_receipt_sha256": "714789D52A0AB4A1E465789C681E9ACDB7CB1BCE97BA45ED323E9CE07437FED7",
+      "branch_a_informative_content_withheld": true,
+      "branch_b_full_artifact_unchanged": true,
+      "model_visible_parent_projection_sha256": "0CA75F828ABEE5874A5D951555CBC87EA2CF4BB7352BEE0D67D2DB8C56DB411E",
+      "neutral_instruction_verified": true,
+      "projection_verified": true
+    },
+    "interpretation": "Under the exact frozen carrier, implementation, model, binary, seeds, schemas, and six-request process, withholding Branch-A informative content prevented reproduction of the replicated C42 resolution: the transform ranked C09 first and extraction selected C09 at 4/5.",
+    "non_production": true,
+    "preregistration": {
+      "preexecution_artifact_sha256": "F9B6ADE027F4C92632C322E49A13A3671D5CCCD9E292A0276367B7173B1E7D86",
+      "preregistered_sha256": "A5E053E99A94D150265C743CA81661EF764237DC0D209C9A0BE011D6502A00C6"
+    },
+    "restoration": {
+      "active_leases": 0,
+      "branch_state_absent_from_carrier": true,
+      "cache_root_reuse_admitted": true,
+      "lease_count": 6,
+      "maximum_concurrent_leases": 1,
+      "passed": true,
+      "receipt_sha256": "906DCA1550D0E1FC0B3438C6E58EC2FB3486495E0758EAFCB25F9C5CE6E730E9"
+    },
+    "transform": {
+      "artifact_sha256": "C82D622227374E0DB04BD5C7F6C68A556178C9800DFBF231CAEF830E6516EA33",
+      "operator": "reconcile",
+      "ranking": [
+        "C09",
+        "C34",
+        "C42"
+      ],
+      "top_candidate": "C09"
+    }
+  },
   "schema_version": 1
 }

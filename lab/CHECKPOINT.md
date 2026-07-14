@@ -1,6 +1,22 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: CK0 unresolved-support exact replication complete
+## Checkpoint 2: CK0 Branch-A information-deletion control complete
+
+**Status:** RUN A5 COMPLETE / `PARENT_A_INFORMATION_NECESSITY_SUPPORTED` / `BRANCH_A_INFORMATION_DEPENDENCE_SUPPORTED_ON_FROZEN_CARRIER` / NON-PRODUCTION
+
+- [x] Preregister run `ck0-20260714T215806Z-a5` before execution at canonical object SHA-256 `A5E053E99A94D150265C743CA81661EF764237DC0D209C9A0BE011D6502A00C6`; commit `e97ada1fd8cbddcb09ce92fb451e69ba761b36f3` was fast-forward pushed and all main refs matched.
+- [x] Freeze the exact carrier, reference evidence, deletion direction, model, binary, schemas, seeds, one-slot/one-sidecar process, full Branch-B projection, five-field commitment-only Branch-A receipt, and one-invocation/no-retry/no-repair law.
+- [x] Pass changed-file compilation, 12 / 12 focused tests, the complete CPU-only suite exactly once at 789 / 789, standalone lock validation, and protected preflight exactly once before execution.
+- [x] Execute exactly one live invocation. All six responses completed; Branch A and Branch B both ran normally and ranked `C00,C01,C02`. The exact intervention withheld Branch-A informative content and preserved full Branch B unchanged.
+- [x] Observe `reconcile` ranking `C09,C34,C42`; extraction consumed rank 1 and selected `C09` at 4 / 5 instead of reproducing `C42` at 5 / 5. The separate control classification is `PARENT_A_INFORMATION_NECESSITY_SUPPORTED`.
+- [x] Preserve the command exit code 1 as a reporting-layer mismatch: the generic CK0 exit law checks the intentionally null ordinary mechanism classifier, while the frozen result status is complete. No retry or repair occurred.
+- [x] Restoration and cleanup passed with zero active leases, six total leases, maximum concurrency one, exact carrier/root reuse, stable PID `20388`, preserved candidate, free port 9494, and unchanged historical evidence.
+- [x] Bind a5 manifest SHA-256 `DB8E28F898E4D9342CB53077FF416B84AA5F71596F71294E661AA36CCAE2F00B`, result SHA-256 `60C8BE5B5F9634FA9C30311BC7CEEDFD822C5A882E83BEDBA3B0257EEC024AFB`, and closure-file SHA-256 `E86DC79CE32FFF5B1740CE8D2A733C7D304156F7E775541BF705263A267C729F`.
+- [x] Unlock only non-production status `BRANCH_A_INFORMATION_DEPENDENCE_SUPPORTED_ON_FROZEN_CARRIER`. Keep Branch-B necessity, general two-parent necessity, transfer, task advantage, superiority, SOTA, general catalytic inference, broader process-local/restart persistence, Deep, and automatic promotion locked.
+
+**Next exact action:** preserve CIB0 a1-a6 and CK0 a1-a5 exactly. The sole Branch-A information-deletion authorization is consumed; no further run or causal follow-on is authorized.
+
+## Historical checkpoint: CK0 unresolved-support exact replication complete
 
 **Status:** RUN A4 COMPLETE / `REPLICATION_VISIBLE` / `CATALYTIC_KERNEL_VISIBLE` / `BOUNDED_RELATIONAL_UNCERTAINTY_REDUCTION_REPLICATED` / NON-PRODUCTION
 

@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "97d406ccdbb0e219cb5935ce9386c230337c1d3a",
+  "baseline_source_commit": "e97ada1fd8cbddcb09ce92fb451e69ba761b36f3",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -144,7 +144,7 @@
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-14T22:01:40.937101+00:00",
+  "generated_at": "2026-07-14T22:19:02.681971+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
@@ -170,13 +170,13 @@
     "NEO3000.md": "b7ba87065f942d47abed19330197a843577bbd6b2fd58057a6df9de9cd7d2905",
     "README.md": "78708a68121242f8c0d48bc8218da2776985a2f8d3854e6a85be1b16050d3427",
     "ROADMAP.md": "68852e7604604624e816fdd9793fa5c4ff0847c8a719ea83d87f15289bb01970",
-    "TASKS.md": "ad102fb8712c3f6773585c739c44155df82fcc0f8718762e05139940d246c3f9",
+    "TASKS.md": "176f234ff8430a362511968fa0ebcd41670122f9739f6dfaef858215188bb3f9",
     "docs/CATALYTIC_RUNTIME_ROADMAP.md": "b425fc553a78997964dff09851ade15262cd3eb59de0b8f751e66ff8b97ea923",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "0496c1cb1bfd188e2b91bdb82d919693e1275bdb64c6e6fef31c93c9073dec9c",
+    "lab/CHECKPOINT.md": "eeea5a53ab61dd30794e29d704bb766c537ea189a3c30c32b040b0992b7b346a",
     "lab/EVALUATOR.json": "83fc5defe6168d49c74909d698ec457ecb4976212a01f5f75ab253b058d150fe",
-    "lab/GOAL.md": "614e83cdb57b7e30b77854b0d5d284563dd3eaa43c1ec3b6af5c7a33677baf09",
-    "lab/ck0_parent_a_information_deletion_1.json": "f9b6ade027f4c92632c322e49a13a3671d5cccd9e292a0276367b7173b1e7d86",
+    "lab/GOAL.md": "abf5d85c85c858a7c3b21e0c8ce5d4281c93fc076b9f26205058e2269a29f891",
+    "lab/ck0_parent_a_information_deletion_1.json": "a5b5c651ec5e542154283723bc727aa68cfd589125dbec3ff1624c0d31c0087b",
     "scripts/baseline_harness.py": "3924efc2e8f9f8b64929c2e2c6d8453a45a49d17277c2622d293a6cb3350b618",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "50803f75dbd9006237b95b779bc6e16325bfa0170c356bc1849bd73ae17d99d2",
