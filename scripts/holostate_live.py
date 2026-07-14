@@ -19047,6 +19047,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--carrier-profile",
         choices=("complementary-unresolved-public-v1",),
     )
+    catalytic_kernel_0.add_argument(
+        "--control",
+        choices=("parent-a-information-deletion",),
+    )
     catalytic_kernel_0.set_defaults(handler=command_run_catalytic_kernel_0)
     return parser
 

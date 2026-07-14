@@ -11,12 +11,16 @@ from typing import Any, Mapping
 
 from catalytic_kernel_0 import (
     CARRIER_ID,
+    PARENT_A_INFORMATION_DELETION_CONTROL,
+    PARENT_A_CONTROL_RUN_ID,
     REQUEST_IDS,
     CatalyticKernel0Error,
     build_carrier,
     build_model_request,
+    build_parent_a_commitment_receipt,
     build_public_shard,
     classify_kernel,
+    classify_parent_a_information_control,
     derive_rank_delta,
     normalize_branch,
     normalize_extraction,
@@ -24,6 +28,7 @@ from catalytic_kernel_0 import (
     parse_response,
     run_catalytic_kernel_0,
     unresolved_relation_observables,
+    validate_parent_a_information_deletion_projection,
 )
 from catalytic_kernel_0_carrier_scan import (
     PROFILE_ID,
@@ -288,9 +293,16 @@ class CatalyticKernel0Tests(unittest.TestCase):
         branch_a_assignment = json.loads(payloads["branch-a"]["messages"][1]["content"])
         branch_b_assignment = json.loads(payloads["branch-b"]["messages"][1]["content"])
         restore_assignment = json.loads(payloads["restore"]["messages"][1]["content"])
+        transform_assignment = json.loads(
+            payloads["transform"]["messages"][1]["content"]
+        )
         self.assertEqual(set(branch_a_assignment), {"request_id", "instruction", "evidence_shard"})
         self.assertEqual(set(branch_b_assignment), {"request_id", "instruction", "evidence_shard"})
         self.assertEqual(set(restore_assignment), {"request_id", "carrier_id", "instruction"})
+        self.assertEqual(
+            transform_assignment["parent_artifacts"],
+            [artifacts["branch-a"], artifacts["branch-b"]],
+        )
         suite = build_frozen_task_suite()
         projections = [task.public_projection() for task in suite.tasks]
         projections[0] = {**projections[0], "hidden_examples": []}
@@ -300,6 +312,45 @@ class CatalyticKernel0Tests(unittest.TestCase):
                 task_suite_sha256=EXPECTED_SUITE_SHA256,
             )
 
+    def test_parent_a_commitment_only_projection(self) -> None:
+        profile = selected_unresolved_public_profile()
+        carrier = build_carrier(profile)
+        branch_a = normalize_branch("branch-a", ["C00", "C01", "C02"], profile)
+        branch_b = normalize_branch("branch-b", ["C00", "C01", "C02"], profile)
+        artifacts = {"branch-a": branch_a, "branch-b": branch_b}
+        receipt = build_parent_a_commitment_receipt(branch_a, profile)
+        self.assertEqual(
+            set(receipt),
+            {
+                "artifact_id",
+                "artifact_sha256",
+                "carrier_profile_id",
+                "projection_mode",
+                "informative_content_withheld",
+            },
+        )
+        self.assertNotIn(
+            "C42",
+            [value for key, value in receipt.items() if key != "artifact_sha256"],
+        )
+        payload = build_model_request(
+            "transform",
+            carrier=carrier,
+            artifacts=artifacts,
+            control=PARENT_A_INFORMATION_DELETION_CONTROL,
+        )
+        assignment = json.loads(payload["messages"][1]["content"])
+        self.assertEqual(assignment["parent_artifacts"][0], receipt)
+        self.assertEqual(assignment["parent_artifacts"][1], branch_b)
+        self.assertNotEqual(assignment["parent_artifacts"][0], branch_a)
+        evidence = validate_parent_a_information_deletion_projection(
+            payload,
+            carrier=carrier,
+            artifacts=artifacts,
+        )
+        self.assertTrue(evidence["projection_verified"])
+        self.assertTrue(evidence["branch_b_full_artifact_unchanged"])
+
     def test_exact_two_parent_transform_binding(self) -> None:
         left = normalize_branch("branch-a", ["C00", "C01", "C02"])
         right = normalize_branch("branch-b", ["C01", "C00", "C02"])
@@ -307,6 +358,77 @@ class CatalyticKernel0Tests(unittest.TestCase):
         self.assertEqual(transform["parent_artifact_sha256"], [left["artifact_sha256"], right["artifact_sha256"]])
         self.assertEqual(len(transform["dag_edges"]), 6)
         self.assertEqual({item["parent_artifact_id"] for item in transform["dag_edges"]}, {"branch-a", "branch-b"})
+
+    def test_parent_a_control_classification(self) -> None:
+        profile = selected_unresolved_public_profile()
+        carrier = build_carrier(profile)
+        branch_a = normalize_branch("branch-a", ["C00", "C01", "C02"], profile)
+        branch_b = normalize_branch("branch-b", ["C00", "C01", "C02"], profile)
+        artifacts = {"branch-a": branch_a, "branch-b": branch_b}
+        payload = build_model_request(
+            "transform",
+            carrier=carrier,
+            artifacts=artifacts,
+            control=PARENT_A_INFORMATION_DELETION_CONTROL,
+        )
+        intervention = validate_parent_a_information_deletion_projection(
+            payload, carrier=carrier, artifacts=artifacts
+        )
+        recovered_transform = normalize_transform(
+            branch_a,
+            branch_b,
+            operator="combine",
+            ranking=["C42", "C56", "C09"],
+            profile=profile,
+        )
+        recovered_extract = normalize_extraction("C42", recovered_transform, profile)
+        self.assertEqual(
+            classify_parent_a_information_control(
+                branch_a,
+                branch_b,
+                recovered_transform,
+                recovered_extract,
+                intervention,
+                restoration_passed=True,
+                completed_request_count=6,
+                profile=profile,
+            ),
+            "PARENT_A_INFORMATION_NOT_SHOWN_NECESSARY",
+        )
+        blocked_transform = normalize_transform(
+            branch_a,
+            branch_b,
+            operator="combine",
+            ranking=["C09", "C34", "C42"],
+            profile=profile,
+        )
+        blocked_extract = normalize_extraction("C09", blocked_transform, profile)
+        self.assertEqual(
+            classify_parent_a_information_control(
+                branch_a,
+                branch_b,
+                blocked_transform,
+                blocked_extract,
+                intervention,
+                restoration_passed=True,
+                completed_request_count=6,
+                profile=profile,
+            ),
+            "PARENT_A_INFORMATION_NECESSITY_SUPPORTED",
+        )
+        self.assertEqual(
+            classify_parent_a_information_control(
+                branch_a,
+                branch_b,
+                blocked_transform,
+                blocked_extract,
+                {**intervention, "projection_verified": False},
+                restoration_passed=True,
+                completed_request_count=6,
+                profile=profile,
+            ),
+            "CAUSAL_CONTROL_INCONCLUSIVE",
+        )
 
     def test_deterministic_rank_delta_derivation(self) -> None:
         delta = derive_rank_delta(["C00", "C01", "C02"], ["C01", "C03", "C00"])
@@ -415,6 +537,22 @@ class CatalyticKernel0Tests(unittest.TestCase):
         )
         self.assertEqual(parsed.handler.__name__, "command_run_catalytic_kernel_0")
         self.assertEqual(parsed.carrier_profile, PROFILE_ID)
+        control_parsed = build_parser().parse_args(
+            [
+                "run-catalytic-kernel-0",
+                "--model",
+                "model.gguf",
+                "--run-id",
+                "ck0-control-parser",
+                "--carrier-profile",
+                PROFILE_ID,
+                "--control",
+                PARENT_A_INFORMATION_DELETION_CONTROL,
+            ]
+        )
+        self.assertEqual(
+            control_parsed.control, PARENT_A_INFORMATION_DELETION_CONTROL
+        )
         adapter = FakeAdapter(unresolved_profile=True)
         with tempfile.TemporaryDirectory(dir=ROOT / "state") as temporary:
             result = run_catalytic_kernel_0(
@@ -438,10 +576,54 @@ class CatalyticKernel0Tests(unittest.TestCase):
         self.assertEqual(result["lease_accounting"]["lease_count"], 6)
         self.assertEqual(result["lease_accounting"]["maximum_concurrent_leases"], 1)
         self.assertEqual(result["mechanism_classification"], "CATALYTIC_KERNEL_VISIBLE")
+        self.assertFalse(any(key.startswith("control_") for key in result))
+        self.assertNotIn("non_production", result)
         self.assertEqual(result["carrier"]["profile"]["profile_id"], PROFILE_ID)
         self.assertTrue(result["restoration"]["historical_ck0_preserved"])
         self.assertIn("RELATIONAL_UNCERTAINTY_REDUCED", result["diagnostics"])
         self.assertNotIn("RAW_SENTINEL", persisted)
+        control_adapter = FakeAdapter(unresolved_profile=True)
+        with tempfile.TemporaryDirectory(dir=ROOT / "state") as temporary:
+            control_result = run_catalytic_kernel_0(
+                {
+                    "run_id": PARENT_A_CONTROL_RUN_ID,
+                    "binary": "X",
+                    "model": "Y",
+                    "carrier_profile": PROFILE_ID,
+                    "control": PARENT_A_INFORMATION_DELETION_CONTROL,
+                },
+                adapter=control_adapter,
+                repository_root=ROOT,
+                state_root=temporary,
+            )
+        self.assertEqual(control_adapter.request_ids, list(REQUEST_IDS))
+        self.assertIsNone(control_result["mechanism_classification"])
+        self.assertEqual(
+            control_result["control_classification"],
+            "PARENT_A_INFORMATION_NOT_SHOWN_NECESSARY",
+        )
+        self.assertIsNone(control_result["relational_observables"])
+        self.assertTrue(
+            control_result["control_intervention"]["projection_verified"]
+        )
+        self.assertEqual(
+            control_result["control_preregistration"]["execution_run_id"],
+            PARENT_A_CONTROL_RUN_ID,
+        )
+        transform_payload = control_adapter.payloads[3]
+        transform_assignment = json.loads(
+            transform_payload["messages"][1]["content"]
+        )
+        self.assertEqual(
+            set(transform_assignment["parent_artifacts"][0]),
+            {
+                "artifact_id",
+                "artifact_sha256",
+                "carrier_profile_id",
+                "projection_mode",
+                "informative_content_withheld",
+            },
+        )
 
     def test_collapse_versus_visible_classification(self) -> None:
         historical_a = normalize_branch("branch-a", ["C58", "C56", "C08"])

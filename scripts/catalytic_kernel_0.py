@@ -89,6 +89,28 @@ CLAIMS = {
     "DEEP": "DISABLED",
     "automatic_promotion": False,
 }
+PARENT_A_INFORMATION_DELETION_CONTROL = "parent-a-information-deletion"
+PARENT_A_CONTROL_RUN_ID = "ck0-20260714T215806Z-a5"
+PARENT_A_CONTROL_PREREGISTRATION = "lab/ck0_parent_a_information_deletion_1.json"
+PARENT_A_CONTROL_STARTING_MAIN = "97d406ccdbb0e219cb5935ce9386c230337c1d3a"
+PARENT_A_CONTROL_FROZEN_IMPLEMENTATION = "b19a4b4d6147bc10459c7d1d144021a1ff3d8eed"
+PARENT_A_CONTROL_CLASSIFICATIONS = (
+    "PARENT_A_INFORMATION_NECESSITY_SUPPORTED",
+    "PARENT_A_INFORMATION_NOT_SHOWN_NECESSARY",
+    "CAUSAL_CONTROL_INCONCLUSIVE",
+)
+CONTROL_TRANSFORM_INSTRUCTION = (
+    "Operate on the supplied parent projections. Author one allowed operator and one candidate ranking."
+)
+BLINDED_PARENT_RECEIPT_FIELDS = frozenset(
+    {
+        "artifact_id",
+        "artifact_sha256",
+        "carrier_profile_id",
+        "projection_mode",
+        "informative_content_withheld",
+    }
+)
 
 
 class CatalyticKernel0Error(ValueError):
@@ -393,6 +415,21 @@ def _validated_profile(profile: Mapping[str, Any] | None) -> dict[str, Any] | No
     if supplied != expected:
         raise CatalyticKernel0Error("unresolved carrier profile identity drift")
     return expected
+
+
+def _validated_control(
+    control: str | None, profile: Mapping[str, Any] | None
+) -> str | None:
+    if control is None:
+        return None
+    if control != PARENT_A_INFORMATION_DELETION_CONTROL:
+        raise CatalyticKernel0Error("unknown or unauthorized CK0 control")
+    validated = _validated_profile(profile)
+    if validated is None or validated["profile_id"] != UNRESOLVED_PROFILE_ID:
+        raise CatalyticKernel0Error(
+            "parent-A information deletion requires the frozen unresolved profile"
+        )
+    return control
 
 
 def _profile_indices(profile: Mapping[str, Any] | None) -> dict[str, tuple[int, ...]]:
@@ -1065,13 +1102,164 @@ def classify_kernel(
     return "CATALYTIC_KERNEL_COLLAPSED"
 
 
-def _assignment(
-    request_id: str,
+def build_parent_a_commitment_receipt(
+    branch_a: Mapping[str, Any], profile: Mapping[str, Any]
+) -> dict[str, Any]:
+    profile = _validated_profile(profile)
+    assert profile is not None
+    if branch_a.get("artifact_id") != "branch-a" or branch_a.get(
+        "artifact_sha256"
+    ) != json_sha256(
+        {key: value for key, value in branch_a.items() if key != "artifact_sha256"}
+    ):
+        raise CatalyticKernel0Error("Branch-A artifact binding is invalid")
+    if branch_a.get("carrier_profile_id") != profile["profile_id"]:
+        raise CatalyticKernel0Error("Branch-A carrier profile identity drift")
+    receipt = {
+        "artifact_id": "branch-a",
+        "artifact_sha256": branch_a["artifact_sha256"],
+        "carrier_profile_id": profile["profile_id"],
+        "projection_mode": "commitment-only",
+        "informative_content_withheld": True,
+    }
+    if set(receipt) != BLINDED_PARENT_RECEIPT_FIELDS:
+        raise CatalyticKernel0Error("blinded Branch-A receipt field set changed")
+    validate_metadata_only(receipt)
+    return receipt
+
+
+def validate_parent_a_information_deletion_projection(
+    payload: Mapping[str, Any],
     *,
     carrier: Mapping[str, Any],
     artifacts: Mapping[str, Mapping[str, Any]],
 ) -> dict[str, Any]:
     profile = _validated_profile(carrier.get("profile"))
+    _validated_control(PARENT_A_INFORMATION_DELETION_CONTROL, profile)
+    if profile is None or not all(key in artifacts for key in ("branch-a", "branch-b")):
+        raise CatalyticKernel0Error("control transform parents are incomplete")
+    branch_a = artifacts["branch-a"]
+    branch_b = artifacts["branch-b"]
+    receipt = build_parent_a_commitment_receipt(branch_a, profile)
+    messages = payload.get("messages")
+    try:
+        assignment = json.loads(messages[1]["content"])
+    except (IndexError, KeyError, TypeError, json.JSONDecodeError) as exc:
+        raise CatalyticKernel0Error("control transform assignment is invalid") from exc
+    expected_keys = {"request_id", "instruction", "parent_artifacts"}
+    parents = assignment.get("parent_artifacts")
+    if (
+        set(assignment) != expected_keys
+        or assignment.get("request_id") != "transform"
+        or assignment.get("instruction") != CONTROL_TRANSFORM_INSTRUCTION
+        or not isinstance(parents, list)
+        or len(parents) != 2
+        or parents[0] != receipt
+        or parents[1] != branch_b
+    ):
+        raise CatalyticKernel0Error("control transform projection differs from preregistration")
+    if set(parents[0]) != BLINDED_PARENT_RECEIPT_FIELDS:
+        raise CatalyticKernel0Error("Branch-A informative fields entered the control projection")
+    winner = profile["full_public_argmax_set"][0]
+    if winner in assignment["instruction"] or any(
+        value == winner
+        for key, value in parents[0].items()
+        if key != "artifact_sha256"
+    ):
+        raise CatalyticKernel0Error("expected winner entered the blinded control projection")
+    if branch_b.get("artifact_sha256") != json_sha256(
+        {key: value for key, value in branch_b.items() if key != "artifact_sha256"}
+    ):
+        raise CatalyticKernel0Error("full Branch-B artifact binding changed")
+    evidence = {
+        "control_id": PARENT_A_INFORMATION_DELETION_CONTROL,
+        "deleted_parent": "branch-a",
+        "retained_informative_parent": "branch-b",
+        "blinded_parent_receipt": receipt,
+        "blinded_parent_receipt_sha256": json_sha256(receipt),
+        "branch_a_artifact_sha256": branch_a["artifact_sha256"],
+        "branch_b_artifact_sha256": branch_b["artifact_sha256"],
+        "model_visible_parent_projection_sha256": json_sha256(parents),
+        "branch_a_informative_content_withheld": True,
+        "branch_b_full_artifact_unchanged": True,
+        "neutral_instruction_verified": True,
+        "projection_verified": True,
+    }
+    validate_metadata_only(evidence)
+    return evidence
+
+
+def classify_parent_a_information_control(
+    branch_a: Mapping[str, Any] | None,
+    branch_b: Mapping[str, Any] | None,
+    transform: Mapping[str, Any] | None,
+    extraction: Mapping[str, Any] | None,
+    intervention: Mapping[str, Any] | None,
+    *,
+    restoration_passed: bool,
+    completed_request_count: int,
+    profile: Mapping[str, Any],
+) -> str:
+    profile = _validated_profile(profile)
+    assert profile is not None
+    if (
+        completed_request_count != 6
+        or not restoration_passed
+        or not all(
+            isinstance(item, Mapping)
+            for item in (branch_a, branch_b, transform, extraction, intervention)
+        )
+    ):
+        return "CAUSAL_CONTROL_INCONCLUSIVE"
+    assert branch_a is not None
+    assert branch_b is not None
+    assert transform is not None
+    assert extraction is not None
+    assert intervention is not None
+    if not all(
+        (
+            intervention.get("control_id") == PARENT_A_INFORMATION_DELETION_CONTROL,
+            intervention.get("projection_verified") is True,
+            intervention.get("branch_a_informative_content_withheld") is True,
+            intervention.get("branch_b_full_artifact_unchanged") is True,
+            intervention.get("branch_a_artifact_sha256")
+            == branch_a.get("artifact_sha256"),
+            intervention.get("branch_b_artifact_sha256")
+            == branch_b.get("artifact_sha256"),
+            transform.get("parent_artifact_sha256")
+            == [branch_a.get("artifact_sha256"), branch_b.get("artifact_sha256")],
+            extraction.get("transform_artifact_sha256_consumed")
+            == transform.get("artifact_sha256"),
+        )
+    ):
+        return "CAUSAL_CONTROL_INCONCLUSIVE"
+    winner = profile["full_public_argmax_set"][0]
+    score = extraction.get("all_public_score", {})
+    fully_recovered = all(
+        (
+            transform.get("ranking", [None])[0] == winner,
+            extraction.get("candidate_id") == winner,
+            score.get("candidate_id") == winner,
+            score.get("passed") == 5,
+            score.get("total") == 5,
+        )
+    )
+    return (
+        "PARENT_A_INFORMATION_NOT_SHOWN_NECESSARY"
+        if fully_recovered
+        else "PARENT_A_INFORMATION_NECESSITY_SUPPORTED"
+    )
+
+
+def _assignment(
+    request_id: str,
+    *,
+    carrier: Mapping[str, Any],
+    artifacts: Mapping[str, Mapping[str, Any]],
+    control: str | None = None,
+) -> dict[str, Any]:
+    profile = _validated_profile(carrier.get("profile"))
+    control = _validated_control(control, profile)
     if request_id == "borrow":
         return {
             "request_id": request_id,
@@ -1086,6 +1274,16 @@ def _assignment(
             "evidence_shard": build_public_shard(request_id, profile),
         }
     if request_id == "transform":
+        if control == PARENT_A_INFORMATION_DELETION_CONTROL:
+            assert profile is not None
+            return {
+                "request_id": request_id,
+                "instruction": CONTROL_TRANSFORM_INSTRUCTION,
+                "parent_artifacts": [
+                    build_parent_a_commitment_receipt(artifacts["branch-a"], profile),
+                    artifacts["branch-b"],
+                ],
+            }
         return {
             "request_id": request_id,
             "instruction": "Reconcile the exact two normalized parent artifacts. Author only one allowed operator and one candidate ranking.",
@@ -1111,10 +1309,13 @@ def build_model_request(
     *,
     carrier: Mapping[str, Any],
     artifacts: Mapping[str, Mapping[str, Any]],
+    control: str | None = None,
 ) -> dict[str, Any]:
     if request_id not in REQUEST_IDS:
         raise CatalyticKernel0Error("unknown kernel request")
-    assignment = _assignment(request_id, carrier=carrier, artifacts=artifacts)
+    assignment = _assignment(
+        request_id, carrier=carrier, artifacts=artifacts, control=control
+    )
     payload = {
         "model": MODEL_ALIAS,
         "messages": [
@@ -1143,7 +1344,13 @@ def build_model_request(
         "return_progress": True,
         "verbose": True,
     }
-    validate_model_request(request_id, payload, carrier=carrier, artifacts=artifacts)
+    validate_model_request(
+        request_id,
+        payload,
+        carrier=carrier,
+        artifacts=artifacts,
+        control=control,
+    )
     return payload
 
 
@@ -1164,6 +1371,7 @@ def validate_model_request(
     *,
     carrier: Mapping[str, Any],
     artifacts: Mapping[str, Mapping[str, Any]],
+    control: str | None = None,
 ) -> None:
     if not _carrier_is_pristine(carrier):
         raise CatalyticKernel0Error("model request carrier is not the exact public-only root")
@@ -1173,7 +1381,9 @@ def validate_model_request(
         "content": carrier["carrier_root"],
     }:
         raise CatalyticKernel0Error("model request changed the immutable carrier root")
-    expected = _assignment(request_id, carrier=carrier, artifacts=artifacts)
+    expected = _assignment(
+        request_id, carrier=carrier, artifacts=artifacts, control=control
+    )
     try:
         actual = json.loads(messages[1]["content"])
     except (KeyError, TypeError, json.JSONDecodeError) as exc:
@@ -1186,8 +1396,173 @@ def validate_model_request(
         raise CatalyticKernel0Error("restore request contains branch state")
     if payload.get("chat_template_kwargs") != {"enable_thinking": False}:
         raise CatalyticKernel0Error("kernel requests must remain thinking-disabled")
+    if (
+        request_id == "transform"
+        and control == PARENT_A_INFORMATION_DELETION_CONTROL
+    ):
+        validate_parent_a_information_deletion_projection(
+            payload,
+            carrier=carrier,
+            artifacts=artifacts,
+        )
     _reject_private_prompt_fields(payload)
     validate_metadata_only(expected)
+
+
+def validate_parent_a_control_preregistration(
+    repository: Path,
+    *,
+    run_id: str,
+    carrier: Mapping[str, Any],
+) -> dict[str, Any]:
+    path = repository / PARENT_A_CONTROL_PREREGISTRATION
+    if not path.is_file() or path.is_symlink():
+        raise CatalyticKernel0Error("control preregistration is missing or unsafe")
+    raw = path.read_bytes()
+    try:
+        document = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise CatalyticKernel0Error("control preregistration is invalid JSON") from exc
+    if not isinstance(document, dict) or set(document) != {
+        "schema_version",
+        "preregistered",
+    }:
+        raise CatalyticKernel0Error(
+            "control preregistration must remain pre-execution only"
+        )
+    preregistered = document.get("preregistered")
+    if not isinstance(preregistered, dict):
+        raise CatalyticKernel0Error("control preregistration body is invalid")
+    profile = _validated_profile(carrier.get("profile"))
+    assert profile is not None
+    expected_requests = [
+        {
+            "max_tokens": 64,
+            "ordinal": ordinal,
+            "request_id": request_id,
+            "response_schema": response_schema(
+                request_id, carrier_id=str(carrier["carrier_id"])
+            ),
+            "seed": int.from_bytes(
+                hashlib.sha256(f"ck0:{request_id}".encode()).digest()[:4],
+                "big",
+            ),
+        }
+        for ordinal, request_id in enumerate(REQUEST_IDS, 1)
+    ]
+    frozen_carrier = preregistered.get("frozen_carrier")
+    transform_projection = preregistered.get("transform_projection")
+    deletion_direction = preregistered.get("deletion_direction")
+    classifications = preregistered.get("control_classifications")
+    expected_receipt_schema = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "artifact_id",
+            "artifact_sha256",
+            "carrier_profile_id",
+            "projection_mode",
+            "informative_content_withheld",
+        ],
+        "properties": {
+            "artifact_id": {"const": "branch-a", "type": "string"},
+            "artifact_sha256": {
+                "pattern": "^[0-9A-F]{64}$",
+                "type": "string",
+            },
+            "carrier_profile_id": {
+                "const": UNRESOLVED_PROFILE_ID,
+                "type": "string",
+            },
+            "projection_mode": {"const": "commitment-only", "type": "string"},
+            "informative_content_withheld": {"const": True, "type": "boolean"},
+        },
+    }
+    expected_references = {
+        "discovery": {
+            "closure_sha256": "34825DE4069B63E5A03E380A9580926EEFFE4746611FADC49757524CF3EA6B4D",
+            "manifest_sha256": "CA4B5781F9023380AA218E6E881F98706A2077BB420359095E0C0C2043FEF389",
+            "result_sha256": "EB6BA8376D2B594D31A86478BC409E7EB4734C5AF3B6082F6292721B26BDFD4B",
+            "run_id": "ck0-20260714T002941Z-a3",
+        },
+        "replication": {
+            "artifact_sha256": "1CEF59F1C19774568AAD0910622BA4C53E216A9FE3FBFA8F7EF2D571505F7234",
+            "closure_sha256": "58B0A40BD676D008A8D25098435F4B8E26E485BE0595AB9FE8E93F3FA1029925",
+            "manifest_sha256": "D72BD718D5E6798DA065342C717963AF0797CF48AEE69AE32DC4EA19AC46BFA3",
+            "preregistered_sha256": "6BAA531FA1DF58FB22FCD6ED7A7052E90E5B85ED749C5D0C282BA8E6FB8BCA6D",
+            "result_sha256": "A4353263BDDDE0FC7A7A8CBDEA47C3224448919D56E1B15D18AE530D98C6A3FD",
+            "run_id": "ck0-20260714T005256Z-a4",
+        },
+    }
+    if not all(
+        (
+            document.get("schema_version") == 1,
+            preregistered.get("schema_version") == 1,
+            preregistered.get("status") == "preregistered",
+            preregistered.get("starting_protected_main")
+            == PARENT_A_CONTROL_STARTING_MAIN,
+            preregistered.get("frozen_implementation_sha")
+            == PARENT_A_CONTROL_FROZEN_IMPLEMENTATION,
+            preregistered.get("execution_run_id") == PARENT_A_CONTROL_RUN_ID,
+            run_id == PARENT_A_CONTROL_RUN_ID,
+            preregistered.get("authorized_invocations") == 1,
+            preregistered.get("retry_count") == 0,
+            preregistered.get("request_sequence") == expected_requests,
+            isinstance(frozen_carrier, Mapping),
+            frozen_carrier.get("profile_id") == profile["profile_id"],
+            frozen_carrier.get("task_id") == profile["task_id"],
+            frozen_carrier.get("scan_sha256") == profile["scan_sha256"],
+            frozen_carrier.get("public_score_matrix_sha256")
+            == profile["public_score_matrix_sha256"],
+            frozen_carrier.get("carrier_content_sha256")
+            == carrier["carrier_content_sha256"],
+            frozen_carrier.get("carrier_root_sha256")
+            == carrier["carrier_root_sha256"],
+            isinstance(deletion_direction, Mapping),
+            deletion_direction.get("deleted_parent") == "branch-a",
+            deletion_direction.get("retained_informative_parent") == "branch-b",
+            deletion_direction.get("frozen_before_output") is True,
+            isinstance(transform_projection, Mapping),
+            transform_projection.get("instruction")
+            == CONTROL_TRANSFORM_INSTRUCTION,
+            transform_projection.get("blinded_branch_a_receipt_schema")
+            == expected_receipt_schema,
+            transform_projection.get("ordinary_mechanism_classifier_applied")
+            is False,
+            isinstance(classifications, Mapping),
+            set(classifications) == set(PARENT_A_CONTROL_CLASSIFICATIONS),
+            preregistered.get("reference_runs") == expected_references,
+        )
+    ):
+        raise CatalyticKernel0Error("control preregistration identity drift")
+    for reference in expected_references.values():
+        run_root = repository / "state" / "catalytic_kernel_0" / reference["run_id"]
+        for filename in ("manifest.json", "result.json", "closure.json"):
+            expected_hash = reference[f"{filename.removesuffix('.json')}_sha256"]
+            evidence_path = run_root / filename
+            if (
+                not evidence_path.is_file()
+                or evidence_path.is_symlink()
+                or sha256_bytes(evidence_path.read_bytes()) != expected_hash
+            ):
+                raise CatalyticKernel0Error("frozen CK0 reference evidence changed")
+    replication_artifact = repository / "lab" / "ck0_unresolved_replication_1.json"
+    if (
+        not replication_artifact.is_file()
+        or replication_artifact.is_symlink()
+        or sha256_bytes(replication_artifact.read_bytes())
+        != expected_references["replication"]["artifact_sha256"]
+    ):
+        raise CatalyticKernel0Error("frozen CK0 replication artifact changed")
+    projection = {
+        "relative_path": PARENT_A_CONTROL_PREREGISTRATION,
+        "artifact_sha256": sha256_bytes(raw),
+        "preregistered_sha256": json_sha256(preregistered),
+        "execution_run_id": run_id,
+        "status": "validated-preregistered",
+    }
+    validate_metadata_only(projection)
+    return projection
 
 
 def _common_prefix(left: Sequence[int], right: Sequence[int]) -> int:
@@ -1254,19 +1629,50 @@ def _result_projection(
     lease: Mapping[str, Any],
     restoration: Mapping[str, Any] | None,
     failure: Mapping[str, Any] | None,
+    control: str | None = None,
+    control_intervention: Mapping[str, Any] | None = None,
+    control_preregistration: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     profile = _validated_profile(carrier.get("profile"))
-    classification = classify_kernel(
-        artifacts.get("branch-a"),
-        artifacts.get("branch-b"),
-        artifacts.get("transform"),
-        artifacts.get("extract"),
-        restoration_passed=isinstance(restoration, Mapping) and restoration.get("passed") is True,
-        completed_request_count=len(outcomes),
-        profile=profile,
-    )
+    control = _validated_control(control, profile)
+    classification = None
+    control_classification = None
+    if control == PARENT_A_INFORMATION_DELETION_CONTROL:
+        assert profile is not None
+        control_classification = classify_parent_a_information_control(
+            artifacts.get("branch-a"),
+            artifacts.get("branch-b"),
+            artifacts.get("transform"),
+            artifacts.get("extract"),
+            control_intervention,
+            restoration_passed=isinstance(restoration, Mapping)
+            and restoration.get("passed") is True,
+            completed_request_count=len(outcomes),
+            profile=profile,
+        )
+    else:
+        classification = classify_kernel(
+            artifacts.get("branch-a"),
+            artifacts.get("branch-b"),
+            artifacts.get("transform"),
+            artifacts.get("extract"),
+            restoration_passed=isinstance(restoration, Mapping)
+            and restoration.get("passed") is True,
+            completed_request_count=len(outcomes),
+            profile=profile,
+        )
     complete = len(outcomes) == 6 and completed_responses == 6 and failure is None
-    status = "complete" if complete and classification != "INCONCLUSIVE" else "failed"
+    terminal_classification = control_classification or classification
+    inconclusive = (
+        "CAUSAL_CONTROL_INCONCLUSIVE"
+        if control is not None
+        else "INCONCLUSIVE"
+    )
+    status = (
+        "complete"
+        if complete and terminal_classification != inconclusive
+        else "failed"
+    )
     branch_relation = None
     relational_observables = None
     diagnostics = None
@@ -1277,6 +1683,7 @@ def _result_projection(
         }
     if (
         profile is not None
+        and control is None
         and all(key in artifacts for key in ("branch-a", "branch-b", "transform"))
     ):
         relational_observables = unresolved_relation_observables(
@@ -1303,7 +1710,13 @@ def _result_projection(
         "run_id": run_id,
         "implementation_sha": implementation_sha,
         "status": status,
-        "mechanism_classification": classification if status == "complete" else "INCONCLUSIVE",
+        "mechanism_classification": (
+            classification
+            if status == "complete" and control is None
+            else "INCONCLUSIVE"
+            if control is None
+            else None
+        ),
         "carrier": carrier_projection,
         "historical_cib0": dict(cib0_snapshot),
         "historical_ck0": dict(ck0_snapshot),
@@ -1331,6 +1744,28 @@ def _result_projection(
         "claiming": False,
         "automatic_promotion": False,
     }
+    if control is not None:
+        result.update(
+            {
+                "control_mode": control,
+                "control_classification": (
+                    control_classification
+                    if status == "complete"
+                    else "CAUSAL_CONTROL_INCONCLUSIVE"
+                ),
+                "control_intervention": (
+                    dict(control_intervention)
+                    if isinstance(control_intervention, Mapping)
+                    else None
+                ),
+                "control_preregistration": (
+                    dict(control_preregistration)
+                    if isinstance(control_preregistration, Mapping)
+                    else None
+                ),
+                "non_production": True,
+            }
+        )
     validate_metadata_only(result)
     return result
 
@@ -1351,6 +1786,7 @@ def run_catalytic_kernel_0(
         if requested_profile == UNRESOLVED_PROFILE_ID
         else None
     )
+    control = _validated_control(_arg(args, "control"), profile)
     repository = Path(repository_root).resolve() if repository_root is not None else Path(__file__).resolve().parents[1]
     state_base = Path(state_root).resolve() if state_root is not None else repository / "state" / "catalytic_kernel_0"
     run_root = state_base / run_id
@@ -1361,6 +1797,15 @@ def run_catalytic_kernel_0(
     if run_root.exists():
         raise CatalyticKernel0Error("kernel run ID already exists")
     carrier = build_carrier(profile)
+    control_preregistration = (
+        validate_parent_a_control_preregistration(
+            repository,
+            run_id=run_id,
+            carrier=carrier,
+        )
+        if control == PARENT_A_INFORMATION_DELETION_CONTROL
+        else None
+    )
     cib0_before = _snapshot_tree(repository / "state" / "catalytic_inference_bench_0")
     ck0_before = _snapshot_historical_ck0(repository / "state" / "catalytic_kernel_0")
     paths = {name: run_root / name for name in STATE_FILENAMES}
@@ -1397,6 +1842,14 @@ def run_catalytic_kernel_0(
     }
     if profile is not None:
         manifest["carrier_profile"] = dict(carrier["profile"])
+    if control is not None:
+        manifest["control"] = {
+            "control_id": control,
+            "deleted_parent": "branch-a",
+            "retained_informative_parent": "branch-b",
+            "ordinary_mechanism_classifier_applied": False,
+        }
+        manifest["control_preregistration"] = dict(control_preregistration)
     _atomic_json(paths["manifest.json"], manifest)
 
     pool = live.create_lease_pool(1)
@@ -1409,6 +1862,7 @@ def run_catalytic_kernel_0(
     postflight: Mapping[str, Any] = {"passed": False}
     failure: Mapping[str, Any] | None = None
     restoration: Mapping[str, Any] | None = None
+    control_intervention: Mapping[str, Any] | None = None
     warm_tokens: list[int] | None = None
     warm_terminal: int | None = None
     warm_terminal_identity: str | None = None
@@ -1429,7 +1883,23 @@ def run_catalytic_kernel_0(
                 "model_response_completed": False,
                 "physical_slot": PHYSICAL_SLOT,
             }
-            payload = build_model_request(request_id, carrier=carrier, artifacts=artifacts)
+            payload = build_model_request(
+                request_id,
+                carrier=carrier,
+                artifacts=artifacts,
+                control=control,
+            )
+            if (
+                request_id == "transform"
+                and control == PARENT_A_INFORMATION_DELETION_CONTROL
+            ):
+                control_intervention = (
+                    validate_parent_a_information_deletion_projection(
+                        payload,
+                        carrier=carrier,
+                        artifacts=artifacts,
+                    )
+                )
             geometry = live.prompt_geometry(sidecar=sidecar, payload=payload)
             token_ids = list(geometry["token_ids"])
             terminal = int(geometry["public_root_terminal_token_index"])
@@ -1648,6 +2118,9 @@ def run_catalytic_kernel_0(
         lease=lease,
         restoration=restoration,
         failure=failure,
+        control=control,
+        control_intervention=control_intervention,
+        control_preregistration=control_preregistration,
     )
     _atomic_json(paths["result.json"], result)
     if paths["run.lock"].exists():
@@ -1676,6 +2149,10 @@ def run_catalytic_kernel_0(
         "historical_cib0_tree_sha256": cib0_before["tree_sha256"],
         "historical_ck0_tree_sha256": ck0_before["tree_sha256"],
     }
+    if control_preregistration is not None:
+        closure_body["control_preregistered_sha256"] = control_preregistration[
+            "preregistered_sha256"
+        ]
     _atomic_json(paths["closure.json"], closure_body)
     return result
 
@@ -1684,13 +2161,18 @@ __all__ = [
     "ALLOWED_OPERATORS",
     "BRANCH_SHARDS",
     "CARRIER_ID",
+    "PARENT_A_CONTROL_CLASSIFICATIONS",
+    "PARENT_A_INFORMATION_DELETION_CONTROL",
+    "PARENT_A_CONTROL_RUN_ID",
     "CatalyticKernel0Error",
     "KERNEL_ID",
     "REQUEST_IDS",
     "build_carrier",
+    "build_parent_a_commitment_receipt",
     "build_model_request",
     "build_public_shard",
     "classify_kernel",
+    "classify_parent_a_information_control",
     "derive_rank_delta",
     "normalize_branch",
     "normalize_extraction",
@@ -1700,4 +2182,6 @@ __all__ = [
     "run_catalytic_kernel_0",
     "shared_example_consistency",
     "validate_model_request",
+    "validate_parent_a_information_deletion_projection",
+    "validate_parent_a_control_preregistration",
 ]
