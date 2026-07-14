@@ -1,6 +1,14 @@
 # Active Goal
 
-## Checkpoint 2: Preserve CK0 Branch-A information-deletion evidence
+## Checkpoint 2: Preserve CK0 Branch-B information-deletion evidence
+
+Preregistration artifact `lab/ck0_parent_b_information_deletion_1.json` froze run `ck0-20260714T222830Z-a6` at canonical object SHA-256 `D8029D511028F1025ADB21DEA432256AB126887BC74632A7A72CCCDEEBA4F677` and pushed commit `5e684d2bb2d98646287e1d544775cbbbd526eee3` before execution. The exact a3/a4 carrier and evidence identities, model, binary, schemas, seeds, six-request process, symmetric deletion direction, five-field Branch-B commitment, full Branch-A projection, one-invocation law, and no-retry/no-repair boundary were admitted statically. Changed-file compilation, 12 / 12 focused tests, the full CPU-only suite exactly once at 789 / 789, evaluator-lock validation, and protected preflight exactly once passed before execution.
+
+The sole authorized invocation completed 6 / 6 requests. Both branches executed normally and ranked `C00,C01,C02`; the transform received the complete unchanged Branch-A artifact plus only the exact five-field commitment to the privately retained Branch-B artifact. `combine` ranked `C42,C56,C00`, and extraction selected `C42` at 5 / 5, reproducing the replicated resolution despite withholding Branch-B informative content. Restoration, cleanup, stable/candidate custody, zero-lease closure, and historical CIB0/CK0 preservation passed. The generic command exit was 1 because it checks the intentionally unused ordinary mechanism classifier, while the separate frozen control result is complete and classified `PARENT_B_INFORMATION_NOT_SHOWN_NECESSARY`. No retry or repair occurred.
+
+Preserve CIB0 a1-a6 and CK0 a1-a6 exactly. The existing non-production `BRANCH_A_INFORMATION_DEPENDENCE_SUPPORTED_ON_FROZEN_CARRIER` status remains unchanged; no Branch-B dependence or bilateral dependence status is unlocked. The Branch-B necessity hypothesis is rejected only for this exact frozen control. General two-parent necessity, transfer, task advantage, superiority, SOTA, general catalytic inference, broader or restart persistence, Deep, and promotion remain locked. No further run or causal follow-on is authorized.
+
+## Historical checkpoint: Preserve CK0 Branch-A information-deletion evidence
 
 Preregistration artifact `lab/ck0_parent_a_information_deletion_1.json` froze run `ck0-20260714T215806Z-a5` at canonical object SHA-256 `A5E053E99A94D150265C743CA81661EF764237DC0D209C9A0BE011D6502A00C6` and pushed commit `e97ada1fd8cbddcb09ce92fb451e69ba761b36f3` before execution. The exact a3/a4 carrier and evidence identities, model, binary, schemas, seeds, six-request process, deletion direction, five-field Branch-A commitment, full Branch-B projection, one-invocation law, and no-retry/no-repair boundary were admitted statically. Changed-file compilation, 12 / 12 focused tests, the full CPU-only suite exactly once at 789 / 789, and protected preflight exactly once passed before execution.
 

@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Track A remains paused. CIB0 a1-a6 and CK0 a1-a5 are immutable consumed evidence. The exact frozen Branch-A information-deletion control supports only non-production status `BRANCH_A_INFORMATION_DEPENDENCE_SUPPORTED_ON_FROZEN_CARRIER`; broad claims remain locked.
-**Next exact action:** preserve CK0 a1-a5 exactly. No rerun, opposite-direction control, second profile, tuning, CIB0/CS1 command, Deep request, broad claim change, or automatic promotion is authorized. Any follow-on requires a separately authorized static boundary.
+**Active bounded objective:** Track A remains paused. CIB0 a1-a6 and CK0 a1-a6 are immutable consumed evidence. The two exact frozen directional controls are asymmetric: Branch-A information dependence remains supported on the frozen carrier, while Branch-B information was not shown necessary. No new Branch-B or bilateral dependence status is unlocked; broad claims remain locked.
+**Next exact action:** preserve CK0 a1-a6 exactly. No rerun, additional causal control, second profile, tuning, CIB0/CS1 command, Deep request, broad claim change, or automatic promotion is authorized. Any follow-on requires a separately authorized static boundary.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -548,6 +548,16 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Bind a5 manifest SHA-256 `DB8E28F898E4D9342CB53077FF416B84AA5F71596F71294E661AA36CCAE2F00B`, result SHA-256 `60C8BE5B5F9634FA9C30311BC7CEEDFD822C5A882E83BEDBA3B0257EEC024AFB`, and closure-file SHA-256 `E86DC79CE32FFF5B1740CE8D2A733C7D304156F7E775541BF705263A267C729F`.
 - [x] Unlock only non-production status `BRANCH_A_INFORMATION_DEPENDENCE_SUPPORTED_ON_FROZEN_CARRIER`: under this exact frozen control, withholding Branch-A informative content prevented reproduction of the replicated C42 resolution. Branch-B necessity, general two-parent necessity, transfer, task advantage, superiority, SOTA, general catalytic inference, broader/restart persistence, Deep, and promotion remain locked.
 
+### Catalytic Kernel 0 Branch-B information-deletion control [PREREGISTERED / EXECUTED ONCE / NECESSITY NOT SHOWN]
+
+- [x] Preregister run `ck0-20260714T222830Z-a6` at canonical object SHA-256 `D8029D511028F1025ADB21DEA432256AB126887BC74632A7A72CCCDEEBA4F677` and raw pre-execution artifact SHA-256 `5CBE6BBAA3E50E42AEAE5398E5C028EFD866290BCD371C5938FF34C4F06730E9`; commit `5e684d2bb2d98646287e1d544775cbbbd526eee3` was fast-forward pushed before execution.
+- [x] Freeze the exact a3/a4 carrier and evidence identities, symmetric deletion direction, six schemas and seeds, full Branch-A projection, five-field commitment-only Branch-B receipt, neutral transform instruction, one invocation, and no-retry/no-repair law. Changed-file compilation, 12 / 12 focused tests, the full CPU-only suite exactly once at 789 / 789, evaluator-lock validation, and protected preflight exactly once passed before execution.
+- [x] Invoke the exact control command once. All six model responses completed. Branch A and Branch B executed normally and each ranked `C00,C01,C02`; the transform received full unchanged Branch A plus only the exact Branch-B commitment receipt. The generic command returned 1 because its preserved exit law checks the intentionally unused ordinary mechanism classifier; the frozen control result itself is complete. No retry or repair occurred.
+- [x] Observe `combine` ranking `C42,C56,C00`; extraction consumed rank 1 and selected `C42` at 5 / 5, reproducing the replicated resolution despite withheld Branch-B informative content. Classify the preregistered control `PARENT_B_INFORMATION_NOT_SHOWN_NECESSARY`.
+- [x] Restoration and cleanup passed with zero active leases, six leases total, maximum concurrency one, exact carrier/root reuse, stable PID `20388`, candidate custody, free port 9494, and unchanged historical CIB0/CK0 evidence.
+- [x] Bind post-execution artifact SHA-256 `162600D74A96C6E4C1797484D6123C2FFD710296CEDFFEC859A6DA008D70B512`, a6 manifest SHA-256 `84EC7998242E7AE11F1238C59E354FB883BC91ACB33E8FAB78AE34365E1B13B3`, result SHA-256 `C606B1C25B7C2F126F3334FFBCA6DA47A477822BBEFCBFA0AF88C3634B64316E`, and closure-file SHA-256 `5ECBBF0693A485F5C1A47663E3EB7007BE71C6699097994ED9487D14BE23C34B`.
+- [x] Preserve the existing non-production Branch-A dependence status exactly. Unlock no Branch-B dependence or bilateral dependence status: this frozen control instead rejects the preregistered Branch-B necessity hypothesis. General two-parent necessity, transfer, task advantage, superiority, SOTA, general catalytic inference, broader/restart persistence, Deep, and promotion remain locked.
+
 Preserved v1 executed boundary:
 
 - Root A rendered 7,806 tokens and returned exact visible content `HOLOSTATE ROOT WARM`, empty reasoning metadata, `finish_reason=stop`, and 7 completion tokens. Prompt processing was 145,519.789 ms at 53.642 TPS.
@@ -577,4 +587,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: preserve CIB0 a1-a6 and CK0 a1-a5 exactly. The sole preregistered Branch-A deletion control is consumed; no rerun or further live action is authorized. Branch-B necessity, general two-parent necessity, transfer, task advantage, superiority, SOTA, general catalytic inference, persistence, Deep, and automatic promotion remain locked.
+Next task: preserve CIB0 a1-a6 and CK0 a1-a6 exactly. Both preregistered directional deletion controls are consumed; no rerun or further live action is authorized. Branch-A dependence remains supported only on the frozen carrier; Branch-B dependence and bilateral dependence are not unlocked. General two-parent necessity, transfer, task advantage, superiority, SOTA, general catalytic inference, persistence, Deep, and automatic promotion remain locked.

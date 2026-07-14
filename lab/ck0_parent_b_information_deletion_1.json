@@ -384,5 +384,233 @@
       "temperature": 0
     }
   },
+  "observed_result": {
+    "branch_results": {
+      "branch_a": {
+        "artifact_sha256": "4EA236EB983F20F1EB890ECBC425E423BA1B27270FF89C9D1646791EA7465BC4",
+        "public_argmax_set": [
+          "C42",
+          "C56"
+        ],
+        "ranking": [
+          "C00",
+          "C01",
+          "C02"
+        ]
+      },
+      "branch_b": {
+        "artifact_sha256": "93AE76AC41481B4A637B5AAEF112725C7112BD9BE3A7CD73A601B84DCF988DA0",
+        "public_argmax_set": [
+          "C09",
+          "C34",
+          "C42"
+        ],
+        "ranking": [
+          "C00",
+          "C01",
+          "C02"
+        ]
+      }
+    },
+    "carrier": {
+      "carrier_content_sha256": "1A35B29875BECF4084B21C86B656E79C5221350EF53B9855C56D2C510071E29A",
+      "carrier_id": "ck0:cs1-task-05:complementary-unresolved-public-v1:public-carrier",
+      "carrier_root_sha256": "14EA07DE66F16D44FAAF6D7ADFF70E1B11953CB940133449B7B962F56C50221C",
+      "profile_id": "complementary-unresolved-public-v1",
+      "task_id": "cs1-task-05"
+    },
+    "claims": {
+      "automatic_promotion": "LOCKED",
+      "bilateral_parent_information_dependence_supported_on_frozen_carrier": "LOCKED",
+      "branch_a_information_dependence_supported_on_frozen_carrier": "PRESERVED_SUPPORTED",
+      "branch_b_information_dependence_supported_on_frozen_carrier": "NOT_UNLOCKED",
+      "broader_process_local_holostate": "LOCKED",
+      "deep": "DISABLED",
+      "general_catalytic_inference": "LOCKED",
+      "general_two_parent_necessity": "LOCKED",
+      "restart_persistent_holostate": "LOCKED",
+      "sota": "LOCKED",
+      "superiority": "LOCKED",
+      "task_advantage": "LOCKED",
+      "transfer": "LOCKED"
+    },
+    "cleanup": {
+      "passed": true,
+      "port_9494_free": true,
+      "process_stopped": true,
+      "runtime_removed": true,
+      "stable_preserved": true,
+      "temporary_state_removed": true
+    },
+    "comparison": {
+      "branch_a_deletion": {
+        "classification": "PARENT_A_INFORMATION_NECESSITY_SUPPORTED",
+        "extraction_candidate": "C09",
+        "public_score": "4/5",
+        "transform_ranking": [
+          "C09",
+          "C34",
+          "C42"
+        ]
+      },
+      "branch_b_deletion": {
+        "classification": "PARENT_B_INFORMATION_NOT_SHOWN_NECESSARY",
+        "extraction_candidate": "C42",
+        "public_score": "5/5",
+        "transform_ranking": [
+          "C42",
+          "C56",
+          "C00"
+        ]
+      },
+      "full_information_replication": {
+        "extraction_candidate": "C42",
+        "public_score": "5/5",
+        "transform_ranking": [
+          "C42",
+          "C56",
+          "C09"
+        ]
+      }
+    },
+    "control_classification": "PARENT_B_INFORMATION_NOT_SHOWN_NECESSARY",
+    "custody": {
+      "candidate_head": "14de9c71593e5aea4fcfcadeda47ba5c623fadcf",
+      "historical_cib0_tree_sha256": "57CE7FFFEBBB925BBD3B37F55A9394037720018748776C2C42DD17961D8ECCBD",
+      "historical_ck0_tree_sha256": "BB15C248EFBF075F77899161FC6EEDCD28830097CB6D0B67D7BB7F368ADCC249",
+      "postflight_passed": true,
+      "run_lock_absent": true,
+      "stable_listener_pids": [
+        20388
+      ]
+    },
+    "evidence": {
+      "closure_sha256": "5ECBBF0693A485F5C1A47663E3EB7007BE71C6699097994ED9487D14BE23C34B",
+      "manifest_sha256": "84EC7998242E7AE11F1238C59E354FB883BC91ACB33E8FAB78AE34365E1B13B3",
+      "result_sha256": "C606B1C25B7C2F126F3334FFBCA6DA47A477822BBEFCBFA0AF88C3634B64316E"
+    },
+    "execution": {
+      "authorized_invocations": 1,
+      "command_exit_code": 1,
+      "command_exit_interpretation": "The generic CK0 CLI exit law checks the ordinary mechanism classifier, which is intentionally null for this separately classified completed control.",
+      "completed_model_responses": 6,
+      "execution_commit": "5e684d2bb2d98646287e1d544775cbbbd526eee3",
+      "invocations_consumed": 1,
+      "repair_count": 0,
+      "retry_count": 0,
+      "run_id": "ck0-20260714T222830Z-a6",
+      "status": "complete"
+    },
+    "extraction": {
+      "all_public_score": {
+        "passed": 5,
+        "total": 5
+      },
+      "artifact_sha256": "862BC45E6568997702373EA59773E6E8D3F0E4E92735853A950F886C73C94E03",
+      "candidate_id": "C42",
+      "transform_artifact_sha256_consumed": "7F5EC63954F13525351D5B2128ED0E0C6CCFE8724EA70FA211C454028E55502F",
+      "transform_rank_consumed": 1
+    },
+    "identities": {
+      "binary": {
+        "runtime_version": "13 (417e1d6)",
+        "sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
+      },
+      "model": {
+        "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+        "size_bytes": 21166757632
+      }
+    },
+    "intervention": {
+      "blinded_parent_receipt": {
+        "artifact_id": "branch-b",
+        "artifact_sha256": "93AE76AC41481B4A637B5AAEF112725C7112BD9BE3A7CD73A601B84DCF988DA0",
+        "carrier_profile_id": "complementary-unresolved-public-v1",
+        "informative_content_withheld": true,
+        "projection_mode": "commitment-only"
+      },
+      "blinded_parent_receipt_sha256": "748DDAFFAFAD4245E0A970CBAB4A247A8AE12C1C9EBA9D1CEC27B293DF1A2AFA",
+      "branch_a_full_artifact_unchanged": true,
+      "branch_b_informative_content_withheld": true,
+      "model_visible_parent_projection_sha256": "FCF47BD31C12377F138928B07230E9E44BC168FBBB9C6C0B07FC743D7F28F931",
+      "neutral_instruction_verified": true,
+      "projection_verified": true
+    },
+    "interpretation": "Branch-B information was not shown necessary under this frozen control; full Branch A plus the blinded Branch-B commitment still recovered C42 as transform top and extraction at 5/5.",
+    "non_production": true,
+    "preregistration": {
+      "preexecution_artifact_sha256": "5CBE6BBAA3E50E42AEAE5398E5C028EFD866290BCD371C5938FF34C4F06730E9",
+      "preregistered_sha256": "D8029D511028F1025ADB21DEA432256AB126887BC74632A7A72CCCDEEBA4F677"
+    },
+    "request_outcomes": [
+      {
+        "model_request_sha256": "B590B238CBAC4BB9582448D81EE5C6B51EB2979D89D170C951C40CAC435EFFBD",
+        "model_response_completed": true,
+        "normalized_artifact_sha256": null,
+        "ordinal": 1,
+        "request_id": "borrow",
+        "status": "accepted"
+      },
+      {
+        "model_request_sha256": "DF8675C4B071FE6E1CD526DF69B63B29FA3D89DEC6095BE04B502F2FB5473199",
+        "model_response_completed": true,
+        "normalized_artifact_sha256": "4EA236EB983F20F1EB890ECBC425E423BA1B27270FF89C9D1646791EA7465BC4",
+        "ordinal": 2,
+        "request_id": "branch-a",
+        "status": "accepted"
+      },
+      {
+        "model_request_sha256": "09A98408A5CDA06B16D5F7AD009612073C05C1360D32D56E4682765818054488",
+        "model_response_completed": true,
+        "normalized_artifact_sha256": "93AE76AC41481B4A637B5AAEF112725C7112BD9BE3A7CD73A601B84DCF988DA0",
+        "ordinal": 3,
+        "request_id": "branch-b",
+        "status": "accepted"
+      },
+      {
+        "model_request_sha256": "3C942D92A3A3B16C527C24E1F3FB8040E0F8C60E63B89F92D7D3FED1CB773D0D",
+        "model_response_completed": true,
+        "normalized_artifact_sha256": "7F5EC63954F13525351D5B2128ED0E0C6CCFE8724EA70FA211C454028E55502F",
+        "ordinal": 4,
+        "request_id": "transform",
+        "status": "accepted"
+      },
+      {
+        "model_request_sha256": "95455B541C00F15BECE2B98FEECF82D542EB288A5380913026A678D54576AAF8",
+        "model_response_completed": true,
+        "normalized_artifact_sha256": "862BC45E6568997702373EA59773E6E8D3F0E4E92735853A950F886C73C94E03",
+        "ordinal": 5,
+        "request_id": "extract",
+        "status": "accepted"
+      },
+      {
+        "model_request_sha256": "22F95646A97E538F9DAD7FEC6F8A970C0D32AE807A1F2363B3B7D6E01AFC55D4",
+        "model_response_completed": true,
+        "normalized_artifact_sha256": null,
+        "ordinal": 6,
+        "request_id": "restore",
+        "status": "accepted"
+      }
+    ],
+    "restoration": {
+      "active_leases": 0,
+      "branch_state_absent_from_carrier": true,
+      "cache_root_reuse_admitted": true,
+      "lease_count": 6,
+      "maximum_concurrent_leases": 1,
+      "passed": true,
+      "receipt_sha256": "906DCA1550D0E1FC0B3438C6E58EC2FB3486495E0758EAFCB25F9C5CE6E730E9"
+    },
+    "transform": {
+      "artifact_sha256": "7F5EC63954F13525351D5B2128ED0E0C6CCFE8724EA70FA211C454028E55502F",
+      "operator": "combine",
+      "ranking": [
+        "C42",
+        "C56",
+        "C00"
+      ],
+      "top_candidate": "C42"
+    }
+  },
   "schema_version": 1
 }
