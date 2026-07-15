@@ -259,6 +259,243 @@
       "top_matched_private_singleton": false
     }
   },
+  "delete_b_observed_result": {
+    "all_preregistered_runs_consumed": true,
+    "branch_a_reference_preserved": {
+      "closure_sha256": "4A2DD55ECC2DD03AE272F08FEB611F97E714EB587A28BD0660673E116286C873",
+      "manifest_sha256": "03508F7AE5E5F4A812C43F02FD31A3EE4009530B1CB17E61056213AE1079E74E",
+      "narrow_status": "BRANCH_A_INFORMATION_DEPENDENCE_SUPPORTED_ON_BALANCED_OPAQUE_CARRIER",
+      "result_sha256": "7AE2578A6D48831B5335CE2826424EA375EB169A218502B404BD031507635846"
+    },
+    "cache_admissions": [
+      {
+        "accepted": true,
+        "admitted": true,
+        "cached_prompt_tokens": 0,
+        "completion_tokens": 22,
+        "fresh_prompt_tokens": 1852,
+        "prompt_tokens": 1852,
+        "request_duration_seconds": 50.37534669999877,
+        "request_id": "borrow"
+      },
+      {
+        "accepted": true,
+        "admitted": true,
+        "cached_prompt_tokens": 1809,
+        "completion_tokens": 29,
+        "fresh_prompt_tokens": 2196,
+        "prompt_tokens": 4005,
+        "request_duration_seconds": 35.716118799999094,
+        "request_id": "branch-a"
+      },
+      {
+        "accepted": true,
+        "admitted": true,
+        "cached_prompt_tokens": 1809,
+        "completion_tokens": 29,
+        "fresh_prompt_tokens": 2193,
+        "prompt_tokens": 4002,
+        "request_duration_seconds": 38.39517440000054,
+        "request_id": "branch-b"
+      },
+      {
+        "accepted": true,
+        "admitted": true,
+        "cached_prompt_tokens": 1809,
+        "completion_tokens": 38,
+        "fresh_prompt_tokens": 245,
+        "prompt_tokens": 2054,
+        "request_duration_seconds": 6.809926400001132,
+        "request_id": "transform"
+      },
+      {
+        "accepted": true,
+        "admitted": true,
+        "cached_prompt_tokens": 1809,
+        "completion_tokens": 9,
+        "fresh_prompt_tokens": 111,
+        "prompt_tokens": 1920,
+        "request_duration_seconds": 2.7970220999995945,
+        "request_id": "extract"
+      },
+      {
+        "accepted": true,
+        "admitted": true,
+        "cached_prompt_tokens": 1809,
+        "completion_tokens": 22,
+        "fresh_prompt_tokens": 44,
+        "prompt_tokens": 1853,
+        "request_duration_seconds": 2.5425341999980446,
+        "request_id": "restore"
+      }
+    ],
+    "carrier_and_schema_identities": {
+      "carrier_content_sha256": "381D94451155D789FE94F5830042AD9C8AE90EF5869DD41B0E759D3EFBD9BF59",
+      "carrier_root_sha256": "E66846DC5097C5E9D6CFE5DC8679660CC193648DAE7A555AAA2587BE8A371033",
+      "response_schema_sha256": {
+        "borrow_restore": "4EBEC04AC016ABAC26B905BD93AC02ED1899AFFCBB87113F497FEB8E088F3F81",
+        "branches": "00B8B34FA8419B30F355DB1369FDA3208788B044157A299916F9E48E912478FE",
+        "extract": "B47E080796EE9ACB7CD03D797292C03B18B0A570AE58BE5D7C7473ED940B6886",
+        "transform": "B36864F84116E64D96775452265513E7AB46521418EB376CC17872492B281E27"
+      }
+    },
+    "claim_boundary": {
+      "automatic_promotion": false,
+      "bilateral_parent_dependence": "BILATERAL_PARENT_INFORMATION_DEPENDENCE_SUPPORTED_ON_BALANCED_OPAQUE_CARRIER",
+      "branch_a_information_dependence": "BRANCH_A_INFORMATION_DEPENDENCE_SUPPORTED_ON_BALANCED_OPAQUE_CARRIER",
+      "branch_b_information_dependence": "BRANCH_B_INFORMATION_DEPENDENCE_SUPPORTED_ON_BALANCED_OPAQUE_CARRIER",
+      "broader_process_local_holostate": "LOCKED",
+      "deep": "DISABLED",
+      "general_catalytic_inference": "LOCKED",
+      "general_two_parent_necessity": "LOCKED",
+      "historical_frozen_carrier_branch_a_status_preserved": true,
+      "restart_persistence": "LOCKED",
+      "sota": "LOCKED",
+      "superiority": "LOCKED",
+      "task_advantage": "LOCKED",
+      "transfer": "LOCKED"
+    },
+    "cleanup": {
+      "passed": true,
+      "port_9494_free": true,
+      "process_stopped": true,
+      "runtime_removed": true,
+      "stable_preserved": true,
+      "temporary_state_removed": true
+    },
+    "commitment_verification": {
+      "alias_map_commitment_recomputed": true,
+      "delete_a_run_key_commitment_recomputed": true,
+      "delete_b_run_key_commitment_recomputed": true,
+      "full_run_key_commitment_recomputed": true,
+      "private_creation_receipt_verified": true,
+      "secret_commitment_recomputed": true,
+      "tracked_secret_byte_matches": 0
+    },
+    "custody": {
+      "candidate_head": "14de9c71593e5aea4fcfcadeda47ba5c623fadcf",
+      "historical_cib0_tree_sha256": "57CE7FFFEBBB925BBD3B37F55A9394037720018748776C2C42DD17961D8ECCBD",
+      "historical_ck0_a1_a2_tree_sha256": "BB15C248EFBF075F77899161FC6EEDCD28830097CB6D0B67D7BB7F368ADCC249",
+      "historical_ck0_a3_a6_files_rehashed": 12,
+      "postflight_passed": true,
+      "run_lock_absent": true,
+      "stable_pid": 20388,
+      "terminal_custody_passed": true
+    },
+    "evidence": {
+      "closure_sha256": "880E238B877602AE3A869E2071DBDF1B0D3EE0FAF3D0D019C2D133D05C57BF90",
+      "manifest_sha256": "EF2160E9CA719A4120FF7F7F226A1AD76F0BF08FE6A5C58CFFADCBCE2AB8B782",
+      "result_sha256": "F0E24AAA61A2E8D0EC567F93444E08FD81EB8AFE36E2C01D7397A4D06FD46CB6"
+    },
+    "execution": {
+      "command_exit_code": 0,
+      "command_wall_seconds": 489.875,
+      "completed_model_responses": 6,
+      "execution_commit": "3133af3b60aabe05608f51874071955467f3b6d0",
+      "invocation_count": 1,
+      "repair_count": 0,
+      "request_count": 6,
+      "retry_count": 0,
+      "run_id": "ck0-balanced-v1-delete-b-r1",
+      "status": "complete"
+    },
+    "extraction": {
+      "artifact_commitment": "45D453027A93BA9C257AC5BE290D51184A51F50C246951C95B88F1DF52B79A21",
+      "full_public_score": 3,
+      "full_public_total": 5,
+      "selected_private_singleton": false,
+      "transform_artifact_commitment_consumed": "D166D22DB41ED9E781930086F4EE33576880AB5566983FC8A2B69D034B49E55E"
+    },
+    "full_information_reference_preserved": {
+      "closure_sha256": "FE918337A82C7D9D2C59DE56514D284C736A239226F03C91E8025811E92E8DDA",
+      "manifest_sha256": "A129BBD9BA9DEF0842144178B94A0269F66022EF82DB60D517CDD0C423CC2E1D",
+      "narrow_status": "BALANCED_OPAQUE_RELATIONAL_FULL_INFORMATION_VISIBLE",
+      "result_sha256": "B57FE3598A03F7CBB2765F77CE702293F72BBF900424F9592D719CF02DA458F8"
+    },
+    "information_flow": {
+      "both_branch_artifacts_constructed_and_privately_verified": true,
+      "both_branches_executed_normally": true,
+      "branch_support_cardinalities": {
+        "parent-0": 5,
+        "parent-1": 5
+      },
+      "no_complete_alias_map_persisted": true,
+      "no_disclosure_occurred": true,
+      "parent_artifact_commitments": {
+        "parent-0": "1FCC6DCD4514752E4452C66516D488CD2FE4CBBAD2B6504E3AC2E0B5164446B7",
+        "parent-1": "E6931AB1C1EDFA5AFC28300C5329F02DC4EDF3BF562B5D49E930B1949FE798D9"
+      },
+      "private_material_model_visible": false,
+      "raw_model_output_persisted": false,
+      "raw_sse_persisted": false,
+      "reasoning_persisted": false
+    },
+    "intervention": {
+      "commitment_only_parent_count": 1,
+      "complete_parent_count": 1,
+      "deleted_parent_informative_content_withheld": true,
+      "deleted_parent_projection_mode": "commitment-only",
+      "deleted_parent_role": "parent-1",
+      "parent_ordering_preserved": true,
+      "projection_verified": true,
+      "retained_parent_role": "parent-0",
+      "retained_parent_support_cardinality": 5,
+      "run_mode": "delete-parent-1"
+    },
+    "lease_accounting": {
+      "active_leases": 0,
+      "lease_count": 6,
+      "maximum_concurrent_leases": 1,
+      "physical_slots": 1
+    },
+    "narrow_interpretation": "Under the frozen balanced opaque carrier, withholding Branch-B informative content prevented reproduction of the visible full-information singleton resolution.",
+    "narrow_non_production_status": "BRANCH_B_INFORMATION_DEPENDENCE_SUPPORTED_ON_BALANCED_OPAQUE_CARRIER",
+    "next_required_static_publication_action": "Publish only the validated bounded delete-B and bilateral-dependence evidence in a separately authorized static operation.",
+    "non_production": true,
+    "prepared_bilateral_non_production_status": "BILATERAL_PARENT_INFORMATION_DEPENDENCE_SUPPORTED_ON_BALANCED_OPAQUE_CARRIER",
+    "readiness": {
+      "chat_template_sha256": "A4AEE8AFCF2E0711942CF848899BE66016F8D14A889FF9EDE07BCA099C28F715",
+      "readiness_private_bytes": 3414769664,
+      "readiness_seconds": 26.781,
+      "sidecar_pid": 33380,
+      "stable_health_probe_attempts": 92,
+      "stable_health_recovery_events": 0,
+      "stable_pid": 20388
+    },
+    "resource_observations": {
+      "advisory_wddm_state": "unavailable",
+      "maximum_host_private_bytes": 4908023808,
+      "measured_resource_ceiling_breaches": false,
+      "readiness_private_bytes": 3414769664
+    },
+    "restoration": {
+      "active_leases": 0,
+      "carrier_root_restored": true,
+      "passed": true,
+      "receipt_sha256": "005115225A5FED24894FF423C6B51B0762B1584924C2E88CE63C6C3E2840B74E",
+      "sidecar_cleanup_passed": true,
+      "sidecar_port_free": true
+    },
+    "runtime_identities": {
+      "binary": {
+        "runtime_version": "13 (417e1d6)",
+        "sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
+      },
+      "model": {
+        "filename": "Agents-A1-Q4_K_M.gguf",
+        "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+        "size_bytes": 21166757632
+      }
+    },
+    "terminal_classification": "PARENT_B_INFORMATION_DEPENDENCE_SUPPORTED",
+    "transform": {
+      "artifact_commitment": "D166D22DB41ED9E781930086F4EE33576880AB5566983FC8A2B69D034B49E55E",
+      "operator": "refine",
+      "ranking_length": 3,
+      "ranking_persisted": false,
+      "top_matched_private_singleton": false
+    }
+  },
   "disclosure_law": {
     "alternative": "explicit-user-retirement",
     "automatic_disclosure": false,
