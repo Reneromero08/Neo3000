@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Preserve the statically qualified binding-2 external one-shot live-authority bridge without granting authority. Static preregistration remains non-self-authorizing; a later separately authorized live command must supply a fresh 64-hex authority ID and the exact protected repair commit, and consumption must occur atomically immediately before the first live mutation. CIB0 a1-a6, CK0 a1-a6, binding-1 evidence, both private roots, all three binding-2 reservations, model-visible payloads, and every scientific claim remain unchanged.
-**Next exact action:** separately authorize only `ck0-balanced-v1b2-full-r1` with a fresh authority ID and the exact protected repair commit. The live prompt previously bound to `813ba25b62ea023bf0b7ac1d9c366c180115b811` remains historically unconsumed but cannot authorize the repaired code. Both deletion controls remain unauthorized.
+**Active bounded objective:** Publish the exactly-once binding-2 full-information collapse evidence, incorporate the publication guards already reviewed in draft PR #12, and make the authority test state-independent without altering runtime law. Run `ck0-balanced-v1b2-full-r1` consumed its external authority on protected main `1eb4227219c78209ba487ab68339772887018722`, completed all six requests, and classified `BALANCED_OPAQUE_RELATIONAL_COLLAPSED`: both complete five-member parent relations reached transform, transform ranked the private singleton first, but extraction selected a different alias at `3 / 5`. Restoration, cleanup, custody, and zero-lease closure passed. No inference, retry, replacement authority, deletion control, disclosure, or claim expansion is authorized.
+**Next exact action:** after this three-commit static evidence-contract operation is complete, separately authorize only a static scientific adjudication. Do not rerun `ck0-balanced-v1b2-full-r1`; do not authorize or execute either deletion control. General two-parent necessity, cross-binding replication, transfer, general catalytic inference, task advantage, superiority, SOTA, broader/restart HoloState, Deep, and automatic promotion remain locked.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -22,7 +22,13 @@
 
 ---
 
-## Active queue: binding-2 external one-shot authority bridge
+## Active queue: publish the consumed binding-2 full-information result
+
+- [x] Commit and fast-forward push only the validated bounded evidence for `ck0-balanced-v1b2-full-r1`; preserve the ignored runtime directory and consumed authority receipt, perform no live action, and keep both deletion controls unauthorized.
+
+The sole authorized invocation exited `0` after `6 / 6` accepted requests. Authority-ID hash `1E2261AA8D0FA1CC0C6A371F5EA7AAAB0DA60FEB9BE30487F6D5EB7AB063CAF8`, receipt HMAC `6CA384671222D9875E63C6EE4E3090772CD67E409E09633D3D6AE104FF6DBE54`, and receipt SHA-256 `FEDEF50312E6F0A6326C67BB4B57ED295C2E5390E775B1FC3CED4C4942BD5878` bind one consumed no-retry attempt. The raw authority ID did not enter the consumed receipt, runtime evidence, tracked files, or model-visible payloads. Parent support cardinalities were `5 + 5`; `reconcile` produced a three-entry opaque ranking whose top matched the private singleton, extraction did not select the singleton, and the private public score was `3 / 5`. All six verbose generated-token-array observations were unavailable; `completion_token_count_match` was `false`; requests were accepted using authoritative completion usage plus source-bound terminal-EOS evidence; complete generated-token-array confirmation was unavailable. No measured resource-ceiling breach occurred. WDDM telemetry was unavailable and advisory, so no WDDM or GPU-memory peak is claimed. Manifest `1E330CCFB2727E3273F298D976641E4DE4CEAD1C335FE48519025E760CB6B70F`, result `17B5E36EDC0261B8D98D25F5F4F9E4884F86F6982C8F4D51EA3E54AAE90A88E5`, closure `24676B5E148E545BFF3339187C651791C2BC47273452F4705802AC515B95C06D`, and restoration receipt `005115225A5FED24894FF423C6B51B0762B1584924C2E88CE63C6C3E2840B74E` preserve the terminal collapsed outcome.
+
+### Historical queue: binding-2 external one-shot authority bridge
 
 - [x] Preserve `live_authority_granted = false` and add a controller-only exact-run, exact-commit authority object plus run-key HMAC receipt law.
 - [x] Add explicit `--external-live-authority-id` and `--authorized-commit` inputs with no default or environment fallback; bind future manifest/result/closure evidence without entering model-visible payloads.
@@ -31,7 +37,7 @@
 - [x] Receive terminal `PASS / PASS` from the one-shot lifecycle and no-self-authorization/control-gating auditors on frozen implementation identity `628E924204171268F1AEC96E0B2B548362BE730A07BF2171DF9513B38BF6A190` and pre-audit diff `2527AD5811CFC84081C4CBFD6A0F69DDF3A07978E6DB15E53C23AAF0E64B3594`.
 - [x] Complete static validation, update exact bindings/cursors, and carry the bridge in the one authorized publication commit.
 
-The two original auditor roles returned terminal `PASS / PASS` on the same frozen final code identity after the concurrency repair. Post-audit qualification passed 16 / 16 authority and binding-2 tests, 16 / 16 binding-1 compatibility tests, 12 / 12 CK0 tests, changed-file compilation, exact preregistration/schema/payload/commitment/custody validation, evaluator-lock validation, and protected preflight exactly once. The one complete CPU discovery ran 821 tests: 819 passed in-sandbox, and the two documented Windows file-lock restrictions passed 2 / 2 under exact targeted host permission; semantic failures are zero. No authority ID, authority receipt, reservation consumption, sidecar, model request, inference result, or claim unlock exists. Both deletion controls remain unauthorized and retain the terminal-visible-full plus separate-authority gates.
+The two original auditor roles returned terminal `PASS / PASS` on the same frozen final code identity after the concurrency repair. Post-audit qualification passed 16 / 16 authority and binding-2 tests, 16 / 16 binding-1 compatibility tests, 12 / 12 CK0 tests, changed-file compilation, exact preregistration/schema/payload/commitment/custody validation, evaluator-lock validation, and protected preflight exactly once. The one complete CPU discovery ran 821 tests: 819 passed in-sandbox, and the two documented Windows file-lock restrictions passed 2 / 2 under exact targeted host permission; semantic failures are zero. This bridge state was superseded by the exactly-once collapsed full-information execution above. Both deletion controls remain unauthorized because the full result was not visible.
 
 ---
 
