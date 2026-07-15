@@ -1,5 +1,22 @@
 # Checkpoint Ledger
 
+## Checkpoint 2: Binding-2 external one-shot authority bridge repair
+
+**Status:** STATIC BRIDGE COMPLETE / FINAL CONCURRENCY REPAIR 16 FOCUSED TESTS PASS / AUDIT PASS-PASS / STATIC QUALIFICATION PASS / ZERO LIVE AUTHORITY
+
+- [x] Admit protected main `813ba25b62ea023bf0b7ac1d9c366c180115b811` with exact refs and clean stable/candidate custody; preserve historical, binding-1, binding-2, private, model, binary, stable-server, and port state.
+- [x] Preserve tracked `live_authority_granted = false`; reject tracked self-authorization and require explicit no-default `--external-live-authority-id` plus `--authorized-commit` only for binding 2.
+- [x] Bind one exact run/profile/mode/commit/preregistration/implementation/model/binary/carrier/run-key commitment in a metadata-only controller object and exact run-key HMAC.
+- [x] Place exclusive authority consumption at the dedicated ignored flat per-run receipt immediately after complete non-mutating admission and before runtime-root or run-lock creation; serialize cross-run scan-and-create with a non-mutating binding-2 private-byte lock and reject prior use of either the run or authority-ID hash.
+- [x] Bind future manifest/result/closure authority evidence while keeping raw IDs, run keys, private roots/maps, and all authority metadata out of model-visible payloads.
+- [x] Pass 16 / 16 focused external-authority tests using synthetic IDs and temporary state only.
+- [x] Receive terminal `PASS / PASS` from exactly two read-only authority auditors on frozen implementation identity `628E924204171268F1AEC96E0B2B548362BE730A07BF2171DF9513B38BF6A190`.
+- [x] Complete the one protected preflight, one complete CPU suite, remaining static gates, exact binding/lock updates, and carry the bridge in one fast-forward publication commit.
+
+The two original auditor roles returned terminal `PASS / PASS` on the same frozen final code identity after reviewing same-run and cross-run exclusion, receipt ordering, post-consumption failure, lock cleanup, non-self-authorization, control gates, and payload visibility. Post-audit qualification passed 16 / 16 authority and binding-2 tests, 16 / 16 binding-1 compatibility tests, 12 / 12 CK0 tests, changed-file compilation, exact preregistration reconstruction, both authority schemas, canonical JSON/JSONL, model-visibility scans, evaluator lock, historical/binding-1/adjudication rehashes, binding-2 commitments, tracked-private scans, and protected preflight exactly once. The one complete CPU discovery ran 821 tests: 819 passed in-sandbox; the two known Windows file-lock restrictions passed 2 / 2 with exact targeted host permission; semantic failures are zero. No live run, sidecar, model request, authority ID, authority receipt, runtime evidence, reservation consumption, result append, or claim expansion occurred. The prior prompt bound to the starting SHA cannot cross the repair commit. Only the binding-2 full run remains separately authorizable after publication; both deletion controls remain unauthorized and separately gated.
+
+---
+
 ## Checkpoint 2: Balanced opaque CK0 binding 2 statically preregistered
 
 **Status:** BINDING-2 STATIC PACKAGE COMPLETE / EXACTLY THREE RUNS RESERVED-UNCONSUMED / ZERO LIVE AUTHORITY / BROAD CLAIMS LOCKED

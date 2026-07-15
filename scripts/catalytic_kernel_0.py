@@ -241,6 +241,15 @@ def _arg(args: Any, name: str) -> Any:
     return args.get(name) if isinstance(args, Mapping) else getattr(args, name, None)
 
 
+def _validate_balanced_profile_selection(
+    requested_profile: str | None, balanced_runtime: Any
+) -> None:
+    if requested_profile != balanced_runtime.configuration.profile_id:
+        raise CatalyticKernel0Error(
+            "balanced opaque run ID and carrier profile do not match"
+        )
+
+
 def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
     validate_metadata_only(value)
     encoded = json.dumps(
@@ -2137,8 +2146,15 @@ def run_catalytic_kernel_0(
     repository = Path(repository_root).resolve() if repository_root is not None else Path(__file__).resolve().parents[1]
     requested_profile = _arg(args, "carrier_profile")
     from catalytic_kernel_0_balanced_opaque import (
+        BINDING_2,
         BINDING_CONFIGURATIONS as BALANCED_OPAQUE_BINDINGS,
         BalancedOpaqueRuntime,
+        assert_external_live_authority_unconsumed,
+        authority_id_sha256,
+        consume_external_live_authority_once,
+        external_authority_receipt_hmac,
+        validate_preregistration as validate_balanced_preregistration,
+        verify_external_live_authority_receipt,
     )
 
     if requested_profile not in {
@@ -2157,6 +2173,28 @@ def run_catalytic_kernel_0(
         if requested_profile in BALANCED_OPAQUE_BINDINGS
         else None
     )
+    if balanced_runtime is not None:
+        _validate_balanced_profile_selection(requested_profile, balanced_runtime)
+    external_authority_id = _arg(args, "external_live_authority_id")
+    authorized_commit = _arg(args, "authorized_commit")
+    binding_2_execution = (
+        balanced_runtime is not None
+        and balanced_runtime.configuration is BINDING_2
+    )
+    if binding_2_execution:
+        if not isinstance(external_authority_id, str) or not isinstance(
+            authorized_commit, str
+        ):
+            raise CatalyticKernel0Error(
+                "binding-2 requires --external-live-authority-id and --authorized-commit"
+            )
+        assert_external_live_authority_unconsumed(
+            repository, run_id, authority_id_sha256(external_authority_id)
+        )
+    elif external_authority_id is not None or authorized_commit is not None:
+        raise CatalyticKernel0Error(
+            "external live authority arguments are binding-2 only"
+        )
     if balanced_runtime is not None and _arg(args, "control") is not None:
         raise CatalyticKernel0Error(
             "balanced opaque execution mode is bound by its preregistered run ID"
@@ -2207,6 +2245,32 @@ def run_catalytic_kernel_0(
         allowed_paths=tuple(paths.values()),
     )
     preflight = _public_preflight(preflight_full)
+    external_authority = None
+    external_authority_evidence = None
+    if binding_2_execution:
+        assert balanced_runtime is not None
+        external_authority = balanced_runtime.prepare_external_live_authority(
+            external_authority_id=external_authority_id,
+            authorized_commit=authorized_commit,
+            preflight=preflight,
+        )
+        authority_hmac = external_authority_receipt_hmac(
+            balanced_runtime.private, external_authority
+        )
+        validate_balanced_preregistration(
+            repository,
+            balanced_runtime.private,
+            run_id=run_id,
+            require_final=True,
+            configuration=BINDING_2,
+            for_execution=True,
+            external_authority=external_authority,
+            current_commit=preflight["stable"]["head"],
+            authority_hmac=authority_hmac,
+        )
+        external_authority_evidence = consume_external_live_authority_once(
+            repository, balanced_runtime.private, external_authority
+        )
     run_root.mkdir(parents=True)
     lock_fd = os.open(paths["run.lock"], os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     os.write(lock_fd, (run_id + "\n").encode("ascii"))
@@ -2246,6 +2310,10 @@ def run_catalytic_kernel_0(
         manifest["balanced_preregistration"] = dict(
             balanced_runtime.preregistration
         )
+        if binding_2_execution:
+            manifest["external_live_authority"] = dict(
+                external_authority_evidence
+            )
     if control is not None:
         deleted_parent, retained_parent = _control_direction(control)
         manifest["control"] = {
@@ -2551,6 +2619,20 @@ def run_catalytic_kernel_0(
             )
 
     implementation_sha = preflight.get("stable", {}).get("head") if isinstance(preflight.get("stable"), Mapping) else None
+    if binding_2_execution:
+        assert balanced_runtime is not None and external_authority is not None
+        try:
+            verified_authority = verify_external_live_authority_receipt(
+                repository, balanced_runtime.private, external_authority
+            )
+            if verified_authority != external_authority_evidence:
+                raise CatalyticKernel0Error(
+                    "external live authority evidence changed during execution"
+                )
+        except BaseException as exc:
+            failure = failure or _safe_failure(
+                exc, boundary="external-live-authority"
+            )
     result = (
         balanced_runtime.build_result_projection(
             implementation_sha=implementation_sha,
@@ -2567,6 +2649,7 @@ def run_catalytic_kernel_0(
             restoration=restoration,
             failure=failure,
             intervention=control_intervention,
+            external_live_authority=external_authority_evidence,
             claims=CLAIMS,
         )
         if balanced_runtime is not None
@@ -2602,6 +2685,14 @@ def run_catalytic_kernel_0(
             raise CatalyticKernel0Error("historical CIB0 evidence changed at closure")
         if _snapshot_historical_ck0(repository / "state" / "catalytic_kernel_0") != ck0_before:
             raise CatalyticKernel0Error("historical CK0 evidence changed at closure")
+        if binding_2_execution:
+            assert balanced_runtime is not None and external_authority is not None
+            if verify_external_live_authority_receipt(
+                repository, balanced_runtime.private, external_authority
+            ) != external_authority_evidence:
+                raise CatalyticKernel0Error(
+                    "external live authority evidence changed at closure"
+                )
     except BaseException as exc:
         result["status"] = "failed"
         result["mechanism_classification"] = "INCONCLUSIVE"
@@ -2622,6 +2713,10 @@ def run_catalytic_kernel_0(
         closure_body["balanced_preregistration_document_sha256"] = (
             balanced_runtime.preregistration["document_sha256"]
         )
+        if binding_2_execution:
+            closure_body["external_live_authority"] = dict(
+                external_authority_evidence
+            )
     elif control_preregistration is not None:
         closure_body["control_preregistered_sha256"] = control_preregistration[
             "preregistered_sha256"

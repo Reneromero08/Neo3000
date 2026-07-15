@@ -1,7 +1,9 @@
 {
   "audits": {
     "binding_independence_auditor": "PASS",
-    "cross_binding_no_correspondence_auditor": "PASS"
+    "cross_binding_no_correspondence_auditor": "PASS",
+    "no_self_authorization_and_control_gating_auditor": "PASS",
+    "one_shot_authority_lifecycle_auditor": "PASS"
   },
   "authoritative_adjudication": {
     "artifact_sha256": "B4742B61F0654C8300676AA1F867813487532A99A901FDCFE2B5046E4A8751EF",
@@ -221,10 +223,23 @@
     }
   },
   "future_authorization_boundary": {
+    "authority_consumption_point": "immediately-before-first-live-mutation",
+    "authority_consumption_serialization": "exclusive-nonmutating-binding-2-private-byte-lock",
+    "authority_object_schema_sha256": "95004B6C9DEB8405344E004C59EDD1E45D9414517B1AB6CEF2EEF812DD61537C",
+    "authority_receipt_path_template": "state/catalytic_kernel_0_authority.<run-id>.authority.consumed.json",
+    "authority_receipt_schema_sha256": "88668F5D99271AAAD9E3BF2CB202D97E11EDFFF62DD9E7A79C63CEC942C16FF0",
+    "authority_retry_allowed": false,
+    "authority_reuse_allowed": false,
     "collapsed_or_inconclusive_full_does_not_authorize_controls": true,
+    "command_placeholders_authorize_execution": false,
     "delete_a_authorized": false,
     "delete_b_authorized": false,
     "deletion_controls_require_full_terminal_visible": true,
+    "embedded_live_authority_granted": false,
+    "external_authority_default": null,
+    "external_authority_model_visible": false,
+    "external_authority_schema_version": "external-one-shot-v1",
+    "external_live_authority_required": true,
     "live_authority_granted": false,
     "only_next_separately_authorizable_action": "ck0-balanced-v1b2-full-r1"
   },
@@ -240,7 +255,11 @@
       "--run-id",
       "ck0-balanced-v1b2-delete-a-r1",
       "--carrier-profile",
-      "balanced-opaque-relational-carrier-v1-binding-2"
+      "balanced-opaque-relational-carrier-v1-binding-2",
+      "--external-live-authority-id",
+      "<separately-issued-64-hex-id>",
+      "--authorized-commit",
+      "<exact-protected-main>"
     ],
     "ck0-balanced-v1b2-delete-b-r1": [
       "python",
@@ -253,7 +272,11 @@
       "--run-id",
       "ck0-balanced-v1b2-delete-b-r1",
       "--carrier-profile",
-      "balanced-opaque-relational-carrier-v1-binding-2"
+      "balanced-opaque-relational-carrier-v1-binding-2",
+      "--external-live-authority-id",
+      "<separately-issued-64-hex-id>",
+      "--authorized-commit",
+      "<exact-protected-main>"
     ],
     "ck0-balanced-v1b2-full-r1": [
       "python",
@@ -266,7 +289,11 @@
       "--run-id",
       "ck0-balanced-v1b2-full-r1",
       "--carrier-profile",
-      "balanced-opaque-relational-carrier-v1-binding-2"
+      "balanced-opaque-relational-carrier-v1-binding-2",
+      "--external-live-authority-id",
+      "<separately-issued-64-hex-id>",
+      "--authorized-commit",
+      "<exact-protected-main>"
     ]
   },
   "future_runs": {
@@ -324,19 +351,19 @@
     "files": [
       {
         "path": ".gitignore",
-        "sha256": "061771C7861D557BE20DA4A198948D2B9E7F7288AFE6B330BFB29FADB72E91C0"
+        "sha256": "BDF8BBD6959267141F5B133C68502DDCC88CF6D3AEE41946BB80A77F33B97C88"
       },
       {
         "path": "scripts/catalytic_kernel_0.py",
-        "sha256": "5CC596E75FB07CB41B95794A3D2C90DE7FCDF99E4C5A4FDAA55FBA93D5508F90"
+        "sha256": "E2663B49E1854718019F09C096375F49A7FD9F9A1DC11CF18DB82D99DC38188F"
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_opaque.py",
-        "sha256": "47F168C3B74E4297305AD0CCE6D3CB9D5E89503835C282364B81CE6AAB1B4669"
+        "sha256": "A569D634D7660B4B3780C5141D374F26A44830EACC99408797B477F72D79636E"
       },
       {
         "path": "scripts/holostate_live.py",
-        "sha256": "978E913C243672E198E97EBD011A46F2E09CE43A13D547489DC3B1DD09BFF851"
+        "sha256": "448C38CBAE966969EEC0923CDA455DAF8DB0624118C1E0F589FAD46DE2AA7C51"
       },
       {
         "path": "scripts/test_catalytic_kernel_0.py",
@@ -348,11 +375,11 @@
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_opaque_binding_2.py",
-        "sha256": "B31152C954805F990D7269804A174A9C58BFA15F35F3A2CF1252D4180463CC7A"
+        "sha256": "9DD931FE88B3707AC128A383D9C5750936E43D781EFB6B237D1109E6E09CF942"
       }
     ],
     "kind": "normalized-source-bundle-sha256-v1",
-    "sha256": "E62621EC92642F12D17D7E023FB35F9C9454D399DFD7EB437FAB23E9DCFDF89E"
+    "sha256": "628E924204171268F1AEC96E0B2B548362BE730A07BF2171DF9513B38BF6A190"
   },
   "model_visible_carrier": {
     "allowed_root_content": [
@@ -628,30 +655,34 @@
   },
   "schema_version": 1,
   "static_verification": {
+    "adjudication_artifact_rehash": "B4742B61F0654C8300676AA1F867813487532A99A901FDCFE2B5046E4A8751EF",
+    "audit_review_diff_sha256": "2527AD5811CFC84081C4CBFD6A0F69DDF3A07978E6DB15E53C23AAF0E64B3594",
+    "audit_review_implementation_binding_sha256": "628E924204171268F1AEC96E0B2B548362BE730A07BF2171DF9513B38BF6A190",
+    "authority_object_schema": "pass",
+    "authority_receipt_schema": "pass",
     "binding_1_balanced_compatibility": "16/16",
-    "binding_1_evidence_custody": "pass",
-    "canonical_json": "pass",
-    "changed_file_compilation": "pass",
-    "complete_cpu_suite": {
-      "corrected_exact_targeted_host_recheck": "2/2 pass",
-      "first_targeted_host_attempt": "module-path-reject-before-test-execution",
-      "in_sandbox_passes": 817,
-      "sandbox_file_lock_errors": 2,
-      "semantic_failures": 0,
-      "single_complete_run_tests": 819
-    },
-    "evaluator_lock": "pass",
-    "existing_ck0_tests": "12/12",
-    "focused_binding_2": "14/14",
-    "historical_evidence_custody": "pass",
-    "jsonl_validation": "pass",
-    "private_state_and_tracked_correspondence_scan": "pass-zero-matches",
-    "protected_preflight": {
-      "execution_count": 1,
-      "status": "pass"
-    },
-    "static_payload_invariance": "pass",
-    "status": "pass"
+    "binding_1_evidence_rehash": "9/9",
+    "binding_2_commitments": "pass",
+    "binding_2_exact_reconstruction": "pass",
+    "canonical_json_jsonl": "pass-7-json-51-jsonl-records",
+    "changed_file_python_compilation": "pass",
+    "complete_cpu_suite": "821-discovered-819-sandbox-pass-2-host-file-lock-pass-0-semantic-failures",
+    "control_gating_auditor": "PASS",
+    "evaluator_lock": "generated-and-validated",
+    "existing_ck0": "12/12",
+    "historical_cib0_tree_sha256": "57CE7FFFEBBB925BBD3B37F55A9394037720018748776C2C42DD17961D8ECCBD",
+    "historical_ck0_tree_sha256": "BB15C248EFBF075F77899161FC6EEDCD28830097CB6D0B67D7BB7F368ADCC249",
+    "ignored_authority_path": "pass",
+    "lifecycle_auditor": "PASS",
+    "model_visible_authority_fields": 0,
+    "model_visible_payload_scan": "pass-authority-free",
+    "post_audit_authority_and_binding_2_focused": "16/16",
+    "pre_audit_focused_authority_bridge": "16/16",
+    "protected_preflight": "pass-1/1",
+    "reservations_consumed": 0,
+    "status": "pass",
+    "tracked_authority_receipts": 0,
+    "tracked_private_matches": 0
   },
   "status": "static-preregistered",
   "visibility_legend": {

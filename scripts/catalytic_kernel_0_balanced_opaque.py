@@ -16,7 +16,9 @@ import os
 import re
 import secrets
 import stat
+import subprocess
 import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -79,6 +81,8 @@ ALLOWED_OPERATORS = frozenset({"combine", "oppose", "eliminate", "refine", "reco
 ALIASES = tuple(f"K{index:02d}" for index in range(64))
 INTERNAL_CANDIDATE_RE = re.compile(r"(?<![A-Za-z0-9])C\d{2}(?![A-Za-z0-9])")
 SHA256_RE = re.compile(r"^[0-9A-F]{64}$")
+AUTHORITY_ID_RE = re.compile(r"^[0-9A-Fa-f]{64}$")
+GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 
 FULL_RUN_ID = "ck0-balanced-v1-full-r1"
 DELETE_A_RUN_ID = "ck0-balanced-v1-delete-a-r1"
@@ -154,6 +158,14 @@ BRANCH_ALIAS_MAP_DOMAIN = b"ck0-balanced-v1/branch-alias-map\0"
 RUN_KEY_DOMAIN = b"ck0-balanced-v1/run-key\0"
 RUN_KEY_COMMITMENT_DOMAIN = b"ck0-balanced-v1/run-key-commitment\0"
 ARTIFACT_DOMAIN = b"ck0-balanced-v1/artifact\0"
+EXTERNAL_AUTHORITY_ID_DOMAIN = b"ck0-balanced/external-live-authority-id-v1\0"
+EXTERNAL_AUTHORITY_RECEIPT_DOMAIN = b"ck0-balanced/external-live-authority-v1\0"
+EXTERNAL_AUTHORITY_SCHEMA_VERSION = "external-one-shot-v1"
+EXTERNAL_AUTHORITY_KIND = "external-one-shot"
+EXTERNAL_AUTHORITY_RECEIPT_SCHEMA_VERSION = "external-one-shot-consumption-v1"
+EXTERNAL_AUTHORITY_RECEIPT_TEMPLATE = (
+    "state/catalytic_kernel_0_authority.<run-id>.authority.consumed.json"
+)
 
 BRANCH_ARTIFACT_FIELDS = frozenset(
     {
@@ -283,6 +295,520 @@ def sha256_bytes(value: bytes) -> str:
 
 def json_sha256(value: Any) -> str:
     return sha256_bytes(canonical_json_bytes(value))
+
+
+@dataclass(frozen=True)
+class ExternalLiveAuthority:
+    """Controller-only exact-run authority; the raw authority ID is never retained."""
+
+    schema_version: str
+    authority_kind: str
+    authority_id_sha256: str
+    authorized_commit: str
+    run_id: str
+    carrier_profile: str
+    run_mode: str
+    preregistration_artifact_sha256: str
+    implementation_binding_sha256: str
+    model_sha256: str
+    binary_sha256: str
+    carrier_root_sha256: str
+    run_key_commitment: str
+    maximum_invocations: int = 1
+    retry_count: int = 0
+    automatic_follow_on: bool = False
+
+    def body(self) -> dict[str, Any]:
+        body = {
+            "schema_version": self.schema_version,
+            "authority_kind": self.authority_kind,
+            "authority_id_sha256": self.authority_id_sha256,
+            "authorized_commit": self.authorized_commit,
+            "run_id": self.run_id,
+            "carrier_profile": self.carrier_profile,
+            "run_mode": self.run_mode,
+            "preregistration_artifact_sha256": self.preregistration_artifact_sha256,
+            "implementation_binding_sha256": self.implementation_binding_sha256,
+            "model_sha256": self.model_sha256,
+            "binary_sha256": self.binary_sha256,
+            "carrier_root_sha256": self.carrier_root_sha256,
+            "run_key_commitment": self.run_key_commitment,
+            "maximum_invocations": self.maximum_invocations,
+            "retry_count": self.retry_count,
+            "automatic_follow_on": self.automatic_follow_on,
+        }
+        validate_metadata_only(body)
+        return body
+
+
+def external_authority_object_schema() -> dict[str, Any]:
+    sha = {"type": "string", "pattern": "^[0-9A-F]{64}$"}
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "schema_version",
+            "authority_kind",
+            "authority_id_sha256",
+            "authorized_commit",
+            "run_id",
+            "carrier_profile",
+            "run_mode",
+            "preregistration_artifact_sha256",
+            "implementation_binding_sha256",
+            "model_sha256",
+            "binary_sha256",
+            "carrier_root_sha256",
+            "run_key_commitment",
+            "maximum_invocations",
+            "retry_count",
+            "automatic_follow_on",
+        ],
+        "properties": {
+            "schema_version": {"const": EXTERNAL_AUTHORITY_SCHEMA_VERSION},
+            "authority_kind": {"const": EXTERNAL_AUTHORITY_KIND},
+            "authority_id_sha256": sha,
+            "authorized_commit": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$",
+            },
+            "run_id": {"type": "string"},
+            "carrier_profile": {"const": BINDING_2_PROFILE_ID},
+            "run_mode": {
+                "enum": ["full-information", "delete-parent-0", "delete-parent-1"]
+            },
+            "preregistration_artifact_sha256": sha,
+            "implementation_binding_sha256": sha,
+            "model_sha256": sha,
+            "binary_sha256": sha,
+            "carrier_root_sha256": sha,
+            "run_key_commitment": sha,
+            "maximum_invocations": {"const": 1},
+            "retry_count": {"const": 0},
+            "automatic_follow_on": {"const": False},
+        },
+    }
+
+
+def external_authority_receipt_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "schema_version",
+            "authority",
+            "authority_object_schema_sha256",
+            "authority_receipt_schema_sha256",
+            "authority_receipt_hmac",
+            "consumed",
+            "consumption_occurred_before_live_mutation",
+            "maximum_invocations",
+            "retry_allowed",
+        ],
+        "properties": {
+            "schema_version": {
+                "const": EXTERNAL_AUTHORITY_RECEIPT_SCHEMA_VERSION
+            },
+            "authority": external_authority_object_schema(),
+            "authority_object_schema_sha256": {
+                "type": "string",
+                "pattern": "^[0-9A-F]{64}$",
+            },
+            "authority_receipt_schema_sha256": {
+                "type": "string",
+                "pattern": "^[0-9A-F]{64}$",
+            },
+            "authority_receipt_hmac": {
+                "type": "string",
+                "pattern": "^[0-9A-F]{64}$",
+            },
+            "consumed": {"const": True},
+            "consumption_occurred_before_live_mutation": {"const": True},
+            "maximum_invocations": {"const": 1},
+            "retry_allowed": {"const": False},
+        },
+    }
+
+
+EXTERNAL_AUTHORITY_OBJECT_SCHEMA_SHA256 = json_sha256(
+    external_authority_object_schema()
+)
+EXTERNAL_AUTHORITY_RECEIPT_SCHEMA_SHA256 = json_sha256(
+    external_authority_receipt_schema()
+)
+
+
+def binding_2_authorization_boundary() -> dict[str, Any]:
+    return {
+        "live_authority_granted": False,
+        "embedded_live_authority_granted": False,
+        "external_live_authority_required": True,
+        "external_authority_schema_version": EXTERNAL_AUTHORITY_SCHEMA_VERSION,
+        "external_authority_model_visible": False,
+        "external_authority_default": None,
+        "authority_consumption_point": "immediately-before-first-live-mutation",
+        "authority_consumption_serialization": (
+            "exclusive-nonmutating-binding-2-private-byte-lock"
+        ),
+        "authority_reuse_allowed": False,
+        "authority_retry_allowed": False,
+        "authority_object_schema_sha256": EXTERNAL_AUTHORITY_OBJECT_SCHEMA_SHA256,
+        "authority_receipt_schema_sha256": EXTERNAL_AUTHORITY_RECEIPT_SCHEMA_SHA256,
+        "authority_receipt_path_template": (
+            EXTERNAL_AUTHORITY_RECEIPT_TEMPLATE
+        ),
+        "command_placeholders_authorize_execution": False,
+        "only_next_separately_authorizable_action": BINDING_2_FULL_RUN_ID,
+        "delete_a_authorized": False,
+        "delete_b_authorized": False,
+        "deletion_controls_require_full_terminal_visible": True,
+        "collapsed_or_inconclusive_full_does_not_authorize_controls": True,
+    }
+
+
+def validate_binding_2_authorization_boundary(value: Mapping[str, Any]) -> None:
+    if dict(value) != binding_2_authorization_boundary():
+        raise BalancedOpaqueError("binding-2 future authorization boundary changed")
+
+
+def authority_id_sha256(external_authority_id: str) -> str:
+    if not isinstance(external_authority_id, str) or not AUTHORITY_ID_RE.fullmatch(
+        external_authority_id
+    ):
+        raise BalancedOpaqueError(
+            "external live authority ID must be exactly 64 hexadecimal characters"
+        )
+    return sha256_bytes(
+        EXTERNAL_AUTHORITY_ID_DOMAIN + bytes.fromhex(external_authority_id)
+    )
+
+
+def build_external_live_authority(
+    *,
+    private: "PrivateBinding",
+    external_authority_id: str,
+    authorized_commit: str,
+    current_commit: str,
+    run_id: str,
+    carrier_profile: str,
+    preregistration_artifact_sha256: str,
+    implementation_binding_sha256: str,
+    model_sha256: str,
+    binary_sha256: str,
+    carrier_root_sha256: str,
+) -> ExternalLiveAuthority:
+    if private.configuration is not BINDING_2:
+        raise BalancedOpaqueError("external live authority is binding-2 only")
+    if run_id not in BINDING_2.run_modes:
+        raise BalancedOpaqueError("external live authority run ID is not reserved")
+    if carrier_profile != BINDING_2.profile_id:
+        raise BalancedOpaqueError("external live authority carrier profile mismatch")
+    if not isinstance(authorized_commit, str) or not GIT_COMMIT_RE.fullmatch(
+        authorized_commit
+    ):
+        raise BalancedOpaqueError("authorized commit must be a 40-character Git SHA")
+    if authorized_commit != current_commit:
+        raise BalancedOpaqueError("external live authority commit mismatch")
+    for label, value in {
+        "preregistration artifact": preregistration_artifact_sha256,
+        "implementation binding": implementation_binding_sha256,
+        "model": model_sha256,
+        "binary": binary_sha256,
+        "carrier root": carrier_root_sha256,
+    }.items():
+        if not isinstance(value, str) or not SHA256_RE.fullmatch(value):
+            raise BalancedOpaqueError(f"external live authority {label} identity invalid")
+    authority = ExternalLiveAuthority(
+        schema_version=EXTERNAL_AUTHORITY_SCHEMA_VERSION,
+        authority_kind=EXTERNAL_AUTHORITY_KIND,
+        authority_id_sha256=authority_id_sha256(external_authority_id),
+        authorized_commit=authorized_commit,
+        run_id=run_id,
+        carrier_profile=carrier_profile,
+        run_mode=BINDING_2.run_modes[run_id],
+        preregistration_artifact_sha256=preregistration_artifact_sha256,
+        implementation_binding_sha256=implementation_binding_sha256,
+        model_sha256=model_sha256,
+        binary_sha256=binary_sha256,
+        carrier_root_sha256=carrier_root_sha256,
+        run_key_commitment=run_key_commitment(
+            private.run_key(run_id), BINDING_2
+        ),
+    )
+    authority.body()
+    return authority
+
+
+def external_authority_receipt_hmac(
+    private: "PrivateBinding", authority: ExternalLiveAuthority
+) -> str:
+    if private.configuration is not BINDING_2:
+        raise BalancedOpaqueError("external live authority is binding-2 only")
+    if authority.run_id not in BINDING_2.run_modes:
+        raise BalancedOpaqueError("external live authority run ID is not reserved")
+    return hmac.new(
+        private.run_key(authority.run_id),
+        EXTERNAL_AUTHORITY_RECEIPT_DOMAIN + canonical_json_bytes(authority.body()),
+        hashlib.sha256,
+    ).hexdigest().upper()
+
+
+def validate_external_live_authority(
+    private: "PrivateBinding",
+    authority: ExternalLiveAuthority,
+    *,
+    run_id: str,
+    carrier_profile: str,
+    current_commit: str,
+    receipt_hmac: str | None = None,
+) -> None:
+    if private.configuration is not BINDING_2:
+        raise BalancedOpaqueError("external live authority is binding-2 only")
+    expected_mode = BINDING_2.run_modes.get(run_id)
+    if (
+        expected_mode is None
+        or authority.schema_version != EXTERNAL_AUTHORITY_SCHEMA_VERSION
+        or authority.authority_kind != EXTERNAL_AUTHORITY_KIND
+        or authority.run_id != run_id
+        or authority.carrier_profile != carrier_profile
+        or authority.carrier_profile != BINDING_2.profile_id
+        or authority.run_mode != expected_mode
+        or authority.authorized_commit != current_commit
+        or authority.maximum_invocations != 1
+        or authority.retry_count != 0
+        or authority.automatic_follow_on is not False
+        or authority.run_key_commitment
+        != run_key_commitment(private.run_key(run_id), BINDING_2)
+    ):
+        raise BalancedOpaqueError("external live authority scope mismatch")
+    authority.body()
+    if receipt_hmac is not None:
+        expected = external_authority_receipt_hmac(private, authority)
+        if not hmac.compare_digest(receipt_hmac, expected):
+            raise BalancedOpaqueError("external live authority HMAC mismatch")
+
+
+def authority_receipt_path(repository: Path, run_id: str) -> Path:
+    if run_id not in BINDING_2.run_modes:
+        raise BalancedOpaqueError("external live authority run ID is not reserved")
+    return repository.absolute() / EXTERNAL_AUTHORITY_RECEIPT_TEMPLATE.replace(
+        "<run-id>", run_id
+    )
+
+
+def assert_external_live_authority_unconsumed(
+    repository: Path,
+    run_id: str,
+    authority_id_hash: str | None = None,
+) -> None:
+    repository = repository.absolute()
+    if authority_id_hash is not None and not SHA256_RE.fullmatch(
+        authority_id_hash
+    ):
+        raise BalancedOpaqueError("external live authority ID hash is invalid")
+    target = authority_receipt_path(repository, run_id)
+    _assert_safe_ancestry(repository, target)
+    completed = subprocess.run(
+        ["git", "check-ignore", "--quiet", "--", target.relative_to(repository).as_posix()],
+        cwd=repository,
+        check=False,
+        timeout=30,
+    )
+    if completed.returncode != 0:
+        raise BalancedOpaqueError("external authority receipt path is not ignored")
+    if target.exists() or target.is_symlink():
+        raise BalancedOpaqueError("external live authority run was already attempted")
+    if authority_id_hash is None:
+        return
+    for other_run_id in BINDING_2.run_modes:
+        other = authority_receipt_path(repository, other_run_id)
+        if not other.exists() and not other.is_symlink():
+            continue
+        _assert_safe_ancestry(repository, other)
+        if (
+            not other.is_file()
+            or _is_reparse(other)
+            or other.stat().st_size > 16384
+        ):
+            raise BalancedOpaqueError("external authority receipt inventory is unsafe")
+        try:
+            document = json.loads(other.read_bytes())
+        except json.JSONDecodeError as exc:
+            raise BalancedOpaqueError(
+                "external authority receipt inventory is invalid"
+            ) from exc
+        existing_hash = document.get("authority", {}).get(
+            "authority_id_sha256"
+        )
+        if existing_hash == authority_id_hash:
+            raise BalancedOpaqueError(
+                "external live authority ID was already consumed"
+            )
+
+
+def _authority_receipt_document(
+    private: "PrivateBinding", authority: ExternalLiveAuthority
+) -> dict[str, Any]:
+    receipt = {
+        "schema_version": EXTERNAL_AUTHORITY_RECEIPT_SCHEMA_VERSION,
+        "authority": authority.body(),
+        "authority_object_schema_sha256": EXTERNAL_AUTHORITY_OBJECT_SCHEMA_SHA256,
+        "authority_receipt_schema_sha256": EXTERNAL_AUTHORITY_RECEIPT_SCHEMA_SHA256,
+        "authority_receipt_hmac": external_authority_receipt_hmac(
+            private, authority
+        ),
+        "consumed": True,
+        "consumption_occurred_before_live_mutation": True,
+        "maximum_invocations": 1,
+        "retry_allowed": False,
+    }
+    validate_metadata_only(receipt)
+    return receipt
+
+
+@contextmanager
+def _external_authority_consumption_lock(repository: Path):
+    lock_path = private_secret_path(repository, BINDING_2)
+    _assert_safe_ancestry(repository, lock_path)
+    if (
+        not lock_path.is_file()
+        or _is_reparse(lock_path)
+        or lock_path.stat().st_size != 32
+    ):
+        raise BalancedOpaqueError("binding-2 authority lock file is unsafe")
+    descriptor = os.open(
+        lock_path,
+        os.O_RDWR | getattr(os, "O_BINARY", 0),
+    )
+    locked = False
+    try:
+        if os.name == "nt":
+            import msvcrt
+
+            try:
+                msvcrt.locking(descriptor, msvcrt.LK_NBLCK, 1)
+            except OSError as exc:
+                raise BalancedOpaqueError(
+                    "another external authority consumption is in progress"
+                ) from exc
+        else:
+            import fcntl
+
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError as exc:
+                raise BalancedOpaqueError(
+                    "another external authority consumption is in progress"
+                ) from exc
+        locked = True
+        yield
+    finally:
+        if locked:
+            if os.name == "nt":
+                import msvcrt
+
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
+        os.close(descriptor)
+
+
+def consume_external_live_authority_once(
+    repository: Path,
+    private: "PrivateBinding",
+    authority: ExternalLiveAuthority,
+) -> dict[str, Any]:
+    repository = repository.absolute()
+    validate_external_live_authority(
+        private,
+        authority,
+        run_id=authority.run_id,
+        carrier_profile=authority.carrier_profile,
+        current_commit=authority.authorized_commit,
+    )
+    target = authority_receipt_path(repository, authority.run_id)
+    state_root = repository / "state"
+    if not state_root.is_dir() or _is_reparse(state_root):
+        raise BalancedOpaqueError("state root is missing or unsafe")
+    receipt = _authority_receipt_document(private, authority)
+    payload = canonical_json_bytes(receipt)
+    with _external_authority_consumption_lock(repository):
+        assert_external_live_authority_unconsumed(
+            repository, authority.run_id, authority.authority_id_sha256
+        )
+        _assert_safe_ancestry(repository, target)
+        try:
+            fd = os.open(
+                target,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                stat.S_IRUSR | stat.S_IWUSR,
+            )
+        except FileExistsError as exc:
+            raise BalancedOpaqueError(
+                "external live authority run was already attempted"
+            ) from exc
+        try:
+            if hasattr(os, "fchmod"):
+                os.fchmod(fd, stat.S_IRUSR | stat.S_IWUSR)
+            written = os.write(fd, payload)
+            if written != len(payload):
+                raise BalancedOpaqueError(
+                    "external authority receipt write was incomplete"
+                )
+            os.fsync(fd)
+            os.close(fd)
+            fd = -1
+            os.chmod(target, stat.S_IRUSR | stat.S_IWUSR)
+        finally:
+            if fd >= 0:
+                os.close(fd)
+    return verify_external_live_authority_receipt(
+        repository, private, authority
+    )
+
+
+def verify_external_live_authority_receipt(
+    repository: Path,
+    private: "PrivateBinding",
+    authority: ExternalLiveAuthority,
+) -> dict[str, Any]:
+    target = authority_receipt_path(repository, authority.run_id)
+    _assert_safe_ancestry(repository, target)
+    if (
+        not target.is_file()
+        or _is_reparse(target)
+        or target.stat().st_size > 16384
+    ):
+        raise BalancedOpaqueError("external live authority receipt is missing or unsafe")
+    try:
+        document = json.loads(target.read_bytes())
+    except json.JSONDecodeError as exc:
+        raise BalancedOpaqueError("external live authority receipt is invalid") from exc
+    expected = _authority_receipt_document(private, authority)
+    if document != expected:
+        raise BalancedOpaqueError("external live authority receipt binding changed")
+    validate_external_live_authority(
+        private,
+        authority,
+        run_id=authority.run_id,
+        carrier_profile=authority.carrier_profile,
+        current_commit=authority.authorized_commit,
+        receipt_hmac=str(document.get("authority_receipt_hmac", "")),
+    )
+    evidence = {
+        "authority": authority.body(),
+        "authority_receipt_hmac": document["authority_receipt_hmac"],
+        "authority_receipt_sha256": sha256_bytes(target.read_bytes()),
+        "consumed": True,
+        "consumption_occurred_before_live_mutation": True,
+        "maximum_invocations": 1,
+        "retry_allowed": False,
+    }
+    validate_metadata_only(evidence)
+    return evidence
 
 
 def _normalized_text_sha256(path: Path) -> str:
@@ -1036,12 +1562,46 @@ class BalancedOpaqueRuntime:
             run_id=run_id,
             require_final=require_final_preregistration,
             configuration=configuration,
+            for_execution=False,
         )
         return cls(
             repository=repository,
             run_id=run_id,
             private=private,
             preregistration=preregistration,
+        )
+
+    def prepare_external_live_authority(
+        self,
+        *,
+        external_authority_id: str,
+        authorized_commit: str,
+        preflight: Mapping[str, Any],
+    ) -> ExternalLiveAuthority:
+        if self.configuration is not BINDING_2:
+            raise BalancedOpaqueError("external live authority is binding-2 only")
+        stable = preflight.get("stable", {})
+        model = preflight.get("model_identity", {})
+        binary = preflight.get("binary_identity", {})
+        current_commit = stable.get("head")
+        if not isinstance(current_commit, str):
+            raise BalancedOpaqueError("preflight protected commit is missing")
+        return build_external_live_authority(
+            private=self.private,
+            external_authority_id=external_authority_id,
+            authorized_commit=authorized_commit,
+            current_commit=current_commit,
+            run_id=self.run_id,
+            carrier_profile=self.configuration.profile_id,
+            preregistration_artifact_sha256=str(
+                self.preregistration.get("artifact_sha256", "")
+            ),
+            implementation_binding_sha256=str(
+                self.preregistration.get("implementation_binding_sha256", "")
+            ),
+            model_sha256=str(model.get("sha256", "")),
+            binary_sha256=str(binary.get("sha256", "")),
+            carrier_root_sha256=self.carrier["carrier_root_sha256"],
         )
 
     def _branch_assignment(self, request_id: str) -> dict[str, Any]:
@@ -1545,6 +2105,7 @@ class BalancedOpaqueRuntime:
         restoration: Mapping[str, Any] | None,
         failure: Mapping[str, Any] | None,
         intervention: Mapping[str, Any] | None,
+        external_live_authority: Mapping[str, Any] | None,
         claims: Mapping[str, Any],
     ) -> dict[str, Any]:
         restoration_passed = (
@@ -1604,6 +2165,12 @@ class BalancedOpaqueRuntime:
             "claiming": False,
             "automatic_promotion": False,
         }
+        if self.configuration is BINDING_2:
+            if not isinstance(external_live_authority, Mapping):
+                raise BalancedOpaqueError(
+                    "binding-2 result requires consumed external live authority"
+                )
+            result["external_live_authority"] = dict(external_live_authority)
         validate_metadata_only(result)
         return result
 
@@ -2142,17 +2709,16 @@ def build_preregistration_document(
                 run_id,
                 "--carrier-profile",
                 BINDING_2.profile_id,
+                "--external-live-authority-id",
+                "<separately-issued-64-hex-id>",
+                "--authorized-commit",
+                "<exact-protected-main>",
             ]
             for run_id in BINDING_2.run_modes
         }
-        document["future_authorization_boundary"] = {
-            "live_authority_granted": False,
-            "only_next_separately_authorizable_action": BINDING_2_FULL_RUN_ID,
-            "delete_a_authorized": False,
-            "delete_b_authorized": False,
-            "deletion_controls_require_full_terminal_visible": True,
-            "collapsed_or_inconclusive_full_does_not_authorize_controls": True,
-        }
+        document["future_authorization_boundary"] = (
+            binding_2_authorization_boundary()
+        )
         document["classification_law"]["potential_cross_binding_status"] = {
             "status": "LOCKED",
             "label": "BILATERAL_PARENT_INFORMATION_DEPENDENCE_REPLICATED_ACROSS_PRIVATE_BINDINGS_ON_FROZEN_GEOMETRY",
@@ -2165,6 +2731,12 @@ def build_preregistration_document(
             "cross_binding_no_correspondence_auditor": (audit_outcomes or {}).get(
                 "cross_binding_no_correspondence_auditor", "pending"
             ),
+            "one_shot_authority_lifecycle_auditor": (audit_outcomes or {}).get(
+                "one_shot_authority_lifecycle_auditor", "pending"
+            ),
+            "no_self_authorization_and_control_gating_auditor": (
+                audit_outcomes or {}
+            ).get("no_self_authorization_and_control_gating_auditor", "pending"),
         }
         document["historical_claims"] = {
             "binding_1_full_information": "BALANCED_OPAQUE_RELATIONAL_FULL_INFORMATION_VISIBLE",
@@ -2195,6 +2767,9 @@ def validate_preregistration(
     require_final: bool,
     configuration: PrivateBindingConfiguration | None = None,
     for_execution: bool = True,
+    external_authority: ExternalLiveAuthority | None = None,
+    current_commit: str | None = None,
+    authority_hmac: str | None = None,
 ) -> dict[str, Any]:
     selected = configuration or private.configuration
     if selected is not private.configuration or run_id not in selected.run_modes:
@@ -2317,6 +2892,8 @@ def validate_preregistration(
             else {
                 "binding_independence_auditor": "PASS",
                 "cross_binding_no_correspondence_auditor": "PASS",
+                "one_shot_authority_lifecycle_auditor": "PASS",
+                "no_self_authorization_and_control_gating_auditor": "PASS",
             }
         )
         if document.get("audits") != expected_audits:
@@ -2351,18 +2928,22 @@ def validate_preregistration(
         if document.get("no_correspondence_validation") != expected_correspondence:
             raise BalancedOpaqueError("cross-binding no-correspondence validation changed")
         boundary = document.get("future_authorization_boundary", {})
-        if (
-            boundary.get("only_next_separately_authorizable_action")
-            != BINDING_2_FULL_RUN_ID
-            or boundary.get("delete_a_authorized") is not False
-            or boundary.get("delete_b_authorized") is not False
-            or boundary.get("deletion_controls_require_full_terminal_visible") is not True
-        ):
-            raise BalancedOpaqueError("binding-2 future authorization boundary changed")
-        if for_execution and boundary.get("live_authority_granted") is not True:
-            raise BalancedOpaqueError(
-                "binding-2 live execution requires separate exact authorization"
+        validate_binding_2_authorization_boundary(boundary)
+        if for_execution:
+            if external_authority is None or current_commit is None:
+                raise BalancedOpaqueError(
+                    "binding-2 live execution requires external one-shot authority"
+                )
+            validate_external_live_authority(
+                private,
+                external_authority,
+                run_id=run_id,
+                carrier_profile=selected.profile_id,
+                current_commit=current_commit,
+                receipt_hmac=authority_hmac,
             )
+    elif external_authority is not None or authority_hmac is not None:
+        raise BalancedOpaqueError("external live authority is binding-2 only")
     if selected.run_modes[run_id] != "full-information":
         _require_terminal_full_run(repository, selected)
     projection = {
@@ -2370,6 +2951,7 @@ def validate_preregistration(
         "artifact_sha256": sha256_bytes(path.read_bytes()),
         "document_sha256": json_sha256(document),
         "profile_binding_sha256": private.profile_binding_sha256,
+        "implementation_binding_sha256": source_binding["sha256"],
         "run_id": run_id,
         "mode": selected.run_modes[run_id],
         "status": "validated-static-preregistered",
@@ -2468,6 +3050,10 @@ __all__ = [
     "CARRIER_ID",
     "DELETE_A_RUN_ID",
     "DELETE_B_RUN_ID",
+    "EXTERNAL_AUTHORITY_OBJECT_SCHEMA_SHA256",
+    "EXTERNAL_AUTHORITY_RECEIPT_SCHEMA_SHA256",
+    "EXTERNAL_AUTHORITY_RECEIPT_TEMPLATE",
+    "ExternalLiveAuthority",
     "FULL_RUN_ID",
     "PRIVATE_SECRET_PATH",
     "PREREGISTRATION_PATH",
@@ -2478,17 +3064,24 @@ __all__ = [
     "alias_map_commitment",
     "artifact_commitment",
     "build_carrier",
+    "build_external_live_authority",
     "build_preregistration_document",
     "build_profile_binding",
     "binding_configuration",
     "binding_configuration_for_run",
+    "binding_2_authorization_boundary",
     "binding_independence_checks",
     "carrier_is_pristine",
+    "consume_external_live_authority_once",
     "create_private_secret_once",
     "derive_alias_mapping",
     "derive_branch_alias_mapping",
     "derive_run_key",
     "implementation_binding",
+    "assert_external_live_authority_unconsumed",
+    "authority_id_sha256",
+    "authority_receipt_path",
+    "external_authority_receipt_hmac",
     "response_schema",
     "response_schema_hashes",
     "run_key_commitment",
@@ -2496,5 +3089,8 @@ __all__ = [
     "static_model_visible_payloads",
     "static_payload_invariance_report",
     "validate_preregistration",
+    "validate_external_live_authority",
+    "validate_binding_2_authorization_boundary",
+    "verify_external_live_authority_receipt",
     "verify_artifact_commitment",
 ]

@@ -19082,6 +19082,14 @@ def build_parser() -> argparse.ArgumentParser:
             "parent-b-information-deletion",
         ),
     )
+    catalytic_kernel_0.add_argument(
+        "--external-live-authority-id",
+        help="required 64-hex external one-shot authority ID for binding-2",
+    )
+    catalytic_kernel_0.add_argument(
+        "--authorized-commit",
+        help="required exact protected-main Git SHA for binding-2",
+    )
     catalytic_kernel_0.set_defaults(handler=command_run_catalytic_kernel_0)
     return parser
 

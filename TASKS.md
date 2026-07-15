@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Track A remains paused. CIB0 a1-a6, CK0 a1-a6, and all three binding-1 balanced-opaque runs remain immutable consumed evidence. Frozen design `balanced-opaque-relational-carrier-v1-binding-2` is implemented and statically preregistered from protected main `234bce73cff600879f0ff9c3e02f176f32f6626c` with one independently generated private root, exact binding-1 behavior, unchanged model-visible carrier, and exactly three reserved unconsumed run IDs. This operation created no inference, sidecar, model request, runtime evidence, live authority, claim change, Deep request, or promotion.
-**Next exact action:** separately authorize only `ck0-balanced-v1b2-full-r1` for one future live operation. `ck0-balanced-v1b2-delete-a-r1` and `ck0-balanced-v1b2-delete-b-r1` remain reserved but unauthorized until the binding-2 full-information result is terminally published as visible. General two-parent necessity, cross-binding replication, transfer, advantage, superiority, SOTA, broader/restart persistence, Deep, and promotion remain locked.
+**Active bounded objective:** Preserve the statically qualified binding-2 external one-shot live-authority bridge without granting authority. Static preregistration remains non-self-authorizing; a later separately authorized live command must supply a fresh 64-hex authority ID and the exact protected repair commit, and consumption must occur atomically immediately before the first live mutation. CIB0 a1-a6, CK0 a1-a6, binding-1 evidence, both private roots, all three binding-2 reservations, model-visible payloads, and every scientific claim remain unchanged.
+**Next exact action:** separately authorize only `ck0-balanced-v1b2-full-r1` with a fresh authority ID and the exact protected repair commit. The live prompt previously bound to `813ba25b62ea023bf0b7ac1d9c366c180115b811` remains historically unconsumed but cannot authorize the repaired code. Both deletion controls remain unauthorized.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -19,6 +19,19 @@
 - Correlation does not identify a causal bottleneck.
 - The next unchecked item in the active queue is the default next action.
 - A narrative report does not replace this task board.
+
+---
+
+## Active queue: binding-2 external one-shot authority bridge
+
+- [x] Preserve `live_authority_granted = false` and add a controller-only exact-run, exact-commit authority object plus run-key HMAC receipt law.
+- [x] Add explicit `--external-live-authority-id` and `--authorized-commit` inputs with no default or environment fallback; bind future manifest/result/closure evidence without entering model-visible payloads.
+- [x] Add the ignored flat per-run receipt namespace and place exclusive canonical-file consumption after complete non-mutating admission and immediately before runtime mutation, serialized across runs by a non-mutating binding-2 private-byte lock.
+- [x] Pass the 16-case focused authority suite with synthetic temporary authority state only.
+- [x] Receive terminal `PASS / PASS` from the one-shot lifecycle and no-self-authorization/control-gating auditors on frozen implementation identity `628E924204171268F1AEC96E0B2B548362BE730A07BF2171DF9513B38BF6A190` and pre-audit diff `2527AD5811CFC84081C4CBFD6A0F69DDF3A07978E6DB15E53C23AAF0E64B3594`.
+- [x] Complete static validation, update exact bindings/cursors, and carry the bridge in the one authorized publication commit.
+
+The two original auditor roles returned terminal `PASS / PASS` on the same frozen final code identity after the concurrency repair. Post-audit qualification passed 16 / 16 authority and binding-2 tests, 16 / 16 binding-1 compatibility tests, 12 / 12 CK0 tests, changed-file compilation, exact preregistration/schema/payload/commitment/custody validation, evaluator-lock validation, and protected preflight exactly once. The one complete CPU discovery ran 821 tests: 819 passed in-sandbox, and the two documented Windows file-lock restrictions passed 2 / 2 under exact targeted host permission; semantic failures are zero. No authority ID, authority receipt, reservation consumption, sidecar, model request, inference result, or claim unlock exists. Both deletion controls remain unauthorized and retain the terminal-visible-full plus separate-authority gates.
 
 ---
 

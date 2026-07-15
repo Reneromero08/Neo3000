@@ -2,279 +2,452 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
-import re
-import subprocess
 import tempfile
+import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 import catalytic_kernel_0_balanced_opaque as balanced
+import catalytic_kernel_0 as kernel
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CXX_RE = re.compile(r"(?<![A-Za-z0-9])C\d{2}(?![A-Za-z0-9])")
 SYNTHETIC_BINDING_1_ROOT = bytes(range(32))
 SYNTHETIC_BINDING_2_ROOT = bytes(reversed(range(32)))
+SYNTHETIC_COMMIT = "1" * 40
+SYNTHETIC_SHA = "A" * 64
 
 
-def private_pair() -> tuple[balanced.PrivateBinding, balanced.PrivateBinding]:
-    return (
-        balanced.PrivateBinding.from_secret(
-            SYNTHETIC_BINDING_1_ROOT, balanced.BINDING_1
-        ),
-        balanced.PrivateBinding.from_secret(
-            SYNTHETIC_BINDING_2_ROOT, balanced.BINDING_2
-        ),
+def private_binding(
+    configuration: balanced.PrivateBindingConfiguration = balanced.BINDING_2,
+) -> balanced.PrivateBinding:
+    secret = (
+        SYNTHETIC_BINDING_2_ROOT
+        if configuration is balanced.BINDING_2
+        else SYNTHETIC_BINDING_1_ROOT
     )
+    return balanced.PrivateBinding.from_secret(secret, configuration)
 
 
-def runtime(
-    configuration: balanced.PrivateBindingConfiguration,
-    run_id: str,
-    secret: bytes,
-) -> balanced.BalancedOpaqueRuntime:
-    return balanced.BalancedOpaqueRuntime(
-        repository=ROOT,
+def authority(
+    *,
+    run_id: str = balanced.BINDING_2_FULL_RUN_ID,
+    authority_id: str = "B" * 64,
+    authorized_commit: str = SYNTHETIC_COMMIT,
+    current_commit: str = SYNTHETIC_COMMIT,
+    private: balanced.PrivateBinding | None = None,
+    carrier_profile: str = balanced.BINDING_2_PROFILE_ID,
+) -> balanced.ExternalLiveAuthority:
+    selected = private or private_binding()
+    return balanced.build_external_live_authority(
+        private=selected,
+        external_authority_id=authority_id,
+        authorized_commit=authorized_commit,
+        current_commit=current_commit,
         run_id=run_id,
-        private=balanced.PrivateBinding.from_secret(secret, configuration),
+        carrier_profile=carrier_profile,
+        preregistration_artifact_sha256=SYNTHETIC_SHA,
+        implementation_binding_sha256="C" * 64,
+        model_sha256="D" * 64,
+        binary_sha256="E" * 64,
+        carrier_root_sha256="F" * 64,
     )
 
 
-class BalancedOpaqueBinding2Tests(unittest.TestCase):
-    def test_01_binding_1_commitment_construction_remains_exact(self) -> None:
-        private = balanced.PrivateBinding.from_secret(
-            SYNTHETIC_BINDING_1_ROOT, balanced.BINDING_1
-        )
-        self.assertEqual(
-            private.secret_commitment,
-            "20D9FC77E337E773BE7CD7164AA1807D3248C56AE149B02E96D46B4D9969C296",
-        )
-        self.assertEqual(
-            private.alias_map_commitment,
-            "2C7F2F868FCF53151CD9AEC164E1C6B2EB2AEEC3153FABA317E44AE78DCAB61B",
-        )
-        self.assertEqual(
-            dict(private.branch_alias_map_commitments),
-            {
-                "branch-a": "F9284EF72BCCC8561EC76FF4EAECE04852106B4DE488600793F050846B641CDE",
-                "branch-b": "F92BB1239F781D9FD37796395BACA437A444E20F9982964B75D6D2F0A2963E18",
-            },
-        )
-        self.assertEqual(
-            {
-                run_id: balanced.run_key_commitment(
-                    private.run_key(run_id), balanced.BINDING_1
-                )
-                for run_id in balanced.BINDING_1.run_modes
-            },
-            {
-                balanced.FULL_RUN_ID: "7C6A517A9469C3DF7D398BA64C99EF5C37D1811B55B216A10FB289FD13622A20",
-                balanced.DELETE_A_RUN_ID: "60894F8C4574C5552D9F9A07B28DC9891FCFE659A8C0813C0BB06CF306916165",
-                balanced.DELETE_B_RUN_ID: "0A2F3A747C6F8C11CB7DB51FB6D91F5765DD8E67825A88831A6B9F770D680BF8",
-            },
-        )
+def prepare_authority_repository(repository: Path) -> None:
+    (repository / "state").mkdir()
+    secret = repository / balanced.BINDING_2.secret_path
+    secret.parent.mkdir(parents=True, exist_ok=True)
+    secret.write_bytes(SYNTHETIC_BINDING_2_ROOT)
 
-    def test_02_binding_1_model_payload_hashes_remain_exact(self) -> None:
-        expected = {
-            balanced.FULL_RUN_ID: {
-                "borrow": "24E87CE8707F0F8F7168BBA4D6B55EC3AF3573E3640606BB2430BE425332BCB0",
-                "branch-a": "1478019EDF68FC1D904877E2B2ED9039BF710E540C084CFEE052BB706E2CFF6A",
-                "branch-b": "84FCC735293141245A49705268677CCEDE907119A1E38E41AA61400BC5F9668D",
-                "transform": "CB346824C860FB55804D64E1E1411E9D2B37E94EA2A3F0BE6F143D4824F9E2D2",
-                "extract": "010A24307C6E4059C1F10E8D0A24FDC16A1A3BF03A5D344365E3780F71840A8B",
-                "restore": "2D7F56D9D275C46DDF5CCC63E44B6F33B9125D7D38EF2E5AD56EC7D18D54BE6E",
-            },
-            balanced.DELETE_A_RUN_ID: {
-                "borrow": "24E87CE8707F0F8F7168BBA4D6B55EC3AF3573E3640606BB2430BE425332BCB0",
-                "branch-a": "1478019EDF68FC1D904877E2B2ED9039BF710E540C084CFEE052BB706E2CFF6A",
-                "branch-b": "84FCC735293141245A49705268677CCEDE907119A1E38E41AA61400BC5F9668D",
-                "transform": "03451314A3FF8A6D95424F7343628637B813A9520D7846C143F2F9EE62DD3476",
-                "extract": "BADDFA19E3F551F7E4A9F047E47C8BA0B3F8A030AC40E9970C93F10B2763DA30",
-                "restore": "2D7F56D9D275C46DDF5CCC63E44B6F33B9125D7D38EF2E5AD56EC7D18D54BE6E",
-            },
-            balanced.DELETE_B_RUN_ID: {
-                "borrow": "24E87CE8707F0F8F7168BBA4D6B55EC3AF3573E3640606BB2430BE425332BCB0",
-                "branch-a": "1478019EDF68FC1D904877E2B2ED9039BF710E540C084CFEE052BB706E2CFF6A",
-                "branch-b": "84FCC735293141245A49705268677CCEDE907119A1E38E41AA61400BC5F9668D",
-                "transform": "ADDCE122F2BDF282EC4DB051EE1E3CDD54608367D0AD674666AA69C5C2482B1D",
-                "extract": "BEF37D3B7EC3633C1112FC0168674E41A9A48F7C6FC951F450D3D2852705771E",
-                "restore": "2D7F56D9D275C46DDF5CCC63E44B6F33B9125D7D38EF2E5AD56EC7D18D54BE6E",
-            },
-        }
-        actual = {
-            run_id: {
-                request_id: balanced.json_sha256(payload)
-                for request_id, payload in balanced.static_model_visible_payloads(
-                    SYNTHETIC_BINDING_1_ROOT, run_id, balanced.BINDING_1
-                ).items()
-            }
-            for run_id in balanced.BINDING_1.run_modes
-        }
-        self.assertEqual(actual, expected)
 
-    def test_03_binding_2_private_paths_are_ignored_regular_and_once_only(self) -> None:
-        for relative in (
-            balanced.BINDING_2.secret_path,
-            balanced.BINDING_2.creation_receipt_path,
+class ExternalAuthorityBridgeTests(unittest.TestCase):
+    def test_01_static_preregistration_remains_non_self_authorizing(self) -> None:
+        document = json.loads(
+            (ROOT / balanced.BINDING_2.preregistration_path).read_bytes()
+        )
+        boundary = document["future_authorization_boundary"]
+        self.assertFalse(boundary["live_authority_granted"])
+        self.assertFalse(boundary["embedded_live_authority_granted"])
+        self.assertTrue(boundary["external_live_authority_required"])
+        private = balanced._private_binding_from_repository(ROOT, balanced.BINDING_2)
+        projection = balanced.validate_preregistration(
+            ROOT,
+            private,
+            run_id=balanced.BINDING_2_FULL_RUN_ID,
+            require_final=False,
+            configuration=balanced.BINDING_2,
+            for_execution=False,
+        )
+        self.assertEqual(projection["status"], "validated-static-preregistered")
+
+    def test_02_tracked_live_authority_true_is_rejected(self) -> None:
+        boundary = balanced.binding_2_authorization_boundary()
+        boundary["live_authority_granted"] = True
+        with self.assertRaises(balanced.BalancedOpaqueError):
+            balanced.validate_binding_2_authorization_boundary(boundary)
+
+    def test_03_binding_2_execution_without_external_authority_fails_before_mutation(self) -> None:
+        private = balanced._private_binding_from_repository(ROOT, balanced.BINDING_2)
+        receipt = balanced.authority_receipt_path(
+            ROOT, balanced.BINDING_2_FULL_RUN_ID
+        )
+        self.assertFalse(receipt.exists())
+        with self.assertRaisesRegex(
+            balanced.BalancedOpaqueError, "requires external one-shot authority"
         ):
-            ignored = subprocess.run(
-                ["git", "check-ignore", "--quiet", relative],
-                cwd=ROOT,
-                check=False,
+            balanced.validate_preregistration(
+                ROOT,
+                private,
+                run_id=balanced.BINDING_2_FULL_RUN_ID,
+                require_final=False,
+                configuration=balanced.BINDING_2,
+                for_execution=True,
             )
-            self.assertEqual(ignored.returncode, 0)
-            path = ROOT / relative
-            self.assertTrue(path.is_file())
-            self.assertFalse(path.is_symlink())
-        with tempfile.TemporaryDirectory(dir=ROOT / "state") as temporary:
+        self.assertFalse(receipt.exists())
+
+    def test_04_malformed_authority_id_fails(self) -> None:
+        for malformed in ("", "0" * 63, "0" * 65, "Z" * 64):
+            with self.subTest(malformed_length=len(malformed)):
+                with self.assertRaises(balanced.BalancedOpaqueError):
+                    authority(authority_id=malformed)
+
+    def test_05_authorized_commit_mismatch_fails(self) -> None:
+        with self.assertRaisesRegex(
+            balanced.BalancedOpaqueError, "commit mismatch"
+        ):
+            authority(authorized_commit="2" * 40)
+
+    def test_06_run_id_mismatch_fails(self) -> None:
+        selected = private_binding()
+        full = authority(private=selected)
+        with self.assertRaisesRegex(
+            balanced.BalancedOpaqueError, "scope mismatch"
+        ):
+            balanced.validate_external_live_authority(
+                selected,
+                full,
+                run_id=balanced.BINDING_2_DELETE_A_RUN_ID,
+                carrier_profile=balanced.BINDING_2_PROFILE_ID,
+                current_commit=SYNTHETIC_COMMIT,
+            )
+
+    def test_07_profile_and_binding_mismatch_fail(self) -> None:
+        with self.assertRaisesRegex(
+            balanced.BalancedOpaqueError, "carrier profile mismatch"
+        ):
+            authority(carrier_profile=balanced.BINDING_1_PROFILE_ID)
+        with self.assertRaisesRegex(
+            balanced.BalancedOpaqueError, "binding-2 only"
+        ):
+            authority(private=private_binding(balanced.BINDING_1))
+        instance = balanced.BalancedOpaqueRuntime(
+            repository=ROOT,
+            run_id=balanced.BINDING_2_FULL_RUN_ID,
+            private=private_binding(),
+        )
+        with self.assertRaisesRegex(
+            kernel.CatalyticKernel0Error, "run ID and carrier profile"
+        ):
+            kernel._validate_balanced_profile_selection(
+                balanced.BINDING_1_PROFILE_ID, instance
+            )
+
+    def test_08_authority_body_and_hmac_recompute_exactly(self) -> None:
+        selected = private_binding()
+        external = authority(private=selected)
+        body = external.body()
+        expected = hmac.new(
+            selected.run_key(external.run_id),
+            b"ck0-balanced/external-live-authority-v1\0"
+            + balanced.canonical_json_bytes(body),
+            hashlib.sha256,
+        ).hexdigest().upper()
+        actual = balanced.external_authority_receipt_hmac(selected, external)
+        self.assertEqual(actual, expected)
+        balanced.validate_external_live_authority(
+            selected,
+            external,
+            run_id=external.run_id,
+            carrier_profile=external.carrier_profile,
+            current_commit=SYNTHETIC_COMMIT,
+            receipt_hmac=actual,
+        )
+
+    def test_09_tampered_authority_receipt_fails(self) -> None:
+        selected = private_binding()
+        external = authority(private=selected)
+        with tempfile.TemporaryDirectory() as temporary:
             repository = Path(temporary)
-            (repository / "state").mkdir()
-            path = balanced.create_private_secret_once(repository, balanced.BINDING_2)
-            self.assertEqual(path.stat().st_size, 32)
-            with self.assertRaises(balanced.BalancedOpaqueError):
-                balanced.create_private_secret_once(repository, balanced.BINDING_2)
-        with tempfile.TemporaryDirectory(dir=ROOT / "state") as temporary:
-            repository = Path(temporary)
-            receipt = repository / balanced.BINDING_2.creation_receipt_path
-            receipt.parent.mkdir(parents=True)
-            receipt.write_text("inconsistent-state", encoding="utf-8")
-            with self.assertRaises(balanced.BalancedOpaqueError):
-                balanced.create_private_secret_once(repository, balanced.BINDING_2)
-            self.assertFalse(
-                (repository / balanced.BINDING_2.secret_path).exists()
-            )
+            prepare_authority_repository(repository)
+            with mock.patch.object(
+                balanced.subprocess,
+                "run",
+                return_value=SimpleNamespace(returncode=0),
+            ):
+                balanced.consume_external_live_authority_once(
+                    repository, selected, external
+                )
+            path = balanced.authority_receipt_path(repository, external.run_id)
+            document = json.loads(path.read_bytes())
+            document["authority"]["binary_sha256"] = "0" * 64
+            path.write_text(json.dumps(document), encoding="utf-8")
+            with self.assertRaisesRegex(
+                balanced.BalancedOpaqueError, "binding changed"
+            ):
+                balanced.verify_external_live_authority_receipt(
+                    repository, selected, external
+                )
 
-    def test_04_binding_2_alias_derivation_is_deterministic(self) -> None:
-        _, profile = balanced.build_profile_binding(balanced.BINDING_2)
-        first = balanced.derive_alias_mapping(
-            SYNTHETIC_BINDING_2_ROOT, profile, balanced.BINDING_2
-        )
-        second = balanced.derive_alias_mapping(
-            SYNTHETIC_BINDING_2_ROOT, profile, balanced.BINDING_2
-        )
-        self.assertTrue(first == second)
-        self.assertEqual(set(first), set(balanced.ALIASES))
-        self.assertEqual(set(first.values()), {f"C{index:02d}" for index in range(64)})
-
-    def test_05_complete_binding_2_alias_map_differs(self) -> None:
-        first, second = private_pair()
-        self.assertTrue(dict(first.alias_to_internal) != dict(second.alias_to_internal))
-        self.assertNotEqual(first.alias_map_commitment, second.alias_map_commitment)
-
-    def test_06_private_singleton_alias_differs(self) -> None:
-        first, second = private_pair()
-        winner = balanced.EXPECTED_FULL_SUPPORT[0]
-        self.assertTrue(first.internal_to_alias[winner] != second.internal_to_alias[winner])
-
-    def test_07_both_ordered_support_tuples_differ(self) -> None:
-        first, second = private_pair()
-        for branch in ("branch-a", "branch-b"):
-            one = tuple(
-                sorted(first.internal_to_alias[item] for item in balanced.EXPECTED_SUPPORTS[branch])
-            )
-            two = tuple(
-                sorted(second.internal_to_alias[item] for item in balanced.EXPECTED_SUPPORTS[branch])
-            )
-            self.assertTrue(one != two)
-
-    def test_08_both_branch_presentations_differ(self) -> None:
-        first, second = private_pair()
-        winner = balanced.EXPECTED_FULL_SUPPORT[0]
-        for branch in ("branch-a", "branch-b"):
-            self.assertNotEqual(
-                first.branch_alias_map_commitments[branch],
-                second.branch_alias_map_commitments[branch],
-            )
-            one = {value: key for key, value in first.branch_alias_to_internal[branch].items()}
-            two = {value: key for key, value in second.branch_alias_to_internal[branch].items()}
-            self.assertTrue(one[winner] != two[winner])
-
-    def test_09_binding_2_run_keys_are_independent_and_run_bound(self) -> None:
-        first, second = private_pair()
-        one = {
-            balanced.run_key_commitment(first.run_key(run_id), balanced.BINDING_1)
-            for run_id in balanced.BINDING_1.run_modes
-        }
-        two = {
-            balanced.run_key_commitment(second.run_key(run_id), balanced.BINDING_2)
-            for run_id in balanced.BINDING_2.run_modes
-        }
-        self.assertEqual(len(two), 3)
-        self.assertTrue(one.isdisjoint(two))
-
-    def test_10_carrier_prompts_schemas_and_seeds_are_binding_invariant(self) -> None:
-        first, second = private_pair()
-        report = balanced.static_payload_invariance_report(first, second)
-        self.assertEqual(report["status"], "pass")
-        self.assertTrue(report["immutable_carrier_root_exact"])
-        self.assertEqual(
-            balanced.build_carrier()["carrier_root_sha256"],
-            "E66846DC5097C5E9D6CFE5DC8679660CC193648DAE7A555AAA2587BE8A371033",
-        )
-        self.assertEqual(report["schemas_exact"], balanced.response_schema_hashes())
-
-    def test_11_binding_identity_and_correspondence_never_enter_payloads(self) -> None:
-        first, second = private_pair()
+    def test_10_authority_fields_cannot_enter_model_visible_payloads(self) -> None:
+        selected = private_binding()
+        external = authority(private=selected)
+        receipt_hmac = balanced.external_authority_receipt_hmac(selected, external)
         forbidden = {
-            balanced.BINDING_2.profile_id,
-            first.secret_commitment,
-            second.secret_commitment,
-            first.alias_map_commitment,
-            second.alias_map_commitment,
-            *first.branch_alias_map_commitments.values(),
-            *second.branch_alias_map_commitments.values(),
+            "authority_kind",
+            "authority_id_sha256",
+            "authorized_commit",
+            "preregistration_artifact_sha256",
+            "run_key_commitment",
+            "maximum_invocations",
+            "automatic_follow_on",
+            external.authority_id_sha256,
+            external.authorized_commit,
+            receipt_hmac,
         }
         for run_id in balanced.BINDING_2.run_modes:
             for payload in balanced.static_model_visible_payloads(
                 SYNTHETIC_BINDING_2_ROOT, run_id, balanced.BINDING_2
             ).values():
                 text = balanced.canonical_json_text(payload)
-                self.assertIsNone(CXX_RE.search(text))
                 self.assertTrue(all(value not in text for value in forbidden))
 
-    def test_12_binding_2_deletion_receipt_shape_is_frozen(self) -> None:
-        for run_id, deleted_role in (
-            (balanced.BINDING_2_DELETE_A_RUN_ID, "parent-0"),
-            (balanced.BINDING_2_DELETE_B_RUN_ID, "parent-1"),
+    def test_11_authority_receipt_is_atomically_consumed_once(self) -> None:
+        selected = private_binding()
+        external = authority(private=selected)
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            prepare_authority_repository(repository)
+            with mock.patch.object(
+                balanced.subprocess,
+                "run",
+                return_value=SimpleNamespace(returncode=0),
+            ):
+                evidence = balanced.consume_external_live_authority_once(
+                    repository, selected, external
+                )
+            path = balanced.authority_receipt_path(repository, external.run_id)
+            self.assertTrue(path.is_file())
+            self.assertFalse(path.is_symlink())
+            self.assertTrue(evidence["consumed"])
+            self.assertTrue(evidence["consumption_occurred_before_live_mutation"])
+            self.assertEqual(
+                path.read_bytes(),
+                balanced.canonical_json_bytes(json.loads(path.read_bytes())),
+            )
+        replacement = authority(private=selected, authority_id="C" * 64)
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            prepare_authority_repository(repository)
+            with mock.patch.object(
+                balanced.subprocess,
+                "run",
+                return_value=SimpleNamespace(returncode=0),
+            ), mock.patch.object(
+                balanced,
+                "verify_external_live_authority_receipt",
+                side_effect=balanced.BalancedOpaqueError(
+                    "synthetic post-consumption crash"
+                ),
+            ):
+                with self.assertRaisesRegex(
+                    balanced.BalancedOpaqueError, "post-consumption crash"
+                ):
+                    balanced.consume_external_live_authority_once(
+                        repository, selected, external
+                    )
+            path = balanced.authority_receipt_path(repository, external.run_id)
+            self.assertTrue(path.is_file())
+            with mock.patch.object(
+                balanced.subprocess,
+                "run",
+                return_value=SimpleNamespace(returncode=0),
+            ):
+                with self.assertRaisesRegex(
+                    balanced.BalancedOpaqueError, "already attempted"
+                ):
+                    balanced.consume_external_live_authority_once(
+                        repository, selected, replacement
+                    )
+
+    def test_12_existing_consumed_receipt_prevents_reuse(self) -> None:
+        selected = private_binding()
+        first = authority(private=selected, authority_id="B" * 64)
+        replacement = authority(private=selected, authority_id="C" * 64)
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            prepare_authority_repository(repository)
+            barrier = threading.Barrier(2)
+
+            def attempt() -> str:
+                barrier.wait()
+                try:
+                    balanced.consume_external_live_authority_once(
+                        repository, selected, first
+                    )
+                    return "consumed"
+                except balanced.BalancedOpaqueError:
+                    return "blocked"
+
+            with mock.patch.object(
+                balanced.subprocess,
+                "run",
+                return_value=SimpleNamespace(returncode=0),
+            ):
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    outcomes = list(executor.map(lambda _: attempt(), range(2)))
+                self.assertEqual(sorted(outcomes), ["blocked", "consumed"])
+                receipt = balanced.authority_receipt_path(
+                    repository, first.run_id
+                )
+                self.assertTrue(receipt.is_file())
+                self.assertFalse(
+                    (repository / "state" / "catalytic_kernel_0").exists()
+                )
+                with self.assertRaisesRegex(
+                    balanced.BalancedOpaqueError, "already attempted"
+                ):
+                    balanced.consume_external_live_authority_once(
+                        repository, selected, replacement
+                    )
+
+    def test_13_failure_before_consumption_creates_no_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            (repository / "state").mkdir()
+            path = balanced.authority_receipt_path(
+                repository, balanced.BINDING_2_FULL_RUN_ID
+            )
+            with self.assertRaises(balanced.BalancedOpaqueError):
+                authority(authorized_commit="2" * 40)
+            self.assertFalse(path.exists())
+
+    def test_14_full_run_authority_cannot_authorize_deletion_controls(self) -> None:
+        selected = private_binding()
+        full = authority(private=selected)
+        for deletion_run in (
+            balanced.BINDING_2_DELETE_A_RUN_ID,
+            balanced.BINDING_2_DELETE_B_RUN_ID,
         ):
-            instance = runtime(
-                balanced.BINDING_2, run_id, SYNTHETIC_BINDING_2_ROOT
-            )
-            artifacts = {
-                "branch-a": instance.normalize_branch("branch-a", ["K00"]),
-                "branch-b": instance.normalize_branch("branch-b", ["K01"]),
-            }
-            parents = instance.assignment("transform", artifacts)["parent_artifacts"]
-            self.assertEqual([item["artifact_role"] for item in parents], ["parent-0", "parent-1"])
-            receipt = next(item for item in parents if item["artifact_role"] == deleted_role)
-            self.assertEqual(set(receipt), set(balanced.DELETION_RECEIPT_FIELDS))
+            with self.subTest(run_id=deletion_run):
+                with self.assertRaisesRegex(
+                    balanced.BalancedOpaqueError, "scope mismatch"
+                ):
+                    balanced.validate_external_live_authority(
+                        selected,
+                        full,
+                        run_id=deletion_run,
+                        carrier_profile=balanced.BINDING_2_PROFILE_ID,
+                        current_commit=SYNTHETIC_COMMIT,
+                    )
 
-    def test_13_three_binding_2_run_ids_are_reserved_and_unconsumed(self) -> None:
-        document = json.loads((ROOT / balanced.BINDING_2.preregistration_path).read_bytes())
-        runs = document["future_runs"]["runs"]
-        self.assertEqual({item["run_id"] for item in runs}, set(balanced.BINDING_2.run_modes))
-        self.assertTrue(all(item["authorized_invocations"] == 0 for item in runs))
-        self.assertTrue(all(item["reservation_state"] == "reserved-unconsumed" for item in runs))
-        self.assertTrue(
-            all(
-                not (ROOT / "state" / "catalytic_kernel_0" / run_id).exists()
-                for run_id in balanced.BINDING_2.run_modes
-            )
+    def test_15_deletions_keep_terminal_full_and_separate_authority_gates(self) -> None:
+        selected = private_binding()
+        full = authority(private=selected, authority_id="B" * 64)
+        reused_delete_a = authority(
+            private=selected,
+            run_id=balanced.BINDING_2_DELETE_A_RUN_ID,
+            authority_id="B" * 64,
         )
-
-    def test_14_full_first_boundary_blocks_both_deletion_controls(self) -> None:
-        document = json.loads((ROOT / balanced.BINDING_2.preregistration_path).read_bytes())
-        boundary = document["future_authorization_boundary"]
-        self.assertFalse(boundary["live_authority_granted"])
+        fresh_delete_a = authority(
+            private=selected,
+            run_id=balanced.BINDING_2_DELETE_A_RUN_ID,
+            authority_id="C" * 64,
+        )
+        self.assertEqual(
+            full.authority_id_sha256, reused_delete_a.authority_id_sha256
+        )
+        self.assertNotEqual(
+            full.authority_id_sha256, fresh_delete_a.authority_id_sha256
+        )
+        boundary = balanced.binding_2_authorization_boundary()
         self.assertFalse(boundary["delete_a_authorized"])
         self.assertFalse(boundary["delete_b_authorized"])
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            prepare_authority_repository(repository)
+            secret_path = repository / balanced.BINDING_2.secret_path
+            private_bytes_before = secret_path.read_bytes()
+            (repository / "state" / "catalytic_kernel_0").mkdir()
+            barrier = threading.Barrier(2)
+
+            def attempt(
+                external: balanced.ExternalLiveAuthority,
+            ) -> str:
+                barrier.wait()
+                try:
+                    balanced.consume_external_live_authority_once(
+                        repository, selected, external
+                    )
+                    return "consumed"
+                except balanced.BalancedOpaqueError:
+                    return "blocked"
+
+            with mock.patch.object(
+                balanced.subprocess,
+                "run",
+                return_value=SimpleNamespace(returncode=0),
+            ):
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    outcomes = list(
+                        executor.map(attempt, (full, reused_delete_a))
+                    )
+            self.assertEqual(sorted(outcomes), ["blocked", "consumed"])
+            receipts = [
+                balanced.authority_receipt_path(repository, run_id)
+                for run_id in (
+                    balanced.BINDING_2_FULL_RUN_ID,
+                    balanced.BINDING_2_DELETE_A_RUN_ID,
+                )
+            ]
+            self.assertEqual(sum(path.is_file() for path in receipts), 1)
+            self.assertEqual(secret_path.read_bytes(), private_bytes_before)
+            with self.assertRaisesRegex(
+                balanced.BalancedOpaqueError, "full-information run"
+            ):
+                balanced._require_terminal_full_run(repository, balanced.BINDING_2)
+
+    def test_16_binding_1_history_commands_commitments_and_payloads_are_unchanged(self) -> None:
+        path = ROOT / balanced.BINDING_1.preregistration_path
         self.assertEqual(
-            boundary["only_next_separately_authorizable_action"],
-            balanced.BINDING_2_FULL_RUN_ID,
+            hashlib.sha256(path.read_bytes()).hexdigest().upper(),
+            "D6FEC8B0477A198216ECDDDD8DE11AD2734410A640A69B37017394D9454643B7",
         )
-        with self.assertRaises(balanced.BalancedOpaqueError):
-            balanced._require_terminal_full_run(ROOT, balanced.BINDING_2)
+        document = json.loads(path.read_bytes())
+        self.assertNotIn("future_command_bindings", document)
+        selected = private_binding(balanced.BINDING_1)
+        self.assertEqual(
+            selected.secret_commitment,
+            "20D9FC77E337E773BE7CD7164AA1807D3248C56AE149B02E96D46B4D9969C296",
+        )
+        self.assertEqual(
+            selected.alias_map_commitment,
+            "2C7F2F868FCF53151CD9AEC164E1C6B2EB2AEEC3153FABA317E44AE78DCAB61B",
+        )
+        expected_borrow = "24E87CE8707F0F8F7168BBA4D6B55EC3AF3573E3640606BB2430BE425332BCB0"
+        for run_id in balanced.BINDING_1.run_modes:
+            payloads = balanced.static_model_visible_payloads(
+                SYNTHETIC_BINDING_1_ROOT, run_id, balanced.BINDING_1
+            )
+            self.assertEqual(
+                balanced.json_sha256(payloads["borrow"]), expected_borrow
+            )
 
 
 if __name__ == "__main__":
