@@ -1,6 +1,22 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Balanced opaque CK0 causal package adjudicated; fresh-binding replication selected
+## Checkpoint 2: Balanced opaque CK0 binding 2 statically preregistered
+
+**Status:** BINDING-2 STATIC PACKAGE COMPLETE / EXACTLY THREE RUNS RESERVED-UNCONSUMED / ZERO LIVE AUTHORITY / BROAD CLAIMS LOCKED
+
+- [x] Admit protected main `234bce73cff600879f0ff9c3e02f176f32f6626c`, exact local/remote refs, clean candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, exact model/binary identities, healthy stable PID `20388`, free ports 9393/9494, absent sidecars/run locks, exact CIB0 a1-a6, CK0 a1-a6, binding-1 evidence, private custody, and adjudication identity.
+- [x] Generate exactly one independent ignored regular 32-byte root and creation receipt for `balanced-opaque-relational-carrier-v1-binding-2`; perform no resampling and preserve binding-1 private files exactly.
+- [x] Reuse HMAC-SHA-256, canonical serialization, key hierarchy, stage/run binding, and verification law. Preserve exact binding-1 commitments and payload hashes while domain-separating every binding-2 private commitment.
+- [x] Pass all 14 private independence gates. The complete alias map, private singleton alias, both ordered support presentations, both branch presentations, both private singleton local presentations, and all three run-key commitments differ without tracked correspondence disclosure.
+- [x] Preserve exact carrier content/root, prompts, schemas, seeds, temperature, thinking setting, parent order, classifications, lifecycle, one-slot/one-sidecar law, cleanup, restoration, historical custody, and metadata-only persistence.
+- [x] Receive terminal `PASS` from exactly two read-only auditors after one bounded repair and one re-audit of only the affected scopes: binding independence and cross-binding no-correspondence.
+- [x] Pass 14 / 14 binding-2 tests, 16 / 16 binding-1 balanced tests, 12 / 12 existing CK0 tests, changed-file compilation, canonical JSON/JSONL, evaluator lock, exact historical/binding-1 rehash, private/tracked-correspondence scans, static payload invariance, and protected preflight exactly once. The one complete CPU suite ran 819 tests: 817 in-sandbox passes plus 2 / 2 exact targeted host-permission passes for the known Windows file-lock restriction; semantic failures are zero.
+- [x] Reserve only `ck0-balanced-v1b2-full-r1`, `ck0-balanced-v1b2-delete-a-r1`, and `ck0-balanced-v1b2-delete-b-r1`, all unconsumed with `authorized_invocations = 0`. Create no runtime directory, live result, model request, sidecar, or claim unlock.
+- [x] Preserve `lab/results.jsonl` unchanged and keep cross-binding replication, general two-parent necessity, transfer, general catalytic inference, advantage, superiority, SOTA, broader/restart HoloState, Deep, and promotion locked.
+
+**Next exact action:** separately authorize only `ck0-balanced-v1b2-full-r1`. Both deletion controls remain unauthorized until that full-information run is terminally published as visible; collapse or inconclusion does not authorize them.
+
+## Historical checkpoint: Balanced opaque CK0 causal package adjudicated; fresh-binding replication selected
 
 **Status:** `CAUSAL_PACKAGE_VALID_WITH_RESIDUAL_LIMITATIONS` / `REPLICATE_TRIAD_UNDER_FRESH_PRIVATE_BINDING` / LANE A / BINDING-2 DESIGN FROZEN ONLY / NON-PRODUCTION / BROAD CLAIMS LOCKED
 

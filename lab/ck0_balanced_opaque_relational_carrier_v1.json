@@ -512,34 +512,6 @@
     "sidecar_launched": false,
     "synthetic_live_evidence": false
   },
-  "future_runs": {
-    "deletion_controls_locked_until_full_terminal_visible": true,
-    "next_separately_authorized_live_action": "ck0-balanced-v1-full-r1",
-    "runs": [
-      {
-        "authorized_invocations": 1,
-        "mode": "full-information",
-        "retry_count": 0,
-        "run_id": "ck0-balanced-v1-full-r1",
-        "run_key_commitment": "9465F6FB2DE9764366657BFFD82D686BE67654AFD88B7A6EA16939D2F2DC7419"
-      },
-      {
-        "authorized_invocations": 1,
-        "mode": "delete-parent-0",
-        "retry_count": 0,
-        "run_id": "ck0-balanced-v1-delete-a-r1",
-        "run_key_commitment": "CB5CF0961100AE24FDD70729A8AAC3C5F5D31989D1781125411AB39EB1EBB019"
-      },
-      {
-        "authorized_invocations": 1,
-        "mode": "delete-parent-1",
-        "retry_count": 0,
-        "run_id": "ck0-balanced-v1-delete-b-r1",
-        "run_key_commitment": "BA08A0D3D7E26E705089185CDF323C8AA79CA39DB8FC138F2F5150A661282CD3"
-      }
-    ],
-    "visibility": "controller_private_preregistered"
-  },
   "full_information_observed_result": {
     "cache_admissions": [
       {
@@ -724,6 +696,34 @@
       "top_matched_private_singleton": true
     }
   },
+  "future_runs": {
+    "deletion_controls_locked_until_full_terminal_visible": true,
+    "next_separately_authorized_live_action": "ck0-balanced-v1-full-r1",
+    "runs": [
+      {
+        "authorized_invocations": 1,
+        "mode": "full-information",
+        "retry_count": 0,
+        "run_id": "ck0-balanced-v1-full-r1",
+        "run_key_commitment": "9465F6FB2DE9764366657BFFD82D686BE67654AFD88B7A6EA16939D2F2DC7419"
+      },
+      {
+        "authorized_invocations": 1,
+        "mode": "delete-parent-0",
+        "retry_count": 0,
+        "run_id": "ck0-balanced-v1-delete-a-r1",
+        "run_key_commitment": "CB5CF0961100AE24FDD70729A8AAC3C5F5D31989D1781125411AB39EB1EBB019"
+      },
+      {
+        "authorized_invocations": 1,
+        "mode": "delete-parent-1",
+        "retry_count": 0,
+        "run_id": "ck0-balanced-v1-delete-b-r1",
+        "run_key_commitment": "BA08A0D3D7E26E705089185CDF323C8AA79CA39DB8FC138F2F5150A661282CD3"
+      }
+    ],
+    "visibility": "controller_private_preregistered"
+  },
   "historical_claims": {
     "automatic_promotion": false,
     "bilateral_parent_dependence": "LOCKED",
@@ -743,19 +743,19 @@
     "files": [
       {
         "path": ".gitignore",
-        "sha256": "76D467E178D56345408AC94E2C4DC6F0335D6474A7366450A879E44922A6D0A4"
+        "sha256": "061771C7861D557BE20DA4A198948D2B9E7F7288AFE6B330BFB29FADB72E91C0"
       },
       {
         "path": "scripts/catalytic_kernel_0.py",
-        "sha256": "E94F67BC58A31C8825F3085A318D502ECD4A32103F403CF697998E477F29EA8B"
+        "sha256": "5CC596E75FB07CB41B95794A3D2C90DE7FCDF99E4C5A4FDAA55FBA93D5508F90"
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_opaque.py",
-        "sha256": "AE36119B4BFA7B727E1848B6C7FA4F07FAF74E41FE08CC87FF9F913472CD59E7"
+        "sha256": "47F168C3B74E4297305AD0CCE6D3CB9D5E89503835C282364B81CE6AAB1B4669"
       },
       {
         "path": "scripts/holostate_live.py",
-        "sha256": "2279CB0A283512DABB8AAD7C0C4C701AA9423813C01B839165019CE0B85CB77F"
+        "sha256": "978E913C243672E198E97EBD011A46F2E09CE43A13D547489DC3B1DD09BFF851"
       },
       {
         "path": "scripts/test_catalytic_kernel_0.py",
@@ -767,7 +767,7 @@
       }
     ],
     "kind": "normalized-source-bundle-sha256-v1",
-    "sha256": "1D5D5E79A5AA322DD06ACCD78F48C52141F78690673A9C87C5B4E9FAB3DD6796"
+    "sha256": "4525AF1905147706C9AE9126F97CAB79E49E22B4CEADA822A53D4B5A0B2D9ADE"
   },
   "model_visible_carrier": {
     "allowed_root_content": [

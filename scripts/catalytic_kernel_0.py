@@ -2137,14 +2137,14 @@ def run_catalytic_kernel_0(
     repository = Path(repository_root).resolve() if repository_root is not None else Path(__file__).resolve().parents[1]
     requested_profile = _arg(args, "carrier_profile")
     from catalytic_kernel_0_balanced_opaque import (
-        PROFILE_ID as BALANCED_OPAQUE_PROFILE_ID,
+        BINDING_CONFIGURATIONS as BALANCED_OPAQUE_BINDINGS,
         BalancedOpaqueRuntime,
     )
 
     if requested_profile not in {
         None,
         UNRESOLVED_PROFILE_ID,
-        BALANCED_OPAQUE_PROFILE_ID,
+        *BALANCED_OPAQUE_BINDINGS,
     }:
         raise CatalyticKernel0Error("unknown or unauthorized carrier profile")
     profile = (
@@ -2154,7 +2154,7 @@ def run_catalytic_kernel_0(
     )
     balanced_runtime = (
         BalancedOpaqueRuntime.from_repository(repository, run_id)
-        if requested_profile == BALANCED_OPAQUE_PROFILE_ID
+        if requested_profile in BALANCED_OPAQUE_BINDINGS
         else None
     )
     if balanced_runtime is not None and _arg(args, "control") is not None:
@@ -2238,7 +2238,7 @@ def run_catalytic_kernel_0(
         manifest["carrier_profile"] = dict(carrier["profile"])
     if balanced_runtime is not None:
         manifest["carrier_profile"] = {
-            "profile_id": BALANCED_OPAQUE_PROFILE_ID,
+            "profile_id": balanced_runtime.configuration.profile_id,
             "profile_binding_sha256": balanced_runtime.private.profile_binding_sha256,
             "run_mode": balanced_runtime.mode,
             "model_visible_mapping": False,

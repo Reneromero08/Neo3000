@@ -18971,7 +18971,10 @@ def _catalytic_kernel_0_result_succeeded(
 ) -> bool:
     if result.get("status") != "complete":
         return False
-    if carrier_profile == "balanced-opaque-relational-carrier-v1":
+    if carrier_profile in {
+        "balanced-opaque-relational-carrier-v1",
+        "balanced-opaque-relational-carrier-v1-binding-2",
+    }:
         return result.get("balanced_classification") in {
             "BALANCED_OPAQUE_RELATIONAL_VISIBLE",
             "BALANCED_OPAQUE_RELATIONAL_COLLAPSED",
@@ -19069,6 +19072,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=(
             "complementary-unresolved-public-v1",
             "balanced-opaque-relational-carrier-v1",
+            "balanced-opaque-relational-carrier-v1-binding-2",
         ),
     )
     catalytic_kernel_0.add_argument(

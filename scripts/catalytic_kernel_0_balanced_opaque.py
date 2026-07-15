@@ -30,10 +30,16 @@ from catalytic_inference_bench_0 import validate_metadata_only
 from catalytic_inference_bench_0_runtime import MODEL_ALIAS
 
 
-PROFILE_ID = "balanced-opaque-relational-carrier-v1"
+BINDING_1_PROFILE_ID = "balanced-opaque-relational-carrier-v1"
+BINDING_2_PROFILE_ID = "balanced-opaque-relational-carrier-v1-binding-2"
+PROFILE_ID = BINDING_1_PROFILE_ID
 CARRIER_ID = "ck0:balanced-opaque-relational-carrier-v1"
 STARTING_PROTECTED_MAIN = "9eb024d9f664b5592997aac90081d083e75adbd1"
 PREREGISTRATION_PATH = "lab/ck0_balanced_opaque_relational_carrier_v1.json"
+BINDING_2_STARTING_PROTECTED_MAIN = "234bce73cff600879f0ff9c3e02f176f32f6626c"
+BINDING_2_PREREGISTRATION_PATH = (
+    "lab/ck0_balanced_opaque_relational_carrier_v1_binding_2.json"
+)
 PRIVATE_SECRET_PATH = (
     "state/catalytic_kernel_0_private/"
     "balanced-opaque-relational-carrier-v1.secret"
@@ -41,6 +47,14 @@ PRIVATE_SECRET_PATH = (
 PRIVATE_CREATION_RECEIPT_PATH = (
     "state/catalytic_kernel_0_private/"
     "balanced-opaque-relational-carrier-v1.creation.json"
+)
+BINDING_2_PRIVATE_SECRET_PATH = (
+    "state/catalytic_kernel_0_private/"
+    "balanced-opaque-relational-carrier-v1-binding-2.secret"
+)
+BINDING_2_PRIVATE_CREATION_RECEIPT_PATH = (
+    "state/catalytic_kernel_0_private/"
+    "balanced-opaque-relational-carrier-v1-binding-2.creation.json"
 )
 
 TASK_INDEX = 2
@@ -74,9 +88,61 @@ RUN_MODES = {
     DELETE_A_RUN_ID: "delete-parent-0",
     DELETE_B_RUN_ID: "delete-parent-1",
 }
+BINDING_2_FULL_RUN_ID = "ck0-balanced-v1b2-full-r1"
+BINDING_2_DELETE_A_RUN_ID = "ck0-balanced-v1b2-delete-a-r1"
+BINDING_2_DELETE_B_RUN_ID = "ck0-balanced-v1b2-delete-b-r1"
+BINDING_2_RUN_MODES = {
+    BINDING_2_FULL_RUN_ID: "full-information",
+    BINDING_2_DELETE_A_RUN_ID: "delete-parent-0",
+    BINDING_2_DELETE_B_RUN_ID: "delete-parent-1",
+}
 DELETED_PARENT_BY_MODE = {
     "delete-parent-0": "parent-0",
     "delete-parent-1": "parent-1",
+}
+
+
+@dataclass(frozen=True)
+class PrivateBindingConfiguration:
+    """Controller-private binding selector; never serialized into model payloads."""
+
+    profile_id: str
+    preregistration_path: str
+    secret_path: str
+    creation_receipt_path: str
+    run_modes: Mapping[str, str] = field(repr=False)
+    domain_separation_identity: str = field(repr=False)
+    protected_starting_sha: str
+    legacy_domain_compatibility: bool = False
+
+
+BINDING_1 = PrivateBindingConfiguration(
+    profile_id=BINDING_1_PROFILE_ID,
+    preregistration_path=PREREGISTRATION_PATH,
+    secret_path=PRIVATE_SECRET_PATH,
+    creation_receipt_path=PRIVATE_CREATION_RECEIPT_PATH,
+    run_modes=RUN_MODES,
+    domain_separation_identity=BINDING_1_PROFILE_ID,
+    protected_starting_sha=STARTING_PROTECTED_MAIN,
+    legacy_domain_compatibility=True,
+)
+BINDING_2 = PrivateBindingConfiguration(
+    profile_id=BINDING_2_PROFILE_ID,
+    preregistration_path=BINDING_2_PREREGISTRATION_PATH,
+    secret_path=BINDING_2_PRIVATE_SECRET_PATH,
+    creation_receipt_path=BINDING_2_PRIVATE_CREATION_RECEIPT_PATH,
+    run_modes=BINDING_2_RUN_MODES,
+    domain_separation_identity=BINDING_2_PROFILE_ID,
+    protected_starting_sha=BINDING_2_STARTING_PROTECTED_MAIN,
+)
+BINDING_CONFIGURATIONS = {
+    BINDING_1.profile_id: BINDING_1,
+    BINDING_2.profile_id: BINDING_2,
+}
+RUN_CONFIGURATION_BY_ID = {
+    run_id: configuration
+    for configuration in BINDING_CONFIGURATIONS.values()
+    for run_id in configuration.run_modes
 }
 
 SECRET_COMMITMENT_DOMAIN = b"ck0-balanced-v1/secret-commitment\0"
@@ -169,6 +235,34 @@ class BalancedOpaqueError(ValueError):
     """The balanced opaque carrier boundary is malformed or unsafe."""
 
 
+def binding_configuration(profile_id: str) -> PrivateBindingConfiguration:
+    try:
+        return BINDING_CONFIGURATIONS[profile_id]
+    except KeyError as exc:
+        raise BalancedOpaqueError("unknown private binding configuration") from exc
+
+
+def binding_configuration_for_run(run_id: str) -> PrivateBindingConfiguration:
+    try:
+        return RUN_CONFIGURATION_BY_ID[run_id]
+    except KeyError as exc:
+        raise BalancedOpaqueError("run ID is not preregistered") from exc
+
+
+def _domain(
+    base: bytes,
+    configuration: PrivateBindingConfiguration,
+) -> bytes:
+    if configuration.legacy_domain_compatibility:
+        return base
+    return (
+        base
+        + b"binding-identity\0"
+        + configuration.domain_separation_identity.encode("ascii")
+        + b"\0"
+    )
+
+
 def canonical_json_bytes(value: Any) -> bytes:
     return json.dumps(
         value,
@@ -219,18 +313,26 @@ def _assert_safe_ancestry(repository: Path, target: Path) -> None:
             raise BalancedOpaqueError("private state ancestry is unsafe")
 
 
-def private_secret_path(repository: Path) -> Path:
-    return repository.absolute() / Path(PRIVATE_SECRET_PATH)
+def private_secret_path(
+    repository: Path,
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> Path:
+    return repository.absolute() / Path(configuration.secret_path)
 
 
-def _private_creation_receipt_path(repository: Path) -> Path:
-    return repository.absolute() / Path(PRIVATE_CREATION_RECEIPT_PATH)
+def _private_creation_receipt_path(
+    repository: Path,
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> Path:
+    return repository.absolute() / Path(configuration.creation_receipt_path)
 
 
-def _creation_receipt_body() -> dict[str, Any]:
+def _creation_receipt_body(
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> dict[str, Any]:
     return {
         "schema_version": 1,
-        "secret_relative_path": PRIVATE_SECRET_PATH,
+        "secret_relative_path": configuration.secret_path,
         "generation_source": "secrets.token_bytes",
         "generated_bytes": 32,
         "generation_count": 1,
@@ -238,19 +340,24 @@ def _creation_receipt_body() -> dict[str, Any]:
     }
 
 
-def _write_private_creation_receipt_once(repository: Path, secret: bytes) -> Path:
+def _write_private_creation_receipt_once(
+    repository: Path,
+    secret: bytes,
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> Path:
     if len(secret) != 32:
         raise BalancedOpaqueError("private state has the wrong length")
-    target = _private_creation_receipt_path(repository)
+    target = _private_creation_receipt_path(repository, configuration)
     _assert_safe_ancestry(repository, target)
     if target.exists() or target.is_symlink():
         raise BalancedOpaqueError("balanced opaque creation receipt already exists")
-    body = _creation_receipt_body()
+    body = _creation_receipt_body(configuration)
     receipt = {
         **body,
         "receipt_hmac_sha256": hmac.new(
             secret,
-            CREATION_RECEIPT_DOMAIN + canonical_json_bytes(body),
+            _domain(CREATION_RECEIPT_DOMAIN, configuration)
+            + canonical_json_bytes(body),
             hashlib.sha256,
         ).hexdigest().upper(),
     }
@@ -281,10 +388,19 @@ def _write_private_creation_receipt_once(repository: Path, secret: bytes) -> Pat
     return target
 
 
-def create_private_secret_once(repository: Path) -> Path:
+def create_private_secret_once(
+    repository: Path,
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> Path:
     """Create the 32-byte private root exactly once without exposing its value."""
     repository = repository.absolute()
-    target = private_secret_path(repository)
+    target = private_secret_path(repository, configuration)
+    receipt = _private_creation_receipt_path(repository, configuration)
+    _assert_safe_ancestry(repository, receipt)
+    if receipt.exists() or receipt.is_symlink():
+        raise BalancedOpaqueError(
+            "balanced opaque creation receipt already exists"
+        )
     _assert_safe_ancestry(repository, target)
     if target.exists() or target.is_symlink():
         raise BalancedOpaqueError("balanced opaque private state already exists")
@@ -294,6 +410,11 @@ def create_private_secret_once(repository: Path) -> Path:
         raise BalancedOpaqueError("state root is missing or unsafe")
     if not parent.exists():
         parent.mkdir(mode=0o700)
+    _assert_safe_ancestry(repository, receipt)
+    if receipt.exists() or receipt.is_symlink():
+        raise BalancedOpaqueError(
+            "balanced opaque creation receipt appeared during creation"
+        )
     _assert_safe_ancestry(repository, target)
     if target.exists() or target.is_symlink():
         raise BalancedOpaqueError("balanced opaque private state appeared during creation")
@@ -321,7 +442,7 @@ def create_private_secret_once(repository: Path) -> Path:
                 "balanced opaque private state appeared during creation"
             ) from exc
         os.chmod(target, stat.S_IRUSR | stat.S_IWUSR)
-        _write_private_creation_receipt_once(repository, secret)
+        _write_private_creation_receipt_once(repository, secret, configuration)
     finally:
         if fd >= 0:
             os.close(fd)
@@ -339,8 +460,12 @@ def _assert_safe_secret_file(repository: Path, path: Path) -> None:
         raise BalancedOpaqueError("balanced opaque private state has the wrong length")
 
 
-def _validate_private_creation_receipt(repository: Path, secret: bytes) -> str:
-    path = _private_creation_receipt_path(repository)
+def _validate_private_creation_receipt(
+    repository: Path,
+    secret: bytes,
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> str:
+    path = _private_creation_receipt_path(repository, configuration)
     _assert_safe_ancestry(repository, path)
     if not path.is_file() or _is_reparse(path) or path.stat().st_size > 4096:
         raise BalancedOpaqueError("balanced opaque creation receipt is missing or unsafe")
@@ -348,10 +473,11 @@ def _validate_private_creation_receipt(repository: Path, secret: bytes) -> str:
         receipt = json.loads(path.read_bytes())
     except json.JSONDecodeError as exc:
         raise BalancedOpaqueError("balanced opaque creation receipt is invalid") from exc
-    body = _creation_receipt_body()
+    body = _creation_receipt_body(configuration)
     expected = hmac.new(
         secret,
-        CREATION_RECEIPT_DOMAIN + canonical_json_bytes(body),
+        _domain(CREATION_RECEIPT_DOMAIN, configuration)
+        + canonical_json_bytes(body),
         hashlib.sha256,
     ).hexdigest().upper()
     if (
@@ -366,16 +492,21 @@ def _validate_private_creation_receipt(repository: Path, secret: bytes) -> str:
     return expected
 
 
-def _private_binding_from_repository(repository: Path) -> "PrivateBinding":
-    path = private_secret_path(repository)
+def _private_binding_from_repository(
+    repository: Path,
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> "PrivateBinding":
+    path = private_secret_path(repository, configuration)
     _assert_safe_secret_file(repository.absolute(), path)
     secret = path.read_bytes()
     if len(secret) != 32:
         raise BalancedOpaqueError("balanced opaque private state has the wrong length")
     try:
-        receipt_commitment = _validate_private_creation_receipt(repository, secret)
+        receipt_commitment = _validate_private_creation_receipt(
+            repository, secret, configuration
+        )
         return replace(
-            PrivateBinding.from_secret(secret),
+            PrivateBinding.from_secret(secret, configuration),
             creation_receipt_commitment=receipt_commitment,
         )
     finally:
@@ -412,7 +543,9 @@ def _plateau_gap(rows: Sequence[Mapping[str, Any]]) -> int:
     return top - max(lower) if lower else 0
 
 
-def build_profile_binding() -> tuple[dict[str, Any], str]:
+def build_profile_binding(
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> tuple[dict[str, Any], str]:
     """Reconstruct the frozen profile from public data only."""
     suite = build_frozen_task_suite()
     if suite.suite_sha256 != EXPECTED_SUITE_SHA256 or len(suite.tasks) != 8:
@@ -477,7 +610,7 @@ def build_profile_binding() -> tuple[dict[str, Any], str]:
     }
     selection_audit["public_selection_audit_sha256"] = json_sha256(selection_audit)
     body = {
-        "profile_id": PROFILE_ID,
+        "profile_id": configuration.profile_id,
         "task_suite_sha256": EXPECTED_SUITE_SHA256,
         "task_index": TASK_INDEX,
         "task_id": TASK_ID,
@@ -504,13 +637,20 @@ def build_profile_binding() -> tuple[dict[str, Any], str]:
     return body, json_sha256(body)
 
 
-def secret_commitment(secret: bytes) -> str:
+def secret_commitment(
+    secret: bytes,
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> str:
     if len(secret) != 32:
         raise BalancedOpaqueError("private state has the wrong length")
-    return sha256_bytes(SECRET_COMMITMENT_DOMAIN + secret)
+    return sha256_bytes(_domain(SECRET_COMMITMENT_DOMAIN, configuration) + secret)
 
 
-def derive_alias_mapping(secret: bytes, profile_binding_sha256: str) -> dict[str, str]:
+def derive_alias_mapping(
+    secret: bytes,
+    profile_binding_sha256: str,
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> dict[str, str]:
     if len(secret) != 32 or not SHA256_RE.fullmatch(profile_binding_sha256):
         raise BalancedOpaqueError("private alias derivation input is invalid")
     candidate_ids = tuple(f"C{index:02d}" for index in range(64))
@@ -519,7 +659,7 @@ def derive_alias_mapping(secret: bytes, profile_binding_sha256: str) -> dict[str
         key=lambda candidate_id: (
             hmac.new(
                 secret,
-                ALIAS_ORDER_DOMAIN
+                _domain(ALIAS_ORDER_DOMAIN, configuration)
                 + profile_binding_sha256.encode("ascii")
                 + candidate_id.encode("ascii"),
                 hashlib.sha256,
@@ -534,6 +674,7 @@ def derive_branch_alias_mapping(
     secret: bytes,
     profile_binding_sha256: str,
     branch_id: str,
+    configuration: PrivateBindingConfiguration = BINDING_1,
 ) -> dict[str, str]:
     """Derive a request-local diagnostic namespace unrelated to carrier aliases."""
     if (
@@ -548,7 +689,7 @@ def derive_branch_alias_mapping(
         key=lambda candidate_id: (
             hmac.new(
                 secret,
-                BRANCH_ALIAS_ORDER_DOMAIN
+                _domain(BRANCH_ALIAS_ORDER_DOMAIN, configuration)
                 + profile_binding_sha256.encode("ascii")
                 + branch_id.encode("ascii")
                 + b"\0"
@@ -561,7 +702,10 @@ def derive_branch_alias_mapping(
     return {alias: candidate_id for alias, candidate_id in zip(ALIASES, ordered)}
 
 
-def alias_map_commitment(alias_to_internal: Mapping[str, str]) -> str:
+def alias_map_commitment(
+    alias_to_internal: Mapping[str, str],
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> str:
     if tuple(sorted(alias_to_internal)) != ALIASES:
         raise BalancedOpaqueError("private alias map key set changed")
     values = tuple(alias_to_internal[alias] for alias in ALIASES)
@@ -570,12 +714,13 @@ def alias_map_commitment(alias_to_internal: Mapping[str, str]) -> str:
     mapping_bytes = canonical_json_bytes(
         {alias: alias_to_internal[alias] for alias in ALIASES}
     )
-    return sha256_bytes(ALIAS_MAP_DOMAIN + mapping_bytes)
+    return sha256_bytes(_domain(ALIAS_MAP_DOMAIN, configuration) + mapping_bytes)
 
 
 def branch_alias_map_commitment(
     branch_id: str,
     alias_to_internal: Mapping[str, str],
+    configuration: PrivateBindingConfiguration = BINDING_1,
 ) -> str:
     if branch_id not in BRANCH_INDICES:
         raise BalancedOpaqueError("private branch alias map scope changed")
@@ -588,35 +733,50 @@ def branch_alias_map_commitment(
         {alias: alias_to_internal[alias] for alias in ALIASES}
     )
     return sha256_bytes(
-        BRANCH_ALIAS_MAP_DOMAIN
+        _domain(BRANCH_ALIAS_MAP_DOMAIN, configuration)
         + branch_id.encode("ascii")
         + b"\0"
         + mapping_bytes
     )
 
 
-def derive_run_key(secret: bytes, profile_binding_sha256: str, run_id: str) -> bytes:
-    if run_id not in RUN_MODES:
+def derive_run_key(
+    secret: bytes,
+    profile_binding_sha256: str,
+    run_id: str,
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> bytes:
+    if run_id not in configuration.run_modes:
         raise BalancedOpaqueError("run ID is not preregistered")
     return hmac.new(
         secret,
-        RUN_KEY_DOMAIN + profile_binding_sha256.encode("ascii") + run_id.encode("ascii"),
+        _domain(RUN_KEY_DOMAIN, configuration)
+        + profile_binding_sha256.encode("ascii")
+        + run_id.encode("ascii"),
         hashlib.sha256,
     ).digest()
 
 
-def run_key_commitment(run_key: bytes) -> str:
+def run_key_commitment(
+    run_key: bytes,
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> str:
     if len(run_key) != 32:
         raise BalancedOpaqueError("run key has the wrong length")
-    return sha256_bytes(RUN_KEY_COMMITMENT_DOMAIN + run_key)
+    return sha256_bytes(_domain(RUN_KEY_COMMITMENT_DOMAIN, configuration) + run_key)
 
 
-def artifact_commitment(run_key: bytes, stage_id: str, body: Mapping[str, Any]) -> str:
+def artifact_commitment(
+    run_key: bytes,
+    stage_id: str,
+    body: Mapping[str, Any],
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> str:
     if len(run_key) != 32 or not stage_id or "\0" in stage_id:
         raise BalancedOpaqueError("artifact commitment input is invalid")
     return hmac.new(
         run_key,
-        ARTIFACT_DOMAIN
+        _domain(ARTIFACT_DOMAIN, configuration)
         + stage_id.encode("ascii")
         + b"\0"
         + canonical_json_bytes(body),
@@ -629,10 +789,11 @@ def verify_artifact_commitment(
     stage_id: str,
     body: Mapping[str, Any],
     commitment: str,
+    configuration: PrivateBindingConfiguration = BINDING_1,
 ) -> bool:
     if not isinstance(commitment, str) or not SHA256_RE.fullmatch(commitment):
         return False
-    expected = artifact_commitment(run_key, stage_id, body)
+    expected = artifact_commitment(run_key, stage_id, body, configuration)
     return hmac.compare_digest(expected, commitment)
 
 
@@ -766,6 +927,7 @@ def _require_alias_ranking(value: Any) -> list[str]:
 
 @dataclass(frozen=True, repr=False)
 class PrivateBinding:
+    configuration: PrivateBindingConfiguration = field(repr=False)
     profile: Mapping[str, Any] = field(repr=False)
     profile_binding_sha256: str
     alias_to_internal: Mapping[str, str] = field(repr=False)
@@ -778,31 +940,46 @@ class PrivateBinding:
     creation_receipt_commitment: str | None = None
 
     @classmethod
-    def from_secret(cls, secret: bytes) -> "PrivateBinding":
-        profile, profile_sha256 = build_profile_binding()
-        alias_to_internal = derive_alias_mapping(secret, profile_sha256)
+    def from_secret(
+        cls,
+        secret: bytes,
+        configuration: PrivateBindingConfiguration = BINDING_1,
+    ) -> "PrivateBinding":
+        profile, profile_sha256 = build_profile_binding(configuration)
+        alias_to_internal = derive_alias_mapping(
+            secret, profile_sha256, configuration
+        )
         internal_to_alias = {
             internal: alias for alias, internal in alias_to_internal.items()
         }
         branch_alias_to_internal = {
-            branch_id: derive_branch_alias_mapping(secret, profile_sha256, branch_id)
+            branch_id: derive_branch_alias_mapping(
+                secret, profile_sha256, branch_id, configuration
+            )
             for branch_id in BRANCH_INDICES
         }
         run_keys = {
-            run_id: derive_run_key(secret, profile_sha256, run_id)
-            for run_id in RUN_MODES
+            run_id: derive_run_key(
+                secret, profile_sha256, run_id, configuration
+            )
+            for run_id in configuration.run_modes
         }
         return cls(
+            configuration=configuration,
             profile=profile,
             profile_binding_sha256=profile_sha256,
             alias_to_internal=alias_to_internal,
             internal_to_alias=internal_to_alias,
             branch_alias_to_internal=branch_alias_to_internal,
             run_keys=run_keys,
-            secret_commitment=secret_commitment(secret),
-            alias_map_commitment=alias_map_commitment(alias_to_internal),
+            secret_commitment=secret_commitment(secret, configuration),
+            alias_map_commitment=alias_map_commitment(
+                alias_to_internal, configuration
+            ),
             branch_alias_map_commitments={
-                branch_id: branch_alias_map_commitment(branch_id, mapping)
+                branch_id: branch_alias_map_commitment(
+                    branch_id, mapping, configuration
+                )
                 for branch_id, mapping in branch_alias_to_internal.items()
             },
         )
@@ -828,11 +1005,13 @@ class BalancedOpaqueRuntime:
         private: PrivateBinding,
         preregistration: Mapping[str, Any] | None = None,
     ) -> None:
-        if run_id not in RUN_MODES:
+        configuration = private.configuration
+        if run_id not in configuration.run_modes:
             raise BalancedOpaqueError("run ID is not preregistered")
         self.repository = repository.absolute()
         self.run_id = run_id
-        self.mode = RUN_MODES[run_id]
+        self.configuration = configuration
+        self.mode = configuration.run_modes[run_id]
         self.private = private
         self.run_key = private.run_key(run_id)
         self.carrier = build_carrier()
@@ -849,12 +1028,14 @@ class BalancedOpaqueRuntime:
         *,
         require_final_preregistration: bool = True,
     ) -> "BalancedOpaqueRuntime":
-        private = _private_binding_from_repository(repository)
+        configuration = binding_configuration_for_run(run_id)
+        private = _private_binding_from_repository(repository, configuration)
         preregistration = validate_preregistration(
             repository,
             private,
             run_id=run_id,
             require_final=require_final_preregistration,
+            configuration=configuration,
         )
         return cls(
             repository=repository,
@@ -1080,7 +1261,10 @@ class BalancedOpaqueRuntime:
         artifact = {
             **body,
             "artifact_commitment": artifact_commitment(
-                self.run_key, PARENT_ROLES[request_id], body
+                self.run_key,
+                PARENT_ROLES[request_id],
+                body,
+                self.configuration,
             ),
         }
         self.verify_branch_artifact(artifact)
@@ -1111,6 +1295,7 @@ class BalancedOpaqueRuntime:
             str(role),
             body,
             str(artifact.get("artifact_commitment")),
+            self.configuration,
         ):
             raise BalancedOpaqueError("normalized branch artifact commitment is invalid")
         _assert_no_internal_identity(artifact)
@@ -1170,7 +1355,9 @@ class BalancedOpaqueRuntime:
         body = {"operator": operator, "ranking": normalized_ranking}
         artifact = {
             **body,
-            "artifact_commitment": artifact_commitment(self.run_key, "transform", body),
+            "artifact_commitment": artifact_commitment(
+                self.run_key, "transform", body, self.configuration
+            ),
         }
         self.verify_transform_artifact(artifact)
         return artifact
@@ -1187,6 +1374,7 @@ class BalancedOpaqueRuntime:
             "transform",
             body,
             str(artifact.get("artifact_commitment")),
+            self.configuration,
         ):
             raise BalancedOpaqueError("balanced transform artifact commitment is invalid")
         _assert_no_internal_identity(artifact)
@@ -1222,7 +1410,10 @@ class BalancedOpaqueRuntime:
         artifact = {
             **commitment_body,
             "artifact_commitment": artifact_commitment(
-                self.run_key, "extract", commitment_body
+                self.run_key,
+                "extract",
+                commitment_body,
+                self.configuration,
             ),
         }
         self.verify_extraction_artifact(artifact, transform)
@@ -1269,6 +1460,7 @@ class BalancedOpaqueRuntime:
             "extract",
             commitment_body,
             str(artifact.get("artifact_commitment")),
+            self.configuration,
         ):
             raise BalancedOpaqueError("balanced extraction artifact commitment is invalid")
         _assert_no_internal_identity(artifact)
@@ -1377,7 +1569,7 @@ class BalancedOpaqueRuntime:
         result = {
             "schema_version": 1,
             "kernel_id": "catalytic-kernel-0",
-            "carrier_profile": PROFILE_ID,
+            "carrier_profile": self.configuration.profile_id,
             "run_id": self.run_id,
             "run_mode": self.mode,
             "implementation_sha": implementation_sha,
@@ -1427,32 +1619,244 @@ def implementation_binding(repository: Path, relative_paths: Sequence[str]) -> d
     return {**body, "sha256": json_sha256(body)}
 
 
+def _internal_to_branch_alias(
+    private: PrivateBinding,
+    branch_id: str,
+) -> dict[str, str]:
+    return {
+        internal: alias
+        for alias, internal in private.branch_alias_to_internal[branch_id].items()
+    }
+
+
+def binding_independence_checks(
+    binding_1: PrivateBinding,
+    binding_2: PrivateBinding,
+    *,
+    roots_differ: bool,
+) -> dict[str, bool]:
+    if binding_1.configuration is not BINDING_1 or binding_2.configuration is not BINDING_2:
+        raise BalancedOpaqueError("binding independence comparison scope changed")
+    binding_1_runs = {
+        run_key_commitment(binding_1.run_key(run_id), BINDING_1)
+        for run_id in BINDING_1.run_modes
+    }
+    binding_2_runs = {
+        run_key_commitment(binding_2.run_key(run_id), BINDING_2)
+        for run_id in BINDING_2.run_modes
+    }
+    binding_1_commitments = {
+        binding_1.secret_commitment,
+        binding_1.alias_map_commitment,
+        *binding_1.branch_alias_map_commitments.values(),
+        *binding_1_runs,
+        binding_1.creation_receipt_commitment,
+    }
+    binding_2_commitments = {
+        binding_2.secret_commitment,
+        binding_2.alias_map_commitment,
+        *binding_2.branch_alias_map_commitments.values(),
+        *binding_2_runs,
+        binding_2.creation_receipt_commitment,
+    }
+    winner = EXPECTED_FULL_SUPPORT[0]
+    checks = {
+        "private_root_differs": roots_differ,
+        "root_commitment_differs": (
+            binding_2.secret_commitment != binding_1.secret_commitment
+        ),
+        "canonical_alias_map_commitment_differs": (
+            binding_2.alias_map_commitment != binding_1.alias_map_commitment
+        ),
+        "complete_canonical_alias_map_differs": (
+            dict(binding_2.alias_to_internal) != dict(binding_1.alias_to_internal)
+        ),
+        "private_singleton_opaque_alias_differs": (
+            binding_2.internal_to_alias[winner]
+            != binding_1.internal_to_alias[winner]
+        ),
+        "parent_0_ordered_opaque_support_tuple_differs": (
+            tuple(sorted(binding_2.internal_to_alias[item] for item in EXPECTED_SUPPORTS["branch-a"]))
+            != tuple(sorted(binding_1.internal_to_alias[item] for item in EXPECTED_SUPPORTS["branch-a"]))
+        ),
+        "parent_1_ordered_opaque_support_tuple_differs": (
+            tuple(sorted(binding_2.internal_to_alias[item] for item in EXPECTED_SUPPORTS["branch-b"]))
+            != tuple(sorted(binding_1.internal_to_alias[item] for item in EXPECTED_SUPPORTS["branch-b"]))
+        ),
+        "parent_0_branch_presentation_commitment_differs": (
+            binding_2.branch_alias_map_commitments["branch-a"]
+            != binding_1.branch_alias_map_commitments["branch-a"]
+        ),
+        "parent_1_branch_presentation_commitment_differs": (
+            binding_2.branch_alias_map_commitments["branch-b"]
+            != binding_1.branch_alias_map_commitments["branch-b"]
+        ),
+        "private_singleton_parent_0_presentation_differs": (
+            _internal_to_branch_alias(binding_2, "branch-a")[winner]
+            != _internal_to_branch_alias(binding_1, "branch-a")[winner]
+        ),
+        "private_singleton_parent_1_presentation_differs": (
+            _internal_to_branch_alias(binding_2, "branch-b")[winner]
+            != _internal_to_branch_alias(binding_1, "branch-b")[winner]
+        ),
+        "all_three_run_key_commitments_differ_from_binding_1": (
+            binding_2_runs.isdisjoint(binding_1_runs)
+        ),
+        "binding_2_run_key_commitments_pairwise_distinct": (
+            len(binding_2_runs) == 3
+        ),
+        "no_binding_1_commitment_reused": (
+            binding_2_commitments.isdisjoint(binding_1_commitments)
+        ),
+    }
+    if not all(checks.values()):
+        raise BalancedOpaqueError("binding independence gate failed; resampling forbidden")
+    return checks
+
+
+def _payload_invariant_projection(
+    request_id: str,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    projection = json.loads(canonical_json_text(payload))
+    assignment = json.loads(projection["messages"][1]["content"])
+    if request_id in BRANCH_INDICES:
+        for item in assignment["candidate_programs"]:
+            item["branch_local_program"]["ordered_outputs"] = [
+                "<binding-local-extensional-value>"
+            ] * 3
+    elif request_id == "transform":
+        for parent in assignment["parent_artifacts"]:
+            parent["artifact_commitment"] = "<binding-and-run-local-commitment>"
+            if "support_aliases" in parent:
+                parent["support_aliases"] = ["<binding-local-support>"] * 5
+    elif request_id == "extract":
+        assignment["transform_artifact"]["ranking"] = [
+            "<binding-local-ranking>"
+        ] * len(assignment["transform_artifact"]["ranking"])
+        assignment["transform_artifact"]["artifact_commitment"] = (
+            "<binding-and-run-local-commitment>"
+        )
+    projection["messages"][1]["content"] = canonical_json_text(assignment)
+    _assert_no_internal_identity(projection)
+    return projection
+
+
+def static_payload_invariance_report(
+    binding_1: PrivateBinding,
+    binding_2: PrivateBinding,
+) -> dict[str, Any]:
+    forbidden_binding_values = {
+        BINDING_2.profile_id,
+        binding_1.profile_binding_sha256,
+        binding_2.profile_binding_sha256,
+        binding_1.secret_commitment,
+        binding_2.secret_commitment,
+        binding_1.alias_map_commitment,
+        binding_2.alias_map_commitment,
+        *binding_1.branch_alias_map_commitments.values(),
+        *binding_2.branch_alias_map_commitments.values(),
+        *(
+            run_key_commitment(binding_1.run_key(run_id), BINDING_1)
+            for run_id in BINDING_1.run_modes
+        ),
+        *(
+            run_key_commitment(binding_2.run_key(run_id), BINDING_2)
+            for run_id in BINDING_2.run_modes
+        ),
+    }
+    if binding_1.creation_receipt_commitment is not None:
+        forbidden_binding_values.add(binding_1.creation_receipt_commitment)
+    if binding_2.creation_receipt_commitment is not None:
+        forbidden_binding_values.add(binding_2.creation_receipt_commitment)
+    by_mode: dict[str, Any] = {}
+    for mode in ("full-information", "delete-parent-0", "delete-parent-1"):
+        run_1 = next(run for run, value in BINDING_1.run_modes.items() if value == mode)
+        run_2 = next(run for run, value in BINDING_2.run_modes.items() if value == mode)
+        payloads_1 = _static_model_visible_payloads_from_private(binding_1, run_1)
+        payloads_2 = _static_model_visible_payloads_from_private(binding_2, run_2)
+        stage_hashes: dict[str, str] = {}
+        for request_id in REQUEST_IDS:
+            projected_1 = _payload_invariant_projection(request_id, payloads_1[request_id])
+            projected_2 = _payload_invariant_projection(request_id, payloads_2[request_id])
+            if projected_1 != projected_2:
+                raise BalancedOpaqueError("cross-binding model-visible invariant changed")
+            stage_hashes[request_id] = json_sha256(projected_1)
+            payload_text_1 = canonical_json_text(payloads_1[request_id])
+            payload_text_2 = canonical_json_text(payloads_2[request_id])
+            for forbidden in forbidden_binding_values:
+                if forbidden in payload_text_1 or forbidden in payload_text_2:
+                    raise BalancedOpaqueError("private binding identity entered a model payload")
+        by_mode[mode] = {
+            "status": "pass",
+            "invariant_projection_sha256": stage_hashes,
+        }
+    report = {
+        "status": "pass",
+        "modes": by_mode,
+        "immutable_carrier_root_exact": (
+            build_carrier()["carrier_root_sha256"]
+            == "E66846DC5097C5E9D6CFE5DC8679660CC193648DAE7A555AAA2587BE8A371033"
+        ),
+        "schemas_exact": response_schema_hashes(),
+        "request_seeds_exact": {
+            request_id: _request_seed(request_id) for request_id in REQUEST_IDS
+        },
+        "request_order_exact": list(REQUEST_IDS),
+        "parent_order_exact": ["parent-0", "parent-1"],
+        "temperature_exact": 0.0,
+        "thinking_setting_exact": {"enable_thinking": False},
+        "prompt_and_instruction_identity_bound_by_invariant_projection": True,
+        "deletion_receipt_fields_exact": sorted(DELETION_RECEIPT_FIELDS),
+        "extraction_boundary_exact": [
+            "stage",
+            "instruction",
+            "transform_artifact",
+        ],
+        "restoration_boundary_exact": "original-immutable-carrier-only",
+        "binding_identity_model_visible": False,
+        "cross_binding_correspondence_table_persisted": False,
+        "allowed_differences_only": True,
+    }
+    validate_metadata_only(report)
+    return report
+
+
 def build_preregistration_document(
     *,
     repository: Path,
     implementation_paths: Sequence[str],
     audit_outcomes: Mapping[str, str] | None = None,
     static_verification: Mapping[str, Any] | None = None,
+    configuration: PrivateBindingConfiguration = BINDING_1,
 ) -> dict[str, Any]:
-    private = _private_binding_from_repository(repository)
+    private = _private_binding_from_repository(repository, configuration)
     carrier = build_carrier()
     run_bindings = []
-    for run_id, mode in RUN_MODES.items():
+    for run_id, mode in configuration.run_modes.items():
         key = private.run_key(run_id)
-        run_bindings.append(
-            {
-                "run_id": run_id,
-                "mode": mode,
-                "run_key_commitment": run_key_commitment(key),
-                "authorized_invocations": 1,
-                "retry_count": 0,
-            }
-        )
+        item = {
+            "run_id": run_id,
+            "mode": mode,
+            "run_key_commitment": run_key_commitment(key, configuration),
+            "authorized_invocations": (
+                1 if configuration is BINDING_1 else 0
+            ),
+            "retry_count": 0,
+        }
+        if configuration is BINDING_2:
+            item["reservation_state"] = "reserved-unconsumed"
+            item["authorization_state"] = (
+                "separately-authorizable"
+                if mode == "full-information"
+                else "unauthorized-until-full-terminal-visible"
+            )
+        run_bindings.append(item)
     schemas = response_schema_hashes()
     document = {
         "schema_version": 1,
         "status": "static-preregistered",
-        "protected_starting_sha": STARTING_PROTECTED_MAIN,
+        "protected_starting_sha": configuration.protected_starting_sha,
         "implementation_binding": implementation_binding(
             repository, implementation_paths
         ),
@@ -1470,7 +1874,7 @@ def build_preregistration_document(
         },
         "private_state": {
             "visibility": "forbidden_from_model",
-            "relative_path": PRIVATE_SECRET_PATH,
+            "relative_path": configuration.secret_path,
             "size_bytes": 32,
             "generation_law": {
                 "source": "secrets.token_bytes",
@@ -1479,7 +1883,7 @@ def build_preregistration_document(
                 "existing_file_policy": "fail-closed",
             },
             "creation_receipt": {
-                "relative_path": PRIVATE_CREATION_RECEIPT_PATH,
+                "relative_path": configuration.creation_receipt_path,
                 "receipt_hmac_sha256": private.creation_receipt_commitment,
                 "committed": False,
             },
@@ -1494,7 +1898,11 @@ def build_preregistration_document(
         "future_runs": {
             "visibility": "controller_private_preregistered",
             "runs": run_bindings,
-            "next_separately_authorized_live_action": FULL_RUN_ID,
+            "next_separately_authorized_live_action": next(
+                run_id
+                for run_id, mode in configuration.run_modes.items()
+                if mode == "full-information"
+            ),
             "deletion_controls_locked_until_full_terminal_visible": True,
         },
         "model_visible_carrier": {
@@ -1548,7 +1956,7 @@ def build_preregistration_document(
         "disclosure_law": {
             "visibility": "controller_private_preregistered",
             "automatic_disclosure": False,
-            "terminal_condition": [FULL_RUN_ID, DELETE_A_RUN_ID, DELETE_B_RUN_ID],
+            "terminal_condition": list(configuration.run_modes),
             "alternative": "explicit-user-retirement",
         },
         "audits": {
@@ -1584,6 +1992,197 @@ def build_preregistration_document(
             "synthetic_live_evidence": False,
         },
     }
+    if configuration is BINDING_2:
+        binding_1 = _private_binding_from_repository(repository, BINDING_1)
+        root_1 = private_secret_path(repository, BINDING_1).read_bytes()
+        root_2 = private_secret_path(repository, BINDING_2).read_bytes()
+        try:
+            independence = binding_independence_checks(
+                binding_1,
+                private,
+                roots_differ=not hmac.compare_digest(root_1, root_2),
+            )
+            payload_invariance = static_payload_invariance_report(
+                binding_1, private
+            )
+        finally:
+            del root_1
+            del root_2
+        document["authoritative_adjudication"] = {
+            "commit": BINDING_2_STARTING_PROTECTED_MAIN,
+            "relative_path": "lab/ck0_balanced_opaque_causal_adjudication_1.md",
+            "artifact_sha256": "B4742B61F0654C8300676AA1F867813487532A99A901FDCFE2B5046E4A8751EF",
+            "status": "CAUSAL_PACKAGE_VALID_WITH_RESIDUAL_LIMITATIONS",
+            "selected_outcome": "REPLICATE_TRIAD_UNDER_FRESH_PRIVATE_BINDING",
+            "selected_lane": "Lane A",
+        }
+        document["binding_1_package"] = {
+            "implementation_commit": "38abb3ca54f16083206f33b10103b3311c1eafd5",
+            "full_information_commit": "ea757e7afb4ddf832ee7e9e050ac03bc34c2c065",
+            "delete_a_commit": "3133af3b60aabe05608f51874071955467f3b6d0",
+            "delete_b_and_bilateral_commit": "9193e2a42212dbc1c1fab1de8fc5eff7d7b3ce31",
+            "public_commitments": {
+                "secret_commitment": binding_1.secret_commitment,
+                "alias_map_commitment": binding_1.alias_map_commitment,
+                "branch_presentation_commitments": dict(
+                    binding_1.branch_alias_map_commitments
+                ),
+                "run_key_commitments": {
+                    run_id: run_key_commitment(binding_1.run_key(run_id), BINDING_1)
+                    for run_id in BINDING_1.run_modes
+                },
+            },
+            "evidence": {
+                "full_information": {
+                    "run_id": FULL_RUN_ID,
+                    "manifest_sha256": "A129BBD9BA9DEF0842144178B94A0269F66022EF82DB60D517CDD0C423CC2E1D",
+                    "result_sha256": "B57FE3598A03F7CBB2765F77CE702293F72BBF900424F9592D719CF02DA458F8",
+                    "closure_sha256": "FE918337A82C7D9D2C59DE56514D284C736A239226F03C91E8025811E92E8DDA",
+                },
+                "delete_parent_0": {
+                    "run_id": DELETE_A_RUN_ID,
+                    "manifest_sha256": "03508F7AE5E5F4A812C43F02FD31A3EE4009530B1CB17E61056213AE1079E74E",
+                    "result_sha256": "7AE2578A6D48831B5335CE2826424EA375EB169A218502B404BD031507635846",
+                    "closure_sha256": "4A2DD55ECC2DD03AE272F08FEB611F97E714EB587A28BD0660673E116286C873",
+                },
+                "delete_parent_1": {
+                    "run_id": DELETE_B_RUN_ID,
+                    "manifest_sha256": "EF2160E9CA719A4120FF7F7F226A1AD76F0BF08FE6A5C58CFFADCBCE2AB8B782",
+                    "result_sha256": "F0E24AAA61A2E8D0EC567F93444E08FD81EB8AFE36E2C01D7397A4D06FD46CB6",
+                    "closure_sha256": "880E238B877602AE3A869E2071DBDF1B0D3EE0FAF3D0D019C2D133D05C57BF90",
+                },
+            },
+            "private_state_preserved": True,
+            "published_statuses_preserved": True,
+        }
+        document["controller_private_binding"] = {
+            "visibility": "controller_private_preregistered",
+            "design_name": BINDING_2.profile_id,
+            "domain_separation_identity": BINDING_2.domain_separation_identity,
+            "binding_selector_model_visible": False,
+        }
+        document["binding_independence_checks"] = {
+            "visibility": "controller_private_preregistered",
+            "status": "pass",
+            "generation_count": 1,
+            "resampling_performed": False,
+            "checks": independence,
+        }
+        document["no_correspondence_validation"] = {
+            "visibility": "controller_private_preregistered",
+            **payload_invariance,
+        }
+        document["frozen_mechanism"] = {
+            "task_id": TASK_ID,
+            "parent_0_public_examples": [1, 2, 3],
+            "parent_1_public_examples": [3, 4, 5],
+            "shared_calibration_example": 3,
+            "parent_order": ["parent-0", "parent-1"],
+            "support_cardinalities": [5, 5],
+            "exclusive_alternatives": [4, 4],
+            "relational_intersection_cardinality": 1,
+            "branch_local_tied_score": "3/3",
+            "branch_local_plateau_gap": 1,
+            "support_pass_vectors": [[True, True, True], [True, True, True]],
+            "request_lifecycle": list(REQUEST_IDS),
+            "physical_slots": 1,
+            "sidecar_epochs": 1,
+        }
+        document["frozen_runtime_and_custody_law"] = {
+            "cache_root_admission": "exact-carrier-root-sha256",
+            "lease_discipline": {
+                "physical_slots": 1,
+                "required_total_leases": 6,
+                "maximum_concurrent_leases": 1,
+                "required_terminal_active_leases": 0,
+            },
+            "resource_telemetry": {
+                "mode": "exact-sidecar-pid-wddm",
+                "wddm_mib_ceiling": 6000,
+                "valid_measured_ceiling_breach": "fail-closed",
+            },
+            "cleanup": {
+                "sidecar_stopped": True,
+                "runtime_removed": True,
+                "port_9494_free": True,
+            },
+            "restoration": {
+                "carrier_identity_unchanged": True,
+                "carrier_root_unchanged": True,
+                "carrier_terminal_identity_unchanged": True,
+                "cache_root_reuse_admitted": True,
+                "branch_state_absent_from_carrier": True,
+                "cleanup_passed": True,
+            },
+            "custody": {
+                "stable_preserved": True,
+                "candidate_preserved": True,
+                "historical_cib0_preserved": True,
+                "historical_ck0_preserved": True,
+                "binding_1_package_preserved": True,
+            },
+            "tracked_persistence": {
+                "mode": "bounded-normalized-metadata-only",
+                "sse_events_persisted": False,
+                "model_response_text_persisted": False,
+                "reasoning_text_persisted": False,
+                "private_mapping_persisted": False,
+            },
+        }
+        document["future_command_bindings"] = {
+            run_id: [
+                "python",
+                "scripts/holostate_live.py",
+                "run-catalytic-kernel-0",
+                "--binary",
+                "<frozen-binary-path>",
+                "--model",
+                "<frozen-model-path>",
+                "--run-id",
+                run_id,
+                "--carrier-profile",
+                BINDING_2.profile_id,
+            ]
+            for run_id in BINDING_2.run_modes
+        }
+        document["future_authorization_boundary"] = {
+            "live_authority_granted": False,
+            "only_next_separately_authorizable_action": BINDING_2_FULL_RUN_ID,
+            "delete_a_authorized": False,
+            "delete_b_authorized": False,
+            "deletion_controls_require_full_terminal_visible": True,
+            "collapsed_or_inconclusive_full_does_not_authorize_controls": True,
+        }
+        document["classification_law"]["potential_cross_binding_status"] = {
+            "status": "LOCKED",
+            "label": "BILATERAL_PARENT_INFORMATION_DEPENDENCE_REPLICATED_ACROSS_PRIVATE_BINDINGS_ON_FROZEN_GEOMETRY",
+            "requires_complete_successful_second_triad": True,
+        }
+        document["audits"] = {
+            "binding_independence_auditor": (audit_outcomes or {}).get(
+                "binding_independence_auditor", "pending"
+            ),
+            "cross_binding_no_correspondence_auditor": (audit_outcomes or {}).get(
+                "cross_binding_no_correspondence_auditor", "pending"
+            ),
+        }
+        document["historical_claims"] = {
+            "binding_1_full_information": "BALANCED_OPAQUE_RELATIONAL_FULL_INFORMATION_VISIBLE",
+            "binding_1_branch_a_information_dependence": "BRANCH_A_INFORMATION_DEPENDENCE_SUPPORTED_ON_BALANCED_OPAQUE_CARRIER",
+            "binding_1_branch_b_information_dependence": "BRANCH_B_INFORMATION_DEPENDENCE_SUPPORTED_ON_BALANCED_OPAQUE_CARRIER",
+            "binding_1_bilateral_parent_dependence": "BILATERAL_PARENT_INFORMATION_DEPENDENCE_SUPPORTED_ON_BALANCED_OPAQUE_CARRIER",
+            "cross_binding_replication": "LOCKED",
+            "general_two_parent_necessity": "LOCKED",
+            "transfer": "LOCKED",
+            "general_catalytic_inference": "LOCKED",
+            "task_advantage": "LOCKED",
+            "superiority": "LOCKED",
+            "sota": "LOCKED",
+            "broader_process_local_holostate": "LOCKED",
+            "restart_persistence": "LOCKED",
+            "deep": "DISABLED",
+            "automatic_promotion": False,
+        }
     validate_metadata_only(document)
     return document
 
@@ -1594,8 +2193,13 @@ def validate_preregistration(
     *,
     run_id: str,
     require_final: bool,
+    configuration: PrivateBindingConfiguration | None = None,
+    for_execution: bool = True,
 ) -> dict[str, Any]:
-    path = repository / PREREGISTRATION_PATH
+    selected = configuration or private.configuration
+    if selected is not private.configuration or run_id not in selected.run_modes:
+        raise BalancedOpaqueError("private binding configuration mismatch")
+    path = repository / selected.preregistration_path
     if not path.is_file() or path.is_symlink():
         raise BalancedOpaqueError("balanced preregistration is missing or unsafe")
     try:
@@ -1604,7 +2208,7 @@ def validate_preregistration(
         raise BalancedOpaqueError("balanced preregistration is invalid JSON") from exc
     if not isinstance(document, dict) or document.get("status") != "static-preregistered":
         raise BalancedOpaqueError("balanced preregistration status changed")
-    if document.get("protected_starting_sha") != STARTING_PROTECTED_MAIN:
+    if document.get("protected_starting_sha") != selected.protected_starting_sha:
         raise BalancedOpaqueError("balanced preregistration starting boundary changed")
     profile = document.get("profile_binding", {})
     if (
@@ -1615,7 +2219,8 @@ def validate_preregistration(
         raise BalancedOpaqueError("balanced private profile binding changed")
     private_state = document.get("private_state", {})
     if (
-        private_state.get("secret_commitment") != private.secret_commitment
+        private_state.get("relative_path") != selected.secret_path
+        or private_state.get("secret_commitment") != private.secret_commitment
         or private_state.get("alias_map_commitment") != private.alias_map_commitment
         or private_state.get("branch_alias_map_commitments")
         != dict(private.branch_alias_map_commitments)
@@ -1630,7 +2235,7 @@ def validate_preregistration(
         }
         or private_state.get("creation_receipt")
         != {
-            "relative_path": PRIVATE_CREATION_RECEIPT_PATH,
+            "relative_path": selected.creation_receipt_path,
             "receipt_hmac_sha256": private.creation_receipt_commitment,
             "committed": False,
         }
@@ -1639,7 +2244,7 @@ def validate_preregistration(
     if document.get("disclosure_law") != {
         "visibility": "controller_private_preregistered",
         "automatic_disclosure": False,
-        "terminal_condition": [FULL_RUN_ID, DELETE_A_RUN_ID, DELETE_B_RUN_ID],
+        "terminal_condition": list(selected.run_modes),
         "alternative": "explicit-user-retirement",
     }:
         raise BalancedOpaqueError("balanced private disclosure law changed")
@@ -1647,17 +2252,27 @@ def validate_preregistration(
         item["run_id"]: item for item in document.get("future_runs", {}).get("runs", [])
         if isinstance(item, dict) and "run_id" in item
     }
-    if set(expected_runs) != set(RUN_MODES) or run_id not in expected_runs:
+    if set(expected_runs) != set(selected.run_modes) or run_id not in expected_runs:
         raise BalancedOpaqueError("balanced future run reservation changed")
-    for expected_run_id, mode in RUN_MODES.items():
+    for expected_run_id, mode in selected.run_modes.items():
         item = expected_runs[expected_run_id]
-        if (
-            item.get("mode") != mode
-            or item.get("run_key_commitment")
-            != run_key_commitment(private.run_key(expected_run_id))
-            or item.get("authorized_invocations") != 1
-            or item.get("retry_count") != 0
-        ):
+        expected_item = {
+            "run_id": expected_run_id,
+            "mode": mode,
+            "run_key_commitment": run_key_commitment(
+                private.run_key(expected_run_id), selected
+            ),
+            "authorized_invocations": 1 if selected is BINDING_1 else 0,
+            "retry_count": 0,
+        }
+        if selected is BINDING_2:
+            expected_item["reservation_state"] = "reserved-unconsumed"
+            expected_item["authorization_state"] = (
+                "separately-authorizable"
+                if mode == "full-information"
+                else "unauthorized-until-full-terminal-visible"
+            )
+        if item != expected_item:
             raise BalancedOpaqueError("balanced future run binding changed")
     carrier = build_carrier()
     carrier_binding = document.get("model_visible_carrier", {})
@@ -1680,31 +2295,99 @@ def validate_preregistration(
     paths = [item.get("path") for item in source_binding.get("files", []) if isinstance(item, dict)]
     if not paths or source_binding != implementation_binding(repository, paths):
         raise BalancedOpaqueError("balanced implementation source binding changed")
+    if selected is BINDING_2:
+        expected_document = build_preregistration_document(
+            repository=repository,
+            implementation_paths=paths,
+            audit_outcomes=document.get("audits", {}),
+            static_verification=document.get("static_verification", {}),
+            configuration=BINDING_2,
+        )
+        if document != expected_document:
+            raise BalancedOpaqueError(
+                "binding-2 preregistration differs from its exact reconstruction"
+            )
     if require_final:
-        if document.get("audits") != {
-            "carrier_leakage_auditor": "PASS",
-            "private_commitment_auditor": "PASS",
-        }:
+        expected_audits = (
+            {
+                "carrier_leakage_auditor": "PASS",
+                "private_commitment_auditor": "PASS",
+            }
+            if selected is BINDING_1
+            else {
+                "binding_independence_auditor": "PASS",
+                "cross_binding_no_correspondence_auditor": "PASS",
+            }
+        )
+        if document.get("audits") != expected_audits:
             raise BalancedOpaqueError("balanced read-only audits are not terminal PASS")
         if document.get("static_verification", {}).get("status") != "pass":
             raise BalancedOpaqueError("balanced static verification is not terminal PASS")
-    if run_id != FULL_RUN_ID:
-        _require_terminal_full_run(repository)
+    if selected is BINDING_2:
+        binding_1 = _private_binding_from_repository(repository, BINDING_1)
+        root_1 = private_secret_path(repository, BINDING_1).read_bytes()
+        root_2 = private_secret_path(repository, BINDING_2).read_bytes()
+        try:
+            expected_independence = binding_independence_checks(
+                binding_1,
+                private,
+                roots_differ=not hmac.compare_digest(root_1, root_2),
+            )
+        finally:
+            del root_1
+            del root_2
+        if document.get("binding_independence_checks") != {
+            "visibility": "controller_private_preregistered",
+            "status": "pass",
+            "generation_count": 1,
+            "resampling_performed": False,
+            "checks": expected_independence,
+        }:
+            raise BalancedOpaqueError("binding independence preregistration changed")
+        expected_correspondence = {
+            "visibility": "controller_private_preregistered",
+            **static_payload_invariance_report(binding_1, private),
+        }
+        if document.get("no_correspondence_validation") != expected_correspondence:
+            raise BalancedOpaqueError("cross-binding no-correspondence validation changed")
+        boundary = document.get("future_authorization_boundary", {})
+        if (
+            boundary.get("only_next_separately_authorizable_action")
+            != BINDING_2_FULL_RUN_ID
+            or boundary.get("delete_a_authorized") is not False
+            or boundary.get("delete_b_authorized") is not False
+            or boundary.get("deletion_controls_require_full_terminal_visible") is not True
+        ):
+            raise BalancedOpaqueError("binding-2 future authorization boundary changed")
+        if for_execution and boundary.get("live_authority_granted") is not True:
+            raise BalancedOpaqueError(
+                "binding-2 live execution requires separate exact authorization"
+            )
+    if selected.run_modes[run_id] != "full-information":
+        _require_terminal_full_run(repository, selected)
     projection = {
-        "relative_path": PREREGISTRATION_PATH,
+        "relative_path": selected.preregistration_path,
         "artifact_sha256": sha256_bytes(path.read_bytes()),
         "document_sha256": json_sha256(document),
         "profile_binding_sha256": private.profile_binding_sha256,
         "run_id": run_id,
-        "mode": RUN_MODES[run_id],
+        "mode": selected.run_modes[run_id],
         "status": "validated-static-preregistered",
     }
     validate_metadata_only(projection)
     return projection
 
 
-def _require_terminal_full_run(repository: Path) -> None:
-    root = repository / "state" / "catalytic_kernel_0" / FULL_RUN_ID
+def _require_terminal_full_run(
+    repository: Path,
+    configuration: PrivateBindingConfiguration = BINDING_1,
+) -> None:
+    full_run_id = next(
+        run_id
+        for run_id, mode in configuration.run_modes.items()
+        if mode == "full-information"
+    )
+    root = repository / "state" / "catalytic_kernel_0" / full_run_id
     paths = {name: root / name for name in ("manifest.json", "result.json", "closure.json")}
     if any(not path.is_file() or path.is_symlink() for path in paths.values()):
         raise BalancedOpaqueError("full-information run is not terminally bound")
@@ -1721,9 +2404,25 @@ def _require_terminal_full_run(repository: Path) -> None:
         raise BalancedOpaqueError("full-information run is not terminal visible evidence")
 
 
-def static_model_visible_payloads(secret: bytes, run_id: str) -> dict[str, dict[str, Any]]:
+def static_model_visible_payloads(
+    secret: bytes,
+    run_id: str,
+    configuration: PrivateBindingConfiguration | None = None,
+) -> dict[str, dict[str, Any]]:
     """Generate all six payloads without I/O, sidecars, or model requests."""
-    private = PrivateBinding.from_secret(secret)
+    selected = configuration or binding_configuration_for_run(run_id)
+    if run_id not in selected.run_modes:
+        raise BalancedOpaqueError("run ID does not belong to the private binding")
+    private = PrivateBinding.from_secret(secret, selected)
+    return _static_model_visible_payloads_from_private(private, run_id)
+
+
+def _static_model_visible_payloads_from_private(
+    private: PrivateBinding,
+    run_id: str,
+) -> dict[str, dict[str, Any]]:
+    if run_id not in private.configuration.run_modes:
+        raise BalancedOpaqueError("run ID does not belong to the private binding")
     runtime = BalancedOpaqueRuntime(
         repository=Path.cwd(),
         run_id=run_id,
@@ -1756,6 +2455,14 @@ def static_model_visible_payloads(secret: bytes, run_id: str) -> dict[str, dict[
 __all__ = [
     "ALIASES",
     "ALIAS_MAP_DOMAIN",
+    "BINDING_1",
+    "BINDING_1_PROFILE_ID",
+    "BINDING_2",
+    "BINDING_2_DELETE_A_RUN_ID",
+    "BINDING_2_DELETE_B_RUN_ID",
+    "BINDING_2_FULL_RUN_ID",
+    "BINDING_2_PROFILE_ID",
+    "BINDING_CONFIGURATIONS",
     "BalancedOpaqueError",
     "BalancedOpaqueRuntime",
     "CARRIER_ID",
@@ -1766,12 +2473,16 @@ __all__ = [
     "PREREGISTRATION_PATH",
     "PROFILE_ID",
     "PrivateBinding",
+    "PrivateBindingConfiguration",
     "RUN_MODES",
     "alias_map_commitment",
     "artifact_commitment",
     "build_carrier",
     "build_preregistration_document",
     "build_profile_binding",
+    "binding_configuration",
+    "binding_configuration_for_run",
+    "binding_independence_checks",
     "carrier_is_pristine",
     "create_private_secret_once",
     "derive_alias_mapping",
@@ -1783,6 +2494,7 @@ __all__ = [
     "run_key_commitment",
     "secret_commitment",
     "static_model_visible_payloads",
+    "static_payload_invariance_report",
     "validate_preregistration",
     "verify_artifact_commitment",
 ]
