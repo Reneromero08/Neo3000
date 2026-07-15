@@ -1,0 +1,335 @@
+{
+  "audits": {
+    "carrier_leakage_auditor": "PASS",
+    "private_commitment_auditor": "PASS"
+  },
+  "classification_law": {
+    "bilateral_requires": [
+      "full-information-visible",
+      "parent-0-deletion-dependence-supported",
+      "parent-1-deletion-dependence-supported",
+      "all-three-runs-safely-terminal",
+      "no-private-mapping-or-winner-leakage",
+      "restoration-passed-in-all-three-runs"
+    ],
+    "bilateral_status": "BILATERAL_PARENT_INFORMATION_DEPENDENCE_SUPPORTED_ON_BALANCED_OPAQUE_CARRIER",
+    "delete_parent_0": [
+      "PARENT_A_INFORMATION_DEPENDENCE_SUPPORTED",
+      "PARENT_A_UNAIDED_EXCHANGEABLE_HIT",
+      "CAUSAL_CONTROL_INCONCLUSIVE"
+    ],
+    "delete_parent_1": [
+      "PARENT_B_INFORMATION_DEPENDENCE_SUPPORTED",
+      "PARENT_B_UNAIDED_EXCHANGEABLE_HIT",
+      "CAUSAL_CONTROL_INCONCLUSIVE"
+    ],
+    "full_information": [
+      "BALANCED_OPAQUE_RELATIONAL_VISIBLE",
+      "BALANCED_OPAQUE_RELATIONAL_COLLAPSED",
+      "INCONCLUSIVE"
+    ],
+    "visibility": "controller_private_preregistered"
+  },
+  "disclosure_law": {
+    "alternative": "explicit-user-retirement",
+    "automatic_disclosure": false,
+    "terminal_condition": [
+      "ck0-balanced-v1-full-r1",
+      "ck0-balanced-v1-delete-a-r1",
+      "ck0-balanced-v1-delete-b-r1"
+    ],
+    "visibility": "controller_private_preregistered"
+  },
+  "execution_state": {
+    "live_execution_performed": false,
+    "model_requests_issued": 0,
+    "sidecar_launched": false,
+    "synthetic_live_evidence": false
+  },
+  "future_runs": {
+    "deletion_controls_locked_until_full_terminal_visible": true,
+    "next_separately_authorized_live_action": "ck0-balanced-v1-full-r1",
+    "runs": [
+      {
+        "authorized_invocations": 1,
+        "mode": "full-information",
+        "retry_count": 0,
+        "run_id": "ck0-balanced-v1-full-r1",
+        "run_key_commitment": "9465F6FB2DE9764366657BFFD82D686BE67654AFD88B7A6EA16939D2F2DC7419"
+      },
+      {
+        "authorized_invocations": 1,
+        "mode": "delete-parent-0",
+        "retry_count": 0,
+        "run_id": "ck0-balanced-v1-delete-a-r1",
+        "run_key_commitment": "CB5CF0961100AE24FDD70729A8AAC3C5F5D31989D1781125411AB39EB1EBB019"
+      },
+      {
+        "authorized_invocations": 1,
+        "mode": "delete-parent-1",
+        "retry_count": 0,
+        "run_id": "ck0-balanced-v1-delete-b-r1",
+        "run_key_commitment": "BA08A0D3D7E26E705089185CDF323C8AA79CA39DB8FC138F2F5150A661282CD3"
+      }
+    ],
+    "visibility": "controller_private_preregistered"
+  },
+  "historical_claims": {
+    "automatic_promotion": false,
+    "bilateral_parent_dependence": "LOCKED",
+    "branch_a_information_dependence": "BRANCH_A_INFORMATION_DEPENDENCE_SUPPORTED_ON_FROZEN_CARRIER",
+    "branch_b_information_dependence": "LOCKED",
+    "broader_process_local_holostate": "LOCKED",
+    "deep": "DISABLED",
+    "general_catalytic_inference": "LOCKED",
+    "general_two_parent_necessity": "LOCKED",
+    "restart_persistence": "LOCKED",
+    "sota": "LOCKED",
+    "superiority": "LOCKED",
+    "task_advantage": "LOCKED",
+    "transfer": "LOCKED"
+  },
+  "implementation_binding": {
+    "files": [
+      {
+        "path": ".gitignore",
+        "sha256": "76D467E178D56345408AC94E2C4DC6F0335D6474A7366450A879E44922A6D0A4"
+      },
+      {
+        "path": "scripts/catalytic_kernel_0.py",
+        "sha256": "E94F67BC58A31C8825F3085A318D502ECD4A32103F403CF697998E477F29EA8B"
+      },
+      {
+        "path": "scripts/catalytic_kernel_0_balanced_opaque.py",
+        "sha256": "AE36119B4BFA7B727E1848B6C7FA4F07FAF74E41FE08CC87FF9F913472CD59E7"
+      },
+      {
+        "path": "scripts/holostate_live.py",
+        "sha256": "2279CB0A283512DABB8AAD7C0C4C701AA9423813C01B839165019CE0B85CB77F"
+      },
+      {
+        "path": "scripts/test_catalytic_kernel_0.py",
+        "sha256": "EEB3FEADBD9B75FD3A1A9A40D4BE31FDC8A5D6D092064CF867A753A13F3B2822"
+      },
+      {
+        "path": "scripts/test_catalytic_kernel_0_balanced_opaque.py",
+        "sha256": "FC2C4828304FFFDAE0F1453782FB948E2BC1A00A31181C15A2F842F5AE1DED58"
+      }
+    ],
+    "kind": "normalized-source-bundle-sha256-v1",
+    "sha256": "1D5D5E79A5AA322DD06ACCD78F48C52141F78690673A9C87C5B4E9FAB3DD6796"
+  },
+  "model_visible_carrier": {
+    "allowed_root_content": [
+      "generic carrier identity",
+      "abstract task DSL semantics",
+      "opaque aliases K00 through K63",
+      "strict response schemas",
+      "six-stage lifecycle law",
+      "model/controller authorship boundary"
+    ],
+    "carrier_content_sha256": "381D94451155D789FE94F5830042AD9C8AE90EF5869DD41B0E759D3EFBD9BF59",
+    "carrier_id": "ck0:balanced-opaque-relational-carrier-v1",
+    "carrier_root_sha256": "E66846DC5097C5E9D6CFE5DC8679660CC193648DAE7A555AAA2587BE8A371033",
+    "visibility": "model_visible"
+  },
+  "private_state": {
+    "alias_map_commitment": "B43F3399D3884195AFC41362263BE064D39828381D859DDE84A556542ABC1889",
+    "alias_map_committed": false,
+    "branch_alias_map_commitments": {
+      "branch-a": "F08F0E8318773C82BEF11068AF5529A9F39A90529CCFF64FE3D263F83481F8E9",
+      "branch-b": "6EB90673F6FA045F7A942BA64EF48ABBCB4C95071760094CF9740A04F5B403F9"
+    },
+    "creation_receipt": {
+      "committed": false,
+      "receipt_hmac_sha256": "52C408BA92D784629C8CDF15624E880F8178296A055D73C1D381A40685CA1B25",
+      "relative_path": "state/catalytic_kernel_0_private/balanced-opaque-relational-carrier-v1.creation.json"
+    },
+    "generation_law": {
+      "create_mode": "exclusive-once-atomic-publish",
+      "existing_file_policy": "fail-closed",
+      "requested_bytes": 32,
+      "source": "secrets.token_bytes"
+    },
+    "relative_path": "state/catalytic_kernel_0_private/balanced-opaque-relational-carrier-v1.secret",
+    "secret_commitment": "272B5D28981B2D02AECF7DCC5EAA1FBEA5F486DBA05AFB6C15C026ABD2AA29ED",
+    "secret_committed": false,
+    "size_bytes": 32,
+    "visibility": "forbidden_from_model"
+  },
+  "profile_binding": {
+    "branch_indices": {
+      "branch-a": [
+        0,
+        1,
+        2
+      ],
+      "branch-b": [
+        2,
+        3,
+        4
+      ]
+    },
+    "exclusive_support": {
+      "branch-a": [
+        "C02",
+        "C31",
+        "C38",
+        "C53"
+      ],
+      "branch-b": [
+        "C16",
+        "C46",
+        "C51",
+        "C60"
+      ]
+    },
+    "full_public_support": [
+      "C34"
+    ],
+    "plateau_gaps": {
+      "branch-a": 1,
+      "branch-b": 1
+    },
+    "profile_binding_sha256": "B06FCD3231C0A5BFF10B796F7A42F5C23F679F6EF55DBAB81EBE3B125708C6B6",
+    "profile_id": "balanced-opaque-relational-carrier-v1",
+    "selection_audit": {
+      "balance_tie_break": [
+        "equal-support-cardinality",
+        "equal-plateau-gaps",
+        "equal-exclusive-counts",
+        "smaller-supports",
+        "lower-task-index",
+        "lexicographically-lower-shards"
+      ],
+      "frozen_tasks": 8,
+      "geometry_and_pass_equivalence_profiles": 26,
+      "ordered_shard_pairs_per_task": 30,
+      "public_selection_audit_sha256": "B28184ECAFD48DDC796656B291287841163A00FD2AD04EB89AA059BDE4712DE4",
+      "selected_branch_indices": {
+        "branch-a": [
+          0,
+          1,
+          2
+        ],
+        "branch-b": [
+          2,
+          3,
+          4
+        ]
+      },
+      "selected_task_index": 2,
+      "singleton_full_public_support_profiles": 240,
+      "source": "frozen-public-only",
+      "strict_current_carrier_profiles": 0,
+      "strict_relational_geometry_profiles": 26,
+      "total_profiles": 240
+    },
+    "shared_public_example_index": 2,
+    "support_pass_vectors": {
+      "branch-a": [
+        true,
+        true,
+        true
+      ],
+      "branch-b": [
+        true,
+        true,
+        true
+      ]
+    },
+    "support_sets": {
+      "branch-a": [
+        "C02",
+        "C31",
+        "C34",
+        "C38",
+        "C53"
+      ],
+      "branch-b": [
+        "C16",
+        "C34",
+        "C46",
+        "C51",
+        "C60"
+      ]
+    },
+    "task_id": "cs1-task-03",
+    "task_index": 2,
+    "task_suite_sha256": "4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92",
+    "top_scores": {
+      "branch-a": 3,
+      "branch-b": 3
+    },
+    "visibility": "controller_private_preregistered"
+  },
+  "protected_starting_sha": "9eb024d9f664b5592997aac90081d083e75adbd1",
+  "request_seeds": {
+    "values": {
+      "borrow": 1665572352,
+      "branch-a": 763754430,
+      "branch-b": 2177982767,
+      "extract": 858375455,
+      "restore": 1868146898,
+      "transform": 2041953616
+    },
+    "visibility": "controller_private_preregistered"
+  },
+  "response_schemas": {
+    "sha256": {
+      "borrow": "4EBEC04AC016ABAC26B905BD93AC02ED1899AFFCBB87113F497FEB8E088F3F81",
+      "branch-a": "00B8B34FA8419B30F355DB1369FDA3208788B044157A299916F9E48E912478FE",
+      "branch-b": "00B8B34FA8419B30F355DB1369FDA3208788B044157A299916F9E48E912478FE",
+      "extract": "B47E080796EE9ACB7CD03D797292C03B18B0A570AE58BE5D7C7473ED940B6886",
+      "restore": "4EBEC04AC016ABAC26B905BD93AC02ED1899AFFCBB87113F497FEB8E088F3F81",
+      "transform": "B36864F84116E64D96775452265513E7AB46521418EB376CC17872492B281E27"
+    },
+    "visibility": "model_visible"
+  },
+  "runtime_identities": {
+    "automatic_promotion": false,
+    "binary": {
+      "filename": "llama-server.exe",
+      "sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B",
+      "version": "13 (417e1d6)"
+    },
+    "deep_requests": 0,
+    "model": {
+      "filename": "Agents-A1-Q4_K_M.gguf",
+      "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+      "size_bytes": 21166757632
+    },
+    "physical_slots": 1,
+    "sidecar_epochs": 1,
+    "visibility": "controller_private_preregistered"
+  },
+  "schema_version": 1,
+  "static_verification": {
+    "canonical_json": "pass",
+    "changed_file_compilation": "pass",
+    "complete_cpu_suite": {
+      "in_sandbox_passes": 803,
+      "sandbox_permission_errors": 2,
+      "semantic_failures": 0,
+      "single_complete_run_tests": 805,
+      "targeted_permission_recheck": "2/2 pass"
+    },
+    "evaluator_lock": "pass",
+    "focused_balanced_opaque": "16/16",
+    "historical_ck0_tests": "12/12",
+    "historical_evidence_custody": "pass",
+    "private_state_custody": "pass",
+    "protected_preflight": {
+      "host_execution_count": 1,
+      "sandbox_pre_admission_rejection_count": 1,
+      "status": "pass"
+    },
+    "status": "pass"
+  },
+  "status": "static-preregistered",
+  "visibility_legend": {
+    "controller_private_preregistered": "committed controller-only binding; forbidden from every model request",
+    "forbidden_from_model": "must fail closed if present in a model request",
+    "model_visible": "exact bounded content allowed in model requests"
+  }
+}

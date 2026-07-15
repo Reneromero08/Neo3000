@@ -1,6 +1,14 @@
 # Active Goal
 
-## Checkpoint 2: Preserve CK0 Branch-B information-deletion evidence
+## Checkpoint 2: Preserve balanced opaque CK0 static preregistration
+
+`balanced-opaque-relational-carrier-v1` is implemented and statically bound from protected starting main `9eb024d9f664b5592997aac90081d083e75adbd1`. It uses the exact frozen public-only `cs1-task-03` bilateral geometry, one private 32-byte root, canonical and branch-local opaque permutations, run/stage HMAC commitments, and the unchanged six-request CK0 lifecycle. Branch source bodies no longer expose a reversible alias lookup: each branch receives only a separately keyed request-local extensional projection, while transform receives the minimum normalized shared opaque relation.
+
+Exactly two read-only auditors reached terminal `PASS` after one bounded repair/re-audit cycle. Focused tests pass 16 / 16, existing CK0 tests pass 12 / 12, compilation/canonical/evaluator/custody checks pass, and protected preflight passes. The one complete 805-test CPU run produced 803 in-sandbox passes and two environment-only Windows file-lock errors; those exact two tests passed with host permission, so semantic failures are zero. Historical CIB0 a1-a6 and CK0 a1-a6 evidence rehashes exactly. The private files are ignored and the 32 secret bytes occur in zero tracked files.
+
+No sidecar launched, no model request or inference occurred, no secret or mapping was disclosed, and no live or synthetic result exists. The only next separately authorizable live action is `ck0-balanced-v1-full-r1`. Do not authorize `ck0-balanced-v1-delete-a-r1` or `ck0-balanced-v1-delete-b-r1` until the full-information run is terminally bound. All broader claims remain locked.
+
+## Historical checkpoint: Preserve CK0 Branch-B information-deletion evidence
 
 Preregistration artifact `lab/ck0_parent_b_information_deletion_1.json` froze run `ck0-20260714T222830Z-a6` at canonical object SHA-256 `D8029D511028F1025ADB21DEA432256AB126887BC74632A7A72CCCDEEBA4F677` and pushed commit `5e684d2bb2d98646287e1d544775cbbbd526eee3` before execution. The exact a3/a4 carrier and evidence identities, model, binary, schemas, seeds, six-request process, symmetric deletion direction, five-field Branch-B commitment, full Branch-A projection, one-invocation law, and no-retry/no-repair boundary were admitted statically. Changed-file compilation, 12 / 12 focused tests, the full CPU-only suite exactly once at 789 / 789, evaluator-lock validation, and protected preflight exactly once passed before execution.
 

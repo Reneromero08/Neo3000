@@ -26,6 +26,9 @@ state/catalytic_swarm_1_cache_diagnostic/
 /state/catalytic_swarm_1_v*/
 /state/catalytic_inference_bench_0/
 /state/catalytic_kernel_0/
+/state/catalytic_kernel_0_private/balanced-opaque-relational-carrier-v1.secret
+/state/catalytic_kernel_0_private/balanced-opaque-relational-carrier-v1.creation.json
+/state/catalytic_kernel_0_private/.balanced-opaque-*
 
 # Benchmarks and logs
 *.log

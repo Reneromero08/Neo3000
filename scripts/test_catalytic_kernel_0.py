@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from typing import Any, Mapping
+from unittest.mock import patch
 
 from catalytic_kernel_0 import (
     CARRIER_ID,
@@ -724,7 +725,20 @@ class CatalyticKernel0Tests(unittest.TestCase):
         self.assertIn("RELATIONAL_UNCERTAINTY_REDUCED", result["diagnostics"])
         self.assertNotIn("RAW_SENTINEL", persisted)
         control_adapter = FakeAdapter(unresolved_profile=True)
-        with tempfile.TemporaryDirectory(dir=ROOT / "state") as temporary:
+        consumed_preregistration = {
+            "relative_path": "lab/ck0_parent_b_information_deletion_1.json",
+            "artifact_sha256": "0" * 64,
+            "preregistered_sha256": "D8029D511028F1025ADB21DEA432256AB126887BC74632A7A72CCCDEEBA4F677",
+            "execution_run_id": PARENT_B_CONTROL_RUN_ID,
+            "status": "validated-preregistered-test-fixture",
+        }
+        with (
+            tempfile.TemporaryDirectory(dir=ROOT / "state") as temporary,
+            patch(
+                "catalytic_kernel_0.validate_parent_b_control_preregistration",
+                return_value=consumed_preregistration,
+            ),
+        ):
             control_result = run_catalytic_kernel_0(
                 {
                     "run_id": PARENT_B_CONTROL_RUN_ID,

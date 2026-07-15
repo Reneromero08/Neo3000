@@ -162,7 +162,9 @@
       "scripts/test_catalytic_inference_bench_0_runtime.py",
       "scripts/catalytic_kernel_0_carrier_scan.py",
       "scripts/catalytic_kernel_0.py",
+      "scripts/catalytic_kernel_0_balanced_opaque.py",
       "scripts/test_catalytic_kernel_0.py",
+      "scripts/test_catalytic_kernel_0_balanced_opaque.py",
       "tools/server/server-context.cpp",
       "tools/server/server-task.cpp",
       ".gitignore",
@@ -176,6 +178,7 @@
       "lab/CHECKPOINT.md",
       "lab/ck0_parent_a_information_deletion_1.json",
       "lab/ck0_parent_b_information_deletion_1.json",
+      "lab/ck0_balanced_opaque_relational_carrier_v1.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]

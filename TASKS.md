@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Track A remains paused. CIB0 a1-a6 and CK0 a1-a6 are immutable consumed evidence. The two exact frozen directional controls are asymmetric: Branch-A information dependence remains supported on the frozen carrier, while Branch-B information was not shown necessary. No new Branch-B or bilateral dependence status is unlocked; broad claims remain locked.
-**Next exact action:** preserve CK0 a1-a6 exactly. No rerun, additional causal control, second profile, tuning, CIB0/CS1 command, Deep request, broad claim change, or automatic promotion is authorized. Any follow-on requires a separately authorized static boundary.
+**Active bounded objective:** Track A remains paused. CIB0 a1-a6 and CK0 a1-a6 are immutable consumed evidence. `balanced-opaque-relational-carrier-v1` is implemented, independently audited, and statically preregistered; no live execution has occurred. All Branch-B, bilateral, transfer, general catalytic-inference, advantage, superiority, SOTA, persistence, Deep, and promotion claims remain locked.
+**Next exact action:** only a separately authorized live invocation of `ck0-balanced-v1-full-r1`. Do not authorize either deletion control until that full-information run is terminally bound. No other CK0/CIB0/CS1 run, tuning, profile, claim change, Deep request, or automatic promotion is authorized.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -558,6 +558,18 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Bind post-execution artifact SHA-256 `162600D74A96C6E4C1797484D6123C2FFD710296CEDFFEC859A6DA008D70B512`, a6 manifest SHA-256 `84EC7998242E7AE11F1238C59E354FB883BC91ACB33E8FAB78AE34365E1B13B3`, result SHA-256 `C606B1C25B7C2F126F3334FFBCA6DA47A477822BBEFCBFA0AF88C3634B64316E`, and closure-file SHA-256 `5ECBBF0693A485F5C1A47663E3EB7007BE71C6699097994ED9487D14BE23C34B`.
 - [x] Preserve the existing non-production Branch-A dependence status exactly. Unlock no Branch-B dependence or bilateral dependence status: this frozen control instead rejects the preregistered Branch-B necessity hypothesis. General two-parent necessity, transfer, task advantage, superiority, SOTA, general catalytic inference, broader/restart persistence, Deep, and promotion remain locked.
 
+### Catalytic Kernel 0 balanced opaque relational carrier [STATICALLY PREREGISTERED / NOT EXECUTED]
+
+- [x] Freeze public-only profile `balanced-opaque-relational-carrier-v1` on `cs1-task-03`, shards A=`1,2,3` and B=`3,4,5`, supports 5 and 5, four exclusives per parent, singleton full/intersection support `{C34}`, tied 3/3 scores, and equal pass vectors.
+- [x] Create one ignored 32-byte private root with a keyed creation receipt; commit only the secret, canonical alias-map, branch-presentation-map, and three run-key commitments. No secret, mapping, or run key is tracked or model-visible.
+- [x] Replace reversible branch source-body labels with separately keyed request-local extensional projections. Each parent keeps `C34` exchangeable with its four local alternatives; transform receives only the two normalized shared opaque relations; extraction receives only opaque ranking and commitment.
+- [x] Preserve the existing six-request CK0 lifecycle, one slot, one sidecar epoch, cache/lease/custody/cleanup/restoration machinery, metadata-only persistence, historical carrier identities, and every historical classification.
+- [x] Obtain terminal `PASS` from exactly two read-only audits after one bounded repair/re-audit cycle: carrier leakage and private commitments.
+- [x] Pass 16 / 16 focused tests, 12 / 12 existing CK0 tests, changed-file compilation, canonical preregistration validation, evaluator-lock validation, exact historical rehash, ignored-private-state and tracked-byte scans, and protected preflight. The single 805-test CPU suite had 803 in-sandbox passes plus two sandbox file-lock errors; both exact tests passed 2 / 2 with host file-lock permission, leaving zero semantic failures.
+- [x] Reserve only `ck0-balanced-v1-full-r1`, `ck0-balanced-v1-delete-a-r1`, and `ck0-balanced-v1-delete-b-r1`. No live request, sidecar launch, synthetic live evidence, disclosure, claim unlock, Deep request, or promotion occurred.
+
+**Next exact action:** only separately authorized `ck0-balanced-v1-full-r1`. Both deletion controls remain locked until the full-information result is terminally bound.
+
 Preserved v1 executed boundary:
 
 - Root A rendered 7,806 tokens and returned exact visible content `HOLOSTATE ROOT WARM`, empty reasoning metadata, `finish_reason=stop`, and 7 completion tokens. Prompt processing was 145,519.789 ms at 53.642 TPS.
@@ -587,4 +599,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: preserve CIB0 a1-a6 and CK0 a1-a6 exactly. Both preregistered directional deletion controls are consumed; no rerun or further live action is authorized. Branch-A dependence remains supported only on the frozen carrier; Branch-B dependence and bilateral dependence are not unlocked. General two-parent necessity, transfer, task advantage, superiority, SOTA, general catalytic inference, persistence, Deep, and automatic promotion remain locked.
+Next task: preserve CIB0 a1-a6 and CK0 a1-a6 exactly. The only separately authorizable live action is `ck0-balanced-v1-full-r1`; both balanced deletion controls remain locked until its terminal binding. Branch-A dependence remains supported only on the historical frozen carrier; Branch-B dependence, bilateral dependence, general two-parent necessity, transfer, task advantage, superiority, SOTA, general catalytic inference, persistence, Deep, and automatic promotion remain locked.

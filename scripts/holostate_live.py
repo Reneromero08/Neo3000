@@ -18965,6 +18965,27 @@ def command_run_catalytic_kernel_0(args: argparse.Namespace) -> dict[str, Any]:
     return run_catalytic_kernel_0(args)
 
 
+def _catalytic_kernel_0_result_succeeded(
+    result: Mapping[str, Any],
+    carrier_profile: str | None,
+) -> bool:
+    if result.get("status") != "complete":
+        return False
+    if carrier_profile == "balanced-opaque-relational-carrier-v1":
+        return result.get("balanced_classification") in {
+            "BALANCED_OPAQUE_RELATIONAL_VISIBLE",
+            "BALANCED_OPAQUE_RELATIONAL_COLLAPSED",
+            "PARENT_A_INFORMATION_DEPENDENCE_SUPPORTED",
+            "PARENT_A_UNAIDED_EXCHANGEABLE_HIT",
+            "PARENT_B_INFORMATION_DEPENDENCE_SUPPORTED",
+            "PARENT_B_UNAIDED_EXCHANGEABLE_HIT",
+        }
+    return result.get("mechanism_classification") in {
+        "CATALYTIC_KERNEL_VISIBLE",
+        "CATALYTIC_KERNEL_COLLAPSED",
+    }
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     common = argparse.ArgumentParser(add_help=False)
@@ -19045,7 +19066,10 @@ def build_parser() -> argparse.ArgumentParser:
     catalytic_kernel_0.add_argument("--run-id", required=True)
     catalytic_kernel_0.add_argument(
         "--carrier-profile",
-        choices=("complementary-unresolved-public-v1",),
+        choices=(
+            "complementary-unresolved-public-v1",
+            "balanced-opaque-relational-carrier-v1",
+        ),
     )
     catalytic_kernel_0.add_argument(
         "--control",
@@ -19110,10 +19134,8 @@ def main() -> int:
                 in {"MECHANISM_VISIBLE", "MECHANISM_WEAK", "MECHANISM_COLLAPSED"}
             ) else 1
         if args.command == "run-catalytic-kernel-0":
-            return 0 if (
-                result.get("status") == "complete"
-                and result.get("mechanism_classification")
-                in {"CATALYTIC_KERNEL_VISIBLE", "CATALYTIC_KERNEL_COLLAPSED"}
+            return 0 if _catalytic_kernel_0_result_succeeded(
+                result, getattr(args, "carrier_profile", None)
             ) else 1
         if args.command == "audit-catalytic-swarm-0":
             return 1

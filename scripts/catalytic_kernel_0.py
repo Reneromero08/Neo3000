@@ -2134,16 +2134,38 @@ def run_catalytic_kernel_0(
     state_root: str | os.PathLike[str] | None = None,
 ) -> dict[str, Any]:
     run_id = validate_run_id(_arg(args, "run_id"))
+    repository = Path(repository_root).resolve() if repository_root is not None else Path(__file__).resolve().parents[1]
     requested_profile = _arg(args, "carrier_profile")
-    if requested_profile not in {None, UNRESOLVED_PROFILE_ID}:
+    from catalytic_kernel_0_balanced_opaque import (
+        PROFILE_ID as BALANCED_OPAQUE_PROFILE_ID,
+        BalancedOpaqueRuntime,
+    )
+
+    if requested_profile not in {
+        None,
+        UNRESOLVED_PROFILE_ID,
+        BALANCED_OPAQUE_PROFILE_ID,
+    }:
         raise CatalyticKernel0Error("unknown or unauthorized carrier profile")
     profile = (
         selected_unresolved_public_profile()
         if requested_profile == UNRESOLVED_PROFILE_ID
         else None
     )
-    control = _validated_control(_arg(args, "control"), profile)
-    repository = Path(repository_root).resolve() if repository_root is not None else Path(__file__).resolve().parents[1]
+    balanced_runtime = (
+        BalancedOpaqueRuntime.from_repository(repository, run_id)
+        if requested_profile == BALANCED_OPAQUE_PROFILE_ID
+        else None
+    )
+    if balanced_runtime is not None and _arg(args, "control") is not None:
+        raise CatalyticKernel0Error(
+            "balanced opaque execution mode is bound by its preregistered run ID"
+        )
+    control = (
+        None
+        if balanced_runtime is not None
+        else _validated_control(_arg(args, "control"), profile)
+    )
     state_base = Path(state_root).resolve() if state_root is not None else repository / "state" / "catalytic_kernel_0"
     run_root = state_base / run_id
     try:
@@ -2152,15 +2174,23 @@ def run_catalytic_kernel_0(
         raise CatalyticKernel0Error("kernel state must remain below the repository") from exc
     if run_root.exists():
         raise CatalyticKernel0Error("kernel run ID already exists")
-    carrier = build_carrier(profile)
-    control_preregistration = None
-    if control == PARENT_A_INFORMATION_DELETION_CONTROL:
+    carrier = (
+        balanced_runtime.carrier
+        if balanced_runtime is not None
+        else build_carrier(profile)
+    )
+    control_preregistration = (
+        dict(balanced_runtime.preregistration)
+        if balanced_runtime is not None
+        else None
+    )
+    if balanced_runtime is None and control == PARENT_A_INFORMATION_DELETION_CONTROL:
         control_preregistration = validate_parent_a_control_preregistration(
             repository,
             run_id=run_id,
             carrier=carrier,
         )
-    elif control == PARENT_B_INFORMATION_DELETION_CONTROL:
+    elif balanced_runtime is None and control == PARENT_B_INFORMATION_DELETION_CONTROL:
         control_preregistration = validate_parent_b_control_preregistration(
             repository,
             run_id=run_id,
@@ -2186,7 +2216,11 @@ def run_catalytic_kernel_0(
         "schema_version": STATE_SCHEMA_VERSION,
         "kernel_id": KERNEL_ID,
         "run_id": run_id,
-        "task_id": TASK_ID if profile is None else profile["task_id"],
+        "task_id": (
+            balanced_runtime.private.profile["task_id"]
+            if balanced_runtime is not None
+            else TASK_ID if profile is None else profile["task_id"]
+        ),
         "carrier_id": carrier["carrier_id"],
         "carrier_content_sha256": carrier["carrier_content_sha256"],
         "carrier_root_sha256": carrier["carrier_root_sha256"],
@@ -2202,6 +2236,16 @@ def run_catalytic_kernel_0(
     }
     if profile is not None:
         manifest["carrier_profile"] = dict(carrier["profile"])
+    if balanced_runtime is not None:
+        manifest["carrier_profile"] = {
+            "profile_id": BALANCED_OPAQUE_PROFILE_ID,
+            "profile_binding_sha256": balanced_runtime.private.profile_binding_sha256,
+            "run_mode": balanced_runtime.mode,
+            "model_visible_mapping": False,
+        }
+        manifest["balanced_preregistration"] = dict(
+            balanced_runtime.preregistration
+        )
     if control is not None:
         deleted_parent, retained_parent = _control_direction(control)
         manifest["control"] = {
@@ -2244,13 +2288,21 @@ def run_catalytic_kernel_0(
                 "model_response_completed": False,
                 "physical_slot": PHYSICAL_SLOT,
             }
-            payload = build_model_request(
-                request_id,
-                carrier=carrier,
-                artifacts=artifacts,
-                control=control,
+            payload = (
+                balanced_runtime.build_model_request(request_id, artifacts)
+                if balanced_runtime is not None
+                else build_model_request(
+                    request_id,
+                    carrier=carrier,
+                    artifacts=artifacts,
+                    control=control,
+                )
             )
-            if request_id == "transform" and control in INFORMATION_DELETION_CONTROLS:
+            if request_id == "transform" and balanced_runtime is not None:
+                control_intervention = balanced_runtime.validate_transform_assignment(
+                    json.loads(payload["messages"][1]["content"])
+                )
+            elif request_id == "transform" and control in INFORMATION_DELETION_CONTROLS:
                 assert control is not None
                 control_intervention = _validate_information_deletion_projection(
                     payload,
@@ -2297,30 +2349,56 @@ def run_catalytic_kernel_0(
             if after_custody.get("passed") is not True or _resource_breach(after_resource):
                 raise CatalyticKernel0Error("post-request custody or measured resource ceiling failed")
             transport = _normalized_transport(execution, rendered_tokens=len(token_ids), max_tokens=64)
-            structured = parse_response(
-                request_id,
-                transport["structured_content"],
-                transform_artifact=artifacts.get("transform"),
-                profile=profile,
-                carrier_id=carrier["carrier_id"],
+            structured = (
+                balanced_runtime.parse_response(
+                    request_id,
+                    transport["structured_content"],
+                    transform_artifact=artifacts.get("transform"),
+                )
+                if balanced_runtime is not None
+                else parse_response(
+                    request_id,
+                    transport["structured_content"],
+                    transform_artifact=artifacts.get("transform"),
+                    profile=profile,
+                    carrier_id=carrier["carrier_id"],
+                )
             )
             if request_id in BRANCH_SHARDS:
-                artifacts[request_id] = normalize_branch(
-                    request_id,
-                    structured["ranking"],
-                    profile,
+                artifacts[request_id] = (
+                    balanced_runtime.normalize_branch(
+                        request_id, structured["ranking"]
+                    )
+                    if balanced_runtime is not None
+                    else normalize_branch(
+                        request_id,
+                        structured["ranking"],
+                        profile,
+                    )
                 )
             elif request_id == "transform":
-                artifacts[request_id] = normalize_transform(
-                    artifacts["branch-a"],
-                    artifacts["branch-b"],
-                    operator=structured["operator"],
-                    ranking=structured["ranking"],
-                    profile=profile,
+                artifacts[request_id] = (
+                    balanced_runtime.normalize_transform(
+                        structured["operator"], structured["ranking"]
+                    )
+                    if balanced_runtime is not None
+                    else normalize_transform(
+                        artifacts["branch-a"],
+                        artifacts["branch-b"],
+                        operator=structured["operator"],
+                        ranking=structured["ranking"],
+                        profile=profile,
+                    )
                 )
             elif request_id == "extract":
-                artifacts[request_id] = normalize_extraction(
-                    structured["candidate_id"], artifacts["transform"], profile
+                artifacts[request_id] = (
+                    balanced_runtime.normalize_extraction(
+                        structured["candidate_alias"], artifacts["transform"]
+                    )
+                    if balanced_runtime is not None
+                    else normalize_extraction(
+                        structured["candidate_id"], artifacts["transform"], profile
+                    )
                 )
             if request_id == "borrow":
                 cache_admission = {
@@ -2354,7 +2432,15 @@ def run_catalytic_kernel_0(
                 {
                     "status": "accepted",
                     "model_request_sha256": json_sha256(payload),
-                    "normalized_artifact_sha256": artifacts.get(request_id, {}).get("artifact_sha256"),
+                    (
+                        "normalized_artifact_commitment"
+                        if balanced_runtime is not None
+                        else "normalized_artifact_sha256"
+                    ): artifacts.get(request_id, {}).get(
+                        "artifact_commitment"
+                        if balanced_runtime is not None
+                        else "artifact_sha256"
+                    ),
                     "transport": transport["metadata"],
                     "cache": {
                         "required": request_id != "borrow",
@@ -2415,7 +2501,12 @@ def run_catalytic_kernel_0(
             "carrier_terminal_identity_sha256_before": warm_terminal_identity,
             "carrier_terminal_identity_sha256_after": restore_terminal_identity,
             "cache_root_reuse_admitted": restore_cache_admitted,
-            "branch_state_absent_from_carrier": _carrier_is_pristine(carrier),
+            "branch_state_absent_from_carrier": (
+                balanced_runtime is not None
+                and balanced_runtime.carrier_is_pristine(carrier)
+                or balanced_runtime is None
+                and _carrier_is_pristine(carrier)
+            ),
             "active_leases": lease["active_leases"],
             "lease_count": lease["lease_count"],
             "maximum_concurrent_leases": lease["maximum_concurrent_leases"],
@@ -2460,25 +2551,45 @@ def run_catalytic_kernel_0(
             )
 
     implementation_sha = preflight.get("stable", {}).get("head") if isinstance(preflight.get("stable"), Mapping) else None
-    result = _result_projection(
-        run_id=run_id,
-        implementation_sha=implementation_sha,
-        carrier=carrier,
-        preflight=preflight,
-        cib0_snapshot=cib0_before,
-        ck0_snapshot=ck0_before,
-        readiness=readiness,
-        outcomes=outcomes,
-        artifacts=artifacts,
-        completed_responses=completed_responses,
-        cleanup=cleanup,
-        postflight=postflight,
-        lease=lease,
-        restoration=restoration,
-        failure=failure,
-        control=control,
-        control_intervention=control_intervention,
-        control_preregistration=control_preregistration,
+    result = (
+        balanced_runtime.build_result_projection(
+            implementation_sha=implementation_sha,
+            preflight=preflight,
+            cib0_snapshot=cib0_before,
+            ck0_snapshot=ck0_before,
+            readiness=readiness,
+            outcomes=outcomes,
+            artifacts=artifacts,
+            completed_responses=completed_responses,
+            cleanup=cleanup,
+            postflight=postflight,
+            lease=lease,
+            restoration=restoration,
+            failure=failure,
+            intervention=control_intervention,
+            claims=CLAIMS,
+        )
+        if balanced_runtime is not None
+        else _result_projection(
+            run_id=run_id,
+            implementation_sha=implementation_sha,
+            carrier=carrier,
+            preflight=preflight,
+            cib0_snapshot=cib0_before,
+            ck0_snapshot=ck0_before,
+            readiness=readiness,
+            outcomes=outcomes,
+            artifacts=artifacts,
+            completed_responses=completed_responses,
+            cleanup=cleanup,
+            postflight=postflight,
+            lease=lease,
+            restoration=restoration,
+            failure=failure,
+            control=control,
+            control_intervention=control_intervention,
+            control_preregistration=control_preregistration,
+        )
     )
     _atomic_json(paths["result.json"], result)
     if paths["run.lock"].exists():
@@ -2507,7 +2618,11 @@ def run_catalytic_kernel_0(
         "historical_cib0_tree_sha256": cib0_before["tree_sha256"],
         "historical_ck0_tree_sha256": ck0_before["tree_sha256"],
     }
-    if control_preregistration is not None:
+    if balanced_runtime is not None:
+        closure_body["balanced_preregistration_document_sha256"] = (
+            balanced_runtime.preregistration["document_sha256"]
+        )
+    elif control_preregistration is not None:
         closure_body["control_preregistered_sha256"] = control_preregistration[
             "preregistered_sha256"
         ]
