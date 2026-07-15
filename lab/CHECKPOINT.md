@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Balanced opaque CK0 carrier statically preregistered
+## Checkpoint 2: Balanced opaque CK0 full-information result terminally visible
 
-**Status:** STATIC IMPLEMENTATION COMPLETE / TWO AUDITS PASS / NO LIVE EXECUTION / CLAIMS LOCKED
+**Status:** FULL RUN EXECUTED EXACTLY ONCE / `BALANCED_OPAQUE_RELATIONAL_VISIBLE` / NON-PRODUCTION / BROAD CLAIMS LOCKED
 
 - [x] Admit exact protected main `9eb024d9f664b5592997aac90081d083e75adbd1`, clean candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, exact model/binary identities, and unchanged historical evidence before editing.
 - [x] Implement exact profile `balanced-opaque-relational-carrier-v1` on `cs1-task-03`, A=`1,2,3`, B=`3,4,5`, 5+5 supports, four exclusives each, and private singleton intersection `{C34}` without hidden data.
@@ -11,9 +11,14 @@
 - [x] Require run/stage-bound artifact HMACs, exact extraction recomputation, deletion commitment-only receipts, and an enforced no-automatic-disclosure terminal law.
 - [x] Receive `PASS` from the carrier-leakage auditor and private-commitment auditor after one permitted re-audit each. Neither auditor edited files or accessed inference.
 - [x] Pass 16 / 16 focused tests, 12 / 12 existing CK0 tests, changed-file compilation, canonical JSON, evaluator lock, exact CIB0/CK0 rehash, private-state Git/byte scans, and protected preflight. One complete CPU run executed 805 tests: 803 passed in-sandbox; the only two sandbox file-lock errors passed 2 / 2 with required host access; zero semantic failures remain.
-- [x] Preserve the historical default/unresolved/deletion runtime paths and all classifications. No sidecar, model request, inference, live evidence, Deep request, disclosure, promotion, or claim unlock occurred.
+- [x] Preserve the historical default/unresolved/deletion runtime paths and all classifications. Static implementation occurred with no sidecar, model request, inference, synthetic live evidence, Deep request, disclosure, promotion, or claim unlock.
+- [x] Admit protected main `38abb3ca54f16083206f33b10103b3311c1eafd5`, remote/local ref equality, clean stable/candidate worktrees, candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, exact model/binary/carrier/schema identities, stable PID `20388`, free port 9494, evaluator lock, unchanged historical evidence, verified private commitments, zero tracked-secret matches, absent run state/lock, and one unconsumed full-run reservation.
+- [x] Execute only `ck0-balanced-v1-full-r1` exactly once. Command exit code was 0; sidecar PID `10372` was ready in 29.687 seconds; all six responses completed with exact root cache admission, one physical slot, no retry, no repair, and no deletion control.
+- [x] Observe two five-member normalized opaque parent supports. `refine` ranked the private singleton first; extraction consumed the transform commitment, selected the singleton, and privately scored 5 / 5. No secret, complete alias map, internal-to-opaque correspondence, raw SSE, raw output, or reasoning was persisted.
+- [x] Classify `BALANCED_OPAQUE_RELATIONAL_VISIBLE`; restoration, cleanup, stable/candidate custody, historical evidence, zero active leases, sidecar retirement, and port release passed. Evidence hashes are manifest `A129BBD9BA9DEF0842144178B94A0269F66022EF82DB60D517CDD0C423CC2E1D`, result `B57FE3598A03F7CBB2765F77CE702293F72BBF900424F9592D719CF02DA458F8`, and closure `FE918337A82C7D9D2C59DE56514D284C736A239226F03C91E8025811E92E8DDA`.
+- [x] Unlock only `BALANCED_OPAQUE_RELATIONAL_FULL_INFORMATION_VISIBLE`. This run establishes no balanced-carrier parent dependence or bilateral dependence; the historical frozen-carrier Branch-A status is merely preserved. General two-parent necessity, transfer, general catalytic inference, task advantage, superiority, SOTA, broader/restart HoloState, Deep, and promotion remain locked.
 
-**Next exact action:** only a separately authorized `ck0-balanced-v1-full-r1`. The two balanced deletion controls remain unauthorized until the full-information run is terminally bound.
+**Next exact action:** no deletion control is authorized automatically. Only a later separately authorized operation may consider `ck0-balanced-v1-delete-a-r1`; the Branch-B deletion control remains behind that ordered causal cursor.
 
 ## Historical checkpoint: CK0 Branch-B information-deletion control complete
 

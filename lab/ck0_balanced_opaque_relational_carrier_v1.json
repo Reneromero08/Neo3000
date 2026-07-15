@@ -74,6 +74,190 @@
     ],
     "visibility": "controller_private_preregistered"
   },
+  "full_information_observed_result": {
+    "cache_admissions": [
+      {
+        "admitted": true,
+        "cached_prompt_tokens": 0,
+        "completion_tokens": 22,
+        "fresh_prompt_tokens": 1852,
+        "prompt_tokens": 1852,
+        "request_duration_seconds": 61.354223500000444,
+        "request_id": "borrow"
+      },
+      {
+        "admitted": true,
+        "cached_prompt_tokens": 1809,
+        "completion_tokens": 29,
+        "fresh_prompt_tokens": 2196,
+        "prompt_tokens": 4005,
+        "request_duration_seconds": 58.558137900001384,
+        "request_id": "branch-a"
+      },
+      {
+        "admitted": true,
+        "cached_prompt_tokens": 1809,
+        "completion_tokens": 29,
+        "fresh_prompt_tokens": 2193,
+        "prompt_tokens": 4002,
+        "request_duration_seconds": 46.735437999999704,
+        "request_id": "branch-b"
+      },
+      {
+        "admitted": true,
+        "cached_prompt_tokens": 1809,
+        "completion_tokens": 38,
+        "fresh_prompt_tokens": 282,
+        "prompt_tokens": 2091,
+        "request_duration_seconds": 13.80369040000005,
+        "request_id": "transform"
+      },
+      {
+        "admitted": true,
+        "cached_prompt_tokens": 1809,
+        "completion_tokens": 9,
+        "fresh_prompt_tokens": 110,
+        "prompt_tokens": 1919,
+        "request_duration_seconds": 4.117278899999292,
+        "request_id": "extract"
+      },
+      {
+        "admitted": true,
+        "cached_prompt_tokens": 1809,
+        "completion_tokens": 22,
+        "fresh_prompt_tokens": 44,
+        "prompt_tokens": 1853,
+        "request_duration_seconds": 5.046962399999757,
+        "request_id": "restore"
+      }
+    ],
+    "carrier_and_schema_identities": {
+      "carrier_content_sha256": "381D94451155D789FE94F5830042AD9C8AE90EF5869DD41B0E759D3EFBD9BF59",
+      "carrier_root_sha256": "E66846DC5097C5E9D6CFE5DC8679660CC193648DAE7A555AAA2587BE8A371033",
+      "response_schema_sha256": {
+        "borrow_restore": "4EBEC04AC016ABAC26B905BD93AC02ED1899AFFCBB87113F497FEB8E088F3F81",
+        "branches": "00B8B34FA8419B30F355DB1369FDA3208788B044157A299916F9E48E912478FE",
+        "extract": "B47E080796EE9ACB7CD03D797292C03B18B0A570AE58BE5D7C7473ED940B6886",
+        "transform": "B36864F84116E64D96775452265513E7AB46521418EB376CC17872492B281E27"
+      }
+    },
+    "cleanup": {
+      "passed": true,
+      "port_9494_free": true,
+      "process_stopped": true,
+      "runtime_removed": true,
+      "stable_preserved": true,
+      "temporary_state_removed": true
+    },
+    "commitment_verification": {
+      "alias_map_commitment_recomputed": true,
+      "deletion_run_key_commitments_recomputed_without_invocation": true,
+      "full_run_key_commitment_recomputed": true,
+      "private_creation_receipt_verified": true,
+      "secret_commitment_recomputed": true,
+      "tracked_secret_byte_matches": 0
+    },
+    "custody": {
+      "candidate_head": "14de9c71593e5aea4fcfcadeda47ba5c623fadcf",
+      "historical_cib0_tree_sha256": "57CE7FFFEBBB925BBD3B37F55A9394037720018748776C2C42DD17961D8ECCBD",
+      "historical_ck0_a1_a2_tree_sha256": "BB15C248EFBF075F77899161FC6EEDCD28830097CB6D0B67D7BB7F368ADCC249",
+      "historical_ck0_a3_a6_files_rehashed": 12,
+      "postflight_passed": true,
+      "run_lock_absent": true,
+      "stable_pid": 20388,
+      "terminal_custody_passed": true
+    },
+    "deletion_controls_remain_unauthorized": true,
+    "evidence": {
+      "closure_sha256": "FE918337A82C7D9D2C59DE56514D284C736A239226F03C91E8025811E92E8DDA",
+      "manifest_sha256": "A129BBD9BA9DEF0842144178B94A0269F66022EF82DB60D517CDD0C423CC2E1D",
+      "result_sha256": "B57FE3598A03F7CBB2765F77CE702293F72BBF900424F9592D719CF02DA458F8"
+    },
+    "execution": {
+      "command_exit_code": 0,
+      "completed_model_responses": 6,
+      "execution_commit": "38abb3ca54f16083206f33b10103b3311c1eafd5",
+      "invocation_count": 1,
+      "repair_count": 0,
+      "request_count": 6,
+      "retry_count": 0,
+      "run_id": "ck0-balanced-v1-full-r1",
+      "status": "complete"
+    },
+    "extraction": {
+      "artifact_commitment": "721476140353981AADCA4FE9EE1A7158526D5354639245126BA7E7937E8D6855",
+      "full_public_score": 5,
+      "full_public_total": 5,
+      "selected_private_singleton": true,
+      "transform_artifact_commitment_consumed": "AD20F98F6558615181E8CC851B75F62F67DB67DC1284158295CEC3978EBD9F53"
+    },
+    "information_flow": {
+      "branch_support_cardinalities": {
+        "parent-0": 5,
+        "parent-1": 5
+      },
+      "no_complete_alias_map_persisted": true,
+      "no_disclosure_occurred": true,
+      "parent_artifact_commitments": {
+        "parent-0": "22FC9F005035E71708BC92D91079181D707168EB060C34AF39AA98653C345371",
+        "parent-1": "E23D33114CD91D8702F222B04A3B1458F0483641B3DC75DFCAC7CC179D449E79"
+      },
+      "private_material_model_visible": false,
+      "raw_model_output_persisted": false,
+      "raw_sse_persisted": false,
+      "reasoning_persisted": false
+    },
+    "lease_accounting": {
+      "active_leases": 0,
+      "lease_count": 6,
+      "maximum_concurrent_leases": 1,
+      "physical_slots": 1
+    },
+    "narrow_non_production_status": "BALANCED_OPAQUE_RELATIONAL_FULL_INFORMATION_VISIBLE",
+    "next_separately_authorizable_action": "ck0-balanced-v1-delete-a-r1",
+    "non_production": true,
+    "readiness": {
+      "chat_template_sha256": "A4AEE8AFCF2E0711942CF848899BE66016F8D14A889FF9EDE07BCA099C28F715",
+      "readiness_private_bytes": 3415343104,
+      "readiness_seconds": 29.687,
+      "sidecar_pid": 10372,
+      "stable_health_probe_attempts": 102,
+      "stable_health_recovery_events": 0,
+      "stable_pid": 20388
+    },
+    "resource_observations": {
+      "advisory_wddm_state": "unavailable",
+      "maximum_host_private_bytes": 4908994560,
+      "measured_resource_ceiling_breaches": false,
+      "readiness_private_bytes": 3415343104
+    },
+    "restoration": {
+      "active_leases": 0,
+      "carrier_root_restored": true,
+      "passed": true,
+      "receipt_sha256": "005115225A5FED24894FF423C6B51B0762B1584924C2E88CE63C6C3E2840B74E",
+      "sidecar_cleanup_passed": true,
+      "sidecar_port_free": true
+    },
+    "runtime_identities": {
+      "binary": {
+        "runtime_version": "13 (417e1d6)",
+        "sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
+      },
+      "model": {
+        "filename": "Agents-A1-Q4_K_M.gguf",
+        "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+        "size_bytes": 21166757632
+      }
+    },
+    "terminal_classification": "BALANCED_OPAQUE_RELATIONAL_VISIBLE",
+    "transform": {
+      "artifact_commitment": "AD20F98F6558615181E8CC851B75F62F67DB67DC1284158295CEC3978EBD9F53",
+      "operator": "refine",
+      "ranking_persisted": false,
+      "top_matched_private_singleton": true
+    }
+  },
   "historical_claims": {
     "automatic_promotion": false,
     "bilateral_parent_dependence": "LOCKED",
