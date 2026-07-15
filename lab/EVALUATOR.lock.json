@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "38abb3ca54f16083206f33b10103b3311c1eafd5",
+  "baseline_source_commit": "ea757e7afb4ddf832ee7e9e050ac03bc34c2c065",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -144,7 +144,7 @@
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-15T01:02:55.305090+00:00",
+  "generated_at": "2026-07-15T01:41:44.342892+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
@@ -170,13 +170,13 @@
     "NEO3000.md": "b7ba87065f942d47abed19330197a843577bbd6b2fd58057a6df9de9cd7d2905",
     "README.md": "78708a68121242f8c0d48bc8218da2776985a2f8d3854e6a85be1b16050d3427",
     "ROADMAP.md": "21fdd9adef0ae599be637f178a3c604654fb378940dd4733b60d88b13e9a66e1",
-    "TASKS.md": "706d7b228b129967c91303be0e09a706b781dbc0396a234305455538ecbd10ce",
+    "TASKS.md": "d8e0e3b12e5cc2d0c2a244bf4688d28f6699a7cbb8d491d187e395820e24f10a",
     "docs/CATALYTIC_RUNTIME_ROADMAP.md": "b425fc553a78997964dff09851ade15262cd3eb59de0b8f751e66ff8b97ea923",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "72a55336c5fa5d16baea0a10bdca7101814da6ce0ff418be122b8318d5bfc096",
+    "lab/CHECKPOINT.md": "dcfa61cfcdab7d29323026d8f4209c09e10028e040cabbc8c9a3719e361feaff",
     "lab/EVALUATOR.json": "20ceda0399fad3755024cf7290f53b2bdd6fcc48f020b6b4f5ac182020ce100a",
-    "lab/GOAL.md": "3e28373976a708bb89f57753de8b329a623b5bee7d3e002b02f1eba578cb1c67",
-    "lab/ck0_balanced_opaque_relational_carrier_v1.json": "17a05549d5c8c705fd07f18392ab72295eab6e8a22be74dc183a8d8946375a60",
+    "lab/GOAL.md": "1a0439c58e8ca7ad24bb117c8cfd833dc3e44ccb61dfa19fa25fa368eb1bccd3",
+    "lab/ck0_balanced_opaque_relational_carrier_v1.json": "f5ba91b0e80f0183b51536bbe8c536254153b83edf4eaa6f06c9d23492e04a7f",
     "lab/ck0_parent_a_information_deletion_1.json": "a5b5c651ec5e542154283723bc727aa68cfd589125dbec3ff1624c0d31c0087b",
     "lab/ck0_parent_b_information_deletion_1.json": "162600d74a96c6e4c1797484d6123c2ffd710296cedffec859a6da008d70b512",
     "scripts/baseline_harness.py": "3924efc2e8f9f8b64929c2e2c6d8453a45a49d17277c2622d293a6cb3350b618",

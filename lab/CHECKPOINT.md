@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Balanced opaque CK0 full-information result terminally visible
+## Checkpoint 2: Balanced opaque CK0 Branch-A dependence supported
 
-**Status:** FULL RUN EXECUTED EXACTLY ONCE / `BALANCED_OPAQUE_RELATIONAL_VISIBLE` / NON-PRODUCTION / BROAD CLAIMS LOCKED
+**Status:** DELETE-A EXECUTED EXACTLY ONCE / `PARENT_A_INFORMATION_DEPENDENCE_SUPPORTED` / EVIDENCE PREPARED UNSTAGED / NON-PRODUCTION / BROAD CLAIMS LOCKED
 
 - [x] Admit exact protected main `9eb024d9f664b5592997aac90081d083e75adbd1`, clean candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, exact model/binary identities, and unchanged historical evidence before editing.
 - [x] Implement exact profile `balanced-opaque-relational-carrier-v1` on `cs1-task-03`, A=`1,2,3`, B=`3,4,5`, 5+5 supports, four exclusives each, and private singleton intersection `{C34}` without hidden data.
@@ -17,8 +17,14 @@
 - [x] Observe two five-member normalized opaque parent supports. `refine` ranked the private singleton first; extraction consumed the transform commitment, selected the singleton, and privately scored 5 / 5. No secret, complete alias map, internal-to-opaque correspondence, raw SSE, raw output, or reasoning was persisted.
 - [x] Classify `BALANCED_OPAQUE_RELATIONAL_VISIBLE`; restoration, cleanup, stable/candidate custody, historical evidence, zero active leases, sidecar retirement, and port release passed. Evidence hashes are manifest `A129BBD9BA9DEF0842144178B94A0269F66022EF82DB60D517CDD0C423CC2E1D`, result `B57FE3598A03F7CBB2765F77CE702293F72BBF900424F9592D719CF02DA458F8`, and closure `FE918337A82C7D9D2C59DE56514D284C736A239226F03C91E8025811E92E8DDA`.
 - [x] Unlock only `BALANCED_OPAQUE_RELATIONAL_FULL_INFORMATION_VISIBLE`. This run establishes no balanced-carrier parent dependence or bilateral dependence; the historical frozen-carrier Branch-A status is merely preserved. General two-parent necessity, transfer, general catalytic inference, task advantage, superiority, SOTA, broader/restart HoloState, Deep, and promotion remain locked.
+- [x] Admit protected main `ea757e7afb4ddf832ee7e9e050ac03bc34c2c065`, exact local/remote refs, clean stable/candidate worktrees, candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, exact model/binary/carrier/schema identities, evaluator lock, unchanged historical and full-information evidence, verified private commitments, zero tracked-secret matches, healthy stable PID `20388`, free port 9494, and one unconsumed delete-A reservation.
+- [x] Execute only `ck0-balanced-v1-delete-a-r1` exactly once. Exit code was 0 and wall time was 501.4 seconds; sidecar PID `15156` was ready in 25.609 seconds. All six responses completed and passed cache admission with one slot, no retry, no repair, no disclosure, and no Branch-B control.
+- [x] Construct and privately verify both complete five-member parent artifacts. Withhold parent-0 informative content from transform through the exact commitment-only receipt, preserve complete parent-1 unchanged, keep parent ordering exact, and expose no internal candidate identity or expected singleton.
+- [x] Observe transform operator `refine`; do not persist its opaque ranking. Transform top did not match the private singleton, extraction did not select it, and private public scoring was 3 / 5. Dedicated classification is `PARENT_A_INFORMATION_DEPENDENCE_SUPPORTED`.
+- [x] Pass restoration, cleanup, zero active leases, six total leases, maximum concurrency one, stable/candidate custody, historical custody, full-information preservation, sidecar retirement, and port release. Evidence hashes are manifest `03508F7AE5E5F4A812C43F02FD31A3EE4009530B1CB17E61056213AE1079E74E`, result `7AE2578A6D48831B5335CE2826424EA375EB169A218502B404BD031507635846`, and closure `4A2DD55ECC2DD03AE272F08FEB611F97E714EB587A28BD0660673E116286C873`.
+- [x] Support only non-production `BRANCH_A_INFORMATION_DEPENDENCE_SUPPORTED_ON_BALANCED_OPAQUE_CARRIER`. This result does not unlock Branch-B information dependence, bilateral dependence, general two-parent necessity, transfer, general catalytic inference, task advantage, superiority, SOTA, broader/restart HoloState, Deep, or promotion.
 
-**Next exact action:** no deletion control is authorized automatically. Only a later separately authorized operation may consider `ck0-balanced-v1-delete-a-r1`; the Branch-B deletion control remains behind that ordered causal cursor.
+**Next exact action:** publish only the validated bounded delete-A evidence in a separately authorized static operation. The Branch-B deletion control remains unauthorized and unconsumed; no live action is authorized.
 
 ## Historical checkpoint: CK0 Branch-B information-deletion control complete
 
