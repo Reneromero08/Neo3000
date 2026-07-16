@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import runpy
 import subprocess
 import sys
@@ -59,57 +60,63 @@ class RankHeadV2EntrypointTests(unittest.TestCase):
             )
 
     def test_original_duplicate_main_module_code_object_is_rejected(self) -> None:
-        duplicate = runpy.run_path(
-            entrypoint.__file__,
-            run_name="rank_head_v2_duplicate_entrypoint",
-        )
-        with self.assertRaisesRegex(
-            live_core.RankHeadV2LiveError,
-            "callable only by the authoritative fail-closed entrypoint",
-        ):
-            duplicate["run_rank_head_v2"]({"run_id": RUN_ID})
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            (repository / "state").mkdir()
+            duplicate = runpy.run_path(
+                entrypoint.__file__,
+                run_name="rank_head_v2_duplicate_entrypoint",
+            )
+            with self.assertRaisesRegex(
+                live_core.RankHeadV2LiveError,
+                "callable only by the authoritative fail-closed entrypoint",
+            ):
+                duplicate["run_rank_head_v2"](
+                    {"run_id": RUN_ID},
+                    repository_root=repository,
+                )
+            self.assertFalse(
+                (repository / "state" / "catalytic_kernel_0_rank_head_v2").exists()
+            )
+            self.assertFalse(authority.authority_receipt_path(repository, RUN_ID).exists())
 
     def test_direct_entrypoint_script_rejects_before_argument_admission(self) -> None:
-        repository = Path(entrypoint.__file__).resolve().parents[1]
-        runtime_root = repository / "state" / "catalytic_kernel_0_rank_head_v2"
-        receipts_before = sorted(
-            path.name
-            for path in (repository / "state").glob(
-                "catalytic_kernel_0_rank_head_v2_authority.*.authority.consumed.json"
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_root = Path(temporary)
+            copied_entrypoint = temporary_root / Path(entrypoint.__file__).name
+            copied_entrypoint.write_bytes(Path(entrypoint.__file__).read_bytes())
+            marker = "SYNTHETIC-AUTHORITY-MARKER-MUST-NOT-ECHO"
+            environment = os.environ.copy()
+            scripts_root = str(Path(entrypoint.__file__).resolve().parent)
+            environment["PYTHONPATH"] = os.pathsep.join(
+                value
+                for value in (scripts_root, environment.get("PYTHONPATH", ""))
+                if value
             )
-        )
-        marker = "SYNTHETIC-AUTHORITY-MARKER-MUST-NOT-ECHO"
-        completed = subprocess.run(
-            [
-                sys.executable,
-                entrypoint.__file__,
-                "run",
-                "--run-id",
-                RUN_ID,
-                "--external-live-authority-id",
-                marker,
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        self.assertEqual(completed.returncode, 1)
-        self.assertIn(
-            "catalytic_kernel_0_balanced_rank_head_v2_cli.py",
-            completed.stdout,
-        )
-        self.assertNotIn(marker, completed.stdout + completed.stderr)
-        self.assertFalse(runtime_root.exists())
-        self.assertEqual(
-            sorted(
-                path.name
-                for path in (repository / "state").glob(
-                    "catalytic_kernel_0_rank_head_v2_authority.*.authority.consumed.json"
-                )
-            ),
-            receipts_before,
-        )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(copied_entrypoint),
+                    "run",
+                    "--run-id",
+                    RUN_ID,
+                    "--external-live-authority-id",
+                    marker,
+                ],
+                cwd=temporary_root,
+                env=environment,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn(
+                "catalytic_kernel_0_balanced_rank_head_v2_cli.py",
+                completed.stdout,
+            )
+            self.assertNotIn(marker, completed.stdout + completed.stderr)
+            self.assertFalse((temporary_root / "state").exists())
 
     def test_retired_r1_is_rejected_by_canonical_argument_parser(self) -> None:
         stderr = StringIO()
@@ -138,12 +145,54 @@ class RankHeadV2EntrypointTests(unittest.TestCase):
             entrypoint.parse_args()
         self.assertIn("invalid choice", stderr.getvalue())
 
-    def test_postconsumption_failure_requires_crypto_and_closes_inconclusive(self) -> None:
+    def test_existing_terminal_evidence_is_immutable_before_core_call(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repository = Path(temporary)
             (repository / "state").mkdir()
             receipt = self._receipt(repository)
-            before = receipt.read_bytes()
+            paths = live_core.state_paths(repository, RUN_ID)
+            paths["manifest.json"].parent.mkdir(parents=True)
+            paths["manifest.json"].write_bytes(b'{"terminal":"manifest"}\n')
+            paths["result.json"].write_bytes(b'{"terminal":"result"}\n')
+            paths["closure.json"].write_bytes(b'{"terminal":"closure"}\n')
+            before = {
+                path: path.read_bytes()
+                for path in (
+                    receipt,
+                    paths["manifest.json"],
+                    paths["result.json"],
+                    paths["closure.json"],
+                )
+            }
+            with (
+                mock.patch.object(live_core, "_run_rank_head_v2_protected") as protected,
+                mock.patch.object(entrypoint, "close_post_consumption_failure") as close,
+            ):
+                with self.assertRaisesRegex(
+                    entrypoint.RankHeadV2EntrypointError,
+                    "existing evidence is immutable",
+                ):
+                    entrypoint.run_rank_head_v2(
+                        {"run_id": RUN_ID},
+                        repository_root=repository,
+                    )
+            protected.assert_not_called()
+            close.assert_not_called()
+            self.assertEqual(
+                before,
+                {path: path.read_bytes() for path in before},
+            )
+
+    def test_postconsumption_failure_requires_crypto_and_closes_inconclusive(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            (repository / "state").mkdir()
+            receipt_holder: dict[str, Path] = {}
+
+            def fail_after_consumption(*args: object, **kwargs: object) -> None:
+                receipt_holder["path"] = self._receipt(repository)
+                raise RuntimeError("postconsumption raw secret text")
+
             with (
                 mock.patch.object(
                     authority,
@@ -153,13 +202,15 @@ class RankHeadV2EntrypointTests(unittest.TestCase):
                 mock.patch.object(
                     live_core,
                     "_run_rank_head_v2_protected",
-                    side_effect=RuntimeError("postconsumption raw secret text"),
+                    side_effect=fail_after_consumption,
                 ),
             ):
                 result = entrypoint.run_rank_head_v2(
                     {"run_id": RUN_ID},
                     repository_root=repository,
                 )
+            receipt = receipt_holder["path"]
+            before = b'{"synthetic_fixture":true}\n'
             self.assertGreaterEqual(verify.call_count, 2)
             self.assertEqual(result["status"], "failed")
             self.assertEqual(
@@ -185,7 +236,11 @@ class RankHeadV2EntrypointTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             repository = Path(temporary)
             (repository / "state").mkdir()
-            self._receipt(repository)
+
+            def fail_after_consumption(*args: object, **kwargs: object) -> None:
+                self._receipt(repository)
+                raise RuntimeError("postconsumption")
+
             with (
                 mock.patch.object(
                     authority,
@@ -195,7 +250,7 @@ class RankHeadV2EntrypointTests(unittest.TestCase):
                 mock.patch.object(
                     live_core,
                     "_run_rank_head_v2_protected",
-                    side_effect=RuntimeError("postconsumption"),
+                    side_effect=fail_after_consumption,
                 ),
             ):
                 with self.assertRaisesRegex(
