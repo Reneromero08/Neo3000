@@ -1,18 +1,17 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Rank-head CK0 v2 evidence hardening and binding-1 r3 preparation
+## Checkpoint 2: Binding-1 rank-head v2 R3 published; binding-2 prepared
 
-**Status:** R2 CONSUMED / SUCCESS REPORTED / PUBLICATION CUSTODY LOST / FALSE PUBLICATION REMOVED / TESTS ISOLATED / BYTE-EXACT ARCHIVE ADDED / R3 RESERVED / BINDING-2 UNAUTHORIZED
+**Status:** R3 CONSUMED ONCE / VISIBLE `5/5` / BYTE-EXACT ARCHIVE VERIFIED / `neo-exp-0040` PUBLISHED / BINDING-2 UNEXECUTED AND NOT AUTOMATICALLY AUTHORIZED
 
-- [x] Classify `ck0-balanced-v2-rank-head-b1-full-r2` as `SUCCESS_REPORTED_EVIDENCE_CUSTODY_LOST_AFTER_TEST_OVERWRITE`. Preserve unchanged receipt `865281FD36E530277A11A89500206DBB77D9FA8C7ABEBA21A291777BC73546F1` and manifest `6D11B89F6B96AA55D8FE1AE6C21D6FDCE8FF33A22B0C5DA9475F4D7B9E3B9702`; preserve current overwritten result `E81034DB588B4CF092EADBA9B46668A68D6C366BE7B473C483BDB7A1C28809B8` and closure `1C269E1FCDCD707B07C8D8DBD456337E5446E6670AEB1925EE1A1A368F1EE44C` as forensic evidence.
-- [x] Record unavailable original result `FE63B84FDFBD16386838F017DA572203631AE38EEE0AD3E7A565E2D6732A57EE` and closure `C47E49988543A365A306566416B32EE59871674F65C7A4F332D290E451CE92CD` only as historical identities. Remove draft `neo-exp-0040`; block scientific publication and every binding-2 consequence; retire r2 without retry.
-- [x] Repair both state-dependent tests: the duplicate entrypoint code-object test and canonical CLI caller-gate test now run only inside explicit temporary repositories and repository-owned temporary state roots. Pass the same root through failure closure and reject test access to the real checkout before state lookup.
-- [x] Refuse failure-closure overwrite of complete or failed terminal evidence. Automatically snapshot each future terminal receipt, manifest, result, and closure into an ignored `v1` content-addressed archive using exclusive creation, exact filename/size/SHA-256/run/commit binding, archived-receipt cryptographic verification, and restore only to missing or byte-identical destinations. Verify current r2 forensic bundle `14A0DECC79AE860073ABB92C260739F1BEBA4D2A7DC38A9E8E9EB50922BBC101`.
-- [x] Retain a future-r3-only non-runtime publication validator with no r2 result constants. Reserve active run order `ck0-balanced-v2-rank-head-b1-full-r3`, then unchanged `ck0-balanced-v2-rank-head-b2-full-r1`; preserve both private roots and mappings; activate v3 authority object/receipt schema hashes `5616C6D5ACEDD569D9DBF052890C48A44B9C2600FC5C536A2B18F4F5F02A07BB` / `7E44D619F5BCC4FC24F41E7CFE81946B7073C35349F6322F892AE0C5BC396A52`; bind r3 run key `7B7E30422A76FFE057B381B586F21AF6F9A68563F5A2282136F3E217F1B8392C`; and require binding-2 authority to bind the synchronized committed r3 publication commit and canonical record SHA-256.
-- [x] Bind 18 implementation files at `E4D92CCF46ED5DF123262CF954D3D2F42A4F907B738779FFD90B00EA6BF72DA3`; regenerate exact run-design artifact/document `C1D648039574F866797F519AEEC9A77C6215B682B2346343DF2BA892BD8D015E` / `9D8EBFF02A327C1169DEB294B8459D64AF96284C61AC9A81323E371307E20D95`.
-- [x] Keep every broader claim locked. This static repair created no authority, receipt, live runtime root, sidecar, model request, inference, retry, deletion control, or binding-2 execution.
+- [x] Execute `ck0-balanced-v2-rank-head-b1-full-r3` once from `358c0e2e86136e47647a83cf60e75a6c1078a2fe` with no retry. Complete six stages, five model responses, five leases, one physical slot, one sidecar epoch, zero active leases, clean restoration, cleanup, and terminal classification `BALANCED_OPAQUE_RANK_HEAD_V2_VISIBLE`.
+- [x] Verify deterministic controller extraction froze rank zero before private mapping, consumed transform commitment `73157ACB6DA448D5D42367F4393987C1B52365E7022BFF904230869446ADE392`, selected the private singleton, and scored `5/5` without an extraction model request.
+- [x] Preserve receipt `ABEEBD217119FC49059EEEECBD418867D6C509C44EA066A9E0A3613241332D7C`, manifest `C7B4BFFF37C77833541BCAA65E43180C69EB073D73368E11BDF81231DDC8254E`, result `A4CFEB142F5E1CE538B9724D3C8ED9215B6E2351C6EEC2AD35EE79F01C74AA32`, and closure `E43CFB0505F316AF877712C31B82D8B73BAD379057A38119B2CC911456BF6BA7` in verified content-addressed bundle `9566F5D1CF9797496ACB9F4716CE68FBDAE0CE5974E90CEE1F6CAA1A66941349`.
+- [x] Publish one canonical split-schema `neo-exp-0040` record at line 53 with exact record SHA-256 `0B167E49C9CA83BD57893B792CA729E0F33F154E27B0CEDD4B172110FCB75C16`. Match a fresh independent render and preserve the disclosure boundary.
+- [x] Keep `ck0-balanced-v2-rank-head-b2-full-r1` unexecuted and without authority. Require its future fresh authority to HMAC-bind the synchronized publication commit and canonical record SHA-256.
+- [x] Keep cross-binding replication, binding-2 parent dependence, causal replication, general catalytic inference, task advantage, superiority, SOTA, transfer, Deep, restart persistence, and automatic promotion locked.
 
-**Next exact action:** `Separately authorize only ck0-balanced-v2-rank-head-b1-full-r3 with a fresh external authority ID bound to the exact hardened protected commit.`
+**Next exact action:** `Separately authorize ck0-balanced-v2-rank-head-b2-full-r1 with a fresh external authority ID bound to the exact publication commit and canonical neo-exp-0040 SHA-256 0B167E49C9CA83BD57893B792CA729E0F33F154E27B0CEDD4B172110FCB75C16.`
 
 ---
 
