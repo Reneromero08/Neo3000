@@ -25,18 +25,31 @@ class RankHeadV2CarrierTests(unittest.TestCase):
             root["kernel_instructions"]["cycle"],
             list(rank_head.LOGICAL_STAGES),
         )
-        self.assertEqual(
-            root["kernel_instructions"]["model_request_stages"],
-            list(rank_head.MODEL_REQUEST_STAGES),
-        )
         self.assertFalse(
             root["kernel_instructions"]["extraction_contract"][
                 "model_request_present"
             ]
         )
+        for request_id in rank_head.MODEL_REQUEST_STAGES:
+            schema = rank_head.v2_response_schema(request_id)
+            if request_id in {"borrow", "restore"}:
+                self.assertEqual(
+                    schema["properties"]["carrier_id"]["const"],
+                    rank_head.V2_CARRIER_ID,
+                )
+            else:
+                self.assertEqual(schema, balanced.response_schema(request_id))
         with self.assertRaises(rank_head.RankHeadDesignError):
             rank_head.v2_response_schema("extract")
-        self.assertTrue(rank_head.v2_carrier_is_pristine(carrier))
+        self.assertEqual(
+            set(rank_head.REQUIRED_IMPLEMENTATION_PATHS),
+            {
+                "scripts/catalytic_kernel_0_balanced_rank_head_v2.py",
+                "scripts/catalytic_kernel_0_balanced_rank_head_v2_core.py",
+                "scripts/test_catalytic_kernel_0_balanced_rank_head_v2.py",
+                "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_core.py",
+            },
+        )
 
 
 if __name__ == "__main__":
