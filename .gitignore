@@ -32,6 +32,8 @@ state/catalytic_swarm_1_cache_diagnostic/
 /state/catalytic_kernel_0_private/balanced-opaque-relational-carrier-v1-binding-2.secret
 /state/catalytic_kernel_0_private/balanced-opaque-relational-carrier-v1-binding-2.creation.json
 /state/catalytic_kernel_0_private/.balanced-opaque-*
+/state/catalytic_kernel_0_rank_head_v2/
+/state/catalytic_kernel_0_rank_head_v2_authority.*.authority.consumed.json
 
 # Benchmarks and logs
 *.log
