@@ -1,21 +1,21 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Deterministic rank-head CK0 v2 runtime statically integrated
+## Checkpoint 2: Rank-head CK0 v2 authority repair and pre-consumption retirement
 
-**Status:** STATIC RUNTIME/DESIGN COMPLETE / EXACT TWO-RUN ORDER / AUTHORITY BRIDGE COMPLETE / AUDIT `PASS / PASS / PASS` / ZERO LIVE-AUTHORITY-SECRET ACTIVITY
+**Status:** STATIC AUTHORITY V2 / CANONICAL CLI REPAIRED / R1 RETIRED / R2 RESERVED / AUDIT `PASS / PASS / PASS` / ZERO LIVE OR SCIENTIFIC ACTIVITY
 
-- [x] Admit protected main `25b70f649f0e1cd7eedd21ac7a7711fbdfcac8e6` and connector head `e3df0e59c769f203fc0b69674f5836f2ca18222c`; preserve clean candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, healthy stable service, free port 9494, exact historical evidence, valid consumed v1 receipt, unchanged private roots, and absent v2 state/authority.
-- [x] Copy the connector's final 11-file contents without history, then independently close predecessor-publication, entrypoint-only execution, protected-adapter, exact private scope, cryptographic receipt, process-concurrency, and bounded-closure defects. Preserve all frozen v1 source and preregistrations.
-- [x] Bind exactly 14 final implementation source/test paths at normalized SHA-256 `CBD911A064E855827B4A0A712FD4125E429040C6E80A44F423E24CB459DD0D3D`.
-- [x] Implement six logical stages, five model requests, five physical leases, one slot/sidecar epoch, controller extraction without a lease or model request, exact cleanup/restoration, protected adapter reuse, fail-closed lower surfaces, and bounded post-consumption terminal evidence.
-- [x] Bind exact one-shot authority to run, commit, run design, static preregistration, model, binary, carrier, source custody, and a domain-separated run key. Serialize global receipt inventory across both runs; consume immediately before runtime-root creation; permit no retry or reused authority.
-- [x] Require binding-2 predecessor publication through exact raw evidence, cryptographic authority, private visible recomputation, restoration/custody, and exactly one tracked split experiment record. Reject legacy co-located publication records.
-- [x] Receive final `PASS / PASS / PASS` from exactly three read-only auditors. Two concrete blockers were repaired once; only their affected scopes were re-audited once.
-- [x] Pass focused tests `46 / 46`, changed-file compilation, binding-1 `16 / 16`, binding-2 `16 / 16`, CK0 `12 / 12`, publication/private guards `6 / 6` each, and forensics `5 / 5`. Preserve exact private commitments and zero tracked/model-visible/cross-binding disclosure.
-- [x] Generate exact run-design artifact `52E759FCB4BDD0BC873962146A00609D8CC94A4E1C100CD65036B2643654E2AC`, canonical document `53CDE454FBF8E2FFAE4B0FEBEFB1EBF0BDFACF90EE28B8E31546E54A45EBA019`, and reserve only `ck0-balanced-v2-rank-head-b1-full-r1` then `ck0-balanced-v2-rank-head-b2-full-r1`.
-- [x] Preserve zero model requests, sidecar launches, authority receipts, authority consumptions, secrets, runtime roots, retries, deletion controls, historical rewrites, and claim expansion. Binding-2 remains unauthorized.
+- [x] Admit protected main `5130285d096650651ab9a3aa718d1280c45f317f` and exact PR #17 head `3b8f25f13031cde79f2d70bb8f80daede49013f0`; preserve clean candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, healthy stable service, free port 9494, exact historical raw evidence and consumed v1 receipt, unchanged private roots, and absent v2 runtime state/receipts.
+- [x] Copy only PR #17's final CLI and CLI-test bytes without branch history. Make the canonical public CLI the supported bootstrap and fail closed on direct lower-level script execution before parsing, authority admission, or mutation.
+- [x] Bind exactly 16 final implementation source/test paths at normalized SHA-256 `EDD064D36DD8FB123B1D095A2C613540C67BB3DCD71F6F23C6F565AAEAB4A837`.
+- [x] Activate authority versions `rank-head-v2-external-one-shot-v2` and `rank-head-v2-authority-consumption-v2` at exact schema hashes `279BABE4626FEE8F69B178A0CBC23AECD58B9BFDC5579BE633B75B337797CE72` and `898DE481CE8F896F7B6D006E7BB1357AF507597BE2EE9B31F0D3DC6337723CC5`; retain historical v1 schemas as inactive evidence only and reject intermediate v1-version/r2-enum identities.
+- [x] Blacklist consumed historical authority-ID hash `541C7E61EBB30366D7007D8BA5EC30DB720B0817FA29CABB1625536D6B720A66` before private loading or mutation. Preserve exact run-key HMAC domains and unchanged source custody.
+- [x] Record incident artifact `95B778474FC87C0369B3070EFAF9C12931A137094EFAAF0F98FDA6FC8AC83DCD` / document `A4780A5531DA3597189FF5F9E8B7D431A2DC1D7F24F581F59B006C08E3A20370`; retire `ck0-balanced-v2-rank-head-b1-full-r1` as `RETIRED_PRECONSUMPTION_COMMAND_INVOKED`. The command spent supplied authorization but created no runtime receipt, root, lock, sidecar, request, scientific observation, result, or closure and permits no retry or replacement authority.
+- [x] Regenerate run design artifact `C4A0378BCD04E2A2F823049A15FE63EE4E2E4BC6519215DB21B528460683EAEA` / document `5712D3EC5436BCF45ECD763C2E05D742FBE2D7C72BB91EBEDCF5769AE362A5CF`. Reserve only `ck0-balanced-v2-rank-head-b1-full-r2`, then `ck0-balanced-v2-rank-head-b2-full-r1`; preserve binding-2 predecessor dependence on r2 and keep it unauthorized.
+- [x] Pass focused static tests `84 / 84`, changed-file compilation, exact design/incident reconstruction, schema identity checks, and historical publication/private-fact guards without inference or private disclosure.
+- [x] Receive terminal `PASS / PASS / PASS` from exactly three read-only auditors: authority schema/no reuse, CLI caller gate/no retry, and custody/run design. No auditor edited files or performed live execution.
+- [x] Preserve zero active-v2 authority creation/consumption, receipts, secrets, runtime roots, sidecars, leases, model requests, retries, deletion controls, evidence rewrites, or claim expansion. PR #17 remains open and unmerged; only its exact final two file contents were incorporated.
 
-**Next exact action:** `Separately authorize only ck0-balanced-v2-rank-head-b1-full-r1 with a fresh external authority ID bound to the exact protected integration commit.`
+**Next exact action:** `Separately authorize only ck0-balanced-v2-rank-head-b1-full-r2 with a fresh external authority ID bound to the exact repaired protected commit.` The retired r1 and historical authority are permanently ineligible; binding-2 remains unauthorized.
 
 ---
 

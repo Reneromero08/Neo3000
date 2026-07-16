@@ -21,9 +21,14 @@ import catalytic_kernel_0_balanced_rank_head_v2 as v2
 INTEGRATION_ID = "balanced-opaque-rank-head-v2-runtime-integration-v1"
 STARTING_PROTECTED_MAIN = "25b70f649f0e1cd7eedd21ac7a7711fbdfcac8e6"
 RUN_DESIGN_PATH = "lab/ck0_balanced_opaque_rank_head_v2_runtime_design_1.json"
-BINDING_1_RUN_ID = "ck0-balanced-v2-rank-head-b1-full-r1"
+RETIRED_BINDING_1_RUN_ID = "ck0-balanced-v2-rank-head-b1-full-r1"
+BINDING_1_RUN_ID = "ck0-balanced-v2-rank-head-b1-full-r2"
 BINDING_2_RUN_ID = "ck0-balanced-v2-rank-head-b2-full-r1"
 RUN_ORDER = (BINDING_1_RUN_ID, BINDING_2_RUN_ID)
+RETIRED_RUN_DISPOSITIONS = {
+    RETIRED_BINDING_1_RUN_ID: "RETIRED_PRECONSUMPTION_COMMAND_INVOKED",
+}
+ALL_KNOWN_RUN_IDS = (RETIRED_BINDING_1_RUN_ID, *RUN_ORDER)
 RUN_KEY_DOMAIN = b"ck0-balanced-rank-head-v2/runtime-key-v1\0"
 VISIBLE_CLASSIFICATION = "BALANCED_OPAQUE_RANK_HEAD_V2_VISIBLE"
 COLLAPSED_CLASSIFICATION = "BALANCED_OPAQUE_RANK_HEAD_V2_COLLAPSED"
@@ -31,9 +36,9 @@ INCONCLUSIVE_CLASSIFICATION = "INCONCLUSIVE"
 LOGICAL_STAGES = v2.LOGICAL_STAGES
 MODEL_REQUEST_STAGES = v2.MODEL_REQUEST_STAGES
 REQUIRED_AUDITS = {
-    "runtime_and_restoration_auditor": "PASS",
-    "authority_and_custody_auditor": "PASS",
-    "no_smuggle_and_run_design_auditor": "PASS",
+    "authority_schema_and_no_reuse_auditor": "PASS",
+    "cli_caller_gate_and_no_retry_auditor": "PASS",
+    "custody_and_run_design_auditor": "PASS",
 }
 
 
@@ -83,13 +88,20 @@ RUN_SPECS = {
         source_binding="binding-2",
         source_profile_id=balanced.BINDING_2_PROFILE_ID,
         source_full_run_id=balanced.BINDING_2_FULL_RUN_ID,
-        authorization_state="unauthorized-until-binding-1-v2-terminal-visible",
+        authorization_state=(
+            "unauthorized-until-binding-1-v2-r2-terminal-visible-and-published"
+        ),
         predecessor_run_id=BINDING_1_RUN_ID,
     ),
 }
 
 
 def run_spec(run_id: str) -> V2RunSpec:
+    retired = RETIRED_RUN_DISPOSITIONS.get(run_id)
+    if retired is not None:
+        raise RankHeadV2IntegrationError(
+            f"retired v2 run ID: {retired}"
+        )
     try:
         return RUN_SPECS[run_id]
     except KeyError as exc:

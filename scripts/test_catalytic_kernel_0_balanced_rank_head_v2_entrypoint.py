@@ -2,8 +2,13 @@
 from __future__ import annotations
 
 import json
+import runpy
+import subprocess
+import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr
+from io import StringIO
 from pathlib import Path
 from unittest import mock
 
@@ -52,6 +57,86 @@ class RankHeadV2EntrypointTests(unittest.TestCase):
             self.assertFalse(
                 (repository / "state" / "catalytic_kernel_0_rank_head_v2").exists()
             )
+
+    def test_original_duplicate_main_module_code_object_is_rejected(self) -> None:
+        duplicate = runpy.run_path(
+            entrypoint.__file__,
+            run_name="rank_head_v2_duplicate_entrypoint",
+        )
+        with self.assertRaisesRegex(
+            live_core.RankHeadV2LiveError,
+            "callable only by the authoritative fail-closed entrypoint",
+        ):
+            duplicate["run_rank_head_v2"]({"run_id": RUN_ID})
+
+    def test_direct_entrypoint_script_rejects_before_argument_admission(self) -> None:
+        repository = Path(entrypoint.__file__).resolve().parents[1]
+        runtime_root = repository / "state" / "catalytic_kernel_0_rank_head_v2"
+        receipts_before = sorted(
+            path.name
+            for path in (repository / "state").glob(
+                "catalytic_kernel_0_rank_head_v2_authority.*.authority.consumed.json"
+            )
+        )
+        marker = "SYNTHETIC-AUTHORITY-MARKER-MUST-NOT-ECHO"
+        completed = subprocess.run(
+            [
+                sys.executable,
+                entrypoint.__file__,
+                "run",
+                "--run-id",
+                RUN_ID,
+                "--external-live-authority-id",
+                marker,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn(
+            "catalytic_kernel_0_balanced_rank_head_v2_cli.py",
+            completed.stdout,
+        )
+        self.assertNotIn(marker, completed.stdout + completed.stderr)
+        self.assertFalse(runtime_root.exists())
+        self.assertEqual(
+            sorted(
+                path.name
+                for path in (repository / "state").glob(
+                    "catalytic_kernel_0_rank_head_v2_authority.*.authority.consumed.json"
+                )
+            ),
+            receipts_before,
+        )
+
+    def test_retired_r1_is_rejected_by_canonical_argument_parser(self) -> None:
+        stderr = StringIO()
+        with (
+            mock.patch.object(
+                sys,
+                "argv",
+                [
+                    "rank-head-v2-cli",
+                    "run",
+                    "--binary",
+                    "synthetic-binary",
+                    "--model",
+                    "synthetic-model",
+                    "--run-id",
+                    integration.RETIRED_BINDING_1_RUN_ID,
+                    "--external-live-authority-id",
+                    "A" * 64,
+                    "--authorized-commit",
+                    "1" * 40,
+                ],
+            ),
+            redirect_stderr(stderr),
+            self.assertRaises(SystemExit),
+        ):
+            entrypoint.parse_args()
+        self.assertIn("invalid choice", stderr.getvalue())
 
     def test_postconsumption_failure_requires_crypto_and_closes_inconclusive(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

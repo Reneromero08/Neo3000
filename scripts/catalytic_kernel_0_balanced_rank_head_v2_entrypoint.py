@@ -24,6 +24,12 @@ class RankHeadV2EntrypointError(ValueError):
     pass
 
 
+DIRECT_EXECUTION_ERROR = (
+    "direct execution is forbidden; use "
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2_cli.py"
+)
+
+
 def _arg(args: Any, name: str) -> Any:
     return args.get(name) if isinstance(args, Mapping) else getattr(args, name, None)
 
@@ -228,5 +234,18 @@ def main() -> int:
     return 0 if result.get("status") == "complete" else 1
 
 
+def reject_direct_execution() -> int:
+    print(
+        json.dumps(
+            {
+                "status": "fail",
+                "error": DIRECT_EXECUTION_ERROR,
+            },
+            sort_keys=True,
+        )
+    )
+    return 1
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(reject_direct_execution())

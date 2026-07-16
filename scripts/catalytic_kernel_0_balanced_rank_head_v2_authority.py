@@ -24,9 +24,33 @@ import catalytic_kernel_0_balanced_rank_head_v2 as v2
 import catalytic_kernel_0_balanced_rank_head_v2_integration as integration
 import catalytic_kernel_0_balanced_rank_head_v2_run_design as run_design
 
-AUTHORITY_SCHEMA_VERSION = "rank-head-v2-external-one-shot-v1"
+AUTHORITY_SCHEMA_VERSION = "rank-head-v2-external-one-shot-v2"
 AUTHORITY_KIND = "external-one-shot"
-RECEIPT_SCHEMA_VERSION = "rank-head-v2-authority-consumption-v1"
+RECEIPT_SCHEMA_VERSION = "rank-head-v2-authority-consumption-v2"
+HISTORICAL_V1_AUTHORITY_OBJECT_SCHEMA_SHA256 = (
+    "8CDE8477F324E9E72C89F14908333937643675C2F42F92E67062DFE92F4A0CB3"
+)
+HISTORICAL_V1_AUTHORITY_RECEIPT_SCHEMA_SHA256 = (
+    "709552F6DDC2F31DC154C1C65F895F55637B7088B4F548FDFA1F771381E55411"
+)
+UNVERSIONED_R2_AUTHORITY_OBJECT_SCHEMA_SHA256 = (
+    "2F171672C66EB845681A2934A717863355E2388D856DC5725BBB70154B7D2D52"
+)
+UNVERSIONED_R2_AUTHORITY_RECEIPT_SCHEMA_SHA256 = (
+    "C56B30ED4E356BD1C914C6DE35BFC4B384FA89E2B3577959AC5A5855AA89B591"
+)
+EXPECTED_ACTIVE_AUTHORITY_OBJECT_SCHEMA_SHA256 = (
+    "279BABE4626FEE8F69B178A0CBC23AECD58B9BFDC5579BE633B75B337797CE72"
+)
+EXPECTED_ACTIVE_AUTHORITY_RECEIPT_SCHEMA_SHA256 = (
+    "898DE481CE8F896F7B6D006E7BB1357AF507597BE2EE9B31F0D3DC6337723CC5"
+)
+HISTORICAL_CONSUMED_AUTHORITY_ID_SHA256 = (
+    "541C7E61EBB30366D7007D8BA5EC30DB720B0817FA29CABB1625536D6B720A66"
+)
+HISTORICAL_CONSUMED_AUTHORITY_ID_BLACKLIST = frozenset(
+    {HISTORICAL_CONSUMED_AUTHORITY_ID_SHA256}
+)
 AUTHORITY_ID_DOMAIN = b"ck0-balanced-rank-head-v2/external-authority-id-v1\0"
 AUTHORITY_RECEIPT_DOMAIN = b"ck0-balanced-rank-head-v2/external-authority-v1\0"
 RECEIPT_TEMPLATE = (
@@ -201,6 +225,13 @@ def authority_receipt_schema() -> dict[str, Any]:
 
 AUTHORITY_OBJECT_SCHEMA_SHA256 = json_sha256(authority_object_schema())
 AUTHORITY_RECEIPT_SCHEMA_SHA256 = json_sha256(authority_receipt_schema())
+if (
+    AUTHORITY_OBJECT_SCHEMA_SHA256
+    != EXPECTED_ACTIVE_AUTHORITY_OBJECT_SCHEMA_SHA256
+    or AUTHORITY_RECEIPT_SCHEMA_SHA256
+    != EXPECTED_ACTIVE_AUTHORITY_RECEIPT_SCHEMA_SHA256
+):
+    raise RuntimeError("active v2 authority schema identity changed")
 
 
 def authority_id_sha256(raw_authority_id: str) -> str:
@@ -220,6 +251,46 @@ def _require_sha(value: str, label: str) -> str:
     if not isinstance(value, str) or not SHA256_RE.fullmatch(value):
         raise RankHeadV2AuthorityError(f"{label} is not a SHA-256 identity")
     return value
+
+
+def assert_authority_id_not_retired(authority_id_hash: str) -> None:
+    value = _require_sha(authority_id_hash, "authority ID hash")
+    if any(
+        hmac.compare_digest(value, blocked)
+        for blocked in HISTORICAL_CONSUMED_AUTHORITY_ID_BLACKLIST
+    ):
+        raise RankHeadV2AuthorityError(
+            "external authority ID was consumed by a retired pre-runtime invocation"
+        )
+
+
+def require_active_schema_identities(
+    authority_object_schema_sha256: str,
+    authority_receipt_schema_sha256: str,
+) -> None:
+    pair = (
+        _require_sha(authority_object_schema_sha256, "authority object schema"),
+        _require_sha(authority_receipt_schema_sha256, "authority receipt schema"),
+    )
+    if pair == (
+        UNVERSIONED_R2_AUTHORITY_OBJECT_SCHEMA_SHA256,
+        UNVERSIONED_R2_AUTHORITY_RECEIPT_SCHEMA_SHA256,
+    ):
+        raise RankHeadV2AuthorityError(
+            "unversioned replacement-run authority schemas are forbidden"
+        )
+    if pair == (
+        HISTORICAL_V1_AUTHORITY_OBJECT_SCHEMA_SHA256,
+        HISTORICAL_V1_AUTHORITY_RECEIPT_SCHEMA_SHA256,
+    ):
+        raise RankHeadV2AuthorityError(
+            "historical v1 authority schemas are inactive"
+        )
+    if pair != (
+        AUTHORITY_OBJECT_SCHEMA_SHA256,
+        AUTHORITY_RECEIPT_SCHEMA_SHA256,
+    ):
+        raise RankHeadV2AuthorityError("active v2 authority schema identity mismatch")
 
 
 def _runtime_private(
@@ -307,6 +378,8 @@ def build_external_authority(
     binary_sha256: str,
 ) -> RankHeadV2ExternalAuthority:
     repository = repository.absolute()
+    derived_authority_id_sha256 = authority_id_sha256(raw_authority_id)
+    assert_authority_id_not_retired(derived_authority_id_sha256)
     private = _runtime_private(repository, spec)
     if (
         not isinstance(authorized_commit, str)
@@ -328,7 +401,7 @@ def build_external_authority(
     authority = RankHeadV2ExternalAuthority(
         schema_version=AUTHORITY_SCHEMA_VERSION,
         authority_kind=AUTHORITY_KIND,
-        authority_id_sha256=authority_id_sha256(raw_authority_id),
+        authority_id_sha256=derived_authority_id_sha256,
         authorized_commit=authorized_commit,
         run_id=spec.run_id,
         run_ordinal=spec.ordinal,
@@ -379,6 +452,10 @@ def validate_external_authority(
     require_current_static: bool = True,
 ) -> None:
     repository = repository.absolute()
+    active_spec = integration.run_spec(authority.run_id)
+    if spec != active_spec:
+        raise RankHeadV2AuthorityError("v2 authority run specification changed")
+    assert_authority_id_not_retired(authority.authority_id_sha256)
     private = _runtime_private(repository, spec)
     projections = (
         _projection_fields(
@@ -481,6 +558,10 @@ def _receipt_document(
     repository: Path,
     authority: RankHeadV2ExternalAuthority,
 ) -> dict[str, Any]:
+    require_active_schema_identities(
+        AUTHORITY_OBJECT_SCHEMA_SHA256,
+        AUTHORITY_RECEIPT_SCHEMA_SHA256,
+    )
     document = {
         "schema_version": RECEIPT_SCHEMA_VERSION,
         "authority": authority.body(),
@@ -503,7 +584,7 @@ def assert_authority_unconsumed(
 ) -> None:
     repository = repository.absolute()
     if authority_id_hash is not None:
-        _require_sha(authority_id_hash, "authority ID hash")
+        assert_authority_id_not_retired(authority_id_hash)
     target = authority_receipt_path(repository, run_id)
     _assert_safe_ancestry(repository, target)
     ignored = subprocess.run(
@@ -671,6 +752,10 @@ def verify_authority_receipt(
         document = json.loads(target.read_bytes())
     except json.JSONDecodeError as exc:
         raise RankHeadV2AuthorityError("v2 authority receipt is invalid") from exc
+    require_active_schema_identities(
+        str(document.get("authority_object_schema_sha256", "")),
+        str(document.get("authority_receipt_schema_sha256", "")),
+    )
     expected = _receipt_document(repository, authority)
     if document != expected:
         raise RankHeadV2AuthorityError("v2 authority receipt binding changed")
@@ -705,6 +790,10 @@ def authority_from_body(body: Mapping[str, Any]) -> RankHeadV2ExternalAuthority:
         raise RankHeadV2AuthorityError("v2 authority body is malformed") from exc
     if value.body() != dict(body):
         raise RankHeadV2AuthorityError("v2 authority body changed during reconstruction")
+    if value.schema_version != AUTHORITY_SCHEMA_VERSION:
+        raise RankHeadV2AuthorityError("inactive v2 authority schema version")
+    integration.run_spec(value.run_id)
+    assert_authority_id_not_retired(value.authority_id_sha256)
     return value
 
 

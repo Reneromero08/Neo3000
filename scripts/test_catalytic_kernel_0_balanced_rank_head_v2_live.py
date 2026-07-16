@@ -43,6 +43,17 @@ class RankHeadV2LiveTests(unittest.TestCase):
                     Path(outside_name),
                 )
 
+    def test_retired_r1_has_no_runtime_state_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            with self.assertRaisesRegex(
+                integration.RankHeadV2IntegrationError,
+                "RETIRED_PRECONSUMPTION_COMMAND_INVOKED",
+            ):
+                live.state_paths(
+                    Path(temporary),
+                    integration.RETIRED_BINDING_1_RUN_ID,
+                )
+
     def test_cli_requires_authority_and_exact_run(self) -> None:
         parser = live.parse_args
         self.assertTrue(callable(parser))

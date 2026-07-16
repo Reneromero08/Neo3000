@@ -186,14 +186,14 @@ class RankHeadV2RunDesignTests(unittest.TestCase):
         )
         return patches
 
-    def test_exact_fourteen_file_binding(self) -> None:
+    def test_exact_sixteen_file_binding(self) -> None:
         design.require_exact_implementation_paths(
             design.REQUIRED_IMPLEMENTATION_PATHS
         )
-        self.assertEqual(len(design.REQUIRED_IMPLEMENTATION_PATHS), 14)
+        self.assertEqual(len(design.REQUIRED_IMPLEMENTATION_PATHS), 16)
         with self.assertRaisesRegex(
             design.RankHeadV2RunDesignError,
-            "exactly fourteen files",
+            "exactly sixteen files",
         ):
             design.require_exact_implementation_paths(
                 design.REQUIRED_IMPLEMENTATION_PATHS[:-1]
@@ -328,9 +328,20 @@ class RankHeadV2RunDesignTests(unittest.TestCase):
         )
         first = integration.RUN_SPECS[integration.BINDING_1_RUN_ID]
         second = integration.RUN_SPECS[integration.BINDING_2_RUN_ID]
+        self.assertEqual(
+            first.run_id,
+            "ck0-balanced-v2-rank-head-b1-full-r2",
+        )
         self.assertEqual(first.authorization_state, "separately-authorizable")
         self.assertEqual(second.predecessor_run_id, first.run_id)
-        self.assertIn("unauthorized", second.authorization_state)
+        self.assertEqual(
+            second.authorization_state,
+            "unauthorized-until-binding-1-v2-r2-terminal-visible-and-published",
+        )
+        self.assertNotIn(
+            integration.RETIRED_BINDING_1_RUN_ID,
+            integration.RUN_ORDER,
+        )
 
     def test_state_and_authority_namespaces_are_versioned(self) -> None:
         self.assertEqual(
@@ -358,6 +369,28 @@ class RankHeadV2RunDesignTests(unittest.TestCase):
             "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
             paths,
         )
+        self.assertIn(
+            "scripts/catalytic_kernel_0_balanced_rank_head_v2_cli.py",
+            paths,
+        )
+        self.assertIn(
+            "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_cli.py",
+            paths,
+        )
+
+    def test_preconsumption_incident_reconstructs_exactly(self) -> None:
+        repository = Path(__file__).resolve().parents[1]
+        incident = design.validate_preconsumption_incident(repository)
+        self.assertEqual(
+            incident["historical_run_id"],
+            integration.RETIRED_BINDING_1_RUN_ID,
+        )
+        self.assertEqual(
+            incident["replacement_run_id"],
+            integration.BINDING_1_RUN_ID,
+        )
+        self.assertFalse(incident["runtime_authority_consumed"])
+        self.assertFalse(incident["scientific_observation_performed"])
 
 
 if __name__ == "__main__":

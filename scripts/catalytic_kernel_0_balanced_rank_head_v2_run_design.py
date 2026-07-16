@@ -20,6 +20,9 @@ import catalytic_kernel_0_balanced_rank_head_v2 as v2
 import catalytic_kernel_0_balanced_rank_head_v2_integration as integration
 
 RUN_DESIGN_PATH = integration.RUN_DESIGN_PATH
+PRECONSUMPTION_INCIDENT_PATH = (
+    "lab/ck0_balanced_opaque_rank_head_v2_preconsumption_failure_1.json"
+)
 STATE_ROOT = "state/catalytic_kernel_0_rank_head_v2"
 STATE_FILENAMES = ("manifest.json", "result.json", "closure.json", "run.lock")
 AUTHORITY_RECEIPT_TEMPLATE = (
@@ -38,6 +41,8 @@ REQUIRED_IMPLEMENTATION_PATHS = (
     "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_live.py",
     "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
     "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2_cli.py",
+    "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_cli.py",
 )
 REQUIRED_AUDITS = integration.REQUIRED_AUDITS
 
@@ -61,8 +66,86 @@ def require_exact_implementation_paths(paths: Sequence[str]) -> None:
         or len(set(paths)) != len(paths)
     ):
         raise RankHeadV2RunDesignError(
-            "v2 run design binding must contain exactly fourteen files"
+            "v2 run design binding must contain exactly sixteen files"
         )
+
+
+def validate_preconsumption_incident(repository: Path) -> dict[str, Any]:
+    import catalytic_kernel_0_balanced_rank_head_v2_authority as authority
+
+    path = repository / PRECONSUMPTION_INCIDENT_PATH
+    if not path.is_file() or path.is_symlink():
+        raise RankHeadV2RunDesignError(
+            "v2 preconsumption incident is missing or unsafe"
+        )
+    try:
+        document = json.loads(path.read_bytes())
+    except json.JSONDecodeError as exc:
+        raise RankHeadV2RunDesignError(
+            "v2 preconsumption incident is invalid JSON"
+        ) from exc
+    expected = {
+        "claiming": False,
+        "closure_created": False,
+        "command_invocation_count": 1,
+        "consumed_authority_id_sha256": (
+            authority.HISTORICAL_CONSUMED_AUTHORITY_ID_SHA256
+        ),
+        "evidence_kind": "operational-preconsumption-failure",
+        "failure_message_sha256": (
+            "081F9421ED390CC79C60B4C182D1764BB894E3D6296BA2533898DE016E959D45"
+        ),
+        "historical_authority_object_schema_sha256": (
+            authority.HISTORICAL_V1_AUTHORITY_OBJECT_SCHEMA_SHA256
+        ),
+        "historical_authority_receipt_schema_sha256": (
+            authority.HISTORICAL_V1_AUTHORITY_RECEIPT_SCHEMA_SHA256
+        ),
+        "historical_custody": "pass",
+        "historical_run_id": integration.RETIRED_BINDING_1_RUN_ID,
+        "invocation_commit": "b7a200c96654ea057cc43848ab8ef4113863bfba",
+        "logical_stages": 0,
+        "manifest_created": False,
+        "model_contacted": False,
+        "model_requests": 0,
+        "physical_leases": 0,
+        "private_values_disclosed": False,
+        "process_exit": 1,
+        "raw_authority_id_persisted": False,
+        "reauthorization_allowed": False,
+        "replacement_run_id": integration.BINDING_1_RUN_ID,
+        "result_created": False,
+        "retry_allowed": False,
+        "run_lock_created": False,
+        "run_mutation_performed": False,
+        "runtime_authority_consumed": False,
+        "runtime_receipt_created": False,
+        "runtime_root_created": False,
+        "schema_version": 1,
+        "scientific_observation_performed": False,
+        "scientific_result": None,
+        "sidecar_launched": False,
+        "status": "PRECONSUMPTION_ENTRYPOINT_CALLER_IDENTITY_REJECTED",
+        "supplied_external_authorization_consumed": True,
+    }
+    if document != expected:
+        raise RankHeadV2RunDesignError(
+            "v2 preconsumption incident differs from exact reconstruction"
+        )
+    balanced.validate_metadata_only(document)
+    return {
+        "relative_path": PRECONSUMPTION_INCIDENT_PATH,
+        "artifact_sha256": sha256_bytes(path.read_bytes()),
+        "document_sha256": json_sha256(document),
+        "status": document["status"],
+        "historical_run_id": document["historical_run_id"],
+        "replacement_run_id": document["replacement_run_id"],
+        "consumed_authority_id_sha256": document[
+            "consumed_authority_id_sha256"
+        ],
+        "runtime_authority_consumed": False,
+        "scientific_observation_performed": False,
+    }
 
 
 def source_binding_custody(
@@ -402,6 +485,7 @@ def build_run_design(
         raise RankHeadV2RunDesignError(
             "v2 run design verification must be terminal PASS"
         )
+    incident = validate_preconsumption_incident(repository)
     v2_projection = v2.validate_preregistration(repository)
     runs = []
     for run_id in integration.RUN_ORDER:
@@ -428,6 +512,21 @@ def build_run_design(
         "status": "static-preregistered",
         "integration_id": integration.INTEGRATION_ID,
         "protected_starting_main": integration.STARTING_PROTECTED_MAIN,
+        "repair_starting_main": "5130285d096650651ab9a3aa718d1280c45f317f",
+        "retired_operational_attempts": [
+            {
+                **incident,
+                "disposition": integration.RETIRED_RUN_DISPOSITIONS[
+                    integration.RETIRED_BINDING_1_RUN_ID
+                ],
+                "command_invocation_count": 1,
+                "process_exit": 1,
+                "model_requests": 0,
+                "runtime_authority_consumed": False,
+                "reauthorization_permitted": False,
+                "scientific_result": None,
+            }
+        ],
         "v2_static_preregistration": v2_projection,
         "v2_carrier": {
             key: v2.build_v2_carrier()[key]
@@ -441,11 +540,14 @@ def build_run_design(
         "model_request_stages": list(integration.MODEL_REQUEST_STAGES),
         "controller_stage": "extract",
         "runtime_entrypoint": {
-            "module": (
+            "public_cli_bootstrap": (
+                "scripts/catalytic_kernel_0_balanced_rank_head_v2_cli.py"
+            ),
+            "fail_closed_entrypoint": (
                 "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py"
             ),
             "function": "run_rank_head_v2",
-            "live_core_module": (
+            "protected_live_core": (
                 "scripts/catalytic_kernel_0_balanced_rank_head_v2_live.py"
             ),
             "runtime_class": "QualifiedRankHeadV2Runtime",
@@ -465,6 +567,7 @@ def build_run_design(
             "ignored_authority_receipts_required": True,
         },
         "authority_contract": {
+            "active": True,
             "schema_version": authority.AUTHORITY_SCHEMA_VERSION,
             "kind": authority.AUTHORITY_KIND,
             "object_schema_sha256": authority.AUTHORITY_OBJECT_SCHEMA_SHA256,
@@ -479,6 +582,30 @@ def build_run_design(
             "raw_authority_id_persisted": False,
             "consumption_point": "immediately-before-v2-runtime-root-creation",
             "global_inventory_across_both_runs": True,
+            "historical_consumed_authority_id_blacklist": sorted(
+                authority.HISTORICAL_CONSUMED_AUTHORITY_ID_BLACKLIST
+            ),
+            "unversioned_intermediate_schema_identities_rejected": [
+                authority.UNVERSIONED_R2_AUTHORITY_OBJECT_SCHEMA_SHA256,
+                authority.UNVERSIONED_R2_AUTHORITY_RECEIPT_SCHEMA_SHA256,
+            ],
+        },
+        "historical_authority_contract": {
+            "active": False,
+            "schema_version": "rank-head-v2-external-one-shot-v1",
+            "object_schema_sha256": (
+                authority.HISTORICAL_V1_AUTHORITY_OBJECT_SCHEMA_SHA256
+            ),
+            "receipt_schema_version": "rank-head-v2-authority-consumption-v1",
+            "receipt_schema_sha256": (
+                authority.HISTORICAL_V1_AUTHORITY_RECEIPT_SCHEMA_SHA256
+            ),
+            "historical_run_id": integration.RETIRED_BINDING_1_RUN_ID,
+            "authority_id_sha256": (
+                authority.HISTORICAL_CONSUMED_AUTHORITY_ID_SHA256
+            ),
+            "evidence_only": True,
+            "future_validation_allowed": False,
         },
         "lifecycle_contract": {
             "logical_stages": 6,
@@ -508,6 +635,8 @@ def build_run_design(
             "live_execution_authorized": False,
             "retry_allowed": False,
             "automatic_follow_on": False,
+            "active_authorities_created": 0,
+            "active_authorities_consumed": 0,
         },
         "binding_2_predecessor_publication_gate": {
             "run_id": integration.BINDING_1_RUN_ID,
@@ -535,6 +664,15 @@ def build_run_design(
             "source_alias_mappings_preserved": True,
             "v2_run_keys_domain_separated": True,
             "source_private_roots_modified": False,
+        },
+        "static_runtime_state": {
+            "authority_created": False,
+            "authority_consumed": False,
+            "runtime_roots_created": 0,
+            "model_requests": 0,
+            "sidecar_launches": 0,
+            "new_secrets_created": 0,
+            "binding_2_authorized": False,
         },
         "implementation_binding": balanced.implementation_binding(
             repository,
@@ -659,6 +797,15 @@ def validate_run_design(
         "artifact_sha256": sha256_bytes(path.read_bytes()),
         "document_sha256": json_sha256(document),
         "implementation_binding_sha256": binding.get("sha256"),
+        "incident_artifact_sha256": document["retired_operational_attempts"][0][
+            "artifact_sha256"
+        ],
+        "active_authority_object_schema_sha256": document[
+            "authority_contract"
+        ]["object_schema_sha256"],
+        "active_authority_receipt_schema_sha256": document[
+            "authority_contract"
+        ]["receipt_schema_sha256"],
         "run_ids_reserved": list(integration.RUN_ORDER),
         "first_separately_authorizable_run": integration.BINDING_1_RUN_ID,
         "binding_2_predecessor_gate_implemented": True,

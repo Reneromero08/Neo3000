@@ -276,19 +276,155 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
         with self.scoped():
             value = self.build()
             self.assertEqual(
+                authority.AUTHORITY_SCHEMA_VERSION,
+                "rank-head-v2-external-one-shot-v2",
+            )
+            self.assertEqual(
+                authority.RECEIPT_SCHEMA_VERSION,
+                "rank-head-v2-authority-consumption-v2",
+            )
+            self.assertEqual(
                 set(authority.authority_object_schema()["required"]),
                 set(value.body()),
             )
             self.assertEqual(authority.authority_from_body(value.body()), value)
             with self.assertRaises(authority.RankHeadV2AuthorityError):
                 authority.authority_from_body({**value.body(), "extra": True})
-            self.assertRegex(
+            self.assertEqual(
                 authority.AUTHORITY_OBJECT_SCHEMA_SHA256,
-                r"^[0-9A-F]{64}$",
+                "279BABE4626FEE8F69B178A0CBC23AECD58B9BFDC5579BE633B75B337797CE72",
             )
-            self.assertRegex(
+            self.assertEqual(
                 authority.AUTHORITY_RECEIPT_SCHEMA_SHA256,
-                r"^[0-9A-F]{64}$",
+                "898DE481CE8F896F7B6D006E7BB1357AF507597BE2EE9B31F0D3DC6337723CC5",
+            )
+            self.assertEqual(
+                authority.authority_object_schema()["properties"]["run_id"]["enum"],
+                list(integration.RUN_ORDER),
+            )
+
+    def test_historical_and_unversioned_schema_identities_are_inactive(self) -> None:
+        self.assertEqual(
+            authority.HISTORICAL_V1_AUTHORITY_OBJECT_SCHEMA_SHA256,
+            "8CDE8477F324E9E72C89F14908333937643675C2F42F92E67062DFE92F4A0CB3",
+        )
+        self.assertEqual(
+            authority.HISTORICAL_V1_AUTHORITY_RECEIPT_SCHEMA_SHA256,
+            "709552F6DDC2F31DC154C1C65F895F55637B7088B4F548FDFA1F771381E55411",
+        )
+        with self.assertRaisesRegex(
+            authority.RankHeadV2AuthorityError,
+            "historical v1.*inactive",
+        ):
+            authority.require_active_schema_identities(
+                authority.HISTORICAL_V1_AUTHORITY_OBJECT_SCHEMA_SHA256,
+                authority.HISTORICAL_V1_AUTHORITY_RECEIPT_SCHEMA_SHA256,
+            )
+        with self.assertRaisesRegex(
+            authority.RankHeadV2AuthorityError,
+            "unversioned replacement-run",
+        ):
+            authority.require_active_schema_identities(
+                authority.UNVERSIONED_R2_AUTHORITY_OBJECT_SCHEMA_SHA256,
+                authority.UNVERSIONED_R2_AUTHORITY_RECEIPT_SCHEMA_SHA256,
+            )
+        self.assertEqual(
+            authority.AUTHORITY_ID_DOMAIN,
+            b"ck0-balanced-rank-head-v2/external-authority-id-v1\0",
+        )
+        self.assertEqual(
+            authority.AUTHORITY_RECEIPT_DOMAIN,
+            b"ck0-balanced-rank-head-v2/external-authority-v1\0",
+        )
+
+    def test_unversioned_receipt_is_rejected_by_verification_surface(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            self.prepare_repository(repository)
+            with self.scoped():
+                value = self.build()
+                document = authority._receipt_document(repository, value)
+                document["authority_object_schema_sha256"] = (
+                    authority.UNVERSIONED_R2_AUTHORITY_OBJECT_SCHEMA_SHA256
+                )
+                document["authority_receipt_schema_sha256"] = (
+                    authority.UNVERSIONED_R2_AUTHORITY_RECEIPT_SCHEMA_SHA256
+                )
+                path = authority.authority_receipt_path(repository, value.run_id)
+                path.write_bytes(balanced.canonical_json_bytes(document))
+                with self.assertRaisesRegex(
+                    authority.RankHeadV2AuthorityError,
+                    "unversioned replacement-run",
+                ):
+                    authority.verify_authority_receipt(repository, value)
+
+    def test_consumed_pre_runtime_authority_hash_is_blacklisted_for_all_runs(self) -> None:
+        for run_id in integration.RUN_ORDER:
+            with self.subTest(run_id=run_id), self.scoped(), mock.patch.object(
+                authority,
+                "authority_id_sha256",
+                return_value=authority.HISTORICAL_CONSUMED_AUTHORITY_ID_SHA256,
+            ):
+                with self.assertRaisesRegex(
+                    authority.RankHeadV2AuthorityError,
+                    "consumed by a retired pre-runtime invocation",
+                ):
+                    self.build(run_id=run_id, raw="A" * 64)
+
+    def test_consumption_rejects_blacklist_before_runtime_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            self.prepare_repository(repository)
+            for run_id in integration.RUN_ORDER:
+                with self.subTest(run_id=run_id), self.scoped():
+                    value = dataclasses.replace(
+                        self.build(run_id=run_id),
+                        authority_id_sha256=(
+                            authority.HISTORICAL_CONSUMED_AUTHORITY_ID_SHA256
+                        ),
+                    )
+                    with self.assertRaisesRegex(
+                        authority.RankHeadV2AuthorityError,
+                        "consumed by a retired pre-runtime invocation",
+                    ):
+                        authority.consume_authority_once(
+                            repository,
+                            value,
+                            expected_model_sha256=MODEL_SHA,
+                            expected_binary_sha256=BINARY_SHA,
+                        )
+            self.assertFalse((repository / run_design.STATE_ROOT).exists())
+            self.assertEqual(
+                list(repository.glob("state/*rank_head_v2_authority*")),
+                [],
+            )
+
+    def test_retired_r1_is_rejected_by_authority_and_receipt_surfaces(self) -> None:
+        active = integration.run_spec(integration.BINDING_1_RUN_ID)
+        retired = dataclasses.replace(
+            active,
+            run_id=integration.RETIRED_BINDING_1_RUN_ID,
+        )
+        with self.scoped(), self.assertRaisesRegex(
+            integration.RankHeadV2IntegrationError,
+            "RETIRED_PRECONSUMPTION_COMMAND_INVOKED",
+        ):
+            authority.build_external_authority(
+                repository=Path("."),
+                spec=retired,
+                raw_authority_id="A" * 64,
+                authorized_commit=COMMIT,
+                current_commit=COMMIT,
+                model_sha256=MODEL_SHA,
+                binary_sha256=BINARY_SHA,
+            )
+        with self.assertRaisesRegex(
+            integration.RankHeadV2IntegrationError,
+            "RETIRED_PRECONSUMPTION_COMMAND_INVOKED",
+        ):
+            authority.authority_receipt_path(
+                Path("."),
+                integration.RETIRED_BINDING_1_RUN_ID,
             )
 
     def test_consumed_receipt_verifies_cryptographically_and_is_immutable(self) -> None:

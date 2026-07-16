@@ -786,8 +786,8 @@ def _run_rank_head_v2_protected(
 def run_rank_head_v2(*args: Any, **kwargs: Any) -> dict[str, Any]:
     del args, kwargs
     raise RankHeadV2LiveError(
-        "direct live-core invocation is forbidden; use the fail-closed "
-        "rank-head v2 entrypoint"
+        "direct live-core invocation is forbidden; use the canonical "
+        "rank-head v2 CLI bootstrap"
     )
 
 
@@ -808,8 +808,8 @@ def main() -> int:
             {
                 "status": "fail",
                 "error": (
-                    "direct live-core execution is forbidden; use the "
-                    "fail-closed rank-head v2 entrypoint"
+                    "direct live-core execution is forbidden; use the canonical "
+                    "rank-head v2 CLI bootstrap"
                 ),
             },
             sort_keys=True,

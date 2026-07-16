@@ -128,11 +128,36 @@ class RankHeadV2IntegrationTests(unittest.TestCase):
         )
 
     def test_ordered_two_run_gate(self) -> None:
+        self.assertEqual(
+            integration.RUN_ORDER,
+            (
+                "ck0-balanced-v2-rank-head-b1-full-r2",
+                "ck0-balanced-v2-rank-head-b2-full-r1",
+            ),
+        )
         first = integration.RUN_SPECS[integration.BINDING_1_RUN_ID]
         second = integration.RUN_SPECS[integration.BINDING_2_RUN_ID]
         self.assertEqual(first.authorization_state, "separately-authorizable")
         self.assertEqual(second.predecessor_run_id, first.run_id)
-        self.assertIn("unauthorized", second.authorization_state)
+        self.assertEqual(
+            second.authorization_state,
+            "unauthorized-until-binding-1-v2-r2-terminal-visible-and-published",
+        )
+
+    def test_preconsumption_r1_is_permanently_retired(self) -> None:
+        self.assertNotIn(
+            integration.RETIRED_BINDING_1_RUN_ID,
+            integration.RUN_ORDER,
+        )
+        self.assertNotIn(
+            integration.RETIRED_BINDING_1_RUN_ID,
+            integration.RUN_SPECS,
+        )
+        with self.assertRaisesRegex(
+            integration.RankHeadV2IntegrationError,
+            "RETIRED_PRECONSUMPTION_COMMAND_INVOKED",
+        ):
+            integration.run_spec(integration.RETIRED_BINDING_1_RUN_ID)
 
     def test_v2_carrier_contains_no_extract_schema(self) -> None:
         root = json.loads(v2.build_v2_carrier()["carrier_root"])

@@ -1,26 +1,36 @@
 {
   "audits": {
-    "authority_and_custody_auditor": "PASS",
-    "no_smuggle_and_run_design_auditor": "PASS",
-    "runtime_and_restoration_auditor": "PASS"
+    "authority_schema_and_no_reuse_auditor": "PASS",
+    "cli_caller_gate_and_no_retry_auditor": "PASS",
+    "custody_and_run_design_auditor": "PASS"
   },
   "authority_contract": {
+    "active": true,
     "authority_id_input": "explicit-raw-64-hex-no-default-no-environment-fallback",
     "authorized_commit_input": "explicit-exact-protected-commit-no-default",
     "automatic_follow_on": false,
     "consumption_point": "immediately-before-v2-runtime-root-creation",
     "global_inventory_across_both_runs": true,
+    "historical_consumed_authority_id_blacklist": [
+      "541C7E61EBB30366D7007D8BA5EC30DB720B0817FA29CABB1625536D6B720A66"
+    ],
     "kind": "external-one-shot",
     "maximum_invocations": 1,
-    "object_schema_sha256": "8CDE8477F324E9E72C89F14908333937643675C2F42F92E67062DFE92F4A0CB3",
+    "object_schema_sha256": "279BABE4626FEE8F69B178A0CBC23AECD58B9BFDC5579BE633B75B337797CE72",
     "raw_authority_id_persisted": false,
     "receipt_path_template": "state/catalytic_kernel_0_rank_head_v2_authority.<run-id>.authority.consumed.json",
-    "receipt_schema_sha256": "709552F6DDC2F31DC154C1C65F895F55637B7088B4F548FDFA1F771381E55411",
-    "receipt_schema_version": "rank-head-v2-authority-consumption-v1",
+    "receipt_schema_sha256": "898DE481CE8F896F7B6D006E7BB1357AF507597BE2EE9B31F0D3DC6337723CC5",
+    "receipt_schema_version": "rank-head-v2-authority-consumption-v2",
     "retry_count": 0,
-    "schema_version": "rank-head-v2-external-one-shot-v1"
+    "schema_version": "rank-head-v2-external-one-shot-v2",
+    "unversioned_intermediate_schema_identities_rejected": [
+      "2F171672C66EB845681A2934A717863355E2388D856DC5725BBB70154B7D2D52",
+      "C56B30ED4E356BD1C914C6DE35BFC4B384FA89E2B3577959AC5A5855AA89B591"
+    ]
   },
   "authorization_boundary": {
+    "active_authorities_consumed": 0,
+    "active_authorities_created": 0,
     "authority_consumption_point": "after-complete-nonmutating-admission-before-runtime-root",
     "authority_created": false,
     "authority_implementation_present": true,
@@ -28,7 +38,7 @@
     "automatic_follow_on": false,
     "binding_2_run_requires_binding_1_terminal_visible": true,
     "external_one_shot_authority_required_per_run": true,
-    "first_separately_authorizable_run": "ck0-balanced-v2-rank-head-b1-full-r1",
+    "first_separately_authorizable_run": "ck0-balanced-v2-rank-head-b1-full-r2",
     "live_execution_authorized": false,
     "predecessor_gate_implemented": true,
     "retry_allowed": false
@@ -47,7 +57,7 @@
     "required_classification": "BALANCED_OPAQUE_RANK_HEAD_V2_VISIBLE",
     "restoration_cleanup_and_historical_custody_required": true,
     "run_design_identity_exact": true,
-    "run_id": "ck0-balanced-v2-rank-head-b1-full-r1",
+    "run_id": "ck0-balanced-v2-rank-head-b1-full-r2",
     "run_lock_absent": true,
     "static_preregistration_identity_exact": true,
     "tracked_publication": "exactly-one-lab-results-jsonl-record-with-raw-hashes"
@@ -77,6 +87,17 @@
     }
   },
   "controller_stage": "extract",
+  "historical_authority_contract": {
+    "active": false,
+    "authority_id_sha256": "541C7E61EBB30366D7007D8BA5EC30DB720B0817FA29CABB1625536D6B720A66",
+    "evidence_only": true,
+    "future_validation_allowed": false,
+    "historical_run_id": "ck0-balanced-v2-rank-head-b1-full-r1",
+    "object_schema_sha256": "8CDE8477F324E9E72C89F14908333937643675C2F42F92E67062DFE92F4A0CB3",
+    "receipt_schema_sha256": "709552F6DDC2F31DC154C1C65F895F55637B7088B4F548FDFA1F771381E55411",
+    "receipt_schema_version": "rank-head-v2-authority-consumption-v1",
+    "schema_version": "rank-head-v2-external-one-shot-v1"
+  },
   "implementation_binding": {
     "files": [
       {
@@ -85,7 +106,11 @@
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_authority.py",
-        "sha256": "09454CAE387060B18B21B132DB9980ADD704F0EB90798479A54D6A583C45EA26"
+        "sha256": "00ABF695160FDA37D6197E52ADB0CC1CC35E82B946F34A280A483DEA80307302"
+      },
+      {
+        "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_cli.py",
+        "sha256": "87701D6DFB75C8C2BB79C1DA9475452692E84733529180E3E7FD94F55441F1D7"
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_core.py",
@@ -93,19 +118,19 @@
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
-        "sha256": "225925325DEA223282589FDBF37E2052F1AAA4CEC7C3A503C471D5C461F7351F"
+        "sha256": "78461150652AE09B66734804435048BAA48A8F5E21C629DFF8FF0CC08E3834AA"
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_integration.py",
-        "sha256": "BE899BE41547176D6E40BE719ED978316FEF0854BE46F609CAD861F6096CE067"
+        "sha256": "6A47093AF002EBDFAA007A36A0ACFD5F3B9DB0FA77A3768E402E1C06046AA4C7"
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_live.py",
-        "sha256": "21111E51300BB0F7956CB37E0BE4E5C8D5561AFB5A960634B681802E7E252195"
+        "sha256": "284438797CEB7314FBE669BF7E49D4426AC6607C9B2A216F203E2AC5AA4C1B69"
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_run_design.py",
-        "sha256": "13A20866298E824815992E67E831D96F4852817D62D0B1054221D0A06E027D54"
+        "sha256": "55CF2BAA0B938AE7DDCC45C9EAF66E485C9315127FE177A6A0A8D22649AF22FD"
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2.py",
@@ -113,7 +138,11 @@
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_authority.py",
-        "sha256": "504A140091DBEA4F43E182C4E427FFE0B8A8A8BA6AFD03C62F46D211C64770A9"
+        "sha256": "F6AC39102A11F1C001CF6094AA0DF11733F8E6F6188856FDBBA5A06B8B8DDACE"
+      },
+      {
+        "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_cli.py",
+        "sha256": "E6755130A6567DD0A205B51FCA150A339491219DDA0D25C005B80D3F0FB85EA6"
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_core.py",
@@ -121,23 +150,23 @@
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
-        "sha256": "9FA07F39341B23099B816DB800A67662AED93021EC4B0BBDD83FE6F174A0CAF2"
+        "sha256": "E68DC0ADE7720314FC6F77394742284EDF8B58AF6763C5A4676C0B5DBB557962"
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_integration.py",
-        "sha256": "9014090E7B8EE54E6D8A12C503358F8AC21425349E4D33801D50865F4547B02F"
+        "sha256": "16CE9140E59598B58EFFBA6F66977C56975ED5C0381174CA33A845E7F5487396"
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_live.py",
-        "sha256": "93BA5CB7AE251990C160C89ABBB1058B93F0DCF6A1069D136F5E92B0668E38FE"
+        "sha256": "6A1D813B285EFE6C4EB4F6ABF2D9C594A75075DC84B9ACEC04B8D227A6BB94F4"
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_run_design.py",
-        "sha256": "5012EE546FF0AA0D33C11A43017BF2ADFB9317F30A61B1D8E450248324B80E1A"
+        "sha256": "276F11415D573E702204FD56C68F9FA9D26887FD24CB69113E14BBBC19EB4DB8"
       }
     ],
     "kind": "normalized-source-bundle-sha256-v1",
-    "sha256": "CBD911A064E855827B4A0A712FD4125E429040C6E80A44F423E24CB459DD0D3D"
+    "sha256": "EDD064D36DD8FB123B1D095A2C613540C67BB3DCD71F6F23C6F565AAEAB4A837"
   },
   "integration_id": "balanced-opaque-rank-head-v2-runtime-integration-v1",
   "lifecycle_contract": {
@@ -179,13 +208,33 @@
     "v2_run_keys_domain_separated": true
   },
   "protected_starting_main": "25b70f649f0e1cd7eedd21ac7a7711fbdfcac8e6",
+  "repair_starting_main": "5130285d096650651ab9a3aa718d1280c45f317f",
+  "retired_operational_attempts": [
+    {
+      "artifact_sha256": "95B778474FC87C0369B3070EFAF9C12931A137094EFAAF0F98FDA6FC8AC83DCD",
+      "command_invocation_count": 1,
+      "consumed_authority_id_sha256": "541C7E61EBB30366D7007D8BA5EC30DB720B0817FA29CABB1625536D6B720A66",
+      "disposition": "RETIRED_PRECONSUMPTION_COMMAND_INVOKED",
+      "document_sha256": "A4780A5531DA3597189FF5F9E8B7D431A2DC1D7F24F581F59B006C08E3A20370",
+      "historical_run_id": "ck0-balanced-v2-rank-head-b1-full-r1",
+      "model_requests": 0,
+      "process_exit": 1,
+      "reauthorization_permitted": false,
+      "relative_path": "lab/ck0_balanced_opaque_rank_head_v2_preconsumption_failure_1.json",
+      "replacement_run_id": "ck0-balanced-v2-rank-head-b1-full-r2",
+      "runtime_authority_consumed": false,
+      "scientific_observation_performed": false,
+      "scientific_result": null,
+      "status": "PRECONSUMPTION_ENTRYPOINT_CALLER_IDENTITY_REJECTED"
+    }
+  ],
   "run_order": [
-    "ck0-balanced-v2-rank-head-b1-full-r1",
+    "ck0-balanced-v2-rank-head-b1-full-r2",
     "ck0-balanced-v2-rank-head-b2-full-r1"
   ],
   "runs": [
     {
-      "authority_receipt_path": "state/catalytic_kernel_0_rank_head_v2_authority.ck0-balanced-v2-rank-head-b1-full-r1.authority.consumed.json",
+      "authority_receipt_path": "state/catalytic_kernel_0_rank_head_v2_authority.ck0-balanced-v2-rank-head-b1-full-r2.authority.consumed.json",
       "authorization_state": "separately-authorizable",
       "automatic_follow_on": false,
       "maximum_invocations": 1,
@@ -194,8 +243,8 @@
       "predecessor_run_id": null,
       "reservation_state": "reserved-unconsumed",
       "retry_count": 0,
-      "run_id": "ck0-balanced-v2-rank-head-b1-full-r1",
-      "run_key_commitment": "DD3FE1A34A5206BF9FAF7C4362760B664CE7A5E7CC8474B6A37D4AE2ACC66BE6",
+      "run_id": "ck0-balanced-v2-rank-head-b1-full-r2",
+      "run_key_commitment": "F2C5FC9BBD24C4FABF873F78D044B4DD51A43310C5B16E71BFAA78F48E9ABA1E",
       "source_binding": "binding-1",
       "source_custody": {
         "source_alias_map_commitment": "B43F3399D3884195AFC41362263BE064D39828381D859DDE84A556542ABC1889",
@@ -221,16 +270,16 @@
         "closure.json",
         "run.lock"
       ],
-      "state_root": "state/catalytic_kernel_0_rank_head_v2/ck0-balanced-v2-rank-head-b1-full-r1"
+      "state_root": "state/catalytic_kernel_0_rank_head_v2/ck0-balanced-v2-rank-head-b1-full-r2"
     },
     {
       "authority_receipt_path": "state/catalytic_kernel_0_rank_head_v2_authority.ck0-balanced-v2-rank-head-b2-full-r1.authority.consumed.json",
-      "authorization_state": "unauthorized-until-binding-1-v2-terminal-visible",
+      "authorization_state": "unauthorized-until-binding-1-v2-r2-terminal-visible-and-published",
       "automatic_follow_on": false,
       "maximum_invocations": 1,
       "mode": "full-information",
       "ordinal": 2,
-      "predecessor_run_id": "ck0-balanced-v2-rank-head-b1-full-r1",
+      "predecessor_run_id": "ck0-balanced-v2-rank-head-b1-full-r2",
       "reservation_state": "reserved-unconsumed",
       "retry_count": 0,
       "run_id": "ck0-balanced-v2-rank-head-b2-full-r1",
@@ -265,13 +314,14 @@
   ],
   "runtime_entrypoint": {
     "authority_bridge_module": "scripts/catalytic_kernel_0_balanced_rank_head_v2_authority.py",
+    "fail_closed_entrypoint": "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
     "function": "run_rank_head_v2",
     "historical_v1_runner_modified": false,
     "holostate_cli_registered": false,
-    "live_core_module": "scripts/catalytic_kernel_0_balanced_rank_head_v2_live.py",
-    "module": "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
     "post_consumption_fail_closed_closure": "implemented",
+    "protected_live_core": "scripts/catalytic_kernel_0_balanced_rank_head_v2_live.py",
     "protected_sidecar_adapter_integration": "implemented",
+    "public_cli_bootstrap": "scripts/catalytic_kernel_0_balanced_rank_head_v2_cli.py",
     "runtime_class": "QualifiedRankHeadV2Runtime"
   },
   "schema_version": 1,
@@ -287,134 +337,67 @@
     "ignored_runtime_required": true,
     "root": "state/catalytic_kernel_0_rank_head_v2"
   },
+  "static_runtime_state": {
+    "authority_consumed": false,
+    "authority_created": false,
+    "binding_2_authorized": false,
+    "model_requests": 0,
+    "new_secrets_created": 0,
+    "runtime_roots_created": 0,
+    "sidecar_launches": 0
+  },
   "static_verification": {
-    "auditors": {
-      "authority_and_custody_auditor": "PASS",
-      "no_smuggle_and_run_design_auditor": "PASS",
-      "runtime_and_restoration_auditor": "PASS"
+    "active_authority_contract": {
+      "authority_object_schema_sha256": "279BABE4626FEE8F69B178A0CBC23AECD58B9BFDC5579BE633B75B337797CE72",
+      "authority_schema_version": "rank-head-v2-external-one-shot-v2",
+      "receipt_schema_sha256": "898DE481CE8F896F7B6D006E7BB1357AF507597BE2EE9B31F0D3DC6337723CC5",
+      "receipt_schema_version": "rank-head-v2-authority-consumption-v2"
     },
-    "authorities_consumed": 0,
-    "authority_object_schema_sha256": "8CDE8477F324E9E72C89F14908333937643675C2F42F92E67062DFE92F4A0CB3",
-    "authority_receipt_path_template": "state/catalytic_kernel_0_rank_head_v2_authority.<run-id>.authority.consumed.json",
-    "authority_receipt_schema_sha256": "709552F6DDC2F31DC154C1C65F895F55637B7088B4F548FDFA1F771381E55411",
-    "authority_receipts_created": 0,
-    "carrier_identities": {
-      "carrier_content_sha256": "44DCC744FEDB0282C4022E70E03C50FEFD54D7FDBF3ED67EAC8BC76008C0A43F",
-      "carrier_id": "ck0:balanced-opaque-relational-carrier-v2-rank-head",
-      "carrier_root_sha256": "4B82F399ACE797BDF40012ABB4D1254021F838B58BAED66153D4042EF3C7585C"
-    },
-    "compatibility_tests": {
-      "binding_1_balanced": "16/16",
-      "binding_2_balanced": "16/16",
-      "binding_2_forensics": "5/5",
-      "existing_ck0": "12/12",
-      "private_fact_guard": "6/6",
-      "publication_guard": "6/6",
-      "status": "pass"
-    },
-    "connector_head": "e3df0e59c769f203fc0b69674f5836f2ca18222c",
-    "final_implementation_identity": {
-      "kind": "normalized-source-bundle-sha256-v1",
-      "sha256": "CBD911A064E855827B4A0A712FD4125E429040C6E80A44F423E24CB459DD0D3D"
-    },
-    "final_implementation_paths": [
-      "scripts/catalytic_kernel_0_balanced_rank_head_v2.py",
-      "scripts/catalytic_kernel_0_balanced_rank_head_v2_core.py",
-      "scripts/test_catalytic_kernel_0_balanced_rank_head_v2.py",
-      "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_core.py",
-      "scripts/catalytic_kernel_0_balanced_rank_head_v2_integration.py",
-      "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_integration.py",
-      "scripts/catalytic_kernel_0_balanced_rank_head_v2_run_design.py",
-      "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_run_design.py",
-      "scripts/catalytic_kernel_0_balanced_rank_head_v2_authority.py",
-      "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_authority.py",
-      "scripts/catalytic_kernel_0_balanced_rank_head_v2_live.py",
-      "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_live.py",
-      "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
-      "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py"
-    ],
-    "first_run_authorization_state": "reserved-unconsumed-separately-authorizable-not-authorized",
-    "focused_tests": {
-      "authority": "11/11",
-      "changed_file_compilation": "pass",
-      "entrypoint": "5/5",
-      "integration": "10/10",
-      "live_lifecycle": "9/9",
-      "run_design": "11/11",
-      "status": "pass",
-      "total": "46/46"
-    },
-    "leases": 5,
-    "live_model_requests": 0,
-    "logical_stages": 6,
-    "model_requests": 5,
-    "no_smuggle": "pass",
-    "predecessor_publication_gate": {
-      "binding_1_has_no_predecessor": true,
-      "binding_2_requires_binding_1_terminal_visible": true,
-      "cryptographic_authority_verification_required": true,
-      "legacy_colocated_records_allowed": false,
-      "private_visible_recomputation_required": true,
-      "raw_manifest_result_closure_rehash_required": true,
-      "restoration_cleanup_and_custody_required": true,
-      "status": "implemented-fail-closed",
-      "tracked_split_experiment_records_required": 1
-    },
-    "private_scans": {
-      "cross_binding_correspondence": "none",
-      "model_visible_private_values": "none",
-      "source_private_roots_modified": false,
-      "status": "pass",
-      "tracked_private_bytes": "none"
-    },
-    "protected_starting_sha": "25b70f649f0e1cd7eedd21ac7a7711fbdfcac8e6",
-    "run_design_schema": {
-      "exact_reconstruction_required": true,
-      "integration_id": "balanced-opaque-rank-head-v2-runtime-integration-v1",
-      "schema_version": 1
-    },
-    "run_ids": [
-      "ck0-balanced-v2-rank-head-b1-full-r1",
+    "active_run_order": [
+      "ck0-balanced-v2-rank-head-b1-full-r2",
       "ck0-balanced-v2-rank-head-b2-full-r1"
     ],
-    "run_key_commitments": {
-      "ck0-balanced-v2-rank-head-b1-full-r1": "DD3FE1A34A5206BF9FAF7C4362760B664CE7A5E7CC8474B6A37D4AE2ACC66BE6",
-      "ck0-balanced-v2-rank-head-b2-full-r1": "FEC400325777606A697687F990A24968B6AE787EDF444339A1639AE9BCFA8AC1"
+    "binding_2_run_key_commitment_unchanged": true,
+    "claim_expansion": false,
+    "focused_tests": {
+      "authority": "16/16",
+      "cli": "2/2",
+      "entrypoint": "8/8",
+      "integration": "11/11",
+      "live_core": "10/10",
+      "run_design": "12/12",
+      "static_core": "12/12",
+      "static_wrapper": "13/13",
+      "total": "84/84"
     },
-    "runtime_roots_created": 0,
-    "second_run_authorization_state": "reserved-unconsumed-unauthorized-until-binding-1-v2-terminal-visible",
-    "secrets_created": 0,
-    "sidecar_epochs": 1,
-    "sidecar_launches": 0,
-    "source_private_commitments": {
-      "binding-1": {
-        "alias_map_commitment": "B43F3399D3884195AFC41362263BE064D39828381D859DDE84A556542ABC1889",
-        "branch_a_alias_map_commitment": "F08F0E8318773C82BEF11068AF5529A9F39A90529CCFF64FE3D263F83481F8E9",
-        "branch_b_alias_map_commitment": "6EB90673F6FA045F7A942BA64EF48ABBCB4C95071760094CF9740A04F5B403F9",
-        "creation_receipt_commitment": "52C408BA92D784629C8CDF15624E880F8178296A055D73C1D381A40685CA1B25",
-        "secret_commitment": "272B5D28981B2D02AECF7DCC5EAA1FBEA5F486DBA05AFB6C15C026ABD2AA29ED",
-        "source_preregistration_artifact_sha256": "D6FEC8B0477A198216ECDDDD8DE11AD2734410A640A69B37017394D9454643B7",
-        "source_preregistration_document_sha256": "9C6EE3F1C198B07552FBF194B8A815C4026722A0320BFFE55826361F02CCC90E"
-      },
-      "binding-2": {
-        "alias_map_commitment": "5AB4A5EB526B76B4C4BC9C169AD7889A422CFED20FDC47CA06859DA5A3D225E9",
-        "branch_a_alias_map_commitment": "00F92D3BB32C2C5FD4FEA8E40E06194674AD55CFA2DAE3CB2A79E073842AAB57",
-        "branch_b_alias_map_commitment": "6BF49B4C11D33DEC06B2280BDE36C119D38EA1B120437C7F50497D3F14878404",
-        "creation_receipt_commitment": "7B5FC42F06D1540A129D7E835801984D5C69E0224A6F32E889B0067F04E39482",
-        "secret_commitment": "AEBBE1CD5499D0076C8731B4AF292240463371BD59F60A688E94DE786F5AB549",
-        "source_preregistration_artifact_sha256": "9276E79B40978831C29FBA7EF55443F6A7EEE300C1BC59E826F0102075538C86",
-        "source_preregistration_document_sha256": "BDA3F5828A64F4BCB9E3EA2256F2BF03400740094D2FC98FBAADE16F1E71158D"
-      }
+    "historical_authority_contract": {
+      "active": false,
+      "authority_object_schema_sha256": "8CDE8477F324E9E72C89F14908333937643675C2F42F92E67062DFE92F4A0CB3",
+      "consumed_authority_id_blacklisted": true,
+      "receipt_schema_sha256": "709552F6DDC2F31DC154C1C65F895F55637B7088B4F548FDFA1F771381E55411"
     },
-    "state_root": "state/catalytic_kernel_0_rank_head_v2",
-    "status": "pass",
-    "v2_static_preregistration_identities": {
-      "artifact_sha256": "F208A55C48EBE316564F1FFEE66857F5388503F3911FAC65AAF29159BACACB31",
-      "design_contract_sha256": "15B7363BBC9FDA14BC270C4236DCB2BB5950926C013CB3BE6BEB74EEE4A0C8AB",
-      "document_sha256": "4CF4188EE83AE7B2A16422A022CECC1B1C77F5C47971A4A44B1A5746F2A10CD8",
-      "implementation_binding_sha256": "07B3F6BFD59909D369F794C07D1CEEBEE5CA4A27C668F44BD18733F03173688F",
-      "receipt_schema_sha256": "FEB391B98051993712D44552A3DA3FC32D319A856F779B44EEC1449A98CE3B18"
-    }
+    "historical_guards": {
+      "existing_ck0": "12/12",
+      "private_fact_guard": "pass",
+      "publication_guard": "pass"
+    },
+    "implementation_binding_sha256": "EDD064D36DD8FB123B1D095A2C613540C67BB3DCD71F6F23C6F565AAEAB4A837",
+    "implementation_file_count": 16,
+    "incident_artifact_sha256": "95B778474FC87C0369B3070EFAF9C12931A137094EFAAF0F98FDA6FC8AC83DCD",
+    "pre_audit_scope": true,
+    "private_custody": {
+      "binding_1_source_unchanged": true,
+      "binding_2_source_unchanged": true,
+      "private_values_disclosed": false
+    },
+    "runtime_activity": {
+      "authorities_consumed": 0,
+      "authorities_created": 0,
+      "model_requests": 0,
+      "runtime_roots_created": 0,
+      "sidecars_launched": 0
+    },
+    "status": "pass"
   },
   "status": "static-preregistered",
   "v2_carrier": {
