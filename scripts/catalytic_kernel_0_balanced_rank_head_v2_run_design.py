@@ -35,6 +35,8 @@ REQUIRED_IMPLEMENTATION_PATHS = (
     "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_authority.py",
     "scripts/catalytic_kernel_0_balanced_rank_head_v2_live.py",
     "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_live.py",
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
+    "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
 )
 REQUIRED_AUDITS = integration.REQUIRED_AUDITS
 
@@ -58,7 +60,7 @@ def require_exact_implementation_paths(paths: Sequence[str]) -> None:
         or len(set(paths)) != len(paths)
     ):
         raise RankHeadV2RunDesignError(
-            "v2 run design binding must contain exactly twelve files"
+            "v2 run design binding must contain exactly fourteen files"
         )
 
 
@@ -233,12 +235,18 @@ def build_run_design(
         "model_request_stages": list(integration.MODEL_REQUEST_STAGES),
         "controller_stage": "extract",
         "runtime_entrypoint": {
-            "module": "scripts/catalytic_kernel_0_balanced_rank_head_v2_live.py",
+            "module": (
+                "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py"
+            ),
             "function": "run_rank_head_v2",
+            "live_core_module": (
+                "scripts/catalytic_kernel_0_balanced_rank_head_v2_live.py"
+            ),
             "runtime_class": "QualifiedRankHeadV2Runtime",
             "historical_v1_runner_modified": False,
             "holostate_cli_registered": False,
             "protected_sidecar_adapter_integration": "implemented",
+            "post_consumption_fail_closed_closure": "implemented",
             "authority_bridge_module": (
                 "scripts/catalytic_kernel_0_balanced_rank_head_v2_authority.py"
             ),
@@ -397,6 +405,7 @@ def validate_run_design(
         "first_separately_authorizable_run": integration.BINDING_1_RUN_ID,
         "binding_2_predecessor_gate_implemented": True,
         "authority_bridge_implemented": True,
+        "fail_closed_entrypoint_implemented": True,
         "second_run_authorized": False,
         "live_execution_authorized": False,
         "status": "validated-static-run-design",
