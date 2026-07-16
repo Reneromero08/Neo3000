@@ -1,0 +1,333 @@
+{
+  "candidate_reconstruction": {
+    "candidate_count": 48,
+    "candidates": [
+      {
+        "name": "commit-blob-exact",
+        "sha256": "D85F36FC395D14C3187E9689180D93B1578123245F84A02726105BE382F84F05",
+        "size_bytes": 25607
+      },
+      {
+        "name": "commit-blob-lf",
+        "sha256": "D85F36FC395D14C3187E9689180D93B1578123245F84A02726105BE382F84F05",
+        "size_bytes": 25607
+      },
+      {
+        "name": "commit-blob-crlf",
+        "sha256": "211572B6FC2E3C96F1B97388FAAAB0EF258A123793AECAC88E66452788073589",
+        "size_bytes": 26300
+      },
+      {
+        "name": "commit-blob-cr",
+        "sha256": "51A2561D461ECC0C6C6381330950566C32BFC4494A2A98D2C0855C23B98FC4D5",
+        "size_bytes": 25607
+      },
+      {
+        "name": "commit-blob-lf-no-final-newline",
+        "sha256": "50AAA44E0F2025873FC432241391621C3EA6218F2123AFFC658C17C63A3481A3",
+        "size_bytes": 25606
+      },
+      {
+        "name": "commit-blob-crlf-no-final-newline",
+        "sha256": "0F3BE282154664D0C95A0F4606261E0759E22BDE13526569C06C8B88F093F01E",
+        "size_bytes": 26298
+      },
+      {
+        "name": "commit-blob-cr-no-final-newline",
+        "sha256": "6F260FC033AF7E208045EFEB512C64938986B2D0A5B4A9A2CACE53523F71DA2E",
+        "size_bytes": 25606
+      },
+      {
+        "name": "commit-blob-lf-final-newline",
+        "sha256": "D85F36FC395D14C3187E9689180D93B1578123245F84A02726105BE382F84F05",
+        "size_bytes": 25607
+      },
+      {
+        "name": "commit-blob-crlf-final-newline",
+        "sha256": "211572B6FC2E3C96F1B97388FAAAB0EF258A123793AECAC88E66452788073589",
+        "size_bytes": 26300
+      },
+      {
+        "name": "commit-blob-cr-final-newline",
+        "sha256": "51A2561D461ECC0C6C6381330950566C32BFC4494A2A98D2C0855C23B98FC4D5",
+        "size_bytes": 25607
+      },
+      {
+        "name": "canonical-compact",
+        "sha256": "1E542902555BBED73A82CEC80ADBFA3848823CB23D536974AB3709A1F985343B",
+        "size_bytes": 20738
+      },
+      {
+        "name": "pretty-preserve-order-lf-no-final-newline",
+        "sha256": "50AAA44E0F2025873FC432241391621C3EA6218F2123AFFC658C17C63A3481A3",
+        "size_bytes": 25606
+      },
+      {
+        "name": "pretty-preserve-order-lf-final-newline",
+        "sha256": "D85F36FC395D14C3187E9689180D93B1578123245F84A02726105BE382F84F05",
+        "size_bytes": 25607
+      },
+      {
+        "name": "pretty-preserve-order-crlf-no-final-newline",
+        "sha256": "0F3BE282154664D0C95A0F4606261E0759E22BDE13526569C06C8B88F093F01E",
+        "size_bytes": 26298
+      },
+      {
+        "name": "pretty-preserve-order-crlf-final-newline",
+        "sha256": "211572B6FC2E3C96F1B97388FAAAB0EF258A123793AECAC88E66452788073589",
+        "size_bytes": 26300
+      },
+      {
+        "name": "pretty-preserve-order-cr-no-final-newline",
+        "sha256": "6F260FC033AF7E208045EFEB512C64938986B2D0A5B4A9A2CACE53523F71DA2E",
+        "size_bytes": 25606
+      },
+      {
+        "name": "pretty-preserve-order-cr-final-newline",
+        "sha256": "51A2561D461ECC0C6C6381330950566C32BFC4494A2A98D2C0855C23B98FC4D5",
+        "size_bytes": 25607
+      },
+      {
+        "name": "pretty-sorted-lf-no-final-newline",
+        "sha256": "50AAA44E0F2025873FC432241391621C3EA6218F2123AFFC658C17C63A3481A3",
+        "size_bytes": 25606
+      },
+      {
+        "name": "pretty-sorted-lf-final-newline",
+        "sha256": "D85F36FC395D14C3187E9689180D93B1578123245F84A02726105BE382F84F05",
+        "size_bytes": 25607
+      },
+      {
+        "name": "pretty-sorted-crlf-no-final-newline",
+        "sha256": "0F3BE282154664D0C95A0F4606261E0759E22BDE13526569C06C8B88F093F01E",
+        "size_bytes": 26298
+      },
+      {
+        "name": "pretty-sorted-crlf-final-newline",
+        "sha256": "211572B6FC2E3C96F1B97388FAAAB0EF258A123793AECAC88E66452788073589",
+        "size_bytes": 26300
+      },
+      {
+        "name": "pretty-sorted-cr-no-final-newline",
+        "sha256": "6F260FC033AF7E208045EFEB512C64938986B2D0A5B4A9A2CACE53523F71DA2E",
+        "size_bytes": 25606
+      },
+      {
+        "name": "pretty-sorted-cr-final-newline",
+        "sha256": "51A2561D461ECC0C6C6381330950566C32BFC4494A2A98D2C0855C23B98FC4D5",
+        "size_bytes": 25607
+      },
+      {
+        "name": "utf8-bom:commit-blob-exact",
+        "sha256": "A8A060E7389C59468EA58AC57E43C5F68DA5B1D4340D1249A41EC15A0EE10FBE",
+        "size_bytes": 25610
+      },
+      {
+        "name": "utf8-bom:commit-blob-lf",
+        "sha256": "A8A060E7389C59468EA58AC57E43C5F68DA5B1D4340D1249A41EC15A0EE10FBE",
+        "size_bytes": 25610
+      },
+      {
+        "name": "utf8-bom:commit-blob-crlf",
+        "sha256": "BA71D8F03222402D3DBB9967C24421453C70504785DCD24C87444F990981802F",
+        "size_bytes": 26303
+      },
+      {
+        "name": "utf8-bom:commit-blob-cr",
+        "sha256": "27B073E1DF9DEA653825D8F7CE7E644F0ACF6CA85FF546BB897CACB5D18A00A3",
+        "size_bytes": 25610
+      },
+      {
+        "name": "utf8-bom:commit-blob-lf-no-final-newline",
+        "sha256": "2A32895AF549B54E4DF170C3D2AC2F2CF90DC437BAE2BCC424B8FBD04A122CF8",
+        "size_bytes": 25609
+      },
+      {
+        "name": "utf8-bom:commit-blob-crlf-no-final-newline",
+        "sha256": "30F56C3DB7CB2F5FA0B76AB3C34AE711FF29F2AF3D2EB8D51B05EC571C06AD3A",
+        "size_bytes": 26301
+      },
+      {
+        "name": "utf8-bom:commit-blob-cr-no-final-newline",
+        "sha256": "5EA812B1F363C29F697011AFAA15CCC6AA41785D3DD1C048C94A18CCE3A90435",
+        "size_bytes": 25609
+      },
+      {
+        "name": "utf8-bom:commit-blob-lf-final-newline",
+        "sha256": "A8A060E7389C59468EA58AC57E43C5F68DA5B1D4340D1249A41EC15A0EE10FBE",
+        "size_bytes": 25610
+      },
+      {
+        "name": "utf8-bom:commit-blob-crlf-final-newline",
+        "sha256": "BA71D8F03222402D3DBB9967C24421453C70504785DCD24C87444F990981802F",
+        "size_bytes": 26303
+      },
+      {
+        "name": "utf8-bom:commit-blob-cr-final-newline",
+        "sha256": "27B073E1DF9DEA653825D8F7CE7E644F0ACF6CA85FF546BB897CACB5D18A00A3",
+        "size_bytes": 25610
+      },
+      {
+        "name": "utf8-bom:canonical-compact",
+        "sha256": "4B2C4B701C6F83CCD41CF5F2D28ED12F17F72BE06765401613937E1DB7A83A10",
+        "size_bytes": 20741
+      },
+      {
+        "name": "utf8-bom:pretty-preserve-order-lf-no-final-newline",
+        "sha256": "2A32895AF549B54E4DF170C3D2AC2F2CF90DC437BAE2BCC424B8FBD04A122CF8",
+        "size_bytes": 25609
+      },
+      {
+        "name": "utf8-bom:pretty-preserve-order-lf-final-newline",
+        "sha256": "A8A060E7389C59468EA58AC57E43C5F68DA5B1D4340D1249A41EC15A0EE10FBE",
+        "size_bytes": 25610
+      },
+      {
+        "name": "utf8-bom:pretty-preserve-order-crlf-no-final-newline",
+        "sha256": "30F56C3DB7CB2F5FA0B76AB3C34AE711FF29F2AF3D2EB8D51B05EC571C06AD3A",
+        "size_bytes": 26301
+      },
+      {
+        "name": "utf8-bom:pretty-preserve-order-crlf-final-newline",
+        "sha256": "BA71D8F03222402D3DBB9967C24421453C70504785DCD24C87444F990981802F",
+        "size_bytes": 26303
+      },
+      {
+        "name": "utf8-bom:pretty-preserve-order-cr-no-final-newline",
+        "sha256": "5EA812B1F363C29F697011AFAA15CCC6AA41785D3DD1C048C94A18CCE3A90435",
+        "size_bytes": 25609
+      },
+      {
+        "name": "utf8-bom:pretty-preserve-order-cr-final-newline",
+        "sha256": "27B073E1DF9DEA653825D8F7CE7E644F0ACF6CA85FF546BB897CACB5D18A00A3",
+        "size_bytes": 25610
+      },
+      {
+        "name": "utf8-bom:pretty-sorted-lf-no-final-newline",
+        "sha256": "2A32895AF549B54E4DF170C3D2AC2F2CF90DC437BAE2BCC424B8FBD04A122CF8",
+        "size_bytes": 25609
+      },
+      {
+        "name": "utf8-bom:pretty-sorted-lf-final-newline",
+        "sha256": "A8A060E7389C59468EA58AC57E43C5F68DA5B1D4340D1249A41EC15A0EE10FBE",
+        "size_bytes": 25610
+      },
+      {
+        "name": "utf8-bom:pretty-sorted-crlf-no-final-newline",
+        "sha256": "30F56C3DB7CB2F5FA0B76AB3C34AE711FF29F2AF3D2EB8D51B05EC571C06AD3A",
+        "size_bytes": 26301
+      },
+      {
+        "name": "utf8-bom:pretty-sorted-crlf-final-newline",
+        "sha256": "BA71D8F03222402D3DBB9967C24421453C70504785DCD24C87444F990981802F",
+        "size_bytes": 26303
+      },
+      {
+        "name": "utf8-bom:pretty-sorted-cr-no-final-newline",
+        "sha256": "5EA812B1F363C29F697011AFAA15CCC6AA41785D3DD1C048C94A18CCE3A90435",
+        "size_bytes": 25609
+      },
+      {
+        "name": "utf8-bom:pretty-sorted-cr-final-newline",
+        "sha256": "27B073E1DF9DEA653825D8F7CE7E644F0ACF6CA85FF546BB897CACB5D18A00A3",
+        "size_bytes": 25610
+      },
+      {
+        "name": "current-index-blob",
+        "sha256": "9276E79B40978831C29FBA7EF55443F6A7EEE300C1BC59E826F0102075538C86",
+        "size_bytes": 25607
+      },
+      {
+        "name": "current-worktree-bytes",
+        "sha256": "9276E79B40978831C29FBA7EF55443F6A7EEE300C1BC59E826F0102075538C86",
+        "size_bytes": 25607
+      }
+    ],
+    "matches": []
+  },
+  "current_index_blob": {
+    "sha256": "9276E79B40978831C29FBA7EF55443F6A7EEE300C1BC59E826F0102075538C86",
+    "size_bytes": 25607
+  },
+  "current_worktree": {
+    "sha256": "9276E79B40978831C29FBA7EF55443F6A7EEE300C1BC59E826F0102075538C86",
+    "size_bytes": 25607
+  },
+  "custody_adjudication": {
+    "accepted_for_narrow_transform_stage_adjudication": true,
+    "audit_status": "PASS / PASS / PASS",
+    "auditor_outcomes": {
+      "byte_forensic_auditor": "PASS",
+      "cryptographic_chain_auditor": "PASS",
+      "scientific_materiality_and_no_smuggle_auditor": "PASS"
+    },
+    "byte_serialization_provenance_limitation": "Exact execution bytes are cryptographically committed but are not independently reconstructable from the bounded candidates or repository-local Git objects.",
+    "custody_qualifier": "EXECUTION_PREREGISTRATION_SEMANTIC_IDENTITY_VERIFIED_BYTE_SERIALIZATION_UNRECOVERED",
+    "exact_execution_bytes_recovered": false,
+    "primary_verdict": "BYTE_ARTIFACT_COMMITMENT_VERIFIED_SERIALIZATION_UNRECOVERED",
+    "raw_serialization_model_visible": false,
+    "scientific_materiality_main_assessment": "Canonical semantic identity fixes every model-visible and scientifically operative preregistration field; raw whitespace, line endings, BOM state, and key formatting affect only the separately recorded byte-custody hash.",
+    "semantic_preregistration_identity_independently_verified": true
+  },
+  "execution_commit": "1eb4227219c78209ba487ab68339772887018722",
+  "execution_commit_blob": {
+    "canonical_document_sha256": "1E542902555BBED73A82CEC80ADBFA3848823CB23D536974AB3709A1F985343B",
+    "sha256": "D85F36FC395D14C3187E9689180D93B1578123245F84A02726105BE382F84F05",
+    "size_bytes": 25607
+  },
+  "execution_chain_reconstruction": {
+    "authority_artifact_hash_equals_manifest": true,
+    "authority_evidence_equal_across_receipt_manifest_result_and_closure": true,
+    "authority_hmac_verified": true,
+    "balanced_runtime_from_repository_before_preflight": true,
+    "canonical_document_hash_equals_execution_commit_document": true,
+    "closure_binds_manifest_sha256": true,
+    "exact_reconstructed_document_validation_preceded_execution": true,
+    "implementation_model_binary_carrier_schemas_seeds_and_private_commitments_semantically_bound": true,
+    "manifest_written_before_sidecar_launch": true,
+    "manifest_contains_preregistration_projection_and_consumed_authority_evidence": true,
+    "preregistration_artifact_hash_captured_from_path_read_bytes_before_preflight": true,
+    "receipt_sha256": "FEDEF50312E6F0A6326C67BB4B57ED295C2E5390E775B1FC3CED4C4942BD5878",
+    "result_and_closure_preserve_authority_evidence_without_drift": true,
+    "source_commit": "1eb4227219c78209ba487ab68339772887018722",
+    "validate_preregistration_for_execution_false_before_preflight": true
+  },
+  "expected_artifact_sha256": "FD9638323210829C5058F9F5A5E52D57252E8ABE5029A2CC099F20102E97BB5D",
+  "expected_document_sha256": "1E542902555BBED73A82CEC80ADBFA3848823CB23D536974AB3709A1F985343B",
+  "git_text_state": {
+    "check_attr": "lab/ck0_balanced_opaque_relational_carrier_v1_binding_2.json: text: auto\nlab/ck0_balanced_opaque_relational_carrier_v1_binding_2.json: eol: lf",
+    "core_autocrlf": "true",
+    "core_eol": null,
+    "ls_files_eol": "i/lf    w/lf    attr/text=auto eol=lf \tlab/ck0_balanced_opaque_relational_carrier_v1_binding_2.json",
+    "status_porcelain": "",
+    "working_tree_encoding": "lab/ck0_balanced_opaque_relational_carrier_v1_binding_2.json: working-tree-encoding: unspecified"
+  },
+  "manifest_path": "D:\\CCC 2.0\\AI\\Neo3000\\state\\catalytic_kernel_0\\ck0-balanced-v1b2-full-r1\\manifest.json",
+  "manifest_sha256": "1E330CCFB2727E3273F298D976641E4DE4CEAD1C335FE48519025E760CB6B70F",
+  "manual_verification": {
+    "core_autocrlf": "true",
+    "core_eol": null,
+    "execution_commit_blob_canonical_document_sha256": "1E542902555BBED73A82CEC80ADBFA3848823CB23D536974AB3709A1F985343B",
+    "execution_commit_blob_sha256": "D85F36FC395D14C3187E9689180D93B1578123245F84A02726105BE382F84F05",
+    "fsck_exit": 0,
+    "fsck_unreachable_counts": {
+      "blob": 83,
+      "commit": 64,
+      "tree": 143
+    },
+    "git_attributes": "text=auto eol=lf",
+    "index_eol": "lf",
+    "path_status": "clean",
+    "working_tree_encoding": "unspecified",
+    "worktree_eol": "lf"
+  },
+  "object_database_matches": [],
+  "object_database_scan_enabled": true,
+  "read_only": true,
+  "relative_path": "lab/ck0_balanced_opaque_relational_carrier_v1_binding_2.json",
+  "repository": "D:\\CCC 2.0\\AI\\Neo3000",
+  "schema_version": 1,
+  "semantic_document_identity_matches": true,
+  "status": "complete",
+  "verdict": "SEMANTIC_IDENTITY_ONLY_BYTE_STATE_UNRECOVERED"
+}
