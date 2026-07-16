@@ -4,6 +4,8 @@
 Before authority consumption, failures propagate without mutation. After a
 receipt exists, any uncaught core failure is converted into bounded terminal
 INCONCLUSIVE evidence while preserving the receipt and removing the run lock.
+A later invocation may never reinterpret or overwrite existing authority or
+runtime evidence from an earlier invocation.
 """
 from __future__ import annotations
 
@@ -56,6 +58,23 @@ def _receipt_evidence(repository: Path, run_id: str) -> dict[str, Any] | None:
         raise RankHeadV2EntrypointError(
             "consumed v2 authority receipt failed cryptographic verification"
         ) from exc
+
+
+def require_absent_prior_invocation_state(
+    repository: Path,
+    run_id: str,
+    *,
+    state_root: Path | None = None,
+) -> None:
+    """Reject later invocations before their failures can mutate prior evidence."""
+
+    receipt_path = authority.authority_receipt_path(repository, run_id)
+    paths = live_core.state_paths(repository, run_id, state_root)
+    candidates = (receipt_path, *paths.values())
+    if any(path.exists() or path.is_symlink() for path in candidates):
+        raise RankHeadV2EntrypointError(
+            "v2 run already has authority or runtime evidence; existing evidence is immutable"
+        )
 
 
 def close_post_consumption_failure(
@@ -175,13 +194,21 @@ def run_rank_head_v2(
         if repository_root is not None
         else Path(__file__).resolve().parents[1]
     )
+    resolved_state_root = (
+        Path(state_root).resolve() if state_root is not None else None
+    )
     run_id = str(_arg(args, "run_id") or "")
     integration.run_spec(run_id)
+    require_absent_prior_invocation_state(
+        repository,
+        run_id,
+        state_root=resolved_state_root,
+    )
     try:
         return live_core._run_rank_head_v2_protected(
             args,
             repository_root=repository,
-            state_root=state_root,
+            state_root=resolved_state_root,
         )
     except BaseException as exc:
         closed = close_post_consumption_failure(repository, run_id, exc)
