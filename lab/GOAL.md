@@ -1,6 +1,18 @@
 # Active Goal
 
-## Checkpoint 2: Deterministic rank-head v2 statically implemented and preregistered
+## Checkpoint 2: Deterministic rank-head CK0 v2 runtime statically integrated and preregistered
+
+The protected deterministic rank-head CK0 v2 runtime and exact ordered two-run design are complete at the static boundary. The 14-file normalized implementation binding is `CBD911A064E855827B4A0A712FD4125E429040C6E80A44F423E24CB459DD0D3D`. Run-design artifact SHA-256 is `52E759FCB4BDD0BC873962146A00609D8CC94A4E1C100CD65036B2643654E2AC`; canonical document SHA-256 is `53CDE454FBF8E2FFAE4B0FEBEFB1EBF0BDFACF90EE28B8E31546E54A45EBA019`.
+
+The protected lifecycle preserves six logical stages, exactly five model requests, five physical leases, one physical slot, one sidecar epoch, cache admission, controller-only deterministic extraction with no lease or model request, cleanup, restoration, result, and closure. The public entrypoint has no adapter or authority default; lower-level execution surfaces fail closed. A cryptographic one-shot authority object binds the exact run, protected commit, run design, static preregistration, model, binary, carrier, and source-bound domain-separated run key. Consumption is globally serialized across both runs immediately before runtime-root creation, and post-consumption failures retain immutable cryptographically verified evidence.
+
+Exactly two full-information runs are reserved in order: `ck0-balanced-v2-rank-head-b1-full-r1`, then `ck0-balanced-v2-rank-head-b2-full-r1`. The first is separately authorizable but not authorized. The second remains unauthorized until the first is terminally visible through raw evidence, exact authority, private recomputation, restoration/custody, and exactly one tracked split-schema publication record. There is no retry, deletion control, automatic follow-on, or third run.
+
+The existing private roots and creation receipts remain unchanged and undisclosed. Their source commitments are bound without tracking private bytes or cross-binding correspondence; v2 run keys are domain-separated from historical keys and from each other. Focused tests pass `46 / 46`; binding-1 compatibility passes `16 / 16`, binding-2 `16 / 16`, CK0 `12 / 12`, publication/private guards `6 / 6` each, and forensics `5 / 5`. Exactly three read-only auditors returned `PASS / PASS / PASS` after one bounded repair and one permitted affected-scope re-audit.
+
+This operation created zero authority receipts, consumed zero authorities, created zero secrets or runtime roots, launched zero sidecars, and issued zero model requests. It establishes no live v2 result. The next exact action is: `Separately authorize only ck0-balanced-v2-rank-head-b1-full-r1 with a fresh external authority ID bound to the exact protected integration commit.` Binding-2 remains unauthorized. Every broader claim remains locked.
+
+## Historical checkpoint: Deterministic rank-head v2 statically implemented and preregistered
 
 The balanced-opaque transform/extraction package is terminally adjudicated from binding-1 full/delete-A/delete-B and binding-2 full-information evidence. The extraction instruction, schema, and parser admit any ranked alias while the terminal acceptance law requires the private-winning rank head, establishing `EXTRACTION_CONTRACT_UNDERSPECIFIED_RELATIVE_TO_ACCEPTANCE_LAW`. The static controller-only counterfactual freezes transform ranking position zero before private mapping and yields singleton `5/5` for both full-information runs and non-singleton `3/5` for both binding-1 deletion controls. The selection order passes `DETERMINISTIC_RANK_HEAD_EXTRACTION_NO_SMUGGLE_PASS`.
 

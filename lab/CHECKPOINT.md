@@ -1,6 +1,25 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Deterministic rank-head CK0 v2 statically complete
+## Checkpoint 2: Deterministic rank-head CK0 v2 runtime statically integrated
+
+**Status:** STATIC RUNTIME/DESIGN COMPLETE / EXACT TWO-RUN ORDER / AUTHORITY BRIDGE COMPLETE / AUDIT `PASS / PASS / PASS` / ZERO LIVE-AUTHORITY-SECRET ACTIVITY
+
+- [x] Admit protected main `25b70f649f0e1cd7eedd21ac7a7711fbdfcac8e6` and connector head `e3df0e59c769f203fc0b69674f5836f2ca18222c`; preserve clean candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, healthy stable service, free port 9494, exact historical evidence, valid consumed v1 receipt, unchanged private roots, and absent v2 state/authority.
+- [x] Copy the connector's final 11-file contents without history, then independently close predecessor-publication, entrypoint-only execution, protected-adapter, exact private scope, cryptographic receipt, process-concurrency, and bounded-closure defects. Preserve all frozen v1 source and preregistrations.
+- [x] Bind exactly 14 final implementation source/test paths at normalized SHA-256 `CBD911A064E855827B4A0A712FD4125E429040C6E80A44F423E24CB459DD0D3D`.
+- [x] Implement six logical stages, five model requests, five physical leases, one slot/sidecar epoch, controller extraction without a lease or model request, exact cleanup/restoration, protected adapter reuse, fail-closed lower surfaces, and bounded post-consumption terminal evidence.
+- [x] Bind exact one-shot authority to run, commit, run design, static preregistration, model, binary, carrier, source custody, and a domain-separated run key. Serialize global receipt inventory across both runs; consume immediately before runtime-root creation; permit no retry or reused authority.
+- [x] Require binding-2 predecessor publication through exact raw evidence, cryptographic authority, private visible recomputation, restoration/custody, and exactly one tracked split experiment record. Reject legacy co-located publication records.
+- [x] Receive final `PASS / PASS / PASS` from exactly three read-only auditors. Two concrete blockers were repaired once; only their affected scopes were re-audited once.
+- [x] Pass focused tests `46 / 46`, changed-file compilation, binding-1 `16 / 16`, binding-2 `16 / 16`, CK0 `12 / 12`, publication/private guards `6 / 6` each, and forensics `5 / 5`. Preserve exact private commitments and zero tracked/model-visible/cross-binding disclosure.
+- [x] Generate exact run-design artifact `52E759FCB4BDD0BC873962146A00609D8CC94A4E1C100CD65036B2643654E2AC`, canonical document `53CDE454FBF8E2FFAE4B0FEBEFB1EBF0BDFACF90EE28B8E31546E54A45EBA019`, and reserve only `ck0-balanced-v2-rank-head-b1-full-r1` then `ck0-balanced-v2-rank-head-b2-full-r1`.
+- [x] Preserve zero model requests, sidecar launches, authority receipts, authority consumptions, secrets, runtime roots, retries, deletion controls, historical rewrites, and claim expansion. Binding-2 remains unauthorized.
+
+**Next exact action:** `Separately authorize only ck0-balanced-v2-rank-head-b1-full-r1 with a fresh external authority ID bound to the exact protected integration commit.`
+
+---
+
+## Historical checkpoint: Deterministic rank-head CK0 v2 statically complete
 
 **Status:** STATIC IMPLEMENTATION COMPLETE / DISTINCT V2 CARRIER / EXACT FOUR-FILE PREREGISTRATION / AUDIT `PASS / PASS` / ZERO RUN-AUTHORITY-SECRET-LIVE ACTIVITY
 

@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "a774ab44c42e31ac500d13bba9accdceb5ef5b9b",
+  "baseline_source_commit": "25b70f649f0e1cd7eedd21ac7a7711fbdfcac8e6",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -144,7 +144,7 @@
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-16T04:59:25.907356+00:00",
+  "generated_at": "2026-07-16T06:46:35.883456+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
@@ -170,12 +170,12 @@
     "NEO3000.md": "b7ba87065f942d47abed19330197a843577bbd6b2fd58057a6df9de9cd7d2905",
     "README.md": "78708a68121242f8c0d48bc8218da2776985a2f8d3854e6a85be1b16050d3427",
     "ROADMAP.md": "21fdd9adef0ae599be637f178a3c604654fb378940dd4733b60d88b13e9a66e1",
-    "TASKS.md": "f837c752e40b58e9a04de6574865184dcba14ea50277cf81d6a6a373ba3d2547",
+    "TASKS.md": "40f3079d1d45cd0238e867ce3eac9380b0b7b458bd789380b3b1f1d8e2036ad4",
     "docs/CATALYTIC_RUNTIME_ROADMAP.md": "b425fc553a78997964dff09851ade15262cd3eb59de0b8f751e66ff8b97ea923",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "65c052db0d1fed9f992136b3134fa001d633c71b820463f8fc8f50a6c354b5ef",
+    "lab/CHECKPOINT.md": "b6d59c0a5dafdd8d2cc8706326df57e04959983474b123ec597ea9beb73f6685",
     "lab/EVALUATOR.json": "40c44177045e0abed55d728910cdfd0246d3f810e7d698a19961d29476265530",
-    "lab/GOAL.md": "2d88798fc83a45d4f6e53ceadd6b59b23bde08cea0074fda3ddeae6e5907650c",
+    "lab/GOAL.md": "8888a8658ace383c66a5007f1937f907e4875f350e30f3672e87e2213cbdee52",
     "lab/ck0_balanced_opaque_relational_carrier_v1.json": "adf29f23463cb14b9bc79995d59afe5ab5ac456043ed3734668d8c4372e09f09",
     "lab/ck0_balanced_opaque_relational_carrier_v1_binding_2.json": "9276e79b40978831c29fba7ef55443f6a7eee300c1bc59e826f0102075538c86",
     "lab/ck0_parent_a_information_deletion_1.json": "a5b5c651ec5e542154283723bc727aa68cfd589125dbec3ff1624c0d31c0087b",

@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** The static implementation and preregistration of `balanced-opaque-relational-carrier-v2-deterministic-rank-head-extraction` are complete. The distinct v2 carrier preserves six logical stages while issuing exactly five model requests, removes the extract request/schema, and binds controller-native committed rank position zero before private mapping. No run ID, secret, authority, runtime integration, inference, sidecar, or historical reclassification exists. The qualified transform-stage status and custody qualifier remain exact; binding-2 remains historically `BALANCED_OPAQUE_RELATIONAL_COLLAPSED`.
-**Next exact action:** `Separately authorize a static deterministic-rank-head v2 runtime-integration and run-design operation; no live execution.` End-to-end cross-binding replication, binding-2 parent dependence, causal replication, general two-parent necessity, transfer, general catalytic inference, task advantage, superiority, SOTA, broader/restart HoloState, Deep, and automatic promotion remain locked.
+**Active bounded objective:** Deterministic rank-head CK0 v2 runtime integration and its ordered two-run design are statically implemented and preregistered. The protected lifecycle has six logical stages, five model requests, five physical leases, one slot, one sidecar epoch, controller-only extraction, exact restoration, a fail-closed entrypoint, and a cryptographic one-shot authority bridge. Existing private roots are reused unchanged through domain-separated run keys. Exactly two full-information runs are reserved; neither is authorized.
+**Next exact action:** `Separately authorize only ck0-balanced-v2-rank-head-b1-full-r1 with a fresh external authority ID bound to the exact protected integration commit.` Binding-2 remains unauthorized. End-to-end cross-binding replication, binding-2 parent dependence, causal replication, general two-parent necessity, transfer, general catalytic inference, task advantage, superiority, SOTA, broader/restart HoloState, Deep, and automatic promotion remain locked.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -23,6 +23,9 @@
 ---
 
 ## Active queue: deterministic rank-head extraction v2
+
+- [x] Integrate and preregister the deterministic rank-head CK0 v2 protected runtime and exact ordered two-run design. Bind the 14-file implementation at `CBD911A064E855827B4A0A712FD4125E429040C6E80A44F423E24CB459DD0D3D`; implement exact one-shot authority, process-wide collision exclusion, protected adapter reuse, split-schema predecessor publication, bounded post-consumption failure closure, and `PASS / PASS / PASS` audits. Reserve only `ck0-balanced-v2-rank-head-b1-full-r1` followed by `ck0-balanced-v2-rank-head-b2-full-r1`; create no authority, secret, runtime root, sidecar, model request, inference, or result.
+- [ ] Separately authorize only `ck0-balanced-v2-rank-head-b1-full-r1` with a fresh external authority ID bound to the exact protected integration commit. Permit one invocation and no retry. Do not authorize or auto-follow binding-2.
 
 - [x] Statically implement and preregister `balanced-opaque-relational-carrier-v2-deterministic-rank-head-extraction` with controller-native selection of committed transform rank position zero before private mapping. Preserve borrow, both branch requests, transform, restore, six logical stages, one physical slot, one sidecar epoch, exact frozen geometry, metadata-only persistence, custody, restoration, and all claim locks. Make no live request and reserve no run.
 
