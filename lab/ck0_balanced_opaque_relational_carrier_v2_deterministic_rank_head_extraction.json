@@ -1,0 +1,494 @@
+{
+  "audits": {
+    "historical_compatibility_auditor": "PASS",
+    "rank_head_no_smuggle_auditor": "PASS"
+  },
+  "design_contract": {
+    "authorship_boundary": {
+      "controller_authored": [
+        "deterministic rank-head projection",
+        "private mapping after selection",
+        "public score after selection",
+        "deterministic extraction receipt",
+        "custody and restoration"
+      ],
+      "model_authored": [
+        "branch diagnostic rankings",
+        "transform operator",
+        "ordered opaque transform ranking",
+        "carrier acknowledgements"
+      ],
+      "new_relational_information_added_by_extraction": false
+    },
+    "claim_boundary": {
+      "historical_binding_2_terminal_classification": "BALANCED_OPAQUE_RELATIONAL_COLLAPSED",
+      "locked": [
+        "end-to-end-cross-binding-replication",
+        "binding-2-parent-dependence",
+        "causal-dependence-replicated-across-bindings",
+        "general-two-parent-necessity",
+        "transfer",
+        "general-catalytic-inference",
+        "task-advantage",
+        "superiority",
+        "sota",
+        "broader-process-local-holostate",
+        "restart-persistence",
+        "deep",
+        "automatic-promotion"
+      ],
+      "required_custody_qualifier": "EXECUTION_PREREGISTRATION_SEMANTIC_IDENTITY_VERIFIED_BYTE_SERIALIZATION_UNRECOVERED",
+      "unlocked_stage_specific_status": "BALANCED_OPAQUE_TRANSFORM_STAGE_SINGLETON_RESOLUTION_REPLICATED_ACROSS_TWO_PRIVATE_BINDINGS_ON_FROZEN_GEOMETRY"
+    },
+    "design_id": "balanced-opaque-relational-carrier-v2-deterministic-rank-head-extraction",
+    "extraction_contract": {
+      "mode": "controller-deterministic-rank-head",
+      "model_request_present": false,
+      "private_mapping_after_selection_only": true,
+      "private_score_after_selection_only": true,
+      "receipt_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_commitment": {
+            "pattern": "^[0-9A-F]{64}$",
+            "type": "string"
+          },
+          "candidate_alias": {
+            "enum": [
+              "K00",
+              "K01",
+              "K02",
+              "K03",
+              "K04",
+              "K05",
+              "K06",
+              "K07",
+              "K08",
+              "K09",
+              "K10",
+              "K11",
+              "K12",
+              "K13",
+              "K14",
+              "K15",
+              "K16",
+              "K17",
+              "K18",
+              "K19",
+              "K20",
+              "K21",
+              "K22",
+              "K23",
+              "K24",
+              "K25",
+              "K26",
+              "K27",
+              "K28",
+              "K29",
+              "K30",
+              "K31",
+              "K32",
+              "K33",
+              "K34",
+              "K35",
+              "K36",
+              "K37",
+              "K38",
+              "K39",
+              "K40",
+              "K41",
+              "K42",
+              "K43",
+              "K44",
+              "K45",
+              "K46",
+              "K47",
+              "K48",
+              "K49",
+              "K50",
+              "K51",
+              "K52",
+              "K53",
+              "K54",
+              "K55",
+              "K56",
+              "K57",
+              "K58",
+              "K59",
+              "K60",
+              "K61",
+              "K62",
+              "K63"
+            ],
+            "type": "string"
+          },
+          "controller_private_evaluation": {
+            "additionalProperties": false,
+            "properties": {
+              "full_public_score": {
+                "maximum": 5,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "full_public_total": {
+                "const": 5,
+                "type": "integer"
+              },
+              "mapped_to_full_public_support": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "mapped_to_full_public_support",
+              "full_public_score",
+              "full_public_total"
+            ],
+            "type": "object"
+          },
+          "extraction_mode": {
+            "const": "controller-deterministic-rank-head",
+            "type": "string"
+          },
+          "private_mapping_consulted_before_selection": {
+            "const": false,
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": "deterministic-rank-head-extraction-v2",
+            "type": "string"
+          },
+          "selected_rank": {
+            "const": 0,
+            "type": "integer"
+          },
+          "selection_frozen_before_private_mapping": {
+            "const": true,
+            "type": "boolean"
+          },
+          "selection_law": {
+            "const": "verified-transform-ranking-position-zero-before-private-mapping",
+            "type": "string"
+          },
+          "stage_id": {
+            "const": "extract-rank-head-v2",
+            "type": "string"
+          },
+          "transform_artifact_commitment_consumed": {
+            "pattern": "^[0-9A-F]{64}$",
+            "type": "string"
+          },
+          "transform_ranking_length": {
+            "maximum": 3,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "artifact_commitment",
+          "candidate_alias",
+          "controller_private_evaluation",
+          "extraction_mode",
+          "private_mapping_consulted_before_selection",
+          "schema_version",
+          "selected_rank",
+          "selection_frozen_before_private_mapping",
+          "selection_law",
+          "stage_id",
+          "transform_artifact_commitment_consumed",
+          "transform_ranking_length"
+        ],
+        "type": "object"
+      },
+      "receipt_schema_sha256": "FEB391B98051993712D44552A3DA3FC32D319A856F779B44EEC1449A98CE3B18",
+      "receipt_schema_version": "deterministic-rank-head-extraction-v2",
+      "receipt_stage_id": "extract-rank-head-v2",
+      "same_law_for_full_and_control_modes": true,
+      "selected_rank": 0,
+      "selection_frozen_before_private_mapping": true,
+      "selection_law": "verified-transform-ranking-position-zero-before-private-mapping",
+      "selection_order": [
+        "verify-transform-artifact-shape",
+        "verify-transform-run-bound-commitment",
+        "freeze-ranking-position-zero",
+        "bind-frozen-alias-rank-transform-commitment-and-ranking-length",
+        "consult-private-mapping-after-selection",
+        "score-frozen-alias-only",
+        "construct-deterministic-extraction-receipt",
+        "verify-deterministic-extraction-receipt"
+      ],
+      "transform_commitment_verified_before_selection": true
+    },
+    "frozen_mechanism": {
+      "allowed_transform_operators": [
+        "combine",
+        "eliminate",
+        "oppose",
+        "reconcile",
+        "refine"
+      ],
+      "branch_indices": {
+        "branch-a": [
+          0,
+          1,
+          2
+        ],
+        "branch-b": [
+          2,
+          3,
+          4
+        ]
+      },
+      "carrier_content_sha256": "44DCC744FEDB0282C4022E70E03C50FEFD54D7FDBF3ED67EAC8BC76008C0A43F",
+      "carrier_id": "ck0:balanced-opaque-relational-carrier-v2-rank-head",
+      "carrier_root_sha256": "4B82F399ACE797BDF40012ABB4D1254021F838B58BAED66153D4042EF3C7585C",
+      "extract_response_schema_present": false,
+      "logical_stages": [
+        "borrow",
+        "branch-a",
+        "branch-b",
+        "transform",
+        "extract",
+        "restore"
+      ],
+      "model_request_count": 5,
+      "model_request_schema_sha256": {
+        "borrow": "5B4561716510D126AD34B41F423D3151CFACD76301D9D19A6452E82D4C91746D",
+        "branch-a": "00B8B34FA8419B30F355DB1369FDA3208788B044157A299916F9E48E912478FE",
+        "branch-b": "00B8B34FA8419B30F355DB1369FDA3208788B044157A299916F9E48E912478FE",
+        "restore": "5B4561716510D126AD34B41F423D3151CFACD76301D9D19A6452E82D4C91746D",
+        "transform": "B36864F84116E64D96775452265513E7AB46521418EB376CC17872492B281E27"
+      },
+      "model_request_stages": [
+        "borrow",
+        "branch-a",
+        "branch-b",
+        "transform",
+        "restore"
+      ],
+      "parent_order": [
+        "parent-0",
+        "parent-1"
+      ],
+      "physical_slots": 1,
+      "relational_intersection_cardinality": 1,
+      "sidecar_epochs": 1,
+      "source_profile_ids": [
+        "balanced-opaque-relational-carrier-v1",
+        "balanced-opaque-relational-carrier-v1-binding-2"
+      ],
+      "source_v1_carrier_id": "ck0:balanced-opaque-relational-carrier-v1",
+      "support_cardinalities": [
+        5,
+        5
+      ],
+      "task_id": "cs1-task-03",
+      "task_index": 2,
+      "task_suite_sha256": "4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92"
+    },
+    "frozen_source_custody": {
+      "historical_preregistrations_modified": false,
+      "historical_runtime_modified": false,
+      "preregistrations": {
+        "binding-1": {
+          "artifact_sha256": "D6FEC8B0477A198216ECDDDD8DE11AD2734410A640A69B37017394D9454643B7",
+          "document_sha256": "9C6EE3F1C198B07552FBF194B8A815C4026722A0320BFFE55826361F02CCC90E",
+          "relative_path": "lab/ck0_balanced_opaque_relational_carrier_v1.json"
+        },
+        "binding-2": {
+          "artifact_sha256": "9276E79B40978831C29FBA7EF55443F6A7EEE300C1BC59E826F0102075538C86",
+          "document_sha256": "BDA3F5828A64F4BCB9E3EA2256F2BF03400740094D2FC98FBAADE16F1E71158D",
+          "relative_path": "lab/ck0_balanced_opaque_relational_carrier_v1_binding_2.json"
+        }
+      },
+      "runtime_relative_path": "scripts/catalytic_kernel_0_balanced_opaque.py",
+      "runtime_sha256": "A569D634D7660B4B3780C5141D374F26A44830EACC99408797B477F72D79636E"
+    },
+    "future_boundary": {
+      "live_execution_requires_separate_authorization": true,
+      "run_reservation_requires_separate_static_authorization": true,
+      "runtime_integration_requires_separate_static_authorization": true
+    },
+    "model_visible_carrier": {
+      "carrier_content_sha256": "44DCC744FEDB0282C4022E70E03C50FEFD54D7FDBF3ED67EAC8BC76008C0A43F",
+      "carrier_id": "ck0:balanced-opaque-relational-carrier-v2-rank-head",
+      "carrier_root_sha256": "4B82F399ACE797BDF40012ABB4D1254021F838B58BAED66153D4042EF3C7585C",
+      "extract_model_request_present": false,
+      "logical_stages": [
+        "borrow",
+        "branch-a",
+        "branch-b",
+        "transform",
+        "extract",
+        "restore"
+      ],
+      "model_request_stages": [
+        "borrow",
+        "branch-a",
+        "branch-b",
+        "transform",
+        "restore"
+      ],
+      "response_schema_sha256": {
+        "borrow": "5B4561716510D126AD34B41F423D3151CFACD76301D9D19A6452E82D4C91746D",
+        "branch-a": "00B8B34FA8419B30F355DB1369FDA3208788B044157A299916F9E48E912478FE",
+        "branch-b": "00B8B34FA8419B30F355DB1369FDA3208788B044157A299916F9E48E912478FE",
+        "restore": "5B4561716510D126AD34B41F423D3151CFACD76301D9D19A6452E82D4C91746D",
+        "transform": "B36864F84116E64D96775452265513E7AB46521418EB376CC17872492B281E27"
+      }
+    },
+    "no_smuggle_invariants": {
+      "failed_transform_top_cannot_be_privately_repaired": true,
+      "ranking_order_model_authored": true,
+      "selection_binding_independent": true,
+      "selection_mode_independent": true,
+      "selection_profile_independent": true,
+      "selection_uses_binding_identity": false,
+      "selection_uses_branch_identities": false,
+      "selection_uses_counterfactual_result": false,
+      "selection_uses_expected_classification": false,
+      "selection_uses_historical_result": false,
+      "selection_uses_mode": false,
+      "selection_uses_private_identity": false,
+      "selection_uses_private_score": false,
+      "selection_uses_support_intersection": false,
+      "transform_commitment_consumed_exactly": true
+    },
+    "protected_starting_main": "a774ab44c42e31ac500d13bba9accdceb5ef5b9b",
+    "published_adjudication": {
+      "adjudication_path": "lab/ck0_balanced_opaque_transform_extraction_adjudication_2.md",
+      "adjudication_sha256": "F42A4C9EDB6D1BD60B850AF67961E257F31406473A78DAD67D02587CE28C150C",
+      "counterfactual_path": "lab/ck0_balanced_opaque_rank_head_counterfactual_1.json",
+      "counterfactual_sha256": "F4024BEB385306DBB37658010C41EB61CBE49E9019778E4CCBE7F47EACDFE9B4",
+      "custody_qualifier": "EXECUTION_PREREGISTRATION_SEMANTIC_IDENTITY_VERIFIED_BYTE_SERIALIZATION_UNRECOVERED",
+      "extraction_contract_finding": "EXTRACTION_CONTRACT_UNDERSPECIFIED_RELATIVE_TO_ACCEPTANCE_LAW",
+      "extraction_status": "MODEL_AUTHORED_EXTRACTION_CLOSURE_NOT_REPLICATED_ACROSS_PRIVATE_BINDINGS",
+      "forensic_path": "lab/ck0_binding2_preregistration_byte_forensics_1.json",
+      "forensic_sha256": "015558B713D6D904E7BC0393FF3D3640119AF9435CE3DB3C8A449D69788DAE61",
+      "no_smuggle_status": "DETERMINISTIC_RANK_HEAD_EXTRACTION_NO_SMUGGLE_PASS",
+      "selected_lane": "LANE_A_CONTROLLER_NATIVE_DETERMINISTIC_RANK_HEAD_EXTRACTION",
+      "selected_outcome": "IMPLEMENT_DETERMINISTIC_RANK_HEAD_EXTRACTION",
+      "stage_specific_status": "BALANCED_OPAQUE_TRANSFORM_STAGE_SINGLETON_RESOLUTION_REPLICATED_ACROSS_TWO_PRIVATE_BINDINGS_ON_FROZEN_GEOMETRY"
+    },
+    "schema_version": 1,
+    "static_boundary": {
+      "existing_private_roots_modified": false,
+      "historical_reclassification": false,
+      "live_authority_created": false,
+      "live_execution_authorized": false,
+      "new_private_secret_created": false,
+      "run_reservations": [],
+      "runtime_integration_authorized": false
+    },
+    "status": "static-design-only"
+  },
+  "execution_state": {
+    "live_authority_created": false,
+    "live_execution_performed": false,
+    "model_requests_issued": 0,
+    "new_private_secret_created": false,
+    "run_ids_reserved": [],
+    "sidecar_launched": false
+  },
+  "implementation_binding": {
+    "files": [
+      {
+        "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2.py",
+        "sha256": "55BAFFCB7023F0B61909C728685EAA7BC4CA1C65CE3147A123D04DA4CDE31BC4"
+      },
+      {
+        "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_core.py",
+        "sha256": "9B82BBDAA7E600CCA3DFBBDAFEE4DF5DB20E5B5D11BFFB09CB15FC420FD6AC05"
+      },
+      {
+        "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2.py",
+        "sha256": "7AD2BDB80CF513CEBCC8E729DE035AC6733BA5C04ADBAFA8ED1077B7ACDB7D22"
+      },
+      {
+        "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_core.py",
+        "sha256": "F526138E464D4C0360DDA29C77382A65B82A82B07AD6C054AC0DE6395B9D3A02"
+      }
+    ],
+    "kind": "normalized-source-bundle-sha256-v1",
+    "sha256": "07B3F6BFD59909D369F794C07D1CEEBEE5CA4A27C668F44BD18733F03173688F"
+  },
+  "schema_version": 1,
+  "static_verification": {
+    "auditors": {
+      "historical_compatibility_auditor": "PASS",
+      "rank_head_no_smuggle_auditor": "PASS"
+    },
+    "authorities_created": 0,
+    "compatibility_tests": {
+      "binding_1_balanced": "16/16 passed",
+      "binding_2_balanced": "16/16 passed",
+      "ck0_existing": "12/12 passed",
+      "evaluator_lock": "27/27 passed",
+      "forensic": "5/5 passed",
+      "private_fact_guard": "6/6 passed",
+      "publication_guard": "6/6 passed"
+    },
+    "connector_head": "313424eb28f55511138948436bcb977a3925b72c",
+    "extract_model_request": false,
+    "focused_tests": {
+      "core_entry": "12/12 passed",
+      "wrapper_entry": "13/13 passed"
+    },
+    "historical_custody": "pass",
+    "historical_matrix": {
+      "binding_1_delete_a": "non-singleton 3/5 receipt-verified",
+      "binding_1_delete_b": "non-singleton 3/5 receipt-verified",
+      "binding_1_full": "singleton 5/5 receipt-verified",
+      "binding_2_full": "singleton 5/5 receipt-verified",
+      "status": "pass"
+    },
+    "implementation_binding_sha256": "07B3F6BFD59909D369F794C07D1CEEBEE5CA4A27C668F44BD18733F03173688F",
+    "implementation_files": [
+      {
+        "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2.py",
+        "sha256": "55BAFFCB7023F0B61909C728685EAA7BC4CA1C65CE3147A123D04DA4CDE31BC4"
+      },
+      {
+        "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_core.py",
+        "sha256": "9B82BBDAA7E600CCA3DFBBDAFEE4DF5DB20E5B5D11BFFB09CB15FC420FD6AC05"
+      },
+      {
+        "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2.py",
+        "sha256": "7AD2BDB80CF513CEBCC8E729DE035AC6733BA5C04ADBAFA8ED1077B7ACDB7D22"
+      },
+      {
+        "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_core.py",
+        "sha256": "F526138E464D4C0360DDA29C77382A65B82A82B07AD6C054AC0DE6395B9D3A02"
+      }
+    ],
+    "live_model_requests": 0,
+    "logical_stage_count": 6,
+    "model_request_count": 5,
+    "no_smuggle": "pass",
+    "private_value_scan": {
+      "cross_binding_correspondence": "pass",
+      "model_visible_values": "pass",
+      "tracked_private_bytes": "pass"
+    },
+    "protected_starting_sha": "a774ab44c42e31ac500d13bba9accdceb5ef5b9b",
+    "receipt_schema_sha256": "FEB391B98051993712D44552A3DA3FC32D319A856F779B44EEC1449A98CE3B18",
+    "run_reservations": 0,
+    "secrets_created": 0,
+    "selection_order": [
+      "verify-transform-artifact-shape",
+      "verify-transform-run-bound-commitment",
+      "freeze-ranking-position-zero",
+      "bind-frozen-alias-rank-transform-commitment-and-ranking-length",
+      "consult-private-mapping-after-selection",
+      "score-frozen-alias-only",
+      "construct-deterministic-extraction-receipt",
+      "verify-deterministic-extraction-receipt"
+    ],
+    "sidecar_launches": 0,
+    "status": "pass",
+    "v2_carrier_content_sha256": "44DCC744FEDB0282C4022E70E03C50FEFD54D7FDBF3ED67EAC8BC76008C0A43F",
+    "v2_carrier_differs_from_v1": true,
+    "v2_carrier_pristine": true,
+    "v2_carrier_root_sha256": "4B82F399ACE797BDF40012ABB4D1254021F838B58BAED66153D4042EF3C7585C"
+  },
+  "status": "static-preregistered"
+}

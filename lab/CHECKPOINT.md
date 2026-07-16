@@ -1,5 +1,22 @@
 # Checkpoint Ledger
 
+## Checkpoint 2: Deterministic rank-head CK0 v2 statically complete
+
+**Status:** STATIC IMPLEMENTATION COMPLETE / DISTINCT V2 CARRIER / EXACT FOUR-FILE PREREGISTRATION / AUDIT `PASS / PASS` / ZERO RUN-AUTHORITY-SECRET-LIVE ACTIVITY
+
+- [x] Admit protected main `a774ab44c42e31ac500d13bba9accdceb5ef5b9b`, exact connector head `313424eb28f55511138948436bcb977a3925b72c`, clean stable/candidate custody, exact historical evidence, valid binding-2 consumed receipt, unchanged ignored private roots, free port 9494, healthy stable service, and no v2 runtime, secret, run ID, reservation, or authority.
+- [x] Copy only the connector branch's four added files without its incremental history, then independently repair forensic-custody binding, explicit receipt stage identity, carrier parent/operator/future-runtime laws, complete no-smuggle invariants, required tamper/fail-closed coverage, and the weaker alternate core preregistration path. Frozen v1 runtime and both v1 preregistrations remain unchanged.
+- [x] Bind distinct carrier `ck0:balanced-opaque-relational-carrier-v2-rank-head`, content SHA-256 `44DCC744FEDB0282C4022E70E03C50FEFD54D7FDBF3ED67EAC8BC76008C0A43F`, and root SHA-256 `4B82F399ACE797BDF40012ABB4D1254021F838B58BAED66153D4042EF3C7585C`. Preserve six logical stages, exactly five model requests, one future physical slot/sidecar epoch, and no extract request or response schema.
+- [x] Freeze transform rank zero only after shape and run-bound commitment verification, bind the exact alias/rank/transform commitment/ranking length before private lookup, then map and score only the frozen alias. Bind receipt schema SHA-256 `FEB391B98051993712D44552A3DA3FC32D319A856F779B44EEC1449A98CE3B18` with stage `extract-rank-head-v2` and run-key HMAC verification.
+- [x] Pass focused tests 13 / 13 and 12 / 12, changed-file compilation, exact carrier-pristine reconstruction, and the read-only real private matrix: binding-1 full `5/5`, delete-A `3/5`, delete-B `3/5`, binding-2 full `5/5`; every in-memory receipt verifies and no alias, ranking, map, root, key, or receipt is persisted.
+- [x] Receive final `PASS / PASS` from exactly two read-only auditors. The one blocker was the alternate weaker core preregistration surface; the bounded repair made core generation fail closed to the authoritative wrapper, focused tests were rerun, and the one permitted affected-scope re-audit returned `PASS`.
+- [x] Bind the exact four implementation files at SHA-256 `07B3F6BFD59909D369F794C07D1CEEBEE5CA4A27C668F44BD18733F03173688F`. Preregistration artifact SHA-256 is `F208A55C48EBE316564F1FFEE66857F5388503F3911FAC65AAF29159BACACB31`, canonical document SHA-256 is `4CF4188EE83AE7B2A16422A022CECC1B1C77F5C47971A4A44B1A5746F2A10CD8`, and design-contract SHA-256 is `15B7363BBC9FDA14BC270C4236DCB2BB5950926C013CB3BE6BEB74EEE4A0C8AB`.
+- [x] Preserve `BALANCED_OPAQUE_TRANSFORM_STAGE_SINGLETON_RESOLUTION_REPLICATED_ACROSS_TWO_PRIVATE_BINDINGS_ON_FROZEN_GEOMETRY` only with qualifier `EXECUTION_PREREGISTRATION_SEMANTIC_IDENTITY_VERIFIED_BYTE_SERIALIZATION_UNRECOVERED`. Binding-2 remains historically `BALANCED_OPAQUE_RELATIONAL_COLLAPSED`; no claim expands.
+
+**Next exact action:** `Separately authorize a static deterministic-rank-head v2 runtime-integration and run-design operation; no live execution.` No run ID, reservation, secret, authority, integration, inference, sidecar, retry, deletion control, or live action is authorized.
+
+---
+
 ## Checkpoint 2: Binding-2 custody and transform/extraction split adjudicated
 
 **Status:** `BYTE_ARTIFACT_COMMITMENT_VERIFIED_SERIALIZATION_UNRECOVERED` / VERDICT B / AUDIT `PASS / PASS / PASS` / LANE A SELECTED / QUALIFIED TRANSFORM-STAGE STATUS / NO LIVE AUTHORITY
