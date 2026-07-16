@@ -12,16 +12,20 @@ import catalytic_kernel_0_balanced_rank_head_v2_publication as publication
 import catalytic_kernel_0_balanced_rank_head_v2_run_design as run_design
 
 
-def sample_record() -> dict:
+def sample_record(run_id: str = publication.RUN_ID) -> dict:
+    spec = publication.PUBLICATION_SPECS[run_id]
     return {
-        "id": publication.RECORD_ID,
+        "id": spec["record_id"],
         "checkpoint": "test",
         "hypothesis": "test",
         "intervention": "test",
         "baseline_commit": "1" * 40,
         "candidate_commit": None,
         "model_hash": "2" * 64,
-        "configuration": {"run_id": publication.RUN_ID},
+        "configuration": {
+            "run_id": run_id,
+            "source_binding": spec["source_binding"],
+        },
         "metrics_before": {},
         "metrics_after": {
             "terminal_classification": publication.CLASSIFICATION,
@@ -34,6 +38,35 @@ def sample_record() -> dict:
             "causal_replication_across_bindings_locked": True,
         },
         "verdict": "accept",
+        "next_boundary": "test",
+    }
+
+
+def sample_adjudication() -> dict:
+    return {
+        "schema_version": 1,
+        "adjudication_id": publication.ADJUDICATION_ID,
+        "status": publication.ADJUDICATION_STATUS,
+        "scope": "test",
+        "shared_frozen_identity": {},
+        "binding_evidence": [
+            {"source_binding": "binding-1"},
+            {"source_binding": "binding-2"},
+        ],
+        "cross_binding_invariants": {
+            "same_frozen_model_binary_carrier_and_runtime_law": True,
+            "two_distinct_private_binding_custody_roots": True,
+            "two_independent_run_keys": True,
+            "both_full_information_runs_completed": True,
+            "both_completed_six_stages_and_five_accepted_model_responses": True,
+            "both_transform_artifacts_verified_and_heads_matched_own_private_singletons": True,
+            "both_rank_zero_selections_frozen_before_private_mapping": True,
+            "both_extractions_selected_own_private_singletons_at_five_of_five": True,
+            "both_restoration_and_cleanup_checks_passed": True,
+            "both_archives_and_canonical_publications_verified": True,
+        },
+        "supported_claims": list(publication.SUPPORTED_CLAIMS),
+        "locked_claims": dict(publication.LOCKED_CLAIMS),
         "next_boundary": "test",
     }
 
@@ -61,13 +94,33 @@ class RankHeadV2PublicationTests(unittest.TestCase):
         self.assertNotIn("ck0-balanced-v2-rank-head-b1-full-r2", source)
         self.assertNotIn("FE63B84FDFBD", source)
 
+    def test_publication_specs_are_exact_and_distinct(self) -> None:
+        self.assertEqual(
+            publication.PUBLICATION_SPECS[publication.RUN_ID]["record_id"],
+            "neo-exp-0040",
+        )
+        self.assertEqual(
+            publication.PUBLICATION_SPECS[
+                publication.integration.BINDING_2_RUN_ID
+            ]["record_id"],
+            "neo-exp-0041",
+        )
+        self.assertEqual(
+            {item["run_ordinal"] for item in publication.PUBLICATION_SPECS.values()},
+            {1, 2},
+        )
+
     def test_record_requires_exact_split_layout_and_canonical_size(self) -> None:
-        record = sample_record()
-        publication._validate_record_shape(record)
-        publication.validate_disclosure_boundary(record)
-        line = publication.canonical_json_text(record)
-        self.assertLessEqual(len(line.encode("utf-8")), publication.MAX_RECORD_BYTES)
-        self.assertNotIn("\n", line)
+        for run_id in publication.PUBLICATION_SPECS:
+            with self.subTest(run_id=run_id):
+                record = sample_record(run_id)
+                publication._validate_record_shape(record, run_id)
+                publication.validate_disclosure_boundary(record)
+                line = publication.canonical_json_text(record)
+                self.assertLessEqual(
+                    len(line.encode("utf-8")), publication.MAX_RECORD_BYTES
+                )
+                self.assertNotIn("\n", line)
 
     def test_record_requires_both_cross_binding_claim_locks(self) -> None:
         for field in (
@@ -99,18 +152,24 @@ class RankHeadV2PublicationTests(unittest.TestCase):
             publication._require_source_claim_boundary(manifest, result)
 
     def test_exact_split_record_validates(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            repository = Path(temporary)
-            record = sample_record()
-            self.write_ledger(repository, [record])
-            result = publication.validate_ledger_record(
-                repository,
-                record,
-                require_predecessor_gate=False,
-            )
-        self.assertEqual(result["status"], "pass")
-        self.assertEqual(result["layout"], "split-experiment-record")
-        self.assertEqual(result["ledger_line"], 1)
+        for run_id in publication.PUBLICATION_SPECS:
+            with self.subTest(run_id=run_id), tempfile.TemporaryDirectory() as temporary:
+                repository = Path(temporary)
+                record = sample_record(run_id)
+                self.write_ledger(repository, [record])
+                result = publication.validate_ledger_record(
+                    repository,
+                    record,
+                    run_id=run_id,
+                    require_predecessor_gate=False,
+                )
+                self.assertEqual(result["status"], "pass")
+                self.assertEqual(result["layout"], "split-experiment-record")
+                self.assertEqual(result["ledger_line"], 1)
+                self.assertEqual(
+                    result["record_id"],
+                    publication.PUBLICATION_SPECS[run_id]["record_id"],
+                )
 
     def test_duplicate_record_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -119,7 +178,7 @@ class RankHeadV2PublicationTests(unittest.TestCase):
             self.write_ledger(repository, [record, record])
             with self.assertRaisesRegex(
                 publication.RankHeadV2PublicationError,
-                "exactly one active rank-head-v2 publication",
+                "exactly one selected rank-head-v2 publication",
             ):
                 publication.validate_ledger_record(
                     repository,
@@ -153,7 +212,7 @@ class RankHeadV2PublicationTests(unittest.TestCase):
             self.write_ledger(repository, [observed])
             with self.assertRaisesRegex(
                 publication.RankHeadV2PublicationError,
-                "exactly one active rank-head-v2 publication",
+                "exactly one selected rank-head-v2 publication",
             ):
                 publication.validate_ledger_record(
                     repository,
@@ -239,6 +298,42 @@ class RankHeadV2PublicationTests(unittest.TestCase):
                     record,
                     require_predecessor_gate=False,
                 )
+
+    def test_adjudication_requires_exact_supported_and_locked_claims(self) -> None:
+        document = sample_adjudication()
+        publication._validate_adjudication_shape(document)
+        self.assertEqual(
+            document["supported_claims"],
+            [
+                "END_TO_END_CROSS_BINDING_REPLICATION",
+                "DETERMINISTIC_RANK_HEAD_EXTRACTION_REPLICATED_ACROSS_TWO_PRIVATE_BINDINGS",
+            ],
+        )
+        self.assertEqual(
+            document["locked_claims"]["GENERAL_CATALYTIC_INFERENCE"],
+            "LOCKED",
+        )
+        self.assertFalse(document["locked_claims"]["automatic_promotion"])
+
+    def test_adjudication_rejects_a_false_replication_invariant(self) -> None:
+        document = sample_adjudication()
+        document["cross_binding_invariants"][
+            "both_extractions_selected_own_private_singletons_at_five_of_five"
+        ] = False
+        with self.assertRaisesRegex(
+            publication.RankHeadV2PublicationError,
+            "replication evidence is incomplete",
+        ):
+            publication._validate_adjudication_shape(document)
+
+    def test_adjudication_disclosure_boundary_rejects_correspondence(self) -> None:
+        document = sample_adjudication()
+        document["cross_binding_correspondence"] = {"left": "right"}
+        with self.assertRaisesRegex(
+            publication.RankHeadV2PublicationError,
+            "forbidden field",
+        ):
+            publication.validate_disclosure_boundary(document)
 
 
 if __name__ == "__main__":

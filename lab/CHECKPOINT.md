@@ -1,17 +1,17 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Binding-1 rank-head v2 R3 published; binding-2 prepared
+## Checkpoint 2: Rank-head v2 cross-binding replication published
 
-**Status:** R3 CONSUMED ONCE / VISIBLE `5/5` / BYTE-EXACT ARCHIVE VERIFIED / `neo-exp-0040` PUBLISHED / BINDING-2 UNEXECUTED AND NOT AUTOMATICALLY AUTHORIZED
+**Status:** BINDING-1 + BINDING-2 CONSUMED ONCE / BOTH VISIBLE `5/5` / BOTH BYTE-EXACT ARCHIVES VERIFIED / `neo-exp-0040` + `neo-exp-0041` PUBLISHED / END-TO-END CROSS-BINDING REPLICATION SUPPORTED
 
-- [x] Execute `ck0-balanced-v2-rank-head-b1-full-r3` once from `358c0e2e86136e47647a83cf60e75a6c1078a2fe` with no retry. Complete six stages, five model responses, five leases, one physical slot, one sidecar epoch, zero active leases, clean restoration, cleanup, and terminal classification `BALANCED_OPAQUE_RANK_HEAD_V2_VISIBLE`.
-- [x] Verify deterministic controller extraction froze rank zero before private mapping, consumed transform commitment `73157ACB6DA448D5D42367F4393987C1B52365E7022BFF904230869446ADE392`, selected the private singleton, and scored `5/5` without an extraction model request.
-- [x] Preserve receipt `ABEEBD217119FC49059EEEECBD418867D6C509C44EA066A9E0A3613241332D7C`, manifest `C7B4BFFF37C77833541BCAA65E43180C69EB073D73368E11BDF81231DDC8254E`, result `A4CFEB142F5E1CE538B9724D3C8ED9215B6E2351C6EEC2AD35EE79F01C74AA32`, and closure `E43CFB0505F316AF877712C31B82D8B73BAD379057A38119B2CC911456BF6BA7` in verified content-addressed bundle `9566F5D1CF9797496ACB9F4716CE68FBDAE0CE5974E90CEE1F6CAA1A66941349`.
-- [x] Publish one canonical split-schema `neo-exp-0040` record at line 53 with exact record SHA-256 `0B167E49C9CA83BD57893B792CA729E0F33F154E27B0CEDD4B172110FCB75C16`. Match a fresh independent render and preserve the disclosure boundary.
-- [x] Keep `ck0-balanced-v2-rank-head-b2-full-r1` unexecuted and without authority. Require its future fresh authority to HMAC-bind the synchronized publication commit and canonical record SHA-256.
-- [x] Keep cross-binding replication, binding-2 parent dependence, causal replication, general catalytic inference, task advantage, superiority, SOTA, transfer, Deep, restart persistence, and automatic promotion locked.
+- [x] Preserve binding-1 `ck0-balanced-v2-rank-head-b1-full-r3` exactly: one execution, six stages, five responses and leases, deterministic rank-zero extraction before private mapping, own-private-singleton match, `5/5`, clean restoration/cleanup, canonical `neo-exp-0040` at line 53, record SHA-256 `0B167E49C9CA83BD57893B792CA729E0F33F154E27B0CEDD4B172110FCB75C16`, and archive `9566F5D1CF9797496ACB9F4716CE68FBDAE0CE5974E90CEE1F6CAA1A66941349`.
+- [x] Verify binding-2 authority cryptographically binds predecessor commit `e71ee047cbc826c0ed5023a5f0fef2900a1178a8` and the exact binding-1 record SHA-256. Preserve its one consumed invocation, no retry, no automatic follow-on, five leases at maximum concurrency one, zero active leases, and five successful cache admissions.
+- [x] Verify binding-2 receipt `425828C3CB0819F05BA556A8CCBA1602C90F45311FDB677200DB14F3BC42A19B`, manifest `23186EB4F48ABD262B3FF20933E0B1737D582B929AAC1E0048D16533EFAFD7A6`, result `D7BFE06CED70B7544EB5F6D81EC64AE901CE6CD86DE82C72BCC4C5E395290BD9`, closure `B09E6233720950648037C674E42C920F27150532D5FB957A55586F0DC9303CB5`, and archive `EBD8F01971C0D4BEE945A516D515645EF9F8F7BDC16F03D15BE7990F476536ED` byte-exactly. Its transform commitment is `C3B6DD4D9F5E16D466C8C00D5AB7833A0D7D70CEECDF4A024713620FC5FEDAC4`; deterministic extraction commitment is `2DF17237D3451837EC5CEB92AC832E54A9E64752387319071B1F880F533026D4`.
+- [x] Publish canonical split record `neo-exp-0041` at line 54 with SHA-256 `D6DF5C9B4FFF825F236AB616EE8292CEAEC8F9905E9C47CF57B29F70F68F87EE`. Match a fresh independent render, disclose no private correspondence, and preserve binding-1 byte-for-byte.
+- [x] Publish static adjudication artifact `lab/ck0_balanced_opaque_rank_head_v2_cross_binding_adjudication_1.json`, SHA-256 `9473E1052DBE72CEABCB70EBA7787266DDF350843F01774A3F363213F29D4961`. Support only `END_TO_END_CROSS_BINDING_REPLICATION` and `DETERMINISTIC_RANK_HEAD_EXTRACTION_REPLICATED_ACROSS_TWO_PRIVATE_BINDINGS`.
+- [x] Keep binding-2 parent dependence, causal replication, general two-parent necessity, transfer, general catalytic inference, task advantage, superiority, SOTA, broader/restart HoloState, Deep, and automatic promotion locked.
 
-**Next exact action:** `Separately authorize ck0-balanced-v2-rank-head-b2-full-r1 with a fresh external authority ID bound to the exact publication commit and canonical neo-exp-0040 SHA-256 0B167E49C9CA83BD57893B792CA729E0F33F154E27B0CEDD4B172110FCB75C16.`
+**Next exact action:** `Design the minimum cross-binding causal test required to determine whether parent dependence replicates under binding-2, without rerunning either completed full-information experiment.`
 
 ---
 
