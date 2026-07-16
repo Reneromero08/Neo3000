@@ -61,6 +61,37 @@ class RankHeadV2Tests(unittest.TestCase):
         self.assertFalse(extraction["model_request_present"])
         self.assertEqual(contract["static_boundary"]["run_reservations"], [])
 
+    def test_v2_carrier_removes_model_authored_extraction(self) -> None:
+        carrier = rank_head.build_v2_carrier()
+        root = __import__("json").loads(carrier["carrier_root"])
+        self.assertEqual(carrier["carrier_id"], rank_head.V2_CARRIER_ID)
+        self.assertNotEqual(carrier["carrier_id"], balanced.CARRIER_ID)
+        self.assertEqual(
+            set(root["response_schemas"]),
+            set(rank_head.MODEL_REQUEST_STAGES),
+        )
+        self.assertNotIn("extract", root["response_schemas"])
+        self.assertEqual(
+            root["kernel_instructions"]["cycle"],
+            list(rank_head.LOGICAL_STAGES),
+        )
+        self.assertFalse(
+            root["kernel_instructions"]["extraction_contract"][
+                "model_request_present"
+            ]
+        )
+        for request_id in rank_head.MODEL_REQUEST_STAGES:
+            schema = rank_head.v2_response_schema(request_id)
+            if request_id in {"borrow", "restore"}:
+                self.assertEqual(
+                    schema["properties"]["carrier_id"]["const"],
+                    rank_head.V2_CARRIER_ID,
+                )
+            else:
+                self.assertEqual(schema, balanced.response_schema(request_id))
+        with self.assertRaises(rank_head.RankHeadDesignError):
+            rank_head.v2_response_schema("extract")
+
     def test_rank_head_winner_is_frozen_and_scored_after_selection(self) -> None:
         frozen = rank_head.freeze_rank_head_selection(
             self.runtime,
@@ -133,12 +164,16 @@ class RankHeadV2Tests(unittest.TestCase):
                 target = temp_root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(source.read_bytes())
-            scripts = temp_root / "scripts"
-            scripts.mkdir(exist_ok=True)
-            module_path = scripts / "catalytic_kernel_0_balanced_rank_head_v2.py"
-            test_path = scripts / "test_catalytic_kernel_0_balanced_rank_head_v2.py"
-            module_path.write_bytes(Path(rank_head.__file__).read_bytes())
-            test_path.write_bytes(Path(__file__).read_bytes())
+            copied = {
+                "scripts/catalytic_kernel_0_balanced_rank_head_v2.py": Path(rank_head.__file__),
+                "scripts/catalytic_kernel_0_balanced_rank_head_v2_core.py": Path(rank_head._core.__file__),
+                "scripts/test_catalytic_kernel_0_balanced_rank_head_v2.py": Path(__file__).with_name("test_catalytic_kernel_0_balanced_rank_head_v2.py"),
+                "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_core.py": Path(__file__).with_name("test_catalytic_kernel_0_balanced_rank_head_v2_core.py"),
+            }
+            for relative, source in copied.items():
+                target = temp_root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(source.read_bytes())
             audits = {
                 "rank_head_no_smuggle_auditor": "PASS",
                 "historical_compatibility_auditor": "PASS",
@@ -146,10 +181,7 @@ class RankHeadV2Tests(unittest.TestCase):
             verification = {"status": "pass", "live_model_requests": 0}
             document = rank_head.build_preregistration_document(
                 repository=temp_root,
-                implementation_paths=[
-                    "scripts/catalytic_kernel_0_balanced_rank_head_v2.py",
-                    "scripts/test_catalytic_kernel_0_balanced_rank_head_v2.py",
-                ],
+                implementation_paths=list(rank_head.REQUIRED_IMPLEMENTATION_PATHS),
                 audit_outcomes=audits,
                 static_verification=verification,
             )
@@ -162,6 +194,19 @@ class RankHeadV2Tests(unittest.TestCase):
             self.assertEqual(projection["run_ids_reserved"], [])
             self.assertFalse(projection["live_execution_authorized"])
             self.assertTrue(path.is_file())
+
+    def test_incomplete_implementation_binding_is_rejected(self) -> None:
+        repository = Path(__file__).resolve().parents[1]
+        with self.assertRaisesRegex(
+            rank_head.RankHeadDesignError,
+            "exactly the four authorized files",
+        ):
+            rank_head.build_preregistration_document(
+                repository=repository,
+                implementation_paths=[
+                    "scripts/catalytic_kernel_0_balanced_rank_head_v2.py"
+                ],
+            )
 
     def test_receipt_schema_is_exact_and_metadata_only(self) -> None:
         schema = rank_head.deterministic_extraction_receipt_schema()
