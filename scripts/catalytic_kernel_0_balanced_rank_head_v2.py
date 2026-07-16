@@ -18,6 +18,12 @@ from catalytic_kernel_0_balanced_rank_head_v2_core import *  # noqa: F401,F403
 
 balanced = _core.balanced
 V2_CARRIER_ID = "ck0:balanced-opaque-relational-carrier-v2-rank-head"
+REQUIRED_IMPLEMENTATION_PATHS = (
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2.py",
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2_core.py",
+    "scripts/test_catalytic_kernel_0_balanced_rank_head_v2.py",
+    "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_core.py",
+)
 
 
 def v2_response_schema(request_id: str) -> dict[str, Any]:
@@ -128,6 +134,15 @@ def build_design_contract(repository: Path) -> dict[str, Any]:
     return contract
 
 
+def _require_exact_implementation_paths(implementation_paths: Sequence[str]) -> None:
+    observed = tuple(sorted(implementation_paths))
+    expected = tuple(sorted(REQUIRED_IMPLEMENTATION_PATHS))
+    if observed != expected or len(set(implementation_paths)) != len(implementation_paths):
+        raise RankHeadDesignError(
+            "v2 implementation binding must contain exactly the four authorized files"
+        )
+
+
 def build_preregistration_document(
     *,
     repository: Path,
@@ -135,6 +150,7 @@ def build_preregistration_document(
     audit_outcomes: Mapping[str, str] | None = None,
     static_verification: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    _require_exact_implementation_paths(implementation_paths)
     document = {
         "schema_version": DESIGN_SCHEMA_VERSION,
         "status": "static-preregistered",
