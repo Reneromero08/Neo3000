@@ -11,14 +11,14 @@ import catalytic_kernel_0_balanced_rank_head_v2_run_design as design
 
 
 class RankHeadV2RunDesignTests(unittest.TestCase):
-    def test_exact_twelve_file_binding(self) -> None:
+    def test_exact_fourteen_file_binding(self) -> None:
         design.require_exact_implementation_paths(
             design.REQUIRED_IMPLEMENTATION_PATHS
         )
-        self.assertEqual(len(design.REQUIRED_IMPLEMENTATION_PATHS), 12)
+        self.assertEqual(len(design.REQUIRED_IMPLEMENTATION_PATHS), 14)
         with self.assertRaisesRegex(
             design.RankHeadV2RunDesignError,
-            "exactly twelve files",
+            "exactly fourteen files",
         ):
             design.require_exact_implementation_paths(
                 design.REQUIRED_IMPLEMENTATION_PATHS[:-1]
@@ -136,7 +136,7 @@ class RankHeadV2RunDesignTests(unittest.TestCase):
         self.assertIn("rank_head_v2_authority", design.AUTHORITY_RECEIPT_TEMPLATE)
         self.assertIn("<run-id>", design.AUTHORITY_RECEIPT_TEMPLATE)
 
-    def test_complete_surface_contains_authority_and_live_modules(self) -> None:
+    def test_complete_surface_contains_authority_live_and_entrypoint(self) -> None:
         paths = set(design.REQUIRED_IMPLEMENTATION_PATHS)
         self.assertIn(
             "scripts/catalytic_kernel_0_balanced_rank_head_v2_authority.py",
@@ -144,6 +144,10 @@ class RankHeadV2RunDesignTests(unittest.TestCase):
         )
         self.assertIn(
             "scripts/catalytic_kernel_0_balanced_rank_head_v2_live.py",
+            paths,
+        )
+        self.assertIn(
+            "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
             paths,
         )
 
