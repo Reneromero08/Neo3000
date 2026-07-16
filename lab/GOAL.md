@@ -1,6 +1,22 @@
 # Active Goal
 
-## Checkpoint 2: Rank-head CK0 v2 authority versioned; pre-consumption run retired
+## Checkpoint 2: Harden rank-head v2 evidence custody and prepare binding-1 r3
+
+Run `ck0-balanced-v2-rank-head-b1-full-r2` consumed its one-shot authority and reported a successful visible terminal result, but two state-dependent tests later executed the production failure-closure path against the real checkout and overwrote its ignored result and closure. The exact original result/closure bytes are unavailable. R2 is therefore retired as `SUCCESS_REPORTED_EVIDENCE_CUSTODY_LOST_AFTER_TEST_OVERWRITE`: it cannot be rerun, cannot be published, and cannot unlock binding-2. No `neo-exp-0040` record exists.
+
+The unchanged r2 authority receipt `865281FD36E530277A11A89500206DBB77D9FA8C7ABEBA21A291777BC73546F1` and manifest `6D11B89F6B96AA55D8FE1AE6C21D6FDCE8FF33A22B0C5DA9475F4D7B9E3B9702` remain preserved. The current forensic result is `E81034DB588B4CF092EADBA9B46668A68D6C366BE7B473C483BDB7A1C28809B8`; the current closure is `1C269E1FCDCD707B07C8D8DBD456337E5446E6670AEB1925EE1A1A368F1EE44C`. Those four exact current files are independently verified in ignored content-addressed bundle `14A0DECC79AE860073ABB92C260739F1BEBA4D2A7DC38A9E8E9EB50922BBC101`. The original reported hashes remain recorded only as unavailable historical identities: result `FE63B84FDFBD16386838F017DA572203631AE38EEE0AD3E7A565E2D6732A57EE`, closure `C47E49988543A365A306566416B32EE59871674F65C7A4F332D290E451CE92CD`.
+
+All mutation-capable tests now use explicit temporary repositories and repository-owned temporary state roots. A test-process guard rejects the real checkout before v2 state access, failure closure refuses to overwrite complete or failed terminal evidence, and every future terminal closure is snapshotted into an ignored versioned content-addressed archive with exclusive creation, exact size/hash binding, archived-receipt cryptographic verification, and byte-exact restore only to missing or already-identical destinations. The publication validator contains no r2 result constants and is retained only for a future valid r3 result.
+
+Fresh binding-1 run `ck0-balanced-v2-rank-head-b1-full-r3` is the only next run. Binding-2 remains `ck0-balanced-v2-rank-head-b2-full-r1` and now requires an exactly published visible r3 predecessor. Both private roots and alias mappings remain unchanged. No authority, receipt, sidecar, model request, live execution, retry, or claim expansion occurred in this repair.
+
+The active authority schemas are `rank-head-v2-external-one-shot-v3` and `rank-head-v2-authority-consumption-v3`, with exact object/receipt schema hashes `5616C6D5ACEDD569D9DBF052890C48A44B9C2600FC5C536A2B18F4F5F02A07BB` and `7E44D619F5BCC4FC24F41E7CFE81946B7073C35349F6322F892AE0C5BC396A52`. R3 run-key commitment is `7B7E30422A76FFE057B381B586F21AF6F9A68563F5A2282136F3E217F1B8392C`; binding-2 remains `FEC400325777606A697687F990A24968B6AE787EDF444339A1639AE9BCFA8AC1`. A binding-2 authority must HMAC-bind r3's committed publication commit and canonical record SHA-256 read from clean synchronized `HEAD = main = origin/main`.
+
+The exact 18-file implementation binding is `E4D92CCF46ED5DF123262CF954D3D2F42A4F907B738779FFD90B00EA6BF72DA3`. The regenerated run-design artifact/document hashes are `C1D648039574F866797F519AEEC9A77C6215B682B2346343DF2BA892BD8D015E` and `9D8EBFF02A327C1169DEB294B8459D64AF96284C61AC9A81323E371307E20D95`.
+
+**Next exact action:** `Separately authorize only ck0-balanced-v2-rank-head-b1-full-r3 with a fresh external authority ID bound to the exact hardened protected commit.`
+
+## Historical checkpoint: Rank-head CK0 v2 authority versioned; pre-consumption run retired
 
 The repaired deterministic rank-head CK0 v2 package is complete at the static boundary. The exact 16-file normalized implementation binding is `EDD064D36DD8FB123B1D095A2C613540C67BB3DCD71F6F23C6F565AAEAB4A837`. Run-design artifact SHA-256 is `C4A0378BCD04E2A2F823049A15FE63EE4E2E4BC6519215DB21B528460683EAEA`; canonical document SHA-256 is `5712D3EC5436BCF45ECD763C2E05D742FBE2D7C72BB91EBEDCF5769AE362A5CF`. The canonical public CLI is now the sole supported bootstrap; direct lower-level script execution rejects before parsing, admission, authority consumption, or mutation.
 

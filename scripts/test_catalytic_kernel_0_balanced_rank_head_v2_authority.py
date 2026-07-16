@@ -33,10 +33,20 @@ STATIC_PROJECTION = {
 COMMIT = "1" * 40
 MODEL_SHA = "3" * 64
 BINARY_SHA = "4" * 64
+PREDECESSOR_COMMIT = "5" * 40
+PREDECESSOR_RECORD_SHA = "6" * 64
+PREDECESSOR_GATE = {
+    "publication": {
+        "layout": "split-experiment-record",
+        "run_id": integration.BINDING_1_RUN_ID,
+        "commit": PREDECESSOR_COMMIT,
+        "record_sha256": PREDECESSOR_RECORD_SHA,
+    }
+}
 
 
 def synthetic_private(run_id: str) -> balanced.PrivateBinding:
-    spec = integration.run_spec(run_id)
+    spec = integration.known_run_spec(run_id)
     source = integration.source_configuration(spec)
     secret = bytes(range(32)) if spec.ordinal == 1 else bytes(reversed(range(32)))
     return integration.runtime_private_from_source(
@@ -58,7 +68,7 @@ def _consume_worker(
         mock.patch.object(
             authority,
             "_runtime_private",
-            side_effect=lambda _repository, spec: synthetic_private(spec.run_id),
+            side_effect=lambda _repository, spec, **_kwargs: synthetic_private(spec.run_id),
         ),
         mock.patch.object(
             run_design,
@@ -69,6 +79,11 @@ def _consume_worker(
             v2,
             "validate_preregistration",
             return_value=STATIC_PROJECTION,
+        ),
+        mock.patch.object(
+            run_design,
+            "require_binding_1_v2_terminal_visible",
+            return_value=PREDECESSOR_GATE,
         ),
     ):
         try:
@@ -96,7 +111,7 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
             mock.patch.object(
                 authority,
                 "_runtime_private",
-                side_effect=lambda _repository, spec: synthetic_private(spec.run_id),
+                side_effect=lambda _repository, spec, **_kwargs: synthetic_private(spec.run_id),
             ),
             mock.patch.object(
                 run_design,
@@ -107,6 +122,11 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
                 v2,
                 "validate_preregistration",
                 return_value=STATIC_PROJECTION,
+            ),
+            mock.patch.object(
+                run_design,
+                "require_binding_1_v2_terminal_visible",
+                return_value=PREDECESSOR_GATE,
             ),
         ):
             yield
@@ -174,6 +194,9 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
             self.assertEqual(value.run_id, integration.BINDING_1_RUN_ID)
             self.assertEqual(value.run_ordinal, 1)
             self.assertEqual(value.source_binding, "binding-1")
+            self.assertIsNone(value.predecessor_run_id)
+            self.assertIsNone(value.predecessor_publication_commit)
+            self.assertIsNone(value.predecessor_publication_record_sha256)
             self.assertEqual(value.carrier_id, v2.V2_CARRIER_ID)
             self.assertEqual(value.state_root, run_design.STATE_ROOT)
             authority.validate_external_authority(
@@ -185,6 +208,66 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
                 expected_model_sha256=MODEL_SHA,
                 expected_binary_sha256=BINARY_SHA,
             )
+
+    def test_binding_2_authority_binds_published_predecessor_identity(self) -> None:
+        with self.scoped():
+            value = self.build(run_id=integration.BINDING_2_RUN_ID)
+            self.assertEqual(
+                value.predecessor_run_id,
+                integration.BINDING_1_RUN_ID,
+            )
+            self.assertEqual(
+                value.predecessor_publication_commit,
+                PREDECESSOR_COMMIT,
+            )
+            self.assertEqual(
+                value.predecessor_publication_record_sha256,
+                PREDECESSOR_RECORD_SHA,
+            )
+            for tampered in (
+                dataclasses.replace(
+                    value,
+                    predecessor_publication_commit="0" * 40,
+                ),
+                dataclasses.replace(
+                    value,
+                    predecessor_publication_record_sha256="0" * 64,
+                ),
+            ):
+                with self.assertRaisesRegex(
+                    authority.RankHeadV2AuthorityError,
+                    "scope mismatch",
+                ):
+                    authority.validate_external_authority(
+                        Path("."),
+                        tampered,
+                        spec=integration.run_spec(value.run_id),
+                        current_commit=COMMIT,
+                    )
+
+    def test_final_run_key_commitments_are_exact(self) -> None:
+        repository = Path(__file__).resolve().parents[1]
+        expected = {
+            integration.BINDING_1_RUN_ID: (
+                "7B7E30422A76FFE057B381B586F21AF6F9A68563F5A2282136F3E217F1B8392C"
+            ),
+            integration.BINDING_2_RUN_ID: (
+                "FEC400325777606A697687F990A24968B6AE787EDF444339A1639AE9BCFA8AC1"
+            ),
+        }
+        for run_id, commitment in expected.items():
+            with self.subTest(run_id=run_id):
+                private = integration.runtime_private_from_repository(
+                    repository,
+                    run_id,
+                )
+                self.assertEqual(
+                    balanced.run_key_commitment(
+                        private.run_key(run_id),
+                        private.configuration,
+                    ),
+                    commitment,
+                )
 
     def test_wrong_commit_and_malformed_authority_id_are_rejected(self) -> None:
         with self.scoped():
@@ -227,10 +310,21 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
             private,
             configuration=changed_configuration,
         )
-        with mock.patch.object(
-            integration,
-            "runtime_private_from_repository",
-            return_value=substitute,
+        source_private = balanced.PrivateBinding.from_secret(
+            bytes(range(32)),
+            balanced.BINDING_1,
+        )
+        with (
+            mock.patch.object(
+                balanced,
+                "_private_binding_from_repository",
+                return_value=source_private,
+            ),
+            mock.patch.object(
+                integration,
+                "runtime_private_from_source",
+                return_value=substitute,
+            ),
         ):
             with self.assertRaisesRegex(
                 authority.RankHeadV2AuthorityError,
@@ -277,11 +371,11 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
             value = self.build()
             self.assertEqual(
                 authority.AUTHORITY_SCHEMA_VERSION,
-                "rank-head-v2-external-one-shot-v2",
+                "rank-head-v2-external-one-shot-v3",
             )
             self.assertEqual(
                 authority.RECEIPT_SCHEMA_VERSION,
-                "rank-head-v2-authority-consumption-v2",
+                "rank-head-v2-authority-consumption-v3",
             )
             self.assertEqual(
                 set(authority.authority_object_schema()["required"]),
@@ -292,11 +386,11 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
                 authority.authority_from_body({**value.body(), "extra": True})
             self.assertEqual(
                 authority.AUTHORITY_OBJECT_SCHEMA_SHA256,
-                "279BABE4626FEE8F69B178A0CBC23AECD58B9BFDC5579BE633B75B337797CE72",
+                "5616C6D5ACEDD569D9DBF052890C48A44B9C2600FC5C536A2B18F4F5F02A07BB",
             )
             self.assertEqual(
                 authority.AUTHORITY_RECEIPT_SCHEMA_SHA256,
-                "898DE481CE8F896F7B6D006E7BB1357AF507597BE2EE9B31F0D3DC6337723CC5",
+                "7E44D619F5BCC4FC24F41E7CFE81946B7073C35349F6322F892AE0C5BC396A52",
             )
             self.assertEqual(
                 authority.authority_object_schema()["properties"]["run_id"]["enum"],
@@ -328,6 +422,14 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
                 authority.UNVERSIONED_R2_AUTHORITY_OBJECT_SCHEMA_SHA256,
                 authority.UNVERSIONED_R2_AUTHORITY_RECEIPT_SCHEMA_SHA256,
             )
+        with self.assertRaisesRegex(
+            authority.RankHeadV2AuthorityError,
+            "historical consumed r2.*inactive",
+        ):
+            authority.require_active_schema_identities(
+                authority.HISTORICAL_V2_AUTHORITY_OBJECT_SCHEMA_SHA256,
+                authority.HISTORICAL_V2_AUTHORITY_RECEIPT_SCHEMA_SHA256,
+            )
         self.assertEqual(
             authority.AUTHORITY_ID_DOMAIN,
             b"ck0-balanced-rank-head-v2/external-authority-id-v1\0",
@@ -358,18 +460,23 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
                 ):
                     authority.verify_authority_receipt(repository, value)
 
-    def test_consumed_pre_runtime_authority_hash_is_blacklisted_for_all_runs(self) -> None:
+    def test_all_consumed_authority_hashes_are_blacklisted_for_all_runs(self) -> None:
         for run_id in integration.RUN_ORDER:
-            with self.subTest(run_id=run_id), self.scoped(), mock.patch.object(
-                authority,
-                "authority_id_sha256",
-                return_value=authority.HISTORICAL_CONSUMED_AUTHORITY_ID_SHA256,
-            ):
-                with self.assertRaisesRegex(
-                    authority.RankHeadV2AuthorityError,
-                    "consumed by a retired pre-runtime invocation",
+            for blocked in authority.HISTORICAL_CONSUMED_AUTHORITY_ID_BLACKLIST:
+                with (
+                    self.subTest(run_id=run_id, blocked=blocked),
+                    self.scoped(),
+                    mock.patch.object(
+                        authority,
+                        "authority_id_sha256",
+                        return_value=blocked,
+                    ),
                 ):
-                    self.build(run_id=run_id, raw="A" * 64)
+                    with self.assertRaisesRegex(
+                        authority.RankHeadV2AuthorityError,
+                        "already consumed",
+                    ):
+                        self.build(run_id=run_id, raw="A" * 64)
 
     def test_consumption_rejects_blacklist_before_runtime_state(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -385,7 +492,7 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
                     )
                     with self.assertRaisesRegex(
                         authority.RankHeadV2AuthorityError,
-                        "consumed by a retired pre-runtime invocation",
+                        "already consumed",
                     ):
                         authority.consume_authority_once(
                             repository,
@@ -427,6 +534,80 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
                 integration.RETIRED_BINDING_1_RUN_ID,
             )
 
+    def test_consumed_r2_is_historical_only_and_receipt_still_verifies(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            self.prepare_repository(repository)
+            spec = integration.known_run_spec(
+                integration.LOST_CUSTODY_BINDING_1_RUN_ID
+            )
+            private = synthetic_private(spec.run_id)
+            value = authority.HistoricalRankHeadV2ExternalAuthority(
+                schema_version=authority.HISTORICAL_V2_AUTHORITY_SCHEMA_VERSION,
+                authority_kind=authority.AUTHORITY_KIND,
+                authority_id_sha256=(
+                    authority.HISTORICAL_R2_CONSUMED_AUTHORITY_ID_SHA256
+                ),
+                authorized_commit=COMMIT,
+                run_id=spec.run_id,
+                run_ordinal=spec.ordinal,
+                source_binding=spec.source_binding,
+                run_design_artifact_sha256="A" * 64,
+                run_design_document_sha256="B" * 64,
+                run_design_implementation_binding_sha256="C" * 64,
+                static_preregistration_artifact_sha256="D" * 64,
+                static_preregistration_document_sha256="E" * 64,
+                static_design_contract_sha256="F" * 64,
+                carrier_id=v2.V2_CARRIER_ID,
+                carrier_root_sha256=v2.build_v2_carrier()["carrier_root_sha256"],
+                state_root=run_design.STATE_ROOT,
+                model_sha256=MODEL_SHA,
+                binary_sha256=BINARY_SHA,
+                run_key_commitment=balanced.run_key_commitment(
+                    private.run_key(spec.run_id),
+                    private.configuration,
+                ),
+            )
+            with self.scoped():
+                document = {
+                    "schema_version": authority.HISTORICAL_V2_RECEIPT_SCHEMA_VERSION,
+                    "authority": value.body(),
+                    "authority_object_schema_sha256": (
+                        authority.HISTORICAL_V2_AUTHORITY_OBJECT_SCHEMA_SHA256
+                    ),
+                    "authority_receipt_schema_sha256": (
+                        authority.HISTORICAL_V2_AUTHORITY_RECEIPT_SCHEMA_SHA256
+                    ),
+                    "authority_receipt_hmac": (
+                        authority._historical_v2_receipt_hmac(repository, value)
+                    ),
+                    "consumed": True,
+                    "consumption_occurred_before_live_mutation": True,
+                    "maximum_invocations": 1,
+                    "retry_allowed": False,
+                }
+                path = authority.authority_receipt_path(repository, spec.run_id)
+                path.write_bytes(balanced.canonical_json_bytes(document))
+                evidence = authority.verify_authority_receipt_for_run(
+                    repository,
+                    spec.run_id,
+                    require_current_static=False,
+                )
+                self.assertEqual(evidence["authority"], value.body())
+                with self.assertRaisesRegex(
+                    authority.RankHeadV2AuthorityError,
+                    "cannot authorize execution",
+                ):
+                    authority.verify_authority_receipt_for_run(
+                        repository,
+                        spec.run_id,
+                    )
+                with self.assertRaisesRegex(
+                    integration.RankHeadV2IntegrationError,
+                    "SUCCESS_REPORTED_EVIDENCE_CUSTODY_LOST_AFTER_TEST_OVERWRITE",
+                ):
+                    integration.run_spec(spec.run_id)
+
     def test_consumed_receipt_verifies_cryptographically_and_is_immutable(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repository = Path(temporary)
@@ -441,6 +622,14 @@ class RankHeadV2AuthorityTests(unittest.TestCase):
                 )
                 path = authority.authority_receipt_path(repository, value.run_id)
                 before = path.read_bytes()
+                path.write_bytes(b"not-the-archived-receipt\n")
+                from_bytes = authority.verify_authority_receipt_bytes_for_run(
+                    repository,
+                    value.run_id,
+                    before,
+                )
+                self.assertEqual(from_bytes, evidence)
+                path.write_bytes(before)
                 self.assertEqual(
                     authority.verify_authority_receipt_for_run(
                         repository, value.run_id

@@ -22,13 +22,22 @@ INTEGRATION_ID = "balanced-opaque-rank-head-v2-runtime-integration-v1"
 STARTING_PROTECTED_MAIN = "25b70f649f0e1cd7eedd21ac7a7711fbdfcac8e6"
 RUN_DESIGN_PATH = "lab/ck0_balanced_opaque_rank_head_v2_runtime_design_1.json"
 RETIRED_BINDING_1_RUN_ID = "ck0-balanced-v2-rank-head-b1-full-r1"
-BINDING_1_RUN_ID = "ck0-balanced-v2-rank-head-b1-full-r2"
+LOST_CUSTODY_BINDING_1_RUN_ID = "ck0-balanced-v2-rank-head-b1-full-r2"
+BINDING_1_RUN_ID = "ck0-balanced-v2-rank-head-b1-full-r3"
 BINDING_2_RUN_ID = "ck0-balanced-v2-rank-head-b2-full-r1"
 RUN_ORDER = (BINDING_1_RUN_ID, BINDING_2_RUN_ID)
 RETIRED_RUN_DISPOSITIONS = {
     RETIRED_BINDING_1_RUN_ID: "RETIRED_PRECONSUMPTION_COMMAND_INVOKED",
+    LOST_CUSTODY_BINDING_1_RUN_ID: (
+        "SUCCESS_REPORTED_EVIDENCE_CUSTODY_LOST_AFTER_TEST_OVERWRITE"
+    ),
 }
-ALL_KNOWN_RUN_IDS = (RETIRED_BINDING_1_RUN_ID, *RUN_ORDER)
+ALL_KNOWN_RUN_IDS = (
+    RETIRED_BINDING_1_RUN_ID,
+    LOST_CUSTODY_BINDING_1_RUN_ID,
+    *RUN_ORDER,
+)
+RECEIPT_INVENTORY_RUN_IDS = (LOST_CUSTODY_BINDING_1_RUN_ID, *RUN_ORDER)
 RUN_KEY_DOMAIN = b"ck0-balanced-rank-head-v2/runtime-key-v1\0"
 VISIBLE_CLASSIFICATION = "BALANCED_OPAQUE_RANK_HEAD_V2_VISIBLE"
 COLLAPSED_CLASSIFICATION = "BALANCED_OPAQUE_RANK_HEAD_V2_COLLAPSED"
@@ -73,6 +82,17 @@ class V2RunSpec:
         }
 
 
+HISTORICAL_RUN_SPECS = {
+    LOST_CUSTODY_BINDING_1_RUN_ID: V2RunSpec(
+        run_id=LOST_CUSTODY_BINDING_1_RUN_ID,
+        ordinal=1,
+        source_binding="binding-1",
+        source_profile_id=balanced.BINDING_1_PROFILE_ID,
+        source_full_run_id=balanced.FULL_RUN_ID,
+        authorization_state="consumed-evidence-custody-lost",
+    ),
+}
+
 RUN_SPECS = {
     BINDING_1_RUN_ID: V2RunSpec(
         run_id=BINDING_1_RUN_ID,
@@ -89,7 +109,7 @@ RUN_SPECS = {
         source_profile_id=balanced.BINDING_2_PROFILE_ID,
         source_full_run_id=balanced.BINDING_2_FULL_RUN_ID,
         authorization_state=(
-            "unauthorized-until-binding-1-v2-r2-terminal-visible-and-published"
+            "unauthorized-until-binding-1-v2-r3-terminal-visible-and-published"
         ),
         predecessor_run_id=BINDING_1_RUN_ID,
     ),
@@ -106,6 +126,13 @@ def run_spec(run_id: str) -> V2RunSpec:
         return RUN_SPECS[run_id]
     except KeyError as exc:
         raise RankHeadV2IntegrationError("unknown v2 run ID") from exc
+
+
+def known_run_spec(run_id: str) -> V2RunSpec:
+    """Return active or historical runtime identity without granting execution."""
+    if run_id in HISTORICAL_RUN_SPECS:
+        return HISTORICAL_RUN_SPECS[run_id]
+    return run_spec(run_id)
 
 
 def source_configuration(spec: V2RunSpec) -> balanced.PrivateBindingConfiguration:

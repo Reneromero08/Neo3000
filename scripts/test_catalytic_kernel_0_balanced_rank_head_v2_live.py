@@ -83,6 +83,7 @@ class RankHeadV2LiveTests(unittest.TestCase):
             live._run_rank_head_v2_protected(
                 {"run_id": integration.BINDING_1_RUN_ID},
                 repository_root=Path.cwd(),
+                state_root=Path.cwd() / run_design.STATE_ROOT,
             )
         protected_parameters = inspect.signature(
             live._run_rank_head_v2_protected

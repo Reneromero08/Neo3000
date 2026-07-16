@@ -224,8 +224,8 @@ def _result_projection(
 def _run_rank_head_v2_protected(
     args: Any,
     *,
-    repository_root: str | os.PathLike[str] | None = None,
-    state_root: str | os.PathLike[str] | None = None,
+    repository_root: str | os.PathLike[str],
+    state_root: str | os.PathLike[str],
 ) -> dict[str, Any]:
     import catalytic_kernel_0_balanced_rank_head_v2_entrypoint as entrypoint
 
@@ -239,11 +239,13 @@ def _run_rank_head_v2_protected(
             )
     finally:
         del frame, caller
-    repository = (
-        Path(repository_root).resolve()
-        if repository_root is not None
-        else Path(__file__).resolve().parents[1]
-    )
+    repository = Path(repository_root).resolve()
+    runtime_state_root = Path(state_root).resolve()
+    authority.assert_test_repository_isolated(repository)
+    if runtime_state_root != (repository / run_design.STATE_ROOT).resolve():
+        raise RankHeadV2LiveError(
+            "v2 state root must be the repository-owned isolated runtime root"
+        )
     run_id = str(_arg(args, "run_id") or "")
     runtime = _predecessor_and_runtime(repository, run_id)
     raw_authority_id = _arg(args, "external_live_authority_id")
@@ -258,7 +260,7 @@ def _run_rank_head_v2_protected(
     paths = state_paths(
         repository,
         run_id,
-        Path(state_root).resolve() if state_root is not None else None,
+        runtime_state_root,
     )
     run_root = paths["manifest.json"].parent
     if run_root.exists() or run_root.is_symlink():

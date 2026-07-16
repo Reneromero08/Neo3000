@@ -131,7 +131,7 @@ class RankHeadV2IntegrationTests(unittest.TestCase):
         self.assertEqual(
             integration.RUN_ORDER,
             (
-                "ck0-balanced-v2-rank-head-b1-full-r2",
+                "ck0-balanced-v2-rank-head-b1-full-r3",
                 "ck0-balanced-v2-rank-head-b2-full-r1",
             ),
         )
@@ -141,7 +141,7 @@ class RankHeadV2IntegrationTests(unittest.TestCase):
         self.assertEqual(second.predecessor_run_id, first.run_id)
         self.assertEqual(
             second.authorization_state,
-            "unauthorized-until-binding-1-v2-r2-terminal-visible-and-published",
+            "unauthorized-until-binding-1-v2-r3-terminal-visible-and-published",
         )
 
     def test_preconsumption_r1_is_permanently_retired(self) -> None:
@@ -158,6 +158,21 @@ class RankHeadV2IntegrationTests(unittest.TestCase):
             "RETIRED_PRECONSUMPTION_COMMAND_INVOKED",
         ):
             integration.run_spec(integration.RETIRED_BINDING_1_RUN_ID)
+
+    def test_consumed_r2_is_retired_for_lost_publication_custody(self) -> None:
+        self.assertNotIn(
+            integration.LOST_CUSTODY_BINDING_1_RUN_ID,
+            integration.RUN_ORDER,
+        )
+        with self.assertRaisesRegex(
+            integration.RankHeadV2IntegrationError,
+            "SUCCESS_REPORTED_EVIDENCE_CUSTODY_LOST_AFTER_TEST_OVERWRITE",
+        ):
+            integration.run_spec(integration.LOST_CUSTODY_BINDING_1_RUN_ID)
+        historical = integration.known_run_spec(
+            integration.LOST_CUSTODY_BINDING_1_RUN_ID
+        )
+        self.assertEqual(historical.authorization_state, "consumed-evidence-custody-lost")
 
     def test_v2_carrier_contains_no_extract_schema(self) -> None:
         root = json.loads(v2.build_v2_carrier()["carrier_root"])

@@ -1,0 +1,52 @@
+{
+  "authority_consumed": true,
+  "binding_2_authorized": false,
+  "claiming": false,
+  "corruption_source": {
+    "kind": "state-dependent-test-overwrite",
+    "tests": [
+      "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_cli.py::RankHeadV2CliBootstrapTests.test_bootstrap_passes_live_core_caller_gate",
+      "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py::RankHeadV2EntrypointTests.test_original_duplicate_main_module_code_object_is_rejected"
+    ]
+  },
+  "current_forensic_evidence": {
+    "closure_sha256": "1C269E1FCDCD707B07C8D8DBD456337E5446E6670AEB1925EE1A1A368F1EE44C",
+    "closure_status": "failed",
+    "manifest_sha256": "6D11B89F6B96AA55D8FE1AE6C21D6FDCE8FF33A22B0C5DA9475F4D7B9E3B9702",
+    "receipt_sha256": "865281FD36E530277A11A89500206DBB77D9FA8C7ABEBA21A291777BC73546F1",
+    "result_sha256": "E81034DB588B4CF092EADBA9B46668A68D6C366BE7B473C483BDB7A1C28809B8",
+    "result_status": "failed",
+    "terminal_classification": "INCONCLUSIVE"
+  },
+  "disposition": "SUCCESS_REPORTED_EVIDENCE_CUSTODY_LOST_AFTER_TEST_OVERWRITE",
+  "evidence_kind": "operational-post-run-custody-incident",
+  "forensic_archive": {
+    "bundle_sha256": "14A0DECC79AE860073ABB92C260739F1BEBA4D2A7DC38A9E8E9EB50922BBC101",
+    "content_addressed": true,
+    "includes_receipt_manifest_result_and_closure": true,
+    "purpose": "forensic-test-overwrite",
+    "verified": true
+  },
+  "neo_exp_0040_published": false,
+  "no_private_values_recorded": true,
+  "original_evidence": {
+    "closure_bytes_available": false,
+    "closure_sha256": "C47E49988543A365A306566416B32EE59871674F65C7A4F332D290E451CE92CD",
+    "manifest_sha256": "6D11B89F6B96AA55D8FE1AE6C21D6FDCE8FF33A22B0C5DA9475F4D7B9E3B9702",
+    "receipt_sha256": "865281FD36E530277A11A89500206DBB77D9FA8C7ABEBA21A291777BC73546F1",
+    "result_bytes_available": false,
+    "result_sha256": "FE63B84FDFBD16386838F017DA572203631AE38EEE0AD3E7A565E2D6732A57EE"
+  },
+  "preserved_after_overwrite": {
+    "authority_receipt_unchanged": true,
+    "manifest_unchanged": true
+  },
+  "private_values_disclosed": false,
+  "reported_terminal_classification_before_corruption": "BALANCED_OPAQUE_RANK_HEAD_V2_VISIBLE",
+  "retry_allowed": false,
+  "run_id": "ck0-balanced-v2-rank-head-b1-full-r2",
+  "run_reusable": false,
+  "schema_version": 1,
+  "scientific_publication_blocked": true,
+  "successful_terminal_result_reported_before_corruption": true
+}

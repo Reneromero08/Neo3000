@@ -9,20 +9,28 @@
     "authority_id_input": "explicit-raw-64-hex-no-default-no-environment-fallback",
     "authorized_commit_input": "explicit-exact-protected-commit-no-default",
     "automatic_follow_on": false,
+    "binding_1_predecessor_identity": null,
+    "binding_2_authority_hmac_binds_published_predecessor": true,
+    "binding_2_predecessor_fields": [
+      "predecessor_run_id",
+      "predecessor_publication_commit",
+      "predecessor_publication_record_sha256"
+    ],
     "consumption_point": "immediately-before-v2-runtime-root-creation",
     "global_inventory_across_both_runs": true,
     "historical_consumed_authority_id_blacklist": [
-      "541C7E61EBB30366D7007D8BA5EC30DB720B0817FA29CABB1625536D6B720A66"
+      "541C7E61EBB30366D7007D8BA5EC30DB720B0817FA29CABB1625536D6B720A66",
+      "94D435C48B32649A0F049D4BBB951D17F2A44D32B2893E74F437245FE0A09C3E"
     ],
     "kind": "external-one-shot",
     "maximum_invocations": 1,
-    "object_schema_sha256": "279BABE4626FEE8F69B178A0CBC23AECD58B9BFDC5579BE633B75B337797CE72",
+    "object_schema_sha256": "5616C6D5ACEDD569D9DBF052890C48A44B9C2600FC5C536A2B18F4F5F02A07BB",
     "raw_authority_id_persisted": false,
     "receipt_path_template": "state/catalytic_kernel_0_rank_head_v2_authority.<run-id>.authority.consumed.json",
-    "receipt_schema_sha256": "898DE481CE8F896F7B6D006E7BB1357AF507597BE2EE9B31F0D3DC6337723CC5",
-    "receipt_schema_version": "rank-head-v2-authority-consumption-v2",
+    "receipt_schema_sha256": "7E44D619F5BCC4FC24F41E7CFE81946B7073C35349F6322F892AE0C5BC396A52",
+    "receipt_schema_version": "rank-head-v2-authority-consumption-v3",
     "retry_count": 0,
-    "schema_version": "rank-head-v2-external-one-shot-v2",
+    "schema_version": "rank-head-v2-external-one-shot-v3",
     "unversioned_intermediate_schema_identities_rejected": [
       "2F171672C66EB845681A2934A717863355E2388D856DC5725BBB70154B7D2D52",
       "C56B30ED4E356BD1C914C6DE35BFC4B384FA89E2B3577959AC5A5855AA89B591"
@@ -38,7 +46,7 @@
     "automatic_follow_on": false,
     "binding_2_run_requires_binding_1_terminal_visible": true,
     "external_one_shot_authority_required_per_run": true,
-    "first_separately_authorizable_run": "ck0-balanced-v2-rank-head-b1-full-r2",
+    "first_separately_authorizable_run": "ck0-balanced-v2-rank-head-b1-full-r3",
     "live_execution_authorized": false,
     "predecessor_gate_implemented": true,
     "retry_allowed": false
@@ -50,14 +58,21 @@
     "closure_hashes_recomputed": true,
     "external_authority_evidence_identical_and_cryptographically_verified": true,
     "lease_count": 5,
+    "ledger_source": "clean-HEAD-lab-results-jsonl",
     "maximum_concurrency": 1,
     "private_visible_classification_recomputed": true,
+    "publication_commit_and_canonical_record_sha256_returned": true,
     "raw_ignored_evidence_alone_authorizes_binding_2": false,
     "raw_manifest_result_closure_required": true,
     "required_classification": "BALANCED_OPAQUE_RANK_HEAD_V2_VISIBLE",
+    "required_refs": [
+      "HEAD",
+      "main",
+      "origin/main"
+    ],
     "restoration_cleanup_and_historical_custody_required": true,
     "run_design_identity_exact": true,
-    "run_id": "ck0-balanced-v2-rank-head-b1-full-r2",
+    "run_id": "ck0-balanced-v2-rank-head-b1-full-r3",
     "run_lock_absent": true,
     "static_preregistration_identity_exact": true,
     "tracked_publication": "exactly-one-lab-results-jsonl-record-with-raw-hashes"
@@ -98,6 +113,18 @@
     "receipt_schema_version": "rank-head-v2-authority-consumption-v1",
     "schema_version": "rank-head-v2-external-one-shot-v1"
   },
+  "historical_r2_authority_contract": {
+    "active": false,
+    "authority_id_sha256": "94D435C48B32649A0F049D4BBB951D17F2A44D32B2893E74F437245FE0A09C3E",
+    "evidence_only": true,
+    "future_authorization_allowed": false,
+    "future_validation_allowed": true,
+    "historical_run_id": "ck0-balanced-v2-rank-head-b1-full-r2",
+    "object_schema_sha256": "279BABE4626FEE8F69B178A0CBC23AECD58B9BFDC5579BE633B75B337797CE72",
+    "receipt_schema_sha256": "898DE481CE8F896F7B6D006E7BB1357AF507597BE2EE9B31F0D3DC6337723CC5",
+    "receipt_schema_version": "rank-head-v2-authority-consumption-v2",
+    "schema_version": "rank-head-v2-external-one-shot-v2"
+  },
   "implementation_binding": {
     "files": [
       {
@@ -106,11 +133,11 @@
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_authority.py",
-        "sha256": "00ABF695160FDA37D6197E52ADB0CC1CC35E82B946F34A280A483DEA80307302"
+        "sha256": "6F52993B86E54C9E9A0BA321A96F85E126C11DCCB63A4EEC94E9A8F551329557"
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_cli.py",
-        "sha256": "87701D6DFB75C8C2BB79C1DA9475452692E84733529180E3E7FD94F55441F1D7"
+        "sha256": "E20FEA281CA9C7D936C5F2D21D63691F7E50B76F8C4ACF9F4E63D9C88533D8CF"
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_core.py",
@@ -118,19 +145,23 @@
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
-        "sha256": "78461150652AE09B66734804435048BAA48A8F5E21C629DFF8FF0CC08E3834AA"
+        "sha256": "193CF496C5C743960EFE7E3E44BB8C84298620CAE40A2AD13C29E716A916B52D"
+      },
+      {
+        "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_evidence.py",
+        "sha256": "20DF9050F4C0FF08009E85024A31FD7EDA677C04C148527B360B6B5A34A77321"
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_integration.py",
-        "sha256": "6A47093AF002EBDFAA007A36A0ACFD5F3B9DB0FA77A3768E402E1C06046AA4C7"
+        "sha256": "DF9BA84F71B1583DDFA65198C2AFCD9F0CB3425685DA97CE086D58D5B8BCD793"
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_live.py",
-        "sha256": "284438797CEB7314FBE669BF7E49D4426AC6607C9B2A216F203E2AC5AA4C1B69"
+        "sha256": "7248FD4E653CA94EC968BDB26715D62DF243B40332FB2B966F48C4DA2C73DB8B"
       },
       {
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_run_design.py",
-        "sha256": "55CF2BAA0B938AE7DDCC45C9EAF66E485C9315127FE177A6A0A8D22649AF22FD"
+        "sha256": "03DE9C29477AE4CF75487C188A592F0B1CE9CFAE273249233541DA3E8CFD4ECE"
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2.py",
@@ -138,11 +169,11 @@
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_authority.py",
-        "sha256": "F6AC39102A11F1C001CF6094AA0DF11733F8E6F6188856FDBBA5A06B8B8DDACE"
+        "sha256": "00ADE4B7684CBB2AF47625BB8E090F96346EEA539528A2CD31158EFA6CEFF11C"
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_cli.py",
-        "sha256": "E6755130A6567DD0A205B51FCA150A339491219DDA0D25C005B80D3F0FB85EA6"
+        "sha256": "04507131DA6D148079266734DF0CAFB5AC0DF64A909F456093C11234F85823F7"
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_core.py",
@@ -150,23 +181,27 @@
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
-        "sha256": "E68DC0ADE7720314FC6F77394742284EDF8B58AF6763C5A4676C0B5DBB557962"
+        "sha256": "11AC4C8B682AF34882AD5EFDB5CF7853A6D8A38ECF70A406A30C29B813DFAF98"
+      },
+      {
+        "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_evidence.py",
+        "sha256": "E3568AA03827B85315F08444A422F29B3D72F838513279CD9F70BD9C8B4E9B80"
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_integration.py",
-        "sha256": "16CE9140E59598B58EFFBA6F66977C56975ED5C0381174CA33A845E7F5487396"
+        "sha256": "25CD3CD40533C972D1FF2C7825148EFC8A83C9E2E0D02728C1158B31C1484088"
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_live.py",
-        "sha256": "6A1D813B285EFE6C4EB4F6ABF2D9C594A75075DC84B9ACEC04B8D227A6BB94F4"
+        "sha256": "31BBFDB33F1A45FB28F5DC0FFA1F53C45A536E99E637ACFB6970BCC730585946"
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_run_design.py",
-        "sha256": "276F11415D573E702204FD56C68F9FA9D26887FD24CB69113E14BBBC19EB4DB8"
+        "sha256": "9C9AD27C6FF2DE1A031761A1FFE45774B7B33220F02969285AA5ACD064109519"
       }
     ],
     "kind": "normalized-source-bundle-sha256-v1",
-    "sha256": "EDD064D36DD8FB123B1D095A2C613540C67BB3DCD71F6F23C6F565AAEAB4A837"
+    "sha256": "E4D92CCF46ED5DF123262CF954D3D2F42A4F907B738779FFD90B00EA6BF72DA3"
   },
   "integration_id": "balanced-opaque-rank-head-v2-runtime-integration-v1",
   "lifecycle_contract": {
@@ -208,7 +243,7 @@
     "v2_run_keys_domain_separated": true
   },
   "protected_starting_main": "25b70f649f0e1cd7eedd21ac7a7711fbdfcac8e6",
-  "repair_starting_main": "5130285d096650651ab9a3aa718d1280c45f317f",
+  "repair_starting_main": "ccca452f339745e9c5ce2b4dd8eff052dc7d350c",
   "retired_operational_attempts": [
     {
       "artifact_sha256": "95B778474FC87C0369B3070EFAF9C12931A137094EFAAF0F98FDA6FC8AC83DCD",
@@ -226,15 +261,29 @@
       "scientific_observation_performed": false,
       "scientific_result": null,
       "status": "PRECONSUMPTION_ENTRYPOINT_CALLER_IDENTITY_REJECTED"
+    },
+    {
+      "artifact_sha256": "9F49C8F7B11139BF5934EEEE0B6D22A306D707119D0AAD15076C20588A971B74",
+      "authority_consumed": true,
+      "disposition": "SUCCESS_REPORTED_EVIDENCE_CUSTODY_LOST_AFTER_TEST_OVERWRITE",
+      "document_sha256": "9FED7E7F261590D995C66B8BDFF630533BAB7FA8E5F88F4F6E589F8E26B94878",
+      "model_requests_reported_before_custody_loss": 5,
+      "original_terminal_bytes_available": false,
+      "reauthorization_permitted": false,
+      "relative_path": "lab/ck0_balanced_opaque_rank_head_v2_evidence_custody_incident_r2.json",
+      "rerun_permitted": false,
+      "run_id": "ck0-balanced-v2-rank-head-b1-full-r2",
+      "scientific_publication_blocked": true,
+      "successful_terminal_result_reported_before_custody_loss": true
     }
   ],
   "run_order": [
-    "ck0-balanced-v2-rank-head-b1-full-r2",
+    "ck0-balanced-v2-rank-head-b1-full-r3",
     "ck0-balanced-v2-rank-head-b2-full-r1"
   ],
   "runs": [
     {
-      "authority_receipt_path": "state/catalytic_kernel_0_rank_head_v2_authority.ck0-balanced-v2-rank-head-b1-full-r2.authority.consumed.json",
+      "authority_receipt_path": "state/catalytic_kernel_0_rank_head_v2_authority.ck0-balanced-v2-rank-head-b1-full-r3.authority.consumed.json",
       "authorization_state": "separately-authorizable",
       "automatic_follow_on": false,
       "maximum_invocations": 1,
@@ -243,8 +292,8 @@
       "predecessor_run_id": null,
       "reservation_state": "reserved-unconsumed",
       "retry_count": 0,
-      "run_id": "ck0-balanced-v2-rank-head-b1-full-r2",
-      "run_key_commitment": "F2C5FC9BBD24C4FABF873F78D044B4DD51A43310C5B16E71BFAA78F48E9ABA1E",
+      "run_id": "ck0-balanced-v2-rank-head-b1-full-r3",
+      "run_key_commitment": "7B7E30422A76FFE057B381B586F21AF6F9A68563F5A2282136F3E217F1B8392C",
       "source_binding": "binding-1",
       "source_custody": {
         "source_alias_map_commitment": "B43F3399D3884195AFC41362263BE064D39828381D859DDE84A556542ABC1889",
@@ -270,16 +319,16 @@
         "closure.json",
         "run.lock"
       ],
-      "state_root": "state/catalytic_kernel_0_rank_head_v2/ck0-balanced-v2-rank-head-b1-full-r2"
+      "state_root": "state/catalytic_kernel_0_rank_head_v2/ck0-balanced-v2-rank-head-b1-full-r3"
     },
     {
       "authority_receipt_path": "state/catalytic_kernel_0_rank_head_v2_authority.ck0-balanced-v2-rank-head-b2-full-r1.authority.consumed.json",
-      "authorization_state": "unauthorized-until-binding-1-v2-r2-terminal-visible-and-published",
+      "authorization_state": "unauthorized-until-binding-1-v2-r3-terminal-visible-and-published",
       "automatic_follow_on": false,
       "maximum_invocations": 1,
       "mode": "full-information",
       "ordinal": 2,
-      "predecessor_run_id": "ck0-balanced-v2-rank-head-b1-full-r2",
+      "predecessor_run_id": "ck0-balanced-v2-rank-head-b1-full-r3",
       "reservation_state": "reserved-unconsumed",
       "retry_count": 0,
       "run_id": "ck0-balanced-v2-rank-head-b2-full-r1",
@@ -314,6 +363,8 @@
   ],
   "runtime_entrypoint": {
     "authority_bridge_module": "scripts/catalytic_kernel_0_balanced_rank_head_v2_authority.py",
+    "automatic_byte_exact_archive": "state/catalytic_kernel_0_rank_head_v2_evidence_archive/v1",
+    "evidence_archive_module": "scripts/catalytic_kernel_0_balanced_rank_head_v2_evidence.py",
     "fail_closed_entrypoint": "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
     "function": "run_rank_head_v2",
     "historical_v1_runner_modified": false,
@@ -322,11 +373,14 @@
     "protected_live_core": "scripts/catalytic_kernel_0_balanced_rank_head_v2_live.py",
     "protected_sidecar_adapter_integration": "implemented",
     "public_cli_bootstrap": "scripts/catalytic_kernel_0_balanced_rank_head_v2_cli.py",
-    "runtime_class": "QualifiedRankHeadV2Runtime"
+    "runtime_class": "QualifiedRankHeadV2Runtime",
+    "terminal_evidence_overwrite": "forbidden"
   },
   "schema_version": 1,
   "state_namespace": {
     "authority_receipt_template": "state/catalytic_kernel_0_rank_head_v2_authority.<run-id>.authority.consumed.json",
+    "evidence_archive_overwrite_allowed": false,
+    "evidence_archive_root": "state/catalytic_kernel_0_rank_head_v2_evidence_archive/v1",
     "filenames": [
       "manifest.json",
       "result.json",
@@ -334,7 +388,10 @@
       "run.lock"
     ],
     "ignored_authority_receipts_required": true,
+    "ignored_evidence_archive_required": true,
     "ignored_runtime_required": true,
+    "restore_accepts_only_missing_or_byte_identical_destinations": true,
+    "restore_replaces_existing_evidence": false,
     "root": "state/catalytic_kernel_0_rank_head_v2"
   },
   "static_runtime_state": {
@@ -348,47 +405,63 @@
   },
   "static_verification": {
     "active_authority_contract": {
-      "authority_object_schema_sha256": "279BABE4626FEE8F69B178A0CBC23AECD58B9BFDC5579BE633B75B337797CE72",
-      "authority_schema_version": "rank-head-v2-external-one-shot-v2",
-      "receipt_schema_sha256": "898DE481CE8F896F7B6D006E7BB1357AF507597BE2EE9B31F0D3DC6337723CC5",
-      "receipt_schema_version": "rank-head-v2-authority-consumption-v2"
+      "authority_object_schema_sha256": "5616C6D5ACEDD569D9DBF052890C48A44B9C2600FC5C536A2B18F4F5F02A07BB",
+      "authority_schema_version": "rank-head-v2-external-one-shot-v3",
+      "receipt_schema_sha256": "7E44D619F5BCC4FC24F41E7CFE81946B7073C35349F6322F892AE0C5BC396A52",
+      "receipt_schema_version": "rank-head-v2-authority-consumption-v3"
     },
     "active_run_order": [
-      "ck0-balanced-v2-rank-head-b1-full-r2",
+      "ck0-balanced-v2-rank-head-b1-full-r3",
       "ck0-balanced-v2-rank-head-b2-full-r1"
     ],
-    "binding_2_run_key_commitment_unchanged": true,
+    "binding_2_predecessor_authority_binding": {
+      "committed_ledger_only": true,
+      "fields": [
+        "predecessor_run_id",
+        "predecessor_publication_commit",
+        "predecessor_publication_record_sha256"
+      ],
+      "synchronized_refs_required": [
+        "HEAD",
+        "main",
+        "origin/main"
+      ]
+    },
     "claim_expansion": false,
+    "evidence_custody": {
+      "archive_bundle_sha256": "14A0DECC79AE860073ABB92C260739F1BEBA4D2A7DC38A9E8E9EB50922BBC101",
+      "archived_receipt_cryptographically_verified": true,
+      "complete_and_failed_terminal_overwrite_forbidden": true,
+      "restore_replaces_differing_evidence": false
+    },
     "focused_tests": {
-      "authority": "16/16",
+      "authority": "19/19",
       "cli": "2/2",
-      "entrypoint": "8/8",
-      "integration": "11/11",
+      "entrypoint": "10/10",
+      "evidence_archive": "10/10",
+      "integration": "12/12",
       "live_core": "10/10",
-      "run_design": "12/12",
+      "publication_validator": "13/13",
+      "run_design": "15/15",
       "static_core": "12/12",
       "static_wrapper": "13/13",
-      "total": "84/84"
-    },
-    "historical_authority_contract": {
-      "active": false,
-      "authority_object_schema_sha256": "8CDE8477F324E9E72C89F14908333937643675C2F42F92E67062DFE92F4A0CB3",
-      "consumed_authority_id_blacklisted": true,
-      "receipt_schema_sha256": "709552F6DDC2F31DC154C1C65F895F55637B7088B4F548FDFA1F771381E55411"
+      "total": "116/116"
     },
     "historical_guards": {
       "existing_ck0": "12/12",
       "private_fact_guard": "pass",
-      "publication_guard": "pass"
+      "private_fact_guard_tests": "6/6",
+      "publication_guard": "pass",
+      "publication_guard_tests": "6/6"
     },
-    "implementation_binding_sha256": "EDD064D36DD8FB123B1D095A2C613540C67BB3DCD71F6F23C6F565AAEAB4A837",
-    "implementation_file_count": 16,
-    "incident_artifact_sha256": "95B778474FC87C0369B3070EFAF9C12931A137094EFAAF0F98FDA6FC8AC83DCD",
-    "pre_audit_scope": true,
+    "implementation_binding_sha256": "E4D92CCF46ED5DF123262CF954D3D2F42A4F907B738779FFD90B00EA6BF72DA3",
+    "implementation_file_count": 18,
     "private_custody": {
       "binding_1_source_unchanged": true,
+      "binding_2_run_key_commitment": "FEC400325777606A697687F990A24968B6AE787EDF444339A1639AE9BCFA8AC1",
       "binding_2_source_unchanged": true,
-      "private_values_disclosed": false
+      "private_values_disclosed": false,
+      "r3_run_key_commitment": "7B7E30422A76FFE057B381B586F21AF6F9A68563F5A2282136F3E217F1B8392C"
     },
     "runtime_activity": {
       "authorities_consumed": 0,

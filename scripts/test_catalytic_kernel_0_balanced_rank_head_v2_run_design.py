@@ -16,6 +16,36 @@ import catalytic_kernel_0_balanced_rank_head_v2_run_design as design
 
 
 class RankHeadV2RunDesignTests(unittest.TestCase):
+    def _commit_ledger(self, repository: Path, message: str) -> None:
+        subprocess.run(
+            ["git", "add", "--", "lab/results.jsonl"],
+            cwd=repository,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Neo3000 Test",
+                "-c",
+                "user.email=neo3000-test@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                message,
+            ],
+            cwd=repository,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "update-ref", "refs/remotes/origin/main", "HEAD"],
+            cwd=repository,
+            check=True,
+            capture_output=True,
+        )
+
     def _fixture(self, repository: Path, *, classification: str, published: bool, tamper: bool = False):
         source_private = balanced.PrivateBinding.from_secret(
             bytes(range(32)), balanced.BINDING_1
@@ -161,17 +191,12 @@ class RankHeadV2RunDesignTests(unittest.TestCase):
                 json.dumps(record) + "\n", encoding="utf-8"
             )
             subprocess.run(
-                ["git", "init", "--quiet"],
+                ["git", "init", "--quiet", "--initial-branch=main"],
                 cwd=repository,
                 check=True,
                 capture_output=True,
             )
-            subprocess.run(
-                ["git", "add", "--", "lab/results.jsonl"],
-                cwd=repository,
-                check=True,
-                capture_output=True,
-            )
+            self._commit_ledger(repository, "publish fixture")
         patches = (
             mock.patch.object(design, "validate_run_design", return_value=run_projection),
             mock.patch.object(v2, "validate_preregistration", return_value=static_projection),
@@ -186,14 +211,14 @@ class RankHeadV2RunDesignTests(unittest.TestCase):
         )
         return patches
 
-    def test_exact_sixteen_file_binding(self) -> None:
+    def test_exact_eighteen_file_binding(self) -> None:
         design.require_exact_implementation_paths(
             design.REQUIRED_IMPLEMENTATION_PATHS
         )
-        self.assertEqual(len(design.REQUIRED_IMPLEMENTATION_PATHS), 16)
+        self.assertEqual(len(design.REQUIRED_IMPLEMENTATION_PATHS), 18)
         with self.assertRaisesRegex(
             design.RankHeadV2RunDesignError,
-            "exactly sixteen files",
+            "exactly eighteen files",
         ):
             design.require_exact_implementation_paths(
                 design.REQUIRED_IMPLEMENTATION_PATHS[:-1]
@@ -269,10 +294,63 @@ class RankHeadV2RunDesignTests(unittest.TestCase):
                 ledger.read_text(encoding="utf-8") * 2,
                 encoding="utf-8",
             )
+            self._commit_ledger(repository, "duplicate fixture")
             with patches[0], patches[1], patches[2], patches[3]:
                 with self.assertRaisesRegex(
                     design.RankHeadV2RunDesignError,
                     "exactly one published visible record",
+                ):
+                    design.require_binding_1_v2_terminal_visible(repository)
+
+    def test_uncommitted_publication_ledger_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            patches = self._fixture(
+                repository,
+                classification=integration.VISIBLE_CLASSIFICATION,
+                published=True,
+            )
+            ledger = repository / "lab" / "results.jsonl"
+            ledger.write_text(
+                ledger.read_text(encoding="utf-8") + "\n",
+                encoding="utf-8",
+            )
+            with patches[0], patches[1], patches[2], patches[3]:
+                with self.assertRaisesRegex(
+                    design.RankHeadV2RunDesignError,
+                    "uncommitted changes",
+                ):
+                    design.require_binding_1_v2_terminal_visible(repository)
+
+    def test_publication_refs_must_be_synchronized(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            patches = self._fixture(
+                repository,
+                classification=integration.VISIBLE_CLASSIFICATION,
+                published=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=Neo3000 Test",
+                    "-c",
+                    "user.email=neo3000-test@example.invalid",
+                    "commit",
+                    "--quiet",
+                    "--allow-empty",
+                    "-m",
+                    "advance main only",
+                ],
+                cwd=repository,
+                check=True,
+                capture_output=True,
+            )
+            with patches[0], patches[1], patches[2], patches[3]:
+                with self.assertRaisesRegex(
+                    design.RankHeadV2RunDesignError,
+                    "refs are not synchronized",
                 ):
                     design.require_binding_1_v2_terminal_visible(repository)
 
@@ -296,6 +374,7 @@ class RankHeadV2RunDesignTests(unittest.TestCase):
                 + "\n",
                 encoding="utf-8",
             )
+            self._commit_ledger(repository, "legacy fixture")
             with patches[0], patches[1], patches[2], patches[3]:
                 with self.assertRaisesRegex(
                     design.RankHeadV2RunDesignError,
@@ -330,13 +409,13 @@ class RankHeadV2RunDesignTests(unittest.TestCase):
         second = integration.RUN_SPECS[integration.BINDING_2_RUN_ID]
         self.assertEqual(
             first.run_id,
-            "ck0-balanced-v2-rank-head-b1-full-r2",
+            "ck0-balanced-v2-rank-head-b1-full-r3",
         )
         self.assertEqual(first.authorization_state, "separately-authorizable")
         self.assertEqual(second.predecessor_run_id, first.run_id)
         self.assertEqual(
             second.authorization_state,
-            "unauthorized-until-binding-1-v2-r2-terminal-visible-and-published",
+            "unauthorized-until-binding-1-v2-r3-terminal-visible-and-published",
         )
         self.assertNotIn(
             integration.RETIRED_BINDING_1_RUN_ID,
@@ -377,6 +456,14 @@ class RankHeadV2RunDesignTests(unittest.TestCase):
             "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_cli.py",
             paths,
         )
+        self.assertIn(
+            "scripts/catalytic_kernel_0_balanced_rank_head_v2_evidence.py",
+            paths,
+        )
+        self.assertIn(
+            "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_evidence.py",
+            paths,
+        )
 
     def test_preconsumption_incident_reconstructs_exactly(self) -> None:
         repository = Path(__file__).resolve().parents[1]
@@ -387,10 +474,24 @@ class RankHeadV2RunDesignTests(unittest.TestCase):
         )
         self.assertEqual(
             incident["replacement_run_id"],
-            integration.BINDING_1_RUN_ID,
+            integration.LOST_CUSTODY_BINDING_1_RUN_ID,
         )
         self.assertFalse(incident["runtime_authority_consumed"])
         self.assertFalse(incident["scientific_observation_performed"])
+
+    def test_r2_evidence_custody_incident_reconstructs_exactly(self) -> None:
+        repository = Path(__file__).resolve().parents[1]
+        incident = design.validate_evidence_custody_incident(repository)
+        self.assertEqual(
+            incident["run_id"],
+            integration.LOST_CUSTODY_BINDING_1_RUN_ID,
+        )
+        self.assertEqual(
+            incident["disposition"],
+            "SUCCESS_REPORTED_EVIDENCE_CUSTODY_LOST_AFTER_TEST_OVERWRITE",
+        )
+        self.assertTrue(incident["scientific_publication_blocked"])
+        self.assertFalse(incident["reauthorization_permitted"])
 
 
 if __name__ == "__main__":

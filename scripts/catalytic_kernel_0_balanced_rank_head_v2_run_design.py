@@ -23,6 +23,12 @@ RUN_DESIGN_PATH = integration.RUN_DESIGN_PATH
 PRECONSUMPTION_INCIDENT_PATH = (
     "lab/ck0_balanced_opaque_rank_head_v2_preconsumption_failure_1.json"
 )
+EVIDENCE_CUSTODY_INCIDENT_PATH = (
+    "lab/ck0_balanced_opaque_rank_head_v2_evidence_custody_incident_r2.json"
+)
+EVIDENCE_CUSTODY_INCIDENT_ARTIFACT_SHA256 = (
+    "9F49C8F7B11139BF5934EEEE0B6D22A306D707119D0AAD15076C20588A971B74"
+)
 STATE_ROOT = "state/catalytic_kernel_0_rank_head_v2"
 STATE_FILENAMES = ("manifest.json", "result.json", "closure.json", "run.lock")
 AUTHORITY_RECEIPT_TEMPLATE = (
@@ -41,6 +47,8 @@ REQUIRED_IMPLEMENTATION_PATHS = (
     "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_live.py",
     "scripts/catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
     "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2_evidence.py",
+    "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_evidence.py",
     "scripts/catalytic_kernel_0_balanced_rank_head_v2_cli.py",
     "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_cli.py",
 )
@@ -66,7 +74,7 @@ def require_exact_implementation_paths(paths: Sequence[str]) -> None:
         or len(set(paths)) != len(paths)
     ):
         raise RankHeadV2RunDesignError(
-            "v2 run design binding must contain exactly sixteen files"
+            "v2 run design binding must contain exactly eighteen files"
         )
 
 
@@ -113,7 +121,7 @@ def validate_preconsumption_incident(repository: Path) -> dict[str, Any]:
         "process_exit": 1,
         "raw_authority_id_persisted": False,
         "reauthorization_allowed": False,
-        "replacement_run_id": integration.BINDING_1_RUN_ID,
+        "replacement_run_id": integration.LOST_CUSTODY_BINDING_1_RUN_ID,
         "result_created": False,
         "retry_allowed": False,
         "run_lock_created": False,
@@ -145,6 +153,88 @@ def validate_preconsumption_incident(repository: Path) -> dict[str, Any]:
         ],
         "runtime_authority_consumed": False,
         "scientific_observation_performed": False,
+    }
+
+
+def validate_evidence_custody_incident(repository: Path) -> dict[str, Any]:
+    path = repository / EVIDENCE_CUSTODY_INCIDENT_PATH
+    if not path.is_file() or path.is_symlink():
+        raise RankHeadV2RunDesignError(
+            "v2 r2 evidence-custody incident is missing or unsafe"
+        )
+    raw = path.read_bytes()
+    if sha256_bytes(raw) != EVIDENCE_CUSTODY_INCIDENT_ARTIFACT_SHA256:
+        raise RankHeadV2RunDesignError(
+            "v2 r2 evidence-custody incident artifact changed"
+        )
+    try:
+        document = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RankHeadV2RunDesignError(
+            "v2 r2 evidence-custody incident is invalid JSON"
+        ) from exc
+    current = document.get("current_forensic_evidence", {})
+    original = document.get("original_evidence", {})
+    preserved = document.get("preserved_after_overwrite", {})
+    forensic_archive = document.get("forensic_archive", {})
+    if not all(
+        (
+            document.get("schema_version") == 1,
+            document.get("run_id") == integration.LOST_CUSTODY_BINDING_1_RUN_ID,
+            document.get("disposition")
+            == integration.RETIRED_RUN_DISPOSITIONS[
+                integration.LOST_CUSTODY_BINDING_1_RUN_ID
+            ],
+            document.get("authority_consumed") is True,
+            document.get("run_reusable") is False,
+            document.get("retry_allowed") is False,
+            document.get("scientific_publication_blocked") is True,
+            document.get("binding_2_authorized") is False,
+            document.get("neo_exp_0040_published") is False,
+            document.get("private_values_disclosed") is False,
+            document.get("no_private_values_recorded") is True,
+            document.get("successful_terminal_result_reported_before_corruption")
+            is True,
+            isinstance(current, Mapping),
+            current.get("receipt_sha256")
+            == "865281FD36E530277A11A89500206DBB77D9FA8C7ABEBA21A291777BC73546F1",
+            current.get("manifest_sha256")
+            == "6D11B89F6B96AA55D8FE1AE6C21D6FDCE8FF33A22B0C5DA9475F4D7B9E3B9702",
+            current.get("result_sha256")
+            == "E81034DB588B4CF092EADBA9B46668A68D6C366BE7B473C483BDB7A1C28809B8",
+            current.get("closure_sha256")
+            == "1C269E1FCDCD707B07C8D8DBD456337E5446E6670AEB1925EE1A1A368F1EE44C",
+            isinstance(original, Mapping),
+            original.get("result_sha256")
+            == "FE63B84FDFBD16386838F017DA572203631AE38EEE0AD3E7A565E2D6732A57EE",
+            original.get("closure_sha256")
+            == "C47E49988543A365A306566416B32EE59871674F65C7A4F332D290E451CE92CD",
+            original.get("result_bytes_available") is False,
+            original.get("closure_bytes_available") is False,
+            isinstance(preserved, Mapping),
+            preserved.get("authority_receipt_unchanged") is True,
+            preserved.get("manifest_unchanged") is True,
+            isinstance(forensic_archive, Mapping),
+            forensic_archive.get("bundle_sha256")
+            == "14A0DECC79AE860073ABB92C260739F1BEBA4D2A7DC38A9E8E9EB50922BBC101",
+            forensic_archive.get("content_addressed") is True,
+            forensic_archive.get("verified") is True,
+            forensic_archive.get("purpose") == "forensic-test-overwrite",
+        )
+    ):
+        raise RankHeadV2RunDesignError(
+            "v2 r2 evidence-custody incident facts changed"
+        )
+    balanced.validate_metadata_only(document)
+    return {
+        "relative_path": EVIDENCE_CUSTODY_INCIDENT_PATH,
+        "artifact_sha256": sha256_bytes(raw),
+        "document_sha256": json_sha256(document),
+        "run_id": document["run_id"],
+        "disposition": document["disposition"],
+        "authority_consumed": True,
+        "scientific_publication_blocked": True,
+        "reauthorization_permitted": False,
     }
 
 
@@ -204,20 +294,41 @@ def _require_published_visible_record(
     ledger = repository / "lab" / "results.jsonl"
     if not ledger.is_file() or ledger.is_symlink():
         raise RankHeadV2RunDesignError("binding-1 v2 publication ledger is absent")
-    tracked = subprocess.run(
-        ["git", "ls-files", "--error-unmatch", "--", "lab/results.jsonl"],
-        cwd=repository,
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    if tracked.returncode != 0:
-        raise RankHeadV2RunDesignError(
-            "binding-1 v2 publication record is not tracked"
+    def git_output(*args: str) -> str:
+        completed = subprocess.run(
+            ["git", *args],
+            cwd=repository,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
+        if completed.returncode != 0:
+            raise RankHeadV2RunDesignError(
+                "binding-1 v2 publication commit is not locally proven"
+            )
+        return completed.stdout.strip()
+
+    if git_output("symbolic-ref", "--short", "HEAD") != "main":
+        raise RankHeadV2RunDesignError(
+            "binding-1 v2 publication must be visible from main"
+        )
+    head = git_output("rev-parse", "HEAD")
+    if not (
+        head
+        == git_output("rev-parse", "main")
+        == git_output("rev-parse", "origin/main")
+    ):
+        raise RankHeadV2RunDesignError(
+            "binding-1 v2 publication refs are not synchronized"
+        )
+    if git_output("status", "--porcelain", "--", "lab/results.jsonl"):
+        raise RankHeadV2RunDesignError(
+            "binding-1 v2 publication ledger has uncommitted changes"
+        )
+    committed = git_output("show", "HEAD:lab/results.jsonl")
     matches: list[dict[str, Any]] = []
-    for line_number, line in enumerate(ledger.read_text(encoding="utf-8").splitlines(), 1):
+    for line_number, line in enumerate(committed.splitlines(), 1):
         if not line.strip():
             continue
         try:
@@ -257,7 +368,13 @@ def _require_published_visible_record(
                     "binding-1 v2 publication hashes do not bind raw evidence"
                 )
             matches.append(
-                {"line": line_number, "layout": "split-experiment-record"}
+                {
+                    "line": line_number,
+                    "layout": "split-experiment-record",
+                    "run_id": integration.BINDING_1_RUN_ID,
+                    "commit": head,
+                    "record_sha256": sha256_bytes(line.encode("utf-8")),
+                }
             )
     if len(matches) != 1:
         raise RankHeadV2RunDesignError(
@@ -486,6 +603,7 @@ def build_run_design(
             "v2 run design verification must be terminal PASS"
         )
     incident = validate_preconsumption_incident(repository)
+    custody_incident = validate_evidence_custody_incident(repository)
     v2_projection = v2.validate_preregistration(repository)
     runs = []
     for run_id in integration.RUN_ORDER:
@@ -512,7 +630,7 @@ def build_run_design(
         "status": "static-preregistered",
         "integration_id": integration.INTEGRATION_ID,
         "protected_starting_main": integration.STARTING_PROTECTED_MAIN,
-        "repair_starting_main": "5130285d096650651ab9a3aa718d1280c45f317f",
+        "repair_starting_main": "ccca452f339745e9c5ce2b4dd8eff052dc7d350c",
         "retired_operational_attempts": [
             {
                 **incident,
@@ -525,7 +643,14 @@ def build_run_design(
                 "runtime_authority_consumed": False,
                 "reauthorization_permitted": False,
                 "scientific_result": None,
-            }
+            },
+            {
+                **custody_incident,
+                "model_requests_reported_before_custody_loss": 5,
+                "successful_terminal_result_reported_before_custody_loss": True,
+                "original_terminal_bytes_available": False,
+                "rerun_permitted": False,
+            },
         ],
         "v2_static_preregistration": v2_projection,
         "v2_carrier": {
@@ -555,6 +680,13 @@ def build_run_design(
             "holostate_cli_registered": False,
             "protected_sidecar_adapter_integration": "implemented",
             "post_consumption_fail_closed_closure": "implemented",
+            "terminal_evidence_overwrite": "forbidden",
+            "automatic_byte_exact_archive": (
+                "state/catalytic_kernel_0_rank_head_v2_evidence_archive/v1"
+            ),
+            "evidence_archive_module": (
+                "scripts/catalytic_kernel_0_balanced_rank_head_v2_evidence.py"
+            ),
             "authority_bridge_module": (
                 "scripts/catalytic_kernel_0_balanced_rank_head_v2_authority.py"
             ),
@@ -565,6 +697,13 @@ def build_run_design(
             "ignored_runtime_required": True,
             "authority_receipt_template": AUTHORITY_RECEIPT_TEMPLATE,
             "ignored_authority_receipts_required": True,
+            "evidence_archive_root": (
+                "state/catalytic_kernel_0_rank_head_v2_evidence_archive/v1"
+            ),
+            "ignored_evidence_archive_required": True,
+            "evidence_archive_overwrite_allowed": False,
+            "restore_replaces_existing_evidence": False,
+            "restore_accepts_only_missing_or_byte_identical_destinations": True,
         },
         "authority_contract": {
             "active": True,
@@ -579,6 +718,13 @@ def build_run_design(
             "maximum_invocations": 1,
             "retry_count": 0,
             "automatic_follow_on": False,
+            "binding_1_predecessor_identity": None,
+            "binding_2_predecessor_fields": [
+                "predecessor_run_id",
+                "predecessor_publication_commit",
+                "predecessor_publication_record_sha256",
+            ],
+            "binding_2_authority_hmac_binds_published_predecessor": True,
             "raw_authority_id_persisted": False,
             "consumption_point": "immediately-before-v2-runtime-root-creation",
             "global_inventory_across_both_runs": True,
@@ -606,6 +752,24 @@ def build_run_design(
             ),
             "evidence_only": True,
             "future_validation_allowed": False,
+        },
+        "historical_r2_authority_contract": {
+            "active": False,
+            "schema_version": authority.HISTORICAL_V2_AUTHORITY_SCHEMA_VERSION,
+            "object_schema_sha256": (
+                authority.HISTORICAL_V2_AUTHORITY_OBJECT_SCHEMA_SHA256
+            ),
+            "receipt_schema_version": authority.HISTORICAL_V2_RECEIPT_SCHEMA_VERSION,
+            "receipt_schema_sha256": (
+                authority.HISTORICAL_V2_AUTHORITY_RECEIPT_SCHEMA_SHA256
+            ),
+            "historical_run_id": integration.LOST_CUSTODY_BINDING_1_RUN_ID,
+            "authority_id_sha256": (
+                authority.HISTORICAL_R2_CONSUMED_AUTHORITY_ID_SHA256
+            ),
+            "evidence_only": True,
+            "future_validation_allowed": True,
+            "future_authorization_allowed": False,
         },
         "lifecycle_contract": {
             "logical_stages": 6,
@@ -655,6 +819,9 @@ def build_run_design(
             "maximum_concurrency": 1,
             "active_leases": 0,
             "tracked_publication": "exactly-one-lab-results-jsonl-record-with-raw-hashes",
+            "ledger_source": "clean-HEAD-lab-results-jsonl",
+            "required_refs": ["HEAD", "main", "origin/main"],
+            "publication_commit_and_canonical_record_sha256_returned": True,
             "raw_ignored_evidence_alone_authorizes_binding_2": False,
         },
         "private_state": {
