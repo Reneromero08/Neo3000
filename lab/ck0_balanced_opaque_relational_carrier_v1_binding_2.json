@@ -375,11 +375,11 @@
       },
       {
         "path": "scripts/test_catalytic_kernel_0_balanced_opaque_binding_2.py",
-        "sha256": "9DD931FE88B3707AC128A383D9C5750936E43D781EFB6B237D1109E6E09CF942"
+        "sha256": "6ADD28876AB340FD8D5A28FA8A548DD99CA24EDBCE30F0768DF5B053034EEF9F"
       }
     ],
     "kind": "normalized-source-bundle-sha256-v1",
-    "sha256": "628E924204171268F1AEC96E0B2B548362BE730A07BF2171DF9513B38BF6A190"
+    "sha256": "C3AF6765C1F9C73AB89768F6A3D143585785DFC27110BBEA491538B987BA2EE6"
   },
   "model_visible_carrier": {
     "allowed_root_content": [

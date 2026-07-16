@@ -94,23 +94,90 @@ class ExternalAuthorityBridgeTests(unittest.TestCase):
             balanced.validate_binding_2_authorization_boundary(boundary)
 
     def test_03_binding_2_execution_without_external_authority_fails_before_mutation(self) -> None:
+        def snapshot_leaf(path: Path) -> dict[str, object]:
+            if not path.exists() and not path.is_symlink():
+                return {"state": "absent"}
+            self.assertFalse(path.is_symlink())
+            self.assertTrue(path.is_file())
+            data = path.read_bytes()
+            return {
+                "state": "regular-file",
+                "bytes": data,
+                "size": path.stat().st_size,
+                "sha256": hashlib.sha256(data).hexdigest().upper(),
+            }
+
+        def snapshot_tree(path: Path) -> dict[str, object]:
+            if not path.exists() and not path.is_symlink():
+                return {"state": "absent"}
+            self.assertFalse(path.is_symlink())
+            self.assertTrue(path.is_dir())
+            entries: list[dict[str, object]] = []
+            for item in sorted(
+                path.rglob("*"), key=lambda candidate: candidate.relative_to(path).as_posix()
+            ):
+                self.assertFalse(item.is_symlink())
+                relative = item.relative_to(path).as_posix()
+                if item.is_dir():
+                    entries.append({"path": relative + "/", "kind": "directory"})
+                    continue
+                self.assertTrue(item.is_file())
+                data = item.read_bytes()
+                entries.append(
+                    {
+                        "path": relative,
+                        "kind": "regular-file",
+                        "bytes": data,
+                        "size": item.stat().st_size,
+                        "sha256": hashlib.sha256(data).hexdigest().upper(),
+                    }
+                )
+            return {"state": "directory", "entries": entries}
+
         private = balanced._private_binding_from_repository(ROOT, balanced.BINDING_2)
         receipt = balanced.authority_receipt_path(
             ROOT, balanced.BINDING_2_FULL_RUN_ID
         )
-        self.assertFalse(receipt.exists())
-        with self.assertRaisesRegex(
-            balanced.BalancedOpaqueError, "requires external one-shot authority"
-        ):
-            balanced.validate_preregistration(
-                ROOT,
-                private,
-                run_id=balanced.BINDING_2_FULL_RUN_ID,
-                require_final=False,
-                configuration=balanced.BINDING_2,
-                for_execution=True,
-            )
-        self.assertFalse(receipt.exists())
+        runtime_root = (
+            ROOT
+            / "state"
+            / "catalytic_kernel_0"
+            / balanced.BINDING_2_FULL_RUN_ID
+        )
+        run_lock = runtime_root / "run.lock"
+        receipt_before = snapshot_leaf(receipt)
+        runtime_before = snapshot_tree(runtime_root)
+        run_lock_before = snapshot_leaf(run_lock)
+        with mock.patch.object(
+            kernel.CatalyticKernel0Adapter,
+            "launch_sidecar",
+            side_effect=AssertionError("sidecar launch reached"),
+        ) as launch_sidecar, mock.patch.object(
+            kernel.CatalyticKernel0Adapter,
+            "execute_request",
+            side_effect=AssertionError("live model request reached"),
+        ) as execute_request, mock.patch.object(
+            balanced,
+            "consume_external_live_authority_once",
+            side_effect=AssertionError("authority consumption reached"),
+        ) as consume_authority:
+            with self.assertRaisesRegex(
+                balanced.BalancedOpaqueError, "requires external one-shot authority"
+            ):
+                balanced.validate_preregistration(
+                    ROOT,
+                    private,
+                    run_id=balanced.BINDING_2_FULL_RUN_ID,
+                    require_final=False,
+                    configuration=balanced.BINDING_2,
+                    for_execution=True,
+                )
+        launch_sidecar.assert_not_called()
+        execute_request.assert_not_called()
+        consume_authority.assert_not_called()
+        self.assertEqual(snapshot_leaf(receipt), receipt_before)
+        self.assertEqual(snapshot_tree(runtime_root), runtime_before)
+        self.assertEqual(snapshot_leaf(run_lock), run_lock_before)
 
     def test_04_malformed_authority_id_fails(self) -> None:
         for malformed in ("", "0" * 63, "0" * 65, "Z" * 64):
