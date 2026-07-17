@@ -60,8 +60,16 @@ class FakePool:
 
 
 class FakeAdapter:
-    def __init__(self, responses: dict[str, str]) -> None:
+    def __init__(
+        self,
+        responses: dict[str, str],
+        *,
+        cleanup_passed: bool = True,
+        postflight_passed: bool = True,
+    ) -> None:
         self.responses = responses
+        self.cleanup_passed = cleanup_passed
+        self.postflight_passed = postflight_passed
         self.request_ids: list[str] = []
         self.launches = 0
         self.cleanup_calls = 0
@@ -93,10 +101,14 @@ class FakeAdapter:
 
     def cleanup(self, **_kwargs: object) -> dict[str, object]:
         self.cleanup_calls += 1
-        return {"passed": True, "port_free": True, "stable_preserved": True}
+        return {
+            "passed": self.cleanup_passed,
+            "port_free": self.cleanup_passed,
+            "stable_preserved": self.cleanup_passed,
+        }
 
     def postflight(self, **_kwargs: object) -> dict[str, object]:
-        return {"passed": True}
+        return {"passed": self.postflight_passed}
 
 
 class ParentDependenceTests(unittest.TestCase):
@@ -130,12 +142,42 @@ class ParentDependenceTests(unittest.TestCase):
         aliases = list(balanced.ALIASES[:3])
         self.branch_a = self.source_runtime.normalize_branch("branch-a", aliases)
         self.branch_b = self.source_runtime.normalize_branch("branch-b", aliases)
+        original_verify_receipt = parent.verify_authority_receipt
+
+        def verify_receipt_fixture(
+            repository: Path,
+            *,
+            require_current_static: bool = True,
+        ) -> dict[str, object]:
+            if parent.receipt_path(repository).is_file():
+                return original_verify_receipt(
+                    repository,
+                    require_current_static=require_current_static,
+                )
+            return {
+                "authority_receipt_sha256": "9" * 64,
+                "consumed": True,
+            }
+
         self.source_patches = (
             mock.patch.object(parent, "_source_runtime", return_value=self.source_runtime),
             mock.patch.object(
                 parent,
                 "_source_parent_artifacts",
                 return_value=(self.branch_a, self.branch_b),
+            ),
+            mock.patch.object(
+                parent,
+                "verify_authority_receipt",
+                side_effect=verify_receipt_fixture,
+            ),
+            mock.patch.object(
+                parent,
+                "verify_source_evidence",
+                return_value={
+                    "source_hashes": {"archive": "A" * 64},
+                    "source_publication": {"record_sha256": "B" * 64},
+                },
             ),
         )
         for patcher in self.source_patches:
@@ -211,6 +253,55 @@ class ParentDependenceTests(unittest.TestCase):
             "finalization-observed",
             facts=parent._finalization_facts(cleanup, postflight),
         )
+
+    def valid_transform_response(self, *, own_head: bool = True) -> str:
+        own = self.source_runtime.private.internal_to_alias[
+            balanced.EXPECTED_FULL_SUPPORT[0]
+        ]
+        head = own if own_head else next(
+            alias for alias in balanced.ALIASES if alias != own
+        )
+        ranking = [head] + [
+            alias for alias in balanced.ALIASES if alias != head
+        ][:2]
+        return json.dumps(
+            {"operator": "reconcile", "ranking": ranking},
+            separators=(",", ":"),
+        )
+
+    def captured_arm(
+        self,
+        path: Path,
+        arm_id: str,
+        content: str,
+        *,
+        custody: bool = True,
+    ) -> dict[str, object]:
+        self.start_arm(path, arm_id)
+        capture = parent.capture_execution(
+            parent.state_paths(self.repository)[f"capture-{arm_id}"],
+            arm_id=arm_id,
+            model_request_sha256="C" * 64,
+            execution=FakeExecution(content),
+            raw_response_bytes=b"data: {}\n\n",
+        )
+        parent.append_journal_event(
+            path,
+            "response-captured",
+            arm_id=arm_id,
+            facts={
+                "capture_sha256": capture["capture_sha256"],
+                "captured_before_parsing": True,
+            },
+        )
+        if custody:
+            parent.append_journal_event(
+                path,
+                "request-custody-observed",
+                arm_id=arm_id,
+                facts={"passed": True, "custody_sha256": "8" * 64},
+            )
+        return capture
 
     def complete_journal(self) -> Path:
         path = self.start_journal()
@@ -480,7 +571,7 @@ class ParentDependenceTests(unittest.TestCase):
             ],
         )
 
-    def test_any_freeze_failure_prevents_all_private_mapping(self) -> None:
+    def test_known_captured_response_invalidity_prevents_all_private_mapping(self) -> None:
         path = self.start_journal()
         paths = parent.state_paths(self.repository)
         for arm_id in parent.ARM_IDS:
@@ -498,7 +589,9 @@ class ParentDependenceTests(unittest.TestCase):
 
         def freeze(_repository: Path, arm_id: str, *_args: object):
             if arm_id == parent.ARM_IDS[0]:
-                raise parent.ParentDependenceError("synthetic freeze failure")
+                raise parent.CapturedResponseInvalidError(
+                    "synthetic captured-response invalidity"
+                )
             return object(), {}, object(), {}
 
         def adjudicate(*_args: object):
@@ -510,6 +603,120 @@ class ParentDependenceTests(unittest.TestCase):
         ):
             parent._freeze_then_adjudicate_all(self.repository, paths)
         self.assertEqual(mapped, [])
+        outcomes = parent._journal_adjudications(parent.read_journal(path))
+        self.assertEqual(
+            {facts["classification"] for facts in outcomes.values()},
+            {parent.INCONCLUSIVE_CLASSIFICATION},
+        )
+
+    def test_unexpected_controller_failure_preserves_captures_without_adjudication(self) -> None:
+        path = self.start_journal()
+        before: dict[str, bytes] = {}
+        for arm_id in parent.ARM_IDS:
+            self.captured_arm(path, arm_id, self.valid_transform_response())
+            capture_path = parent.state_paths(self.repository)[f"capture-{arm_id}"]
+            before[arm_id] = capture_path.read_bytes()
+        self.finalize(path)
+        with mock.patch.object(
+            parent,
+            "_freeze_captured_arm",
+            side_effect=AssertionError("synthetic controller defect"),
+        ):
+            with self.assertRaisesRegex(AssertionError, "synthetic controller defect"):
+                parent._freeze_then_adjudicate_all(
+                    self.repository,
+                    parent.state_paths(self.repository),
+                )
+        events = parent.read_journal(path)
+        self.assertEqual(parent._journal_adjudications(events), {})
+        self.assertEqual(events[-1]["state"], "finalization-observed")
+        for arm_id, expected in before.items():
+            self.assertEqual(
+                parent.state_paths(self.repository)[f"capture-{arm_id}"].read_bytes(),
+                expected,
+            )
+
+    def test_repaired_controller_replays_same_captures_with_zero_model_calls(self) -> None:
+        path = self.start_journal()
+        before: dict[str, bytes] = {}
+        for arm_id in parent.ARM_IDS:
+            self.captured_arm(path, arm_id, self.valid_transform_response())
+            capture_path = parent.state_paths(self.repository)[f"capture-{arm_id}"]
+            before[arm_id] = capture_path.read_bytes()
+        self.finalize(path)
+        adapter = FakeAdapter({})
+        parent._freeze_then_adjudicate_all(
+            self.repository,
+            parent.state_paths(self.repository),
+        )
+        self.assertEqual(adapter.request_ids, [])
+        self.assertEqual(
+            set(parent._journal_adjudications(parent.read_journal(path))),
+            set(parent.ARM_IDS),
+        )
+        for arm_id, expected in before.items():
+            self.assertEqual(
+                parent.state_paths(self.repository)[f"capture-{arm_id}"].read_bytes(),
+                expected,
+            )
+
+    def test_malformed_model_json_becomes_inconclusive(self) -> None:
+        path = self.start_journal()
+        self.captured_arm(path, parent.ARM_IDS[0], "{malformed")
+        self.captured_arm(
+            path,
+            parent.ARM_IDS[1],
+            self.valid_transform_response(),
+        )
+        self.finalize(path)
+        parent._freeze_then_adjudicate_all(
+            self.repository,
+            parent.state_paths(self.repository),
+        )
+        outcomes = parent._journal_adjudications(parent.read_journal(path))
+        self.assertEqual(
+            {facts["classification"] for facts in outcomes.values()},
+            {parent.INCONCLUSIVE_CLASSIFICATION},
+        )
+
+    def test_schema_invalid_transform_becomes_inconclusive(self) -> None:
+        path = self.start_journal()
+        invalid = json.dumps(
+            {"operator": "invent", "ranking": list(balanced.ALIASES[:3])},
+            separators=(",", ":"),
+        )
+        self.captured_arm(path, parent.ARM_IDS[0], invalid)
+        self.captured_arm(
+            path,
+            parent.ARM_IDS[1],
+            self.valid_transform_response(),
+        )
+        self.finalize(path)
+        parent._freeze_then_adjudicate_all(
+            self.repository,
+            parent.state_paths(self.repository),
+        )
+        outcomes = parent._journal_adjudications(parent.read_journal(path))
+        self.assertEqual(
+            {facts["classification"] for facts in outcomes.values()},
+            {parent.INCONCLUSIVE_CLASSIFICATION},
+        )
+
+    def test_authenticated_capture_corruption_becomes_inconclusive(self) -> None:
+        path = self.start_journal()
+        for arm_id in parent.ARM_IDS:
+            self.captured_arm(path, arm_id, self.valid_transform_response())
+        self.finalize(path)
+        corrupted = parent.state_paths(self.repository)[
+            f"capture-{parent.ARM_IDS[0]}"
+        ]
+        data = bytearray(corrupted.read_bytes())
+        data[-1] ^= 1
+        corrupted.write_bytes(bytes(data))
+        parent._freeze_then_adjudicate_all(
+            self.repository,
+            parent.state_paths(self.repository),
+        )
         outcomes = parent._journal_adjudications(parent.read_journal(path))
         self.assertEqual(
             {facts["classification"] for facts in outcomes.values()},
@@ -708,19 +915,15 @@ class ParentDependenceTests(unittest.TestCase):
         self.assertEqual(result["status"], "inconclusive")
         self.assertFalse(result["custody_gates_passed"])
 
-    def test_resume_without_durable_finalization_fails_closed(self) -> None:
+    def test_both_captures_restart_reconciles_and_adjudicates_without_model_calls(self) -> None:
         paths = parent.state_paths(self.repository)
         journal = self.start_journal()
         for arm_id in parent.ARM_IDS:
-            self.start_arm(journal, arm_id)
-            capture = parent.capture_execution(
-                paths[f"capture-{arm_id}"],
-                arm_id=arm_id,
-                model_request_sha256="C" * 64,
-                execution=FakeExecution("{}"),
-                raw_response_bytes=b"data: {}\n\n",
+            self.captured_arm(
+                journal,
+                arm_id,
+                self.valid_transform_response(),
             )
-            self.capture_arm(journal, arm_id, capture["capture_sha256"])
         adapter = FakeAdapter({arm_id: "{}" for arm_id in parent.ARM_IDS})
         cleanup, postflight = parent._execute_unstarted_arms(
             self.repository,
@@ -728,9 +931,11 @@ class ParentDependenceTests(unittest.TestCase):
             live=adapter,
             full_preflight={},
         )
-        self.assertFalse(cleanup["passed"])
-        self.assertFalse(postflight["passed"])
+        self.assertTrue(cleanup["passed"])
+        self.assertTrue(postflight["passed"])
+        self.assertEqual(cleanup["mode"], "restart-custody-reconciliation")
         self.assertEqual(adapter.launches, 0)
+        self.assertEqual(adapter.request_ids, [])
         parent.append_journal_event(
             journal,
             "finalization-observed",
@@ -739,11 +944,11 @@ class ParentDependenceTests(unittest.TestCase):
         parent._freeze_then_adjudicate_all(self.repository, paths)
         outcomes = parent._journal_adjudications(parent.read_journal(journal))
         self.assertEqual(
-            {facts["classification"] for facts in outcomes.values()},
-            {parent.INCONCLUSIVE_CLASSIFICATION},
+            set(outcomes),
+            set(parent.ARM_IDS),
         )
 
-    def test_resume_with_captured_arm_missing_custody_stays_failed(self) -> None:
+    def test_missing_request_custody_is_restart_reconciled_before_arm_two(self) -> None:
         paths = parent.state_paths(self.repository)
         journal = self.start_journal()
         first, second = parent.ARM_IDS
@@ -772,7 +977,102 @@ class ParentDependenceTests(unittest.TestCase):
             full_preflight={},
         )
         self.assertEqual(adapter.request_ids, [second])
-        self.assertFalse(cleanup["request_custody_passed"])
+        self.assertTrue(cleanup["request_custody_passed"])
+        custody = parent._event_for(
+            parent.read_journal(journal),
+            "request-custody-observed",
+            first,
+        )
+        self.assertEqual(custody["facts"]["mode"], "restart-reconciled")
+        self.assertRegex(
+            custody["facts"]["reconciliation_commitment"],
+            r"^[0-9A-F]{64}$",
+        )
+        parent.append_journal_event(
+            journal,
+            "finalization-observed",
+            facts=parent._finalization_facts(cleanup, postflight),
+        )
+        parent._freeze_then_adjudicate_all(self.repository, paths)
+        outcomes = parent._journal_adjudications(parent.read_journal(journal))
+        self.assertEqual(
+            set(outcomes),
+            set(parent.ARM_IDS),
+        )
+
+    def test_crash_after_arm_one_capture_executes_only_arm_two(self) -> None:
+        paths = parent.state_paths(self.repository)
+        journal = self.start_journal()
+        first, second = parent.ARM_IDS
+        self.captured_arm(
+            journal,
+            first,
+            self.valid_transform_response(),
+        )
+        adapter = FakeAdapter({second: self.valid_transform_response()})
+        cleanup, postflight = parent._execute_unstarted_arms(
+            self.repository,
+            paths,
+            live=adapter,
+            full_preflight={},
+        )
+        self.assertTrue(cleanup["passed"])
+        self.assertTrue(postflight["passed"])
+        self.assertEqual(adapter.request_ids, [second])
+        self.assertEqual(adapter.launches, 1)
+
+    def test_capture_without_event_is_reconciled_without_model_regeneration(self) -> None:
+        paths = parent.state_paths(self.repository)
+        journal = self.start_journal()
+        first, second = parent.ARM_IDS
+        self.start_arm(journal, first)
+        capture = parent.capture_execution(
+            paths[f"capture-{first}"],
+            arm_id=first,
+            model_request_sha256="C" * 64,
+            execution=FakeExecution(self.valid_transform_response()),
+            raw_response_bytes=b"data: {}\n\n",
+        )
+        adapter = FakeAdapter({second: self.valid_transform_response()})
+        cleanup, postflight = parent._execute_unstarted_arms(
+            self.repository,
+            paths,
+            live=adapter,
+            full_preflight={},
+        )
+        self.assertTrue(cleanup["passed"])
+        self.assertTrue(postflight["passed"])
+        self.assertEqual(adapter.request_ids, [second])
+        captured = parent._event_for(
+            parent.read_journal(journal), "response-captured", first
+        )
+        self.assertEqual(captured["facts"]["capture_sha256"], capture["capture_sha256"])
+        custody = parent._event_for(
+            parent.read_journal(journal), "request-custody-observed", first
+        )
+        self.assertEqual(custody["facts"]["mode"], "restart-reconciled")
+
+    def test_failed_restart_custody_is_inconclusive_without_regeneration(self) -> None:
+        paths = parent.state_paths(self.repository)
+        journal = self.start_journal()
+        for arm_id in parent.ARM_IDS:
+            self.captured_arm(
+                journal,
+                arm_id,
+                self.valid_transform_response(),
+                custody=False,
+            )
+        adapter = FakeAdapter({}, cleanup_passed=False)
+        cleanup, postflight = parent._execute_unstarted_arms(
+            self.repository,
+            paths,
+            live=adapter,
+            full_preflight={},
+        )
+        self.assertFalse(cleanup["passed"])
+        self.assertTrue(postflight["passed"])
+        self.assertEqual(adapter.request_ids, [])
+        self.assertEqual(adapter.launches, 0)
         parent.append_journal_event(
             journal,
             "finalization-observed",
@@ -784,6 +1084,40 @@ class ParentDependenceTests(unittest.TestCase):
             {facts["classification"] for facts in outcomes.values()},
             {parent.INCONCLUSIVE_CLASSIFICATION},
         )
+
+    def test_repeated_resume_never_generates_an_arm_twice(self) -> None:
+        paths = parent.state_paths(self.repository)
+        journal = self.start_journal()
+        first, second = parent.ARM_IDS
+        self.captured_arm(
+            journal,
+            first,
+            self.valid_transform_response(),
+        )
+        adapter = FakeAdapter({second: self.valid_transform_response()})
+        parent._execute_unstarted_arms(
+            self.repository,
+            paths,
+            live=adapter,
+            full_preflight={},
+        )
+        parent._execute_unstarted_arms(
+            self.repository,
+            paths,
+            live=adapter,
+            full_preflight={},
+        )
+        self.assertEqual(adapter.request_ids, [second])
+        events = parent.read_journal(journal)
+        for arm_id in parent.ARM_IDS:
+            self.assertEqual(
+                sum(
+                    event["state"] == "request-started"
+                    and event.get("arm_id") == arm_id
+                    for event in events
+                ),
+                1,
+            )
 
     def test_execute_surface_uses_one_generation_per_arm_and_one_sidecar(self) -> None:
         paths = parent.state_paths(self.repository)

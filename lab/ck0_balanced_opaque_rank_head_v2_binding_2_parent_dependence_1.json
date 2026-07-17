@@ -56,17 +56,17 @@
         "sha256": "8BEE2FA8712B1826ADE6EB24809F32924DE498027944CC7D8426217822252BCB"
       },
       {
-        "byte_size": 121800,
+        "byte_size": 132291,
         "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
-        "sha256": "769F9BEB91CF9CFF8C57D36E21371964C4768DC00D95830266EBAAAA87A7C414"
+        "sha256": "FF0A13AB5D412C199EB2552319BBC7848E3931D10EB8F6662BD508AAB2018371"
       },
       {
-        "byte_size": 36837,
+        "byte_size": 49121,
         "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
-        "sha256": "B31FFDB082707F9D85DC52C79DE3E6C569A8D7092FAE3B4A03A7739E6E931B4D"
+        "sha256": "5464736A80E53FDCFA9AB9173BE4FE35BAE8A46FF3772C4BCF3D2DFD7E23471E"
       }
     ],
-    "sha256": "62E347A843C1F1D2AA29108521520572C347EFBFB4E5849B52D4B2E9CC8B5A03"
+    "sha256": "EB4B567D790FC5E032DBA7E9BC822252CC9B3CB8C99F177C04FC4A81BD804A9D"
   },
   "intervention": {
     "arms": [
@@ -255,6 +255,7 @@
     "capture_schema_sha256": "7FB8EBCD5A27654031E94EE5C7A5BFA9090EA5015B151535F39B1CF4E48317C7",
     "captured_response_replay_without_model_contact": true,
     "duplicate_request_started": "rejected",
+    "expected_captured_response_invalidity": "scientific-inconclusive-under-explicit-domain-exception",
     "journal_schema": {
       "append_only": true,
       "hash_law": "SHA-256 hash chain plus experiment-key HMAC of each canonical event",
@@ -284,9 +285,12 @@
       ]
     },
     "journal_schema_sha256": "A18494C3B582EC996F4DA0B1FE8DA30B0449718F75D56B8A63197706AD1713A0",
+    "missing_request_custody_event": "append-only-after-passed-restart-reconciliation",
     "request_started_without_exact_capture": "terminal-inconclusive-no-retry",
     "response_captured_before_transport_parsing": true,
+    "restart_custody_reconciliation": "no-sidecar-no-model-contact-before-deterministic-replay",
     "restore_policy": "missing-or-byte-identical-only",
-    "terminal_archive_content_addressed": true
+    "terminal_archive_content_addressed": true,
+    "unexpected_controller_exception": "raise-with-captures-and-finalization-preserved-no-adjudication"
   }
 }

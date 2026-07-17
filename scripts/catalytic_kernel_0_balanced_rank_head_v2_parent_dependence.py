@@ -36,10 +36,19 @@ import catalytic_kernel_0_balanced_rank_head_v2_evidence as source_evidence
 import catalytic_kernel_0_balanced_rank_head_v2_integration as integration
 import catalytic_kernel_0_balanced_rank_head_v2_publication as publication
 import catalytic_kernel_0_balanced_rank_head_v2_run_design as run_design
+import catalytic_inference_bench_0_runtime as runtime_support
 
 
 class ParentDependenceError(ValueError):
     """The static design or one-shot replay boundary is invalid."""
+
+
+class CapturedResponseInvalidError(ParentDependenceError):
+    """Authenticated captured model data is scientifically invalid."""
+
+
+class RestartCustodyInvalidError(ParentDependenceError):
+    """A restart could not reconstruct the required custody boundary."""
 
 
 EXPERIMENT_ID = "ck0-balanced-v2-rank-head-b2-parent-dependence-r1"
@@ -1586,9 +1595,14 @@ def verify_capture(
     arm_id: str,
     model_request_sha256: str,
 ) -> dict[str, Any]:
-    data = _require_regular(path, "response capture", maximum=MAX_CAPTURE_BYTES)
-    body = _json_object(data, "response capture")
-    _require(
+    try:
+        data = _require_regular(path, "response capture", maximum=MAX_CAPTURE_BYTES)
+        body = _json_object(data, "response capture")
+    except ParentDependenceError as exc:
+        raise CapturedResponseInvalidError(
+            "response capture is missing, unsafe, or malformed"
+        ) from exc
+    if not (
         set(body) == {
             "schema_version",
             "experiment_id",
@@ -1603,41 +1617,48 @@ def verify_capture(
         and body.get("experiment_id") == EXPERIMENT_ID
         and body.get("arm_id") == arm_id
         and body.get("model_request_sha256") == model_request_sha256
-        and body.get("captured_before_parsing") is True,
-        "response capture identity changed",
-    )
+        and body.get("captured_before_parsing") is True
+    ):
+        raise CapturedResponseInvalidError("response capture identity changed")
     authenticated = {key: value for key, value in body.items() if key != "capture_hmac_sha256"}
-    _require(
-        hmac.compare_digest(
+    if not hmac.compare_digest(
             str(body.get("capture_hmac_sha256", "")),
             _evidence_hmac(
                 _repository_from_evidence_path(path),
                 CAPTURE_HMAC_DOMAIN,
                 authenticated,
             ),
-        ),
-        "response capture authentication changed",
-    )
+        ):
+        raise CapturedResponseInvalidError(
+            "response capture authentication changed"
+        )
     execution = body.get("execution")
-    _require(
+    if not (
         isinstance(execution, dict)
-        and set(execution) == set(_CAPTURE_EXECUTION_FIELDS),
-        "response capture execution field set changed",
-    )
+        and set(execution) == set(_CAPTURE_EXECUTION_FIELDS)
+    ):
+        raise CapturedResponseInvalidError(
+            "response capture execution field set changed"
+        )
     raw = body.get("raw_response_capture")
-    _require(isinstance(raw, dict), "raw response capture is malformed")
+    if not isinstance(raw, dict):
+        raise CapturedResponseInvalidError("raw response capture is malformed")
     try:
         raw_bytes = base64.b64decode(str(raw.get("bytes", "")), validate=True)
     except (ValueError, TypeError) as exc:
-        raise ParentDependenceError("raw response capture encoding changed") from exc
-    _require(
+        raise CapturedResponseInvalidError(
+            "raw response capture encoding changed"
+        ) from exc
+    if not (
         set(raw) == {"encoding", "byte_size", "sha256", "bytes"}
         and raw.get("encoding") == "base64"
         and raw.get("byte_size") == len(raw_bytes)
         and raw.get("sha256") == sha256_bytes(raw_bytes)
-        and bool(raw_bytes),
-        "raw response capture identity changed",
-    )
+        and bool(raw_bytes)
+    ):
+        raise CapturedResponseInvalidError(
+            "raw response capture identity changed"
+        )
     return {**body, "capture_sha256": sha256_bytes(data)}
 
 
@@ -1656,20 +1677,30 @@ def _freeze_captured_arm(
 ) -> tuple[integration.RankHeadV2Runtime, dict[str, Any], Any, dict[str, Any]]:
     source_runtime = _source_runtime(repository)
     runtime = _arm_runtime(repository, source_runtime, arm_id)
-    transport = kernel._normalized_transport(
-        replay_capture(capture),
-        rendered_tokens=rendered_tokens,
-        max_tokens=64,
-    )
-    structured = runtime.parse_response(
-        "transform",
-        transport["structured_content"],
-    )
-    transform = runtime.normalize_transform(
-        structured["operator"],
-        structured["ranking"],
-    )
-    frozen = v2.freeze_rank_head_selection(runtime, transform)
+    try:
+        transport = kernel._normalized_transport(
+            replay_capture(capture),
+            rendered_tokens=rendered_tokens,
+            max_tokens=64,
+        )
+        structured = runtime.parse_response(
+            "transform",
+            transport["structured_content"],
+        )
+        transform = runtime.normalize_transform(
+            structured["operator"],
+            structured["ranking"],
+        )
+        frozen = v2.freeze_rank_head_selection(runtime, transform)
+    except (
+        runtime_support.CatalyticInferenceRuntimeError,
+        balanced.BalancedOpaqueError,
+        integration.RankHeadV2IntegrationError,
+        v2.RankHeadDesignError,
+    ) as exc:
+        raise CapturedResponseInvalidError(
+            "captured transform response failed its frozen data contract"
+        ) from exc
     return runtime, transform, frozen, transport["metadata"]
 
 
@@ -1769,6 +1800,18 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "archive_schema_sha256": json_sha256(archive_schema()),
             "response_captured_before_transport_parsing": True,
             "captured_response_replay_without_model_contact": True,
+            "expected_captured_response_invalidity": (
+                "scientific-inconclusive-under-explicit-domain-exception"
+            ),
+            "unexpected_controller_exception": (
+                "raise-with-captures-and-finalization-preserved-no-adjudication"
+            ),
+            "restart_custody_reconciliation": (
+                "no-sidecar-no-model-contact-before-deterministic-replay"
+            ),
+            "missing_request_custody_event": (
+                "append-only-after-passed-restart-reconciliation"
+            ),
             "request_started_without_exact_capture": "terminal-inconclusive-no-retry",
             "duplicate_request_started": "rejected",
             "terminal_archive_content_addressed": True,
@@ -2686,6 +2729,131 @@ def _all_captured_requests_have_custody(
     )
 
 
+def _captured_requests_missing_custody(
+    events: Sequence[Mapping[str, Any]],
+) -> list[str]:
+    return [
+        arm_id
+        for arm_id in ARM_IDS
+        if _event_for(events, "response-captured", arm_id) is not None
+        and _event_for(events, "request-custody-observed", arm_id) is None
+        and _event_for(events, "adjudicated", arm_id) is None
+    ]
+
+
+def _validate_restart_runtime_paths(
+    repository: Path,
+    paths: Mapping[str, Path],
+) -> list[str]:
+    run_root = paths["run_root"]
+    allowed = {
+        path.resolve(strict=False)
+        for key, path in paths.items()
+        if key not in {"run_root", "receipt"}
+    }
+    allowed.add((run_root / ".controller.lock").resolve(strict=False))
+    observed: list[str] = []
+    if not run_root.is_dir() or balanced._is_reparse(run_root):
+        raise RestartCustodyInvalidError("restart runtime root is unsafe")
+    for path in run_root.rglob("*"):
+        if balanced._is_reparse(path):
+            raise RestartCustodyInvalidError("restart runtime path is a reparse point")
+        if path.is_dir():
+            continue
+        if not path.is_file() or path.resolve(strict=False) not in allowed:
+            raise RestartCustodyInvalidError(
+                "restart runtime root contains an unauthorized path"
+            )
+        observed.append(_relative(repository, path))
+    return sorted(observed)
+
+
+def _restart_custody_reconciliation(
+    repository: Path,
+    paths: Mapping[str, Path],
+    *,
+    live: Any,
+    full_preflight: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], str]:
+    """Reconstruct restart custody without launching or contacting a model."""
+    try:
+        receipt = verify_authority_receipt(repository)
+        source = verify_source_evidence(repository)
+        events = read_journal(paths["journal"])
+        observed_paths = _validate_restart_runtime_paths(repository, paths)
+        captures: dict[str, str] = {}
+        partials: dict[str, str] = {}
+        for arm_id in ARM_IDS:
+            started = _event_for(events, "request-started", arm_id)
+            captured = _event_for(events, "response-captured", arm_id)
+            if captured is not None:
+                if started is None:
+                    raise RestartCustodyInvalidError(
+                        "captured response lacks request-started custody"
+                    )
+                verified = verify_capture(
+                    _capture_path(paths, arm_id),
+                    arm_id=arm_id,
+                    model_request_sha256=str(
+                        started["facts"]["model_request_sha256"]
+                    ),
+                )
+                if verified["capture_sha256"] != captured["facts"].get(
+                    "capture_sha256"
+                ):
+                    raise RestartCustodyInvalidError(
+                        "captured response differs from its journal event"
+                    )
+                captures[arm_id] = str(verified["capture_sha256"])
+            partial = _partial_capture_path(paths, arm_id)
+            if partial.exists() or partial.is_symlink():
+                partial_data = _require_regular(
+                    partial,
+                    "partial raw response",
+                    maximum=MAX_RAW_RESPONSE_BYTES,
+                )
+                partials[arm_id] = sha256_bytes(partial_data)
+        cleanup = dict(live.cleanup(sidecar=None, preflight=full_preflight))
+        postflight = dict(live.postflight(preflight=full_preflight))
+    except (
+        OSError,
+        ParentDependenceError,
+        balanced.BalancedOpaqueError,
+        source_authority.RankHeadV2AuthorityError,
+        source_evidence.RankHeadV2EvidenceError,
+        publication.RankHeadV2PublicationError,
+    ) as exc:
+        if isinstance(exc, RestartCustodyInvalidError):
+            raise
+        raise RestartCustodyInvalidError(
+            "restart custody evidence could not be verified"
+        ) from exc
+    cleanup["mode"] = "restart-custody-reconciliation"
+    cleanup["request_custody_passed"] = cleanup.get("passed") is True
+    postflight["mode"] = "restart-custody-reconciliation"
+    passed = cleanup.get("passed") is True and postflight.get("passed") is True
+    body = {
+        "mode": "restart-custody-reconciliation",
+        "gates_passed": passed,
+        "authority_receipt_sha256": receipt["authority_receipt_sha256"],
+        "journal_head_sha256": events[-1]["event_sha256"],
+        "source_archive_sha256": source["source_hashes"]["archive"],
+        "source_publication_record_sha256": source["source_publication"][
+            "record_sha256"
+        ],
+        "captures": captures,
+        "partial_captures": partials,
+        "observed_runtime_paths": observed_paths,
+        "cleanup": cleanup,
+        "postflight": postflight,
+        "model_requests_issued": 0,
+        "sidecar_launched": False,
+        "claiming": False,
+    }
+    balanced.validate_metadata_only(body)
+    return cleanup, postflight, json_sha256(body)
+
+
 def _finalization_facts(
     cleanup: Mapping[str, Any],
     postflight: Mapping[str, Any],
@@ -2693,6 +2861,12 @@ def _finalization_facts(
     facts = {
         "cleanup": dict(cleanup),
         "postflight": dict(postflight),
+        "mode": (
+            "restart-custody-reconciliation"
+            if cleanup.get("mode") == "restart-custody-reconciliation"
+            and postflight.get("mode") == "restart-custody-reconciliation"
+            else "live-cleanup-postflight"
+        ),
         "gates_passed": (
             cleanup.get("passed") is True
             and cleanup.get("request_custody_passed", True) is True
@@ -2710,19 +2884,96 @@ def _execute_unstarted_arms(
     live: Any,
     full_preflight: Mapping[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    for arm_id in ARM_IDS:
+        try:
+            _recover_request_prefix(repository, paths, arm_id)
+        except CapturedResponseInvalidError as exc:
+            events = read_journal(paths["journal"])
+            if _event_for(events, "adjudicated", arm_id) is None:
+                append_journal_event(
+                    paths["journal"],
+                    "adjudicated",
+                    arm_id=arm_id,
+                    facts=_inconclusive_facts(
+                        arm_id,
+                        "captured-response-invalid:"
+                        + sha256_bytes(str(exc).encode("utf-8")),
+                    ),
+                )
     events = read_journal(paths["journal"])
     remaining = _remaining_unstarted_arms(events)
-    if not remaining:
-        custody_complete = _all_captured_requests_have_custody(events)
-        return (
-            {
+    missing_custody = _captured_requests_missing_custody(events)
+    reconciliation: tuple[dict[str, Any], dict[str, Any], str] | None = None
+    if missing_custody or not remaining:
+        try:
+            reconciliation = _restart_custody_reconciliation(
+                repository,
+                paths,
+                live=live,
+                full_preflight=full_preflight,
+            )
+        except RestartCustodyInvalidError as exc:
+            failure_sha = sha256_bytes(str(exc).encode("utf-8"))
+            cleanup = {
                 "passed": False,
                 "request_custody_passed": False,
-                "captured_request_custody_complete": custody_complete,
-                "resume_without_durable_finalization": True,
-            },
-            {"passed": False, "resume_without_durable_finalization": True},
+                "mode": "restart-custody-reconciliation",
+                "failure_sha256": failure_sha,
+            }
+            postflight = {
+                "passed": False,
+                "mode": "restart-custody-reconciliation",
+                "failure_sha256": failure_sha,
+            }
+            for arm_id in missing_custody:
+                if _event_for(
+                    read_journal(paths["journal"]), "adjudicated", arm_id
+                ) is None:
+                    append_journal_event(
+                        paths["journal"],
+                        "adjudicated",
+                        arm_id=arm_id,
+                        facts=_inconclusive_facts(
+                            arm_id,
+                            "restart-custody-reconciliation-failed:" + failure_sha,
+                        ),
+                    )
+            return cleanup, postflight
+        cleanup, postflight, reconciliation_commitment = reconciliation
+        reconciliation_passed = (
+            cleanup.get("passed") is True and postflight.get("passed") is True
         )
+        if reconciliation_passed:
+            for arm_id in missing_custody:
+                append_journal_event(
+                    paths["journal"],
+                    "request-custody-observed",
+                    arm_id=arm_id,
+                    facts={
+                        "passed": True,
+                        "mode": "restart-reconciled",
+                        "reconciliation_commitment": reconciliation_commitment,
+                    },
+                )
+        else:
+            for arm_id in missing_custody:
+                append_journal_event(
+                    paths["journal"],
+                    "adjudicated",
+                    arm_id=arm_id,
+                    facts=_inconclusive_facts(
+                        arm_id,
+                        "restart-custody-reconciliation-gates-failed:"
+                        + reconciliation_commitment,
+                    ),
+                )
+            return cleanup, postflight
+        events = read_journal(paths["journal"])
+        remaining = _remaining_unstarted_arms(events)
+    if not remaining:
+        if reconciliation is None:
+            raise ParentDependenceError("restart reconciliation was not performed")
+        return reconciliation[0], reconciliation[1]
     pool = live.create_lease_pool(1)
     sidecar: Any | None = None
     cleanup: dict[str, Any] = {"passed": False}
@@ -2844,8 +3095,8 @@ def _execute_unstarted_arms(
                         facts=facts,
                     )
                 else:
-                    request_custody_passed = False
                     _recover_request_prefix(repository, paths, arm_id)
+                    raise
                 continue
     finally:
         try:
@@ -2870,8 +3121,14 @@ def _freeze_then_adjudicate_all(
     repository: Path,
     paths: Mapping[str, Path],
 ) -> None:
+    recovery_failures: dict[str, str] = {}
     for arm_id in ARM_IDS:
-        _recover_request_prefix(repository, paths, arm_id)
+        try:
+            _recover_request_prefix(repository, paths, arm_id)
+        except CapturedResponseInvalidError as exc:
+            recovery_failures[arm_id] = sha256_bytes(
+                str(exc).encode("utf-8")
+            )
     events = read_journal(paths["journal"])
     finalization = _event_for(events, "finalization-observed")
     if finalization is None:
@@ -2891,7 +3148,7 @@ def _freeze_then_adjudicate_all(
                 )
         return
     frozen: dict[str, tuple[Any, dict[str, Any], Any, dict[str, Any]]] = {}
-    freeze_failures: dict[str, str] = {}
+    freeze_failures: dict[str, str] = dict(recovery_failures)
     # Freeze every available rank head before any private mapping/scoring.
     for arm_id in ARM_IDS:
         if _event_for(events, "adjudicated", arm_id) is not None:
@@ -2899,6 +3156,8 @@ def _freeze_then_adjudicate_all(
         started = _event_for(events, "request-started", arm_id)
         captured = _event_for(events, "response-captured", arm_id)
         if started is None or captured is None:
+            continue
+        if arm_id in freeze_failures:
             continue
         request_sha = str(started["facts"]["model_request_sha256"])
         try:
@@ -2913,7 +3172,7 @@ def _freeze_then_adjudicate_all(
                 capture,
                 int(started["facts"]["rendered_prompt_tokens"]),
             )
-        except BaseException as exc:
+        except CapturedResponseInvalidError as exc:
             freeze_failures[arm_id] = sha256_bytes(str(exc).encode("utf-8"))
     events = read_journal(paths["journal"])
     preexisting_inconclusive = any(
