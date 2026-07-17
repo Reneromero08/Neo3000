@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Publish binding-2 rank-head v2 evidence and adjudicate cross-binding replication
+## Checkpoint 2: Prepare the binding-2 parent-dependence causal replay
 
 Runs `ck0-balanced-v2-rank-head-b1-full-r3` and `ck0-balanced-v2-rank-head-b2-full-r1` each completed exactly once as `BALANCED_OPAQUE_RANK_HEAD_V2_VISIBLE` under the same frozen model, binary, carrier, run design, static contract, and 18-file implementation. Each completed six logical stages and five model requests with controller-only extraction, froze transform rank zero before private mapping, selected its own private singleton, scored `5/5`, and passed restoration and cleanup. The two private binding custody roots are distinct and the two run keys are independently derived; no private identity or cross-binding correspondence is published.
 
@@ -10,7 +10,13 @@ Canonical split records `neo-exp-0040` and `neo-exp-0041` are published at `lab/
 
 Static artifact `lab/ck0_balanced_opaque_rank_head_v2_cross_binding_adjudication_1.json`, SHA-256 `9473E1052DBE72CEABCB70EBA7787266DDF350843F01774A3F363213F29D4961`, supports `END_TO_END_CROSS_BINDING_REPLICATION` and `DETERMINISTIC_RANK_HEAD_EXTRACTION_REPLICATED_ACROSS_TWO_PRIVATE_BINDINGS`. It does not support binding-2 parent dependence, causal replication across bindings, general two-parent necessity, transfer, general catalytic inference, task advantage, superiority, SOTA, broader or restart-persistent HoloState, Deep, or automatic promotion; those claims remain locked.
 
-**Next exact action:** `Design the minimum cross-binding causal test required to determine whether parent dependence replicates under binding-2, without rerunning either completed full-information experiment.`
+The minimum replay is now statically implemented and preregistered as `ck0-balanced-v2-rank-head-b2-parent-dependence-r1`. It has exactly two arms: `delete-parent-0` replaces only the complete parent-0 relation with its exact four-field commitment receipt, and `delete-parent-1` symmetrically replaces only parent-1. The retained parent in each arm is reconstructed byte-exactly from verified binding-2 archive `EBD8F01971C0D4BEE945A516D515645EF9F8F7BDC16F03D15BE7990F476536ED`. The completed full-information, borrow, and branch requests are never rerun.
+
+The future live budget is exactly two generations, one transform response per arm. One fresh external authority must bind the exact published preparation commit, experiment identity, binding-2 source custody and run-key commitment, `neo-exp-0041`, cross-binding adjudication, both ordered arms, model, binary, carrier, implementation, preregistration, journal, capture, and archive schemas. Per-arm consumption occurs at the append-only `request-started` event. Every raw SSE line is durably recorded before transport parsing and bound into an experiment-key-authenticated capture; captured bytes replay without model contact, while a started request lacking exact capture is terminally inconclusive and is never retried. Cleanup and postflight custody become an authenticated `finalization-observed` journal event before scientific adjudication, and a resume lacking that event fails closed. Both rank-zero selections must freeze successfully before either private mapping or score is computed.
+
+No authority, receipt, runtime root, journal, capture, sidecar, model request, or scientific result exists for this replay. Binding-2 parent dependence, causal replication across bindings, general two-parent necessity, transfer, general catalytic inference, task advantage, superiority, SOTA, broader or restart-persistent HoloState, Deep, and automatic promotion remain locked.
+
+**Next exact action:** `Separately authorize ck0-balanced-v2-rank-head-b2-parent-dependence-r1 with one fresh external authority ID bound to the exact published preparation commit and canonical preregistration.`
 
 ## Historical checkpoint: Rank-head CK0 v2 authority versioned; pre-consumption run retired
 

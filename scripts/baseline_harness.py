@@ -146,8 +146,14 @@ def merge_tool_call(accumulator: dict[int, dict[str, Any]], fragment: dict[str, 
             current["function"]["arguments"] += str(function["arguments"])
 
 
-def iter_sse(response: Any) -> Iterable[dict[str, Any]]:
+def iter_sse(
+    response: Any,
+    *,
+    raw_line_recorder: Callable[[bytes], None] | None = None,
+) -> Iterable[dict[str, Any]]:
     for raw_line in response:
+        if raw_line_recorder is not None:
+            raw_line_recorder(bytes(raw_line))
         line = raw_line.decode("utf-8", errors="replace").strip()
         if not line or line.startswith(":") or not line.startswith("data:"):
             continue
@@ -304,6 +310,7 @@ def stream_completion(
     *,
     event_recorder: Callable[[dict[str, Any]], None] | None = None,
     request_label: str | None = None,
+    raw_line_recorder: Callable[[bytes], None] | None = None,
 ) -> StreamMeasurement:
     encoded = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(
@@ -334,7 +341,7 @@ def stream_completion(
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             status = response.status
-            for event in iter_sse(response):
+            for event in iter_sse(response, raw_line_recorder=raw_line_recorder):
                 now = time.perf_counter()
                 event_count += 1
                 if first_event is None:

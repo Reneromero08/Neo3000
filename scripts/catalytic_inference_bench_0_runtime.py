@@ -1530,7 +1530,14 @@ class _HoloStateAdapter:
             "public_root_terminal_token_index": terminal,
         }
 
-    def execute_request(self, *, sidecar: Any, payload: Mapping[str, Any], request: Any) -> Any:
+    def execute_request(
+        self,
+        *,
+        sidecar: Any,
+        payload: Mapping[str, Any],
+        request: Any,
+        raw_line_recorder: Callable[[bytes], None] | None = None,
+    ) -> Any:
         completed = False
 
         def call() -> Any:
@@ -1542,6 +1549,7 @@ class _HoloStateAdapter:
                 timeout=900,
                 event_recorder=None,
                 request_label=None,
+                raw_line_recorder=raw_line_recorder,
             )
             completed = True
             return value

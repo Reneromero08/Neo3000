@@ -1,0 +1,292 @@
+{
+  "authority_contract": {
+    "authority_kind": "external-one-shot-two-arm-parent-dependence",
+    "automatic_follow_on": false,
+    "object_schema_sha256": "D59C7D3789BBC780E1F2337C0C92A39D96006429110DF1CCF14F23C14CE0B56D",
+    "one_authority_for_exact_arm_set": true,
+    "per_arm_consumption_record": "request-started journal event",
+    "raw_authority_id_persisted": false,
+    "receipt_path_template": "state/catalytic_kernel_0_authority.parent-dependence.<experiment-id>.authority.consumed.json",
+    "receipt_schema_sha256": "63EB95CCACB8760F68FC02C142C9D47BF0934A217C7C26FC8EC87B7F042468F3",
+    "receipt_schema_version": "rank-head-v2-parent-dependence-consumption-v1",
+    "schema_accepts_generic_experiment_identity": true,
+    "schema_version": "rank-head-v2-parent-dependence-authority-v1"
+  },
+  "classification_contract": {
+    "no_prejudgment": true,
+    "per_arm": {
+      "delete-parent-0": {
+        "malformed_inconsistent_or_transport_invalid": "INCONCLUSIVE",
+        "not_shown": "BINDING_2_PARENT_A_INFORMATION_DEPENDENCE_NOT_SHOWN",
+        "supported": "BINDING_2_PARENT_A_INFORMATION_DEPENDENCE_SUPPORTED"
+      },
+      "delete-parent-1": {
+        "malformed_inconsistent_or_transport_invalid": "INCONCLUSIVE",
+        "not_shown": "BINDING_2_PARENT_B_INFORMATION_DEPENDENCE_NOT_SHOWN",
+        "supported": "BINDING_2_PARENT_B_INFORMATION_DEPENDENCE_SUPPORTED"
+      }
+    },
+    "replicated_directional_or_bilateral_claim_requires": [
+      "both binding-2 arms support",
+      "binding-1 causal package remains byte-exact and verified"
+    ]
+  },
+  "execution_state": {
+    "authority_consumed": false,
+    "authority_created": false,
+    "binding_2_full_information_consumed": true,
+    "journal_created": false,
+    "live_execution_performed": false,
+    "model_requests_issued": 0,
+    "parent_dependence_replay_consumed": false,
+    "sidecar_launched": false
+  },
+  "experiment_id": "ck0-balanced-v2-rank-head-b2-parent-dependence-r1",
+  "hypothesis": "Under the independently keyed binding-2 replay, replacing either complete transform parent with its exact commitment-only projection changes whether deterministic rank-zero extraction recovers the frozen private singleton.",
+  "implementation_binding": {
+    "files": [
+      {
+        "byte_size": 27707,
+        "path": "scripts/baseline_harness.py",
+        "sha256": "6100461EFE4172279668A3D213875EFA884F10DC9E246D60AF0A0702BDD49D99"
+      },
+      {
+        "byte_size": 99828,
+        "path": "scripts/catalytic_inference_bench_0_runtime.py",
+        "sha256": "8BEE2FA8712B1826ADE6EB24809F32924DE498027944CC7D8426217822252BCB"
+      },
+      {
+        "byte_size": 121800,
+        "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
+        "sha256": "769F9BEB91CF9CFF8C57D36E21371964C4768DC00D95830266EBAAAA87A7C414"
+      },
+      {
+        "byte_size": 36837,
+        "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
+        "sha256": "B31FFDB082707F9D85DC52C79DE3E6C569A8D7092FAE3B4A03A7739E6E931B4D"
+      }
+    ],
+    "sha256": "62E347A843C1F1D2AA29108521520572C347EFBFB4E5849B52D4B2E9CC8B5A03"
+  },
+  "intervention": {
+    "arms": [
+      {
+        "arm_id": "delete-parent-0",
+        "deleted_parent_role": "parent-0",
+        "not_shown_classification": "BINDING_2_PARENT_A_INFORMATION_DEPENDENCE_NOT_SHOWN",
+        "retained_parent_role": "parent-1",
+        "supported_classification": "BINDING_2_PARENT_A_INFORMATION_DEPENDENCE_SUPPORTED"
+      },
+      {
+        "arm_id": "delete-parent-1",
+        "deleted_parent_role": "parent-1",
+        "not_shown_classification": "BINDING_2_PARENT_B_INFORMATION_DEPENDENCE_NOT_SHOWN",
+        "retained_parent_role": "parent-0",
+        "supported_classification": "BINDING_2_PARENT_B_INFORMATION_DEPENDENCE_SUPPORTED"
+      }
+    ],
+    "borrow_request_reexecuted": false,
+    "branch_requests_reexecuted": false,
+    "deterministic_rank_head": 0,
+    "full_information_request_reexecuted": false,
+    "model_generations_per_arm": 1,
+    "private_mapping_or_score_model_visible": false,
+    "selection_frozen_before_private_mapping": true,
+    "source_of_complete_parents": "state/catalytic_kernel_0_rank_head_v2_evidence_archive/v1/ck0-balanced-v2-rank-head-b2-full-r1/EBD8F01971C0D4BEE945A516D515645EF9F8F7BDC16F03D15BE7990F476536ED",
+    "total_future_model_generations": 2,
+    "transform_requests": 2
+  },
+  "locked_claims": {
+    "BINDING_2_PARENT_DEPENDENCE": "LOCKED_UNTIL_EXECUTED",
+    "BROADER_PROCESS_LOCAL_HOLOSTATE": "LOCKED",
+    "CAUSAL_REPLICATION_ACROSS_BINDINGS": "LOCKED_UNTIL_BOTH_ARMS_SUPPORT",
+    "DEEP": "DISABLED",
+    "GENERAL_CATALYTIC_INFERENCE": "LOCKED",
+    "GENERAL_TWO_PARENT_NECESSITY": "LOCKED",
+    "RESTART_PERSISTENCE": "LOCKED",
+    "SOTA": "LOCKED",
+    "SUPERIORITY": "LOCKED",
+    "TASK_ADVANTAGE": "LOCKED",
+    "TRANSFER": "LOCKED",
+    "automatic_promotion": false
+  },
+  "next_action": "Separately authorize ck0-balanced-v2-rank-head-b2-parent-dependence-r1 with one fresh external authority bound to the exact publication commit and this preregistration.",
+  "protected_starting_main": "720b434d1e2a6e54754d305aed89289cf707c545",
+  "request_isolation": {
+    "arm_projections": {
+      "delete-parent-0": {
+        "arm_id": "delete-parent-0",
+        "commitment_only_parent_count": 1,
+        "complete_parent_count": 1,
+        "deleted_parent_fields_exact": [
+          "artifact_commitment",
+          "artifact_role",
+          "informative_content_withheld",
+          "projection_mode"
+        ],
+        "deleted_parent_role": "parent-0",
+        "no_smuggle_verified": true,
+        "retained_parent_byte_exact": true,
+        "retained_parent_role": "parent-1"
+      },
+      "delete-parent-1": {
+        "arm_id": "delete-parent-1",
+        "commitment_only_parent_count": 1,
+        "complete_parent_count": 1,
+        "deleted_parent_fields_exact": [
+          "artifact_commitment",
+          "artifact_role",
+          "informative_content_withheld",
+          "projection_mode"
+        ],
+        "deleted_parent_role": "parent-1",
+        "no_smuggle_verified": true,
+        "retained_parent_byte_exact": true,
+        "retained_parent_role": "parent-0"
+      }
+    },
+    "arm_request_sha256": {
+      "delete-parent-0": "260F18D1C143C5D61ED775BB85F297D0A96E1507451347BED517BDAEDEE701A8",
+      "delete-parent-1": "2B1124B9D63BC6AF4BF22D25D30606034F26466EEAFB8CF9081ECCC7C242395E"
+    },
+    "cross_arm_response_visible": false,
+    "execution_order_independent": true,
+    "model_authored_restore_required": false,
+    "model_visible_carrier_mutation_present": false,
+    "parallelism": 1,
+    "physical_slots": 1,
+    "request_self_contained": true,
+    "sidecar_epochs_maximum": 1
+  },
+  "schema_version": 1,
+  "source_custody": {
+    "archive_verified": true,
+    "authority_receipt_verified": true,
+    "binary_sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B",
+    "binding_1_causal_adjudication_sha256": "B4742B61F0654C8300676AA1F867813487532A99A901FDCFE2B5046E4A8751EF",
+    "binding_1_package_sha256": "D6FEC8B0477A198216ECDDDD8DE11AD2734410A640A69B37017394D9454643B7",
+    "carrier_root_sha256": "4B82F399ACE797BDF40012ABB4D1254021F838B58BAED66153D4042EF3C7585C",
+    "cross_binding_adjudication_sha256": "9473E1052DBE72CEABCB70EBA7787266DDF350843F01774A3F363213F29D4961",
+    "experiment_run_key_commitment": "11152986FB529BFE9E85203626EEBBAF8A1719DFDE4D6260CC545735D6D217FE",
+    "model_sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+    "private_artifacts_verified": true,
+    "publication_verified": true,
+    "reference_extraction_commitment": "2DF17237D3451837EC5CEB92AC832E54A9E64752387319071B1F880F533026D4",
+    "reference_transform_commitment": "C3B6DD4D9F5E16D466C8C00D5AB7833A0D7D70CEECDF4A024713620FC5FEDAC4",
+    "source_branch_commitments": {
+      "parent-0": "7FD9AEEDAD927B135811BB1D92CE8F37B467C940BF83034D59650FEF982E77F0",
+      "parent-1": "446D2D8FC397E0ACB5F406323E8E1B734DAD03551A87E37D3B3808D71D485262"
+    },
+    "source_hashes": {
+      "archive": "EBD8F01971C0D4BEE945A516D515645EF9F8F7BDC16F03D15BE7990F476536ED",
+      "closure": "B09E6233720950648037C674E42C920F27150532D5FB957A55586F0DC9303CB5",
+      "manifest": "23186EB4F48ABD262B3FF20933E0B1737D582B929AAC1E0048D16533EFAFD7A6",
+      "receipt": "425828C3CB0819F05BA556A8CCBA1602C90F45311FDB677200DB14F3BC42A19B",
+      "result": "D7BFE06CED70B7544EB5F6D81EC64AE901CE6CD86DE82C72BCC4C5E395290BD9"
+    },
+    "source_publication": {
+      "ledger_line": 54,
+      "record_id": "neo-exp-0041",
+      "record_sha256": "D6DF5C9B4FFF825F236AB616EE8292CEAEC8F9905E9C47CF57B29F70F68F87EE"
+    },
+    "source_run_id": "ck0-balanced-v2-rank-head-b2-full-r1",
+    "source_run_key_commitment": "FEC400325777606A697687F990A24968B6AE787EDF444339A1639AE9BCFA8AC1",
+    "source_terminal_classification": "BALANCED_OPAQUE_RANK_HEAD_V2_VISIBLE"
+  },
+  "status": "static-preregistered-unexecuted",
+  "transaction_contract": {
+    "archive_schema": {
+      "capture_files": [
+        "capture-delete-parent-0.json",
+        "capture-delete-parent-1.json"
+      ],
+      "content_address": "SHA-256 of canonical bundle",
+      "overwrite_allowed": false,
+      "partial_capture_files": [
+        "partial-capture-delete-parent-0.raw",
+        "partial-capture-delete-parent-1.raw"
+      ],
+      "required_core_files": [
+        "authority-receipt.json",
+        "manifest.json",
+        "journal.jsonl",
+        "result.json",
+        "closure.json"
+      ],
+      "restore_policy": "missing-or-byte-identical-only",
+      "schema_version": 1
+    },
+    "archive_schema_sha256": "198D47F078421798D0EB9AD8C1F97588C3E6FBF207A5B5DF0BD0A6F539FB317F",
+    "capture_schema": {
+      "authentication": "HMAC-SHA-256 under the private experiment key",
+      "exclusive_create": true,
+      "execution_fields": [
+        "content",
+        "reasoning_content",
+        "tool_calls",
+        "prompt_tokens",
+        "cached_prompt_tokens",
+        "completion_tokens",
+        "generated_token_ids",
+        "generated_token_count",
+        "completion_token_count_match",
+        "generated_token_sha256",
+        "nonempty_token_array_event_count",
+        "empty_token_array_event_count",
+        "token_merge_modes",
+        "terminal_stop_evidence",
+        "finish_reason",
+        "http_status",
+        "event_count"
+      ],
+      "replay_without_model_contact": true,
+      "required_fields": [
+        "schema_version",
+        "experiment_id",
+        "arm_id",
+        "model_request_sha256",
+        "captured_before_parsing",
+        "raw_response_capture",
+        "execution",
+        "capture_hmac_sha256"
+      ],
+      "schema_version": 1
+    },
+    "capture_schema_sha256": "7FB8EBCD5A27654031E94EE5C7A5BFA9090EA5015B151535F39B1CF4E48317C7",
+    "captured_response_replay_without_model_contact": true,
+    "duplicate_request_started": "rejected",
+    "journal_schema": {
+      "append_only": true,
+      "hash_law": "SHA-256 hash chain plus experiment-key HMAC of each canonical event",
+      "required_fields": [
+        "schema_version",
+        "sequence",
+        "experiment_id",
+        "state",
+        "arm_id",
+        "observed_at",
+        "previous_event_sha256",
+        "facts",
+        "event_sha256",
+        "event_hmac_sha256"
+      ],
+      "schema_version": 1,
+      "states": [
+        "prepared",
+        "authority-consumed",
+        "request-started",
+        "response-captured",
+        "request-custody-observed",
+        "finalization-observed",
+        "adjudicated",
+        "terminal-written",
+        "archived"
+      ]
+    },
+    "journal_schema_sha256": "A18494C3B582EC996F4DA0B1FE8DA30B0449718F75D56B8A63197706AD1713A0",
+    "request_started_without_exact_capture": "terminal-inconclusive-no-retry",
+    "response_captured_before_transport_parsing": true,
+    "restore_policy": "missing-or-byte-identical-only",
+    "terminal_archive_content_addressed": true
+  }
+}

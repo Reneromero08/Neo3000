@@ -434,6 +434,19 @@ class EvaluatorGateTests(unittest.TestCase):
             self.assertIn(path, EVALUATOR["protected_paths"]["files"])
             self.assertIn(path, EVALUATOR["controller_files"])
 
+    def test_rank_head_parent_dependence_surface_is_protected(self) -> None:
+        controller_paths = (
+            "scripts/catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
+            "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
+        )
+        for path in controller_paths:
+            self.assertIn(path, EVALUATOR["protected_paths"]["files"])
+            self.assertIn(path, EVALUATOR["controller_files"])
+        self.assertIn(
+            "lab/ck0_balanced_opaque_rank_head_v2_binding_2_parent_dependence_1.json",
+            EVALUATOR["protected_paths"]["files"],
+        )
+
     def test_catalytic_swarm_1_complete_object_is_exact_and_evidence_bound(self) -> None:
         self.assertEqual(
             EVALUATOR["catalytic_swarm_1"],
