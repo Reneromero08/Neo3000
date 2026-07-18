@@ -508,6 +508,22 @@ class ParentDependenceTests(unittest.TestCase):
             self.assertEqual(set(receipt), balanced.DELETION_RECEIPT_FIELDS)
             self.assertEqual(retained, (self.branch_a, self.branch_b)[1 - deleted_index])
 
+    def test_runtime_custody_paths_exclude_external_receipt(self) -> None:
+        paths = parent.state_paths(self.repository)
+        allowed = parent._runtime_allowed_paths(paths)
+        self.assertNotIn(paths["receipt"], allowed)
+        self.assertNotIn(paths["run_root"], allowed)
+        self.assertEqual(
+            set(allowed),
+            {
+                path
+                for key, path in paths.items()
+                if key not in {"run_root", "receipt"}
+            },
+        )
+        for path in allowed:
+            path.relative_to(paths["run_root"])
+
     def test_arm_projection_rejects_any_extra_deleted_parent_field(self) -> None:
         assignment = parent.arm_assignment(self.repository, parent.ARM_IDS[0])
         assignment["parent_artifacts"][0]["support_aliases"] = []
@@ -1446,6 +1462,41 @@ class ParentDependenceTests(unittest.TestCase):
                 before[parent.ARM_IDS[0]],
             )
             self.assertEqual(paths[f"capture-{second}"].read_bytes(), second_before)
+        finally:
+            for patcher in reversed(patches):
+                patcher.stop()
+
+    def test_fresh_authority_admits_one_descendant_controller_repair(self) -> None:
+        authority, _request_hashes, patches = self.repair_policy_fixture()
+        try:
+            original = str(authority["authorized_commit"])
+            current = self.commit_repair_fixture("pre-consumption-repair")
+            with mock.patch.object(
+                parent,
+                "authority_id_sha256",
+                return_value=str(authority["authority_id_sha256"]),
+            ):
+                built = parent.build_external_authority(
+                    self.repository,
+                    raw_authority_id="A" * 64,
+                    authorized_commit=original,
+                    current_commit=current,
+                    expected_model_sha256=parent.MODEL_SHA256,
+                    expected_binary_sha256=parent.BINARY_SHA256,
+                )
+            self.assertEqual(built, authority)
+            report = parent._controller_repair_report(
+                self.repository,
+                built,
+                current_commit=current,
+                events=None,
+            )
+            self.assertEqual(report["controller_repair_commit_count"], 1)
+            self.assertEqual(report["model_generations_issued"], 0)
+            self.assertEqual(
+                report["frozen_scientific_execution_binding_sha256"],
+                authority["frozen_scientific_execution_binding_sha256"],
+            )
         finally:
             for patcher in reversed(patches):
                 patcher.stop()

@@ -985,6 +985,15 @@ def state_paths(repository: Path) -> dict[str, Path]:
     }
 
 
+def _runtime_allowed_paths(paths: Mapping[str, Path]) -> tuple[Path, ...]:
+    """Return only exact mutable files below the custody-authorized run root."""
+    return tuple(
+        path
+        for key, path in paths.items()
+        if key not in {"run_root", "receipt"}
+    )
+
+
 def build_external_authority(
     repository: Path,
     *,
@@ -995,15 +1004,19 @@ def build_external_authority(
     expected_binary_sha256: str,
 ) -> dict[str, Any]:
     repository = repository.resolve(strict=False)
-    if authorized_commit != current_commit or GIT_COMMIT_RE.fullmatch(
-        authorized_commit
-    ) is None:
-        raise ParentDependenceError("authority does not bind the exact current commit")
+    if (
+        GIT_COMMIT_RE.fullmatch(authorized_commit) is None
+        or GIT_COMMIT_RE.fullmatch(current_commit) is None
+    ):
+        raise ParentDependenceError("authority commit identity is malformed")
     if expected_model_sha256 != MODEL_SHA256 or expected_binary_sha256 != BINARY_SHA256:
         raise ParentDependenceError("authority model or binary identity changed")
     source = verify_source_evidence(repository)
-    preregistration = validate_preregistration(repository)
-    implementation = _implementation_binding(repository)
+    preregistration = validate_preregistration(
+        repository,
+        require_current_controller=current_commit == authorized_commit,
+    )
+    frozen = _frozen_scientific_binding(repository)
     isolation = request_isolation_report(repository)
     authority = {
         "schema_version": AUTHORITY_SCHEMA_VERSION,
@@ -1027,13 +1040,11 @@ def build_external_authority(
         "model_sha256": MODEL_SHA256,
         "binary_sha256": BINARY_SHA256,
         "carrier_root_sha256": CARRIER_ROOT_SHA256,
-        "frozen_scientific_execution_binding_sha256": implementation[
-            "frozen_scientific_execution"
-        ]["sha256"],
+        "frozen_scientific_execution_binding_sha256": frozen["sha256"],
         "arm_request_sha256": dict(isolation["arm_request_sha256"]),
-        "repairable_controller_initial_binding_sha256": implementation[
-            "repairable_controller"
-        ]["sha256"],
+        "repairable_controller_initial_binding_sha256": preregistration[
+            "repairable_controller_initial_binding_sha256"
+        ],
         "implementation_binding_sha256": preregistration[
             "implementation_binding_sha256"
         ],
@@ -1061,10 +1072,15 @@ def build_external_authority(
 def _expected_authority_body(
     repository: Path,
     authority: Mapping[str, Any],
+    *,
+    require_current_controller: bool = True,
 ) -> dict[str, Any]:
     source = verify_source_evidence(repository)
-    preregistration = validate_preregistration(repository)
-    implementation = _implementation_binding(repository)
+    preregistration = validate_preregistration(
+        repository,
+        require_current_controller=require_current_controller,
+    )
+    frozen = _frozen_scientific_binding(repository)
     isolation = request_isolation_report(repository)
     return {
         "schema_version": AUTHORITY_SCHEMA_VERSION,
@@ -1090,13 +1106,11 @@ def _expected_authority_body(
         "model_sha256": MODEL_SHA256,
         "binary_sha256": BINARY_SHA256,
         "carrier_root_sha256": CARRIER_ROOT_SHA256,
-        "frozen_scientific_execution_binding_sha256": implementation[
-            "frozen_scientific_execution"
-        ]["sha256"],
+        "frozen_scientific_execution_binding_sha256": frozen["sha256"],
         "arm_request_sha256": dict(isolation["arm_request_sha256"]),
-        "repairable_controller_initial_binding_sha256": implementation[
-            "repairable_controller"
-        ]["sha256"],
+        "repairable_controller_initial_binding_sha256": preregistration[
+            "repairable_controller_initial_binding_sha256"
+        ],
         "implementation_binding_sha256": preregistration[
             "implementation_binding_sha256"
         ],
@@ -1126,16 +1140,30 @@ def validate_external_authority(
     if set(authority) != set(authority_object_schema()["required"]):
         raise ParentDependenceError("authority field set changed")
     _require_sha(authority.get("authority_id_sha256"), "authority ID hash")
-    expected = _expected_authority_body(repository, authority)
+    original = str(authority.get("authorized_commit", ""))
+    is_controller_repair = current_commit != original
+    expected = _expected_authority_body(
+        repository,
+        authority,
+        require_current_controller=not is_controller_repair,
+    )
     _require(
         dict(authority) == expected
-        and authority.get("authorized_commit") == current_commit
         and authority.get("original_authorized_execution_commit")
-        == current_commit
+        == original
         and expected_model_sha256 == MODEL_SHA256
         and expected_binary_sha256 == BINARY_SHA256,
         "external authority scope mismatch",
     )
+    if is_controller_repair:
+        _controller_repair_report(
+            repository,
+            authority,
+            current_commit=current_commit,
+            events=None,
+        )
+    else:
+        _require(original == current_commit, "external authority scope mismatch")
     # The stable schema deliberately does not enumerate this experiment ID.
     experiment_schema = authority_object_schema()["properties"]["experiment_id"]
     _require(
@@ -3664,7 +3692,7 @@ def run_parent_dependence(
         args=args,
         repository_root=repository,
         run_root=paths["run_root"],
-        allowed_paths=tuple(path for key, path in paths.items() if key != "run_root"),
+        allowed_paths=_runtime_allowed_paths(paths),
     )
     public_preflight = _public_preflight(full_preflight)
     current_commit = str(public_preflight.get("stable", {}).get("head", ""))
