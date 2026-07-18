@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import catalytic_kernel_0_balanced_opaque as balanced
 import catalytic_kernel_0_balanced_rank_head_v2_integration as integration
 import catalytic_kernel_0_balanced_rank_head_v2_parent_dependence as parent
+import catalytic_runtime_custody as custody
 import baseline_harness as harness
 
 
@@ -513,6 +514,7 @@ class ParentDependenceTests(unittest.TestCase):
         allowed = parent._runtime_allowed_paths(paths)
         self.assertNotIn(paths["receipt"], allowed)
         self.assertNotIn(paths["run_root"], allowed)
+        self.assertIn(paths["controller_lock"], allowed)
         self.assertEqual(
             set(allowed),
             {
@@ -523,6 +525,103 @@ class ParentDependenceTests(unittest.TestCase):
         )
         for path in allowed:
             path.relative_to(paths["run_root"])
+
+    def test_controller_lock_false_negative_reproduces_and_exact_lock_admission_passes(self) -> None:
+        subprocess.run(
+            ["git", "add", ".gitignore"],
+            cwd=self.repository,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Neo3000 Test",
+                "-c",
+                "user.email=neo3000-test@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                "fixture",
+            ],
+            cwd=self.repository,
+            check=True,
+            capture_output=True,
+        )
+        paths = parent.state_paths(self.repository)
+        authorized = paths["run_root"].relative_to(self.repository).as_posix()
+        repaired_allowed = [
+            path.relative_to(self.repository).as_posix()
+            for path in parent._runtime_allowed_paths(paths)
+        ]
+        historical_allowed = [
+            path
+            for path in repaired_allowed
+            if path != paths["controller_lock"].relative_to(self.repository).as_posix()
+        ]
+        original = custody.capture_preclaim_custody(
+            self.repository,
+            authorized_root=authorized,
+            allowed_paths=historical_allowed,
+        )
+        paths["controller_lock"].parent.mkdir(parents=True, exist_ok=True)
+        descriptor = os.open(
+            paths["controller_lock"],
+            os.O_RDWR | os.O_CREAT,
+        )
+
+        def legacy_stable_file_hash(path: Path) -> tuple[int, str]:
+            before = path.stat(follow_symlinks=False)
+            digest = hashlib.sha256()
+            with path.open("rb") as handle:
+                while chunk := handle.read(1024 * 1024):
+                    digest.update(chunk)
+            return before.st_size, digest.hexdigest()
+
+        try:
+            if os.name == "nt":
+                import msvcrt
+
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                msvcrt.locking(descriptor, msvcrt.LK_NBLCK, 1)
+            with mock.patch.object(
+                custody,
+                "_stable_file_hash",
+                side_effect=legacy_stable_file_hash,
+            ):
+                with self.assertRaises(BaseException) as raised:
+                    custody.validate_postclaim_custody(original)
+            if os.name == "nt":
+                self.assertIsInstance(raised.exception, PermissionError)
+                self.assertEqual(
+                    hashlib.sha256(str(raised.exception).encode("utf-8")).hexdigest().upper(),
+                    "36D3843CE9B6F9A8F14C54CF139F8E505E457145C99847316C38FC2C632F32DF",
+                )
+        finally:
+            if os.name == "nt":
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+            os.close(descriptor)
+            paths["controller_lock"].unlink()
+        self.assertFalse(paths["controller_lock"].exists())
+        historical_report = custody.validate_postclaim_custody(original)
+        self.assertEqual(
+            historical_report.changed_evidence_paths,
+            (authorized.rstrip("/") + "/",),
+        )
+        repaired = custody.capture_preclaim_custody(
+            self.repository,
+            authorized_root=authorized,
+            allowed_paths=repaired_allowed,
+        )
+        with parent.controller_lock(paths["controller_lock"]):
+            report = custody.validate_postclaim_custody(repaired)
+            self.assertIn(
+                paths["controller_lock"].relative_to(self.repository).as_posix(),
+                report.changed_evidence_paths,
+            )
+        self.assertFalse(paths["controller_lock"].exists())
 
     def test_arm_projection_rejects_any_extra_deleted_parent_field(self) -> None:
         assignment = parent.arm_assignment(self.repository, parent.ARM_IDS[0])

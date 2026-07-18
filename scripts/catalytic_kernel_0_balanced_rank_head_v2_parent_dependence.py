@@ -977,6 +977,7 @@ def state_paths(repository: Path) -> dict[str, Path]:
         "result": run_root / "result.json",
         "closure": run_root / "closure.json",
         "run_lock": run_root / "run.lock",
+        "controller_lock": run_root / ".controller.lock",
         "capture-delete-parent-0": captures / "delete-parent-0.json",
         "capture-delete-parent-1": captures / "delete-parent-1.json",
         "partial-capture-delete-parent-0": captures / "delete-parent-0.raw.partial",
@@ -2481,6 +2482,7 @@ def run_lock(path: Path) -> Iterator[None]:
 
 @contextmanager
 def controller_lock(path: Path) -> Iterator[None]:
+    """Hold the exact controller-only mutex through final publication."""
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(path, os.O_RDWR | os.O_CREAT, stat.S_IRUSR | stat.S_IWUSR)
     locked = False
@@ -3254,7 +3256,7 @@ def _validate_restart_runtime_paths(
         for key, path in paths.items()
         if key not in {"run_root", "receipt"}
     }
-    allowed.add((run_root / ".controller.lock").resolve(strict=False))
+    allowed.add(paths["controller_lock"].resolve(strict=False))
     observed: list[str] = []
     if not run_root.is_dir() or balanced._is_reparse(run_root):
         raise RestartCustodyInvalidError("restart runtime root is unsafe")
@@ -3725,7 +3727,7 @@ def run_parent_dependence(
             expected_model_sha256=model_sha,
             expected_binary_sha256=binary_sha,
         )
-    controller_path = paths["run_root"] / ".controller.lock"
+    controller_path = paths["controller_lock"]
     with controller_lock(controller_path):
         with run_lock(paths["run_lock"]):
             _prepare_or_resume(

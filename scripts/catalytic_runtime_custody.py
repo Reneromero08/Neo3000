@@ -302,12 +302,16 @@ def _is_ignored(repository_root: Path, path: str) -> bool:
 def _stable_file_hash(path: Path) -> tuple[int, str]:
     before = path.stat(follow_symlinks=False)
     digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        while True:
-            chunk = handle.read(1024 * 1024)
-            if not chunk:
-                break
-            digest.update(chunk)
+    # An exact allowlisted zero-byte control lock has no content to read.
+    # Hashing it by identity plus the empty digest avoids a Windows false
+    # negative where an active byte-range mutex rejects a redundant read.
+    if before.st_size:
+        with path.open("rb") as handle:
+            while True:
+                chunk = handle.read(1024 * 1024)
+                if not chunk:
+                    break
+                digest.update(chunk)
     after = path.stat(follow_symlinks=False)
     before_identity = (
         before.st_dev,
