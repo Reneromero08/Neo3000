@@ -550,6 +550,42 @@ class PositionSeedCrossoverTests(unittest.TestCase):
             with self.assertRaisesRegex(panel.PositionSeedCrossoverError, "differs"):
                 panel._verify_existing_archive(repository, commitment)
 
+    def test_25_nested_live_preflight_projects_exact_commit_for_authority(self) -> None:
+        head = "a" * 40
+        full_preflight = {
+            "metadata": {
+                "stable": {"head": head},
+                "candidate": {"head": "b" * 40},
+                "model_identity": {"sha256": panel.MODEL_SHA256},
+                "binary_identity": {"sha256": panel.BINARY_SHA256},
+            },
+            "runtime": {"private_state": object()},
+        }
+        public = panel._public_preflight(full_preflight)
+        self.assertEqual(public["stable"]["head"], head)
+        self.assertNotIn("runtime", public)
+        preregistration = {
+            "artifact_sha256": "C" * 64,
+            "frozen_scientific_execution_binding_sha256": "D" * 64,
+            "repairable_controller_binding_sha256": "E" * 64,
+            "request_sha256": {request_id: "F" * 64 for request_id in panel.REQUEST_IDS},
+        }
+        with mock.patch.object(
+            panel,
+            "validate_preregistration",
+            return_value=preregistration,
+        ):
+            authority = panel.build_external_authority(
+                REPOSITORY,
+                self.model_path,
+                raw_authority_id="1" * 64,
+                authorized_commit=head,
+                current_commit=public["stable"]["head"],
+                expected_model_sha256=panel.MODEL_SHA256,
+                expected_binary_sha256=panel.BINARY_SHA256,
+            )
+        self.assertEqual(authority["authorized_commit"], head)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

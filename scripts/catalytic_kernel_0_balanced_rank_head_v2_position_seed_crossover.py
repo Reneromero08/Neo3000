@@ -1861,15 +1861,7 @@ def _recover_or_mark_started_request(
 
 
 def _public_preflight(full_preflight: Mapping[str, Any]) -> dict[str, Any]:
-    public = {
-        "stable": dict(full_preflight.get("stable", {})),
-        "candidate": dict(full_preflight.get("candidate", {})),
-        "model_identity": dict(full_preflight.get("model_identity", {})),
-        "binary_identity": dict(full_preflight.get("binary_identity", {})),
-        "port_9494_free": full_preflight.get("port_9494_free"),
-        "run_lock_absent": full_preflight.get("run_lock_absent", True),
-    }
-    return public
+    return runtime_support._public_preflight(full_preflight)
 
 
 def _archive_terminal(repository: Path, paths: Mapping[str, Path]) -> dict[str, Any]:
