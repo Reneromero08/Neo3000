@@ -177,6 +177,7 @@ class ParentDependenceTests(unittest.TestCase):
                 return_value={
                     "source_hashes": {"archive": "A" * 64},
                     "source_publication": {"record_sha256": "B" * 64},
+                    "experiment_run_key_commitment": "C" * 64,
                 },
             ),
         )
@@ -317,6 +318,181 @@ class ParentDependenceTests(unittest.TestCase):
             facts={"result_sha256": "E" * 64, "closure_sha256": "F" * 64},
         )
         return path
+
+    def commit_repair_fixture(self, label: str, *, initialize: bool = False) -> str:
+        controller = self.repository / (
+            "scripts/catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py"
+        )
+        if initialize:
+            for relative in parent.REPAIRABLE_CONTROLLER_PATHS:
+                path = self.repository / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(f"initial:{relative}\n", encoding="utf-8")
+        controller.parent.mkdir(parents=True, exist_ok=True)
+        controller.write_text(f"controller:{label}\n", encoding="utf-8")
+        subprocess.run(
+            ["git", "add", "-A"],
+            cwd=self.repository,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Neo Test",
+                "-c",
+                "user.email=neo@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                label,
+            ],
+            cwd=self.repository,
+            check=True,
+            capture_output=True,
+        )
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=self.repository,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+
+    def repair_policy_fixture(self) -> tuple[dict[str, object], dict[str, str], tuple[object, ...]]:
+        original = self.commit_repair_fixture("commit-a", initialize=True)
+        request_hashes = {
+            arm_id: parent.json_sha256(parent.build_arm_request(self.repository, arm_id))
+            for arm_id in parent.ARM_IDS
+        }
+        frozen = {"sha256": "A" * 64}
+        initial_controller = parent._file_binding(
+            self.repository,
+            ("scripts/catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",),
+        )
+        implementation_body = {
+            "frozen_scientific_execution": frozen,
+            "repairable_controller": initial_controller,
+        }
+        implementation = {
+            **implementation_body,
+            "sha256": parent.json_sha256(implementation_body),
+        }
+        preregistration = {
+            "artifact_sha256": "B" * 64,
+            "document_sha256": "C" * 64,
+            "implementation_binding_sha256": implementation["sha256"],
+            "frozen_scientific_execution_binding_sha256": frozen["sha256"],
+            "repairable_controller_initial_binding_sha256": initial_controller["sha256"],
+        }
+
+        def current_controller(repository: Path) -> dict[str, object]:
+            return parent._file_binding(
+                repository,
+                (
+                    "scripts/catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
+                ),
+            )
+
+        patches = (
+            mock.patch.object(parent, "_frozen_scientific_binding", return_value=frozen),
+            mock.patch.object(
+                parent,
+                "_repairable_controller_binding",
+                side_effect=current_controller,
+            ),
+            mock.patch.object(
+                parent,
+                "_implementation_binding",
+                return_value=implementation,
+            ),
+            mock.patch.object(
+                parent,
+                "validate_preregistration",
+                return_value=preregistration,
+            ),
+            mock.patch.object(
+                parent,
+                "request_isolation_report",
+                return_value={"arm_request_sha256": request_hashes},
+            ),
+            mock.patch.object(
+                parent.scientific,
+                "EXPECTED_ARM_REQUEST_SHA256",
+                request_hashes,
+            ),
+        )
+        for patcher in patches:
+            patcher.start()
+        authority = parent._expected_authority_body(
+            self.repository,
+            {
+                "authority_id_sha256": "D" * 64,
+                "authorized_commit": original,
+            },
+        )
+        return authority, request_hashes, patches
+
+    def initialize_consumed_repair_evidence(
+        self,
+        authority: dict[str, object],
+        request_hashes: dict[str, str],
+    ) -> tuple[Path, dict[str, bytes]]:
+        paths = parent.state_paths(self.repository)
+        receipt = parent.canonical_json_bytes(
+            parent._receipt_document(self.repository, authority)
+        )
+        parent._exclusive_write(paths["receipt"], receipt)
+        journal = paths["journal"]
+        parent.append_journal_event(
+            journal,
+            "prepared",
+            facts={"manifest_sha256": "E" * 64},
+        )
+        parent.append_journal_event(
+            journal,
+            "authority-consumed",
+            facts={"authority_receipt_sha256": parent.sha256_bytes(receipt)},
+        )
+        first = parent.ARM_IDS[0]
+        parent.append_journal_event(
+            journal,
+            "request-started",
+            arm_id=first,
+            facts={
+                "model_request_sha256": request_hashes[first],
+                "generation_ordinal": 1,
+                "maximum_generations_for_arm": 1,
+                "rendered_prompt_tokens": 12,
+            },
+        )
+        capture = parent.capture_execution(
+            paths[f"capture-{first}"],
+            arm_id=first,
+            model_request_sha256=request_hashes[first],
+            execution=FakeExecution(self.valid_transform_response()),
+            raw_response_bytes=b"data: {}\n\n",
+        )
+        parent.append_journal_event(
+            journal,
+            "response-captured",
+            arm_id=first,
+            facts={
+                "capture_sha256": capture["capture_sha256"],
+                "captured_before_parsing": True,
+            },
+        )
+        parent.append_journal_event(
+            journal,
+            "request-custody-observed",
+            arm_id=first,
+            facts={"passed": True, "custody_sha256": "F" * 64},
+        )
+        return journal, {
+            "receipt": paths["receipt"].read_bytes(),
+            first: paths[f"capture-{first}"].read_bytes(),
+        }
 
     def test_exact_two_arm_projection_and_no_smuggle(self) -> None:
         report = parent.request_isolation_report(self.repository)
@@ -1178,6 +1354,214 @@ class ParentDependenceTests(unittest.TestCase):
             event["facts"]["partial_response_sha256"],
             parent.sha256_bytes(partial.read_bytes()),
         )
+
+    def test_real_commit_chain_resumes_only_unstarted_arm_then_replays_zero_contact(self) -> None:
+        authority, request_hashes, patches = self.repair_policy_fixture()
+        try:
+            journal, before = self.initialize_consumed_repair_evidence(
+                authority,
+                request_hashes,
+            )
+            original = str(authority["authorized_commit"])
+            commit_b = self.commit_repair_fixture("commit-b")
+            report_b = parent._observe_controller_repair(
+                self.repository,
+                parent.state_paths(self.repository),
+                authority=authority,
+                current_commit=commit_b,
+            )
+            self.assertEqual(report_b["original_execution_commit"], original)
+            self.assertEqual(report_b["controller_repair_commit_count"], 1)
+            second = parent.ARM_IDS[1]
+            adapter_b = FakeAdapter({second: self.valid_transform_response()})
+            cleanup_b, postflight_b = parent._execute_unstarted_arms(
+                self.repository,
+                parent.state_paths(self.repository),
+                live=adapter_b,
+                full_preflight={},
+            )
+            self.assertTrue(cleanup_b["passed"])
+            self.assertTrue(postflight_b["passed"])
+            self.assertEqual(adapter_b.request_ids, [second])
+            self.assertEqual(adapter_b.launches, 1)
+            second_before = parent.state_paths(self.repository)[
+                f"capture-{second}"
+            ].read_bytes()
+
+            commit_c = self.commit_repair_fixture("commit-c")
+            report_c = parent._observe_controller_repair(
+                self.repository,
+                parent.state_paths(self.repository),
+                authority=authority,
+                current_commit=commit_c,
+            )
+            self.assertEqual(report_c["previous_replay_commit"], commit_b)
+            self.assertEqual(report_c["controller_repair_commit_count"], 2)
+            adapter_c = FakeAdapter({})
+            cleanup_c, postflight_c = parent._execute_unstarted_arms(
+                self.repository,
+                parent.state_paths(self.repository),
+                live=adapter_c,
+                full_preflight={},
+            )
+            self.assertEqual(adapter_c.request_ids, [])
+            self.assertEqual(adapter_c.launches, 0)
+            parent.append_journal_event(
+                journal,
+                "finalization-observed",
+                facts=parent._finalization_facts(cleanup_c, postflight_c),
+            )
+            parent._freeze_then_adjudicate_all(
+                self.repository,
+                parent.state_paths(self.repository),
+            )
+            events = parent.read_journal(journal)
+            self.assertEqual(
+                set(parent._journal_adjudications(events)),
+                set(parent.ARM_IDS),
+            )
+            for arm_id in parent.ARM_IDS:
+                starts = [
+                    event
+                    for event in events
+                    if event["state"] == "request-started"
+                    and event.get("arm_id") == arm_id
+                ]
+                self.assertEqual(len(starts), 1)
+                self.assertEqual(
+                    starts[0]["facts"]["model_request_sha256"],
+                    request_hashes[arm_id],
+                )
+            repairs = [
+                event for event in events if event["state"] == "controller-repair-observed"
+            ]
+            self.assertEqual(len(repairs), 2)
+            self.assertTrue(
+                all(event["facts"]["model_generations_issued"] == 0 for event in repairs)
+            )
+            paths = parent.state_paths(self.repository)
+            self.assertEqual(paths["receipt"].read_bytes(), before["receipt"])
+            self.assertEqual(
+                paths[f"capture-{parent.ARM_IDS[0]}"].read_bytes(),
+                before[parent.ARM_IDS[0]],
+            )
+            self.assertEqual(paths[f"capture-{second}"].read_bytes(), second_before)
+        finally:
+            for patcher in reversed(patches):
+                patcher.stop()
+
+    def test_repair_resume_rejects_scientific_mutations_before_model_contact(self) -> None:
+        authority, request_hashes, patches = self.repair_policy_fixture()
+        try:
+            self.initialize_consumed_repair_evidence(authority, request_hashes)
+            commit_b = self.commit_repair_fixture("commit-b")
+            changed_requests = dict(request_hashes)
+            changed_requests[parent.ARM_IDS[0]] = "0" * 64
+            with mock.patch.object(
+                parent,
+                "request_isolation_report",
+                return_value={"arm_request_sha256": changed_requests},
+            ):
+                with self.assertRaisesRegex(
+                    parent.ParentDependenceError,
+                    "immutable binding",
+                ):
+                    parent._controller_repair_report(
+                        self.repository,
+                        authority,
+                        current_commit=commit_b,
+                        events=parent.read_journal(self.journal_path()),
+                    )
+            for surface in (
+                "intervention",
+                "seed",
+                "model-schema",
+                "dispatch",
+                "capture-recording",
+            ):
+                with self.subTest(surface=surface), mock.patch.object(
+                    parent,
+                    "_frozen_scientific_binding",
+                    return_value={"sha256": "0" * 64},
+                ):
+                    with self.assertRaisesRegex(
+                        parent.ParentDependenceError,
+                        "immutable binding",
+                    ):
+                        parent._controller_repair_report(
+                            self.repository,
+                            authority,
+                            current_commit=commit_b,
+                            events=parent.read_journal(self.journal_path()),
+                        )
+            adapter = FakeAdapter({})
+            self.assertEqual(adapter.request_ids, [])
+            self.assertEqual(adapter.launches, 0)
+        finally:
+            for patcher in reversed(patches):
+                patcher.stop()
+
+    def test_non_descendant_and_fourth_controller_repair_commit_are_rejected(self) -> None:
+        authority, request_hashes, patches = self.repair_policy_fixture()
+        try:
+            self.initialize_consumed_repair_evidence(authority, request_hashes)
+            tree = subprocess.run(
+                ["git", "rev-parse", f"{authority['authorized_commit']}^{{tree}}"],
+                cwd=self.repository,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            orphan = subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=Neo Test",
+                    "-c",
+                    "user.email=neo@example.invalid",
+                    "commit-tree",
+                    tree,
+                ],
+                cwd=self.repository,
+                check=True,
+                capture_output=True,
+                text=True,
+                input="orphan\n",
+            ).stdout.strip()
+            with self.assertRaisesRegex(
+                parent.ParentDependenceError,
+                "not a descendant",
+            ):
+                parent._controller_repair_report(
+                    self.repository,
+                    authority,
+                    current_commit=orphan,
+                    events=parent.read_journal(self.journal_path()),
+                )
+            for ordinal in range(1, 4):
+                commit = self.commit_repair_fixture(f"repair-{ordinal}")
+                parent._observe_controller_repair(
+                    self.repository,
+                    parent.state_paths(self.repository),
+                    authority=authority,
+                    current_commit=commit,
+                )
+            fourth = self.commit_repair_fixture("repair-4")
+            journal_before = self.journal_path().read_bytes()
+            with self.assertRaisesRegex(
+                parent.ParentDependenceError,
+                "budget exceeded",
+            ):
+                parent._observe_controller_repair(
+                    self.repository,
+                    parent.state_paths(self.repository),
+                    authority=authority,
+                    current_commit=fourth,
+                )
+            self.assertEqual(self.journal_path().read_bytes(), journal_before)
+        finally:
+            for patcher in reversed(patches):
+                patcher.stop()
 
     def test_test_process_guard_rejects_real_repository_state(self) -> None:
         real = Path(__file__).resolve().parents[1]

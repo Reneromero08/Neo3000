@@ -2,13 +2,21 @@
   "authority_contract": {
     "authority_kind": "external-one-shot-two-arm-parent-dependence",
     "automatic_follow_on": false,
-    "object_schema_sha256": "D59C7D3789BBC780E1F2337C0C92A39D96006429110DF1CCF14F23C14CE0B56D",
+    "controller_repair_resets_arm_consumption": false,
+    "current_commit_must_descend_from_original": true,
+    "exact_arm_request_hashes_bound": true,
+    "frozen_scientific_execution_binding_bound": true,
+    "maximum_controller_repair_commits": 3,
+    "object_schema_sha256": "4ED7A597E8AC1FC4BDB2466CA2229B479C18ED37699CF0505142C2AACD55E2A5",
     "one_authority_for_exact_arm_set": true,
+    "original_execution_commit_bound": true,
     "per_arm_consumption_record": "request-started journal event",
     "raw_authority_id_persisted": false,
     "receipt_path_template": "state/catalytic_kernel_0_authority.parent-dependence.<experiment-id>.authority.consumed.json",
-    "receipt_schema_sha256": "63EB95CCACB8760F68FC02C142C9D47BF0934A217C7C26FC8EC87B7F042468F3",
+    "receipt_schema_sha256": "1B6BB1D13CCA5430E9DAF26ADED9EACE2F50A64E2C8A4DAA5BD21738306D3B9F",
     "receipt_schema_version": "rank-head-v2-parent-dependence-consumption-v1",
+    "repair_transition_model_generations": 0,
+    "repairable_controller_initial_binding_bound": true,
     "schema_accepts_generic_experiment_identity": true,
     "schema_version": "rank-head-v2-parent-dependence-authority-v1"
   },
@@ -44,29 +52,159 @@
   "experiment_id": "ck0-balanced-v2-rank-head-b2-parent-dependence-r1",
   "hypothesis": "Under the independently keyed binding-2 replay, replacing either complete transform parent with its exact commitment-only projection changes whether deterministic rank-zero extraction recovers the frozen private singleton.",
   "implementation_binding": {
-    "files": [
-      {
-        "byte_size": 27707,
-        "path": "scripts/baseline_harness.py",
-        "sha256": "6100461EFE4172279668A3D213875EFA884F10DC9E246D60AF0A0702BDD49D99"
+    "frozen_scientific_execution": {
+      "arm_request_sha256": {
+        "delete-parent-0": "260F18D1C143C5D61ED775BB85F297D0A96E1507451347BED517BDAEDEE701A8",
+        "delete-parent-1": "2B1124B9D63BC6AF4BF22D25D30606034F26466EEAFB8CF9081ECCC7C242395E"
       },
-      {
-        "byte_size": 99828,
-        "path": "scripts/catalytic_inference_bench_0_runtime.py",
-        "sha256": "8BEE2FA8712B1826ADE6EB24809F32924DE498027944CC7D8426217822252BCB"
+      "capture_schema_sha256": "7FB8EBCD5A27654031E94EE5C7A5BFA9090EA5015B151535F39B1CF4E48317C7",
+      "captured_arms_replay_without_model_contact": true,
+      "contract": {
+        "arm_ids": [
+          "delete-parent-0",
+          "delete-parent-1"
+        ],
+        "arm_ordering": [
+          "delete-parent-0",
+          "delete-parent-1"
+        ],
+        "binary_sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B",
+        "carrier_root_sha256": "4B82F399ACE797BDF40012ABB4D1254021F838B58BAED66153D4042EF3C7585C",
+        "experiment_id": "ck0-balanced-v2-rank-head-b2-parent-dependence-r1",
+        "experiment_run_key_commitment": "11152986FB529BFE9E85203626EEBBAF8A1719DFDE4D6260CC545735D6D217FE",
+        "intervention": {
+          "construction": "exactly-one-retained-parent-plus-one-commitment-only-projection",
+          "deleted_parent_projection_mode": "commitment-only",
+          "retained_parent_byte_exact": true
+        },
+        "maximum_model_generations_per_arm": 1,
+        "maximum_total_model_generations": 2,
+        "model_sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+        "raw_response_recording": "exclusive-fsynced-capture-before-controller-parse",
+        "request_dispatch": "frozen-scientific-module-exact-hash-gate-before-contact",
+        "response_schema_sha256": "B36864F84116E64D96775452265513E7AB46521418EB376CC17872492B281E27",
+        "seeds": {
+          "delete-parent-0": 1851550238,
+          "delete-parent-1": 1669860413
+        },
+        "source_archive_sha256": "EBD8F01971C0D4BEE945A516D515645EF9F8F7BDC16F03D15BE7990F476536ED",
+        "source_binding": "binding-2",
+        "source_evidence_sha256": {
+          "archive": "EBD8F01971C0D4BEE945A516D515645EF9F8F7BDC16F03D15BE7990F476536ED",
+          "closure": "B09E6233720950648037C674E42C920F27150532D5FB957A55586F0DC9303CB5",
+          "manifest": "23186EB4F48ABD262B3FF20933E0B1737D582B929AAC1E0048D16533EFAFD7A6",
+          "receipt": "425828C3CB0819F05BA556A8CCBA1602C90F45311FDB677200DB14F3BC42A19B",
+          "result": "D7BFE06CED70B7544EB5F6D81EC64AE901CE6CD86DE82C72BCC4C5E395290BD9"
+        },
+        "source_publication_record_sha256": "D6DF5C9B4FFF825F236AB616EE8292CEAEC8F9905E9C47CF57B29F70F68F87EE",
+        "source_run_id": "ck0-balanced-v2-rank-head-b2-full-r1"
       },
-      {
-        "byte_size": 132291,
-        "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
-        "sha256": "FF0A13AB5D412C199EB2552319BBC7848E3931D10EB8F6662BD508AAB2018371"
+      "dispatch_dependencies": {
+        "callables": [
+          {
+            "qualified_name": "catalytic_kernel_0.CatalyticKernel0Adapter.launch_sidecar",
+            "sha256": "055ECDEA20B89B70673C5EA855FB7263B3CD91408A41616119E75A7BAE2F92E3"
+          },
+          {
+            "qualified_name": "catalytic_inference_bench_0_runtime._HoloStateAdapter.prompt_geometry",
+            "sha256": "F40F6D986F253458EB120D987E1352C508A39714600920CC82AC2A0A6306121D"
+          },
+          {
+            "qualified_name": "catalytic_inference_bench_0_runtime._HoloStateAdapter.execute_request",
+            "sha256": "BE6D4304A0EA77B7B395BB5B01E61DE67D7690EEE1B9BB55985F790DF4F37E2E"
+          },
+          {
+            "qualified_name": "catalytic_inference_bench_0_runtime._HoloStateAdapter.boundary_custody",
+            "sha256": "554A2726E2AC6FB66CEA6C757D96D4B3E2B55A46F20962A64A3B251F7C484FD4"
+          },
+          {
+            "qualified_name": "baseline_harness.stream_completion",
+            "sha256": "06C4B9739EA3EAADD0FE831CAA22370AEB3DB211809DAAA7CC4749EDA6012351"
+          },
+          {
+            "qualified_name": "catalytic_kernel_0._terminal_identity",
+            "sha256": "73CB02829F7B2C4B247F3528DAE621DCC16E381FF3F0F8D6C4B4A7024A7BBE5B"
+          }
+        ],
+        "sha256": "5A39066DEF9B5E89B8092CA29BD89D43F0446022D0FBAB59F5E85D1913F8FB75"
       },
-      {
-        "byte_size": 49121,
-        "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
-        "sha256": "5464736A80E53FDCFA9AB9173BE4FE35BAE8A46FF3772C4BCF3D2DFD7E23471E"
-      }
-    ],
-    "sha256": "EB4B567D790FC5E032DBA7E9BC822252CC9B3CB8C99F177C04FC4A81BD804A9D"
+      "module": {
+        "byte_size": 16303,
+        "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_parent_dependence_scientific.py",
+        "sha256": "55AC227156F837354EC8799C877134A534DCFEF57196C9BD5E89B92FB5847C1F"
+      },
+      "one_generation_maximum_per_arm": true,
+      "one_request_started_maximum_per_arm": true,
+      "sha256": "F084C1BE1FB5E90C33DEB15F60D969F8B24B23DB13E27A6066360B9CC0FFA1F3",
+      "surface_version": 1,
+      "two_generations_maximum_overall": true
+    },
+    "repairable_controller": {
+      "files": [
+        {
+          "byte_size": 27707,
+          "path": "scripts/baseline_harness.py",
+          "sha256": "6100461EFE4172279668A3D213875EFA884F10DC9E246D60AF0A0702BDD49D99"
+        },
+        {
+          "byte_size": 99828,
+          "path": "scripts/catalytic_inference_bench_0_runtime.py",
+          "sha256": "8BEE2FA8712B1826ADE6EB24809F32924DE498027944CC7D8426217822252BCB"
+        },
+        {
+          "byte_size": 113042,
+          "path": "scripts/catalytic_kernel_0.py",
+          "sha256": "E2663B49E1854718019F09C096375F49A7FD9F9A1DC11CF18DB82D99DC38188F"
+        },
+        {
+          "byte_size": 124720,
+          "path": "scripts/catalytic_kernel_0_balanced_opaque.py",
+          "sha256": "A569D634D7660B4B3780C5141D374F26A44830EACC99408797B477F72D79636E"
+        },
+        {
+          "byte_size": 11836,
+          "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2.py",
+          "sha256": "55BAFFCB7023F0B61909C728685EAA7BC4CA1C65CE3147A123D04DA4CDE31BC4"
+        },
+        {
+          "byte_size": 45037,
+          "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_authority.py",
+          "sha256": "6F52993B86E54C9E9A0BA321A96F85E126C11DCCB63A4EEC94E9A8F551329557"
+        },
+        {
+          "byte_size": 16774,
+          "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_evidence.py",
+          "sha256": "20DF9050F4C0FF08009E85024A31FD7EDA677C04C148527B360B6B5A34A77321"
+        },
+        {
+          "byte_size": 18190,
+          "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_integration.py",
+          "sha256": "DF9BA84F71B1583DDFA65198C2AFCD9F0CB3425685DA97CE086D58D5B8BCD793"
+        },
+        {
+          "byte_size": 57139,
+          "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_publication.py",
+          "sha256": "A443534C29695A6FFEE407F2179D9BD80F7FC0CDAD2800282BA1B1FC023ECCBE"
+        },
+        {
+          "byte_size": 43413,
+          "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_run_design.py",
+          "sha256": "03DE9C29477AE4CF75487C188A592F0B1CE9CFAE273249233541DA3E8CFD4ECE"
+        },
+        {
+          "byte_size": 152251,
+          "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
+          "sha256": "A5AF36AF8BE4C10E886CA1E164E9C33E025DA1EC03A362291D8FC25984356EF5"
+        },
+        {
+          "byte_size": 64232,
+          "path": "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
+          "sha256": "B2EC3FF96434B205BE653C81A3D224FCCBD383FA07919DAE31E3B5052413A2AE"
+        }
+      ],
+      "sha256": "E2A6FD65816E19D3ECAE90DFF9C88547E6D13C66C62339D18DBA3A2AB8B578A9"
+    },
+    "sha256": "8B0BC8EF5ACE3C28A91995B2E30FD391DDD210B02FE68B1DAE5F02FA57DCBFA0"
   },
   "intervention": {
     "arms": [
@@ -254,7 +392,10 @@
     },
     "capture_schema_sha256": "7FB8EBCD5A27654031E94EE5C7A5BFA9090EA5015B151535F39B1CF4E48317C7",
     "captured_response_replay_without_model_contact": true,
+    "controller_repair_event": "authenticated-append-only-before-resume",
+    "controller_repair_rejects_before_model_contact": true,
     "duplicate_request_started": "rejected",
+    "existing_receipt_journal_and_captures_rewritten": false,
     "expected_captured_response_invalidity": "scientific-inconclusive-under-explicit-domain-exception",
     "journal_schema": {
       "append_only": true,
@@ -275,6 +416,7 @@
       "states": [
         "prepared",
         "authority-consumed",
+        "controller-repair-observed",
         "request-started",
         "response-captured",
         "request-custody-observed",
@@ -284,7 +426,7 @@
         "archived"
       ]
     },
-    "journal_schema_sha256": "A18494C3B582EC996F4DA0B1FE8DA30B0449718F75D56B8A63197706AD1713A0",
+    "journal_schema_sha256": "D5F7116A957B085F53E38701536523E703BA8A27C1FCD175C0A76E9FC9A7A348",
     "missing_request_custody_event": "append-only-after-passed-restart-reconciliation",
     "request_started_without_exact_capture": "terminal-inconclusive-no-retry",
     "response_captured_before_transport_parsing": true,

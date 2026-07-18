@@ -34,13 +34,13 @@ import catalytic_kernel_0_balanced_rank_head_v2 as v2
 import catalytic_kernel_0_balanced_rank_head_v2_authority as source_authority
 import catalytic_kernel_0_balanced_rank_head_v2_evidence as source_evidence
 import catalytic_kernel_0_balanced_rank_head_v2_integration as integration
+import catalytic_kernel_0_balanced_rank_head_v2_parent_dependence_scientific as scientific
 import catalytic_kernel_0_balanced_rank_head_v2_publication as publication
 import catalytic_kernel_0_balanced_rank_head_v2_run_design as run_design
 import catalytic_inference_bench_0_runtime as runtime_support
 
 
-class ParentDependenceError(ValueError):
-    """The static design or one-shot replay boundary is invalid."""
+ParentDependenceError = scientific.ScientificSurfaceError
 
 
 class CapturedResponseInvalidError(ParentDependenceError):
@@ -137,12 +137,40 @@ RECEIPT_TEMPLATE = (
 PREREGISTRATION_PATH = (
     "lab/ck0_balanced_opaque_rank_head_v2_binding_2_parent_dependence_1.json"
 )
-IMPLEMENTATION_PATHS = (
+REPAIRABLE_CONTROLLER_PATHS = (
     "scripts/baseline_harness.py",
     "scripts/catalytic_inference_bench_0_runtime.py",
+    "scripts/catalytic_kernel_0.py",
+    "scripts/catalytic_kernel_0_balanced_opaque.py",
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2.py",
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2_authority.py",
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2_evidence.py",
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2_integration.py",
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2_publication.py",
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2_run_design.py",
     "scripts/catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
     "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
 )
+ALLOWED_CONTROLLER_REPAIR_PATHS = frozenset(
+    set(REPAIRABLE_CONTROLLER_PATHS)
+    | {
+        "scripts/test_catalytic_kernel_0_balanced_rank_head_v2.py",
+        "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_authority.py",
+        "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_cli.py",
+        "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_core.py",
+        "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_entrypoint.py",
+        "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_evidence.py",
+        "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_integration.py",
+        "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_live.py",
+        "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_publication.py",
+        "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_run_design.py",
+        "TASKS.md",
+        "lab/GOAL.md",
+        "lab/CHECKPOINT.md",
+        "lab/EVALUATOR.lock.json",
+    }
+)
+MAXIMUM_CONTROLLER_REPAIR_COMMITS = 3
 
 EXPERIMENT_KEY_DOMAIN = b"ck0-rank-head-v2/parent-dependence/experiment-key-v1\0"
 ARM_KEY_DOMAIN = b"ck0-rank-head-v2/parent-dependence/arm-key-v1\0"
@@ -154,7 +182,7 @@ AUTHORITY_SCHEMA_VERSION = "rank-head-v2-parent-dependence-authority-v1"
 RECEIPT_SCHEMA_VERSION = "rank-head-v2-parent-dependence-consumption-v1"
 AUTHORITY_KIND = "external-one-shot-two-arm-parent-dependence"
 JOURNAL_SCHEMA_VERSION = 1
-CAPTURE_SCHEMA_VERSION = 1
+CAPTURE_SCHEMA_VERSION = scientific.CAPTURE_SCHEMA_VERSION
 ARCHIVE_SCHEMA_VERSION = 1
 PREREGISTRATION_SCHEMA_VERSION = 1
 SHA256_RE = re.compile(r"^[0-9A-F]{64}$")
@@ -181,25 +209,7 @@ LOCKED_CLAIMS = {
     "automatic_promotion": False,
 }
 
-_CAPTURE_EXECUTION_FIELDS = (
-    "content",
-    "reasoning_content",
-    "tool_calls",
-    "prompt_tokens",
-    "cached_prompt_tokens",
-    "completion_tokens",
-    "generated_token_ids",
-    "generated_token_count",
-    "completion_token_count_match",
-    "generated_token_sha256",
-    "nonempty_token_array_event_count",
-    "empty_token_array_event_count",
-    "token_merge_modes",
-    "terminal_stop_evidence",
-    "finish_reason",
-    "http_status",
-    "event_count",
-)
+_CAPTURE_EXECUTION_FIELDS = scientific.CAPTURE_EXECUTION_FIELDS
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -341,14 +351,66 @@ def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
             temporary.unlink()
 
 
-def _implementation_binding(repository: Path) -> dict[str, Any]:
+def _file_binding(repository: Path, paths: Sequence[str]) -> dict[str, Any]:
     files = []
-    for relative in IMPLEMENTATION_PATHS:
+    for relative in paths:
         data = _require_regular(repository / relative, relative)
         files.append(
             {"path": relative, "byte_size": len(data), "sha256": sha256_bytes(data)}
         )
     body = {"files": files}
+    return {**body, "sha256": json_sha256(body)}
+
+
+def _scientific_contract(repository: Path) -> dict[str, Any]:
+    source = verify_source_evidence(repository)
+    return {
+        "experiment_id": EXPERIMENT_ID,
+        "source_binding": "binding-2",
+        "source_run_id": SOURCE_RUN_ID,
+        "source_archive_sha256": SOURCE_ARCHIVE_SHA256,
+        "source_publication_record_sha256": SOURCE_PUBLICATION_SHA256,
+        "source_evidence_sha256": dict(SOURCE_HASHES),
+        "experiment_run_key_commitment": source["experiment_run_key_commitment"],
+        "intervention": {
+            "construction": "exactly-one-retained-parent-plus-one-commitment-only-projection",
+            "deleted_parent_projection_mode": "commitment-only",
+            "retained_parent_byte_exact": True,
+        },
+        "arm_ids": list(ARM_IDS),
+        "arm_ordering": list(ARM_IDS),
+        "model_sha256": MODEL_SHA256,
+        "binary_sha256": BINARY_SHA256,
+        "carrier_root_sha256": CARRIER_ROOT_SHA256,
+        "seeds": {arm_id: arm_seed(arm_id) for arm_id in ARM_IDS},
+        "response_schema_sha256": json_sha256(v2.v2_response_schema("transform")),
+        "maximum_model_generations_per_arm": 1,
+        "maximum_total_model_generations": 2,
+        "request_dispatch": "frozen-scientific-module-exact-hash-gate-before-contact",
+        "raw_response_recording": "exclusive-fsynced-capture-before-controller-parse",
+    }
+
+
+def _frozen_scientific_binding(repository: Path) -> dict[str, Any]:
+    payloads = {arm_id: build_arm_request(repository, arm_id) for arm_id in ARM_IDS}
+    return scientific.frozen_scientific_binding(
+        repository,
+        contract=_scientific_contract(repository),
+        payloads=payloads,
+    )
+
+
+def _repairable_controller_binding(repository: Path) -> dict[str, Any]:
+    return _file_binding(repository, REPAIRABLE_CONTROLLER_PATHS)
+
+
+def _implementation_binding(repository: Path) -> dict[str, Any]:
+    frozen = _frozen_scientific_binding(repository)
+    controller = _repairable_controller_binding(repository)
+    body = {
+        "frozen_scientific_execution": frozen,
+        "repairable_controller": controller,
+    }
     return {**body, "sha256": json_sha256(body)}
 
 
@@ -709,6 +771,7 @@ def authority_object_schema() -> dict[str, Any]:
             "authority_kind",
             "authority_id_sha256",
             "authorized_commit",
+            "original_authorized_execution_commit",
             "experiment_id",
             "source_binding",
             "source_run_id",
@@ -725,12 +788,18 @@ def authority_object_schema() -> dict[str, Any]:
             "model_sha256",
             "binary_sha256",
             "carrier_root_sha256",
+            "frozen_scientific_execution_binding_sha256",
+            "arm_request_sha256",
+            "repairable_controller_initial_binding_sha256",
             "implementation_binding_sha256",
             "preregistration_artifact_sha256",
             "preregistration_document_sha256",
             "journal_schema_sha256",
             "capture_schema_sha256",
             "archive_schema_sha256",
+            "maximum_controller_repair_commits",
+            "current_commit_must_descend_from_original",
+            "controller_repair_cannot_reset_arm_consumption",
             "retry_count",
             "automatic_follow_on",
         ],
@@ -739,6 +808,7 @@ def authority_object_schema() -> dict[str, Any]:
             "authority_kind": {"const": AUTHORITY_KIND},
             "authority_id_sha256": sha,
             "authorized_commit": commit,
+            "original_authorized_execution_commit": commit,
             "experiment_id": {
                 "type": "string",
                 "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$",
@@ -772,12 +842,23 @@ def authority_object_schema() -> dict[str, Any]:
             "model_sha256": sha,
             "binary_sha256": sha,
             "carrier_root_sha256": sha,
+            "frozen_scientific_execution_binding_sha256": sha,
+            "arm_request_sha256": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": list(ARM_IDS),
+                "properties": {arm_id: sha for arm_id in ARM_IDS},
+            },
+            "repairable_controller_initial_binding_sha256": sha,
             "implementation_binding_sha256": sha,
             "preregistration_artifact_sha256": sha,
             "preregistration_document_sha256": sha,
             "journal_schema_sha256": sha,
             "capture_schema_sha256": sha,
             "archive_schema_sha256": sha,
+            "maximum_controller_repair_commits": {"const": 3},
+            "current_commit_must_descend_from_original": {"const": True},
+            "controller_repair_cannot_reset_arm_consumption": {"const": True},
             "retry_count": {"type": "integer", "minimum": 0},
             "automatic_follow_on": {"type": "boolean"},
         },
@@ -827,6 +908,7 @@ def journal_event_schema() -> dict[str, Any]:
         "states": [
             "prepared",
             "authority-consumed",
+            "controller-repair-observed",
             "request-started",
             "response-captured",
             "request-custody-observed",
@@ -841,23 +923,7 @@ def journal_event_schema() -> dict[str, Any]:
 
 
 def capture_schema() -> dict[str, Any]:
-    return {
-        "schema_version": CAPTURE_SCHEMA_VERSION,
-        "required_fields": [
-            "schema_version",
-            "experiment_id",
-            "arm_id",
-            "model_request_sha256",
-            "captured_before_parsing",
-            "raw_response_capture",
-            "execution",
-            "capture_hmac_sha256",
-        ],
-        "execution_fields": list(_CAPTURE_EXECUTION_FIELDS),
-        "exclusive_create": True,
-        "authentication": "HMAC-SHA-256 under the private experiment key",
-        "replay_without_model_contact": True,
-    }
+    return scientific.capture_schema()
 
 
 def archive_schema() -> dict[str, Any]:
@@ -937,11 +1003,14 @@ def build_external_authority(
         raise ParentDependenceError("authority model or binary identity changed")
     source = verify_source_evidence(repository)
     preregistration = validate_preregistration(repository)
+    implementation = _implementation_binding(repository)
+    isolation = request_isolation_report(repository)
     authority = {
         "schema_version": AUTHORITY_SCHEMA_VERSION,
         "authority_kind": AUTHORITY_KIND,
         "authority_id_sha256": authority_id_sha256(raw_authority_id),
         "authorized_commit": authorized_commit,
+        "original_authorized_execution_commit": authorized_commit,
         "experiment_id": EXPERIMENT_ID,
         "source_binding": "binding-2",
         "source_run_id": SOURCE_RUN_ID,
@@ -958,6 +1027,13 @@ def build_external_authority(
         "model_sha256": MODEL_SHA256,
         "binary_sha256": BINARY_SHA256,
         "carrier_root_sha256": CARRIER_ROOT_SHA256,
+        "frozen_scientific_execution_binding_sha256": implementation[
+            "frozen_scientific_execution"
+        ]["sha256"],
+        "arm_request_sha256": dict(isolation["arm_request_sha256"]),
+        "repairable_controller_initial_binding_sha256": implementation[
+            "repairable_controller"
+        ]["sha256"],
         "implementation_binding_sha256": preregistration[
             "implementation_binding_sha256"
         ],
@@ -966,6 +1042,9 @@ def build_external_authority(
         "journal_schema_sha256": JOURNAL_SCHEMA_SHA256,
         "capture_schema_sha256": json_sha256(capture_schema()),
         "archive_schema_sha256": json_sha256(archive_schema()),
+        "maximum_controller_repair_commits": MAXIMUM_CONTROLLER_REPAIR_COMMITS,
+        "current_commit_must_descend_from_original": True,
+        "controller_repair_cannot_reset_arm_consumption": True,
         "retry_count": 0,
         "automatic_follow_on": False,
     }
@@ -985,11 +1064,16 @@ def _expected_authority_body(
 ) -> dict[str, Any]:
     source = verify_source_evidence(repository)
     preregistration = validate_preregistration(repository)
+    implementation = _implementation_binding(repository)
+    isolation = request_isolation_report(repository)
     return {
         "schema_version": AUTHORITY_SCHEMA_VERSION,
         "authority_kind": AUTHORITY_KIND,
         "authority_id_sha256": authority.get("authority_id_sha256"),
         "authorized_commit": authority.get("authorized_commit"),
+        "original_authorized_execution_commit": authority.get(
+            "authorized_commit"
+        ),
         "experiment_id": EXPERIMENT_ID,
         "source_binding": "binding-2",
         "source_run_id": SOURCE_RUN_ID,
@@ -1006,6 +1090,13 @@ def _expected_authority_body(
         "model_sha256": MODEL_SHA256,
         "binary_sha256": BINARY_SHA256,
         "carrier_root_sha256": CARRIER_ROOT_SHA256,
+        "frozen_scientific_execution_binding_sha256": implementation[
+            "frozen_scientific_execution"
+        ]["sha256"],
+        "arm_request_sha256": dict(isolation["arm_request_sha256"]),
+        "repairable_controller_initial_binding_sha256": implementation[
+            "repairable_controller"
+        ]["sha256"],
         "implementation_binding_sha256": preregistration[
             "implementation_binding_sha256"
         ],
@@ -1014,6 +1105,9 @@ def _expected_authority_body(
         "journal_schema_sha256": JOURNAL_SCHEMA_SHA256,
         "capture_schema_sha256": json_sha256(capture_schema()),
         "archive_schema_sha256": json_sha256(archive_schema()),
+        "maximum_controller_repair_commits": MAXIMUM_CONTROLLER_REPAIR_COMMITS,
+        "current_commit_must_descend_from_original": True,
+        "controller_repair_cannot_reset_arm_consumption": True,
         "retry_count": 0,
         "automatic_follow_on": False,
     }
@@ -1036,6 +1130,8 @@ def validate_external_authority(
     _require(
         dict(authority) == expected
         and authority.get("authorized_commit") == current_commit
+        and authority.get("original_authorized_execution_commit")
+        == current_commit
         and expected_model_sha256 == MODEL_SHA256
         and expected_binary_sha256 == BINARY_SHA256,
         "external authority scope mismatch",
@@ -1083,13 +1179,25 @@ def verify_authority_receipt_bytes(
     expected = _receipt_document(repository, authority)
     _require(document == expected, "authority receipt binding changed")
     if require_current_static:
-        validate_external_authority(
-            repository,
-            authority,
-            current_commit=str(authority.get("authorized_commit", "")),
-            expected_model_sha256=str(authority.get("model_sha256", "")),
-            expected_binary_sha256=str(authority.get("binary_sha256", "")),
-        )
+        try:
+            current_commit = _git(repository, "rev-parse", "HEAD")
+        except ParentDependenceError:
+            current_commit = str(authority.get("authorized_commit", ""))
+        if current_commit == authority.get("authorized_commit"):
+            validate_external_authority(
+                repository,
+                authority,
+                current_commit=current_commit,
+                expected_model_sha256=str(authority.get("model_sha256", "")),
+                expected_binary_sha256=str(authority.get("binary_sha256", "")),
+            )
+        else:
+            _controller_repair_report(
+                repository,
+                authority,
+                current_commit=current_commit,
+                events=None,
+            )
     return {
         "authority": authority,
         "authority_receipt_sha256": sha256_bytes(payload),
@@ -1098,6 +1206,177 @@ def verify_authority_receipt_bytes(
         "maximum_model_generations_per_arm": 1,
         "maximum_total_model_generations": 2,
         "retry_allowed": False,
+    }
+
+
+def _git_is_ancestor(repository: Path, ancestor: str, descendant: str) -> bool:
+    process = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+        cwd=repository,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="strict",
+    )
+    if process.returncode not in {0, 1}:
+        raise ParentDependenceError("Git ancestry verification failed")
+    return process.returncode == 0
+
+
+def _controller_repair_report(
+    repository: Path,
+    authority: Mapping[str, Any],
+    *,
+    current_commit: str,
+    events: Sequence[Mapping[str, Any]] | None,
+) -> dict[str, Any]:
+    """Validate a descendant-only controller repair without using new authority."""
+    repository = repository.resolve(strict=False)
+    _require(
+        isinstance(authority, Mapping)
+        and set(authority) == set(authority_object_schema()["required"]),
+        "consumed authority field set changed",
+    )
+    original = str(authority.get("original_authorized_execution_commit", ""))
+    _require(
+        GIT_COMMIT_RE.fullmatch(original) is not None
+        and GIT_COMMIT_RE.fullmatch(current_commit) is not None
+        and _git_is_ancestor(repository, original, current_commit),
+        "controller repair commit is not a descendant of the original execution commit",
+    )
+    _require(
+        authority.get("model_sha256") == MODEL_SHA256
+        and authority.get("authorized_commit") == original
+        and authority.get("binary_sha256") == BINARY_SHA256
+        and authority.get("carrier_root_sha256") == CARRIER_ROOT_SHA256
+        and authority.get("source_evidence_sha256") == SOURCE_HASHES
+        and authority.get("source_publication_record_sha256")
+        == SOURCE_PUBLICATION_SHA256
+        and authority.get("arm_ids") == list(ARM_IDS)
+        and authority.get("arm_request_sha256")
+        == scientific.EXPECTED_ARM_REQUEST_SHA256
+        and authority.get("maximum_model_generations_per_arm") == 1
+        and authority.get("maximum_total_model_generations") == 2
+        and authority.get("maximum_controller_repair_commits")
+        == MAXIMUM_CONTROLLER_REPAIR_COMMITS
+        and authority.get("current_commit_must_descend_from_original") is True
+        and authority.get("controller_repair_cannot_reset_arm_consumption") is True
+        and authority.get("automatic_follow_on") is False
+        and authority.get("retry_count") == 0,
+        "controller repair changed the scientific authority",
+    )
+    preregistration = validate_preregistration(
+        repository,
+        require_current_controller=False,
+    )
+    frozen = _frozen_scientific_binding(repository)
+    isolation = request_isolation_report(repository)
+    _require(
+        frozen["sha256"]
+        == authority.get("frozen_scientific_execution_binding_sha256")
+        == preregistration["frozen_scientific_execution_binding_sha256"]
+        and isolation["arm_request_sha256"]
+        == authority.get("arm_request_sha256")
+        == scientific.EXPECTED_ARM_REQUEST_SHA256
+        and preregistration["artifact_sha256"]
+        == authority.get("preregistration_artifact_sha256")
+        and preregistration["document_sha256"]
+        == authority.get("preregistration_document_sha256")
+        and preregistration["implementation_binding_sha256"]
+        == authority.get("implementation_binding_sha256")
+        and preregistration["repairable_controller_initial_binding_sha256"]
+        == authority.get("repairable_controller_initial_binding_sha256"),
+        "controller repair crossed an immutable binding",
+    )
+    commits = (
+        []
+        if current_commit == original
+        else _git(
+            repository,
+            "rev-list",
+            "--reverse",
+            "--ancestry-path",
+            f"{original}..{current_commit}",
+        ).splitlines()
+    )
+    _require(
+        len(commits) <= MAXIMUM_CONTROLLER_REPAIR_COMMITS,
+        "controller repair budget exceeded",
+    )
+    changed_paths: set[str] = set()
+    for commit in commits:
+        parents = _git(repository, "rev-list", "--parents", "-n", "1", commit).split()
+        _require(len(parents) == 2, "controller repair history must remain linear")
+        paths = _git(
+            repository,
+            "diff-tree",
+            "--no-commit-id",
+            "--name-only",
+            "-r",
+            commit,
+        ).splitlines()
+        changed_paths.update(path.replace("\\", "/") for path in paths if path)
+    _require(
+        changed_paths <= ALLOWED_CONTROLLER_REPAIR_PATHS,
+        "controller repair changed a path outside the repair policy",
+    )
+    repair_events = (
+        []
+        if events is None
+        else [
+            event
+            for event in events
+            if event.get("state") == "controller-repair-observed"
+            and event.get("arm_id") is None
+        ]
+    )
+    _require(
+        len(repair_events) <= MAXIMUM_CONTROLLER_REPAIR_COMMITS,
+        "journal controller repair budget exceeded",
+    )
+    previous = (
+        str(repair_events[-1]["facts"]["current_replay_commit"])
+        if repair_events
+        else original
+    )
+    _require(
+        _git_is_ancestor(repository, previous, current_commit),
+        "controller repair replay history diverged",
+    )
+    transition_paths = sorted(
+        path.replace("\\", "/")
+        for path in _git(
+            repository,
+            "diff",
+            "--name-only",
+            previous,
+            current_commit,
+        ).splitlines()
+        if path
+    )
+    previous_tree = _git(repository, "rev-parse", f"{previous}^{{tree}}")
+    current_tree = _git(repository, "rev-parse", f"{current_commit}^{{tree}}")
+    diff_body = {
+        "previous_replay_commit": previous,
+        "previous_tree": previous_tree,
+        "current_replay_commit": current_commit,
+        "current_tree": current_tree,
+        "changed_paths": transition_paths,
+    }
+    controller = _repairable_controller_binding(repository)
+    return {
+        "original_execution_commit": original,
+        "previous_replay_commit": previous,
+        "current_replay_commit": current_commit,
+        "changed_tree_diff_sha256": json_sha256(diff_body),
+        "changed_paths": transition_paths,
+        "frozen_scientific_execution_binding_sha256": frozen["sha256"],
+        "repairable_controller_binding_sha256": controller["sha256"],
+        "arm_request_sha256": dict(isolation["arm_request_sha256"]),
+        "controller_repair_commit_count": len(commits),
+        "model_generations_issued": 0,
+        "already_observed": previous == current_commit,
     }
 
 
@@ -1247,6 +1526,47 @@ def _validate_journal_transition(
         counts.get(("authority-consumed", None), 0) == 1,
         "arm work requires consumed authority",
     )
+    if state == "controller-repair-observed":
+        _require(
+            arm_id is None
+            and counts.get(("controller-repair-observed", None), 0)
+            < MAXIMUM_CONTROLLER_REPAIR_COMMITS
+            and counts.get(("terminal-written", None), 0) == 0
+            and counts.get(("archived", None), 0) == 0,
+            "controller repair transition is invalid",
+        )
+        required = {
+            "original_execution_commit",
+            "previous_replay_commit",
+            "current_replay_commit",
+            "changed_tree_diff_sha256",
+            "changed_paths",
+            "frozen_scientific_execution_binding_sha256",
+            "repairable_controller_binding_sha256",
+            "arm_request_sha256",
+            "controller_repair_commit_count",
+            "model_generations_issued",
+        }
+        _require(
+            set(facts) == required
+            and facts.get("model_generations_issued") == 0
+            and isinstance(facts.get("changed_paths"), list)
+            and 1 <= int(facts.get("controller_repair_commit_count", 0))
+            <= MAXIMUM_CONTROLLER_REPAIR_COMMITS,
+            "controller repair facts are malformed",
+        )
+        for key in (
+            "changed_tree_diff_sha256",
+            "frozen_scientific_execution_binding_sha256",
+            "repairable_controller_binding_sha256",
+        ):
+            _require_sha(facts.get(key), key)
+        _require(
+            facts.get("arm_request_sha256")
+            == scientific.EXPECTED_ARM_REQUEST_SHA256,
+            "controller repair request binding changed",
+        )
+        return
     if state == "request-started":
         _require(arm_id in ARM_IDS, "request-started arm is invalid")
         _require(
@@ -1502,6 +1822,78 @@ def _event_for(
     if len(matches) > 1:
         raise ParentDependenceError("journal contains duplicate state")
     return matches[0] if matches else None
+
+
+def _observe_controller_repair(
+    repository: Path,
+    paths: Mapping[str, Path],
+    *,
+    authority: Mapping[str, Any],
+    current_commit: str,
+) -> dict[str, Any]:
+    """Authenticate and append one zero-generation repair transition."""
+    events = read_journal(paths["journal"])
+    report = _controller_repair_report(
+        repository,
+        authority,
+        current_commit=current_commit,
+        events=events,
+    )
+    for event in events:
+        if event.get("state") != "request-started":
+            continue
+        arm_id = str(event.get("arm_id", ""))
+        _require(
+            arm_id in ARM_IDS
+            and event.get("facts", {}).get("model_request_sha256")
+            == scientific.EXPECTED_ARM_REQUEST_SHA256[arm_id],
+            "started request differs from the frozen arm request",
+        )
+    receipt_before = _require_regular(paths["receipt"], "authority receipt")
+    journal_before = _require_regular(paths["journal"], "journal")
+    capture_before: dict[str, bytes] = {}
+    experiment_key = _experiment_key(_source_runtime(repository))
+    for arm_id in ARM_IDS:
+        captured = _event_for(events, "response-captured", arm_id)
+        if captured is None:
+            continue
+        started = _event_for(events, "request-started", arm_id)
+        _require(started is not None, "captured arm lacks request-started custody")
+        path = _capture_path(paths, arm_id)
+        capture_before[arm_id] = _require_regular(path, "response capture")
+        verified = scientific.verify_capture(
+            path,
+            experiment_key=experiment_key,
+            arm_id=arm_id,
+            model_request_sha256=str(started["facts"]["model_request_sha256"]),
+        )
+        _require(
+            verified["capture_sha256"] == captured["facts"].get("capture_sha256"),
+            "captured response differs from its journal binding",
+        )
+    if current_commit == authority["authorized_commit"] or report["already_observed"]:
+        return report
+    facts = {key: value for key, value in report.items() if key != "already_observed"}
+    append_journal_event(
+        paths["journal"],
+        "controller-repair-observed",
+        facts=facts,
+    )
+    _require(
+        _require_regular(paths["receipt"], "authority receipt") == receipt_before,
+        "controller repair rewrote the authority receipt",
+    )
+    journal_after = _require_regular(paths["journal"], "journal")
+    _require(
+        journal_after.startswith(journal_before) and len(journal_after) > len(journal_before),
+        "controller repair did not preserve the exact journal prefix",
+    )
+    for arm_id, before in capture_before.items():
+        _require(
+            _require_regular(_capture_path(paths, arm_id), "response capture") == before,
+            "controller repair rewrote a captured response",
+        )
+    return report
 
 
 def _capture_value(execution: Any, name: str) -> Any:
@@ -1787,6 +2179,14 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "receipt_path_template": RECEIPT_TEMPLATE,
             "one_authority_for_exact_arm_set": True,
             "per_arm_consumption_record": "request-started journal event",
+            "original_execution_commit_bound": True,
+            "frozen_scientific_execution_binding_bound": True,
+            "exact_arm_request_hashes_bound": True,
+            "repairable_controller_initial_binding_bound": True,
+            "maximum_controller_repair_commits": MAXIMUM_CONTROLLER_REPAIR_COMMITS,
+            "current_commit_must_descend_from_original": True,
+            "repair_transition_model_generations": 0,
+            "controller_repair_resets_arm_consumption": False,
             "raw_authority_id_persisted": False,
             "schema_accepts_generic_experiment_identity": True,
             "automatic_follow_on": False,
@@ -1812,6 +2212,9 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "missing_request_custody_event": (
                 "append-only-after-passed-restart-reconciliation"
             ),
+            "controller_repair_event": "authenticated-append-only-before-resume",
+            "controller_repair_rejects_before_model_contact": True,
+            "existing_receipt_journal_and_captures_rewritten": False,
             "request_started_without_exact_capture": "terminal-inconclusive-no-retry",
             "duplicate_request_started": "rejected",
             "terminal_archive_content_addressed": True,
@@ -1862,12 +2265,38 @@ def write_preregistration(repository: Path) -> Path:
     return path
 
 
-def validate_preregistration(repository: Path) -> dict[str, Any]:
+def validate_preregistration(
+    repository: Path,
+    *,
+    require_current_controller: bool = True,
+) -> dict[str, Any]:
     repository = repository.resolve(strict=False)
     path = repository / PREREGISTRATION_PATH
     data = _require_regular(path, "parent-dependence preregistration")
     document = _json_object(data, "parent-dependence preregistration")
     expected = build_preregistration_document(repository)
+    implementation = document.get("implementation_binding")
+    _require(isinstance(implementation, dict), "implementation binding is malformed")
+    frozen = implementation.get("frozen_scientific_execution")
+    controller = implementation.get("repairable_controller")
+    _require(
+        isinstance(frozen, dict)
+        and isinstance(controller, dict)
+        and implementation.get("sha256")
+        == json_sha256(
+            {
+                "frozen_scientific_execution": frozen,
+                "repairable_controller": controller,
+            }
+        ),
+        "implementation binding is not self-consistent",
+    )
+    if not require_current_controller:
+        current_frozen = expected["implementation_binding"][
+            "frozen_scientific_execution"
+        ]
+        _require(frozen == current_frozen, "frozen scientific execution changed")
+        expected["implementation_binding"] = implementation
     _require(document == expected, "preregistration differs from exact reconstruction")
     _require(
         document.get("execution_state", {}).get("model_requests_issued") == 0
@@ -1875,13 +2304,17 @@ def validate_preregistration(repository: Path) -> dict[str, Any]:
         and document.get("status") == "static-preregistered-unexecuted",
         "observed result entered immutable preregistration",
     )
-    implementation = document["implementation_binding"]
+    current_controller = _repairable_controller_binding(repository)
     return {
         "status": "pass",
         "relative_path": PREREGISTRATION_PATH,
         "artifact_sha256": sha256_bytes(data),
         "document_sha256": json_sha256(document),
         "implementation_binding_sha256": implementation["sha256"],
+        "frozen_scientific_execution_binding_sha256": frozen["sha256"],
+        "repairable_controller_initial_binding_sha256": controller["sha256"],
+        "repairable_controller_current_binding_sha256": current_controller["sha256"],
+        "controller_repair_mode": not require_current_controller,
         "experiment_id": EXPERIMENT_ID,
         "arm_ids": list(ARM_IDS),
         "future_model_generations": 2,
@@ -1896,7 +2329,20 @@ def _manifest(
     public_preflight: Mapping[str, Any],
     authority: Mapping[str, Any],
 ) -> dict[str, Any]:
-    preregistration = validate_preregistration(repository)
+    current_commit = _git(repository, "rev-parse", "HEAD")
+    preregistration = validate_preregistration(
+        repository,
+        require_current_controller=current_commit == authority["authorized_commit"],
+    )
+    preregistration = {
+        key: value
+        for key, value in preregistration.items()
+        if key
+        not in {
+            "repairable_controller_current_binding_sha256",
+            "controller_repair_mode",
+        }
+    }
     source = verify_source_evidence(repository)
     isolation = request_isolation_report(repository)
     manifest = {
@@ -1909,6 +2355,15 @@ def _manifest(
         "public_preflight": dict(public_preflight),
         "arm_ids": list(ARM_IDS),
         "arm_request_sha256": isolation["arm_request_sha256"],
+        "frozen_scientific_execution_binding_sha256": authority[
+            "frozen_scientific_execution_binding_sha256"
+        ],
+        "repairable_controller_initial_binding_sha256": authority[
+            "repairable_controller_initial_binding_sha256"
+        ],
+        "maximum_controller_repair_commits": authority[
+            "maximum_controller_repair_commits"
+        ],
         "maximum_model_generations_per_arm": 1,
         "maximum_total_model_generations": 2,
         "physical_slots": 1,
@@ -2635,19 +3090,39 @@ def _prepare_or_resume(
     public_preflight: Mapping[str, Any],
     authority: Mapping[str, Any],
 ) -> dict[str, Any]:
-    expected_manifest = _manifest(repository, public_preflight, authority)
-    manifest_data = json.dumps(
-        expected_manifest,
-        ensure_ascii=False,
-        allow_nan=False,
-        sort_keys=True,
-        indent=2,
-    ).encode("utf-8") + b"\n"
     if not paths["run_root"].exists():
         paths["run_root"].mkdir(parents=True)
     elif not paths["run_root"].is_dir() or balanced._is_reparse(paths["run_root"]):
         raise ParentDependenceError("runtime root is unsafe")
-    _write_or_require_identical(paths["manifest"], manifest_data)
+    if paths["manifest"].exists() or paths["manifest"].is_symlink():
+        manifest_data = _require_regular(paths["manifest"], "manifest")
+        expected_manifest = _json_object(manifest_data, "manifest")
+        _require(
+            expected_manifest.get("experiment_id") == EXPERIMENT_ID
+            and expected_manifest.get("protected_commit")
+            == authority["authorized_commit"]
+            and expected_manifest.get("authority_id_sha256")
+            == authority["authority_id_sha256"]
+            and expected_manifest.get("arm_request_sha256")
+            == authority["arm_request_sha256"]
+            and expected_manifest.get(
+                "frozen_scientific_execution_binding_sha256"
+            )
+            == authority["frozen_scientific_execution_binding_sha256"]
+            and expected_manifest.get("maximum_model_generations_per_arm") == 1
+            and expected_manifest.get("maximum_total_model_generations") == 2,
+            "existing manifest differs from the consumed scientific authority",
+        )
+    else:
+        expected_manifest = _manifest(repository, public_preflight, authority)
+        manifest_data = json.dumps(
+            expected_manifest,
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            indent=2,
+        ).encode("utf-8") + b"\n"
+        _write_or_require_identical(paths["manifest"], manifest_data)
     events = read_journal(paths["journal"])
     if not events:
         append_journal_event(
@@ -2883,7 +3358,10 @@ def _execute_unstarted_arms(
     *,
     live: Any,
     full_preflight: Mapping[str, Any],
+    frozen_scientific_binding_sha256: str | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    enforce_exact_request = frozen_scientific_binding_sha256 is not None
+    frozen_binding = frozen_scientific_binding_sha256 or ("F" * 64)
     for arm_id in ARM_IDS:
         try:
             _recover_request_prefix(repository, paths, arm_id)
@@ -2992,93 +3470,22 @@ def _execute_unstarted_arms(
             if _event_for(events, "request-started", arm_id) is not None:
                 continue
             payload = build_arm_request(repository, arm_id)
-            request_sha = json_sha256(payload)
-            geometry = live.prompt_geometry(sidecar=sidecar, payload=payload)
-            token_ids = geometry.get("token_ids")
-            terminal = geometry.get("public_root_terminal_token_index")
-            _require(
-                isinstance(token_ids, list)
-                and isinstance(terminal, int)
-                and 0 <= terminal < len(token_ids),
-                "arm prompt geometry is invalid",
-            )
-            before = dict(
-                live.boundary_custody(
-                    preflight=full_preflight,
-                    sidecar=sidecar,
-                    boundary=f"before:{arm_id}",
-                )
-            )
-            _require(before.get("passed") is True, "pre-request custody failed")
-            append_journal_event(
-                paths["journal"],
-                "request-started",
-                arm_id=arm_id,
-                facts={
-                    "model_request_sha256": request_sha,
-                    "generation_ordinal": ARM_IDS.index(arm_id) + 1,
-                    "maximum_generations_for_arm": 1,
-                    "rendered_prompt_tokens": len(token_ids),
-                    "carrier_terminal_token_index": terminal,
-                    "carrier_terminal_identity_sha256": kernel._terminal_identity(
-                        token_ids, terminal
-                    ),
-                },
-            )
             try:
-                request = kernel.KernelRequest(
-                    request_id=arm_id,
-                    ordinal=ARM_IDS.index(arm_id) + 1,
-                )
-                partial_path = _partial_capture_path(paths, arm_id)
-                with _RawResponseSpool(partial_path) as spool:
-                    with pool.lease() as lease_id:
-                        _require(lease_id == kernel.PHYSICAL_SLOT, "physical slot changed")
-                        execution = live.execute_request(
-                            sidecar=sidecar,
-                            payload=payload,
-                            request=request,
-                            raw_line_recorder=spool.record,
-                        )
-                raw_response_bytes = _require_regular(
-                    partial_path,
-                    "raw response spool",
-                    maximum=MAX_RAW_RESPONSE_BYTES,
-                )
-                capture = capture_execution(
-                    _capture_path(paths, arm_id),
+                scientific.execute_and_capture_arm(
+                    experiment_key=_experiment_key(_source_runtime(repository)),
+                    frozen_binding_sha256=frozen_binding,
+                    payload=payload,
                     arm_id=arm_id,
-                    model_request_sha256=request_sha,
-                    execution=execution,
-                    raw_response_bytes=raw_response_bytes,
-                )
-                append_journal_event(
-                    paths["journal"],
-                    "response-captured",
-                    arm_id=arm_id,
-                    facts={
-                        "capture_sha256": capture["capture_sha256"],
-                        "model_request_sha256": request_sha,
-                        "captured_before_parsing": True,
-                    },
-                )
-                _remove_bound_partial_capture(paths, arm_id, capture)
-                after = dict(
-                    live.boundary_custody(
-                        preflight=full_preflight,
-                        sidecar=sidecar,
-                        boundary=f"after:{arm_id}",
-                    )
-                )
-                _require(after.get("passed") is True, "post-request custody failed")
-                append_journal_event(
-                    paths["journal"],
-                    "request-custody-observed",
-                    arm_id=arm_id,
-                    facts={
-                        "passed": True,
-                        "custody_sha256": json_sha256(after),
-                    },
+                    live=live,
+                    sidecar=sidecar,
+                    pool=pool,
+                    full_preflight=full_preflight,
+                    capture_path=_capture_path(paths, arm_id),
+                    partial_path=_partial_capture_path(paths, arm_id),
+                    append_event=lambda state, **kwargs: append_journal_event(
+                        paths["journal"], state, **kwargs
+                    ),
+                    enforce_expected_request_hash=enforce_exact_request,
                 )
             except BaseException as exc:
                 if not _capture_path(paths, arm_id).is_file():
@@ -3263,14 +3670,33 @@ def run_parent_dependence(
     current_commit = str(public_preflight.get("stable", {}).get("head", ""))
     model_sha = str(public_preflight.get("model_identity", {}).get("sha256", ""))
     binary_sha = str(public_preflight.get("binary_identity", {}).get("sha256", ""))
-    authority = build_external_authority(
-        repository,
-        raw_authority_id=raw_authority_id,
-        authorized_commit=authorized_commit,
-        current_commit=current_commit,
-        expected_model_sha256=model_sha,
-        expected_binary_sha256=binary_sha,
-    )
+    if paths["receipt"].exists() or paths["receipt"].is_symlink():
+        existing_receipt = verify_authority_receipt(
+            repository,
+            require_current_static=False,
+        )
+        authority = dict(existing_receipt["authority"])
+        _require(
+            authority.get("authorized_commit") == authorized_commit
+            and authority.get("authority_id_sha256")
+            == authority_id_sha256(raw_authority_id),
+            "resume authority differs from the original consumed authority",
+        )
+        _controller_repair_report(
+            repository,
+            authority,
+            current_commit=current_commit,
+            events=None,
+        )
+    else:
+        authority = build_external_authority(
+            repository,
+            raw_authority_id=raw_authority_id,
+            authorized_commit=authorized_commit,
+            current_commit=current_commit,
+            expected_model_sha256=model_sha,
+            expected_binary_sha256=binary_sha,
+        )
     controller_path = paths["run_root"] / ".controller.lock"
     with controller_lock(controller_path):
         with run_lock(paths["run_lock"]):
@@ -3288,6 +3714,12 @@ def run_parent_dependence(
                 expected_model_sha256=model_sha,
                 expected_binary_sha256=binary_sha,
             )
+            _observe_controller_repair(
+                repository,
+                paths,
+                authority=authority,
+                current_commit=current_commit,
+            )
             events = read_journal(paths["journal"])
             terminal = _event_for(events, "terminal-written")
             cleanup: dict[str, Any] = {"passed": False}
@@ -3300,6 +3732,11 @@ def run_parent_dependence(
                         paths,
                         live=live,
                         full_preflight=full_preflight,
+                        frozen_scientific_binding_sha256=str(
+                            authority[
+                                "frozen_scientific_execution_binding_sha256"
+                            ]
+                        ),
                     )
                     append_journal_event(
                         paths["journal"],
@@ -3345,6 +3782,7 @@ def validate_static(repository: Path) -> dict[str, Any]:
     preregistration = validate_preregistration(repository)
     source = verify_source_evidence(repository)
     isolation = request_isolation_report(repository)
+    implementation = _implementation_binding(repository)
     return {
         "status": "pass",
         "experiment_id": EXPERIMENT_ID,
@@ -3356,6 +3794,21 @@ def validate_static(repository: Path) -> dict[str, Any]:
         ],
         "preregistration": preregistration,
         "request_isolation": isolation,
+        "frozen_scientific_execution_binding": implementation[
+            "frozen_scientific_execution"
+        ],
+        "repairable_controller_binding": implementation[
+            "repairable_controller"
+        ],
+        "authority_repair_policy": {
+            "maximum_controller_repair_commits": MAXIMUM_CONTROLLER_REPAIR_COMMITS,
+            "descendant_only": True,
+            "frozen_scientific_surface_may_change": False,
+            "arm_request_hashes_may_change": False,
+            "controller_repair_resets_arm_consumption": False,
+            "repair_transition_model_generations": 0,
+            "automatic_follow_on": False,
+        },
         "authority_object_schema_sha256": AUTHORITY_OBJECT_SCHEMA_SHA256,
         "authority_receipt_schema_sha256": AUTHORITY_RECEIPT_SCHEMA_SHA256,
         "authority_created": False,

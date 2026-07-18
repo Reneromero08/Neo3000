@@ -166,6 +166,7 @@
       "scripts/test_catalytic_kernel_0.py",
       "scripts/test_catalytic_kernel_0_balanced_opaque.py",
       "scripts/test_catalytic_kernel_0_balanced_opaque_binding_2.py",
+      "scripts/catalytic_kernel_0_balanced_rank_head_v2_parent_dependence_scientific.py",
       "scripts/catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
       "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py",
       "tools/server/server-context.cpp",
