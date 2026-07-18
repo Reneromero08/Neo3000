@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Within-binding position-seed crossover statically prepared
+## Checkpoint 2: Within-binding position-seed crossover adjudicated
 
-**Status:** STATIC PREREGISTRATION COMPLETE / ONE FRESH FIRST-MATCH BINDING / 12 FUTURE TRANSFORM GENERATIONS / ZERO AUTHORITY / ZERO MODEL CONTACT / BROADER CLAIMS LOCKED
+**Status:** 12/12 EXECUTED ONCE / POSITION-CONDITIONAL PARENT-INFORMATION EFFECT SUPPORTED / ZERO-CONTACT REPLAY / PARENT-A-ONLY EXPLANATION RETIRED / BROADER CLAIMS LOCKED
 
 - [x] Admit exact protected main `c4ca8760c2ce307dbd3fb445bf6f2a624667000b`, synchronized local/remote refs, clean stable and exact candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, healthy stable service, free port 9494, absent panel run lock, exact historical evidence, and unchanged private custody before editing.
 - [x] Preserve the original parent-dependence terminal result/archive and both consumed captures; preserve forensic artifact `110DAE908E4C1F01747C2CBBEA9F3A34BB2ACA61397D55B0648D82453A3DD975`, asymmetry artifact byte hash `47B6790A05F98051EA10BBA5EA4944C3DCE37A68CF6E64B7BF7A26A464E891B7`, the qualified shared-rank-head endpoint claim, and its exact qualifier. Retry neither consumed arm.
@@ -17,7 +17,15 @@
 - [x] Pass focused crossover `24/24`, all rank-head-v2 `192/192`, forensic `6/6`, asymmetry `8/8`, evaluator `28/28`, exact reconstruction, changed-file compilation, canonical JSON/JSONL and private/no-smuggle scans, evaluator lock, and protected preflight. The one complete CPU discovery ran 1,039 tests: 1,037 passed in sandbox and the two exact known Windows runtime-identity lock cases passed `2/2` with host permission; semantic failures are zero.
 - [x] Create no authority object or receipt, journal, runtime root, capture, sidecar, HTTP/model request, result, scientific execution, retry, or claim expansion. Keep every broader claim locked.
 
-**Next exact action:** separately authorize exactly one live execution with a fresh external authority ID bound to the published static commit and preregistration artifact SHA-256 `6F37F858271CF3F5A10CA8CADEC6D03E7E7068347E5603D67B52C25813697E6D`.
+- [x] Repair only the demonstrated nested-preflight projection defect, preserve the 12 frozen request hashes, qualify focused crossover `25/25`, and publish repair commit `27a5188d1aae8fb0944875865a44cb4583fd0352` before execution.
+- [x] Execute the panel exactly once: one consumed authority, 12 started and completed one-generation requests, 12 authenticated captures, 52 authenticated journal events, zero retries, cleanup/postflight pass, sidecar shutdown, and 17-file archive `BC9404292F54F5597E0D7BA3AEBC83EF6A95E9C19708164994D515980AEB6B1B`.
+- [x] Verify receipt `7EE9A98A78100E6675A659A861D899E0AE95FD2FAF65D87449F28EC9BDE804A7`, manifest `C47B16C6F6E6C8EFFE42F5AB7EDD5DC65ED5A327DCC9BD2E96FAB06105DF86EC`, result `008D4FEFE24D6CB4A846A76E832A892BCBBF134F1A1C951FCDA55F0624C0E0FB`, closure `60077B27F2FFAE7FBC02B7FB7B8EC0B803F9086716611A84C88CD4F6AC8D633D`, journal `1BB6E91E9D9E0E767E78D13C19FFCE3F952166A5A914DA2EBB9394E00A2F3100`, and journal head `F6A0CC59A696D818FCFDF5357AB5534F1BD35377C6AB36B870DDC2AACCD7F2FA` byte-exactly.
+- [x] Replay all 12 captures with zero model contact. Preserve four valid `5/5` full-information baselines; observe both deletions at P0 as recovered `5/5`; observe both deletions at P1 as not recovered `3/5`; observe no seed interaction.
+- [x] Support only `SINGLETON_PRESENTATION_POSITION_EFFECT_SUPPORTED`, `PARENT_INFORMATION_DEPENDENCE_IS_SINGLETON_PRESENTATION_POSITION_CONDITIONAL_WITHIN_MATCHED_BINDING`, and `JOINT_PARENT_INFORMATION_OVERCOMES_UNFAVORABLE_SINGLETON_PRESENTATION_POSITION_ACROSS_TWO_FIXED_SEEDS`. Retire `PARENT_A_ONLY_DIRECTIONAL_ASYMMETRY` as a stable explanation while preserving its historical evidence.
+- [x] Publish adjudication artifact `lab/ck0_balanced_opaque_rank_head_v2_position_seed_crossover_adjudication_1.json` at SHA-256 `DD829AE6C4F38EDA325462AD24D030AA7DF3E74FC69D54C80DE1F9996C820B53` and canonical `neo-exp-0042` at line 55, SHA-256 `DAF072E43700F71A76537843507C578FEA38679AA15DC9A0C783090B29D5D0E8`.
+- [x] Complete bounded static publication qualification: exact archive/capture verification, zero-contact replay, adjudication reconstruction/publication validation, focused publication `7/7`, evaluator `28/28`, changed-file compilation, 19 scientific JSON documents and 55 JSONL records, private/no-smuggle scans, regenerated evaluator lock, and protected preflight. Run no complete CPU suite because no executed runtime source changed.
+
+**Next exact action:** separately authorize one bounded static scientific design choice for the next smallest discriminating experiment; do not authorize execution automatically.
 
 ---
 
