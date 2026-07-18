@@ -1,0 +1,806 @@
+{
+  "authority_contract": {
+    "authority_consumed": false,
+    "authority_created": false,
+    "authority_kind": "external-one-shot-position-seed-crossover",
+    "automatic_follow_on": false,
+    "controller_repair_cannot_change_scientific_surface": true,
+    "controller_repair_cannot_reset_consumption": true,
+    "descendant_only_controller_repairs": true,
+    "exact_preregistration_artifact_required": true,
+    "exact_published_commit_required": true,
+    "exact_twelve_request_hashes_required": true,
+    "maximum_controller_repair_commits": 3,
+    "object_schema_sha256": "6D94934091DFD06C16ADF2E25A36BA073E325BB068246497FFABB5ACA2B4071F",
+    "receipt_schema_sha256": "060D8C278195B05507BC02C9646F6CF9E1B8A7CA3D9AFF27D5598C56F01373A3",
+    "receipt_schema_version": "rank-head-v2-position-seed-crossover-consumption-v1",
+    "schema_version": "rank-head-v2-position-seed-crossover-authority-v1"
+  },
+  "binding_selection": {
+    "attempt_ceiling": 4096,
+    "attempt_count": 50,
+    "both_five_member_supports_exact": true,
+    "central_lexical_ordinal_interval": [
+      32,
+      33
+    ],
+    "failure_law": "stop-before-authority-if-no-candidate-qualifies",
+    "first_match_verified": true,
+    "law": "first eligible domain-separated counter before outcomes",
+    "model_outputs_inspected": 0,
+    "opaque_symbol_token_id_lengths_all_three": true,
+    "rejected_candidates_published": false,
+    "selected_counter": 49,
+    "selected_singleton_global_lexical_ordinal_1_based": 33,
+    "selection_seed_commitment_sha256": "0D6042BF50265BFC21525E5AF5F4420A6842AB6373FED3F593C7B1B3D91884F2"
+  },
+  "canonical_semantic_parents": {
+    "arm_invariant_when_parent_complete": true,
+    "commitment_inputs": [
+      "artifact role",
+      "canonical sorted five-member support",
+      "tied score",
+      "pass-equivalence class",
+      "panel identity"
+    ],
+    "commitments": {
+      "parent-0": "2336A959827451E2BCBE7904D703554BA607DD295C4358E9C3580EF2C4E7ADDA",
+      "parent-1": "CD7E7483664E973593F1D62FC05A079B97AE64E7F83601CFF4839E46B5B212D4"
+    },
+    "presentation_invariant": true,
+    "request_order_invariant": true,
+    "seed_invariant": true
+  },
+  "cells": [
+    {
+      "arm_order_independent": true,
+      "cell_id": "P0-S0",
+      "fixed_transform_seed": 1851550238,
+      "full_information_required_before_claiming": true,
+      "presentation": "P0",
+      "request_ids": [
+        "P0-S0-full-information",
+        "P0-S0-delete-parent-0",
+        "P0-S0-delete-parent-1"
+      ],
+      "request_sha256": {
+        "P0-S0-delete-parent-0": "6EF421279EB504985098C8F290F35DD442EEAC5303A86708E9C82CC0A6617FB1",
+        "P0-S0-delete-parent-1": "615DA19035DCD1874077E4071FD3EDC09FF0257B61FAA13BECB4D90B6FC683DD",
+        "P0-S0-full-information": "7C1BF6444ABE08FA83B5704C62E3A9711C59BB8748AAD0DE4CE1927118415594"
+      },
+      "seed_block": "S0"
+    },
+    {
+      "arm_order_independent": true,
+      "cell_id": "P0-S1",
+      "fixed_transform_seed": 1669860413,
+      "full_information_required_before_claiming": true,
+      "presentation": "P0",
+      "request_ids": [
+        "P0-S1-full-information",
+        "P0-S1-delete-parent-0",
+        "P0-S1-delete-parent-1"
+      ],
+      "request_sha256": {
+        "P0-S1-delete-parent-0": "8C408DE3E8F14BABCCFE211EE7EC22D23071FBAFEFD54E88A281943A07B43B01",
+        "P0-S1-delete-parent-1": "F07BEC4C59A30153B9C5A9C133BA4E7D5E7BBF3737D47F722BEA2EE9B8A23E7E",
+        "P0-S1-full-information": "B008B74F7C07D6E16E78ED22341DA39315216281EFD48D582A2D7C437C54166F"
+      },
+      "seed_block": "S1"
+    },
+    {
+      "arm_order_independent": true,
+      "cell_id": "P1-S0",
+      "fixed_transform_seed": 1851550238,
+      "full_information_required_before_claiming": true,
+      "presentation": "P1",
+      "request_ids": [
+        "P1-S0-full-information",
+        "P1-S0-delete-parent-0",
+        "P1-S0-delete-parent-1"
+      ],
+      "request_sha256": {
+        "P1-S0-delete-parent-0": "ED4FB7E687B16CE6DE61719E98CE98EF921D06DB91D48F85F3651A515DF17344",
+        "P1-S0-delete-parent-1": "FD3FFA1E603DFEA82DFB8CA3C329F46115A258F6E20A2C9E6CDDAC6E3F2B5D89",
+        "P1-S0-full-information": "DA0873C251B77856E8D7662478751FC218558762BEAB0A587D7DE1A7BA00ABC9"
+      },
+      "seed_block": "S0"
+    },
+    {
+      "arm_order_independent": true,
+      "cell_id": "P1-S1",
+      "fixed_transform_seed": 1669860413,
+      "full_information_required_before_claiming": true,
+      "presentation": "P1",
+      "request_ids": [
+        "P1-S1-full-information",
+        "P1-S1-delete-parent-0",
+        "P1-S1-delete-parent-1"
+      ],
+      "request_sha256": {
+        "P1-S1-delete-parent-0": "2DCB0A22479B315ABE57E7EC7DCAA488C8401E03D82801D91EFD8026939C95BF",
+        "P1-S1-delete-parent-1": "D66F7F046263BC87249EE5B428117BE7D5C2ADC1237731CF02B36D9A5E5F8BDE",
+        "P1-S1-full-information": "38CD334566B96F8CB15FE350783068CFEA96B9AD7206542EB39C8CD99CCC9953"
+      },
+      "seed_block": "S1"
+    }
+  ],
+  "deletion_receipt_contract": {
+    "byte_identical_across_relevant_cells": true,
+    "per_parent": {
+      "parent-0": {
+        "serialized_bytes": 193,
+        "sha256": "4BD21383DD261975DACA622F19754887E7AD9611B6B3A5EB5B070153274D99C4",
+        "token_ids": 93,
+        "token_sequence_sha256": "38ABF48CF488ED1932C965F18EFFEB96642290585F77E74802DE237831628BBF"
+      },
+      "parent-1": {
+        "serialized_bytes": 193,
+        "sha256": "D266FC9DEEF57BE3AA807BBEB7FF274B9A38C28728D114C108B073E46A66E56D",
+        "token_ids": 96,
+        "token_sequence_sha256": "4E321205C46BD55534B060545403C9ACAB85B414D5CC981BBBEEFECD84C4617C"
+      }
+    },
+    "presentation_invariant": true,
+    "seed_invariant": true,
+    "token_identical_across_relevant_cells": true
+  },
+  "design_id": "balanced-opaque-transform-only-within-binding-position-seed-crossover-v1",
+  "execution_state": {
+    "authority_consumed": false,
+    "authority_created": false,
+    "journal_created": false,
+    "live_execution_performed": false,
+    "model_requests_issued": 0,
+    "private_binding_created": true,
+    "scientific_retry": false,
+    "sidecar_launched": false
+  },
+  "factorization": {
+    "controlled_presentations": 2,
+    "derivation": "1 binding x 2 presentations x 2 seeds x 3 arms",
+    "fixed_seed_blocks": 2,
+    "fresh_private_bindings": 1,
+    "future_model_generations": 12,
+    "second_private_binding_in_minimum_experiment": false,
+    "transform_only_arms_per_cell": 3
+  },
+  "future_live_command_shape": "python scripts/catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover.py run --repository <repository> --binary <server-binary> --model <pinned-gguf> --design-id balanced-opaque-transform-only-within-binding-position-seed-crossover-v1 --external-authority-id <fresh-64-hex-id> --authorized-commit <published-static-commit>",
+  "hypothesis": "Within one independently selected private binding, controlled singleton presentation position and fixed transform seed distinguish presentation luck, deterministic seed interaction, and matched Parent-A/Parent-B asymmetry.",
+  "implementation_binding": {
+    "frozen_scientific_execution": {
+      "capture_schema_sha256": "994ABF86EAB7407E1A2E05DA68308C178094A13AEC24EE5DB0F4F344B6DC6052",
+      "captured_requests_replay_without_model_contact": true,
+      "contract": {
+        "binary_sha256": "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B",
+        "binding_commitments": {
+          "alias_map_commitment_sha256": "6384655F0C64BED3C0F63E011FA1BAF4B7007C30DDB80DE38995B744CF047274",
+          "experiment_key_commitment_sha256": "762EFD6C9FE80FADF56CBB7F1B50AFDA2B4573326D637C4B820AC4C62C3E3227",
+          "profile_binding_sha256": "0E55293C3E08DFE8EE56C2DE6DA32CB89B8170E753D0C809E89E99908A51F334",
+          "root_commitment_sha256": "F449FB16F15F65AC0C6EAC05F3DC63EC75462D381E0B029DF0E2363B52B6CC5C"
+        },
+        "carrier_root_sha256": "4B82F399ACE797BDF40012ABB4D1254021F838B58BAED66153D4042EF3C7585C",
+        "design_id": "balanced-opaque-transform-only-within-binding-position-seed-crossover-v1",
+        "execution_order": [
+          "P0-S0-full-information",
+          "P1-S1-full-information",
+          "P0-S0-delete-parent-0",
+          "P1-S1-delete-parent-1",
+          "P1-S0-full-information",
+          "P0-S1-full-information",
+          "P1-S0-delete-parent-1",
+          "P0-S1-delete-parent-0",
+          "P0-S0-delete-parent-1",
+          "P1-S1-delete-parent-0",
+          "P1-S0-delete-parent-0",
+          "P0-S1-delete-parent-1"
+        ],
+        "maximum_model_generations_per_request": 1,
+        "maximum_total_model_generations": 12,
+        "model_sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+        "physical_slots": 1,
+        "presentation_proof_commitments": {
+          "parent-0": {
+            "P0": "A63499FEEDF1207375AE00047C2C636282B2F04D3C73048750C1CD6BDD3A851F",
+            "P1": "A63499FEEDF1207375AE00047C2C636282B2F04D3C73048750C1CD6BDD3A851F"
+          },
+          "parent-1": {
+            "P0": "430EAC0DAA1E94CB7AA81E1CDE8F17CB56EC6B0C38B70231E219D250E3BA104C",
+            "P1": "430EAC0DAA1E94CB7AA81E1CDE8F17CB56EC6B0C38B70231E219D250E3BA104C"
+          }
+        },
+        "raw_response_recording": "exclusive-fsynced-capture-before-controller-parse",
+        "request_dispatch": "frozen-scientific-module-exact-hash-gate-before-contact",
+        "request_ids": [
+          "P0-S0-full-information",
+          "P0-S0-delete-parent-0",
+          "P0-S0-delete-parent-1",
+          "P0-S1-full-information",
+          "P0-S1-delete-parent-0",
+          "P0-S1-delete-parent-1",
+          "P1-S0-full-information",
+          "P1-S0-delete-parent-0",
+          "P1-S0-delete-parent-1",
+          "P1-S1-full-information",
+          "P1-S1-delete-parent-0",
+          "P1-S1-delete-parent-1"
+        ],
+        "request_sha256": {
+          "P0-S0-delete-parent-0": "6EF421279EB504985098C8F290F35DD442EEAC5303A86708E9C82CC0A6617FB1",
+          "P0-S0-delete-parent-1": "615DA19035DCD1874077E4071FD3EDC09FF0257B61FAA13BECB4D90B6FC683DD",
+          "P0-S0-full-information": "7C1BF6444ABE08FA83B5704C62E3A9711C59BB8748AAD0DE4CE1927118415594",
+          "P0-S1-delete-parent-0": "8C408DE3E8F14BABCCFE211EE7EC22D23071FBAFEFD54E88A281943A07B43B01",
+          "P0-S1-delete-parent-1": "F07BEC4C59A30153B9C5A9C133BA4E7D5E7BBF3737D47F722BEA2EE9B8A23E7E",
+          "P0-S1-full-information": "B008B74F7C07D6E16E78ED22341DA39315216281EFD48D582A2D7C437C54166F",
+          "P1-S0-delete-parent-0": "ED4FB7E687B16CE6DE61719E98CE98EF921D06DB91D48F85F3651A515DF17344",
+          "P1-S0-delete-parent-1": "FD3FFA1E603DFEA82DFB8CA3C329F46115A258F6E20A2C9E6CDDAC6E3F2B5D89",
+          "P1-S0-full-information": "DA0873C251B77856E8D7662478751FC218558762BEAB0A587D7DE1A7BA00ABC9",
+          "P1-S1-delete-parent-0": "2DCB0A22479B315ABE57E7EC7DCAA488C8401E03D82801D91EFD8026939C95BF",
+          "P1-S1-delete-parent-1": "D66F7F046263BC87249EE5B428117BE7D5C2ADC1237731CF02B36D9A5E5F8BDE",
+          "P1-S1-full-information": "38CD334566B96F8CB15FE350783068CFEA96B9AD7206542EB39C8CD99CCC9953"
+        },
+        "response_schema_sha256": "B36864F84116E64D96775452265513E7AB46521418EB376CC17872492B281E27",
+        "seeds": {
+          "S0": 1851550238,
+          "S1": 1669860413
+        },
+        "semantic_parent_commitments": {
+          "parent-0": "2336A959827451E2BCBE7904D703554BA607DD295C4358E9C3580EF2C4E7ADDA",
+          "parent-1": "CD7E7483664E973593F1D62FC05A079B97AE64E7F83601CFF4839E46B5B212D4"
+        },
+        "sidecar_epochs": 1
+      },
+      "dispatch_dependencies": {
+        "callables": [
+          {
+            "qualified_name": "catalytic_kernel_0.CatalyticKernel0Adapter.launch_sidecar",
+            "sha256": "055ECDEA20B89B70673C5EA855FB7263B3CD91408A41616119E75A7BAE2F92E3"
+          },
+          {
+            "qualified_name": "catalytic_inference_bench_0_runtime._HoloStateAdapter.prompt_geometry",
+            "sha256": "F40F6D986F253458EB120D987E1352C508A39714600920CC82AC2A0A6306121D"
+          },
+          {
+            "qualified_name": "catalytic_inference_bench_0_runtime._HoloStateAdapter.execute_request",
+            "sha256": "BE6D4304A0EA77B7B395BB5B01E61DE67D7690EEE1B9BB55985F790DF4F37E2E"
+          },
+          {
+            "qualified_name": "catalytic_inference_bench_0_runtime._HoloStateAdapter.boundary_custody",
+            "sha256": "554A2726E2AC6FB66CEA6C757D96D4B3E2B55A46F20962A64A3B251F7C484FD4"
+          },
+          {
+            "qualified_name": "baseline_harness.stream_completion",
+            "sha256": "06C4B9739EA3EAADD0FE831CAA22370AEB3DB211809DAAA7CC4749EDA6012351"
+          },
+          {
+            "qualified_name": "catalytic_kernel_0._terminal_identity",
+            "sha256": "73CB02829F7B2C4B247F3528DAE621DCC16E381FF3F0F8D6C4B4A7024A7BBE5B"
+          }
+        ],
+        "sha256": "5A39066DEF9B5E89B8092CA29BD89D43F0446022D0FBAB59F5E85D1913F8FB75"
+      },
+      "module": {
+        "byte_size": 15336,
+        "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover_scientific.py",
+        "sha256": "C136B2657853E3F471D8DD05096F36D77E964EA67F0EA3F85E1FCEF172F6A597"
+      },
+      "one_generation_maximum_per_cell_arm": true,
+      "one_request_started_maximum_per_cell_arm": true,
+      "request_sha256": {
+        "P0-S0-delete-parent-0": "6EF421279EB504985098C8F290F35DD442EEAC5303A86708E9C82CC0A6617FB1",
+        "P0-S0-delete-parent-1": "615DA19035DCD1874077E4071FD3EDC09FF0257B61FAA13BECB4D90B6FC683DD",
+        "P0-S0-full-information": "7C1BF6444ABE08FA83B5704C62E3A9711C59BB8748AAD0DE4CE1927118415594",
+        "P0-S1-delete-parent-0": "8C408DE3E8F14BABCCFE211EE7EC22D23071FBAFEFD54E88A281943A07B43B01",
+        "P0-S1-delete-parent-1": "F07BEC4C59A30153B9C5A9C133BA4E7D5E7BBF3737D47F722BEA2EE9B8A23E7E",
+        "P0-S1-full-information": "B008B74F7C07D6E16E78ED22341DA39315216281EFD48D582A2D7C437C54166F",
+        "P1-S0-delete-parent-0": "ED4FB7E687B16CE6DE61719E98CE98EF921D06DB91D48F85F3651A515DF17344",
+        "P1-S0-delete-parent-1": "FD3FFA1E603DFEA82DFB8CA3C329F46115A258F6E20A2C9E6CDDAC6E3F2B5D89",
+        "P1-S0-full-information": "DA0873C251B77856E8D7662478751FC218558762BEAB0A587D7DE1A7BA00ABC9",
+        "P1-S1-delete-parent-0": "2DCB0A22479B315ABE57E7EC7DCAA488C8401E03D82801D91EFD8026939C95BF",
+        "P1-S1-delete-parent-1": "D66F7F046263BC87249EE5B428117BE7D5C2ADC1237731CF02B36D9A5E5F8BDE",
+        "P1-S1-full-information": "38CD334566B96F8CB15FE350783068CFEA96B9AD7206542EB39C8CD99CCC9953"
+      },
+      "sha256": "621F167BF0A0F7EFB6F6AD1A81DC59E9B71978FF466C4FE09D765B90B24F23DA",
+      "surface_version": 1,
+      "twelve_generations_maximum_overall": true
+    },
+    "repairable_controller": {
+      "files": [
+        {
+          "byte_size": 27707,
+          "path": "scripts/baseline_harness.py",
+          "sha256": "6100461EFE4172279668A3D213875EFA884F10DC9E246D60AF0A0702BDD49D99"
+        },
+        {
+          "byte_size": 99828,
+          "path": "scripts/catalytic_inference_bench_0_runtime.py",
+          "sha256": "8BEE2FA8712B1826ADE6EB24809F32924DE498027944CC7D8426217822252BCB"
+        },
+        {
+          "byte_size": 113042,
+          "path": "scripts/catalytic_kernel_0.py",
+          "sha256": "E2663B49E1854718019F09C096375F49A7FD9F9A1DC11CF18DB82D99DC38188F"
+        },
+        {
+          "byte_size": 124720,
+          "path": "scripts/catalytic_kernel_0_balanced_opaque.py",
+          "sha256": "A569D634D7660B4B3780C5141D374F26A44830EACC99408797B477F72D79636E"
+        },
+        {
+          "byte_size": 11836,
+          "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2.py",
+          "sha256": "55BAFFCB7023F0B61909C728685EAA7BC4CA1C65CE3147A123D04DA4CDE31BC4"
+        },
+        {
+          "byte_size": 18190,
+          "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_integration.py",
+          "sha256": "DF9BA84F71B1583DDFA65198C2AFCD9F0CB3425685DA97CE086D58D5B8BCD793"
+        },
+        {
+          "byte_size": 98759,
+          "path": "scripts/catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover.py",
+          "sha256": "A1BD8B798022E09465AC2693751AEA3584157D6591D6E297497746C98FFE58DA"
+        }
+      ],
+      "sha256": "1BF04B8BA4BACD08C8D139CEFD75B6D742C86AF634818EF879EB53711864F2BA"
+    },
+    "sha256": "3D615D149CB769682AF2F4BE516A388B62BB0A86776760145B437B2A59686177"
+  },
+  "locked_claims": {
+    "BILATERAL_DEPENDENCE": "LOCKED_UNTIL_EXECUTED_AND_ADJUDICATED",
+    "BROADER_PROCESS_LOCAL_HOLOSTATE": "LOCKED",
+    "DEEP": "DISABLED",
+    "GENERAL_CATALYTIC_INFERENCE": "LOCKED",
+    "GENERAL_TWO_PARENT_NECESSITY": "LOCKED",
+    "PARENT_B_CROSS_BINDING_REPLICATION": "LOCKED",
+    "PURE_BINDING_ONLY_REPLICATION_UNDER_IDENTICAL_END_TO_END_PROCESS": "LOCKED",
+    "RESTART_PERSISTENCE": "LOCKED",
+    "SOTA": "LOCKED",
+    "SUPERIORITY": "LOCKED",
+    "TASK_ADVANTAGE": "LOCKED",
+    "TRANSFER": "LOCKED",
+    "automatic_promotion": false
+  },
+  "next_action": "Separately authorize exactly one live execution with a fresh external authority bound to the published static commit and exact preregistration artifact.",
+  "panel_binding_commitments": {
+    "alias_map_commitment_sha256": "6384655F0C64BED3C0F63E011FA1BAF4B7007C30DDB80DE38995B744CF047274",
+    "branch_alias_map_commitment_sha256": {
+      "branch-a": "B2B4C4B92B0BFB910674253C4C6039947C7E409F70557B4508AB1A3DA43DF9CC",
+      "branch-b": "D855CC8CAE6CF3D85BBCBBC09624D1C2325816FE7835D62E5A07A3C226FF3EDC"
+    },
+    "experiment_key_commitment_sha256": "762EFD6C9FE80FADF56CBB7F1B50AFDA2B4573326D637C4B820AC4C62C3E3227",
+    "private_mapping_published": false,
+    "private_root_published": false,
+    "profile_binding_sha256": "0E55293C3E08DFE8EE56C2DE6DA32CB89B8170E753D0C809E89E99908A51F334",
+    "root_commitment_sha256": "F449FB16F15F65AC0C6EAC05F3DC63EC75462D381E0B029DF0E2363B52B6CC5C"
+  },
+  "presentation_contract": {
+    "P0": "private singleton ordinal one; other four ordered by public lexical order",
+    "P1": "private singleton ordinal five; other four ordered by public lexical order",
+    "exact_request_hash_binds_order": true,
+    "model_visible_condition_labels": false,
+    "only_support_list_order_differs": true,
+    "private_validation_only": true,
+    "proofs": {
+      "parent-0": {
+        "only_list_order_differs": true,
+        "p0_projection": {
+          "serialized_bytes": 232,
+          "token_ids": 120,
+          "token_sequence_sha256": "D07DB0C2DD87AEFEECAEE64C650E1B5D5ED1A7A9E8E1ECD2769BFB8FC0104654"
+        },
+        "p0_singleton_ordinal": 1,
+        "p1_projection": {
+          "serialized_bytes": 232,
+          "token_ids": 120,
+          "token_sequence_sha256": "3B4440284A2B2FB0CCE44261D12B96F8CD290D1E2ACAD5BB74C03205C34BB484"
+        },
+        "p1_singleton_ordinal": 5,
+        "private_validation_commitment": "A63499FEEDF1207375AE00047C2C636282B2F04D3C73048750C1CD6BDD3A851F",
+        "role": "parent-0",
+        "same_field_set": true,
+        "same_support_set": true,
+        "semantic_set_commitment": "2336A959827451E2BCBE7904D703554BA607DD295C4358E9C3580EF2C4E7ADDA",
+        "serialized_bytes_equal": true,
+        "tokenizer_lengths_equal": true
+      },
+      "parent-1": {
+        "only_list_order_differs": true,
+        "p0_projection": {
+          "serialized_bytes": 232,
+          "token_ids": 123,
+          "token_sequence_sha256": "E2583EFA7E8FB2F538FC6B37E35B6E52B10CD6C8E59207E32D29FE4D85EE13C3"
+        },
+        "p0_singleton_ordinal": 1,
+        "p1_projection": {
+          "serialized_bytes": 232,
+          "token_ids": 123,
+          "token_sequence_sha256": "FC695FDB00D7FEDA5C7D50B28D076FB452513A324534B45A46171483506805A8"
+        },
+        "p1_singleton_ordinal": 5,
+        "private_validation_commitment": "430EAC0DAA1E94CB7AA81E1CDE8F17CB56EC6B0C38B70231E219D250E3BA104C",
+        "role": "parent-1",
+        "same_field_set": true,
+        "same_support_set": true,
+        "semantic_set_commitment": "CD7E7483664E973593F1D62FC05A079B97AE64E7F83601CFF4839E46B5B212D4",
+        "serialized_bytes_equal": true,
+        "tokenizer_lengths_equal": true
+      }
+    },
+    "same_field_sets": true,
+    "same_semantic_commitments": true,
+    "same_serialized_byte_lengths": true,
+    "same_support_sets": true,
+    "same_tokenizer_lengths": true
+  },
+  "protected_starting_main": "c4ca8760c2ce307dbd3fb445bf6f2a624667000b",
+  "request_isolation": {
+    "borrow_requests": 0,
+    "branch_requests": 0,
+    "cache_reuse_scope": "immutable-common-carrier-prefix-only",
+    "cross_response_state_visible": false,
+    "deletion_receipts": {
+      "parent-0": {
+        "serialized_bytes": 193,
+        "sha256": "4BD21383DD261975DACA622F19754887E7AD9611B6B3A5EB5B070153274D99C4",
+        "token_ids": 93,
+        "token_sequence_sha256": "38ABF48CF488ED1932C965F18EFFEB96642290585F77E74802DE237831628BBF"
+      },
+      "parent-1": {
+        "serialized_bytes": 193,
+        "sha256": "D266FC9DEEF57BE3AA807BBEB7FF274B9A38C28728D114C108B073E46A66E56D",
+        "token_ids": 96,
+        "token_sequence_sha256": "4E321205C46BD55534B060545403C9ACAB85B414D5CC981BBBEEFECD84C4617C"
+      }
+    },
+    "execution_order": [
+      "P0-S0-full-information",
+      "P1-S1-full-information",
+      "P0-S0-delete-parent-0",
+      "P1-S1-delete-parent-1",
+      "P1-S0-full-information",
+      "P0-S1-full-information",
+      "P1-S0-delete-parent-1",
+      "P0-S1-delete-parent-0",
+      "P0-S0-delete-parent-1",
+      "P1-S1-delete-parent-0",
+      "P1-S0-delete-parent-0",
+      "P0-S1-delete-parent-1"
+    ],
+    "extraction_requests": 0,
+    "per_request": {
+      "P0-S0-delete-parent-0": {
+        "arm": "delete-parent-0",
+        "cell_id": "P0-S0",
+        "model_visible_assignment_serialized_bytes": 601,
+        "model_visible_assignment_token_ids": 247,
+        "presentation": "P0",
+        "request_sha256": "6EF421279EB504985098C8F290F35DD442EEAC5303A86708E9C82CC0A6617FB1",
+        "seed": 1851550238,
+        "seed_block": "S0"
+      },
+      "P0-S0-delete-parent-1": {
+        "arm": "delete-parent-1",
+        "cell_id": "P0-S0",
+        "model_visible_assignment_serialized_bytes": 601,
+        "model_visible_assignment_token_ids": 247,
+        "presentation": "P0",
+        "request_sha256": "615DA19035DCD1874077E4071FD3EDC09FF0257B61FAA13BECB4D90B6FC683DD",
+        "seed": 1851550238,
+        "seed_block": "S0"
+      },
+      "P0-S0-full-information": {
+        "arm": "full-information",
+        "cell_id": "P0-S0",
+        "model_visible_assignment_serialized_bytes": 640,
+        "model_visible_assignment_token_ids": 274,
+        "presentation": "P0",
+        "request_sha256": "7C1BF6444ABE08FA83B5704C62E3A9711C59BB8748AAD0DE4CE1927118415594",
+        "seed": 1851550238,
+        "seed_block": "S0"
+      },
+      "P0-S1-delete-parent-0": {
+        "arm": "delete-parent-0",
+        "cell_id": "P0-S1",
+        "model_visible_assignment_serialized_bytes": 601,
+        "model_visible_assignment_token_ids": 247,
+        "presentation": "P0",
+        "request_sha256": "8C408DE3E8F14BABCCFE211EE7EC22D23071FBAFEFD54E88A281943A07B43B01",
+        "seed": 1669860413,
+        "seed_block": "S1"
+      },
+      "P0-S1-delete-parent-1": {
+        "arm": "delete-parent-1",
+        "cell_id": "P0-S1",
+        "model_visible_assignment_serialized_bytes": 601,
+        "model_visible_assignment_token_ids": 247,
+        "presentation": "P0",
+        "request_sha256": "F07BEC4C59A30153B9C5A9C133BA4E7D5E7BBF3737D47F722BEA2EE9B8A23E7E",
+        "seed": 1669860413,
+        "seed_block": "S1"
+      },
+      "P0-S1-full-information": {
+        "arm": "full-information",
+        "cell_id": "P0-S1",
+        "model_visible_assignment_serialized_bytes": 640,
+        "model_visible_assignment_token_ids": 274,
+        "presentation": "P0",
+        "request_sha256": "B008B74F7C07D6E16E78ED22341DA39315216281EFD48D582A2D7C437C54166F",
+        "seed": 1669860413,
+        "seed_block": "S1"
+      },
+      "P1-S0-delete-parent-0": {
+        "arm": "delete-parent-0",
+        "cell_id": "P1-S0",
+        "model_visible_assignment_serialized_bytes": 601,
+        "model_visible_assignment_token_ids": 247,
+        "presentation": "P1",
+        "request_sha256": "ED4FB7E687B16CE6DE61719E98CE98EF921D06DB91D48F85F3651A515DF17344",
+        "seed": 1851550238,
+        "seed_block": "S0"
+      },
+      "P1-S0-delete-parent-1": {
+        "arm": "delete-parent-1",
+        "cell_id": "P1-S0",
+        "model_visible_assignment_serialized_bytes": 601,
+        "model_visible_assignment_token_ids": 247,
+        "presentation": "P1",
+        "request_sha256": "FD3FFA1E603DFEA82DFB8CA3C329F46115A258F6E20A2C9E6CDDAC6E3F2B5D89",
+        "seed": 1851550238,
+        "seed_block": "S0"
+      },
+      "P1-S0-full-information": {
+        "arm": "full-information",
+        "cell_id": "P1-S0",
+        "model_visible_assignment_serialized_bytes": 640,
+        "model_visible_assignment_token_ids": 274,
+        "presentation": "P1",
+        "request_sha256": "DA0873C251B77856E8D7662478751FC218558762BEAB0A587D7DE1A7BA00ABC9",
+        "seed": 1851550238,
+        "seed_block": "S0"
+      },
+      "P1-S1-delete-parent-0": {
+        "arm": "delete-parent-0",
+        "cell_id": "P1-S1",
+        "model_visible_assignment_serialized_bytes": 601,
+        "model_visible_assignment_token_ids": 247,
+        "presentation": "P1",
+        "request_sha256": "2DCB0A22479B315ABE57E7EC7DCAA488C8401E03D82801D91EFD8026939C95BF",
+        "seed": 1669860413,
+        "seed_block": "S1"
+      },
+      "P1-S1-delete-parent-1": {
+        "arm": "delete-parent-1",
+        "cell_id": "P1-S1",
+        "model_visible_assignment_serialized_bytes": 601,
+        "model_visible_assignment_token_ids": 247,
+        "presentation": "P1",
+        "request_sha256": "D66F7F046263BC87249EE5B428117BE7D5C2ADC1237731CF02B36D9A5E5F8BDE",
+        "seed": 1669860413,
+        "seed_block": "S1"
+      },
+      "P1-S1-full-information": {
+        "arm": "full-information",
+        "cell_id": "P1-S1",
+        "model_visible_assignment_serialized_bytes": 640,
+        "model_visible_assignment_token_ids": 274,
+        "presentation": "P1",
+        "request_sha256": "38CD334566B96F8CB15FE350783068CFEA96B9AD7206542EB39C8CD99CCC9953",
+        "seed": 1669860413,
+        "seed_block": "S1"
+      }
+    },
+    "physical_slots": 1,
+    "presentation_proofs": {
+      "parent-0": {
+        "only_list_order_differs": true,
+        "p0_projection": {
+          "serialized_bytes": 232,
+          "token_ids": 120,
+          "token_sequence_sha256": "D07DB0C2DD87AEFEECAEE64C650E1B5D5ED1A7A9E8E1ECD2769BFB8FC0104654"
+        },
+        "p0_singleton_ordinal": 1,
+        "p1_projection": {
+          "serialized_bytes": 232,
+          "token_ids": 120,
+          "token_sequence_sha256": "3B4440284A2B2FB0CCE44261D12B96F8CD290D1E2ACAD5BB74C03205C34BB484"
+        },
+        "p1_singleton_ordinal": 5,
+        "private_validation_commitment": "A63499FEEDF1207375AE00047C2C636282B2F04D3C73048750C1CD6BDD3A851F",
+        "role": "parent-0",
+        "same_field_set": true,
+        "same_support_set": true,
+        "semantic_set_commitment": "2336A959827451E2BCBE7904D703554BA607DD295C4358E9C3580EF2C4E7ADDA",
+        "serialized_bytes_equal": true,
+        "tokenizer_lengths_equal": true
+      },
+      "parent-1": {
+        "only_list_order_differs": true,
+        "p0_projection": {
+          "serialized_bytes": 232,
+          "token_ids": 123,
+          "token_sequence_sha256": "E2583EFA7E8FB2F538FC6B37E35B6E52B10CD6C8E59207E32D29FE4D85EE13C3"
+        },
+        "p0_singleton_ordinal": 1,
+        "p1_projection": {
+          "serialized_bytes": 232,
+          "token_ids": 123,
+          "token_sequence_sha256": "FC695FDB00D7FEDA5C7D50B28D076FB452513A324534B45A46171483506805A8"
+        },
+        "p1_singleton_ordinal": 5,
+        "private_validation_commitment": "430EAC0DAA1E94CB7AA81E1CDE8F17CB56EC6B0C38B70231E219D250E3BA104C",
+        "role": "parent-1",
+        "same_field_set": true,
+        "same_support_set": true,
+        "semantic_set_commitment": "CD7E7483664E973593F1D62FC05A079B97AE64E7F83601CFF4839E46B5B212D4",
+        "serialized_bytes_equal": true,
+        "tokenizer_lengths_equal": true
+      }
+    },
+    "projection_sha256_private_validation": {
+      "parent-0": {
+        "P0": "C5D5E71145420627759B28500FC5B50CC69E9EF3CAB835CAF566A211F253F897",
+        "P1": "E5AF3F5D2C4799C541C51A497682C92CEC75C49EE303BC15F165F6EA4F88259D"
+      },
+      "parent-1": {
+        "P0": "82DEB63207C6077D885047275EFC9D382F2F442142B4C666571117F83EC913CC",
+        "P1": "D7ECA79C7312AC7A936DE83FD0578483627E99236C9E0F7381BC792C554E0AF5"
+      }
+    },
+    "request_ids": [
+      "P0-S0-full-information",
+      "P0-S0-delete-parent-0",
+      "P0-S0-delete-parent-1",
+      "P0-S1-full-information",
+      "P0-S1-delete-parent-0",
+      "P0-S1-delete-parent-1",
+      "P1-S0-full-information",
+      "P1-S0-delete-parent-0",
+      "P1-S0-delete-parent-1",
+      "P1-S1-full-information",
+      "P1-S1-delete-parent-0",
+      "P1-S1-delete-parent-1"
+    ],
+    "request_self_contained": true,
+    "request_sha256": {
+      "P0-S0-delete-parent-0": "6EF421279EB504985098C8F290F35DD442EEAC5303A86708E9C82CC0A6617FB1",
+      "P0-S0-delete-parent-1": "615DA19035DCD1874077E4071FD3EDC09FF0257B61FAA13BECB4D90B6FC683DD",
+      "P0-S0-full-information": "7C1BF6444ABE08FA83B5704C62E3A9711C59BB8748AAD0DE4CE1927118415594",
+      "P0-S1-delete-parent-0": "8C408DE3E8F14BABCCFE211EE7EC22D23071FBAFEFD54E88A281943A07B43B01",
+      "P0-S1-delete-parent-1": "F07BEC4C59A30153B9C5A9C133BA4E7D5E7BBF3737D47F722BEA2EE9B8A23E7E",
+      "P0-S1-full-information": "B008B74F7C07D6E16E78ED22341DA39315216281EFD48D582A2D7C437C54166F",
+      "P1-S0-delete-parent-0": "ED4FB7E687B16CE6DE61719E98CE98EF921D06DB91D48F85F3651A515DF17344",
+      "P1-S0-delete-parent-1": "FD3FFA1E603DFEA82DFB8CA3C329F46115A258F6E20A2C9E6CDDAC6E3F2B5D89",
+      "P1-S0-full-information": "DA0873C251B77856E8D7662478751FC218558762BEAB0A587D7DE1A7BA00ABC9",
+      "P1-S1-delete-parent-0": "2DCB0A22479B315ABE57E7EC7DCAA488C8401E03D82801D91EFD8026939C95BF",
+      "P1-S1-delete-parent-1": "D66F7F046263BC87249EE5B428117BE7D5C2ADC1237731CF02B36D9A5E5F8BDE",
+      "P1-S1-full-information": "38CD334566B96F8CB15FE350783068CFEA96B9AD7206542EB39C8CD99CCC9953"
+    },
+    "requests_transform_only": true,
+    "response_captured_before_parsing": true,
+    "restore_requests": 0,
+    "sidecar_epoch_justification": "Each request is self-contained and independently seeded; no response enters a later prompt; cache reuse is restricted to the immutable common carrier prefix.",
+    "sidecar_epochs": 1,
+    "unique_request_count": 12
+  },
+  "schema_version": 1,
+  "scientific_decision_law": {
+    "bilateral_dependence": "BILATERAL_PARENT_DEPENDENCE_SUPPORTED_WITHIN_MATCHED_POSITION_SEED_CROSSOVER",
+    "deletion_supports_dependence_when": "its full-information cell is valid and rank zero does not recover the private singleton at 5/5",
+    "directional_asymmetry": "PARENT_DIRECTIONAL_ASYMMETRY_STRENGTHENED_WITHIN_MATCHED_BINDING",
+    "generalization_beyond_binding": false,
+    "invalid_full_information_cell": "INCONCLUSIVE",
+    "presentation_effect": "SINGLETON_PRESENTATION_POSITION_EFFECT_SUPPORTED",
+    "seed_effect": "DETERMINISTIC_TRANSFORM_SEED_INTERACTION_SUPPORTED",
+    "valid_full_information_baseline": [
+      "rank zero selects the private singleton",
+      "private score is 5/5",
+      "transform and deterministic extraction verify",
+      "custody passes"
+    ]
+  },
+  "seed_contract": {
+    "independently_seeded_requests": true,
+    "same_seed_for_all_three_arms_within_cell": true,
+    "seed_blocks": {
+      "S0": 1851550238,
+      "S1": 1669860413
+    }
+  },
+  "source_custody": {
+    "asymmetry_audit_sha256": "47B6790A05F98051EA10BBA5EA4944C3DCE37A68CF6E64B7BF7A26A464E891B7",
+    "execution_evidence_rewritten": false,
+    "forensic_artifact_sha256": "110DAE908E4C1F01747C2CBBEA9F3A34BB2ACA61397D55B0648D82453A3DD975",
+    "original_archive_sha256": "7BDA5B9EF4CEAA8EEB4157DF2D47644554F11551EB10DF354B4DD59F55693E1C",
+    "original_terminal_reason": "durable-finalization-custody-gate-failed",
+    "original_terminal_status": "INCONCLUSIVE",
+    "qualification": "Observed across the v1 and v2 extraction variants; not a pure binding-only replication of an otherwise identical end-to-end process.",
+    "supported_claim": "DIRECTIONAL_PARENT_A_INFORMATION_DEPENDENCE_REPRODUCED_ACROSS_TWO_PRIVATE_BINDINGS_AT_SHARED_TRANSFORM_RANK_HEAD_ENDPOINT"
+  },
+  "status": "static-preregistered-unexecuted",
+  "supersession": {
+    "historical_asymmetry_audit_preserved": true,
+    "historical_audit_sha256": "47B6790A05F98051EA10BBA5EA4944C3DCE37A68CF6E64B7BF7A26A464E891B7",
+    "historical_diagnostics_rewritten": false,
+    "reason": "Private-binding identity, alias mapping, lexical identity, and commitment token sequence were confounded with singleton presentation position.",
+    "replacement_design": "balanced-opaque-transform-only-within-binding-position-seed-crossover-v1",
+    "superseded_future_design": "two-private-bindings-by-two-seeds-by-three-arms"
+  },
+  "transaction_contract": {
+    "append_only_authenticated_journal": true,
+    "capture_schema": {
+      "authentication": "HMAC-SHA-256 under the private panel experiment key",
+      "exclusive_create": true,
+      "execution_fields": [
+        "content",
+        "reasoning_content",
+        "tool_calls",
+        "prompt_tokens",
+        "cached_prompt_tokens",
+        "completion_tokens",
+        "generated_token_ids",
+        "generated_token_count",
+        "completion_token_count_match",
+        "generated_token_sha256",
+        "nonempty_token_array_event_count",
+        "empty_token_array_event_count",
+        "token_merge_modes",
+        "terminal_stop_evidence",
+        "finish_reason",
+        "http_status",
+        "event_count"
+      ],
+      "replay_without_model_contact": true,
+      "required_fields": [
+        "schema_version",
+        "design_id",
+        "request_id",
+        "model_request_sha256",
+        "captured_before_parsing",
+        "raw_response_capture",
+        "execution",
+        "capture_hmac_sha256"
+      ],
+      "schema_version": 1
+    },
+    "capture_schema_sha256": "994ABF86EAB7407E1A2E05DA68308C178094A13AEC24EE5DB0F4F344B6DC6052",
+    "captured_data_invalidity": "cell-arm-inconclusive",
+    "captured_response_replay_without_model_contact": true,
+    "duplicate_generation": "rejected",
+    "journal_schema": {
+      "append_only": true,
+      "authenticated": true,
+      "duplicate_generation_rejected": true,
+      "required_fields": [
+        "schema_version",
+        "design_id",
+        "sequence",
+        "state",
+        "request_id",
+        "facts",
+        "previous_event_sha256",
+        "event_sha256",
+        "event_hmac_sha256"
+      ],
+      "schema_version": 1,
+      "states": [
+        "authority-consumed",
+        "controller-repair-observed",
+        "request-started",
+        "response-captured",
+        "request-custody-observed",
+        "request-inconclusive",
+        "adjudicated",
+        "finalization-observed",
+        "terminal-written",
+        "archived"
+      ]
+    },
+    "journal_schema_sha256": "98776A1A75AA758242E1B09F584225C33031762698FF07710AEA8AAABBF59D4E",
+    "maximum_total_generations": 12,
+    "one_generation_maximum_per_cell_arm": true,
+    "raw_sse_capture_before_parsing": true,
+    "request_started_without_capture": "terminal-inconclusive-no-retry",
+    "unexpected_controller_failure": "repairable-with-capture-and-consumption-preserved"
+  }
+}

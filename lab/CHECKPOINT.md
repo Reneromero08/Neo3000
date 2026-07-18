@@ -1,6 +1,27 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Cross-binding parent-dependence asymmetry audit
+## Checkpoint 2: Within-binding position-seed crossover statically prepared
+
+**Status:** STATIC PREREGISTRATION COMPLETE / ONE FRESH FIRST-MATCH BINDING / 12 FUTURE TRANSFORM GENERATIONS / ZERO AUTHORITY / ZERO MODEL CONTACT / BROADER CLAIMS LOCKED
+
+- [x] Admit exact protected main `c4ca8760c2ce307dbd3fb445bf6f2a624667000b`, synchronized local/remote refs, clean stable and exact candidate `14de9c71593e5aea4fcfcadeda47ba5c623fadcf`, healthy stable service, free port 9494, absent panel run lock, exact historical evidence, and unchanged private custody before editing.
+- [x] Preserve the original parent-dependence terminal result/archive and both consumed captures; preserve forensic artifact `110DAE908E4C1F01747C2CBBEA9F3A34BB2ACA61397D55B0648D82453A3DD975`, asymmetry artifact byte hash `47B6790A05F98051EA10BBA5EA4944C3DCE37A68CF6E64B7BF7A26A464E891B7`, the qualified shared-rank-head endpoint claim, and its exact qualifier. Retry neither consumed arm.
+- [x] Supersede only the audit's future two-binding panel recommendation before implementation because presentation position was confounded with binding identity, alias mapping, lexical identity, and commitment token sequence. Select `balanced-opaque-transform-only-within-binding-position-seed-crossover-v1`: `1 binding × 2 presentations × 2 seeds × 3 arms = 12` future generations.
+- [x] Select exactly one new private binding under a secure private selection seed, domain-separated counter, first-match law, and finite ceiling 4,096. Counter `49` is the first eligible result after 50 attempts; ordinal 33 is central, every opaque symbol is exactly three tokenizer IDs, both supports contain exactly five members, and zero model output informed selection. Publish only commitments and bounded selection facts.
+- [x] Bind selection-seed commitment `0D6042BF50265BFC21525E5AF5F4420A6842AB6373FED3F593C7B1B3D91884F2`, root commitment `F449FB16F15F65AC0C6EAC05F3DC63EC75462D381E0B029DF0E2363B52B6CC5C`, profile binding `0E55293C3E08DFE8EE56C2DE6DA32CB89B8170E753D0C809E89E99908A51F334`, and alias-map commitment `6384655F0C64BED3C0F63E011FA1BAF4B7007C30DDB80DE38995B744CF047274` without tracking any root, alias, map, or rejected candidate.
+- [x] Derive presentation-invariant canonical semantic parents at Parent-0 `2336A959827451E2BCBE7904D703554BA607DD295C4358E9C3580EF2C4E7ADDA` and Parent-1 `CD7E7483664E973593F1D62FC05A079B97AE64E7F83601CFF4839E46B5B212D4`. Keep the exact semantic commitment and token sequence in every complete-parent cell; keep deletion receipts byte/token-identical across relevant cells.
+- [x] Privately validate P0 singleton-first and P1 singleton-last projections while exposing only neutral model-visible relations. P0/P1 preserve exact supports, fields, semantic commitments, and 232-byte lengths; Parent-0 stays `120/120` tokenizer IDs and Parent-1 `123/123`. Only support-list order differs, and each exact request hash binds it.
+- [x] Use only seed S0 `1851550238` and S1 `1669860413`; assign the same seed to full/delete-0/delete-1 in each P×S cell. Freeze a counterbalanced 12-request order, one physical slot, at most one sidecar epoch, stateless requests, immutable-prefix-only cache reuse, capture before parse, and no cross-response state.
+- [x] Separate frozen scientific execution `621F167BF0A0F7EFB6F6AD1A81DC59E9B71978FF466C4FE09D765B90B24F23DA` from repairable controller `1BF04B8BA4BACD08C8D139CEFD75B6D742C86AF634818EF879EB53711864F2BA`; bind combined implementation `3D615D149CB769682AF2F4BE516A388B62BB0A86776760145B437B2A59686177`. Preserve one-generation-per-cell-arm, 12-total, exclusive raw capture, authenticated append-only journal, replay without contact, captured invalidity as inconclusive, and descendant-only controller repair without scientific mutation or consumption reset.
+- [x] Publish canonical zero-execution preregistration `lab/ck0_balanced_opaque_rank_head_v2_position_seed_crossover_1.json` at byte SHA-256 `6F37F858271CF3F5A10CA8CADEC6D03E7E7068347E5603D67B52C25813697E6D` and document SHA-256 `1B1D2F260C94D87876961F5B9AB592B28560B94B8E87B4A3C8B02814D5404FA3`. Authority object/receipt, capture, and journal schemas are `6D94934091DFD06C16ADF2E25A36BA073E325BB068246497FFABB5ACA2B4071F`, `060D8C278195B05507BC02C9646F6CF9E1B8A7CA3D9AFF27D5598C56F01373A3`, `994ABF86EAB7407E1A2E05DA68308C178094A13AEC24EE5DB0F4F344B6DC6052`, and `98776A1A75AA758242E1B09F584225C33031762698FF07710AEA8AAABBF59D4E`.
+- [x] Pass focused crossover `24/24`, all rank-head-v2 `192/192`, forensic `6/6`, asymmetry `8/8`, evaluator `28/28`, exact reconstruction, changed-file compilation, canonical JSON/JSONL and private/no-smuggle scans, evaluator lock, and protected preflight. The one complete CPU discovery ran 1,039 tests: 1,037 passed in sandbox and the two exact known Windows runtime-identity lock cases passed `2/2` with host permission; semantic failures are zero.
+- [x] Create no authority object or receipt, journal, runtime root, capture, sidecar, HTTP/model request, result, scientific execution, retry, or claim expansion. Keep every broader claim locked.
+
+**Next exact action:** separately authorize exactly one live execution with a fresh external authority ID bound to the published static commit and preregistration artifact SHA-256 `6F37F858271CF3F5A10CA8CADEC6D03E7E7068347E5603D67B52C25813697E6D`.
+
+---
+
+## Historical checkpoint: Cross-binding parent-dependence asymmetry audit
 
 **Status:** ORIGINAL TERMINAL `INCONCLUSIVE` PRESERVED / CONTROLLER-LOCK FALSE NEGATIVE PROVEN / ZERO-CONTACT CAPTURE REPLAY / PARENT-A ENDPOINT REPRODUCTION QUALIFIED / ASYMMETRY UNRESOLVED / BROADER CLAIMS LOCKED
 
