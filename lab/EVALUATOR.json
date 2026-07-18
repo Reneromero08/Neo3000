@@ -178,6 +178,9 @@
       "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover.py",
       "scripts/catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover_adjudication.py",
       "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover_adjudication.py",
+      "scripts/catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe_scientific.py",
+      "scripts/catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe.py",
+      "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe.py",
       "tools/server/server-context.cpp",
       "tools/server/server-task.cpp",
       ".gitignore",
@@ -198,6 +201,7 @@
       "lab/ck0_balanced_opaque_parent_dependence_cross_binding_asymmetry_audit_1.json",
       "lab/ck0_balanced_opaque_rank_head_v2_position_seed_crossover_1.json",
       "lab/ck0_balanced_opaque_rank_head_v2_position_seed_crossover_adjudication_1.json",
+      "lab/ck0_balanced_opaque_rank_head_v2_relational_operation_probe_1.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]
@@ -300,6 +304,8 @@
     ,"scripts/test_catalytic_kernel_0_balanced_rank_head_v2_parent_dependence.py"
     ,"scripts/catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover.py"
     ,"scripts/test_catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover.py"
+    ,"scripts/catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe.py"
+    ,"scripts/test_catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"

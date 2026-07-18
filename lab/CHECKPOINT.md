@@ -1,6 +1,27 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Within-binding position-seed crossover adjudicated
+## Checkpoint 2: Contrastive relational-operation probe statically preregistered
+
+**Status:** STATIC PASS / EXACTLY FOUR FUTURE TRANSFORM REQUESTS / TWO MATCHED PRIVATE GEOMETRIES / FIVE COMPETING PREDICTIONS FROZEN / NO AUTHORITY / NO MODEL CONTACT / BROADER CLAIMS LOCKED
+
+- [x] Admit exact protected starting main `b6600c2800a80c0892bef15bca5ee2ce577ef34f`, synchronized local/remote refs, clean stable and candidate worktrees, healthy stable service, and free experimental ports before editing.
+- [x] Preserve source position-seed adjudication artifact `DD829AE6C4F38EDA325462AD24D030AA7DF3E74FC69D54C80DE1F9996C820B53` and canonical `neo-exp-0042` record `DAF072E43700F71A76537843507C578FEA38679AA15DC9A0C783090B29D5D0E8` exactly.
+- [x] Reuse the existing ignored private root under new domain separation; create no secret. Select the first outcome-independent eligible geometry pair at counter `19`; keep G0/G1 candidate identities disjoint; give each geometry one different unique overlap; place that overlap at Parent-A position 4 and Parent-B position 3.
+- [x] Freeze exactly `G0-AB`, `G0-BA`, `G1-AB`, `G1-BA` under fixed seed `830800182`. AB/BA swap only parent order. All four assignments are 617 canonical bytes and 254 pinned-tokenizer tokens. No borrow, branch, model-authored extraction, or restore request exists.
+- [x] Freeze unique-intersection, lexical-first, first-listed, Parent-A-priority, and Parent-B-priority predictions before outcomes. Require four distinct prediction commitments per request, with only the declared first-listed/parent-priority overlap. Publish no candidate identity or correspondence.
+- [x] Bind exact request SHA-256 values: G0-AB `5376E22674CCF4BB7057DFB0D31D8C46F240F425965FFD1F40ACC13961DDB759`; G0-BA `C82585DF3098F6F2BA1E90614C5F80876654DDC2F7556F2D78EB639401EE93FA`; G1-AB `1D29EA13DB81157A5759D8AB18FDA4668662A1796C09D95D6D030A8C1529FEB2`; G1-BA `517C29572D54CF76ED5F5B48424F9803E8484C13030C8B498F38255B3B31C545`.
+- [x] Bind canonical preregistration `lab/ck0_balanced_opaque_rank_head_v2_relational_operation_probe_1.json` at `01C3C084CC0D88BB69E2DF09321E4B4F69CC1B193887EBB24426D8292A6095B3`, frozen scientific binding `D9300869CE6C903D309899F5E9AFF02D4C7F9B0D815EC877CCC3BEA5DB67DE7C`, and controller binding `18425127C5B7527DC69158E49268E7B0AB10AAEBA313E6ABA9AEA4E50C306143`.
+- [x] Enforce one generation per request and four total, exact request-hash admission, raw authenticated capture before parsing, duplicate rejection, private comparison only after deterministic rank-zero freezing, zero-contact replay, cleanup/postflight, and content-addressed evidence custody. Add no generalized recovery or publication framework.
+- [x] Pass focused probe `12/12`, complete relevant rank-head-v2 family `212/212`, exact preregistration reconstruction, changed-file compilation, canonical JSON/JSONL, private/no-smuggle scan, evaluator gates `28/28`, regenerated evaluator lock, and protected preflight. Do not run the complete CPU suite.
+- [x] Create zero authority or receipt, launch zero sidecars, issue zero model requests, generate zero responses, publish zero scientific results, and design zero follow-on architecture.
+
+Formal algebra, position-independent bilateral dependence, general two-parent necessity, cross-binding generalization, transfer, general catalytic inference, task advantage, superiority, SOTA, broader/restart HoloState, Deep, and automatic promotion remain locked.
+
+**Next exact action:** separately authorize one live invocation from the final published static commit with a fresh external authority ID. Maximum four one-generation requests; no retry or automatic follow-on.
+
+---
+
+## Historical checkpoint: Within-binding position-seed crossover adjudicated
 
 **Status:** 12/12 EXECUTED ONCE / POSITION-CONDITIONAL PARENT-INFORMATION EFFECT SUPPORTED / ZERO-CONTACT REPLAY / PARENT-A-ONLY EXPLANATION RETIRED / BROADER CLAIMS LOCKED
 
