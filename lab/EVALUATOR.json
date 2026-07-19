@@ -193,6 +193,8 @@
       "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_three_parent_global_invariant_probe.py",
       "scripts/catalytic_kernel_0_balanced_rank_head_v2_three_parent_global_invariant_probe_adjudication.py",
       "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_three_parent_global_invariant_probe_adjudication.py",
+      "scripts/catalytic_kernel_0_balanced_three_worker_to_synthesis_mini_swarm_scan.py",
+      "scripts/test_catalytic_kernel_0_balanced_three_worker_to_synthesis_mini_swarm_scan.py",
       "tools/server/server-context.cpp",
       "tools/server/server-task.cpp",
       ".gitignore",
@@ -219,6 +221,7 @@
       "lab/ck0_balanced_opaque_rank_head_v2_joint_condition_intersection_replication_adjudication_1.json",
       "lab/ck0_balanced_opaque_rank_head_v2_three_parent_global_invariant_probe_1.json",
       "lab/ck0_balanced_opaque_rank_head_v2_three_parent_global_invariant_probe_adjudication_1.json",
+      "lab/ck0_balanced_opaque_three_worker_to_synthesis_mini_swarm_v1_geometry_scan_1.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]
@@ -329,6 +332,8 @@
     ,"scripts/test_catalytic_kernel_0_balanced_rank_head_v2_three_parent_global_invariant_probe.py"
     ,"scripts/catalytic_kernel_0_balanced_rank_head_v2_three_parent_global_invariant_probe_adjudication.py"
     ,"scripts/test_catalytic_kernel_0_balanced_rank_head_v2_three_parent_global_invariant_probe_adjudication.py"
+    ,"scripts/catalytic_kernel_0_balanced_three_worker_to_synthesis_mini_swarm_scan.py"
+    ,"scripts/test_catalytic_kernel_0_balanced_three_worker_to_synthesis_mini_swarm_scan.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"

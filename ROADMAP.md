@@ -584,7 +584,9 @@ Published `neo-exp-0045` supports `THREE_PARENT_GLOBAL_RELATIONAL_INVARIANT_EXTR
 
 The evidence progression is now: joint-parent information matters → pairwise unique-intersection-like operation identified → operation reproduced under a combined new binding-and-seed condition → complete three-parent relation resolves an invariant unavailable to any parent pair. This is stronger than pairwise intersection recovery but remains a transform-only synthetic relational probe. It does not establish full commutativity, associativity, arbitrary n-parent generalization, formal algebra, independent seed or binding invariance, transfer, worker synthesis, general catalytic inference, a complete borrow → transform → extract → restore cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, or promotion.
 
-The next bounded action is `STATIC DESIGN OF_ONE_BOUNDED_WORKER_TO_SYNTHESIS_MINI_SWARM`: test whether independently generated partial worker outputs can be recombined through the evidenced relational transform into a useful synthesis result. Do not spend the next step on another synthetic transform replication, higher arity, associativity, or full permutation testing.
+The authorized public-only scan for `balanced-opaque-three-worker-to-synthesis-mini-swarm-v1` stopped at `EXISTING_CORPUS_THREE_WORKER_GEOMETRY_UNAVAILABLE`. Across the frozen eight-task suite, locally eligible three-example shard counts are `[2,2,0,0,2,1,1,0]`; no task supplies the three distinct shards required before pair/triple geometry, prompt matching, hidden utility, or private binding can lawfully be considered. No worker carrier, request, synthesis surface, preregistration, controller, authority, or live state was created.
+
+The next bounded action is `SEPARATELY_AUTHORIZE_A_STATIC_SCIENTIFIC_DECISION_ON_WORKER_GEOMETRY_CORPUS_COMPATIBILITY`. The current gates must not be weakened and a synthetic replacement task must not be created automatically. Another synthetic transform replication, higher arity, associativity, or permutation panel remains off-path.
 
 First intervention: **HoloState-v1 Live Prefix Lattice**
 

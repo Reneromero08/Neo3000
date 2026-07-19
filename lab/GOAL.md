@@ -1,18 +1,16 @@
 # Active Goal
 
-## Checkpoint 2: Three-parent global relational invariant published
+## Checkpoint 2: Frozen corpus lacks the preregistered three-worker geometry
 
-Canonical `neo-exp-0045` at `lab/results.jsonl:58`, SHA-256 `732D2465105AC69116635E9CD76EF63D743727C9FA34EFFF55CCF34AC40295FC`, and adjudication `lab/ck0_balanced_opaque_rank_head_v2_three_parent_global_invariant_probe_adjudication_1.json`, SHA-256 `4676667CF42ED1978C63F0736B27AC6859F785A6D97DFE3A04610752C548E224`, publish only `THREE_PARENT_GLOBAL_RELATIONAL_INVARIANT_EXTRACTION_SUPPORTED_ON_TWO_MATCHED_GEOMETRIES`.
+The public-only scan for `balanced-opaque-three-worker-to-synthesis-mini-swarm-v1` deterministically classified the frozen `catalytic-swarm-1-dsl-selection-v1` suite as `EXISTING_CORPUS_THREE_WORKER_GEOMETRY_UNAVAILABLE`. Its eight per-task counts of locally eligible three-example worker shards are `[2,2,0,0,2,1,1,0]`; the maximum is two, while the frozen design requires three distinct shards before the `{X,P,Q}`, `{X,P,R}`, `{X,Q,R}` geometry can exist.
 
-The exact bounded interpretation is `TRANSFORM_SELECTS_AN_INVARIANT_IDENTIFIABLE_ONLY_FROM_THE_COMPLETE_THREE_PARENT_RELATION_AND_NOT_FROM_ANY_SINGLE_PARENT_OR_PARENT_PAIR`. T0 and T1 each selected their frozen unique three-way commitment at rank zero under `ABC`, `BCA`, and `CAB`; cyclic-order semantic invariance is true for both geometries. First-listed, lexical-first, first-parent, last-parent, and first-presented-pair decoy predictions are false for all six requests. Selection was frozen before private mapping and private mapping was not consulted before selection.
+Diagnostic artifact `lab/ck0_balanced_opaque_three_worker_to_synthesis_mini_swarm_v1_geometry_scan_1.json` has SHA-256 `F1BC72EE98E92CAACFDB6843CE1D6698F24D82EE15247F7AD6774D0415E496C2`. The scan consumed only public task projections. It stopped before tokenizer matching, hidden examples, answer identity, hidden scoring, and the private opaque binding. No selected task, shard/support commitment, worker carrier, request hash, scientific/controller binding, preregistration, or future live command exists.
 
-The one authorized execution from protected main `467ee0d1381292a795765b2334976b17ba07feae` completed `6/6` generations with zero retry. Static publication independently verified authority HMAC, six authenticated captures, six exact raw-SSE reconstructions and terminal boundaries, deterministic replay, exact result/closure, the 28-event final versus 27-event archived journal boundary, all 11 evidence members, the 12-file physical archive, cleanup, and postflight with zero model contact.
+Canonical `neo-exp-0045` and its bounded three-parent transform interpretation remain unchanged. The failed corpus-availability gate is not evidence against the relational mechanism; it means this existing task suite cannot instantiate the authorized worker-to-synthesis causal geometry under the frozen rules.
 
-The progression is: joint-parent information matters → pairwise unique-intersection-like operation identified → operation reproduced under a combined new binding-and-seed condition → complete three-parent relation resolves an invariant unavailable to any parent pair. This remains a transform-only synthetic relational probe, not worker synthesis or a complete borrow → transform → extract → restore cycle.
+Worker synthesis, transfer, general catalytic inference, a complete borrow → transform → extract → restore cycle, useful-task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and promotion remain locked.
 
-Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, independent seed invariance, independent binding invariance, transfer, worker synthesis, general catalytic inference, a complete new cycle, useful-task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and promotion remain locked.
-
-**Next exact action:** `STATIC DESIGN OF_ONE_BOUNDED_WORKER_TO_SYNTHESIS_MINI_SWARM`. Do not execute automatically or substitute another synthetic transform replication.
+**Next exact action:** `SEPARATELY_AUTHORIZE_A_STATIC_SCIENTIFIC_DECISION_ON_WORKER_GEOMETRY_CORPUS_COMPATIBILITY`. Do not create a synthetic task, weaken the current gates, or execute a live probe automatically.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 

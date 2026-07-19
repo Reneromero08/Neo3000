@@ -1,8 +1,16 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Three-parent global relational invariant published
+## Checkpoint 2: Three-worker geometry unavailable in the frozen corpus
 
-**Status:** SIX-REQUEST THREE-PARENT PROBE EXECUTED ONCE / GLOBAL INVARIANT SUPPORTED ON TWO MATCHED GEOMETRIES / ZERO-CONTACT PUBLICATION / WORKER-TO-SYNTHESIS DESIGN NEXT / BROADER CLAIMS LOCKED
+**Status:** PUBLIC-ONLY CORPUS SCAN COMPLETE / THREE-WORKER GEOMETRY UNAVAILABLE / NO PREREGISTRATION OR LIVE SURFACE / BROADER CLAIMS LOCKED
+
+- [x] Admit synchronized clean `main` at `6c760b2d5f8296f795724d061f1d91a0e4171c27` and exact frozen suite SHA-256 `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
+- [x] Scan only the eight public task projections and all 80 three-example shards. Locally eligible shard counts by task index are `[2,2,0,0,2,1,1,0]`; no task reaches the three distinct worker shards required by the frozen geometry.
+- [x] Classify `EXISTING_CORPUS_THREE_WORKER_GEOMETRY_UNAVAILABLE` and bind diagnostic artifact SHA-256 `F1BC72EE98E92CAACFDB6843CE1D6698F24D82EE15247F7AD6774D0415E496C2`.
+- [x] Stop before tokenizer matching, protected hidden utility, answer identity, hidden scoring, and private binding. Create no selected profile, worker carrier, worker or synthesis request, preregistration, controller, future live command, authority, runtime state, capture, result, or publication record.
+- [x] Pass focused scan tests `10/10`, exact diagnostic reconstruction, changed-file compilation, evaluator gates, canonical JSON/JSONL, private/no-smuggle scan, regenerated evaluator lock, and protected preflight. Run no complete CPU suite or historical CK0 family.
+
+Preserved three-parent evidence:
 
 - [x] Admit synchronized clean main at source commit `b955b26bad38e8e9f9d823e3e15bf461cb325019`; bind only adjudication `0EF8C0B2DD65915962ADBFE1CEE06CE6053A3FB7F55E7B3BD4C5955739F5BEED` and canonical `neo-exp-0043` line SHA-256 `C47DE48658E0C044AB676F584FF6030C0CB0A2AD5C84553B70B43EBC863C9423` as the source result.
 - [x] Create one ignored 32-byte private root with `secrets.token_bytes` and the existing one-shot creation receipt. Bind root commitment `7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD` and receipt commitment `E9535E389DB6D452C71FE1E134B8D036CA9C80CE31075BBB63CA6E1455002131`; publish no root, aliases, map, candidate identity, or correspondence.
@@ -26,7 +34,7 @@
 
 Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** `STATIC DESIGN OF_ONE_BOUNDED_WORKER_TO_SYNTHESIS_MINI_SWARM`. Do not execute automatically or redirect the next step to another synthetic transform replication.
+**Next exact action:** `SEPARATELY_AUTHORIZE_A_STATIC_SCIENTIFIC_DECISION_ON_WORKER_GEOMETRY_CORPUS_COMPATIBILITY`. Do not create a synthetic task, weaken the frozen geometry gates, or execute automatically.
 
 ---
 
