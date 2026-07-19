@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Five-support two-worker synthesis supported on one frozen task
+## Checkpoint 2: Worker-synthesis capability accepted; current carrier is not an inference-advantage test
 
 `balanced-opaque-five-support-two-worker-synthesis-probe-v1` executed once from protected main `563cbf5a72a763af8a2cde2394a5ea5beb008bad`. One consumed authority admitted exactly `worker-A`, `worker-B`, and `synthesis-AB`; all three one-generation requests completed with authenticated captures and zero retries.
 
@@ -10,9 +10,17 @@ The supported classification is `FIVE_SUPPORT_TWO_WORKER_RELATIONAL_SYNTHESIS_SU
 
 Receipt, manifest, result, closure, journal, archive, and captures are bound in canonical adjudication artifact `lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_adjudication_1.json`, SHA-256 `EBF0FA07A7B31C72EC19B9C74400C27C01943DDA8247CD02FC81DCC0EC5B228F`. Canonical `neo-exp-0046` is at `lab/results.jsonl:59`, SHA-256 `BC3FD349EAE13AC6B35659D6FECDEDC00751BB41CBEB33D9F7DF5D29F3F6000A`.
 
-This establishes one bounded worker-to-synthesis capability result. General worker synthesis, transfer, equal-budget advantage, reduced fresh computation, compute amplification, a complete borrow → transform → extract → restore lifecycle, persistent blackboard value, adaptive populations, general catalytic inference, superiority, SOTA, and promotion remain locked.
+Independent static review accepts this as one bounded worker-to-synthesis capability result. It does not reopen or weaken the executed finding.
 
-**Next exact action:** `INDEPENDENT_STATIC_REVIEW_OF_PUBLISHED_WORKER_SYNTHESIS_RESULT`. Review the canonical artifact and `neo-exp-0046` before authorizing any control, replication, efficiency measurement, or follow-on design.
+The same review establishes `CURRENT_DSL_WORKER_SYNTHESIS_IS_CAPABILITY_ONLY_NOT_A_FRESH_INFERENCE_ADVANTAGE_TEST`. Before model contact, the controller has the frozen candidate programs, public examples, shard definitions, private alias mapping, exact worker support sets, and singleton intersection. It constructs both sealed extensional projections and exact placeholder worker artifacts, can select the singleton by deterministic intersection, and can score it with the protected evaluator. The published route used three serial generations with per-request prompt tokens `4073 / 4073 / 2255`, 10,401 logical prompt tokens, 18 cached tokens, and 10,383 fresh prompt tokens; controller-only solution uses zero model generations.
+
+Repository-only search found no frozen task family satisfying the required non-controller-reconstructibility boundary. The existing CatalyticSwarm-1/CIB0/CK0 DSL suite exposes executable candidates and guarantees one publicly exact candidate; baseline compatibility probes do not provide protected relational utility. The resulting classification is `NON_CONTROLLER_RECONSTRUCTIBLE_WORKER_SYNTHESIS_TASK_NOT_AVAILABLE_IN_CURRENT_REPOSITORY`.
+
+Decision artifact `lab/ck0_balanced_opaque_five_support_two_worker_synthesis_task_suitability_decision_1.json`, SHA-256 `EE2C89131B581EE5B0300CDD6EAEAC636AAF31C37CA2C5AC72E8D159CDD56F2F`, binds the route comparison, repository search, minimum successor properties, claim locks, and the infrastructure-only preconsumption continuation rule. No experimental result record is added because no live experiment occurred.
+
+General worker synthesis, transfer, equal-budget advantage, reduced fresh computation, compute amplification, a complete borrow → transform → extract → restore lifecycle, persistent blackboard value, adaptive populations, general catalytic inference, superiority, SOTA, and promotion remain locked.
+
+**Next exact action:** `STATIC_DESIGN_OF_ONE_EASY_35B_CALIBRATED_NON_CONTROLLER_RECONSTRUCTIBLE_WORKER_SYNTHESIS_TASK_FAMILY`. Define only the minimum task family, protected evaluator, direct baseline, and resource-accounting boundary. Keep evidence shards short, the structured schema small, synthesis to one simple relation, and output ceilings bounded. Do not generate the task corpus, implement runtime, create authority, or execute inference without separate authorization.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 

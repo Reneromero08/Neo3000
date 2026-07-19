@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "563cbf5a72a763af8a2cde2394a5ea5beb008bad",
+  "baseline_source_commit": "21a577b6768432cdaccb9146334e9be1ad630d64",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -155,14 +155,14 @@
     "scripts/catalytic_kernel_0_balanced_five_support_two_worker_synthesis_probe.py",
     "scripts/test_catalytic_kernel_0_balanced_five_support_two_worker_synthesis_probe.py"
   ],
-  "evaluator_sha256": "4781305534434b7ce31dc46f884302eae9a3af44544707f36fa5b1939f08ffd7",
+  "evaluator_sha256": "7808d2fce409dcb24e3e41d910567300cb4fc23d7d4ffafb7adedd9cca5c5efa",
   "gate_definition_hashes": {
     "reasoning-preservation-v1": "750a7b0041c13b4407f5d373069f6bcb3fe1d0701504f7bae5bb7c64fbc5d5fe",
     "repeat-final-content-v1": "2737d28ec7947d841bf6c5e07221f6ac453f98150a83b9a9c29c43da1a4b7460",
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-19T14:28:31.226405+00:00",
+  "generated_at": "2026-07-19T14:53:09.045957+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
@@ -187,15 +187,16 @@
     "CHANGELOG.md": "5909a88928728d99764d486a9ae225df926ccd937473034f74ab291bcd3ac0c7",
     "NEO3000.md": "b7ba87065f942d47abed19330197a843577bbd6b2fd58057a6df9de9cd7d2905",
     "README.md": "78708a68121242f8c0d48bc8218da2776985a2f8d3854e6a85be1b16050d3427",
-    "ROADMAP.md": "312385187ff54946f2a70428d88bb8b647d27bbd3bed9c7480f52639c30af59f",
-    "TASKS.md": "7aa44011f13f47e6aff4ad0d28ad055c7ca1bce4ccb6483141389fc7d29d4167",
+    "ROADMAP.md": "4d7cfb148990ae0bd7781ef485e1e4f752ccaa3a06c0f974214872778857bd89",
+    "TASKS.md": "c222cb53a4da401667c1e20830b5fe5ec12bd32d77ecc3903608780a08493d94",
     "docs/CATALYTIC_RUNTIME_ROADMAP.md": "b425fc553a78997964dff09851ade15262cd3eb59de0b8f751e66ff8b97ea923",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "55859d66497c63f415a6a8192fb5d018fdfc5d4d1891f9a9c695c8a884d58275",
-    "lab/EVALUATOR.json": "4781305534434b7ce31dc46f884302eae9a3af44544707f36fa5b1939f08ffd7",
-    "lab/GOAL.md": "a23a3a808e6167d6f98b0faa92bec9adb3da0f6b1c1d8c42853e8bab560f210d",
+    "lab/CHECKPOINT.md": "c22e1110597b87126ba07bd3bacc87ef2ade6240416eee08798ac0b3340b647e",
+    "lab/EVALUATOR.json": "7808d2fce409dcb24e3e41d910567300cb4fc23d7d4ffafb7adedd9cca5c5efa",
+    "lab/GOAL.md": "7bfae83032db1c1f02671848602c94ea2a74f767ed575da2e73fe1e8c68d3e05",
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_1.json": "8eca08391c598fd6102fdac482e043ba1435c9b7efdf61714888a5d6b2823b7c",
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_adjudication_1.json": "ebf0fa07a7b31c72ec19b9c74400c27c01943dda8247cd02fc81dcc0ec5b228f",
+    "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_task_suitability_decision_1.json": "ee2c89131b581ee5b0300cdd6eaeac636aaf31c37ca2c5ac72e8d159cdd56f2f",
     "lab/ck0_balanced_opaque_parent_dependence_cross_binding_asymmetry_audit_1.json": "47b6790a05f98051ea10bba5ea4944c3dce37a68cf6e64b7bf7a26a464e891b7",
     "lab/ck0_balanced_opaque_rank_head_v2_binding_2_parent_dependence_1.json": "a32e445ec136e5bc863e09ee177ee5902a20d8176e810b3b238f75a615698511",
     "lab/ck0_balanced_opaque_rank_head_v2_binding_2_parent_dependence_forensic_recovery_1.json": "110dae908e4c1f01747c2cbbea9f3a34bb2aca61397d55b0648d82453a3dd975",
@@ -527,6 +528,7 @@
     "lab/ck0_balanced_opaque_two_worker_to_synthesis_mini_swarm_v1_geometry_scan_1.json",
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_1.json",
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_adjudication_1.json",
+    "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_task_suitability_decision_1.json",
     "lab/EVALUATOR.lock.json",
     "lab/results.jsonl"
   ],

@@ -230,6 +230,7 @@
       "lab/ck0_balanced_opaque_two_worker_to_synthesis_mini_swarm_v1_geometry_scan_1.json",
       "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_1.json",
       "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_adjudication_1.json",
+      "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_task_suitability_decision_1.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]

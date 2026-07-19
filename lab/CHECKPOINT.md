@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Five-support two-worker synthesis supported on one frozen task
+## Checkpoint 2: Worker-synthesis task suitability adjudicated
 
-**Status:** THREE GENERATIONS EXECUTED ONCE / TWO MODEL-AUTHORED WORKER RELATIONS EXACT / HIDDEN-EXACT SYNTHESIS SUPPORTED / ZERO-CONTACT RECONSTRUCTION / BROADER CLAIMS LOCKED
+**Status:** NEO-EXP-0046 ACCEPTED / CURRENT DSL CARRIER CAPABILITY-ONLY / CONTROLLER-ONLY ZERO-GENERATION ROUTE AVAILABLE / NO SUITABLE EXISTING SUCCESSOR TASK / BROADER CLAIMS LOCKED
 
 - [x] Preserve the three-worker diagnostic from synchronized source `6c760b2d5f8296f795724d061f1d91a0e4171c27`, then admit the separately authorized two-worker decision at synchronized clean `main` `c8942f7b4ecf7ab555b54393fc63c4cbb5a366b3`; exact frozen suite SHA-256 remains `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
 - [x] Scan only the eight public task projections and all 80 three-example shards. Locally eligible shard counts by task index are `[2,2,0,0,2,1,1,0]`; no task reaches the three distinct worker shards required by the frozen geometry.
@@ -27,6 +27,13 @@
 - [x] Verify receipt `A168802B04628864588729808B23089F9F06AE9F7973D86582963E8C2EEFE308`, manifest `BB2B464D54DE73970E8444AFF6E465EF9D74E8A0BA7A1FD9FD5B0986C120E73B`, result `97E24D17F6311D26F258E554A1353DD788322FF092F71BFA6D183044CBE18FFE`, closure `B7E5C896F8F42F84EE594F8CB49473C4B4CC800AD13CB16C10D4BEACC4F271A6`, journal `EF04A009B5980CD7F62EFB40AAF19FE5EFB9DB736708CFFB0EB0D0F6B575DFE4`, journal head `5D5D4B1444AAB8DD627C7DE3E7BFF9B301C1718156EDA99E5E8C66196A2BCAD4`, all three captures, and eight-member archive `8D61154690A1667B51FEA09631111113D23502AB00162605254E2597A7128EE5`.
 - [x] Reconstruct receipt, 13-event journal, captures, exact worker artifacts, synthesis transform, unique-intersection selection, and `5/5` / `16/16` utility with zero model contact.
 - [x] Publish adjudication artifact SHA-256 `EBF0FA07A7B31C72EC19B9C74400C27C01943DDA8247CD02FC81DCC0EC5B228F` and canonical `neo-exp-0046` at line 59, SHA-256 `BC3FD349EAE13AC6B35659D6FECDEDC00751BB41CBEB33D9F7DF5D29F3F6000A`.
+- [x] Independently verify the tracked adjudication and record bytes, preserve the executed classification and bounded interpretation, and accept `neo-exp-0046` as valid one-task worker-to-synthesis capability evidence.
+- [x] Audit the exact precontact controller surface. `public_profile_admission` derives both exact support sets and their singleton intersection; `_sealed_projection` executes every frozen candidate over each worker shard; `_objective_support_aliases` maps the supports; `_placeholder_artifacts` and `build_payloads` construct exact synthesis-parent artifacts before model contact; `_score_frozen_selection` scores the selected candidate deterministically.
+- [x] Reconstruct resource use from authenticated captures and frozen requests. Worker A used 4,073 prompt / 0 cached / 4,073 fresh / 49 completion tokens; Worker B used 4,073 / 18 / 4,055 / 49; synthesis used 2,255 / 0 / 2,255 / 22. The published one-slot route therefore used three serial generations, 10,401 logical prompt tokens, 10,383 fresh prompt tokens, 120 completion tokens, and a 64-token output ceiling per request. The worker-plus-controller route removes only synthesis and still uses two generations; controller-only uses zero.
+- [x] Classify `CURRENT_DSL_WORKER_SYNTHESIS_IS_CAPABILITY_ONLY_NOT_A_FRESH_INFERENCE_ADVANTAGE_TEST`. Preserve the capability result and treat this as a carrier-selection decision, not negative evidence against relational synthesis.
+- [x] Search existing frozen task families. CatalyticSwarm-1/CIB0/CK0 is controller-enumerable from public examples and executable candidate programs with one guaranteed publicly exact candidate; baseline probes lack the required protected relational utility. Classify `NON_CONTROLLER_RECONSTRUCTIBLE_WORKER_SYNTHESIS_TASK_NOT_AVAILABLE_IN_CURRENT_REPOSITORY`.
+- [x] Bind static decision artifact `lab/ck0_balanced_opaque_five_support_two_worker_synthesis_task_suitability_decision_1.json`, SHA-256 `EE2C89131B581EE5B0300CDD6EAEAC636AAF31C37CA2C5AC72E8D159CDD56F2F`. Add no result ledger record because no live experiment occurred.
+- [x] Record the future operating rule: an infrastructure-only preflight blocker may be fixed and the user-authorized task continued only before authority consumption, sidecar/model contact, runtime evidence, or scientific request start. It is not a scientific retry and is forbidden after authority consumption or model contact.
 
 Preserved three-parent evidence:
 
@@ -52,7 +59,7 @@ Preserved three-parent evidence:
 
 Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, general worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** `INDEPENDENT_STATIC_REVIEW_OF_PUBLISHED_WORKER_SYNTHESIS_RESULT`. Review the canonical artifact and `neo-exp-0046` before authorizing any control, replication, efficiency measurement, or follow-on design.
+**Next exact action:** `STATIC_DESIGN_OF_ONE_EASY_35B_CALIBRATED_NON_CONTROLLER_RECONSTRUCTIBLE_WORKER_SYNTHESIS_TASK_FAMILY`. Keep the task deliberately easy for Agents-A1 35B: short evidence shards, a small structured schema, one simple synthesis relation, and bounded output ceilings. Require model-generated worker information unavailable to deterministic controller reconstruction, individually insufficient partials, a protected evaluator, a same-evidence direct baseline, hidden-independent route selection, and exact resource accounting. Do not generate, implement, authorize, or execute it automatically.
 
 ---
 
