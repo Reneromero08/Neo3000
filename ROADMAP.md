@@ -586,7 +586,9 @@ The evidence progression is now: joint-parent information matters → pairwise u
 
 The authorized public-only scan for `balanced-opaque-three-worker-to-synthesis-mini-swarm-v1` stopped at `EXISTING_CORPUS_THREE_WORKER_GEOMETRY_UNAVAILABLE`. Across the frozen eight-task suite, locally eligible three-example shard counts are `[2,2,0,0,2,1,1,0]`; no task supplies the three distinct shards required before pair/triple geometry, prompt matching, hidden utility, or private binding can lawfully be considered. No worker carrier, request, synthesis surface, preregistration, controller, authority, or live state was created.
 
-The next bounded action is `SEPARATELY_AUTHORIZE_A_STATIC_SCIENTIFIC_DECISION_ON_WORKER_GEOMETRY_CORPUS_COMPATIBILITY`. The current gates must not be weakened and a synthetic replacement task must not be created automatically. Another synthetic transform replication, higher arity, associativity, or permutation panel remains off-path.
+The separately authorized public-only decision then tested the smallest requested two-worker geometry as `balanced-opaque-two-worker-to-synthesis-mini-swarm-v1`. It also stopped at corpus admission: the six ordered pairs of distinct locally eligible shards cover at most four of five public examples, overlap on at least two examples, and share all three support candidates. Therefore no pair instantiates two individually ambiguous, decoy-disjoint supports whose unique intersection is the full-public singleton. Diagnostic artifact SHA-256 is `493B8E7CD2591E4BCDD27C224693C8DA890AE885433C3BEA07528683C1D69264`.
+
+The next bounded action is `SEPARATELY_AUTHORIZE_A_STATIC_SCIENTIFIC_DECISION_ON_TWO_WORKER_PROFILE_COMPATIBILITY`. The current gates must not be weakened and a synthetic replacement task must not be created automatically. Another synthetic transform replication, higher arity, associativity, or permutation panel remains off-path.
 
 First intervention: **HoloState-v1 Live Prefix Lattice**
 

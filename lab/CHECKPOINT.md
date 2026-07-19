@@ -1,14 +1,16 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Three-worker geometry unavailable in the frozen corpus
+## Checkpoint 2: Requested worker-synthesis geometries unavailable in the frozen corpus
 
-**Status:** PUBLIC-ONLY CORPUS SCAN COMPLETE / THREE-WORKER GEOMETRY UNAVAILABLE / NO PREREGISTRATION OR LIVE SURFACE / BROADER CLAIMS LOCKED
+**Status:** PUBLIC-ONLY CORPUS DECISION COMPLETE / THREE-WORKER AND TWO-WORKER GEOMETRIES UNAVAILABLE / NO PREREGISTRATION OR LIVE SURFACE / BROADER CLAIMS LOCKED
 
-- [x] Admit synchronized clean `main` at `6c760b2d5f8296f795724d061f1d91a0e4171c27` and exact frozen suite SHA-256 `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
+- [x] Preserve the three-worker diagnostic from synchronized source `6c760b2d5f8296f795724d061f1d91a0e4171c27`, then admit the separately authorized two-worker decision at synchronized clean `main` `c8942f7b4ecf7ab555b54393fc63c4cbb5a366b3`; exact frozen suite SHA-256 remains `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
 - [x] Scan only the eight public task projections and all 80 three-example shards. Locally eligible shard counts by task index are `[2,2,0,0,2,1,1,0]`; no task reaches the three distinct worker shards required by the frozen geometry.
 - [x] Classify `EXISTING_CORPUS_THREE_WORKER_GEOMETRY_UNAVAILABLE` and bind diagnostic artifact SHA-256 `F1BC72EE98E92CAACFDB6843CE1D6698F24D82EE15247F7AD6774D0415E496C2`.
+- [x] Enumerate all six ordered pairs of distinct locally eligible shards for the two-worker design. No pair covers all five public examples with one-example overlap; maximum union is four, minimum overlap is two, and minimum support intersection is three instead of one.
+- [x] Classify `EXISTING_CORPUS_TWO_WORKER_GEOMETRY_UNAVAILABLE` and bind diagnostic artifact SHA-256 `493B8E7CD2591E4BCDD27C224693C8DA890AE885433C3BEA07528683C1D69264`.
 - [x] Stop before tokenizer matching, protected hidden utility, answer identity, hidden scoring, and private binding. Create no selected profile, worker carrier, worker or synthesis request, preregistration, controller, future live command, authority, runtime state, capture, result, or publication record.
-- [x] Pass focused scan tests `10/10`, exact diagnostic reconstruction, changed-file compilation, evaluator gates, canonical JSON/JSONL, private/no-smuggle scan, regenerated evaluator lock, and protected preflight. Run no complete CPU suite or historical CK0 family.
+- [x] Pass focused two-worker scan tests `11/11`, exact diagnostic reconstruction, changed-file compilation, evaluator gates, canonical JSON/JSONL, private/no-smuggle scan, regenerated evaluator lock, and protected preflight. Run no complete CPU suite or historical CK0 family.
 
 Preserved three-parent evidence:
 
@@ -34,7 +36,7 @@ Preserved three-parent evidence:
 
 Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** `SEPARATELY_AUTHORIZE_A_STATIC_SCIENTIFIC_DECISION_ON_WORKER_GEOMETRY_CORPUS_COMPATIBILITY`. Do not create a synthetic task, weaken the frozen geometry gates, or execute automatically.
+**Next exact action:** `SEPARATELY_AUTHORIZE_A_STATIC_SCIENTIFIC_DECISION_ON_TWO_WORKER_PROFILE_COMPATIBILITY`. Do not create a synthetic task, weaken the frozen geometry gates, or execute automatically.
 
 ---
 

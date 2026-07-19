@@ -1,16 +1,18 @@
 # Active Goal
 
-## Checkpoint 2: Frozen corpus lacks the preregistered three-worker geometry
+## Checkpoint 2: Frozen corpus lacks both requested worker-synthesis geometries
 
 The public-only scan for `balanced-opaque-three-worker-to-synthesis-mini-swarm-v1` deterministically classified the frozen `catalytic-swarm-1-dsl-selection-v1` suite as `EXISTING_CORPUS_THREE_WORKER_GEOMETRY_UNAVAILABLE`. Its eight per-task counts of locally eligible three-example worker shards are `[2,2,0,0,2,1,1,0]`; the maximum is two, while the frozen design requires three distinct shards before the `{X,P,Q}`, `{X,P,R}`, `{X,Q,R}` geometry can exist.
 
-Diagnostic artifact `lab/ck0_balanced_opaque_three_worker_to_synthesis_mini_swarm_v1_geometry_scan_1.json` has SHA-256 `F1BC72EE98E92CAACFDB6843CE1D6698F24D82EE15247F7AD6774D0415E496C2`. The scan consumed only public task projections. It stopped before tokenizer matching, hidden examples, answer identity, hidden scoring, and the private opaque binding. No selected task, shard/support commitment, worker carrier, request hash, scientific/controller binding, preregistration, or future live command exists.
+The separately authorized public-only scan for `balanced-opaque-two-worker-to-synthesis-mini-swarm-v1` classified the same corpus as `EXISTING_CORPUS_TWO_WORKER_GEOMETRY_UNAVAILABLE`. It considered all six ordered pairs of distinct locally eligible shards. None covers all five public examples with exactly one shared example; maximum union is four and minimum overlap is two. The paired supports retain all three candidates in common rather than the required singleton.
 
-Canonical `neo-exp-0045` and its bounded three-parent transform interpretation remain unchanged. The failed corpus-availability gate is not evidence against the relational mechanism; it means this existing task suite cannot instantiate the authorized worker-to-synthesis causal geometry under the frozen rules.
+The three-worker diagnostic SHA-256 remains `F1BC72EE98E92CAACFDB6843CE1D6698F24D82EE15247F7AD6774D0415E496C2`. Two-worker diagnostic artifact `lab/ck0_balanced_opaque_two_worker_to_synthesis_mini_swarm_v1_geometry_scan_1.json` has SHA-256 `493B8E7CD2591E4BCDD27C224693C8DA890AE885433C3BEA07528683C1D69264`. Both scans consumed only public task projections and stopped before tokenizer matching, hidden examples, answer identity, hidden scoring, and the private opaque binding. No selected task, shard/support commitment, worker carrier, request hash, scientific/controller binding, preregistration, or future live command exists.
+
+Canonical `neo-exp-0045` and its bounded three-parent transform interpretation remain unchanged. These corpus-availability failures are not evidence against the relational mechanism; they mean this task suite cannot instantiate either requested worker-to-synthesis causal geometry under the frozen rules.
 
 Worker synthesis, transfer, general catalytic inference, a complete borrow → transform → extract → restore cycle, useful-task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and promotion remain locked.
 
-**Next exact action:** `SEPARATELY_AUTHORIZE_A_STATIC_SCIENTIFIC_DECISION_ON_WORKER_GEOMETRY_CORPUS_COMPATIBILITY`. Do not create a synthetic task, weaken the current gates, or execute a live probe automatically.
+**Next exact action:** `SEPARATELY_AUTHORIZE_A_STATIC_SCIENTIFIC_DECISION_ON_TWO_WORKER_PROFILE_COMPATIBILITY`. Do not create a synthetic task, weaken the current gates, or execute a live probe automatically.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 
