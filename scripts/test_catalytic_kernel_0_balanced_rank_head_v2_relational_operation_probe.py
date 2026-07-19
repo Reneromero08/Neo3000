@@ -11,6 +11,7 @@ from types import SimpleNamespace
 
 import catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe as probe
 import catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe_scientific as scientific
+from holostate_readiness import HoloStateReadinessError
 
 
 REPOSITORY = Path(__file__).resolve().parent.parent
@@ -219,6 +220,41 @@ class RelationalOperationProbeTests(unittest.TestCase):
         self.assertIn("--authorized-commit <published-static-commit>", command)
         self.assertFalse(self.artifact["execution_state"]["authority_created"])
         self.assertFalse(self.artifact["execution_state"]["scientific_result_created"])
+
+    def test_13_lifecycle_failure_preserves_only_normalized_readiness_evidence(self) -> None:
+        error = HoloStateReadinessError(
+            "holostate-sidecar-readiness-timeout",
+            evidence={
+                "poll_count": 116,
+                "readiness_seconds": 180.0,
+                "process_alive": True,
+                "stable_health_ok": True,
+                "sidecar_health_ok": False,
+                "wddm_attributed": True,
+                "stable_listener": {"passed": True, "actual_pids": [123]},
+                "unapproved_detail": "must-not-persist",
+            },
+        )
+        failure = probe._lifecycle_failure(error)
+        self.assertEqual(failure["request_id"], None)
+        self.assertFalse(failure["retry_allowed"])
+        self.assertEqual(
+            failure["failure_sha256"],
+            probe.sha256_bytes(str(error).encode("utf-8")),
+        )
+        self.assertEqual(
+            failure["readiness_evidence"],
+            {
+                "poll_count": 116,
+                "readiness_seconds": 180.0,
+                "process_alive": True,
+                "stable_health_ok": True,
+                "sidecar_health_ok": False,
+                "wddm_attributed": True,
+                "stable_listener": {"passed": True, "actual_pids": [123]},
+            },
+        )
+        self.assertNotIn("unapproved_detail", failure["readiness_evidence"])
 
 
 if __name__ == "__main__":

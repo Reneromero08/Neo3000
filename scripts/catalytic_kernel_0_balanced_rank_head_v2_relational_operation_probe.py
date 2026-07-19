@@ -121,6 +121,21 @@ LOCKED_CLAIMS = {
     "automatic_promotion": False,
 }
 
+NORMALIZED_READINESS_FAILURE_FIELDS = (
+    "poll_count",
+    "readiness_seconds",
+    "process_alive",
+    "stable_health_ok",
+    "sidecar_health_ok",
+    "wddm_attributed",
+    "wddm_fresh",
+    "wddm_snapshot",
+    "stable_listener",
+    "sidecar_listener",
+    "stable_listener_confirmation",
+    "stable_health_recovery",
+)
+
 
 def canonical_json_bytes(value: Any) -> bytes:
     return json.dumps(
@@ -224,6 +239,25 @@ def _assert_public_no_smuggle(value: Any) -> None:
         b'"support_aliases"',
     ):
         _require(forbidden not in lowered, "private or model-authored content entered public metadata")
+
+
+def _lifecycle_failure(exc: BaseException) -> dict[str, Any]:
+    failure: dict[str, Any] = {
+        "request_id": None,
+        "failure_sha256": sha256_bytes(str(exc).encode("utf-8")),
+        "retry_allowed": False,
+    }
+    evidence = getattr(exc, "evidence", None)
+    if isinstance(evidence, Mapping):
+        normalized = {
+            field: evidence[field]
+            for field in NORMALIZED_READINESS_FAILURE_FIELDS
+            if field in evidence
+        }
+        if normalized:
+            failure["readiness_evidence"] = normalized
+    _assert_public_no_smuggle(failure)
+    return failure
 
 
 def _probe_binding(root: bytes) -> balanced.PrivateBinding:
@@ -1285,11 +1319,7 @@ def run_probe(
                     break
         except BaseException as exc:
             if failure is None:
-                failure = {
-                    "request_id": None,
-                    "failure_sha256": sha256_bytes(str(exc).encode("utf-8")),
-                    "retry_allowed": False,
-                }
+                failure = _lifecycle_failure(exc)
                 journal.append("lifecycle-failed", facts=failure)
         finally:
             try:
