@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
 
 import catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe as probe
 import catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe_scientific as scientific
@@ -255,6 +256,84 @@ class RelationalOperationProbeTests(unittest.TestCase):
             },
         )
         self.assertNotIn("unapproved_detail", failure["readiness_evidence"])
+
+    def test_14_successor_attempt_is_distinct_one_shot_custody(self) -> None:
+        predecessor_receipt_path = REPOSITORY / probe.PREDECESSOR_AUTHORITY_RECEIPT_PATH
+        predecessor_archive_path = REPOSITORY / probe.PREDECESSOR_ARCHIVE_PATH
+        receipt_before = predecessor_receipt_path.read_bytes()
+        archive_before = {
+            path.relative_to(predecessor_archive_path).as_posix(): path.read_bytes()
+            for path in predecessor_archive_path.rglob("*")
+            if path.is_file() and not path.is_symlink()
+        }
+
+        with mock.patch.object(scientific, "execute_and_capture_request") as model_contact:
+            predecessor = probe.verify_predecessor_attempt(REPOSITORY)
+            validation = probe.validate_static(REPOSITORY, self.model_path)
+            model_contact.assert_not_called()
+
+        self.assertEqual(predecessor["attempt_id"], probe.PREDECESSOR_ATTEMPT_ID)
+        self.assertEqual(predecessor["terminal_classification"], "INCONCLUSIVE")
+        self.assertEqual(predecessor["completed_model_generations"], 0)
+        self.assertEqual(validation["attempt_id"], probe.ATTEMPT_ID)
+        self.assertEqual(
+            validation["preregistration"]["frozen_scientific_binding_sha256"],
+            "D9300869CE6C903D309899F5E9AFF02D4C7F9B0D815EC877CCC3BEA5DB67DE7C",
+        )
+        self.assertEqual(
+            validation["preregistration"]["request_sha256"],
+            {
+                "G0-AB": "5376E22674CCF4BB7057DFB0D31D8C46F240F425965FFD1F40ACC13961DDB759",
+                "G0-BA": "C82585DF3098F6F2BA1E90614C5F80876654DDC2F7556F2D78EB639401EE93FA",
+                "G1-AB": "1D29EA13DB81157A5759D8AB18FDA4668662A1796C09D95D6D030A8C1529FEB2",
+                "G1-BA": "517C29572D54CF76ED5F5B48424F9803E8484C13030C8B498F38255B3B31C545",
+            },
+        )
+
+        attempt_paths = probe.state_paths(REPOSITORY)
+        self.assertNotEqual(
+            attempt_paths["receipt"],
+            REPOSITORY / probe.PREDECESSOR_AUTHORITY_RECEIPT_PATH,
+        )
+        self.assertNotEqual(
+            attempt_paths["run_root"],
+            REPOSITORY / probe.PREDECESSOR_STATE_ROOT,
+        )
+        predecessor_authority = json.loads(receipt_before)["authority"]
+        with tempfile.TemporaryDirectory() as temp:
+            isolated = Path(temp)
+            with self.assertRaisesRegex(
+                probe.RelationalOperationProbeError,
+                "attempt-1 authority cannot authorize attempt 2",
+            ):
+                probe.consume_authority_once(isolated, self.root, predecessor_authority)
+            successor_authority = probe.build_external_authority(
+                REPOSITORY,
+                self.model_path,
+                raw_authority_id="F" * 64,
+                authorized_commit="a" * 40,
+                current_commit="a" * 40,
+                observed_model_sha256=probe.MODEL_SHA256,
+                observed_binary_sha256=probe.BINARY_SHA256,
+            )
+            self.assertEqual(successor_authority["attempt_id"], probe.ATTEMPT_ID)
+            probe.consume_authority_once(isolated, self.root, successor_authority)
+            probe.verify_authority_receipt(isolated, self.root)
+            with self.assertRaisesRegex(
+                probe.RelationalOperationProbeError,
+                "already consumed",
+            ):
+                probe.consume_authority_once(isolated, self.root, successor_authority)
+
+        self.assertEqual(predecessor_receipt_path.read_bytes(), receipt_before)
+        self.assertEqual(
+            {
+                path.relative_to(predecessor_archive_path).as_posix(): path.read_bytes()
+                for path in predecessor_archive_path.rglob("*")
+                if path.is_file() and not path.is_symlink()
+            },
+            archive_before,
+        )
 
 
 if __name__ == "__main__":

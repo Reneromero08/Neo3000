@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "d5aac90ab28178abfa5057e743e047a3a0293257",
+  "baseline_source_commit": "72d45cea269c97d2c563584ead7ff391cfb914f4",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -150,7 +150,7 @@
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-19T01:20:57.367326+00:00",
+  "generated_at": "2026-07-19T02:12:30.122631+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
@@ -187,7 +187,7 @@
     "lab/ck0_balanced_opaque_rank_head_v2_binding_2_parent_dependence_forensic_recovery_1.json": "110dae908e4c1f01747c2cbbea9f3a34bb2aca61397d55b0648d82453a3dd975",
     "lab/ck0_balanced_opaque_rank_head_v2_position_seed_crossover_1.json": "5a2ce43f710ee51b1e3d7d79d6a8e907894813eeaf9161f8b82b356cd44ebf95",
     "lab/ck0_balanced_opaque_rank_head_v2_position_seed_crossover_adjudication_1.json": "dd829ae6c4f38eda325462ad24d030aa7df3e74fc69d54c80de1f9996c820b53",
-    "lab/ck0_balanced_opaque_rank_head_v2_relational_operation_probe_1.json": "83fe0d2bd62fec3ce2f30fa4a773afd071408964bf072ccc934ed2d09b5788ec",
+    "lab/ck0_balanced_opaque_rank_head_v2_relational_operation_probe_1.json": "136e9ed06aa9c9a1ff0731f2503378b9108c28dec19060cbdffe4f5b4b046cec",
     "lab/ck0_balanced_opaque_relational_carrier_v1.json": "adf29f23463cb14b9bc79995d59afe5ab5ac456043ed3734668d8c4372e09f09",
     "lab/ck0_balanced_opaque_relational_carrier_v1_binding_2.json": "9276e79b40978831c29fba7ef55443f6a7eee300c1bc59e826f0102075538c86",
     "lab/ck0_parent_a_information_deletion_1.json": "a5b5c651ec5e542154283723bc727aa68cfd589125dbec3ff1624c0d31c0087b",
@@ -208,7 +208,7 @@
     "scripts/catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover.py": "c41694007545aad174b77f71dbca3a9c001ccb89f752eb43947440d2fb4f76a0",
     "scripts/catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover_adjudication.py": "0d7fd8027ddffff53b9d05fc2099da2af97e4b67826fe658d71d6922bb0394af",
     "scripts/catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover_scientific.py": "c136b2657853e3f471d8dd05096f36d77e964ea67f0ea3f85e1fcef172f6a597",
-    "scripts/catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe.py": "7592724e745b1a3289ea7f73bc53fa78f6d36a0f884eb700a943566b4b862c16",
+    "scripts/catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe.py": "46078440b789e84b435cb8d33baebb453f1da598bf1c60fccf57d01c14a3da96",
     "scripts/catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe_scientific.py": "34d45e52b4ac501adb821a0a7dd302c8506ef39ecf27f09091b4126cb4661714",
     "scripts/catalytic_kernel_0_carrier_scan.py": "50cfa1f66b36ef6bd7a657e65451a66c6d59a7de0f0ef853935a61288915eacb",
     "scripts/catalytic_runtime_custody.py": "01bafd931a34eb4f0c33311456108647a1763c4d6ff559728713697713eb1567",
@@ -263,7 +263,7 @@
     "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_parent_dependence_forensic_recovery.py": "8fb3ba0be81fa062886e8d76a5af13dbb91583765151c4aca2964b6e74512ca3",
     "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover.py": "2bbedc00082af021d3a76a9069b961cdbb47d2f6745eaa590fc917c51539ecda",
     "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_position_seed_crossover_adjudication.py": "38a99efcfef988bb819b8346dd5b855ea6df1969d45ad8404a37df57eeafe914",
-    "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe.py": "9384a0433041b66008b3330114a8378828e9dbecd40e3a2c6ab37fe10f232180",
+    "scripts/test_catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe.py": "42b34a30b6319df38818e056ecfeec2d6f91213b6cb7734dec6b968d86477b04",
     "scripts/test_catalytic_runtime_custody.py": "202dbc04c4d9995b97e13cd88a20b0085ee9d78bf11a44325e993b7eeddd3a4c",
     "scripts/test_catalytic_swarm_1_cache_diagnostic.py": "c569128f4bd674830b2ed2b54c124a183ae92dc1ba9a7e579425025b7d93c042",
     "scripts/test_catalytic_swarm_1_cache_diagnostic_protocol.py": "87c21f6ff5a3ade1a546175f90d0260d3217a4669bb0d643ac126634d3838152",

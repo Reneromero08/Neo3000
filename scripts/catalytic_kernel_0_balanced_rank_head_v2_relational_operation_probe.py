@@ -43,10 +43,46 @@ PREREGISTRATION_PATH = Path(
 )
 PRIVATE_ROOT_PATH = crossover.PRIVATE_ROOT_PATH
 PRIVATE_RECEIPT_PATH = crossover.PRIVATE_RECEIPT_PATH
-STATE_ROOT = Path("state/catalytic_kernel_0/relational_operation_probe_v1")
-ARCHIVE_ROOT = Path("state/catalytic_kernel_0/relational_operation_probe_evidence_archive/v1")
+ATTEMPT_ID = "relational-operation-probe-v1-attempt-2"
+PREDECESSOR_ATTEMPT_ID = "relational-operation-probe-v1-attempt-1"
+RETRY_RELATION = (
+    "fresh-successor-attempt-after-pre-generation-transient-readiness-failure"
+)
+STATE_ROOT = Path("state/catalytic_kernel_0/relational_operation_probe_v1_attempt_2")
+ARCHIVE_ROOT = Path(
+    "state/catalytic_kernel_0/relational_operation_probe_evidence_archive/v1_attempt_2"
+)
 AUTHORITY_RECEIPT_PATH = Path(
+    "state/catalytic_kernel_0_authority.relational-operation-probe-v1-attempt-2.authority.consumed.json"
+)
+PREDECESSOR_AUTHORITY_RECEIPT_PATH = Path(
     "state/catalytic_kernel_0_authority.relational-operation-probe-v1.authority.consumed.json"
+)
+PREDECESSOR_STATE_ROOT = Path(
+    "state/catalytic_kernel_0/relational_operation_probe_v1"
+) / DESIGN_ID
+PREDECESSOR_ARCHIVE_PATH = (
+    Path("state/catalytic_kernel_0/relational_operation_probe_evidence_archive/v1")
+    / DESIGN_ID
+    / "C0CDCD7CBD714F355C238235148ED2395A15DC49E527A95C33C6748212571D29"
+)
+PREDECESSOR_FAILURE_SHA256 = (
+    "0A1E71522A4BC2F692D9158303D430101CCE8C7C98C2CF8079C70361ECA3279D"
+)
+PREDECESSOR_RECEIPT_SHA256 = (
+    "51F29C3B417297D07B72BC52ADD1236455E146A47EFA3E38ACA95C821D2AF4C3"
+)
+PREDECESSOR_RESULT_SHA256 = (
+    "76135B764E3A8863401A82ED33BD420867BB2B0BB82162211400A5C7D7C28476"
+)
+PREDECESSOR_CLOSURE_SHA256 = (
+    "2F3B3411D7AE3AA647D74182F7BB64BBEDF8BEA8A8F5A11A2EEC9412A0B29B7A"
+)
+PREDECESSOR_ARCHIVE_SHA256 = (
+    "C0CDCD7CBD714F355C238235148ED2395A15DC49E527A95C33C6748212571D29"
+)
+PREDECESSOR_AUTHORITY_ID_SHA256 = (
+    "355861D88E699E25756595FD37B6AFC2D5BE18EF40FD053AAB71460F34FFAB41"
 )
 
 REQUEST_IDS = scientific.REQUEST_IDS
@@ -94,10 +130,10 @@ EXPERIMENT_KEY_DOMAIN = b"ck0-rank-head-v2/relational-operation-probe/experiment
 AUTHORITY_ID_DOMAIN = b"ck0-rank-head-v2/relational-operation-probe/authority-id-v1\0"
 AUTHORITY_HMAC_DOMAIN = b"ck0-rank-head-v2/relational-operation-probe/authority-hmac-v1\0"
 JOURNAL_HMAC_DOMAIN = b"ck0-rank-head-v2/relational-operation-probe/journal-hmac-v1\0"
-AUTHORITY_SCHEMA_VERSION = "rank-head-v2-relational-operation-probe-authority-v1"
-AUTHORITY_RECEIPT_SCHEMA_VERSION = "rank-head-v2-relational-operation-probe-consumption-v1"
+AUTHORITY_SCHEMA_VERSION = "rank-head-v2-relational-operation-probe-authority-v2"
+AUTHORITY_RECEIPT_SCHEMA_VERSION = "rank-head-v2-relational-operation-probe-consumption-v2"
 AUTHORITY_KIND = "external-one-shot-relational-operation-probe"
-PREREGISTRATION_SCHEMA_VERSION = 1
+PREREGISTRATION_SCHEMA_VERSION = 2
 JOURNAL_SCHEMA_VERSION = 1
 SHA256_RE = re.compile(r"^[0-9A-F]{64}$")
 AUTHORITY_ID_RE = re.compile(r"^[0-9A-Fa-f]{64}$")
@@ -195,6 +231,104 @@ def _json_object(path: Path, label: str) -> dict[str, Any]:
         raise RelationalOperationProbeError(f"{label} is malformed") from exc
     _require(isinstance(value, dict), f"{label} is not an object")
     return value
+
+
+def verify_predecessor_attempt(repository: Path) -> dict[str, Any]:
+    repository = repository.resolve(strict=False)
+    receipt_path = repository / PREDECESSOR_AUTHORITY_RECEIPT_PATH
+    result_path = repository / PREDECESSOR_STATE_ROOT / "result.json"
+    closure_path = repository / PREDECESSOR_STATE_ROOT / "closure.json"
+    archive_path = repository / PREDECESSOR_ARCHIVE_PATH
+    expected_live = {
+        "authority-receipt.json": (receipt_path, PREDECESSOR_RECEIPT_SHA256),
+        "result.json": (result_path, PREDECESSOR_RESULT_SHA256),
+        "closure.json": (closure_path, PREDECESSOR_CLOSURE_SHA256),
+    }
+    live_bytes: dict[str, bytes] = {}
+    for name, (path, expected_sha) in expected_live.items():
+        data = _require_regular(path, f"predecessor {name}")
+        _require(
+            sha256_bytes(data) == expected_sha,
+            f"predecessor {name} hash changed",
+        )
+        live_bytes[name] = data
+
+    receipt = _json_object(receipt_path, "predecessor authority receipt")
+    result = _json_object(result_path, "predecessor result")
+    closure = _json_object(closure_path, "predecessor closure")
+    predecessor_authority = receipt.get("authority")
+    _require(
+        isinstance(predecessor_authority, Mapping)
+        and predecessor_authority.get("authority_id_sha256")
+        == PREDECESSOR_AUTHORITY_ID_SHA256,
+        "predecessor authority identity changed",
+    )
+    _require(
+        result.get("status") == "inconclusive"
+        and result.get("completed_model_generations") == 0
+        and result.get("failure", {}).get("failure_sha256")
+        == PREDECESSOR_FAILURE_SHA256
+        and result.get("adjudication", {}).get("classification") == "INCONCLUSIVE",
+        "predecessor terminal result changed",
+    )
+    _require(
+        closure.get("status") == "inconclusive"
+        and closure.get("authority_receipt_sha256") == PREDECESSOR_RECEIPT_SHA256
+        and closure.get("result_sha256") == PREDECESSOR_RESULT_SHA256,
+        "predecessor closure binding changed",
+    )
+
+    bundle_path = archive_path / "bundle.json"
+    bundle = _json_object(bundle_path, "predecessor archive bundle")
+    bundle_body = {
+        key: value for key, value in bundle.items() if key != "bundle_sha256"
+    }
+    _require(
+        bundle.get("bundle_sha256") == PREDECESSOR_ARCHIVE_SHA256
+        and json_sha256(bundle_body) == PREDECESSOR_ARCHIVE_SHA256,
+        "predecessor archive content address changed",
+    )
+    entries = bundle.get("files")
+    _require(isinstance(entries, list), "predecessor archive manifest changed")
+    archived_hashes: dict[str, str] = {}
+    for entry in entries:
+        _require(isinstance(entry, Mapping), "predecessor archive entry changed")
+        name = entry.get("path")
+        expected_sha = entry.get("sha256")
+        _require(
+            isinstance(name, str) and isinstance(expected_sha, str),
+            "predecessor archive entry identity changed",
+        )
+        data = _require_regular(archive_path / name, f"predecessor archive {name}")
+        _require(
+            len(data) == entry.get("byte_size")
+            and sha256_bytes(data) == expected_sha,
+            f"predecessor archive {name} changed",
+        )
+        archived_hashes[name] = expected_sha
+        if name in live_bytes:
+            _require(
+                data == live_bytes[name],
+                f"predecessor archive {name} differs from live evidence",
+            )
+    _require(
+        archived_hashes.get("authority-receipt.json") == PREDECESSOR_RECEIPT_SHA256
+        and archived_hashes.get("result.json") == PREDECESSOR_RESULT_SHA256
+        and archived_hashes.get("closure.json") == PREDECESSOR_CLOSURE_SHA256,
+        "predecessor archive terminal binding changed",
+    )
+    return {
+        "attempt_id": PREDECESSOR_ATTEMPT_ID,
+        "terminal_classification": "INCONCLUSIVE",
+        "completed_model_generations": 0,
+        "failure_sha256": PREDECESSOR_FAILURE_SHA256,
+        "authority_receipt_sha256": PREDECESSOR_RECEIPT_SHA256,
+        "result_sha256": PREDECESSOR_RESULT_SHA256,
+        "closure_sha256": PREDECESSOR_CLOSURE_SHA256,
+        "archive_sha256": PREDECESSOR_ARCHIVE_SHA256,
+        "retry_relation": RETRY_RELATION,
+        "preserved_terminal": True,
+    }
 
 
 def _exclusive_write(path: Path, data: bytes) -> None:
@@ -647,6 +781,8 @@ def build_preregistration_document(repository: Path, model_path: Path) -> dict[s
         repository,
         ("scripts/catalytic_kernel_0_balanced_rank_head_v2_relational_operation_probe.py",),
     )
+    predecessor_attempt = verify_predecessor_attempt(repository)
+    attempt_paths = state_paths(repository)
     document = {
         "schema_version": PREREGISTRATION_SCHEMA_VERSION,
         "design_id": DESIGN_ID,
@@ -742,6 +878,21 @@ def build_preregistration_document(repository: Path, model_path: Path) -> dict[s
             "frozen_scientific": scientific_binding,
             "controller": controller_binding,
         },
+        "execution_attempt": {
+            "attempt_id": ATTEMPT_ID,
+            "custody_identity_only": True,
+            "scientific_condition_changed": False,
+            "authority_receipt_path": AUTHORITY_RECEIPT_PATH.as_posix(),
+            "runtime_root": attempt_paths["run_root"].relative_to(repository).as_posix(),
+            "manifest_path": attempt_paths["manifest"].relative_to(repository).as_posix(),
+            "journal_path": attempt_paths["journal"].relative_to(repository).as_posix(),
+            "captures_root": attempt_paths["capture-G0-AB"].parent.relative_to(repository).as_posix(),
+            "result_path": attempt_paths["result"].relative_to(repository).as_posix(),
+            "closure_path": attempt_paths["closure"].relative_to(repository).as_posix(),
+            "run_lock_path": attempt_paths["run_lock"].relative_to(repository).as_posix(),
+            "archive_root": (ARCHIVE_ROOT / DESIGN_ID).as_posix(),
+            "predecessor_attempt": predecessor_attempt,
+        },
         "claim_limits": dict(LOCKED_CLAIMS),
         "execution_state": {
             "authority_created": False,
@@ -798,6 +949,7 @@ def validate_preregistration(repository: Path, model_path: Path) -> dict[str, An
     return {
         "status": "pass",
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
         "artifact_sha256": sha256_bytes(observed_data),
         "selected_counter": observed["geometry_selection"]["selected_counter"],
         "request_sha256": dict(observed["request_set"]["request_sha256"]),
@@ -835,11 +987,19 @@ def build_external_authority(
     _require(observed_model_sha256 == MODEL_SHA256, "authority model identity changed")
     _require(observed_binary_sha256 == BINARY_SHA256, "authority binary identity changed")
     prereg = validate_preregistration(repository, model_path)
+    authority_sha256 = authority_id_sha256(raw_authority_id)
+    _require(
+        authority_sha256 != PREDECESSOR_AUTHORITY_ID_SHA256,
+        "attempt-1 authority cannot authorize attempt 2",
+    )
     return {
         "schema_version": AUTHORITY_SCHEMA_VERSION,
         "authority_kind": AUTHORITY_KIND,
         "design_id": DESIGN_ID,
-        "authority_id_sha256": authority_id_sha256(raw_authority_id),
+        "attempt_id": ATTEMPT_ID,
+        "predecessor_attempt_id": PREDECESSOR_ATTEMPT_ID,
+        "retry_relation": RETRY_RELATION,
+        "authority_id_sha256": authority_sha256,
         "authorized_commit": authorized_commit,
         "preregistration_artifact_sha256": prereg["artifact_sha256"],
         "frozen_scientific_binding_sha256": prereg[
@@ -874,9 +1034,19 @@ def consume_authority_once(
     authority: Mapping[str, Any],
 ) -> dict[str, Any]:
     path = repository.resolve(strict=False) / AUTHORITY_RECEIPT_PATH
+    _require(
+        authority.get("schema_version") == AUTHORITY_SCHEMA_VERSION
+        and authority.get("attempt_id") == ATTEMPT_ID
+        and authority.get("predecessor_attempt_id") == PREDECESSOR_ATTEMPT_ID
+        and authority.get("retry_relation") == RETRY_RELATION
+        and authority.get("authority_id_sha256")
+        != PREDECESSOR_AUTHORITY_ID_SHA256,
+        "attempt-1 authority cannot authorize attempt 2",
+    )
     _require(not path.exists() and not path.is_symlink(), "relational-operation authority is already consumed")
     body = {
         "schema_version": AUTHORITY_RECEIPT_SCHEMA_VERSION,
+        "attempt_id": ATTEMPT_ID,
         "authority": dict(authority),
         "consumed_at_utc": _utc_now(),
         "consuming_commit": str(authority["authorized_commit"]),
@@ -896,6 +1066,12 @@ def verify_authority_receipt(repository: Path, root: bytes) -> dict[str, Any]:
     _require(isinstance(authority, dict), "authority receipt body changed")
     _require(
         receipt.get("schema_version") == AUTHORITY_RECEIPT_SCHEMA_VERSION
+        and receipt.get("attempt_id") == ATTEMPT_ID
+        and authority.get("schema_version") == AUTHORITY_SCHEMA_VERSION
+        and authority.get("attempt_id") == ATTEMPT_ID
+        and authority.get("predecessor_attempt_id") == PREDECESSOR_ATTEMPT_ID
+        and authority.get("authority_id_sha256")
+        != PREDECESSOR_AUTHORITY_ID_SHA256
         and receipt.get("raw_authority_id_persisted") is False
         and receipt.get("receipt_hmac_sha256") == _authority_hmac(root, authority),
         "authority receipt verification failed",
@@ -946,6 +1122,7 @@ class JournalWriter:
         body = {
             "schema_version": JOURNAL_SCHEMA_VERSION,
             "design_id": DESIGN_ID,
+            "attempt_id": ATTEMPT_ID,
             "event_index": len(self.events) + 1,
             "timestamp_utc": _utc_now(),
             "state": state,
@@ -1163,6 +1340,7 @@ def _manifest(
     return {
         "schema_version": 1,
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
         "authority": dict(authority),
         "preregistration_artifact_sha256": prereg["artifact_sha256"],
         "request_sha256": prereg["request_sha256"],
@@ -1192,6 +1370,7 @@ def _archive_terminal(repository: Path, paths: Mapping[str, Path]) -> dict[str, 
     body = {
         "schema_version": 1,
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
         "files": entries,
         "content_addressed": True,
     }
@@ -1285,7 +1464,7 @@ def run_probe(
         try:
             sidecar, _readiness = live.launch_sidecar(
                 preflight=full_preflight,
-                run_id=DESIGN_ID,
+                run_id=ATTEMPT_ID,
             )
             for request_id in EXECUTION_ORDER:
                 assert_can_start(started, request_id)
@@ -1380,6 +1559,9 @@ def run_probe(
     result = {
         "schema_version": 1,
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
+        "predecessor_attempt_id": PREDECESSOR_ATTEMPT_ID,
+        "retry_relation": RETRY_RELATION,
         "status": status,
         "completed_model_generations": len(started_requests),
         "maximum_model_generations": 4,
@@ -1413,6 +1595,8 @@ def run_probe(
     closure = {
         "schema_version": 1,
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
+        "predecessor_attempt_id": PREDECESSOR_ATTEMPT_ID,
         "status": status,
         "manifest_sha256": sha256_bytes(manifest_data),
         "result_sha256": sha256_bytes(result_data),
@@ -1447,6 +1631,7 @@ def run_probe(
 
 def validate_static(repository: Path, model_path: Path) -> dict[str, Any]:
     prereg = validate_preregistration(repository, model_path)
+    predecessor = verify_predecessor_attempt(repository)
     root, _private = _load_private(repository)
     paths = state_paths(repository)
     _require(not paths["receipt"].exists() and not paths["receipt"].is_symlink(), "live authority already exists")
@@ -1454,6 +1639,8 @@ def validate_static(repository: Path, model_path: Path) -> dict[str, Any]:
     return {
         "status": "pass",
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
+        "predecessor_attempt": predecessor,
         "preregistration": prereg,
         "experiment_key_commitment_sha256": sha256_bytes(_experiment_key(root)),
         "request_count": 4,
