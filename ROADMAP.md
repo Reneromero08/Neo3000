@@ -113,7 +113,7 @@ RSI-0: CLOSED
 -> CatalyticSwarm-1 v5: executed once / 775 completed and durably represented / record 775 rejected / consumed / no retry
 -> CatalyticSwarm-1 v6: consumed at runtime-preclaim / harness self-contamination / zero requests / no retry
 -> Track A claim verification: PAUSED; no CS1-v7 authorized or planned
--> Track B mechanism discovery: deterministic rank-head CK0 v2 replicated across two private bindings; the executed position-seed crossover supports a matched-binding presentation-position effect; the completed four-request AB/BA probe supports a unique-intersection-like transform across two matched geometries under one binding and one seed; independent seed/binding replication and all broad claims remain locked
+-> Track B mechanism discovery: deterministic rank-head CK0 v2 replicated across two private bindings; the executed position-seed crossover supports a matched-binding presentation-position effect; the completed AB/BA probe supports a unique-intersection-like transform under one binding and seed; a frozen four-request hard out-of-sample successor now jointly changes one private binding and one commit-derived seed, while separate seed/binding invariance and all broad claims remain locked
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.

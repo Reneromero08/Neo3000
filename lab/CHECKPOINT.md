@@ -1,22 +1,22 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Unique-intersection-like relational transform adjudicated
+## Checkpoint 2: Joint-condition intersection replication frozen
 
-**Status:** 4/4 EXECUTED ONCE / UNIQUE-INTERSECTION-LIKE TRANSFORM SUPPORTED ON TWO MATCHED GEOMETRIES / AB-BA ORDER INVARIANCE OBSERVED / ZERO-CONTACT REPLAY / BROADER CLAIMS LOCKED
+**Status:** STATIC 4-REQUEST HARD OOS REPLICATION FROZEN / ONE FRESH PRIVATE BINDING / ONE NEW FIXED SEED / ZERO LIVE ACTIVITY / BROADER CLAIMS LOCKED
 
-- [x] Admit exact protected source commit `9fc7437a2624586da1bf24471bfda551d0a35a34` with synchronized refs and clean stable/candidate worktrees before static publication.
-- [x] Preserve attempt 1 byte-exactly as zero-generation terminal `INCONCLUSIVE`: receipt `51F29C3B417297D07B72BC52ADD1236455E146A47EFA3E38ACA95C821D2AF4C3`, result `76135B764E3A8863401A82ED33BD420867BB2B0BB82162211400A5C7D7C28476`, closure `2F3B3411D7AE3AA647D74182F7BB64BBEDF8BEA8A8F5A11A2EEC9412A0B29B7A`, and archive `C0CDCD7CBD714F355C238235148ED2395A15DC49E527A95C33C6748212571D29`.
-- [x] Verify attempt-2 receipt `7AD4AF03F315F7050E928F3A24C97CC6C7A83787C692D99191D7E64100E75161`, manifest `36D7B4F3F98457AA3A94B7E220C5D7EB234F36316C552A0622B58B6E3AB23D5C`, result `AD863CD4A265E02940F306E5334AA5D59679B599C6413F56593B5F69A209F090`, closure `A7C2848A74F14348B7A43614D01754D3DA4932016CBE8625200956AD1A18D943`, journal `DFCF0B5BA855C5D831D4B2EBA33B630620E4D8D630BF6CC15525E9E4A8FCE1FF`, and archive `CC3AD55805F0F39C01CC7404B1990B4F778C215E35FFAA9C67588AB83566637E`.
-- [x] Authenticate all four captures and replay them with zero model contact. Reconstruct exact rank-zero outcomes and terminal controller adjudication; verify four request starts, four response captures, four completed generations, no retry, successful cleanup/postflight, absent terminal run lock, and no automatic follow-on.
-- [x] Support `COMMUTATIVE_UNIQUE_INTERSECTION_LIKE_TRANSFORM_SUPPORTED_ON_TWO_MATCHED_GEOMETRIES`: every request matches unique intersection; lexical-first, first-listed, Parent-A priority, and Parent-B priority are false; G0 and G1 are each semantically invariant under AB/BA; parent-order and context-stabilization-only classifications are not selected.
-- [x] Publish bounded interpretation `JOINT_PARENT_TRANSFORM_SELECTS_THE_UNIQUE_RELATIONAL_INVARIANT_INDEPENDENT_OF_PARENT_PRESENTATION_ORDER_ACROSS_TWO_MATCHED_PRIVATE_GEOMETRIES`. Treat it as complementary to `neo-exp-0042`, not as formal algebra, seed/binding replication, general transfer, or a complete new cycle.
-- [x] Publish adjudication artifact `lab/ck0_balanced_opaque_rank_head_v2_relational_operation_probe_adjudication_1.json` at SHA-256 `0EF8C0B2DD65915962ADBFE1CEE06CE6053A3FB7F55E7B3BD4C5955739F5BEED` and canonical `neo-exp-0043` at line 56, SHA-256 `C47DE48658E0C044AB676F584FF6030C0CB0A2AD5C84553B70B43EBC863C9423`.
-- [x] Complete bounded static qualification: focused adjudication `8/8`, exact publication reconstruction, changed-file compilation, canonical JSON/JSONL, private/no-smuggle scans, evaluator `28/28`, regenerated evaluator lock, and protected preflight. Run no complete CPU suite because no executed runtime source changed.
-- [x] Create or consume zero authority, launch zero sidecars, issue zero model requests, generate zero responses, perform zero retries, and design no follow-on experiment during adjudication.
+- [x] Admit synchronized clean main at source commit `b955b26bad38e8e9f9d823e3e15bf461cb325019`; bind only adjudication `0EF8C0B2DD65915962ADBFE1CEE06CE6053A3FB7F55E7B3BD4C5955739F5BEED` and canonical `neo-exp-0043` line SHA-256 `C47DE48658E0C044AB676F584FF6030C0CB0A2AD5C84553B70B43EBC863C9423` as the source result.
+- [x] Create one ignored 32-byte private root with `secrets.token_bytes` and the existing one-shot creation receipt. Bind root commitment `7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD` and receipt commitment `E9535E389DB6D452C71FE1E134B8D036CA9C80CE31075BBB63CA6E1455002131`; publish no root, aliases, map, candidate identity, or correspondence.
+- [x] Derive the sole seed `633514649` as `1 + uint64_be(SHA-256(domain || utf8(design_id) || 00 || ascii(starting_commit))[0:8]) mod (2^31 - 2)`. Freeze it before geometry selection and verify it differs from source seed `830800182`.
+- [x] Select first eligible counter 37. R0/R1 have identity-disjoint decoys, different unique shared candidates, two five-member parents, shared positions A4/B3, identical field/cardinality structure, and equal serialized and pinned-tokenizer lengths across all requests.
+- [x] Freeze exact order `R0-AB`, `R0-BA`, `R1-AB`, `R1-BA`; AB/BA swap only parent presentation order. Enforce transform-only deterministic rank-zero extraction, one generation maximum per request, four total, one slot, and one sidecar epoch, with no deletion, old-binding, extra-seed, borrow, branch, model extraction, or restore arm.
+- [x] Freeze unique-intersection, lexical-first, first-listed, Parent-A priority, and Parent-B priority predictions privately before outcomes. Publish only public HMAC commitments and distinct request hashes.
+- [x] Preregister supported class `COMMUTATIVE_UNIQUE_INTERSECTION_LIKE_TRANSFORM_REPRODUCED_UNDER_JOINTLY_NEW_PRIVATE_BINDING_AND_FIXED_SEED`, plus mixed, not-supported, and inconclusive outcomes. State explicitly that the joint intervention does not separately identify seed or binding effects.
+- [x] Pass focused replication `13/13`, changed-file compilation, exact preregistration reconstruction, canonical JSON/JSONL, private/no-smuggle scans, evaluator gates, regenerated evaluator lock, and protected preflight. Run no complete CPU suite or unrelated audit.
+- [x] Create or consume zero authority; launch zero sidecars; issue zero model requests; produce zero generations, captures, results, publications, retries, or follow-on designs.
 
-Formal algebra, associativity, identity, general closure, idempotence, general within-list permutation invariance, replication across seeds or bindings, transfer, general catalytic inference, a complete new cycle, task advantage, superiority, SOTA, and automatic promotion remain locked.
+Formal algebra, separate seed or binding invariance, transfer, general catalytic inference, a complete new cycle, task advantage, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** separately authorize the smallest static design needed to test replication across an independent seed and private binding. Create no authority and perform no live execution automatically.
+**Next exact action:** separately authorize exactly one live invocation of the frozen four-request design with a fresh external authority ID bound to the published static commit. Do not execute automatically.
 
 ---
 
