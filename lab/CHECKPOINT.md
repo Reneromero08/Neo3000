@@ -1,23 +1,22 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Contrastive relational-operation probe statically preregistered
+## Checkpoint 2: Unique-intersection-like relational transform adjudicated
 
-**Status:** STATIC PASS / EXACTLY FOUR FUTURE TRANSFORM REQUESTS / TWO MATCHED PRIVATE GEOMETRIES / FIVE COMPETING PREDICTIONS FROZEN / NO AUTHORITY / NO MODEL CONTACT / BROADER CLAIMS LOCKED
+**Status:** 4/4 EXECUTED ONCE / UNIQUE-INTERSECTION-LIKE TRANSFORM SUPPORTED ON TWO MATCHED GEOMETRIES / AB-BA ORDER INVARIANCE OBSERVED / ZERO-CONTACT REPLAY / BROADER CLAIMS LOCKED
 
-- [x] Admit exact protected starting main `b6600c2800a80c0892bef15bca5ee2ce577ef34f`, synchronized local/remote refs, clean stable and candidate worktrees, healthy stable service, and free experimental ports before editing.
-- [x] Preserve source position-seed adjudication artifact `DD829AE6C4F38EDA325462AD24D030AA7DF3E74FC69D54C80DE1F9996C820B53` and canonical `neo-exp-0042` record `DAF072E43700F71A76537843507C578FEA38679AA15DC9A0C783090B29D5D0E8` exactly.
-- [x] Reuse the existing ignored private root under new domain separation; create no secret. Select the first outcome-independent eligible geometry pair at counter `19`; keep G0/G1 candidate identities disjoint; give each geometry one different unique overlap; place that overlap at Parent-A position 4 and Parent-B position 3.
-- [x] Freeze exactly `G0-AB`, `G0-BA`, `G1-AB`, `G1-BA` under fixed seed `830800182`. AB/BA swap only parent order. All four assignments are 617 canonical bytes and 254 pinned-tokenizer tokens. No borrow, branch, model-authored extraction, or restore request exists.
-- [x] Freeze unique-intersection, lexical-first, first-listed, Parent-A-priority, and Parent-B-priority predictions before outcomes. Require four distinct prediction commitments per request, with only the declared first-listed/parent-priority overlap. Publish no candidate identity or correspondence.
-- [x] Bind exact request SHA-256 values: G0-AB `5376E22674CCF4BB7057DFB0D31D8C46F240F425965FFD1F40ACC13961DDB759`; G0-BA `C82585DF3098F6F2BA1E90614C5F80876654DDC2F7556F2D78EB639401EE93FA`; G1-AB `1D29EA13DB81157A5759D8AB18FDA4668662A1796C09D95D6D030A8C1529FEB2`; G1-BA `517C29572D54CF76ED5F5B48424F9803E8484C13030C8B498F38255B3B31C545`.
-- [x] Bind canonical preregistration `lab/ck0_balanced_opaque_rank_head_v2_relational_operation_probe_1.json` at `01C3C084CC0D88BB69E2DF09321E4B4F69CC1B193887EBB24426D8292A6095B3`, frozen scientific binding `D9300869CE6C903D309899F5E9AFF02D4C7F9B0D815EC877CCC3BEA5DB67DE7C`, and controller binding `18425127C5B7527DC69158E49268E7B0AB10AAEBA313E6ABA9AEA4E50C306143`.
-- [x] Enforce one generation per request and four total, exact request-hash admission, raw authenticated capture before parsing, duplicate rejection, private comparison only after deterministic rank-zero freezing, zero-contact replay, cleanup/postflight, and content-addressed evidence custody. Add no generalized recovery or publication framework.
-- [x] Pass focused probe `12/12`, complete relevant rank-head-v2 family `212/212`, exact preregistration reconstruction, changed-file compilation, canonical JSON/JSONL, private/no-smuggle scan, evaluator gates `28/28`, regenerated evaluator lock, and protected preflight. Do not run the complete CPU suite.
-- [x] Create zero authority or receipt, launch zero sidecars, issue zero model requests, generate zero responses, publish zero scientific results, and design zero follow-on architecture.
+- [x] Admit exact protected source commit `9fc7437a2624586da1bf24471bfda551d0a35a34` with synchronized refs and clean stable/candidate worktrees before static publication.
+- [x] Preserve attempt 1 byte-exactly as zero-generation terminal `INCONCLUSIVE`: receipt `51F29C3B417297D07B72BC52ADD1236455E146A47EFA3E38ACA95C821D2AF4C3`, result `76135B764E3A8863401A82ED33BD420867BB2B0BB82162211400A5C7D7C28476`, closure `2F3B3411D7AE3AA647D74182F7BB64BBEDF8BEA8A8F5A11A2EEC9412A0B29B7A`, and archive `C0CDCD7CBD714F355C238235148ED2395A15DC49E527A95C33C6748212571D29`.
+- [x] Verify attempt-2 receipt `7AD4AF03F315F7050E928F3A24C97CC6C7A83787C692D99191D7E64100E75161`, manifest `36D7B4F3F98457AA3A94B7E220C5D7EB234F36316C552A0622B58B6E3AB23D5C`, result `AD863CD4A265E02940F306E5334AA5D59679B599C6413F56593B5F69A209F090`, closure `A7C2848A74F14348B7A43614D01754D3DA4932016CBE8625200956AD1A18D943`, journal `DFCF0B5BA855C5D831D4B2EBA33B630620E4D8D630BF6CC15525E9E4A8FCE1FF`, and archive `CC3AD55805F0F39C01CC7404B1990B4F778C215E35FFAA9C67588AB83566637E`.
+- [x] Authenticate all four captures and replay them with zero model contact. Reconstruct exact rank-zero outcomes and terminal controller adjudication; verify four request starts, four response captures, four completed generations, no retry, successful cleanup/postflight, absent terminal run lock, and no automatic follow-on.
+- [x] Support `COMMUTATIVE_UNIQUE_INTERSECTION_LIKE_TRANSFORM_SUPPORTED_ON_TWO_MATCHED_GEOMETRIES`: every request matches unique intersection; lexical-first, first-listed, Parent-A priority, and Parent-B priority are false; G0 and G1 are each semantically invariant under AB/BA; parent-order and context-stabilization-only classifications are not selected.
+- [x] Publish bounded interpretation `JOINT_PARENT_TRANSFORM_SELECTS_THE_UNIQUE_RELATIONAL_INVARIANT_INDEPENDENT_OF_PARENT_PRESENTATION_ORDER_ACROSS_TWO_MATCHED_PRIVATE_GEOMETRIES`. Treat it as complementary to `neo-exp-0042`, not as formal algebra, seed/binding replication, general transfer, or a complete new cycle.
+- [x] Publish adjudication artifact `lab/ck0_balanced_opaque_rank_head_v2_relational_operation_probe_adjudication_1.json` at SHA-256 `0EF8C0B2DD65915962ADBFE1CEE06CE6053A3FB7F55E7B3BD4C5955739F5BEED` and canonical `neo-exp-0043` at line 56, SHA-256 `C47DE48658E0C044AB676F584FF6030C0CB0A2AD5C84553B70B43EBC863C9423`.
+- [x] Complete bounded static qualification: focused adjudication `8/8`, exact publication reconstruction, changed-file compilation, canonical JSON/JSONL, private/no-smuggle scans, evaluator `28/28`, regenerated evaluator lock, and protected preflight. Run no complete CPU suite because no executed runtime source changed.
+- [x] Create or consume zero authority, launch zero sidecars, issue zero model requests, generate zero responses, perform zero retries, and design no follow-on experiment during adjudication.
 
-Formal algebra, position-independent bilateral dependence, general two-parent necessity, cross-binding generalization, transfer, general catalytic inference, task advantage, superiority, SOTA, broader/restart HoloState, Deep, and automatic promotion remain locked.
+Formal algebra, associativity, identity, general closure, idempotence, general within-list permutation invariance, replication across seeds or bindings, transfer, general catalytic inference, a complete new cycle, task advantage, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** separately authorize one live invocation from the final published static commit with a fresh external authority ID. Maximum four one-generation requests; no retry or automatic follow-on.
+**Next exact action:** separately authorize the smallest static design needed to test replication across an independent seed and private binding. Create no authority and perform no live execution automatically.
 
 ---
 
