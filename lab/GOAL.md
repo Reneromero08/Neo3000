@@ -1,16 +1,18 @@
 # Active Goal
 
-## Checkpoint 2: Joint-condition replication published; three-parent probe authorized statically
+## Checkpoint 2: Three-parent global-invariant probe prepared; execution unauthorized
 
 Canonical `neo-exp-0044` and adjudication `lab/ck0_balanced_opaque_rank_head_v2_joint_condition_intersection_replication_adjudication_1.json` publish only `COMMUTATIVE_UNIQUE_INTERSECTION_LIKE_TRANSFORM_REPRODUCED_UNDER_JOINTLY_NEW_PRIVATE_BINDING_AND_FIXED_SEED`. R0/R1 each matched their unique intersection at rank zero under AB and BA; four generations completed without retry; cleanup, postflight, authority HMAC, raw SSE replay, journal custody, and nine-entry archive verification passed.
 
 The source private-binding commitment remains `7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD` and the fixed seed remains `633514649`. Because both changed together relative to `neo-exp-0043`, neither seed invariance nor binding invariance is separately established.
 
-The authorized static successor changes only relational arity and geometry where scientifically possible: two parents become three while the private root, opaque universe, seed, model, binary, transform-only surface, deterministic rank-zero extraction, one slot, and one sidecar epoch remain fixed. It must use exactly T0/T1 and six cyclic-order requests under `balanced-opaque-transform-only-three-parent-global-invariant-probe-v1`, with no authority or live execution.
+The static successor is now frozen as `balanced-opaque-transform-only-three-parent-global-invariant-probe-v1`. It changes only relational arity and geometry: two parents become three while the source private root, opaque correspondence, seed, model, binary, transform-only surface, deterministic rank-zero extraction, one slot, and one sidecar epoch remain fixed. T0/T1 each contain three five-member parents, pairwise intersections `{X,P}`, `{X,Q}`, `{X,R}`, and the sole three-way intersection `{X}`; X occupies different non-first positions A4/B3/C2. Exact order is `T0-ABC`, `T0-BCA`, `T0-CAB`, `T1-ABC`, `T1-BCA`, `T1-CAB`.
+
+Canonical zero-execution preregistration `lab/ck0_balanced_opaque_rank_head_v2_three_parent_global_invariant_probe_1.json` has SHA-256 `BF8F42D01701B31A1878B912AB9AD35EA9FDF8E4B5B2E58BF5A04527F9E24067`; frozen scientific binding is `FDDD95661AF4581CB5F05F627E2E3AFE6A4D25F7D1EFFFE59AE17A6A9439FF44`; controller binding is `4E5E20F55E663CC6C91133A23B236AF004BA0C2A9D2B21B6D42BE273E1E1C401`. Counter 0 is the first eligible geometry; all six assignments are 830 canonical bytes and 365 pinned-tokenizer IDs. No authority, receipt, runtime root, sidecar, request, generation, capture, result, or follow-on design exists.
 
 Formal algebra, full permutation invariance, associativity, arbitrary n-parent generalization, worker synthesis, a complete new cycle, general catalytic inference, useful-task advantage, reduced fresh computation, compute amplification, SOTA, and promotion remain locked.
 
-**Next exact action:** implement, focus-test, and exactly preregister only the six-request three-parent probe; then stop before authority.
+**Next exact action:** separately authorize exactly one live invocation of the frozen six-request probe from its final published static commit with one fresh external authority ID. Do not execute automatically.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 

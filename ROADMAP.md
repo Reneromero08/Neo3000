@@ -582,7 +582,9 @@ Status: **ACTIVE**
 
 Published `neo-exp-0044` supports `COMMUTATIVE_UNIQUE_INTERSECTION_LIKE_TRANSFORM_REPRODUCED_UNDER_JOINTLY_NEW_PRIVATE_BINDING_AND_FIXED_SEED` across two identity-disjoint pairwise geometries and both tested parent orders. The combined intervention does not separately establish seed or binding invariance, and it does not establish formal algebra, transfer, general catalytic inference, task advantage, or compute amplification.
 
-The next bounded bridge toward distributed synthesis is static preparation of `balanced-opaque-transform-only-three-parent-global-invariant-probe-v1`: reuse the source private binding and seed, change only relational arity/geometry where possible, and freeze exactly six cyclic-order synthesis requests over two matched geometries. This is a three-parent transform-core test, not a full swarm or complete borrow → transform → extract → restore cycle.
+Static bridge `balanced-opaque-transform-only-three-parent-global-invariant-probe-v1` is now prepared at zero execution. It reuses the source private root, opaque correspondence, and seed `633514649`; changes only arity and geometry; and freezes six requests over T0/T1 in `ABC`, `BCA`, and `CAB` order. In each geometry every pair intersects in the global candidate plus a different pair-specific decoy, while only the complete three-parent intersection identifies the global candidate. This is a transform-core test, not full commutativity, associativity, arbitrary-arity support, a swarm, or a complete borrow → transform → extract → restore cycle.
+
+The next bounded action is a separately authorized one-shot live execution of those six frozen requests. A positive result may nominate only one separately designed worker-to-synthesis mini-swarm; it does not authorize that follow-on automatically.
 
 First intervention: **HoloState-v1 Live Prefix Lattice**
 

@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Joint-condition intersection replication published
+## Checkpoint 2: Three-parent global-invariant probe prepared
 
-**Status:** FOUR-REQUEST HARD OOS REPLICATION COMPLETE AND PUBLISHED / COMBINED NEW BINDING-AND-SEED CONDITION SUPPORTED / SEPARATE EFFECTS AND BROADER CLAIMS LOCKED
+**Status:** FOUR-REQUEST HARD OOS REPLICATION PUBLISHED / SIX-REQUEST THREE-PARENT PROBE STATICALLY FROZEN / ZERO LIVE EXECUTION / BROADER CLAIMS LOCKED
 
 - [x] Admit synchronized clean main at source commit `b955b26bad38e8e9f9d823e3e15bf461cb325019`; bind only adjudication `0EF8C0B2DD65915962ADBFE1CEE06CE6053A3FB7F55E7B3BD4C5955739F5BEED` and canonical `neo-exp-0043` line SHA-256 `C47DE48658E0C044AB676F584FF6030C0CB0A2AD5C84553B70B43EBC863C9423` as the source result.
 - [x] Create one ignored 32-byte private root with `secrets.token_bytes` and the existing one-shot creation receipt. Bind root commitment `7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD` and receipt commitment `E9535E389DB6D452C71FE1E134B8D036CA9C80CE31075BBB63CA6E1455002131`; publish no root, aliases, map, candidate identity, or correspondence.
@@ -15,11 +15,14 @@
 - [x] Execute exactly once from `5d4d7762fcf1fdaa25a3559d2120929b74ca0099`, consume authority hash `0418064587E02A2E0B23A0B4D774645C238AA4999BB067DBD2AA05364AF44CEF`, complete `4/4` generations without retry, and preserve receipt/manifest/result/closure/journal/archive at `A2CB02AAE10500FC96F996B4E9CD3717241FF36AB422371640CA650DFD511A7D`, `BA68AB949C8C38EC3FF6853871DF62C6E3C423D379F6D8FF85B61A37B5D2B834`, `7835A4E6838E70B0A896D225D9576034112B30C3DAF6C4698A1D1BFF13879933`, `1465A7669DCF096A28C4F092659728B2A619255978D83C5026AD5B6CDEEA6AAC`, `91E968D3F42634083CE8F2A8371B70BB2D4923ED07DBAE1BC7708D056AA033B2`, and `96F010EE89320EA8C7C008B6B7790FA41A753E773738932764828E06ACD20733`.
 - [x] Verify authority HMAC, four capture identities, four raw SSE reconstructions, deterministic replay, result/closure, 20-event live journal, 19-event archived journal prefix, archive content address, and all nine members with zero model contact.
 - [x] Publish adjudication artifact SHA-256 `045E8BAE206E068C3D8A8A8094D6094E08AF5BACFF8B5A8C9BF1A1BA0DFE7674` and canonical `neo-exp-0044` at line 57, SHA-256 `F5264C5575AC92E474E6BBCB202678E811E9D9AD520CB8A715431DDE562DF76C`.
-- [ ] Prepare only `balanced-opaque-transform-only-three-parent-global-invariant-probe-v1` with reused source root, seed `633514649`, T0/T1, and six cyclic-order requests; create no authority or live evidence.
+- [x] Prepare only `balanced-opaque-transform-only-three-parent-global-invariant-probe-v1` with the exact source root/alias correspondence, seed `633514649`, identity-disjoint T0/T1, and six cyclic-order requests. Each parent has five members; pairwise intersections have cardinality two with distinct pair-specific decoys; the three-way intersection has cardinality one; the global candidate occupies A4/B3/C2 and differs from every frozen competing prediction.
+- [x] Freeze request order `T0-ABC`, `T0-BCA`, `T0-CAB`, `T1-ABC`, `T1-BCA`, `T1-CAB`; match all assignment lengths at 830 canonical bytes and 365 pinned-tokenizer IDs; cap execution at one generation per request and six total; preserve transform-only deterministic rank-zero extraction.
+- [x] Bind preregistration `BF8F42D01701B31A1878B912AB9AD35EA9FDF8E4B5B2E58BF5A04527F9E24067`, scientific surface `FDDD95661AF4581CB5F05F627E2E3AFE6A4D25F7D1EFFFE59AE17A6A9439FF44`, and controller `4E5E20F55E663CC6C91133A23B236AF004BA0C2A9D2B21B6D42BE273E1E1C401`. Focused probe tests pass `14/14`; exact private reconstruction, zero-state validation, changed-file compilation, and private/no-smuggle checks pass.
+- [x] Create zero authority objects or receipts, runtime roots, sidecars, model requests, generations, captures, results, retries, or follow-on designs during static preparation.
 
 Formal algebra, separate seed or binding invariance, transfer, general catalytic inference, a complete new cycle, task advantage, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** separately authorize exactly one live invocation of the frozen four-request design with a fresh external authority ID bound to the published static commit. Do not execute automatically.
+**Next exact action:** separately authorize exactly one live invocation of the frozen six-request three-parent design with a fresh external authority ID bound to the final published static commit. Do not execute automatically.
 
 ---
 
