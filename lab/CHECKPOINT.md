@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Three-parent global-invariant probe prepared
+## Checkpoint 2: Three-parent global relational invariant published
 
-**Status:** FOUR-REQUEST HARD OOS REPLICATION PUBLISHED / SIX-REQUEST THREE-PARENT PROBE STATICALLY FROZEN / ZERO LIVE EXECUTION / BROADER CLAIMS LOCKED
+**Status:** SIX-REQUEST THREE-PARENT PROBE EXECUTED ONCE / GLOBAL INVARIANT SUPPORTED ON TWO MATCHED GEOMETRIES / ZERO-CONTACT PUBLICATION / WORKER-TO-SYNTHESIS DESIGN NEXT / BROADER CLAIMS LOCKED
 
 - [x] Admit synchronized clean main at source commit `b955b26bad38e8e9f9d823e3e15bf461cb325019`; bind only adjudication `0EF8C0B2DD65915962ADBFE1CEE06CE6053A3FB7F55E7B3BD4C5955739F5BEED` and canonical `neo-exp-0043` line SHA-256 `C47DE48658E0C044AB676F584FF6030C0CB0A2AD5C84553B70B43EBC863C9423` as the source result.
 - [x] Create one ignored 32-byte private root with `secrets.token_bytes` and the existing one-shot creation receipt. Bind root commitment `7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD` and receipt commitment `E9535E389DB6D452C71FE1E134B8D036CA9C80CE31075BBB63CA6E1455002131`; publish no root, aliases, map, candidate identity, or correspondence.
@@ -19,10 +19,14 @@
 - [x] Freeze request order `T0-ABC`, `T0-BCA`, `T0-CAB`, `T1-ABC`, `T1-BCA`, `T1-CAB`; match all assignment lengths at 830 canonical bytes and 365 pinned-tokenizer IDs; cap execution at one generation per request and six total; preserve transform-only deterministic rank-zero extraction.
 - [x] Bind preregistration `BF8F42D01701B31A1878B912AB9AD35EA9FDF8E4B5B2E58BF5A04527F9E24067`, scientific surface `FDDD95661AF4581CB5F05F627E2E3AFE6A4D25F7D1EFFFE59AE17A6A9439FF44`, and controller `4E5E20F55E663CC6C91133A23B236AF004BA0C2A9D2B21B6D42BE273E1E1C401`. Focused probe tests pass `14/14`; exact private reconstruction, zero-state validation, changed-file compilation, and private/no-smuggle checks pass.
 - [x] Create zero authority objects or receipts, runtime roots, sidecars, model requests, generations, captures, results, retries, or follow-on designs during static preparation.
+- [x] Execute exactly once from protected main `467ee0d1381292a795765b2334976b17ba07feae`, consume authority hash `C48872C8BC362C797B5E4AE4D7F85A9BA33D23C14392CD6896456B23F73D9E54`, complete all six one-generation requests without retry, and support only `THREE_PARENT_GLOBAL_RELATIONAL_INVARIANT_EXTRACTION_SUPPORTED_ON_TWO_MATCHED_GEOMETRIES` with exact bounded interpretation `TRANSFORM_SELECTS_AN_INVARIANT_IDENTIFIABLE_ONLY_FROM_THE_COMPLETE_THREE_PARENT_RELATION_AND_NOT_FROM_ANY_SINGLE_PARENT_OR_PARENT_PAIR`.
+- [x] Verify six authenticated captures and raw-SSE terminal reconstructions, deterministic replay, 28-event final journal, 27-event archived prefix, 11 archive evidence members, 12 physical files including `bundle.json`, result/closure, cleanup, and postflight with zero model contact.
+- [x] Publish adjudication artifact SHA-256 `4676667CF42ED1978C63F0736B27AC6859F785A6D97DFE3A04610752C548E224` and canonical `neo-exp-0045` at line 58, SHA-256 `732D2465105AC69116635E9CD76EF63D743727C9FA34EFFF55CCF34AC40295FC`.
+- [x] Complete bounded static qualification: focused adjudication `8/8`, exact publication validation, changed-file compilation, canonical JSON/JSONL, private/no-smuggle scan, evaluator gates `28/28`, regenerated evaluator lock, and protected preflight. Run no complete CPU suite, historical CK0 family, live request, or follow-on design.
 
-Formal algebra, separate seed or binding invariance, transfer, general catalytic inference, a complete new cycle, task advantage, superiority, SOTA, and automatic promotion remain locked.
+Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** separately authorize exactly one live invocation of the frozen six-request three-parent design with a fresh external authority ID bound to the final published static commit. Do not execute automatically.
+**Next exact action:** `STATIC DESIGN OF_ONE_BOUNDED_WORKER_TO_SYNTHESIS_MINI_SWARM`. Do not execute automatically or redirect the next step to another synthetic transform replication.
 
 ---
 
