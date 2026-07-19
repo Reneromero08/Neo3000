@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Five-support two-worker synthesis probe statically prepared
+## Checkpoint 2: Five-support two-worker synthesis supported on one frozen task
 
-**Status:** CARDINALITY-THREE DIAGNOSTICS PRESERVED / CARDINALITY-FIVE BILATERAL PROFILE ADMITTED / THREE-REQUEST PROBE PREREGISTERED / ZERO LIVE AUTHORITY / BROADER CLAIMS LOCKED
+**Status:** THREE GENERATIONS EXECUTED ONCE / TWO MODEL-AUTHORED WORKER RELATIONS EXACT / HIDDEN-EXACT SYNTHESIS SUPPORTED / ZERO-CONTACT RECONSTRUCTION / BROADER CLAIMS LOCKED
 
 - [x] Preserve the three-worker diagnostic from synchronized source `6c760b2d5f8296f795724d061f1d91a0e4171c27`, then admit the separately authorized two-worker decision at synchronized clean `main` `c8942f7b4ecf7ab555b54393fc63c4cbb5a366b3`; exact frozen suite SHA-256 remains `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
 - [x] Scan only the eight public task projections and all 80 three-example shards. Locally eligible shard counts by task index are `[2,2,0,0,2,1,1,0]`; no task reaches the three distinct worker shards required by the frozen geometry.
@@ -21,6 +21,12 @@
 - [x] Bind preregistration `9FD644C53DAAB27CF4607BB43D1FDEA6ECD88F8E2CBBC34FADDEF10194ADA29B`, scientific surface `E71D5EEA4AE642657AC576010C6BD473B82546CEACC50792E1781DB04BBEAB66`, controller `95DC7462298B20E159BE365853135688BBFF4F27B6143A1B7945B2AE3253665C`, and request hashes `916C7AB6849DD740E6124057EBDAD9C4F06B3B207F0F0FEC42F3BE35407C1EB5`, `93642ED6867D09D18369029D90123CE3B9EF0BCB029F5861CE3BF0AABDEA2891`, and `DCC16B2B750AB89A43A72C9196A6839F412D7871C4BB5E0AD65E2664836B8638`.
 - [x] Pass focused worker-synthesis tests `27/27`, exact preregistration reconstruction, changed-file compilation, canonical JSON/JSONL, private/no-smuggle scans, evaluator gates, regenerated evaluator lock, and protected preflight. Run no complete CPU suite or historical CK0 family.
 - [x] Create zero authority objects or receipts, runtime roots, sidecars, model requests, generations, captures, results, archives, publication records, retries, or follow-on designs during static preparation.
+- [x] Execute exactly once from protected main `563cbf5a72a763af8a2cde2394a5ea5beb008bad`; consume one authority, start and capture exactly three requests in frozen order, complete three generations, and perform zero retries.
+- [x] Validate both model-authored worker relations as exact five-member supports without controller repair; preserve original authored order and bind normalized artifacts `41CC75D053CA4FE74DE1C17F2420D69379855321EA8BEF29D6FBAF075ED7558A` and `57F7E7CB6E3BC01B801B0C969FAD580468251FEFD90DDC0FBA79484ACA354F2F`.
+- [x] Issue synthesis only after both worker validations; observe `reconcile`, ranking length three, rank zero frozen before private mapping, unique-intersection selection, public `5/5`, and hidden `16/16`.
+- [x] Verify receipt `A168802B04628864588729808B23089F9F06AE9F7973D86582963E8C2EEFE308`, manifest `BB2B464D54DE73970E8444AFF6E465EF9D74E8A0BA7A1FD9FD5B0986C120E73B`, result `97E24D17F6311D26F258E554A1353DD788322FF092F71BFA6D183044CBE18FFE`, closure `B7E5C896F8F42F84EE594F8CB49473C4B4CC800AD13CB16C10D4BEACC4F271A6`, journal `EF04A009B5980CD7F62EFB40AAF19FE5EFB9DB736708CFFB0EB0D0F6B575DFE4`, journal head `5D5D4B1444AAB8DD627C7DE3E7BFF9B301C1718156EDA99E5E8C66196A2BCAD4`, all three captures, and eight-member archive `8D61154690A1667B51FEA09631111113D23502AB00162605254E2597A7128EE5`.
+- [x] Reconstruct receipt, 13-event journal, captures, exact worker artifacts, synthesis transform, unique-intersection selection, and `5/5` / `16/16` utility with zero model contact.
+- [x] Publish adjudication artifact SHA-256 `EBF0FA07A7B31C72EC19B9C74400C27C01943DDA8247CD02FC81DCC0EC5B228F` and canonical `neo-exp-0046` at line 59, SHA-256 `BC3FD349EAE13AC6B35659D6FECDEDC00751BB41CBEB33D9F7DF5D29F3F6000A`.
 
 Preserved three-parent evidence:
 
@@ -44,9 +50,9 @@ Preserved three-parent evidence:
 - [x] Publish adjudication artifact SHA-256 `4676667CF42ED1978C63F0736B27AC6859F785A6D97DFE3A04610752C548E224` and canonical `neo-exp-0045` at line 58, SHA-256 `732D2465105AC69116635E9CD76EF63D743727C9FA34EFFF55CCF34AC40295FC`.
 - [x] Complete bounded static qualification: focused adjudication `8/8`, exact publication validation, changed-file compilation, canonical JSON/JSONL, private/no-smuggle scan, evaluator gates `28/28`, regenerated evaluator lock, and protected preflight. Run no complete CPU suite, historical CK0 family, live request, or follow-on design.
 
-Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
+Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, general worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** `SEPARATELY_AUTHORIZE_ONE_LIVE_BALANCED_OPAQUE_FIVE_SUPPORT_TWO_WORKER_SYNTHESIS_PROBE`. Bind one fresh external authority to the final published static commit and exact preregistration; do not execute automatically or add another task, seed, binding, baseline, control, or follow-on.
+**Next exact action:** `INDEPENDENT_STATIC_REVIEW_OF_PUBLISHED_WORKER_SYNTHESIS_RESULT`. Review the canonical artifact and `neo-exp-0046` before authorizing any control, replication, efficiency measurement, or follow-on design.
 
 ---
 

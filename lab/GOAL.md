@@ -1,24 +1,18 @@
 # Active Goal
 
-## Checkpoint 2: Five-support two-worker synthesis probe statically prepared
+## Checkpoint 2: Five-support two-worker synthesis supported on one frozen task
 
-The public-only scan for `balanced-opaque-three-worker-to-synthesis-mini-swarm-v1` deterministically classified the frozen `catalytic-swarm-1-dsl-selection-v1` suite as `EXISTING_CORPUS_THREE_WORKER_GEOMETRY_UNAVAILABLE`. Its eight per-task counts of locally eligible three-example worker shards are `[2,2,0,0,2,1,1,0]`; the maximum is two, while the frozen design requires three distinct shards before the `{X,P,Q}`, `{X,P,R}`, `{X,Q,R}` geometry can exist.
+`balanced-opaque-five-support-two-worker-synthesis-probe-v1` executed once from protected main `563cbf5a72a763af8a2cde2394a5ea5beb008bad`. One consumed authority admitted exactly `worker-A`, `worker-B`, and `synthesis-AB`; all three one-generation requests completed with authenticated captures and zero retries.
 
-The separately authorized public-only scan for `balanced-opaque-two-worker-to-synthesis-mini-swarm-v1` classified the same corpus as `EXISTING_CORPUS_TWO_WORKER_GEOMETRY_UNAVAILABLE`. It considered all six ordered pairs of distinct locally eligible shards. None covers all five public examples with exactly one shared example; maximum union is four and minimum overlap is two. The paired supports retain all three candidates in common rather than the required singleton.
+Both isolated workers authored exactly their complete frozen five-member ambiguity relations. The controller repaired no membership and preserved each original authored order in its capture. Synthesis received only the two validated artifacts and the generic rank-head-v2 carrier, emitted `reconcile` with three ranked aliases, froze rank zero before private mapping, selected the unique intersection, and scored `5/5` public and `16/16` hidden.
 
-The three-worker diagnostic SHA-256 remains `F1BC72EE98E92CAACFDB6843CE1D6698F24D82EE15247F7AD6774D0415E496C2`. Two-worker diagnostic artifact `lab/ck0_balanced_opaque_two_worker_to_synthesis_mini_swarm_v1_geometry_scan_1.json` remains `493B8E7CD2591E4BCDD27C224693C8DA890AE885433C3BEA07528683C1D69264`. Those classifications remain exact for cardinality-three local supports and were not weakened or rewritten.
+The supported classification is `FIVE_SUPPORT_TWO_WORKER_RELATIONAL_SYNTHESIS_SUPPORTED_ON_ONE_FROZEN_TASK`. Its bounded interpretation is `TWO_MODEL_GENERATED_FIVE_WAY_AMBIGUITY_RELATIONS_WERE_RECOMBINED_INTO_A_HIDDEN_EXACT_RESULT_UNAVAILABLE_FROM_EITHER_WORKER_ALONE`.
 
-A separate authorized compatibility decision uses the corpus's already frozen cardinality-five bilateral profile instead: internal task index 2, public shards `012` and `234`, union five, overlap one, two locally exact five-member supports, singleton support intersection, singleton full-public support, tied `3/3` scores, and plateau gaps 1. Public profile freeze precedes the protected gate; the unique full-public candidate equals the protected answer and scores `16/16` hidden without disclosing its identity.
+Receipt, manifest, result, closure, journal, archive, and captures are bound in canonical adjudication artifact `lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_adjudication_1.json`, SHA-256 `EBF0FA07A7B31C72EC19B9C74400C27C01943DDA8247CD02FC81DCC0EC5B228F`. Canonical `neo-exp-0046` is at `lab/results.jsonl:59`, SHA-256 `BC3FD349EAE13AC6B35659D6FECDEDC00751BB41CBEB33D9F7DF5D29F3F6000A`.
 
-`balanced-opaque-five-support-two-worker-synthesis-probe-v1` is statically prepared with exactly `worker-A`, `worker-B`, and `synthesis-AB`; one future generation each and three total. Both worker payloads are matched at 16,393 canonical bytes and 5,566 pinned-tokenizer IDs. Each worker must return exactly its complete five-member relation in the reused shared opaque namespace; controller repair is forbidden. Synthesis receives only two validated relation artifacts and the generic rank-head-v2 carrier, and rank zero freezes before private mapping.
+This establishes one bounded worker-to-synthesis capability result. General worker synthesis, transfer, equal-budget advantage, reduced fresh computation, compute amplification, a complete borrow → transform → extract → restore lifecycle, persistent blackboard value, adaptive populations, general catalytic inference, superiority, SOTA, and promotion remain locked.
 
-Preregistration artifact is `9FD644C53DAAB27CF4607BB43D1FDEA6ECD88F8E2CBBC34FADDEF10194ADA29B`; scientific and controller bindings are `E71D5EEA4AE642657AC576010C6BD473B82546CEACC50792E1781DB04BBEAB66` and `95DC7462298B20E159BE365853135688BBFF4F27B6143A1B7945B2AE3253665C`. Worker seed is `1585467564`; synthesis seed is `633514649`. Exact request hashes are `916C7AB6849DD740E6124057EBDAD9C4F06B3B207F0F0FEC42F3BE35407C1EB5`, `93642ED6867D09D18369029D90123CE3B9EF0BCB029F5861CE3BF0AABDEA2891`, and `DCC16B2B750AB89A43A72C9196A6839F412D7871C4BB5E0AD65E2664836B8638` in execution order.
-
-Canonical `neo-exp-0045` and its bounded three-parent transform interpretation remain unchanged. These corpus-availability failures are not evidence against the relational mechanism; they mean this task suite cannot instantiate either requested worker-to-synthesis causal geometry under the frozen rules.
-
-Worker synthesis, transfer, general catalytic inference, a complete borrow → transform → extract → restore cycle, useful-task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and promotion remain locked.
-
-**Next exact action:** `SEPARATELY_AUTHORIZE_ONE_LIVE_BALANCED_OPAQUE_FIVE_SUPPORT_TWO_WORKER_SYNTHESIS_PROBE`. Bind a fresh one-shot external authority to the final published static commit and exact preregistration. Do not execute automatically or add another task, seed, binding, baseline, control, or follow-on design.
+**Next exact action:** `INDEPENDENT_STATIC_REVIEW_OF_PUBLISHED_WORKER_SYNTHESIS_RESULT`. Review the canonical artifact and `neo-exp-0046` before authorizing any control, replication, efficiency measurement, or follow-on design.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 
