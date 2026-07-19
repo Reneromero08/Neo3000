@@ -578,6 +578,12 @@ Source: `alesha-pro/llama.cpp`, `ds4-longctx` branch. Use: provenance and candid
 
 Status: **ACTIVE**
 
+### Current relational-synthesis frontier
+
+Published `neo-exp-0044` supports `COMMUTATIVE_UNIQUE_INTERSECTION_LIKE_TRANSFORM_REPRODUCED_UNDER_JOINTLY_NEW_PRIVATE_BINDING_AND_FIXED_SEED` across two identity-disjoint pairwise geometries and both tested parent orders. The combined intervention does not separately establish seed or binding invariance, and it does not establish formal algebra, transfer, general catalytic inference, task advantage, or compute amplification.
+
+The next bounded bridge toward distributed synthesis is static preparation of `balanced-opaque-transform-only-three-parent-global-invariant-probe-v1`: reuse the source private binding and seed, change only relational arity/geometry where possible, and freeze exactly six cyclic-order synthesis requests over two matched geometries. This is a three-parent transform-core test, not a full swarm or complete borrow → transform → extract → restore cycle.
+
 First intervention: **HoloState-v1 Live Prefix Lattice**
 
 ```text

@@ -1,18 +1,16 @@
 # Active Goal
 
-## Checkpoint 2: Joint-condition intersection replication frozen
+## Checkpoint 2: Joint-condition replication published; three-parent probe authorized statically
 
-Published source `neo-exp-0043` and adjudication `lab/ck0_balanced_opaque_rank_head_v2_relational_operation_probe_adjudication_1.json` remain the sole source result. They support `COMMUTATIVE_UNIQUE_INTERSECTION_LIKE_TRANSFORM_SUPPORTED_ON_TWO_MATCHED_GEOMETRIES` only under one private binding, seed `830800182`, and four transform-only AB/BA requests.
+Canonical `neo-exp-0044` and adjudication `lab/ck0_balanced_opaque_rank_head_v2_joint_condition_intersection_replication_adjudication_1.json` publish only `COMMUTATIVE_UNIQUE_INTERSECTION_LIKE_TRANSFORM_REPRODUCED_UNDER_JOINTLY_NEW_PRIVATE_BINDING_AND_FIXED_SEED`. R0/R1 each matched their unique intersection at rank zero under AB and BA; four generations completed without retry; cleanup, postflight, authority HMAC, raw SSE replay, journal custody, and nine-entry archive verification passed.
 
-The hard out-of-sample successor is frozen as `balanced-opaque-transform-only-joint-condition-intersection-replication-v1`. One secure ignored 32-byte root was created exactly once using `secrets.token_bytes`; only its public commitment `7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD` and creation-receipt commitment `E9535E389DB6D452C71FE1E134B8D036CA9C80CE31075BBB63CA6E1455002131` are tracked. The single fixed seed `633514649` is derived outcome-independently from the design ID and starting commit `b955b26bad38e8e9f9d823e3e15bf461cb325019` before geometry selection.
+The source private-binding commitment remains `7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD` and the fixed seed remains `633514649`. Because both changed together relative to `neo-exp-0043`, neither seed invariance nor binding invariance is separately established.
 
-The first eligible pair occurs at counter 37. R0 and R1 each contain two five-member relations with exactly one unique shared candidate at Parent-A position 4 and Parent-B position 3; their identities are disjoint, their shared candidates differ, and all four serialized and pinned-tokenizer assignment lengths match. Exact request order is `R0-AB`, `R0-BA`, `R1-AB`, `R1-BA`, with one future generation maximum each and four total in one physical slot and one sidecar epoch. Unique-intersection, lexical-first, first-listed, Parent-A priority, and Parent-B priority predictions are frozen as private HMAC commitments before outcomes.
+The authorized static successor changes only relational arity and geometry where scientifically possible: two parents become three while the private root, opaque universe, seed, model, binary, transform-only surface, deterministic rank-zero extraction, one slot, and one sidecar epoch remain fixed. It must use exactly T0/T1 and six cyclic-order requests under `balanced-opaque-transform-only-three-parent-global-invariant-probe-v1`, with no authority or live execution.
 
-The supported terminal class is preregistered as `COMMUTATIVE_UNIQUE_INTERSECTION_LIKE_TRANSFORM_REPRODUCED_UNDER_JOINTLY_NEW_PRIVATE_BINDING_AND_FIXED_SEED` only if all four rank-zero selections match unique intersection and R0/R1 are each AB/BA invariant. Mixed, not-supported, and inconclusive outcomes remain admissible. Because seed and binding change together, this design cannot independently establish seed invariance or binding invariance.
+Formal algebra, full permutation invariance, associativity, arbitrary n-parent generalization, worker synthesis, a complete new cycle, general catalytic inference, useful-task advantage, reduced fresh computation, compute amplification, SOTA, and promotion remain locked.
 
-Formal algebra, separate seed or binding invariance, transfer, general catalytic inference, a complete new cycle, task advantage, superiority, SOTA, and automatic promotion remain locked.
-
-**Next exact action:** separately authorize exactly one live invocation of the frozen four-request design with a fresh external authority ID bound to the published static commit. Do not create authority or execute automatically.
+**Next exact action:** implement, focus-test, and exactly preregister only the six-request three-parent probe; then stop before authority.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 

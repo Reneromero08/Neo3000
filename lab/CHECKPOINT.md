@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Joint-condition intersection replication frozen
+## Checkpoint 2: Joint-condition intersection replication published
 
-**Status:** STATIC 4-REQUEST HARD OOS REPLICATION FROZEN / ONE FRESH PRIVATE BINDING / ONE NEW FIXED SEED / ZERO LIVE ACTIVITY / BROADER CLAIMS LOCKED
+**Status:** FOUR-REQUEST HARD OOS REPLICATION COMPLETE AND PUBLISHED / COMBINED NEW BINDING-AND-SEED CONDITION SUPPORTED / SEPARATE EFFECTS AND BROADER CLAIMS LOCKED
 
 - [x] Admit synchronized clean main at source commit `b955b26bad38e8e9f9d823e3e15bf461cb325019`; bind only adjudication `0EF8C0B2DD65915962ADBFE1CEE06CE6053A3FB7F55E7B3BD4C5955739F5BEED` and canonical `neo-exp-0043` line SHA-256 `C47DE48658E0C044AB676F584FF6030C0CB0A2AD5C84553B70B43EBC863C9423` as the source result.
 - [x] Create one ignored 32-byte private root with `secrets.token_bytes` and the existing one-shot creation receipt. Bind root commitment `7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD` and receipt commitment `E9535E389DB6D452C71FE1E134B8D036CA9C80CE31075BBB63CA6E1455002131`; publish no root, aliases, map, candidate identity, or correspondence.
@@ -12,7 +12,10 @@
 - [x] Freeze unique-intersection, lexical-first, first-listed, Parent-A priority, and Parent-B priority predictions privately before outcomes. Publish only public HMAC commitments and distinct request hashes.
 - [x] Preregister supported class `COMMUTATIVE_UNIQUE_INTERSECTION_LIKE_TRANSFORM_REPRODUCED_UNDER_JOINTLY_NEW_PRIVATE_BINDING_AND_FIXED_SEED`, plus mixed, not-supported, and inconclusive outcomes. State explicitly that the joint intervention does not separately identify seed or binding effects.
 - [x] Pass focused replication `13/13`, changed-file compilation, exact preregistration reconstruction, canonical JSON/JSONL, private/no-smuggle scans, evaluator gates, regenerated evaluator lock, and protected preflight. Run no complete CPU suite or unrelated audit.
-- [x] Create or consume zero authority; launch zero sidecars; issue zero model requests; produce zero generations, captures, results, publications, retries, or follow-on designs.
+- [x] Execute exactly once from `5d4d7762fcf1fdaa25a3559d2120929b74ca0099`, consume authority hash `0418064587E02A2E0B23A0B4D774645C238AA4999BB067DBD2AA05364AF44CEF`, complete `4/4` generations without retry, and preserve receipt/manifest/result/closure/journal/archive at `A2CB02AAE10500FC96F996B4E9CD3717241FF36AB422371640CA650DFD511A7D`, `BA68AB949C8C38EC3FF6853871DF62C6E3C423D379F6D8FF85B61A37B5D2B834`, `7835A4E6838E70B0A896D225D9576034112B30C3DAF6C4698A1D1BFF13879933`, `1465A7669DCF096A28C4F092659728B2A619255978D83C5026AD5B6CDEEA6AAC`, `91E968D3F42634083CE8F2A8371B70BB2D4923ED07DBAE1BC7708D056AA033B2`, and `96F010EE89320EA8C7C008B6B7790FA41A753E773738932764828E06ACD20733`.
+- [x] Verify authority HMAC, four capture identities, four raw SSE reconstructions, deterministic replay, result/closure, 20-event live journal, 19-event archived journal prefix, archive content address, and all nine members with zero model contact.
+- [x] Publish adjudication artifact SHA-256 `045E8BAE206E068C3D8A8A8094D6094E08AF5BACFF8B5A8C9BF1A1BA0DFE7674` and canonical `neo-exp-0044` at line 57, SHA-256 `F5264C5575AC92E474E6BBCB202678E811E9D9AD520CB8A715431DDE562DF76C`.
+- [ ] Prepare only `balanced-opaque-transform-only-three-parent-global-invariant-probe-v1` with reused source root, seed `633514649`, T0/T1, and six cyclic-order requests; create no authority or live evidence.
 
 Formal algebra, separate seed or binding invariance, transfer, general catalytic inference, a complete new cycle, task advantage, superiority, SOTA, and automatic promotion remain locked.
 
