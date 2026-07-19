@@ -197,6 +197,9 @@
       "scripts/test_catalytic_kernel_0_balanced_three_worker_to_synthesis_mini_swarm_scan.py",
       "scripts/catalytic_kernel_0_balanced_two_worker_to_synthesis_mini_swarm_scan.py",
       "scripts/test_catalytic_kernel_0_balanced_two_worker_to_synthesis_mini_swarm_scan.py",
+      "scripts/catalytic_kernel_0_balanced_five_support_two_worker_synthesis_probe_scientific.py",
+      "scripts/catalytic_kernel_0_balanced_five_support_two_worker_synthesis_probe.py",
+      "scripts/test_catalytic_kernel_0_balanced_five_support_two_worker_synthesis_probe.py",
       "tools/server/server-context.cpp",
       "tools/server/server-task.cpp",
       ".gitignore",
@@ -225,6 +228,7 @@
       "lab/ck0_balanced_opaque_rank_head_v2_three_parent_global_invariant_probe_adjudication_1.json",
       "lab/ck0_balanced_opaque_three_worker_to_synthesis_mini_swarm_v1_geometry_scan_1.json",
       "lab/ck0_balanced_opaque_two_worker_to_synthesis_mini_swarm_v1_geometry_scan_1.json",
+      "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_1.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]
@@ -339,6 +343,8 @@
     ,"scripts/test_catalytic_kernel_0_balanced_three_worker_to_synthesis_mini_swarm_scan.py"
     ,"scripts/catalytic_kernel_0_balanced_two_worker_to_synthesis_mini_swarm_scan.py"
     ,"scripts/test_catalytic_kernel_0_balanced_two_worker_to_synthesis_mini_swarm_scan.py"
+    ,"scripts/catalytic_kernel_0_balanced_five_support_two_worker_synthesis_probe.py"
+    ,"scripts/test_catalytic_kernel_0_balanced_five_support_two_worker_synthesis_probe.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"

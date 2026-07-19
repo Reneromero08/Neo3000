@@ -1,18 +1,24 @@
 # Active Goal
 
-## Checkpoint 2: Frozen corpus lacks both requested worker-synthesis geometries
+## Checkpoint 2: Five-support two-worker synthesis probe statically prepared
 
 The public-only scan for `balanced-opaque-three-worker-to-synthesis-mini-swarm-v1` deterministically classified the frozen `catalytic-swarm-1-dsl-selection-v1` suite as `EXISTING_CORPUS_THREE_WORKER_GEOMETRY_UNAVAILABLE`. Its eight per-task counts of locally eligible three-example worker shards are `[2,2,0,0,2,1,1,0]`; the maximum is two, while the frozen design requires three distinct shards before the `{X,P,Q}`, `{X,P,R}`, `{X,Q,R}` geometry can exist.
 
 The separately authorized public-only scan for `balanced-opaque-two-worker-to-synthesis-mini-swarm-v1` classified the same corpus as `EXISTING_CORPUS_TWO_WORKER_GEOMETRY_UNAVAILABLE`. It considered all six ordered pairs of distinct locally eligible shards. None covers all five public examples with exactly one shared example; maximum union is four and minimum overlap is two. The paired supports retain all three candidates in common rather than the required singleton.
 
-The three-worker diagnostic SHA-256 remains `F1BC72EE98E92CAACFDB6843CE1D6698F24D82EE15247F7AD6774D0415E496C2`. Two-worker diagnostic artifact `lab/ck0_balanced_opaque_two_worker_to_synthesis_mini_swarm_v1_geometry_scan_1.json` has SHA-256 `493B8E7CD2591E4BCDD27C224693C8DA890AE885433C3BEA07528683C1D69264`. Both scans consumed only public task projections and stopped before tokenizer matching, hidden examples, answer identity, hidden scoring, and the private opaque binding. No selected task, shard/support commitment, worker carrier, request hash, scientific/controller binding, preregistration, or future live command exists.
+The three-worker diagnostic SHA-256 remains `F1BC72EE98E92CAACFDB6843CE1D6698F24D82EE15247F7AD6774D0415E496C2`. Two-worker diagnostic artifact `lab/ck0_balanced_opaque_two_worker_to_synthesis_mini_swarm_v1_geometry_scan_1.json` remains `493B8E7CD2591E4BCDD27C224693C8DA890AE885433C3BEA07528683C1D69264`. Those classifications remain exact for cardinality-three local supports and were not weakened or rewritten.
+
+A separate authorized compatibility decision uses the corpus's already frozen cardinality-five bilateral profile instead: internal task index 2, public shards `012` and `234`, union five, overlap one, two locally exact five-member supports, singleton support intersection, singleton full-public support, tied `3/3` scores, and plateau gaps 1. Public profile freeze precedes the protected gate; the unique full-public candidate equals the protected answer and scores `16/16` hidden without disclosing its identity.
+
+`balanced-opaque-five-support-two-worker-synthesis-probe-v1` is statically prepared with exactly `worker-A`, `worker-B`, and `synthesis-AB`; one future generation each and three total. Both worker payloads are matched at 16,393 canonical bytes and 5,566 pinned-tokenizer IDs. Each worker must return exactly its complete five-member relation in the reused shared opaque namespace; controller repair is forbidden. Synthesis receives only two validated relation artifacts and the generic rank-head-v2 carrier, and rank zero freezes before private mapping.
+
+Preregistration artifact is `9FD644C53DAAB27CF4607BB43D1FDEA6ECD88F8E2CBBC34FADDEF10194ADA29B`; scientific and controller bindings are `E71D5EEA4AE642657AC576010C6BD473B82546CEACC50792E1781DB04BBEAB66` and `95DC7462298B20E159BE365853135688BBFF4F27B6143A1B7945B2AE3253665C`. Worker seed is `1585467564`; synthesis seed is `633514649`. Exact request hashes are `916C7AB6849DD740E6124057EBDAD9C4F06B3B207F0F0FEC42F3BE35407C1EB5`, `93642ED6867D09D18369029D90123CE3B9EF0BCB029F5861CE3BF0AABDEA2891`, and `DCC16B2B750AB89A43A72C9196A6839F412D7871C4BB5E0AD65E2664836B8638` in execution order.
 
 Canonical `neo-exp-0045` and its bounded three-parent transform interpretation remain unchanged. These corpus-availability failures are not evidence against the relational mechanism; they mean this task suite cannot instantiate either requested worker-to-synthesis causal geometry under the frozen rules.
 
 Worker synthesis, transfer, general catalytic inference, a complete borrow → transform → extract → restore cycle, useful-task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and promotion remain locked.
 
-**Next exact action:** `SEPARATELY_AUTHORIZE_A_STATIC_SCIENTIFIC_DECISION_ON_TWO_WORKER_PROFILE_COMPATIBILITY`. Do not create a synthetic task, weaken the current gates, or execute a live probe automatically.
+**Next exact action:** `SEPARATELY_AUTHORIZE_ONE_LIVE_BALANCED_OPAQUE_FIVE_SUPPORT_TWO_WORKER_SYNTHESIS_PROBE`. Bind a fresh one-shot external authority to the final published static commit and exact preregistration. Do not execute automatically or add another task, seed, binding, baseline, control, or follow-on design.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 

@@ -1,16 +1,26 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Requested worker-synthesis geometries unavailable in the frozen corpus
+## Checkpoint 2: Five-support two-worker synthesis probe statically prepared
 
-**Status:** PUBLIC-ONLY CORPUS DECISION COMPLETE / THREE-WORKER AND TWO-WORKER GEOMETRIES UNAVAILABLE / NO PREREGISTRATION OR LIVE SURFACE / BROADER CLAIMS LOCKED
+**Status:** CARDINALITY-THREE DIAGNOSTICS PRESERVED / CARDINALITY-FIVE BILATERAL PROFILE ADMITTED / THREE-REQUEST PROBE PREREGISTERED / ZERO LIVE AUTHORITY / BROADER CLAIMS LOCKED
 
 - [x] Preserve the three-worker diagnostic from synchronized source `6c760b2d5f8296f795724d061f1d91a0e4171c27`, then admit the separately authorized two-worker decision at synchronized clean `main` `c8942f7b4ecf7ab555b54393fc63c4cbb5a366b3`; exact frozen suite SHA-256 remains `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
 - [x] Scan only the eight public task projections and all 80 three-example shards. Locally eligible shard counts by task index are `[2,2,0,0,2,1,1,0]`; no task reaches the three distinct worker shards required by the frozen geometry.
 - [x] Classify `EXISTING_CORPUS_THREE_WORKER_GEOMETRY_UNAVAILABLE` and bind diagnostic artifact SHA-256 `F1BC72EE98E92CAACFDB6843CE1D6698F24D82EE15247F7AD6774D0415E496C2`.
 - [x] Enumerate all six ordered pairs of distinct locally eligible shards for the two-worker design. No pair covers all five public examples with one-example overlap; maximum union is four, minimum overlap is two, and minimum support intersection is three instead of one.
 - [x] Classify `EXISTING_CORPUS_TWO_WORKER_GEOMETRY_UNAVAILABLE` and bind diagnostic artifact SHA-256 `493B8E7CD2591E4BCDD27C224693C8DA890AE885433C3BEA07528683C1D69264`.
-- [x] Stop before tokenizer matching, protected hidden utility, answer identity, hidden scoring, and private binding. Create no selected profile, worker carrier, worker or synthesis request, preregistration, controller, future live command, authority, runtime state, capture, result, or publication record.
+- [x] Stop both cardinality-three scans before tokenizer matching, protected hidden utility, answer identity, hidden scoring, and private binding. Create no selected profile, worker carrier, request, preregistration, controller, authority, or runtime state from either failed scan.
 - [x] Pass focused two-worker scan tests `11/11`, exact diagnostic reconstruction, changed-file compilation, evaluator gates, canonical JSON/JSONL, private/no-smuggle scan, regenerated evaluator lock, and protected preflight. Run no complete CPU suite or historical CK0 family.
+- [x] Separately admit the existing cardinality-five bilateral profile without altering either diagnostic: internal task index 2, worker shards `012` and `234`, shard union five, overlap one, local support cardinalities five and five, singleton support intersection/full-public support, tied `3/3` scores, plateau gaps 1, and exact `[true,true,true]` support pass vectors.
+- [x] Freeze the public profile before protected utility. Confirm only afterward that its unique full-public candidate equals the protected answer and scores `16/16` hidden. Publish no answer, candidate identity, alias, map, root, or correspondence.
+- [x] Reuse existing private root commitment `7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD` and shared alias-map commitment `535DDE006301B618155CC7613EC32628C4020BB43BA1363E93540F3EDB69A21D`; create no new private root.
+- [x] Prepare exactly three future one-generation requests in order `worker-A`, `worker-B`, `synthesis-AB`. Worker requests expose only anonymous local examples and sealed extensional outputs in one shared candidate namespace; each exact schema requires five unique aliases. Both payloads match at 16,393 canonical bytes and 5,566 pinned-tokenizer IDs under worker seed `1585467564`.
+- [x] Reject any worker relation that differs from the frozen objective set; issue no synthesis after worker failure. Preserve model-authored order in authenticated capture, normalize only after exact validation using outcome-independent HMAC order, and bind each artifact to its request-scoped authenticated capture source.
+- [x] Give synthesis only the two validated artifacts and generic rank-head-v2 carrier under seed `633514649`; expose no examples, candidate projections, raw outputs, scores, hidden evidence, answer, mapping, or controller-computed intersection. Freeze rank zero before private mapping; defer public/hidden scoring until all three generations complete.
+- [x] Bind profile commitment `92FA5DA066F3E4B1B3B99B645AB30F16A1D64A933BA757AB76C6D22F47684E74`, shard commitments `308D6588CB8D60ADC82E72D322353B0C09C56BC74176BAF1F602AA3F7D8BC40F` / `25F04CB174EF0689A39D065EC449E64879703D37032FF6CF0EA17747B7626F18`, support commitments `E73D2CFD5838FA51A75D21C563B8995529C0500C9D18788BE27019E315340E20` / `5570E438734E832C164B3DBE49DEBAE750912C36B717D260CDA09BF8FD1C3136`, and intersection commitment `C5254C40BD5D20EE2762E5FD2F9790FD8677DBA7170880CFEAD59B4CBB9EB79D`.
+- [x] Bind preregistration `9FD644C53DAAB27CF4607BB43D1FDEA6ECD88F8E2CBBC34FADDEF10194ADA29B`, scientific surface `E71D5EEA4AE642657AC576010C6BD473B82546CEACC50792E1781DB04BBEAB66`, controller `95DC7462298B20E159BE365853135688BBFF4F27B6143A1B7945B2AE3253665C`, and request hashes `916C7AB6849DD740E6124057EBDAD9C4F06B3B207F0F0FEC42F3BE35407C1EB5`, `93642ED6867D09D18369029D90123CE3B9EF0BCB029F5861CE3BF0AABDEA2891`, and `DCC16B2B750AB89A43A72C9196A6839F412D7871C4BB5E0AD65E2664836B8638`.
+- [x] Pass focused worker-synthesis tests `27/27`, exact preregistration reconstruction, changed-file compilation, canonical JSON/JSONL, private/no-smuggle scans, evaluator gates, regenerated evaluator lock, and protected preflight. Run no complete CPU suite or historical CK0 family.
+- [x] Create zero authority objects or receipts, runtime roots, sidecars, model requests, generations, captures, results, archives, publication records, retries, or follow-on designs during static preparation.
 
 Preserved three-parent evidence:
 
@@ -36,7 +46,7 @@ Preserved three-parent evidence:
 
 Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** `SEPARATELY_AUTHORIZE_A_STATIC_SCIENTIFIC_DECISION_ON_TWO_WORKER_PROFILE_COMPATIBILITY`. Do not create a synthetic task, weaken the frozen geometry gates, or execute automatically.
+**Next exact action:** `SEPARATELY_AUTHORIZE_ONE_LIVE_BALANCED_OPAQUE_FIVE_SUPPORT_TWO_WORKER_SYNTHESIS_PROBE`. Bind one fresh external authority to the final published static commit and exact preregistration; do not execute automatically or add another task, seed, binding, baseline, control, or follow-on.
 
 ---
 
