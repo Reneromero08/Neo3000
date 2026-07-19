@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Easy 35B semantic-XOR worker-synthesis family statically designed
+## Checkpoint 2: Easy 35B semantic-XOR corpus and protected evaluator frozen
 
 `balanced-opaque-five-support-two-worker-synthesis-probe-v1` executed once from protected main `563cbf5a72a763af8a2cde2394a5ea5beb008bad`. One consumed authority admitted exactly `worker-A`, `worker-B`, and `synthesis-AB`; all three one-generation requests completed with authenticated captures and zero retries.
 
@@ -28,7 +28,13 @@ The future four-task corpus must be manually authored and cover `00 / 01 / 10 / 
 
 Canonical design artifact `lab/two_shard_semantic_xor_worker_synthesis_family_v1_design.json`, SHA-256 `ED63ED4C75F9D6CE8DB4177E1137D02CFED7B385E20B2D29B434206DAD5C7B1F`, contains no corpus, evaluator answers, prompt text, request hashes, model seeds, runtime code, authority, or live preregistration. No result record is added.
 
-**Next exact action:** `SEPARATELY_AUTHOR_CORPUS_AND_PROTECTED_EVALUATOR_FOR_TWO_SHARD_SEMANTIC_XOR_FAMILY`. Freeze exactly four manual public tasks and their isolated protected answers simultaneously before model contact. Do not implement runtime, create authority, or execute inference automatically.
+The corpus/evaluator boundary is now frozen as `TWO_SHARD_SEMANTIC_XOR_CORPUS_AND_PROTECTED_EVALUATOR_FROZEN`. Eight distinct microcases were authored directly with no generator, template, seed, source table, derivation graph, external model, or outcome-based selection. Public relation types are balanced across comparison, ownership, location, and temporal judgments. All passages are 38–45 words and all questions are 10–16 words.
+
+Canonical public corpus `lab/two_shard_semantic_xor_worker_synthesis_family_v1_public_tasks.json` is 3,704 bytes at SHA-256 `DE4D822424EFE5B6B5FAB1A65F5D2A1E5A87FC60D64A2DD84812BC300A246C41`. The ignored protected evaluator is 968 bytes at SHA-256 `437112DC9A06E4CB3CF1824A738BB13887212B23A38E2AF12A94374A9259D163`; its fresh salt, expected bits, labels, and task-to-cell mapping remain private. Aggregate coverage is exactly one each of `00 / 01 / 10 / 11`, with worker-A, worker-B, and final-label balances each `2/2`.
+
+Tracked binding artifact `lab/two_shard_semantic_xor_worker_synthesis_family_v1_corpus_binding_1.json`, SHA-256 `5EBFF4979CD8E60E814F05C8B5E8413523DFB244E4396548A4A595253020EF5F`, binds both surfaces before any model contact and records zero implementation, prompts, request hashes, seeds, authority, runtime, or result record.
+
+**Next exact action:** `SEPARATELY_IMPLEMENT_AND_PREREGISTER_TWO_SHARD_SEMANTIC_XOR_WORKER_AND_BASELINE_EVALUATION`. Implement only against the frozen corpus/evaluator identities and stop before authority or live execution.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 

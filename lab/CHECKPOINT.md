@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Easy 35B semantic-XOR synthesis family statically designed
+## Checkpoint 2: Easy 35B semantic-XOR corpus and evaluator frozen
 
-**Status:** NEO-EXP-0046 PRESERVED / CURRENT DSL CARRIER CAPABILITY-ONLY / SEMANTIC-XOR FAMILY STATICALLY ADMISSIBLE / NO CORPUS OR IMPLEMENTATION / BROADER CLAIMS LOCKED
+**Status:** NEO-EXP-0046 PRESERVED / SEMANTIC-XOR CORPUS AND PROTECTED EVALUATOR FROZEN / NO IMPLEMENTATION OR MODEL CONTACT / BROADER CLAIMS LOCKED
 
 - [x] Preserve the three-worker diagnostic from synchronized source `6c760b2d5f8296f795724d061f1d91a0e4171c27`, then admit the separately authorized two-worker decision at synchronized clean `main` `c8942f7b4ecf7ab555b54393fc63c4cbb5a366b3`; exact frozen suite SHA-256 remains `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
 - [x] Scan only the eight public task projections and all 80 three-example shards. Locally eligible shard counts by task index are `[2,2,0,0,2,1,1,0]`; no task reaches the three distinct worker shards required by the frozen geometry.
@@ -40,6 +40,12 @@
 - [x] Define a fair one-request direct baseline using both exact shards and shared runtime controls. Require at least equal worker-route accuracy plus fewer fresh prompt-plus-completion tokens per correct final label across every retained task before any inference-advantage classification.
 - [x] Bind canonical design artifact `lab/two_shard_semantic_xor_worker_synthesis_family_v1_design.json`, SHA-256 `ED63ED4C75F9D6CE8DB4177E1137D02CFED7B385E20B2D29B434206DAD5C7B1F`, as `TWO_SHARD_SEMANTIC_XOR_TASK_FAMILY_STATICALLY_ADMISSIBLE`. Add no result record.
 - [x] Create zero task instances, expected bits, labels, prompts, request hashes, seeds, Python code, authority, runtime state, model contact, or follow-on execution during design.
+- [x] Add the exact private evaluator path to the existing narrow `catalytic_kernel_0_private` ignore convention before private creation; create the evaluator exclusively and never expose its bytes through tracked state.
+- [x] Manually author eight distinct entailment microcases with 38–45 passage words, 10–16 question words, two to four named entities, no external knowledge, no ambiguous pronouns, and balanced comparison, ownership, location, and temporal relations.
+- [x] Derive four opaque public IDs only from canonical task bodies, sort lexicographically by ID, and freeze canonical 3,704-byte public corpus SHA-256 `DE4D822424EFE5B6B5FAB1A65F5D2A1E5A87FC60D64A2DD84812BC300A246C41`.
+- [x] Freeze the canonical ignored 968-byte protected evaluator at SHA-256 `437112DC9A06E4CB3CF1824A738BB13887212B23A38E2AF12A94374A9259D163`. Verify aggregate cells `00 / 01 / 10 / 11` exactly once and worker-A, worker-B, and final-label balances `2/2`; disclose no mapping, expected bit, label, or salt.
+- [x] Bind both finalized surfaces before model contact in `lab/two_shard_semantic_xor_worker_synthesis_family_v1_corpus_binding_1.json`, SHA-256 `5EBFF4979CD8E60E814F05C8B5E8413523DFB244E4396548A4A595253020EF5F`, as `TWO_SHARD_SEMANTIC_XOR_CORPUS_AND_PROTECTED_EVALUATOR_FROZEN`. Add no result record.
+- [x] Create zero worker, synthesis, baseline, capture, controller, sidecar, authority, runtime, prompt template, request hash, seed, model request, generation, or follow-on execution during corpus authoring.
 
 Preserved three-parent evidence:
 
@@ -65,7 +71,7 @@ Preserved three-parent evidence:
 
 Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, general worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** `SEPARATELY_AUTHOR_CORPUS_AND_PROTECTED_EVALUATOR_FOR_TWO_SHARD_SEMANTIC_XOR_FAMILY`. Author exactly four manual task pairs covering `00 / 01 / 10 / 11`, freeze public and protected surfaces simultaneously, and stop before implementation, live preregistration, authority, or model contact.
+**Next exact action:** `SEPARATELY_IMPLEMENT_AND_PREREGISTER_TWO_SHARD_SEMANTIC_XOR_WORKER_AND_BASELINE_EVALUATION`. Preserve exact frozen corpus/evaluator bytes and stop before authority, sidecar launch, or model contact.
 
 ---
 

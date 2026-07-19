@@ -604,6 +604,10 @@ That design boundary is complete as `two-shard-semantic-xor-worker-synthesis-fam
 
 The same frozen evidence will also go to one ordinary direct-baseline request under the same model, temperature, tokenizer, sidecar, admission, capture, and eight-token output ceiling. A future inference-advantage claim requires at least equal final accuracy and fewer fresh prompt-plus-completion tokens per correct label across all four retained tasks, with cached tokens and request count reported separately. Canonical design artifact `lab/two_shard_semantic_xor_worker_synthesis_family_v1_design.json`, SHA-256 `ED63ED4C75F9D6CE8DB4177E1137D02CFED7B385E20B2D29B434206DAD5C7B1F`, contains no task text, answers, prompts, seeds, requests, runtime, or live authorization. The next boundary is `SEPARATELY_AUTHOR_CORPUS_AND_PROTECTED_EVALUATOR_FOR_TWO_SHARD_SEMANTIC_XOR_FAMILY`.
 
+Corpus authoring is now complete under `TWO_SHARD_SEMANTIC_XOR_CORPUS_AND_PROTECTED_EVALUATOR_FROZEN`. Four public task pairs contain eight independently authored 35B-calibrated microcases using balanced comparison, ownership, location, and temporal relations. Opaque task IDs derive only from canonical public bodies, and the array is ID-sorted. The protected evaluator covers all four bit cells exactly once, balances worker A, worker B, and final labels `2/2`, and contains the only salt, expected bits, labels, and task-to-cell mapping.
+
+Public corpus `lab/two_shard_semantic_xor_worker_synthesis_family_v1_public_tasks.json` is 3,704 bytes at SHA-256 `DE4D822424EFE5B6B5FAB1A65F5D2A1E5A87FC60D64A2DD84812BC300A246C41`. The ignored protected evaluator is 968 bytes at SHA-256 `437112DC9A06E4CB3CF1824A738BB13887212B23A38E2AF12A94374A9259D163`. Tracked binding artifact `lab/two_shard_semantic_xor_worker_synthesis_family_v1_corpus_binding_1.json`, SHA-256 `5EBFF4979CD8E60E814F05C8B5E8413523DFB244E4396548A4A595253020EF5F`, freezes both identities before model contact without disclosing answers. The next boundary is `SEPARATELY_IMPLEMENT_AND_PREREGISTER_TWO_SHARD_SEMANTIC_XOR_WORKER_AND_BASELINE_EVALUATION`.
+
 First intervention: **HoloState-v1 Live Prefix Lattice**
 
 ```text
