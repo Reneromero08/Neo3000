@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Worker-synthesis task suitability adjudicated
+## Checkpoint 2: Easy 35B semantic-XOR synthesis family statically designed
 
-**Status:** NEO-EXP-0046 ACCEPTED / CURRENT DSL CARRIER CAPABILITY-ONLY / CONTROLLER-ONLY ZERO-GENERATION ROUTE AVAILABLE / NO SUITABLE EXISTING SUCCESSOR TASK / BROADER CLAIMS LOCKED
+**Status:** NEO-EXP-0046 PRESERVED / CURRENT DSL CARRIER CAPABILITY-ONLY / SEMANTIC-XOR FAMILY STATICALLY ADMISSIBLE / NO CORPUS OR IMPLEMENTATION / BROADER CLAIMS LOCKED
 
 - [x] Preserve the three-worker diagnostic from synchronized source `6c760b2d5f8296f795724d061f1d91a0e4171c27`, then admit the separately authorized two-worker decision at synchronized clean `main` `c8942f7b4ecf7ab555b54393fc63c4cbb5a366b3`; exact frozen suite SHA-256 remains `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
 - [x] Scan only the eight public task projections and all 80 three-example shards. Locally eligible shard counts by task index are `[2,2,0,0,2,1,1,0]`; no task reaches the three distinct worker shards required by the frozen geometry.
@@ -34,6 +34,12 @@
 - [x] Search existing frozen task families. CatalyticSwarm-1/CIB0/CK0 is controller-enumerable from public examples and executable candidate programs with one guaranteed publicly exact candidate; baseline probes lack the required protected relational utility. Classify `NON_CONTROLLER_RECONSTRUCTIBLE_WORKER_SYNTHESIS_TASK_NOT_AVAILABLE_IN_CURRENT_REPOSITORY`.
 - [x] Bind static decision artifact `lab/ck0_balanced_opaque_five_support_two_worker_synthesis_task_suitability_decision_1.json`, SHA-256 `EE2C89131B581EE5B0300CDD6EAEAC636AAF31C37CA2C5AC72E8D159CDD56F2F`. Add no result ledger record because no live experiment occurred.
 - [x] Record the future operating rule: an infrastructure-only preflight blocker may be fixed and the user-authorized task continued only before authority consumption, sidecar/model contact, runtime evidence, or scientific request start. It is not a scientific retry and is forbidden after authority consumption or model contact.
+- [x] Design exactly one successor family, `two-shard-semantic-xor-worker-synthesis-family-v1`, calibrated for Agents-A1 35B: two short natural-language shards, isolated binary worker schemas, one fixed XOR synthesis, and eight-token completion ceilings.
+- [x] Freeze the future four-task corpus law without authoring instances: manual authorship, exact `00 / 01 / 10 / 11` coverage, simultaneous public/evaluator freeze before model contact, unconditional retention, and no outcome-based selection or rewriting.
+- [x] Separate controller and evaluator surfaces. The controller receives natural language, schemas, and XOR only; no structured facts, expected bits, final label, generator variables, parser, or protected material may reach rendering, dispatch, route selection, ordering, seeds, or retries.
+- [x] Define a fair one-request direct baseline using both exact shards and shared runtime controls. Require at least equal worker-route accuracy plus fewer fresh prompt-plus-completion tokens per correct final label across every retained task before any inference-advantage classification.
+- [x] Bind canonical design artifact `lab/two_shard_semantic_xor_worker_synthesis_family_v1_design.json`, SHA-256 `ED63ED4C75F9D6CE8DB4177E1137D02CFED7B385E20B2D29B434206DAD5C7B1F`, as `TWO_SHARD_SEMANTIC_XOR_TASK_FAMILY_STATICALLY_ADMISSIBLE`. Add no result record.
+- [x] Create zero task instances, expected bits, labels, prompts, request hashes, seeds, Python code, authority, runtime state, model contact, or follow-on execution during design.
 
 Preserved three-parent evidence:
 
@@ -59,7 +65,7 @@ Preserved three-parent evidence:
 
 Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, general worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** `STATIC_DESIGN_OF_ONE_EASY_35B_CALIBRATED_NON_CONTROLLER_RECONSTRUCTIBLE_WORKER_SYNTHESIS_TASK_FAMILY`. Keep the task deliberately easy for Agents-A1 35B: short evidence shards, a small structured schema, one simple synthesis relation, and bounded output ceilings. Require model-generated worker information unavailable to deterministic controller reconstruction, individually insufficient partials, a protected evaluator, a same-evidence direct baseline, hidden-independent route selection, and exact resource accounting. Do not generate, implement, authorize, or execute it automatically.
+**Next exact action:** `SEPARATELY_AUTHOR_CORPUS_AND_PROTECTED_EVALUATOR_FOR_TWO_SHARD_SEMANTIC_XOR_FAMILY`. Author exactly four manual task pairs covering `00 / 01 / 10 / 11`, freeze public and protected surfaces simultaneously, and stop before implementation, live preregistration, authority, or model contact.
 
 ---
 

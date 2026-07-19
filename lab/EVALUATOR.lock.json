@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "21a577b6768432cdaccb9146334e9be1ad630d64",
+  "baseline_source_commit": "e21359d46a59fdb9c5abd5a0244f3136102a0bc7",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -155,14 +155,14 @@
     "scripts/catalytic_kernel_0_balanced_five_support_two_worker_synthesis_probe.py",
     "scripts/test_catalytic_kernel_0_balanced_five_support_two_worker_synthesis_probe.py"
   ],
-  "evaluator_sha256": "7808d2fce409dcb24e3e41d910567300cb4fc23d7d4ffafb7adedd9cca5c5efa",
+  "evaluator_sha256": "d45378836aecb2aeb47051e8b46f330c005b411c9745d8aeb45be6a221fb4ada",
   "gate_definition_hashes": {
     "reasoning-preservation-v1": "750a7b0041c13b4407f5d373069f6bcb3fe1d0701504f7bae5bb7c64fbc5d5fe",
     "repeat-final-content-v1": "2737d28ec7947d841bf6c5e07221f6ac453f98150a83b9a9c29c43da1a4b7460",
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-19T14:53:09.045957+00:00",
+  "generated_at": "2026-07-19T15:25:51.978271+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
@@ -187,13 +187,13 @@
     "CHANGELOG.md": "5909a88928728d99764d486a9ae225df926ccd937473034f74ab291bcd3ac0c7",
     "NEO3000.md": "b7ba87065f942d47abed19330197a843577bbd6b2fd58057a6df9de9cd7d2905",
     "README.md": "78708a68121242f8c0d48bc8218da2776985a2f8d3854e6a85be1b16050d3427",
-    "ROADMAP.md": "4d7cfb148990ae0bd7781ef485e1e4f752ccaa3a06c0f974214872778857bd89",
-    "TASKS.md": "c222cb53a4da401667c1e20830b5fe5ec12bd32d77ecc3903608780a08493d94",
+    "ROADMAP.md": "f1e2493945af7d46c02daa7953409aa26e99ff92dde6c4da197a12bee13a463f",
+    "TASKS.md": "020879a5b9404143500ade64349b41be9b9d2e8c85a568cc6c26c0c962f59f46",
     "docs/CATALYTIC_RUNTIME_ROADMAP.md": "b425fc553a78997964dff09851ade15262cd3eb59de0b8f751e66ff8b97ea923",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "c22e1110597b87126ba07bd3bacc87ef2ade6240416eee08798ac0b3340b647e",
-    "lab/EVALUATOR.json": "7808d2fce409dcb24e3e41d910567300cb4fc23d7d4ffafb7adedd9cca5c5efa",
-    "lab/GOAL.md": "7bfae83032db1c1f02671848602c94ea2a74f767ed575da2e73fe1e8c68d3e05",
+    "lab/CHECKPOINT.md": "7aad034b789a7902000f88620353ebafe2220bbbc891d7694882dcc1ac7c61fb",
+    "lab/EVALUATOR.json": "d45378836aecb2aeb47051e8b46f330c005b411c9745d8aeb45be6a221fb4ada",
+    "lab/GOAL.md": "bd0130e07cc56b63381362a3875e0ee327c7230b9677c6266e40127c1e156997",
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_1.json": "8eca08391c598fd6102fdac482e043ba1435c9b7efdf61714888a5d6b2823b7c",
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_adjudication_1.json": "ebf0fa07a7b31c72ec19b9c74400c27c01943dda8247cd02fc81dcc0ec5b228f",
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_task_suitability_decision_1.json": "ee2c89131b581ee5b0300cdd6eaeac636aaf31c37ca2c5ac72e8d159cdd56f2f",
@@ -214,6 +214,7 @@
     "lab/ck0_balanced_opaque_two_worker_to_synthesis_mini_swarm_v1_geometry_scan_1.json": "493b8e7cd2591e4bcdd27c224693c8da890ae885433c3bea07528683c1d69264",
     "lab/ck0_parent_a_information_deletion_1.json": "a5b5c651ec5e542154283723bc727aa68cfd589125dbec3ff1624c0d31c0087b",
     "lab/ck0_parent_b_information_deletion_1.json": "162600d74a96c6e4c1797484d6123c2ffd710296cedffec859a6da008d70b512",
+    "lab/two_shard_semantic_xor_worker_synthesis_family_v1_design.json": "ed63ed4c75f9d6ce8db4177e1137d02cfed7b385e20b2d29b434206dad5c7b1f",
     "scripts/baseline_harness.py": "6100461efe4172279668a3d213875efa884f10dc9e246d60af0a0702bdd49d99",
     "scripts/build_candidate.ps1": "cf688332fd3c5c08b5ad369c79ec5dca66d8866ffe3eb36850756435037f8760",
     "scripts/build_cuda.ps1": "50803f75dbd9006237b95b779bc6e16325bfa0170c356bc1849bd73ae17d99d2",
@@ -529,6 +530,7 @@
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_1.json",
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_adjudication_1.json",
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_task_suitability_decision_1.json",
+    "lab/two_shard_semantic_xor_worker_synthesis_family_v1_design.json",
     "lab/EVALUATOR.lock.json",
     "lab/results.jsonl"
   ],

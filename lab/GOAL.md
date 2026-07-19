@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Worker-synthesis capability accepted; current carrier is not an inference-advantage test
+## Checkpoint 2: Easy 35B semantic-XOR worker-synthesis family statically designed
 
 `balanced-opaque-five-support-two-worker-synthesis-probe-v1` executed once from protected main `563cbf5a72a763af8a2cde2394a5ea5beb008bad`. One consumed authority admitted exactly `worker-A`, `worker-B`, and `synthesis-AB`; all three one-generation requests completed with authenticated captures and zero retries.
 
@@ -20,7 +20,15 @@ Decision artifact `lab/ck0_balanced_opaque_five_support_two_worker_synthesis_tas
 
 General worker synthesis, transfer, equal-budget advantage, reduced fresh computation, compute amplification, a complete borrow → transform → extract → restore lifecycle, persistent blackboard value, adaptive populations, general catalytic inference, superiority, SOTA, and promotion remain locked.
 
-**Next exact action:** `STATIC_DESIGN_OF_ONE_EASY_35B_CALIBRATED_NON_CONTROLLER_RECONSTRUCTIBLE_WORKER_SYNTHESIS_TASK_FAMILY`. Define only the minimum task family, protected evaluator, direct baseline, and resource-accounting boundary. Keep evidence shards short, the structured schema small, synthesis to one simple relation, and output ceilings bounded. Do not generate the task corpus, implement runtime, create authority, or execute inference without separate authorization.
+The separately authorized design is complete as `two-shard-semantic-xor-worker-synthesis-family-v1`, with design classification `TWO_SHARD_SEMANTIC_XOR_TASK_FAMILY_STATICALLY_ADMISSIBLE`. The scientific question is whether two isolated workers can generate binary semantic judgments absent from controller-readable structured form and one fixed XOR can synthesize an exact useful label.
+
+Each future shard is an easy Agents-A1 35B-calibrated natural-language microcase: passage at most 120 words, binary question at most 24 words, at most four entities, one explicit negation, and one depth-two temporal, comparison, ownership, or implication chain. Workers see one shard each and emit only `{"bit":0}` or `{"bit":1}` under an eight-token ceiling. Synthesis sees only the two authenticated bits and XOR and emits only `SAME` or `DIFFERENT` under the same ceiling. The protected evaluator remains unavailable to prompt construction and dispatch.
+
+The future four-task corpus must be manually authored and cover `00 / 01 / 10 / 11` exactly once. A direct ordinary-inference baseline receives both exact shards and the same XOR rule. Fresh-inference advantage requires at least equal final accuracy and fewer fresh prompt-plus-completion tokens per correct label across all four retained tasks; smaller per-request context alone is insufficient.
+
+Canonical design artifact `lab/two_shard_semantic_xor_worker_synthesis_family_v1_design.json`, SHA-256 `ED63ED4C75F9D6CE8DB4177E1137D02CFED7B385E20B2D29B434206DAD5C7B1F`, contains no corpus, evaluator answers, prompt text, request hashes, model seeds, runtime code, authority, or live preregistration. No result record is added.
+
+**Next exact action:** `SEPARATELY_AUTHOR_CORPUS_AND_PROTECTED_EVALUATOR_FOR_TWO_SHARD_SEMANTIC_XOR_FAMILY`. Freeze exactly four manual public tasks and their isolated protected answers simultaneously before model contact. Do not implement runtime, create authority, or execute inference automatically.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 
