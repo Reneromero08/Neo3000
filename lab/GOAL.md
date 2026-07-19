@@ -32,9 +32,13 @@ The corpus/evaluator boundary is now frozen as `TWO_SHARD_SEMANTIC_XOR_CORPUS_AN
 
 Canonical public corpus `lab/two_shard_semantic_xor_worker_synthesis_family_v1_public_tasks.json` is 3,704 bytes at SHA-256 `DE4D822424EFE5B6B5FAB1A65F5D2A1E5A87FC60D64A2DD84812BC300A246C41`. The ignored protected evaluator is 968 bytes at SHA-256 `437112DC9A06E4CB3CF1824A738BB13887212B23A38E2AF12A94374A9259D163`; its fresh salt, expected bits, labels, and task-to-cell mapping remain private. Aggregate coverage is exactly one each of `00 / 01 / 10 / 11`, with worker-A, worker-B, and final-label balances each `2/2`.
 
-Tracked binding artifact `lab/two_shard_semantic_xor_worker_synthesis_family_v1_corpus_binding_1.json`, SHA-256 `5EBFF4979CD8E60E814F05C8B5E8413523DFB244E4396548A4A595253020EF5F`, binds both surfaces before any model contact and records zero implementation, prompts, request hashes, seeds, authority, runtime, or result record.
+Tracked binding artifact `lab/two_shard_semantic_xor_worker_synthesis_family_v1_corpus_binding_1.json`, SHA-256 `5EBFF4979CD8E60E814F05C8B5E8413523DFB244E4396548A4A595253020EF5F`, binds both surfaces before any model contact.
 
-**Next exact action:** `SEPARATELY_IMPLEMENT_AND_PREREGISTER_TWO_SHARD_SEMANTIC_XOR_WORKER_AND_BASELINE_EVALUATION`. Implement only against the frozen corpus/evaluator identities and stop before authority or live execution.
+The separately authorized static implementation is complete as `two-shard-semantic-xor-worker-baseline-evaluation-v1`. It freezes 16 request positions and seeds, exact-hash binds all eight worker and four direct-baseline requests, and binds outcome-derived synthesis construction under derivation-law SHA-256 `9974D9F209059F57B0A716D6187F9C4DEF9354608051037BB3CB6A1C30386B8D`. Before each future synthesis contact, both authenticated worker captures must be reverified and the derived request hash journaled. Protected evaluator bytes remain unopened by public construction and can first be read only after all captures, cleanup, and postflight.
+
+Canonical preregistration `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1.json` has artifact SHA-256 `41AA06744924D4705A4EC03FC418FA6F2A407BACD007E96988AF29CBEE49BEA2`. No authority, sidecar, model request, generation, capture, result, archive, publication record, or follow-on design was created.
+
+**Next exact action:** `SEPARATELY_AUTHORIZE_AND_EXECUTE_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1`. Bind one fresh external authority to the published static commit and exact preregistration; do not publish or design a follow-on automatically.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 

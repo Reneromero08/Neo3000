@@ -39,6 +39,13 @@
 - [x] Separate controller and evaluator surfaces. The controller receives natural language, schemas, and XOR only; no structured facts, expected bits, final label, generator variables, parser, or protected material may reach rendering, dispatch, route selection, ordering, seeds, or retries.
 - [x] Define a fair one-request direct baseline using both exact shards and shared runtime controls. Require at least equal worker-route accuracy plus fewer fresh prompt-plus-completion tokens per correct final label across every retained task before any inference-advantage classification.
 - [x] Bind canonical design artifact `lab/two_shard_semantic_xor_worker_synthesis_family_v1_design.json`, SHA-256 `ED63ED4C75F9D6CE8DB4177E1137D02CFED7B385E20B2D29B434206DAD5C7B1F`, as `TWO_SHARD_SEMANTIC_XOR_TASK_FAMILY_STATICALLY_ADMISSIBLE`. Add no result record.
+- [x] Implement the exact four-task worker-versus-baseline controller with 16 fixed request positions, one generation maximum each, one physical slot, one sidecar epoch, no adaptive routing, no semantic early stop, no retry after request start, and uniform `cache_prompt = false`.
+- [x] Bind all 16 outcome-independent seeds, all eight worker request hashes, all four direct-baseline request hashes, and outcome-derived synthesis construction under law `9974D9F209059F57B0A716D6187F9C4DEF9354608051037BB3CB6A1C30386B8D`; prohibit placeholder synthesis answers or falsely preknown hashes.
+- [x] Require cryptographic re-verification of both worker captures before every synthesis contact. Bind each synthesis-visible artifact to worker role, actual captured bit, exact worker request hash, authenticated capture hash, and generation ordinal under the existing private evidence root.
+- [x] Delay protected evaluator opening until all 16 captures, cleanup, and postflight are complete. Return only per-task correctness booleans and aggregate metrics; keep expected bits, labels, task cells, salt, and evaluator contents private.
+- [x] Freeze exact resource accounting with cached tokens required to be zero, fresh prompt tokens equal to logical prompt tokens, and route efficiency compared by exact integer cross-products. Exclude wall-clock and hypothetical parallelism.
+- [x] Bind preregistration artifact `41AA06744924D4705A4EC03FC418FA6F2A407BACD007E96988AF29CBEE49BEA2`, scientific surface `FE0ECA78CC0227AEB82F15338119129195666840A7E5BCD010D563417DC218C4`, controller `964A747D72A20A0E9DAD99DDF99A5FBEC4DE2B3273678CD28A80AC2E69AE7340`, protected scorer `8BF9146886167545CFA7A3C34980614407A5C5BF02D7229F47209FB7F22B0F04`, and resource accountant `FCC62B9E4587A4AF7B3B8B47A2BE903FDF5A33CCDDEAA78FF4B76A9EFF07DA2C`.
+- [x] Pass focused implementation tests, exact preregistration reconstruction, changed-file compilation, no-smuggle/private scans, canonical JSON/JSONL, evaluator gates, regenerated evaluator lock, and protected preflight. Run no full CPU suite or historical CK0 family and create no live state.
 - [x] Create zero task instances, expected bits, labels, prompts, request hashes, seeds, Python code, authority, runtime state, model contact, or follow-on execution during design.
 - [x] Add the exact private evaluator path to the existing narrow `catalytic_kernel_0_private` ignore convention before private creation; create the evaluator exclusively and never expose its bytes through tracked state.
 - [x] Manually author eight distinct entailment microcases with 38–45 passage words, 10–16 question words, two to four named entities, no external knowledge, no ambiguous pronouns, and balanced comparison, ownership, location, and temporal relations.
@@ -71,7 +78,7 @@ Preserved three-parent evidence:
 
 Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, general worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** `SEPARATELY_IMPLEMENT_AND_PREREGISTER_TWO_SHARD_SEMANTIC_XOR_WORKER_AND_BASELINE_EVALUATION`. Preserve exact frozen corpus/evaluator bytes and stop before authority, sidecar launch, or model contact.
+**Next exact action:** `SEPARATELY_AUTHORIZE_AND_EXECUTE_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1`. Bind a fresh external authority to the published static commit and exact preregistration; execute no more than 16 one-generation requests and stop before publication or follow-on design.
 
 ---
 

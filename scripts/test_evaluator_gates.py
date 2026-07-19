@@ -576,5 +576,20 @@ class EvaluatorGateTests(unittest.TestCase):
             self.assertIn(path, EVALUATOR["controller_files"])
 
 
+    def test_semantic_xor_worker_baseline_surface_is_protected(self) -> None:
+        controller_paths = (
+            "scripts/catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation_scientific.py",
+            "scripts/catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation.py",
+            "scripts/test_catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation.py",
+        )
+        for path in controller_paths:
+            self.assertIn(path, EVALUATOR["protected_paths"]["files"])
+            self.assertIn(path, EVALUATOR["controller_files"])
+        self.assertIn(
+            "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1.json",
+            EVALUATOR["protected_paths"]["files"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

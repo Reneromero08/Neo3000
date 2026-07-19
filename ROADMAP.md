@@ -608,6 +608,10 @@ Corpus authoring is now complete under `TWO_SHARD_SEMANTIC_XOR_CORPUS_AND_PROTEC
 
 Public corpus `lab/two_shard_semantic_xor_worker_synthesis_family_v1_public_tasks.json` is 3,704 bytes at SHA-256 `DE4D822424EFE5B6B5FAB1A65F5D2A1E5A87FC60D64A2DD84812BC300A246C41`. The ignored protected evaluator is 968 bytes at SHA-256 `437112DC9A06E4CB3CF1824A738BB13887212B23A38E2AF12A94374A9259D163`. Tracked binding artifact `lab/two_shard_semantic_xor_worker_synthesis_family_v1_corpus_binding_1.json`, SHA-256 `5EBFF4979CD8E60E814F05C8B5E8413523DFB244E4396548A4A595253020EF5F`, freezes both identities before model contact without disclosing answers. The next boundary is `SEPARATELY_IMPLEMENT_AND_PREREGISTER_TWO_SHARD_SEMANTIC_XOR_WORKER_AND_BASELINE_EVALUATION`.
 
+That implementation boundary is complete as `two-shard-semantic-xor-worker-baseline-evaluation-v1`. The static controller freezes 16 request positions across all four tasks, uniformly disables prompt caching, binds 16 outcome-independent seeds, and exact-hash binds eight isolated worker requests plus four direct baselines. The four synthesis hashes are intentionally not precomputed: the frozen derivation law `9974D9F209059F57B0A716D6187F9C4DEF9354608051037BB3CB6A1C30386B8D` requires cryptographic re-verification of both worker captures, exact bit parsing, domain-separated source commitments, and journal binding before each synthesis contact.
+
+Canonical preregistration `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1.json` has artifact SHA-256 `41AA06744924D4705A4EC03FC418FA6F2A407BACD007E96988AF29CBEE49BEA2`. Protected scoring cannot open the evaluator until all 16 captures exist and cleanup/postflight pass; resource comparison uses exact integer cross-products over fresh prompt-plus-completion tokens per correct label. No authority, sidecar, model request, generation, capture, result, archive, ledger record, or follow-on exists. The next boundary is `SEPARATELY_AUTHORIZE_AND_EXECUTE_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1`.
+
 First intervention: **HoloState-v1 Live Prefix Lattice**
 
 ```text
