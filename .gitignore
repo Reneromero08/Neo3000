@@ -34,6 +34,7 @@ state/catalytic_swarm_1_cache_diagnostic/
 /state/catalytic_kernel_0_private/joint-condition-intersection-replication-v1.secret
 /state/catalytic_kernel_0_private/joint-condition-intersection-replication-v1.creation.json
 /state/catalytic_kernel_0_private/two_shard_semantic_xor_worker_synthesis_family_v1_evaluator.json
+/state/catalytic_kernel_0_private/holostate_v1_warm_trajectory_related_task_family_v1_evaluator.json
 /state/catalytic_kernel_0_private/.balanced-opaque-*
 
 # Benchmarks and logs

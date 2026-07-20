@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Semantic-XOR Attempt-3 capability adjudicated and published
+## Checkpoint 2: Integrated HoloState warm-trajectory evaluation statically prepared
 
 `balanced-opaque-five-support-two-worker-synthesis-probe-v1` executed once from protected main `563cbf5a72a763af8a2cde2394a5ea5beb008bad`. One consumed authority admitted exactly `worker-A`, `worker-B`, and `synthesis-AB`; all three one-generation requests completed with authenticated captures and zero retries.
 
@@ -56,7 +56,11 @@ Canonical adjudication artifact `lab/ck0_two_shard_semantic_xor_worker_baseline_
 
 The bounded interpretation is `TWO_ISOLATED_MODEL_GENERATED_SEMANTIC_JUDGMENT_STREAMS_WERE_COMBINED_THROUGH_XOR_INTO_CORRECT_FINAL_LABELS_ON_ALL_FOUR_FROZEN_TASKS_WHILE_THE_SAME_EVIDENCE_DIRECT_BASELINE_SOLVED_THREE_OF_FOUR`. General worker synthesis, transfer, reduced fresh computation, compute amplification, complete catalytic inference, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** `STATICALLY_EVALUATE_WORKER_PLUS_CONTROLLER_XOR_ROUTE_FROM_ATTEMPT_3_CAPTURES`. Use only preserved worker and direct-baseline captures, omit the four model-synthesis requests from accounting, and keep the result explicitly post hoc until separately confirmed.
+The bounded post hoc worker-plus-controller diagnostic is complete with no new model contact or ledger record. Excluding the four model-synthesis requests, worker-plus-controller used 1,668 fresh prompt plus 83 completion tokens across eight requests for four correct labels (`1751/4`); direct baseline used 1,373 plus 57 across four requests for three correct labels (`1430/3`). Exact cross-products are `5253 < 5720`. This is an apparent post hoc advantage only, not confirmatory evidence, and the semantic-XOR line is closed.
+
+The direct catalytic pivot is frozen as `holostate-v1-warm-trajectory-related-task-evaluation-v1`. Four 500–1000-word related task pairs share one Task-A generation and exact process-local checkpoint per pair. Catalytic Task B continues from the checkpoint; direct Task B receives the same evidence and exact captured Task-A JSON without cache reuse. The 12-position order is counterbalanced, Task-B seeds match within every pair, protected evaluation remains delayed until cleanup/postflight, and exact checkpoint identity, reuse, readdress, closure, and resource-accounting laws are preregistered. No authority, sidecar, request, generation, capture, result, publication, or follow-on exists.
+
+**Next exact action:** `AUTHORIZE_ONE_LIVE_HOLOSTATE_WARM_TRAJECTORY_RELATED_TASK_EVALUATION` from the final pushed preparation commit using one fresh external authority. General catalytic inference, transfer, restart persistence, superiority, SOTA, and automatic promotion remain locked.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 

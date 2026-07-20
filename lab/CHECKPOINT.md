@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Semantic-XOR Attempt-3 forensic adjudication published
+## Checkpoint 2: Integrated HoloState warm-trajectory evaluation statically prepared
 
-**Status:** SOURCE ATTEMPT-3 `INCONCLUSIVE` PRESERVED / ZERO-CONTACT WORKER SYNTHESIS CAPABILITY SUPPORTED / FRESH-INFERENCE ADVANTAGE NOT SUPPORTED / NEO-EXP-0047 PUBLISHED / BROADER CLAIMS LOCKED
+**Status:** SOURCE ATTEMPT-3 PRESERVED / POST HOC WORKER-PLUS-CONTROLLER DIAGNOSTIC CLOSED / INTEGRATED HOLOSTATE EVALUATION PREREGISTERED / ZERO LIVE CONTACT / BROADER CLAIMS LOCKED
 
 - [x] Preserve the three-worker diagnostic from synchronized source `6c760b2d5f8296f795724d061f1d91a0e4171c27`, then admit the separately authorized two-worker decision at synchronized clean `main` `c8942f7b4ecf7ab555b54393fc63c4cbb5a366b3`; exact frozen suite SHA-256 remains `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
 - [x] Scan only the eight public task projections and all 80 three-example shards. Locally eligible shard counts by task index are `[2,2,0,0,2,1,1,0]`; no task reaches the three distinct worker shards required by the frozen geometry.
@@ -90,7 +90,12 @@ Preserved three-parent evidence:
 
 Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, general worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** `STATICALLY_EVALUATE_WORKER_PLUS_CONTROLLER_XOR_ROUTE_FROM_ATTEMPT_3_CAPTURES`. Use preserved worker and direct-baseline captures only, exclude all four model-synthesis requests from accounting, and treat the result as a post hoc diagnostic until separately confirmed.
+- [x] Complete the zero-contact post hoc worker-plus-controller diagnostic from preserved Attempt-3 captures. Exclude all four synthesis generations; bind worker-plus-controller `1751/4`, direct baseline `1430/3`, and exact cross-products `5253 < 5720`. Add no result record and treat the apparent advantage as non-confirmatory.
+- [x] Close the semantic-XOR proxy line and implement the direct integrated successor `holostate-v1-warm-trajectory-related-task-evaluation-v1` with four frozen related task pairs and 12 maximum future generations.
+- [x] Bind one shared Task-A generation and exact process-local checkpoint per pair, catalytic Task-B checkpoint continuation, same-information direct replay, counterbalanced route order, paired Task-B seeds, raw authenticated capture, protected delayed scoring, and exact checkpoint identity/reuse/readdress/closure evidence.
+- [x] Preserve all live state absent. Create no authority, receipt, runtime root, sidecar, model request, generation, capture, result, archive, ledger record, or automatic follow-on during static preparation.
+
+**Next exact action:** `AUTHORIZE_ONE_LIVE_HOLOSTATE_WARM_TRAJECTORY_RELATED_TASK_EVALUATION` from the final pushed preparation commit with one fresh external authority. Do not infer general catalytic inference before the frozen live comparison completes.
 
 ---
 

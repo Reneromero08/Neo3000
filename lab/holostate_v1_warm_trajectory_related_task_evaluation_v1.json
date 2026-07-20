@@ -1,0 +1,335 @@
+{
+  "artifact_sha256": "C3A4A768A63657802FDB597BA008D44C6297B4AD11AF13D64F5507A6BC261EE7",
+  "authority": {
+    "authorized_commit_must_equal_protected_main": true,
+    "fresh_external_authority_id": true,
+    "maximum_model_generations": 12,
+    "raw_authority_id_persisted": false,
+    "required": true,
+    "retry_allowed": false
+  },
+  "authority_receipt_absent": true,
+  "bindings": {
+    "checkpoint_closure": {
+      "algorithm": "sha256-canonical-callable-source-v1",
+      "sha256": "CFED70705B4AA064AE283424436558D159BD2FB153D86197B0138FB0411F3AC2"
+    },
+    "controller": {
+      "algorithm": "sha256-canonical-callable-source-v1",
+      "sha256": "D08A10550762E3BDEEFAFB6FC3340BAA5EC101FE4977BF441C60D39B6707F84A"
+    },
+    "frozen_scientific": {
+      "algorithm": "sha256-canonical-scientific-surface-v1",
+      "body": {
+        "corpus_sha256": "A45FF0A6DCD8E3E75CBE0B0F7A572DB023B0E7CE81093F7C82155D0A4DC3D4A9",
+        "design_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1",
+        "fixed_request_template_sha256": {
+          "warm-trajectory-archive-01-task-a": "B8E66591C671B6DEBA97D11B392DB29B727E54FB628787A07156A2284CD17533",
+          "warm-trajectory-archive-01-task-b-catalytic": "8C69F2E0D9081DC0C7EC15969C892E3C6EEEEC36711AD38B3B7E804F3D617C48",
+          "warm-trajectory-archive-01-task-b-direct": "C7B5D9E5971EB35B5A18813A70438CF41C98E67F750B7FD1C51A7DBD6E85C5EF",
+          "warm-trajectory-clinic-04-task-a": "6839C608822F7D759D23D9ADDCFB9E5A29C5597578FF2A4485CEC3E5F89C680C",
+          "warm-trajectory-clinic-04-task-b-catalytic": "E17ACC7FFDAD1206370EC9D000C1A04A3B62A92F08E4436A4DD31FF693BEB331",
+          "warm-trajectory-clinic-04-task-b-direct": "4B1D7676E540864ACB1F73244D06FFFCBA1A798DC352E6B7F1E0E5E7C09A1B42",
+          "warm-trajectory-observatory-03-task-a": "72CBB3D6084622E6CFA7323AFDE19518E847FC093F2236388E5D5C11BFB7CF96",
+          "warm-trajectory-observatory-03-task-b-catalytic": "F6984A99D94C21A9374519C91B3E9EC4B78880A041915E166B58425A1646FF4C",
+          "warm-trajectory-observatory-03-task-b-direct": "69DC7ADD1A4DC7235C7910E7155E82FCBFC630265678127613CF6670A101D463",
+          "warm-trajectory-refuge-02-task-a": "18C2ACDFD37A767D9B36A5B775B04A6C03008B173CB5908B26D6E56D5250FA61",
+          "warm-trajectory-refuge-02-task-b-catalytic": "6BC21E6DCD4767F6D4EC3B36C2E246E38910E9DDA6038AADB3F726F461E3AAE7",
+          "warm-trajectory-refuge-02-task-b-direct": "B05C7198153EE8471C28793254A849E05ACE9C21B4DA5C0B9428AE2A173B079E"
+        },
+        "maximum_generations": 12,
+        "no_retry_after_start": true,
+        "one_generation_maximum_per_request": true,
+        "pair_sha256": {
+          "warm-trajectory-archive-01": "5D8E5D340C392E655EC147623F1578D9030B7F4C0F2D8568196BCEEA1D2C81BD",
+          "warm-trajectory-clinic-04": "844AF3DF891478CBCD892E0B9B2328DE1D9B5262CC129493E8A842C69CAAA421",
+          "warm-trajectory-observatory-03": "21218A64658342522E72898766279B7B9F555040707ED187D90AAED31077DFD5",
+          "warm-trajectory-refuge-02": "792E7159597F559ECF688563F6F15FEC9A9FC089C0A0501834E5EBBD244176F8"
+        },
+        "parsers_binding": {
+          "algorithm": "sha256-canonical-callable-source-v1",
+          "sha256": "3D7FF6430C5C23C4837BFC5900F50727E1158AB037FCA884ED612C207C6FCB26"
+        },
+        "request_constructor_binding": {
+          "algorithm": "sha256-canonical-callable-source-v1",
+          "sha256": "337378A152CA8CEFE669200D50BD2BB759AABCC0CC1C75E93E84E1E261767719"
+        },
+        "request_order": [
+          "warm-trajectory-archive-01-task-a",
+          "warm-trajectory-archive-01-task-b-catalytic",
+          "warm-trajectory-archive-01-task-b-direct",
+          "warm-trajectory-refuge-02-task-a",
+          "warm-trajectory-refuge-02-task-b-direct",
+          "warm-trajectory-refuge-02-task-b-catalytic",
+          "warm-trajectory-observatory-03-task-a",
+          "warm-trajectory-observatory-03-task-b-catalytic",
+          "warm-trajectory-observatory-03-task-b-direct",
+          "warm-trajectory-clinic-04-task-a",
+          "warm-trajectory-clinic-04-task-b-direct",
+          "warm-trajectory-clinic-04-task-b-catalytic"
+        ],
+        "route_order": {
+          "warm-trajectory-archive-01": [
+            "catalytic",
+            "direct"
+          ],
+          "warm-trajectory-clinic-04": [
+            "direct",
+            "catalytic"
+          ],
+          "warm-trajectory-observatory-03": [
+            "catalytic",
+            "direct"
+          ],
+          "warm-trajectory-refuge-02": [
+            "direct",
+            "catalytic"
+          ]
+        },
+        "seeds": {
+          "warm-trajectory-archive-01": {
+            "task_a": 1811608144,
+            "task_b_shared": 1832504555
+          },
+          "warm-trajectory-clinic-04": {
+            "task_a": 676779906,
+            "task_b_shared": 120440515
+          },
+          "warm-trajectory-observatory-03": {
+            "task_a": 1429783017,
+            "task_b_shared": 267551026
+          },
+          "warm-trajectory-refuge-02": {
+            "task_a": 1602627551,
+            "task_b_shared": 1085300477
+          }
+        },
+        "task_a_shared_between_routes": true
+      },
+      "sha256": "EB8A386E6453DB0B1948C4542F35AEFDEF58D5EB1CBFAB46FEC4D309101BC6C7"
+    },
+    "protected_scorer": {
+      "algorithm": "sha256-canonical-callable-source-v1",
+      "sha256": "BD3F15E5AE8A71F97DCB80506B77BDE6808B8F80DEBA88BD5D4A026A7CABEFAA"
+    },
+    "resource_accounting": {
+      "algorithm": "sha256-canonical-callable-source-v1",
+      "sha256": "80EFD822CDCDCBDB90E7F47BC574E8C485C0FB7D3D8DE3EBA3D8AC94D4FD2705"
+    }
+  },
+  "claim_locks": [
+    "restart-persistent state",
+    "general catalytic inference",
+    "arbitrary task transfer",
+    "compute amplification beyond observed accounting",
+    "reduced wall-clock latency unless separately measured",
+    "persistent blackboard value",
+    "adaptive swarms",
+    "superiority",
+    "SOTA",
+    "automatic promotion"
+  ],
+  "corpus": {
+    "all_pairs_retained": true,
+    "evidence_word_bounds": [
+      500,
+      1000
+    ],
+    "outcome_based_selection": false,
+    "pair_ids": [
+      "warm-trajectory-archive-01",
+      "warm-trajectory-refuge-02",
+      "warm-trajectory-observatory-03",
+      "warm-trajectory-clinic-04"
+    ],
+    "pair_sha256": {
+      "warm-trajectory-archive-01": "5D8E5D340C392E655EC147623F1578D9030B7F4C0F2D8568196BCEEA1D2C81BD",
+      "warm-trajectory-clinic-04": "844AF3DF891478CBCD892E0B9B2328DE1D9B5262CC129493E8A842C69CAAA421",
+      "warm-trajectory-observatory-03": "21218A64658342522E72898766279B7B9F555040707ED187D90AAED31077DFD5",
+      "warm-trajectory-refuge-02": "792E7159597F559ECF688563F6F15FEC9A9FC089C0A0501834E5EBBD244176F8"
+    },
+    "path": "lab/holostate_v1_warm_trajectory_related_task_family_v1_public_tasks.json",
+    "sha256": "A45FF0A6DCD8E3E75CBE0B0F7A572DB023B0E7CE81093F7C82155D0A4DC3D4A9"
+  },
+  "decision_law": {
+    "capability_without_token_advantage": "PROCESS_LOCAL_WARM_TRAJECTORY_CAPABILITY_GAIN_SUPPORTED_WITHOUT_FRESH_TOKEN_ADVANTAGE",
+    "inconclusive": "INCONCLUSIVE",
+    "not_supported": "PROCESS_LOCAL_WARM_TRAJECTORY_CATALYTIC_INFERENCE_NOT_SUPPORTED",
+    "reuse_only": "PROCESS_LOCAL_WARM_TRAJECTORY_REUSE_SUPPORTED_WITHOUT_TASK_ADVANTAGE",
+    "supported": "PROCESS_LOCAL_WARM_TRAJECTORY_CATALYTIC_INFERENCE_SUPPORTED"
+  },
+  "design_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1",
+  "execution": {
+    "catalytic_task_b_generations": 4,
+    "direct_task_b_generations": 4,
+    "fixed_request_template_sha256": {
+      "warm-trajectory-archive-01-task-a": "B8E66591C671B6DEBA97D11B392DB29B727E54FB628787A07156A2284CD17533",
+      "warm-trajectory-archive-01-task-b-catalytic": "8C69F2E0D9081DC0C7EC15969C892E3C6EEEEC36711AD38B3B7E804F3D617C48",
+      "warm-trajectory-archive-01-task-b-direct": "C7B5D9E5971EB35B5A18813A70438CF41C98E67F750B7FD1C51A7DBD6E85C5EF",
+      "warm-trajectory-clinic-04-task-a": "6839C608822F7D759D23D9ADDCFB9E5A29C5597578FF2A4485CEC3E5F89C680C",
+      "warm-trajectory-clinic-04-task-b-catalytic": "E17ACC7FFDAD1206370EC9D000C1A04A3B62A92F08E4436A4DD31FF693BEB331",
+      "warm-trajectory-clinic-04-task-b-direct": "4B1D7676E540864ACB1F73244D06FFFCBA1A798DC352E6B7F1E0E5E7C09A1B42",
+      "warm-trajectory-observatory-03-task-a": "72CBB3D6084622E6CFA7323AFDE19518E847FC093F2236388E5D5C11BFB7CF96",
+      "warm-trajectory-observatory-03-task-b-catalytic": "F6984A99D94C21A9374519C91B3E9EC4B78880A041915E166B58425A1646FF4C",
+      "warm-trajectory-observatory-03-task-b-direct": "69DC7ADD1A4DC7235C7910E7155E82FCBFC630265678127613CF6670A101D463",
+      "warm-trajectory-refuge-02-task-a": "18C2ACDFD37A767D9B36A5B775B04A6C03008B173CB5908B26D6E56D5250FA61",
+      "warm-trajectory-refuge-02-task-b-catalytic": "6BC21E6DCD4767F6D4EC3B36C2E246E38910E9DDA6038AADB3F726F461E3AAE7",
+      "warm-trajectory-refuge-02-task-b-direct": "B05C7198153EE8471C28793254A849E05ACE9C21B4DA5C0B9428AE2A173B079E"
+    },
+    "maximum_generations": 12,
+    "no_retry_after_request_start": true,
+    "no_semantic_early_stop": true,
+    "one_generation_maximum_per_request": true,
+    "one_physical_slot": true,
+    "one_sidecar_epoch": true,
+    "request_order": [
+      "warm-trajectory-archive-01-task-a",
+      "warm-trajectory-archive-01-task-b-catalytic",
+      "warm-trajectory-archive-01-task-b-direct",
+      "warm-trajectory-refuge-02-task-a",
+      "warm-trajectory-refuge-02-task-b-direct",
+      "warm-trajectory-refuge-02-task-b-catalytic",
+      "warm-trajectory-observatory-03-task-a",
+      "warm-trajectory-observatory-03-task-b-catalytic",
+      "warm-trajectory-observatory-03-task-b-direct",
+      "warm-trajectory-clinic-04-task-a",
+      "warm-trajectory-clinic-04-task-b-direct",
+      "warm-trajectory-clinic-04-task-b-catalytic"
+    ],
+    "route_order": {
+      "warm-trajectory-archive-01": [
+        "catalytic",
+        "direct"
+      ],
+      "warm-trajectory-clinic-04": [
+        "direct",
+        "catalytic"
+      ],
+      "warm-trajectory-observatory-03": [
+        "catalytic",
+        "direct"
+      ],
+      "warm-trajectory-refuge-02": [
+        "direct",
+        "catalytic"
+      ]
+    },
+    "seeds": {
+      "warm-trajectory-archive-01": {
+        "task_a": 1811608144,
+        "task_b_shared": 1832504555
+      },
+      "warm-trajectory-clinic-04": {
+        "task_a": 676779906,
+        "task_b_shared": 120440515
+      },
+      "warm-trajectory-observatory-03": {
+        "task_a": 1429783017,
+        "task_b_shared": 267551026
+      },
+      "warm-trajectory-refuge-02": {
+        "task_a": 1602627551,
+        "task_b_shared": 1085300477
+      }
+    },
+    "task_a_generations": 4,
+    "task_a_maximum_completion_tokens": 512,
+    "task_b_maximum_completion_tokens": 128,
+    "temperature": 0,
+    "thinking_disabled": true
+  },
+  "holostate_law": {
+    "carrier": "HoloState-v1 Live Prefix Lattice",
+    "catalytic_suffix_contains": [
+      "Task-B question",
+      "Task-B choices",
+      "Task-B response schema"
+    ],
+    "checkpoint_contains": [
+      "shared evidence",
+      "Task-A request",
+      "exact model-generated Task-A state and answer"
+    ],
+    "checkpoint_materialization_reads_prior_cache": false,
+    "checkpoint_readdress_required_immediately_after_catalytic_branch": true,
+    "checkpoint_reuse_required": true,
+    "direct_cached_prompt_tokens_required": 0,
+    "direct_replay_contains": [
+      "complete shared evidence",
+      "Task-A question",
+      "exact captured Task-A JSON",
+      "Task-B question and choices",
+      "Task-B response schema"
+    ],
+    "direct_route_cannot_feed_catalytic_cache": true,
+    "restart_persistence_claimed": false,
+    "scope": "process-local"
+  },
+  "hypothesis": "Executable state created during Task A can be borrowed and transformed for a related Task B with no worse accuracy and fewer fresh marginal tokens than equal-information replay, while the canonical Task-A state remains exact and lawfully closable.",
+  "model_contact_during_preparation": false,
+  "post_hoc_semantic_xor_accounting": {
+    "classification": "POST_HOC_WORKER_PLUS_CONTROLLER_XOR_ACCOUNTING_DIAGNOSTIC",
+    "direct_baseline_route": {
+      "completion_tokens": 57,
+      "correct_final_labels": 3,
+      "fresh_prompt_plus_completion_tokens": 1430,
+      "fresh_prompt_tokens": 1373,
+      "generation_count": 4,
+      "logical_prompt_tokens": 1373,
+      "maximum_request_context": 380,
+      "request_count": 4,
+      "reused_prompt_tokens": 0,
+      "tokens_per_correct": {
+        "denominator": 3,
+        "numerator": 1430
+      }
+    },
+    "integer_cross_products": {
+      "direct_tokens_x_worker_correct": 5720,
+      "worker_tokens_x_direct_correct": 5253
+    },
+    "line_closed": true,
+    "model_synthesis_requests_excluded": 4,
+    "scientific_status": "post-hoc-not-confirmatory",
+    "source_attempt": 3,
+    "source_record_id": "neo-exp-0047",
+    "source_record_sha256": "B253E5AD9C4861CCCBF05AD1F67F5ED28E097A06418F113A4F123E220E0D21D4",
+    "strict_post_hoc_fresh_token_advantage": true,
+    "worker_plus_controller_route": {
+      "completion_tokens": 83,
+      "correct_final_labels": 4,
+      "fresh_prompt_plus_completion_tokens": 1751,
+      "fresh_prompt_tokens": 1668,
+      "generation_count": 8,
+      "logical_prompt_tokens": 1668,
+      "maximum_request_context": 244,
+      "request_count": 8,
+      "reused_prompt_tokens": 0,
+      "tokens_per_correct": {
+        "denominator": 4,
+        "numerator": 1751
+      }
+    }
+  },
+  "protected_evaluator": {
+    "bytes_opened": false,
+    "ignored": true,
+    "path": "state/catalytic_kernel_0_private/holostate_v1_warm_trajectory_related_task_family_v1_evaluator.json",
+    "regular": true,
+    "sha256": "AAC8CC0DEE3C748F92A9BA350E8EF32063171F5AF9B24754D55B1A7E71B0BE3E",
+    "size_bytes": 1895,
+    "tracked": false
+  },
+  "resource_law": {
+    "exact_tokens_per_correct": true,
+    "fresh_prompt_plus_completion_tokens": true,
+    "integer_cross_products": true,
+    "primary_comparison": "marginal catalytic Task B versus direct replay Task B",
+    "shared_task_a_reported_separately": true,
+    "wall_clock_separate": true
+  },
+  "runtime_artifacts_absent": true,
+  "schema_version": 1,
+  "starting_protected_main": "1a07ca0cc366d53e682e13440810716533f60f98",
+  "status": "statically-preregistered-unexecuted"
+}

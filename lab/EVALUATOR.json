@@ -205,6 +205,8 @@
       "scripts/test_catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation.py",
       "scripts/catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation_adjudication.py",
       "scripts/test_catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation_adjudication.py",
+      "scripts/holostate_v1_warm_trajectory_related_task_evaluation.py",
+      "scripts/test_holostate_v1_warm_trajectory_related_task_evaluation.py",
       "tools/server/server-context.cpp",
       "tools/server/server-task.cpp",
       ".gitignore",
@@ -244,6 +246,8 @@
       "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3.json",
       "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_4.json",
       "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3_adjudication_1.json",
+      "lab/holostate_v1_warm_trajectory_related_task_family_v1_public_tasks.json",
+      "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]
@@ -365,6 +369,8 @@
     ,"scripts/test_catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation.py"
     ,"scripts/catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation_adjudication.py"
     ,"scripts/test_catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation_adjudication.py"
+    ,"scripts/holostate_v1_warm_trajectory_related_task_evaluation.py"
+    ,"scripts/test_holostate_v1_warm_trajectory_related_task_evaluation.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"
