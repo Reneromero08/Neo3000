@@ -859,7 +859,7 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         finally:
             shutil.rmtree(repository, ignore_errors=True)
 
-    def test_37_attempt_3_preserves_attempt_2_terminal_evidence(self):
+    def test_37_attempt_4_preserves_attempt_3_terminal_evidence(self):
         prior = probe.verify_prior_execution(ROOT, probe._load_private_root(ROOT))
         self.assertEqual(prior["authority_receipt_sha256"], probe.PRIOR_AUTHORITY_RECEIPT_SHA256)
         self.assertEqual(prior["evidence_sha256"], probe.PRIOR_EVIDENCE_SHA256)
@@ -867,7 +867,7 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         self.assertFalse((ROOT / probe.AUTHORITY_RECEIPT_PATH).exists())
         self.assertFalse((ROOT / probe.STATE_ROOT).exists())
 
-    def test_38_chat_sse_timings_recover_attempt_2_capture_accounting(self):
+    def test_38_attempt_3_capture_retains_normalized_chat_accounting(self):
         path = (
             ROOT
             / probe.PRIOR_STATE_ROOT
@@ -876,8 +876,8 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         )
         self.assertEqual(probe.sha256_file(path), probe.PRIOR_EVIDENCE_SHA256[path.relative_to(ROOT / probe.PRIOR_STATE_ROOT).as_posix()])
         capture = json.loads(path.read_bytes())
-        self.assertIsNone(capture["execution"]["prompt_tokens"])
-        self.assertIsNone(capture["execution"]["completion_tokens"])
+        self.assertEqual(capture["execution"]["prompt_tokens"], 901)
+        self.assertEqual(capture["execution"]["completion_tokens"], 108)
         normalized = probe.normalized_capture_execution(capture)
         self.assertEqual(normalized["prompt_tokens"], 901)
         self.assertEqual(normalized["cached_prompt_tokens"], 0)
@@ -887,6 +887,27 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         self.assertEqual(normalized["terminal_stop_evidence"], {"observed": True, "stop": True})
         resource = probe.resource_record(capture, "warm-trajectory-archive-01-task-a")
         self.assertEqual(resource["fresh_prompt_plus_completion_tokens"], 1009)
+
+    def test_39_checkpoint_boundary_comes_from_full_task_b_prompt(self):
+        class FullPromptOnlyHoloState(FakeHoloState):
+            @staticmethod
+            def render_messages(messages, kwargs):
+                if len(messages) != 4:
+                    raise AssertionError("standalone checkpoint rendering is forbidden")
+                return FakeHoloState.render_messages(messages, kwargs)
+
+        pair = self.by_id[probe.PAIR_IDS[0]]
+        task_a_json = probe.canonical_json_text(
+            {"state": ["one", "two", "three", "four"], "answer": "A"}
+        )
+        geometry = probe.render_checkpoint_and_task_b(
+            FullPromptOnlyHoloState(),
+            pair,
+            task_a_json,
+        )
+        self.assertIn(task_a_json, geometry["checkpoint_prompt"])
+        self.assertTrue(geometry["full_prompt"].startswith(geometry["checkpoint_prompt"]))
+        self.assertLess(geometry["checkpoint_token_count"], geometry["full_prompt_token_count"])
 
 
 if __name__ == "__main__":

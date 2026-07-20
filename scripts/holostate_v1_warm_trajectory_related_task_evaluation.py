@@ -31,8 +31,8 @@ class WarmTrajectoryEvaluationError(ValueError):
 
 
 DESIGN_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1"
-ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-3"
-PRIOR_ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-2"
+ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-4"
+PRIOR_ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-3"
 FAMILY_ID = "holostate-v1-warm-trajectory-related-task-family-v1"
 STARTING_PROTECTED_MAIN = "1a07ca0cc366d53e682e13440810716533f60f98"
 PUBLIC_CORPUS_PATH = Path(
@@ -49,39 +49,39 @@ PREREGISTRATION_PATH = Path(
     "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1.json"
 )
 STATE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-3"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-4"
 )
 ARCHIVE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-3"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-4"
 )
 PRIOR_AUTHORITY_RECEIPT_PATH = Path(
     "state/catalytic_kernel_0_authority."
-    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-2.authority.consumed.json"
+    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-3.authority.consumed.json"
 )
 AUTHORITY_RECEIPT_PATH = Path(
     "state/catalytic_kernel_0_authority."
-    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-3.authority.consumed.json"
+    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-4.authority.consumed.json"
 )
 PRIOR_AUTHORITY_RECEIPT_SHA256 = (
-    "01744A976F84F57DEE2C91EF3817DB6ED2794BBA32AB6AE612D0498E6BE100F3"
+    "352B9EAE0CFBD13E009928EED4A9E300E6C114B2A205F7AC4C9B3C10D34C721A"
 )
 PRIOR_STATE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-2"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-3"
 )
 PRIOR_ARCHIVE_PATH = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-2/"
-    "E7B7EB7FB097C5A2BEDE1602FBFC74D650E064D54E6C8DCDD832AD6F9EFFACC4"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-3/"
+    "EBDDE88262BA24D0659988BB69051101CA99E584EDF1CBFBD8647E092D403B13"
 )
 PRIOR_EVIDENCE_SHA256 = {
-    "manifest.json": "168FB5C680EA47DF1CF469570E04E33EE82A0BEEC5C046225577DC2851D3AEAA",
-    "journal.jsonl": "8F7E8AF68AF91763BA96339A5BB102709A339B564CFE8C1A28582E64E6B443BB",
-    "result.json": "B00234F96CF61FB6C7298FD3B39C52A2CB3745A1D8833E77AF3C45CEDDB2FBBA",
-    "closure.json": "5E61DAF6F8EE56F2A1C60DEA0899325D63F2C7493FD214BB7F3C11946C187981",
+    "manifest.json": "A2C7E362913AD9B49E58F27B6542C7031CA568D61BB3A4280729107D65BB48D3",
+    "journal.jsonl": "0C34BF92AEE3A5F6D11955ED122BDCE0C633DA35FCD350B24F1F39E72ECE043B",
+    "result.json": "B4D3F6C08586A4233A16BD5951A3F10E90414F1B200801A0EB14AE70F5E60AA1",
+    "closure.json": "EBF5EBC86DE64F23F9B7EB0117D747DF0C52370422CCA69711673719D7D508B9",
     "captures/warm-trajectory-archive-01-task-a.json": (
-        "8D26BDCC61FDFF16A6CCBC609D560EB61DB47CA8CCD26E2033AC73AD6679D92C"
+        "9FB12220C9B7E061BDE22640BF038AFF6A6A30594D33C5204386B4051B9E4815"
     ),
 }
-PRIOR_ARCHIVE_SHA256 = "E7B7EB7FB097C5A2BEDE1602FBFC74D650E064D54E6C8DCDD832AD6F9EFFACC4"
+PRIOR_ARCHIVE_SHA256 = "EBDDE88262BA24D0659988BB69051101CA99E584EDF1CBFBD8647E092D403B13"
 EXPECTED_EVIDENCE_ROOT_COMMITMENT = (
     "7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD"
 )
@@ -545,6 +545,7 @@ def controller_binding() -> dict[str, Any]:
             capture_request_once,
             _chat_sse_terminal_accounting,
             normalized_capture_execution,
+            _task_a_terminal_token_index,
             render_checkpoint_and_task_b,
             checkpoint_identity,
             evaluate_checkpoint_reuse,
@@ -1572,22 +1573,60 @@ def account_resources(
     }
 
 
+def _task_a_terminal_token_index(
+    holostate: Any,
+    rendered_prompt: str,
+    token_ids: Sequence[int],
+    task_a_json: str,
+) -> int:
+    start = rendered_prompt.find(task_a_json)
+    _require(
+        start >= 0 and rendered_prompt.find(task_a_json, start + 1) < 0,
+        "full Task-B prompt must contain the Task-A capture exactly once",
+    )
+    end = start + len(task_a_json)
+    full = holostate.cache_diagnostic_detokenize(list(token_ids))
+    _require(full == rendered_prompt, "full Task-B prompt token round-trip changed")
+    low = 1
+    high = len(token_ids)
+    while low < high:
+        middle = (low + high) // 2
+        prefix = holostate.cache_diagnostic_detokenize(list(token_ids[:middle]))
+        _require(rendered_prompt.startswith(prefix), "Task-B token prefix detokenization changed")
+        if len(prefix) >= end:
+            high = middle
+        else:
+            low = middle + 1
+    terminal = holostate.cache_diagnostic_detokenize(list(token_ids[:low]))
+    _require(
+        rendered_prompt.startswith(terminal) and len(terminal) >= end and task_a_json in terminal,
+        "Task-A terminal token boundary is invalid",
+    )
+    if low > 1:
+        previous = holostate.cache_diagnostic_detokenize(list(token_ids[: low - 1]))
+        _require(
+            rendered_prompt.startswith(previous) and len(previous) < end,
+            "Task-A terminal token boundary is not minimal",
+        )
+    return low
+
+
 def render_checkpoint_and_task_b(
     holostate: Any,
     pair: Mapping[str, Any],
     task_a_json: str,
 ) -> dict[str, Any]:
-    prefix_candidate = holostate.render_messages(
-        checkpoint_messages(pair, task_a_json), CHAT_TEMPLATE_KWARGS
-    )
     full_prompt = holostate.render_messages(
         task_b_messages(pair, task_a_json), CHAT_TEMPLATE_KWARGS
     )
-    prefix_ids = holostate.tokenize(prefix_candidate)
     full_ids = holostate.tokenize(full_prompt)
-    common_count = holostate.exact_common_token_prefix(prefix_ids, full_ids)
-    _require(common_count > 0, "Task-A checkpoint has no exact Task-B prefix")
-    checkpoint_ids = full_ids[:common_count]
+    terminal_index = _task_a_terminal_token_index(
+        holostate,
+        full_prompt,
+        full_ids,
+        task_a_json,
+    )
+    checkpoint_ids = full_ids[:terminal_index]
     checkpoint_prompt = holostate.cache_diagnostic_detokenize(checkpoint_ids)
     _require(task_a_json in checkpoint_prompt, "Task-A capture is absent from checkpoint prefix")
     _require(full_ids[: len(checkpoint_ids)] == checkpoint_ids, "checkpoint token prefix changed")
