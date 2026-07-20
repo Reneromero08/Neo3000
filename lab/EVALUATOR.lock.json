@@ -1,5 +1,5 @@
 {
-  "baseline_source_commit": "20798cb5712decea8a0acb158ceeaa0a012c7844",
+  "baseline_source_commit": "71205a4887c1dc8d3923903a1935506d691b3b65",
   "benchmark_prompt_hashes": {
     "smoke-exact-response-v1": "e718d6ecb0011f069f871bfa197f601ce2da4c28e3637086451c184bfbdbae83",
     "tool-call-v1": "87f4b77cf233285f019d226ee5de6a5c9af21f585b6f0bfe3dd2c89455a95c29"
@@ -164,14 +164,14 @@
     "scripts/holostate_v1_warm_trajectory_related_task_evaluation_adjudication.py",
     "scripts/test_holostate_v1_warm_trajectory_related_task_evaluation_adjudication.py"
   ],
-  "evaluator_sha256": "81543e0396ac88a26b54d81c66d399f0bc430160b60bb96f51716a80ea194a41",
+  "evaluator_sha256": "53e896bad894e6ab546b85412c70944f95b65cab2bbce62c5ceddb9858612281",
   "gate_definition_hashes": {
     "reasoning-preservation-v1": "750a7b0041c13b4407f5d373069f6bcb3fe1d0701504f7bae5bb7c64fbc5d5fe",
     "repeat-final-content-v1": "2737d28ec7947d841bf6c5e07221f6ac453f98150a83b9a9c29c43da1a4b7460",
     "transport-final-content-v1": "3ca99ef3fed7d9f92da59ef6eef56641e1e3b1180249ef044396711c8d252857",
     "warm-decode-performance-v1": "9b2d052e1f624faba7ec41cb95290543775c2d4539e848af7d2499281cada196"
   },
-  "generated_at": "2026-07-20T21:58:44.295759+00:00",
+  "generated_at": "2026-07-20T22:43:32.548141+00:00",
   "holostate_contract_sha256": "45da634963bf147eebf7bddfc09c53fa6e0f73c59619917db3c255100b45b957",
   "holostate_worker_protocol_evidence_sha256": "c6cc30437301b6f55f53d62d833d53097b3340ab3c65e86e5a36cd6152ea65d9",
   "holostate_worker_protocol_sha256": "767d85744467902bfc89a77dade270d261164533742694f9aeac1b26f28ae50b",
@@ -196,13 +196,13 @@
     "CHANGELOG.md": "5909a88928728d99764d486a9ae225df926ccd937473034f74ab291bcd3ac0c7",
     "NEO3000.md": "b7ba87065f942d47abed19330197a843577bbd6b2fd58057a6df9de9cd7d2905",
     "README.md": "78708a68121242f8c0d48bc8218da2776985a2f8d3854e6a85be1b16050d3427",
-    "ROADMAP.md": "962782a4613cd0dcac108397eca29b2d7e92b42afc78b841b9cde54157bf2932",
-    "TASKS.md": "5f0a6980f0e6a5f62b4fa9d9336537a12fa30828daba24d98ae076f350bdf530",
+    "ROADMAP.md": "2a888723694be56401d52f6a8e77db95fbdee1cf5de2ff757d0e7061a220fddc",
+    "TASKS.md": "5535c0399d9c01290f08ff0d93863b7449191a184b2bbee43e873b8a38adef77",
     "docs/CATALYTIC_RUNTIME_ROADMAP.md": "b425fc553a78997964dff09851ade15262cd3eb59de0b8f751e66ff8b97ea923",
     "lab/BASELINE_PROTOCOL.md": "772e3126d732d39d89a55441375da9f1554d5c38f088de823310e056baea4fbc",
-    "lab/CHECKPOINT.md": "f3e71bee10fa6490d2924857b33aa297eaf886757d6457b179f02a2ab0015cf7",
-    "lab/EVALUATOR.json": "81543e0396ac88a26b54d81c66d399f0bc430160b60bb96f51716a80ea194a41",
-    "lab/GOAL.md": "542240a94c7d3275e08f85c5ecfc833401ed120b56da9959746394b2f6775093",
+    "lab/CHECKPOINT.md": "6ebe19bcd827e81c72202c8ebb7277555c6f2c74e77bb652e980a1ff31ad2a29",
+    "lab/EVALUATOR.json": "53e896bad894e6ab546b85412c70944f95b65cab2bbce62c5ceddb9858612281",
+    "lab/GOAL.md": "ca6c311117c688a05da6ca667c0e7cbafe439c0f14c97e06aae72a759fec335c",
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_1.json": "8eca08391c598fd6102fdac482e043ba1435c9b7efdf61714888a5d6b2823b7c",
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_probe_adjudication_1.json": "ebf0fa07a7b31c72ec19b9c74400c27c01943dda8247cd02fc81dcc0ec5b228f",
     "lab/ck0_balanced_opaque_five_support_two_worker_synthesis_task_suitability_decision_1.json": "ee2c89131b581ee5b0300cdd6eaeac636aaf31c37ca2c5ac72e8d159cdd56f2f",
@@ -231,6 +231,7 @@
     "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1.json": "469062e6aeee953988af4dc035e4a2155673063b2e3c6d9699294ce7799be68a",
     "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1_attempt_7_adjudication_1.json": "2e7399fa57ee31e6b83a8b76f8065d6f5e1682ba91eb561c9edb2439db58a925",
     "lab/holostate_v1_warm_trajectory_related_task_family_v1_public_tasks.json": "a45ff0a6dcd8e3e75cbe0b0f7a572db023b0e7ce81093f7c82155d0a4dc3d4a9",
+    "lab/holostate_v1_warm_trajectory_successor_selection_1.json": "c14f334f95d5100fbba0cd690388d1dd1baa17dc5351c9e6773f82e6d05e6b92",
     "lab/two_shard_semantic_xor_worker_synthesis_family_v1_corpus_binding_1.json": "5ebff4979cd8e60e814f05c8b5e8413523dfb244e4396548a4a595253020ef5f",
     "lab/two_shard_semantic_xor_worker_synthesis_family_v1_design.json": "ed63ed4c75f9d6ce8db4177e1137d02cfed7b385e20b2d29b434206dad5c7b1f",
     "lab/two_shard_semantic_xor_worker_synthesis_family_v1_public_tasks.json": "de4d822424efe5b6b5fab1a65f5d2a1e5a87fc60d64a2dd84812bc300a246c41",
@@ -576,6 +577,7 @@
     "lab/holostate_v1_warm_trajectory_related_task_family_v1_public_tasks.json",
     "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1.json",
     "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1_attempt_7_adjudication_1.json",
+    "lab/holostate_v1_warm_trajectory_successor_selection_1.json",
     "lab/EVALUATOR.lock.json",
     "lab/results.jsonl"
   ],

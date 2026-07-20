@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Attempt-7 process-local warm-trajectory reuse adjudicated
+## Checkpoint 2: Inherited Task-A carrier successor selected
 
 Attempt 7 completed the frozen four-pair panel from protected commit `20798cb5712decea8a0acb158ceeaa0a012c7844`. Its immutable live terminal classification remains `INCONCLUSIVE`; the static adjudication does not rewrite that result.
 
@@ -9,6 +9,10 @@ Zero-contact authentication and replay support `PROCESS_LOCAL_WARM_TRAJECTORY_EX
 Exact immediate closure is not supported. Closure readdress reused `3657/4185` checkpoint tokens and required exactly `528` fresh tokens, or `132` per pair. Materialization plus catalytic continuation equals direct replay at `4185 + 723 = 4908`; closure raises the complete catalytic cycle to `5436`, so `SINGLE_BRANCH_COMPLETE_CATALYTIC_CYCLE_FRESH_TOKEN_ADVANTAGE_NOT_SUPPORTED` remains the correct efficiency classification.
 
 Canonical artifact `lab/holostate_v1_warm_trajectory_related_task_evaluation_v1_attempt_7_adjudication_1.json`, SHA-256 `2E7399FA57EE31E6B83A8B76F8065D6F5E1682BA91EB561C9EDB2439DB58A925`, and canonical `neo-exp-0048` at `lab/results.jsonl:61`, SHA-256 `DE406303E7DBAB2D8E8E95B94A5ED17DD52F1FFF5E3141112077833C58ED0A6E`, bind this bounded conclusion. General catalytic inference, complete lifecycle, exact restoration, restart persistence, transfer, superiority, SOTA, and automatic promotion remain locked.
+
+Static successor selection chooses `INHERITED_TASK_A_CARRIER_SELECTED`. The minimum executable change is to issue related Task B immediately after Task A on the same cache-enabled slot and omit the separate fresh materialization. Attempt-7 accounting projects inherited suffix plus measured closure at `723 + 528 = 1251` fresh tokens versus observed direct replay `4908`; this is not a result and requires exact inherited-prefix reuse to be reconstructed before contact and observed live. Pure closure/root-copy is not selected, and two-branch amortization remains only a fallback.
+
+Decision artifact `lab/holostate_v1_warm_trajectory_successor_selection_1.json`, SHA-256 `C14F334F95D5100FBBA0CD690388D1DD1BAA17DC5351C9E6773F82E6D05E6B92`, binds the selection with zero authority, sidecar, model contact, generation, runtime root, live evidence, successor corpus, or successor implementation.
 
 `balanced-opaque-five-support-two-worker-synthesis-probe-v1` executed once from protected main `563cbf5a72a763af8a2cde2394a5ea5beb008bad`. One consumed authority admitted exactly `worker-A`, `worker-B`, and `synthesis-AB`; all three one-generation requests completed with authenticated captures and zero retries.
 
@@ -92,7 +96,7 @@ Attempt 5 executed once from `a38e86e45e0cfc20e2882167755a8d7df91ecd51` and pres
 
 Attempt 6 executed once from `3eaa86ffb690611f3549272bdd367c778ddf8da2` and completed one full pair with exact catalytic checkpoint reuse `1004/1004`, direct reuse `0/1180`, and closure readdress `872/1004`. The closure gate correctly failed; cleanup/postflight passed. The controller incorrectly stopped the panel on that scientific false gate. Attempt 7 records the false gate and continues without changing the closure predicate or terminal decision law. Preregistration artifact/file are `9370CD0A2A041BD46A765728B1A93B622BB66BD3EEFF71D45E80189C453C1002` / `469062E6AEEE953988AF4DC035E4A2155673063B2E3C6D9699294CE7799BE68A`; controller identity is `AC85A6FDADE3D4515B5C3DF7A9766BF74CC8D0EDF57192D028FF041C5939A8E1`; frozen scientific, scorer, resource, and closure identities remain unchanged.
 
-**Next exact action:** Statically select the minimum successor for warm-trajectory amortization or inherited carrier state. This publication creates no authority and starts no follow-on experiment.
+**Next exact action:** `PREPARE_INHERITED_TASK_A_CARRIER_EVALUATION`. Freeze the same four matched pairs with Task A directly inherited by cache-enabled same-slot Task B, no materialization, measured closure, and a cache-disabled fresh direct baseline. Create no authority or live state during preparation.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 

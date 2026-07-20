@@ -249,6 +249,7 @@
       "lab/holostate_v1_warm_trajectory_related_task_family_v1_public_tasks.json",
       "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1.json",
       "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1_attempt_7_adjudication_1.json",
+      "lab/holostate_v1_warm_trajectory_successor_selection_1.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]
