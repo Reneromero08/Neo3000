@@ -1,8 +1,15 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Integrated HoloState warm-trajectory evaluation statically prepared
+## Checkpoint 2: Attempt-7 process-local warm-trajectory reuse adjudicated
 
-**Status:** SOURCE ATTEMPT-3 PRESERVED / INTEGRATED HOLOSTATE EVALUATION PREREGISTERED / COMPLETE CARRIER-CYCLE ACCOUNTING REPAIRED / PROTECTED EVALUATOR DELAYED ACCESS PRESERVED / ZERO LIVE CONTACT / BROADER CLAIMS LOCKED
+**Status:** ATTEMPT-7 LIVE INCONCLUSIVE PRESERVED / EXACT PROCESS-LOCAL CHECKPOINT REUSE REPLICATED 4 OF 4 / TASK-B ACCURACY 4 OF 4 BOTH ROUTES / EXACT IMMEDIATE CLOSURE NOT SUPPORTED / COMPLETE-CYCLE FRESH-TOKEN ADVANTAGE NOT SUPPORTED / BROADER CLAIMS LOCKED
+
+- [x] Preserve Attempt 7 at protected source commit `20798cb5712decea8a0acb158ceeaa0a012c7844` with immutable terminal `INCONCLUSIVE`, 12 authenticated captures, eight authenticated zero-output carrier operations, 38 journal events, cleanup/postflight pass, zero retry, and 17-member/18-file archive `E48C62DC8F0EDED92FDD543A0A44C3BB740AA46BC7C217D39FBA40EBD8F9714E`.
+- [x] Authenticate all seven authority receipts and six archived predecessor attempts, reconstruct the exact source preregistration, verify live/archive equality, replay all raw SSE captures and protected scoring only after cleanup/postflight, and create zero authority, sidecar, model request, generation, or scientific retry during adjudication.
+- [x] Support `PROCESS_LOCAL_WARM_TRAJECTORY_EXACT_CHECKPOINT_REUSE_REPLICATED`: catalytic checkpoint reuse is exact for all four pairs, direct cached tokens remain zero, and catalytic/direct Task-B accuracy is `4/4` versus `4/4`.
+- [x] Preserve `IMMEDIATE_EXACT_CHECKPOINT_CLOSURE_NOT_SUPPORTED` and `CONSISTENT_PARTIAL_CHECKPOINT_READDRESS_OBSERVED`: exact closure pairs are `0/4`; partial readdress pairs are `4/4`; closure uses `3657` cached plus `528` fresh tokens.
+- [x] Preserve `SINGLE_BRANCH_COMPLETE_CATALYTIC_CYCLE_FRESH_TOKEN_ADVANTAGE_NOT_SUPPORTED`: materialization `4185` plus catalytic suffix `723` equals direct replay `4908`; closure raises the complete catalytic route to `5436`; exact cross-products are `21744 > 19632` at equal `4/4` correctness.
+- [x] Publish canonical adjudication artifact SHA-256 `2E7399FA57EE31E6B83A8B76F8065D6F5E1682BA91EB561C9EDB2439DB58A925` and canonical `neo-exp-0048` at line 61, SHA-256 `DE406303E7DBAB2D8E8E95B94A5ED17DD52F1FFF5E3141112077833C58ED0A6E`. Preserve live `INCONCLUSIVE` and every broader claim lock.
 
 - [x] Preserve the three-worker diagnostic from synchronized source `6c760b2d5f8296f795724d061f1d91a0e4171c27`, then admit the separately authorized two-worker decision at synchronized clean `main` `c8942f7b4ecf7ab555b54393fc63c4cbb5a366b3`; exact frozen suite SHA-256 remains `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
 - [x] Scan only the eight public task projections and all 80 three-example shards. Locally eligible shard counts by task index are `[2,2,0,0,2,1,1,0]`; no task reaches the three distinct worker shards required by the frozen geometry.
@@ -114,7 +121,7 @@ Full commutativity, associativity, arbitrary n-parent generalization, formal alg
 - [x] Execute Attempt 6 once from `3eaa86ffb690611f3549272bdd367c778ddf8da2`. Preserve three model captures, two carrier operations, exact catalytic reuse `1004/1004`, direct reuse `0/1180`, closure readdress `872/1004`, terminal `INCONCLUSIVE`, cleanup/postflight pass, zero retry, and archive `6AC053C53C48C9552283D6D3F75CFC635CDCF40540AA5369A2342ABE21C49AD5`. Identify the sole stop as the controller's erroneous exception on a scientifically valid false closure gate.
 - [x] Prepare Attempt 7 to record false reuse/closure gates and continue the remaining frozen pairs. Preserve the exact closure predicate and terminal `INCONCLUSIVE` law. Preregistration artifact/file are `9370CD0A2A041BD46A765728B1A93B622BB66BD3EEFF71D45E80189C453C1002` / `469062E6AEEE953988AF4DC035E4A2155673063B2E3C6D9699294CE7799BE68A`; controller is `AC85A6FDADE3D4515B5C3DF7A9766BF74CC8D0EDF57192D028FF041C5939A8E1`; frozen scientific, scorer, resource, and closure identities remain unchanged.
 
-**Next exact action:** Publish the Attempt-7 no-semantic-early-stop repair, then execute the explicitly authorized `holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-7` exactly once from that commit with one fresh external authority. Do not infer general catalytic inference before the frozen live comparison completes.
+**Next exact action:** Statically select the minimum successor for warm-trajectory amortization or inherited carrier state. Do not create authority, contact the model, or begin a follow-on during this adjudication publication.
 
 ---
 
