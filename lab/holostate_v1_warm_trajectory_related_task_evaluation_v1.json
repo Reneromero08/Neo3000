@@ -1,12 +1,21 @@
 {
-  "artifact_sha256": "581E27ECC3C4C2FA9A98C16B7E89F22E316324B64D077D2F3CEB266C792A4E00",
+  "artifact_sha256": "9BF5E2AA8F6D1ADE87C5BCCAE5E50DBB4C394A59BD8BDA48984A896464BE2938",
   "attempt": {
-    "attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-2",
+    "attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-3",
+    "prior_attempt_archive_sha256": "E7B7EB7FB097C5A2BEDE1602FBFC74D650E064D54E6C8DCDD832AD6F9EFFACC4",
     "prior_attempt_carrier_operations": 0,
-    "prior_attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-1",
-    "prior_attempt_model_requests": 0,
-    "prior_attempt_runtime_root_created": false,
-    "prior_authority_receipt_sha256": "88E7AEA3486FEC2CF4996393A48AB301D78A6CAE241FD006D5D5C2CE4DD6AF12",
+    "prior_attempt_evidence_sha256": {
+      "captures/warm-trajectory-archive-01-task-a.json": "8D26BDCC61FDFF16A6CCBC609D560EB61DB47CA8CCD26E2033AC73AD6679D92C",
+      "closure.json": "5E61DAF6F8EE56F2A1C60DEA0899325D63F2C7493FD214BB7F3C11946C187981",
+      "journal.jsonl": "8F7E8AF68AF91763BA96339A5BB102709A339B564CFE8C1A28582E64E6B443BB",
+      "manifest.json": "168FB5C680EA47DF1CF469570E04E33EE82A0BEEC5C046225577DC2851D3AEAA",
+      "result.json": "B00234F96CF61FB6C7298FD3B39C52A2CB3745A1D8833E77AF3C45CEDDB2FBBA"
+    },
+    "prior_attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-2",
+    "prior_attempt_model_requests": 1,
+    "prior_attempt_runtime_root_created": true,
+    "prior_attempt_terminal_classification": "INCONCLUSIVE",
+    "prior_authority_receipt_sha256": "01744A976F84F57DEE2C91EF3817DB6ED2794BBA32AB6AE612D0498E6BE100F3",
     "scientific_surface_changed": false
   },
   "authority": {
@@ -25,7 +34,7 @@
     },
     "controller": {
       "algorithm": "sha256-canonical-callable-source-v1",
-      "sha256": "A3929E21BACFEEBA5DEE5A78B74D95E9D6D3B154E1658B4E66AF30EF64A793C1"
+      "sha256": "15951D73D0BEDED504CCCE0A33130F055157CAB8C58FBC478648CB9F89D20D7D"
     },
     "frozen_scientific": {
       "algorithm": "sha256-canonical-scientific-surface-v1",
@@ -123,7 +132,7 @@
     },
     "resource_accounting": {
       "algorithm": "sha256-canonical-callable-source-v1",
-      "sha256": "31000085A4FB5C1741C69D12FF64412FD5D14E9BF22FC259935936A3CEC41BB7"
+      "sha256": "9B19875C750EFC7D3583EB473FEC46D9697C676142FEBB3B884DF247FC7DBEEB"
     }
   },
   "claim_locks": [

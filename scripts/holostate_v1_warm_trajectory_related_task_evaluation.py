@@ -31,8 +31,8 @@ class WarmTrajectoryEvaluationError(ValueError):
 
 
 DESIGN_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1"
-ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-2"
-PRIOR_ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-1"
+ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-3"
+PRIOR_ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-2"
 FAMILY_ID = "holostate-v1-warm-trajectory-related-task-family-v1"
 STARTING_PROTECTED_MAIN = "1a07ca0cc366d53e682e13440810716533f60f98"
 PUBLIC_CORPUS_PATH = Path(
@@ -49,22 +49,39 @@ PREREGISTRATION_PATH = Path(
     "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1.json"
 )
 STATE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-2"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-3"
 )
 ARCHIVE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-2"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-3"
 )
 PRIOR_AUTHORITY_RECEIPT_PATH = Path(
     "state/catalytic_kernel_0_authority."
-    "holostate-v1-warm-trajectory-related-task-evaluation-v1.authority.consumed.json"
+    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-2.authority.consumed.json"
 )
 AUTHORITY_RECEIPT_PATH = Path(
     "state/catalytic_kernel_0_authority."
-    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-2.authority.consumed.json"
+    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-3.authority.consumed.json"
 )
 PRIOR_AUTHORITY_RECEIPT_SHA256 = (
-    "88E7AEA3486FEC2CF4996393A48AB301D78A6CAE241FD006D5D5C2CE4DD6AF12"
+    "01744A976F84F57DEE2C91EF3817DB6ED2794BBA32AB6AE612D0498E6BE100F3"
 )
+PRIOR_STATE_ROOT = Path(
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-2"
+)
+PRIOR_ARCHIVE_PATH = Path(
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-2/"
+    "E7B7EB7FB097C5A2BEDE1602FBFC74D650E064D54E6C8DCDD832AD6F9EFFACC4"
+)
+PRIOR_EVIDENCE_SHA256 = {
+    "manifest.json": "168FB5C680EA47DF1CF469570E04E33EE82A0BEEC5C046225577DC2851D3AEAA",
+    "journal.jsonl": "8F7E8AF68AF91763BA96339A5BB102709A339B564CFE8C1A28582E64E6B443BB",
+    "result.json": "B00234F96CF61FB6C7298FD3B39C52A2CB3745A1D8833E77AF3C45CEDDB2FBBA",
+    "closure.json": "5E61DAF6F8EE56F2A1C60DEA0899325D63F2C7493FD214BB7F3C11946C187981",
+    "captures/warm-trajectory-archive-01-task-a.json": (
+        "8D26BDCC61FDFF16A6CCBC609D560EB61DB47CA8CCD26E2033AC73AD6679D92C"
+    ),
+}
+PRIOR_ARCHIVE_SHA256 = "E7B7EB7FB097C5A2BEDE1602FBFC74D650E064D54E6C8DCDD832AD6F9EFFACC4"
 EXPECTED_EVIDENCE_ROOT_COMMITMENT = (
     "7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD"
 )
@@ -521,10 +538,13 @@ def controller_binding() -> dict[str, Any]:
             _verify_authority_receipt_path,
             verify_authority_receipt,
             verify_prior_authority_receipt,
+            verify_prior_execution,
             _contains_exact_mapping_key,
             _experiment_key,
             JournalWriter.append,
             capture_request_once,
+            _chat_sse_terminal_accounting,
+            normalized_capture_execution,
             render_checkpoint_and_task_b,
             checkpoint_identity,
             evaluate_checkpoint_reuse,
@@ -547,6 +567,8 @@ def scorer_binding() -> dict[str, Any]:
 def resource_binding() -> dict[str, Any]:
     return _callable_binding(
         [
+            _chat_sse_terminal_accounting,
+            normalized_capture_execution,
             resource_record,
             carrier_operation_record,
             verify_carrier_operation_record,
@@ -576,9 +598,12 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "attempt_id": ATTEMPT_ID,
             "prior_attempt_id": PRIOR_ATTEMPT_ID,
             "prior_authority_receipt_sha256": PRIOR_AUTHORITY_RECEIPT_SHA256,
-            "prior_attempt_model_requests": 0,
+            "prior_attempt_model_requests": 1,
             "prior_attempt_carrier_operations": 0,
-            "prior_attempt_runtime_root_created": False,
+            "prior_attempt_runtime_root_created": True,
+            "prior_attempt_terminal_classification": "INCONCLUSIVE",
+            "prior_attempt_evidence_sha256": PRIOR_EVIDENCE_SHA256,
+            "prior_attempt_archive_sha256": PRIOR_ARCHIVE_SHA256,
             "scientific_surface_changed": False,
         },
         "status": "statically-preregistered-unexecuted",
@@ -835,7 +860,47 @@ def verify_prior_authority_receipt(repository: Path, root: bytes) -> dict[str, A
         sha256_bytes(data) == PRIOR_AUTHORITY_RECEIPT_SHA256,
         "prior warm-trajectory authority receipt changed",
     )
-    return _verify_authority_receipt_path(path, root, expected_attempt_id=None)
+    return _verify_authority_receipt_path(
+        path,
+        root,
+        expected_attempt_id=PRIOR_ATTEMPT_ID,
+    )
+
+
+def verify_prior_execution(repository: Path, root: bytes) -> dict[str, Any]:
+    receipt = verify_prior_authority_receipt(repository, root)
+    live_hashes: dict[str, str] = {}
+    for relative, expected_sha in PRIOR_EVIDENCE_SHA256.items():
+        live_path = repository / PRIOR_STATE_ROOT / relative
+        archived_path = repository / PRIOR_ARCHIVE_PATH / relative
+        live_data = _regular_bytes(live_path, f"prior {relative}", MAX_CAPTURE_BYTES)
+        archived_data = _regular_bytes(archived_path, f"archived prior {relative}", MAX_CAPTURE_BYTES)
+        _require(live_data == archived_data, f"prior {relative} differs from archive")
+        observed_sha = sha256_bytes(live_data)
+        _require(observed_sha == expected_sha, f"prior {relative} changed")
+        live_hashes[relative] = observed_sha
+    archived_receipt = repository / PRIOR_ARCHIVE_PATH / PRIOR_AUTHORITY_RECEIPT_PATH.name
+    _require(
+        _regular_bytes(archived_receipt, "archived prior authority receipt", 64 * 1024)
+        == _regular_bytes(repository / PRIOR_AUTHORITY_RECEIPT_PATH, "prior authority receipt", 64 * 1024),
+        "prior authority receipt differs from archive",
+    )
+    bundle_path = repository / PRIOR_ARCHIVE_PATH / "bundle.json"
+    bundle = json.loads(_regular_bytes(bundle_path, "prior archive bundle", 64 * 1024))
+    _require(
+        isinstance(bundle, Mapping)
+        and bundle.get("bundle_sha256") == PRIOR_ARCHIVE_SHA256
+        and bundle.get("attempt_id") == PRIOR_ATTEMPT_ID,
+        "prior archive bundle changed",
+    )
+    bundle_body = {key: value for key, value in bundle.items() if key != "bundle_sha256"}
+    _require(json_sha256(bundle_body) == PRIOR_ARCHIVE_SHA256, "prior archive address changed")
+    return {
+        "attempt_id": PRIOR_ATTEMPT_ID,
+        "authority_receipt_sha256": receipt["receipt_sha256"],
+        "evidence_sha256": live_hashes,
+        "archive_sha256": PRIOR_ARCHIVE_SHA256,
+    }
 
 
 class RunLock(AbstractContextManager["RunLock"]):
@@ -1017,6 +1082,7 @@ def capture_request_once(
         },
         "execution": {name: _capture_value(execution, name) for name in CAPTURE_EXECUTION_FIELDS},
     }
+    body["execution"] = normalized_capture_execution(body)
     document = {**body, "capture_hmac_sha256": _capture_hmac(experiment_key, body)}
     _exclusive_write(path, canonical_json_bytes(document) + b"\n")
     partial_path.unlink()
@@ -1073,6 +1139,85 @@ def raw_sse_bytes(capture: Mapping[str, Any]) -> bytes:
     raw = capture.get("raw_response_capture")
     _require(isinstance(raw, Mapping), "capture raw response is missing")
     return base64.b64decode(str(raw["bytes"]), validate=True)
+
+
+def _chat_sse_terminal_accounting(raw: bytes) -> dict[str, Any]:
+    event_count = 0
+    final: Mapping[str, Any] | None = None
+    for line in raw.decode("utf-8", errors="strict").splitlines():
+        if not line.startswith("data:"):
+            continue
+        data = line[5:].strip()
+        if not data or data == "[DONE]":
+            continue
+        event = json.loads(data)
+        _require(isinstance(event, Mapping), "chat SSE event is not an object")
+        event_count += 1
+        choices = event.get("choices")
+        if isinstance(choices, list) and choices and isinstance(choices[0], Mapping):
+            if choices[0].get("finish_reason") is not None:
+                final = event
+    _require(final is not None, "chat SSE terminal event is absent")
+    timings = final.get("timings")
+    choices = final.get("choices")
+    _require(isinstance(timings, Mapping), "chat SSE terminal timings are absent")
+    _require(isinstance(choices, list) and choices and isinstance(choices[0], Mapping), "chat SSE terminal choice is absent")
+    prompt = timings.get("prompt_n")
+    cached = timings.get("cache_n")
+    completion = timings.get("predicted_n")
+    finish_reason = choices[0].get("finish_reason")
+    _require(
+        isinstance(prompt, int)
+        and isinstance(cached, int)
+        and isinstance(completion, int)
+        and prompt > 0
+        and 0 <= cached <= prompt
+        and completion > 0
+        and finish_reason == "stop",
+        "chat SSE terminal accounting is invalid",
+    )
+    return {
+        "prompt_tokens": prompt,
+        "cached_prompt_tokens": cached,
+        "completion_tokens": completion,
+        "terminal_stop_evidence": {"observed": True, "stop": True},
+        "finish_reason": finish_reason,
+        "event_count": event_count,
+    }
+
+
+def normalized_capture_execution(capture: Mapping[str, Any]) -> dict[str, Any]:
+    execution = capture.get("execution")
+    _require(isinstance(execution, Mapping), "capture execution is missing")
+    normalized = dict(execution)
+    missing = any(
+        normalized.get(name) is None
+        for name in (
+            "prompt_tokens",
+            "cached_prompt_tokens",
+            "completion_tokens",
+            "terminal_stop_evidence",
+            "finish_reason",
+            "event_count",
+        )
+    )
+    if not missing:
+        return normalized
+    terminal = _chat_sse_terminal_accounting(raw_sse_bytes(capture))
+    for name in (
+        "prompt_tokens",
+        "cached_prompt_tokens",
+        "completion_tokens",
+        "terminal_stop_evidence",
+        "finish_reason",
+        "event_count",
+    ):
+        stored = normalized.get(name)
+        if stored is None:
+            normalized[name] = terminal[name]
+        else:
+            _require(stored == terminal[name], f"capture {name} differs from raw SSE")
+    return normalized
 
 
 def structured_content_from_capture(capture: Mapping[str, Any]) -> str:
@@ -1157,8 +1302,7 @@ def _stream_raw_completion(
 
 
 def resource_record(capture: Mapping[str, Any], request_id: str) -> dict[str, Any]:
-    execution = capture.get("execution")
-    _require(isinstance(execution, Mapping), "capture resource data is missing")
+    execution = normalized_capture_execution(capture)
     logical = int(execution.get("prompt_tokens") or 0)
     cached = int(execution.get("cached_prompt_tokens") or 0)
     completion = int(execution.get("completion_tokens") or 0)
@@ -1507,8 +1651,8 @@ def evaluate_checkpoint_reuse(
     checkpoint_tokens = int(identity["checkpoint_token_count"])
     warm_prompt = int(_capture_value(warm_execution, "prompt_tokens") or 0)
     warm_cached = int(_capture_value(warm_execution, "cached_prompt_tokens") or 0)
-    catalytic_execution = catalytic_capture["execution"]
-    direct_execution = direct_capture["execution"]
+    catalytic_execution = normalized_capture_execution(catalytic_capture)
+    direct_execution = normalized_capture_execution(direct_capture)
     readdress_prompt = int(_capture_value(readdress_execution, "prompt_tokens") or 0)
     readdress_cached = int(_capture_value(readdress_execution, "cached_prompt_tokens") or 0)
     catalytic_cached = int(catalytic_execution.get("cached_prompt_tokens") or 0)
@@ -1907,7 +2051,7 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
         preregistration_sha256=preregistration_file_sha,
     )
     root = _load_private_root(repository)
-    prior_receipt = verify_prior_authority_receipt(repository, root)
+    prior_execution = verify_prior_execution(repository, root)
     experiment_key = _experiment_key(root)
     receipt = consume_authority_once(repository, root, authority)
     paths["run_root"].mkdir(parents=True, exist_ok=False)
@@ -1917,7 +2061,9 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
         "design_id": DESIGN_ID,
         "attempt_id": ATTEMPT_ID,
         "prior_attempt_id": PRIOR_ATTEMPT_ID,
-        "prior_authority_receipt_sha256": prior_receipt["receipt_sha256"],
+        "prior_authority_receipt_sha256": prior_execution["authority_receipt_sha256"],
+        "prior_attempt_evidence_sha256": prior_execution["evidence_sha256"],
+        "prior_attempt_archive_sha256": prior_execution["archive_sha256"],
         "authorized_commit": current_commit,
         "authority_receipt_sha256": receipt["receipt_sha256"],
         "authority_id_sha256": authority["authority_id_sha256"],
@@ -2327,7 +2473,7 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
 
 def validate_static(repository: Path) -> dict[str, Any]:
     preregistration = validate_preregistration(repository)
-    prior_receipt = verify_prior_authority_receipt(repository, _load_private_root(repository))
+    prior_execution = verify_prior_execution(repository, _load_private_root(repository))
     corpus = load_public_corpus(repository)
     diagnostic = preregistration["post_hoc_semantic_xor_accounting"]
     worker = diagnostic["worker_plus_controller_route"]
@@ -2343,7 +2489,9 @@ def validate_static(repository: Path) -> dict[str, Any]:
         "status": "pass",
         "design_id": DESIGN_ID,
         "attempt_id": ATTEMPT_ID,
-        "prior_authority_receipt_sha256": prior_receipt["receipt_sha256"],
+        "prior_authority_receipt_sha256": prior_execution["authority_receipt_sha256"],
+        "prior_attempt_evidence_sha256": prior_execution["evidence_sha256"],
+        "prior_attempt_archive_sha256": prior_execution["archive_sha256"],
         "artifact_sha256": preregistration["artifact_sha256"],
         "preregistration_file_sha256": sha256_file(repository / PREREGISTRATION_PATH),
         "public_corpus_sha256": PUBLIC_CORPUS_SHA256,

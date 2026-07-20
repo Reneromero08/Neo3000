@@ -859,12 +859,34 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         finally:
             shutil.rmtree(repository, ignore_errors=True)
 
-    def test_37_attempt_2_preserves_and_authenticates_attempt_1_receipt(self):
-        prior = probe.verify_prior_authority_receipt(ROOT, probe._load_private_root(ROOT))
-        self.assertEqual(prior["receipt_sha256"], probe.PRIOR_AUTHORITY_RECEIPT_SHA256)
-        self.assertFalse(probe._contains_exact_mapping_key(prior, "raw_authority_id"))
+    def test_37_attempt_3_preserves_attempt_2_terminal_evidence(self):
+        prior = probe.verify_prior_execution(ROOT, probe._load_private_root(ROOT))
+        self.assertEqual(prior["authority_receipt_sha256"], probe.PRIOR_AUTHORITY_RECEIPT_SHA256)
+        self.assertEqual(prior["evidence_sha256"], probe.PRIOR_EVIDENCE_SHA256)
+        self.assertEqual(prior["archive_sha256"], probe.PRIOR_ARCHIVE_SHA256)
         self.assertFalse((ROOT / probe.AUTHORITY_RECEIPT_PATH).exists())
         self.assertFalse((ROOT / probe.STATE_ROOT).exists())
+
+    def test_38_chat_sse_timings_recover_attempt_2_capture_accounting(self):
+        path = (
+            ROOT
+            / probe.PRIOR_STATE_ROOT
+            / "captures"
+            / "warm-trajectory-archive-01-task-a.json"
+        )
+        self.assertEqual(probe.sha256_file(path), probe.PRIOR_EVIDENCE_SHA256[path.relative_to(ROOT / probe.PRIOR_STATE_ROOT).as_posix()])
+        capture = json.loads(path.read_bytes())
+        self.assertIsNone(capture["execution"]["prompt_tokens"])
+        self.assertIsNone(capture["execution"]["completion_tokens"])
+        normalized = probe.normalized_capture_execution(capture)
+        self.assertEqual(normalized["prompt_tokens"], 901)
+        self.assertEqual(normalized["cached_prompt_tokens"], 0)
+        self.assertEqual(normalized["completion_tokens"], 108)
+        self.assertEqual(normalized["finish_reason"], "stop")
+        self.assertEqual(normalized["event_count"], 109)
+        self.assertEqual(normalized["terminal_stop_evidence"], {"observed": True, "stop": True})
+        resource = probe.resource_record(capture, "warm-trajectory-archive-01-task-a")
+        self.assertEqual(resource["fresh_prompt_plus_completion_tokens"], 1009)
 
 
 if __name__ == "__main__":
