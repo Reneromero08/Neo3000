@@ -416,6 +416,20 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
             "INCONCLUSIVE",
         )
 
+    def test_15b_failed_reuse_or_closure_is_recorded_without_semantic_early_stop(self):
+        outcome = probe.checkpoint_gate_outcome(
+            {"passed": True},
+            {"passed": False},
+        )
+        self.assertEqual(
+            outcome,
+            {
+                "reuse_passed": True,
+                "closure_passed": False,
+                "continue_execution": True,
+            },
+        )
+
     def test_16_post_hoc_xor_accounting_is_exact_and_closed(self):
         item = probe.POST_HOC_XOR_ACCOUNTING
         worker = item["worker_plus_controller_route"]
@@ -904,7 +918,7 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         finally:
             shutil.rmtree(repository, ignore_errors=True)
 
-    def test_37_attempt_6_preserves_attempt_5_terminal_evidence(self):
+    def test_37_attempt_7_preserves_attempt_6_terminal_evidence(self):
         prior = probe.verify_prior_execution(ROOT, probe._load_private_root(ROOT))
         self.assertEqual(prior["authority_receipt_sha256"], probe.PRIOR_AUTHORITY_RECEIPT_SHA256)
         self.assertEqual(prior["evidence_sha256"], probe.PRIOR_EVIDENCE_SHA256)
@@ -912,7 +926,7 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         self.assertFalse((ROOT / probe.AUTHORITY_RECEIPT_PATH).exists())
         self.assertFalse((ROOT / probe.STATE_ROOT).exists())
 
-    def test_38_attempt_5_capture_retains_normalized_accounting(self):
+    def test_38_attempt_6_capture_retains_normalized_accounting(self):
         path = (
             ROOT
             / probe.PRIOR_STATE_ROOT

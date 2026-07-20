@@ -31,8 +31,8 @@ class WarmTrajectoryEvaluationError(ValueError):
 
 
 DESIGN_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1"
-ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-6"
-PRIOR_ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-5"
+ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-7"
+PRIOR_ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-6"
 FAMILY_ID = "holostate-v1-warm-trajectory-related-task-family-v1"
 STARTING_PROTECTED_MAIN = "1a07ca0cc366d53e682e13440810716533f60f98"
 PUBLIC_CORPUS_PATH = Path(
@@ -49,39 +49,47 @@ PREREGISTRATION_PATH = Path(
     "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1.json"
 )
 STATE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-6"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-7"
 )
 ARCHIVE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-6"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-7"
 )
 PRIOR_AUTHORITY_RECEIPT_PATH = Path(
     "state/catalytic_kernel_0_authority."
-    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-5.authority.consumed.json"
+    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-6.authority.consumed.json"
 )
 AUTHORITY_RECEIPT_PATH = Path(
     "state/catalytic_kernel_0_authority."
-    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-6.authority.consumed.json"
+    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-7.authority.consumed.json"
 )
 PRIOR_AUTHORITY_RECEIPT_SHA256 = (
-    "DB7C0C334429500F4E1C8B813D0BF68704BD9E8692CD7201B0917971E451BC79"
+    "E89D45A5093F6BB0AE164BC585550172E210F84CE2CA36BE759DEF403091CD7B"
 )
 PRIOR_STATE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-5"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-6"
 )
 PRIOR_ARCHIVE_PATH = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-5/"
-    "AA40B8BBA2F4872C84FA7104264BBD9162F4196777FF071DFF7F0006D972D494"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-6/"
+    "6AC053C53C48C9552283D6D3F75CFC635CDCF40540AA5369A2342ABE21C49AD5"
 )
 PRIOR_EVIDENCE_SHA256 = {
-    "manifest.json": "1EEF60313EEBD7E07A15C09974576B7C99BBFE2E2BA791DF5F9BE605E65695E3",
-    "journal.jsonl": "0E26DB80F2C3A378E4E5806D18A4FAF4C1E55B8218D6A7D2CC4478513DBBA9CC",
-    "result.json": "13CE78DD00182BD74D05AFE94134A6BEEB6B8BBA8618419C588637F184802825",
-    "closure.json": "A2F314E7AF5B4255B75673A1AF9F611AD8A0764CD0CB93D4845E8D460F3A6162",
+    "manifest.json": "2B3D2E3199F985771BD49728FA7A444593E236907B8EED010343D2D51D90C448",
+    "journal.jsonl": "CF3CBC0CF599274E8CB583678A5389B301DDAEDFE539FB2BD32A8E234ACED12D",
+    "result.json": "33DCC2DBB750D956C12E879FF03DE5F56010E7652AA1C493E2B35E88CBA9CB4D",
+    "closure.json": "EE1BA952241BA824457DDDFA192DAA47078FF8C2482CE1ABA26CC8DC0800EC42",
     "captures/warm-trajectory-archive-01-task-a.json": (
-        "967DBEF2959E68F6F0F01301B24773A50B1E0A0D6A3B61593D426CCC88F3FBC0"
+        "037AA62042AB913D1D37EE0929386BB41CE4D8B0DF131F263533A233AF102E66"
+    ),
+    "captures/warm-trajectory-archive-01-task-b-catalytic.json": (
+        "0F35B28DB238DE6CF0BCF0BE67E4353EE06E31426E64C6C171908309995892F8"
+    ),
+    "captures/warm-trajectory-archive-01-task-b-direct.json": (
+        "77DA834A07B8B2E0FBD27F9D39906C6C5DD94835A750954D313C2D25E9DDD6D9"
     ),
 }
-PRIOR_ARCHIVE_SHA256 = "AA40B8BBA2F4872C84FA7104264BBD9162F4196777FF071DFF7F0006D972D494"
+PRIOR_ARCHIVE_SHA256 = "6AC053C53C48C9552283D6D3F75CFC635CDCF40540AA5369A2342ABE21C49AD5"
+PRIOR_MODEL_REQUESTS = 3
+PRIOR_CARRIER_OPERATIONS = 2
 EXPECTED_EVIDENCE_ROOT_COMMITMENT = (
     "7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD"
 )
@@ -551,6 +559,7 @@ def controller_binding() -> dict[str, Any]:
             render_checkpoint_and_task_b,
             checkpoint_identity,
             evaluate_checkpoint_reuse,
+            checkpoint_gate_outcome,
             run_evaluation,
         ]
     )
@@ -602,8 +611,8 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "attempt_id": ATTEMPT_ID,
             "prior_attempt_id": PRIOR_ATTEMPT_ID,
             "prior_authority_receipt_sha256": PRIOR_AUTHORITY_RECEIPT_SHA256,
-            "prior_attempt_model_requests": 1,
-            "prior_attempt_carrier_operations": 0,
+            "prior_attempt_model_requests": PRIOR_MODEL_REQUESTS,
+            "prior_attempt_carrier_operations": PRIOR_CARRIER_OPERATIONS,
             "prior_attempt_runtime_root_created": True,
             "prior_attempt_terminal_classification": "INCONCLUSIVE",
             "prior_attempt_evidence_sha256": PRIOR_EVIDENCE_SHA256,
@@ -611,8 +620,8 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "scientific_surface_changed": False,
             "runtime_binary_changed": False,
             "runtime_repair": (
-                "honor explicit streamed predicted_n=0, exclude prompt-progress token markers "
-                "from generated-token evidence, and reverify the admitted binary identity at postflight"
+                "record failed checkpoint reuse or closure as scientific evidence and continue the "
+                "frozen panel without semantic early stop"
             ),
             "runtime_binary_identity": {
                 "sha256": BINARY_SHA256,
@@ -1795,6 +1804,19 @@ def verify_checkpoint_closure(
     return result
 
 
+def checkpoint_gate_outcome(
+    reuse: Mapping[str, Any],
+    closure: Mapping[str, Any],
+) -> dict[str, bool]:
+    _require(isinstance(reuse.get("passed"), bool), "checkpoint reuse gate is malformed")
+    _require(isinstance(closure.get("passed"), bool), "checkpoint closure gate is malformed")
+    return {
+        "reuse_passed": reuse["passed"],
+        "closure_passed": closure["passed"],
+        "continue_execution": True,
+    }
+
+
 def _task_b_grammar() -> str:
     return (
         'root ::= "{" ws "\\\"answer\\\"" ws ":" ws answer ws "}"\n'
@@ -2415,12 +2437,13 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
                     reuse,
                     closure_operation_record,
                 )
-                _require(reuse["passed"] and closure["passed"], f"checkpoint reuse/closure failed: {pair_id}")
+                gate_outcome = checkpoint_gate_outcome(reuse, closure)
                 checkpoint_reports[pair_id] = {
                     "identity": identity,
                     "geometry": {key: value for key, value in geometry.items() if not key.endswith("_prompt") and not key.endswith("_ids")},
                     "reuse": reuse,
                     "closure": closure,
+                    "gate_outcome": gate_outcome,
                     "carrier_operations": {
                         "materialization": {
                             **materialization_record,
@@ -2438,8 +2461,11 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
                     facts={
                         "pair_id": pair_id,
                         "checkpoint_id": identity["checkpoint_id"],
-                        "reuse_passed": True,
-                        "closure_passed": True,
+                        "reuse_passed": gate_outcome["reuse_passed"],
+                        "closure_passed": gate_outcome["closure_passed"],
+                        "continued_after_scientific_gate_failure": not (
+                            gate_outcome["reuse_passed"] and gate_outcome["closure_passed"]
+                        ),
                         "closure_scope": "immediate-post-catalytic-readdress",
                     },
                 )

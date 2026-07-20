@@ -1,27 +1,29 @@
 {
-  "artifact_sha256": "35EE6DE54B1146247C305AB447C2B7EDB173781AAD060BF17FCD6845E16BFDA4",
+  "artifact_sha256": "9370CD0A2A041BD46A765728B1A93B622BB66BD3EEFF71D45E80189C453C1002",
   "attempt": {
-    "attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-6",
-    "prior_attempt_archive_sha256": "AA40B8BBA2F4872C84FA7104264BBD9162F4196777FF071DFF7F0006D972D494",
-    "prior_attempt_carrier_operations": 0,
+    "attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-7",
+    "prior_attempt_archive_sha256": "6AC053C53C48C9552283D6D3F75CFC635CDCF40540AA5369A2342ABE21C49AD5",
+    "prior_attempt_carrier_operations": 2,
     "prior_attempt_evidence_sha256": {
-      "captures/warm-trajectory-archive-01-task-a.json": "967DBEF2959E68F6F0F01301B24773A50B1E0A0D6A3B61593D426CCC88F3FBC0",
-      "closure.json": "A2F314E7AF5B4255B75673A1AF9F611AD8A0764CD0CB93D4845E8D460F3A6162",
-      "journal.jsonl": "0E26DB80F2C3A378E4E5806D18A4FAF4C1E55B8218D6A7D2CC4478513DBBA9CC",
-      "manifest.json": "1EEF60313EEBD7E07A15C09974576B7C99BBFE2E2BA791DF5F9BE605E65695E3",
-      "result.json": "13CE78DD00182BD74D05AFE94134A6BEEB6B8BBA8618419C588637F184802825"
+      "captures/warm-trajectory-archive-01-task-a.json": "037AA62042AB913D1D37EE0929386BB41CE4D8B0DF131F263533A233AF102E66",
+      "captures/warm-trajectory-archive-01-task-b-catalytic.json": "0F35B28DB238DE6CF0BCF0BE67E4353EE06E31426E64C6C171908309995892F8",
+      "captures/warm-trajectory-archive-01-task-b-direct.json": "77DA834A07B8B2E0FBD27F9D39906C6C5DD94835A750954D313C2D25E9DDD6D9",
+      "closure.json": "EE1BA952241BA824457DDDFA192DAA47078FF8C2482CE1ABA26CC8DC0800EC42",
+      "journal.jsonl": "CF3CBC0CF599274E8CB583678A5389B301DDAEDFE539FB2BD32A8E234ACED12D",
+      "manifest.json": "2B3D2E3199F985771BD49728FA7A444593E236907B8EED010343D2D51D90C448",
+      "result.json": "33DCC2DBB750D956C12E879FF03DE5F56010E7652AA1C493E2B35E88CBA9CB4D"
     },
-    "prior_attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-5",
-    "prior_attempt_model_requests": 1,
+    "prior_attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-6",
+    "prior_attempt_model_requests": 3,
     "prior_attempt_runtime_root_created": true,
     "prior_attempt_terminal_classification": "INCONCLUSIVE",
-    "prior_authority_receipt_sha256": "DB7C0C334429500F4E1C8B813D0BF68704BD9E8692CD7201B0917971E451BC79",
+    "prior_authority_receipt_sha256": "E89D45A5093F6BB0AE164BC585550172E210F84CE2CA36BE759DEF403091CD7B",
     "runtime_binary_changed": false,
     "runtime_binary_identity": {
       "runtime_version": "160 (89762c0)",
       "sha256": "EFA521C4DC4189C89CC71B34CDB46079143857A4D49148E2D4411D3F7599FEE5"
     },
-    "runtime_repair": "honor explicit streamed predicted_n=0, exclude prompt-progress token markers from generated-token evidence, and reverify the admitted binary identity at postflight",
+    "runtime_repair": "record failed checkpoint reuse or closure as scientific evidence and continue the frozen panel without semantic early stop",
     "scientific_surface_changed": false
   },
   "authority": {
@@ -40,7 +42,7 @@
     },
     "controller": {
       "algorithm": "sha256-canonical-callable-source-v1",
-      "sha256": "B766AE4371FB9DCCA6664EB0D5335C60D5483206BE2FC95D7C330F9B4720758E"
+      "sha256": "AC85A6FDADE3D4515B5C3DF7A9766BF74CC8D0EDF57192D028FF041C5939A8E1"
     },
     "frozen_scientific": {
       "algorithm": "sha256-canonical-scientific-surface-v1",
