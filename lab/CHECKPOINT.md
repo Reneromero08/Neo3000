@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Easy 35B semantic-XOR corpus and evaluator frozen
+## Checkpoint 2: Semantic-XOR successor attempt prepared after bounded output failure
 
-**Status:** NEO-EXP-0046 PRESERVED / SEMANTIC-XOR CORPUS AND PROTECTED EVALUATOR FROZEN / NO IMPLEMENTATION OR MODEL CONTACT / BROADER CLAIMS LOCKED
+**Status:** NEO-EXP-0046 PRESERVED / SEMANTIC-XOR ATTEMPT 1 INCONCLUSIVE AND CONSUMED / ATTEMPT 2 MINIMALLY REPAIRED / BROADER CLAIMS LOCKED
 
 - [x] Preserve the three-worker diagnostic from synchronized source `6c760b2d5f8296f795724d061f1d91a0e4171c27`, then admit the separately authorized two-worker decision at synchronized clean `main` `c8942f7b4ecf7ab555b54393fc63c4cbb5a366b3`; exact frozen suite SHA-256 remains `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
 - [x] Scan only the eight public task projections and all 80 three-example shards. Locally eligible shard counts by task index are `[2,2,0,0,2,1,1,0]`; no task reaches the three distinct worker shards required by the frozen geometry.
@@ -46,6 +46,10 @@
 - [x] Freeze exact resource accounting with cached tokens required to be zero, fresh prompt tokens equal to logical prompt tokens, and route efficiency compared by exact integer cross-products. Exclude wall-clock and hypothetical parallelism.
 - [x] Bind preregistration artifact `41AA06744924D4705A4EC03FC418FA6F2A407BACD007E96988AF29CBEE49BEA2`, scientific surface `FE0ECA78CC0227AEB82F15338119129195666840A7E5BCD010D563417DC218C4`, controller `964A747D72A20A0E9DAD99DDF99A5FBEC4DE2B3273678CD28A80AC2E69AE7340`, protected scorer `8BF9146886167545CFA7A3C34980614407A5C5BF02D7229F47209FB7F22B0F04`, and resource accountant `FCC62B9E4587A4AF7B3B8B47A2BE903FDF5A33CCDDEAA78FF4B76A9EFF07DA2C`.
 - [x] Pass focused implementation tests, exact preregistration reconstruction, changed-file compilation, no-smuggle/private scans, canonical JSON/JSONL, evaluator gates, regenerated evaluator lock, and protected preflight. Run no full CPU suite or historical CK0 family and create no live state.
+- [x] Execute attempt 1 once from `5605c5d28a6fdbc7e1e7ee855c0515f88ad50997`; consume one authority, start/capture `1/16`, complete one generation, and perform zero retries. Preserve receipt `E61D53E8842E08327D3544CE5A846DA4CB8B23306B7ECEF78419F951F530477D`, result `1CB608735DC1A8D84937B7E1B1B8EFB8521CAF82D4355172D41389BD32FCF942`, closure `5773086158F9740E423C4142529CC1071240FBD8A6C2229C9A426D0F06A4FC8B`, journal `5D4CE39C54E1584DCB1876B8ED1F8F1B875C16F85F40A749C2F2F2536414568F`, capture `7010019E486CC95527C53B9702227C24ADB4C29EDA164FF4FF48B7BB46ABF73B`, and archive `4447C61747E89084EE9882B238575AF1BF8E21589CDAB78532BD381A1C5741D8`.
+- [x] Classify attempt 1 `INCONCLUSIVE`, not a capability failure: the first baseline response returned HTTP 200 but exhausted the eight-token output ceiling with `finish_reason=length` before strict JSON closure; protected scoring never opened and the worker route never started.
+- [x] Prepare attempt 2 with one scientific-surface repair only: uniform completion ceiling `8 → 16`. Prove compact valid outputs require 5–7 pinned tokens and observed pretty valid outputs require 10–13; preserve corpus, evaluator, tasks, order, seeds, schemas, scoring, resource comparison, claim locks, and the entire consumed attempt.
+- [x] Bind attempt-2 preregistration artifact `1BF0EEF30D0EE71993F02C12ADC7D58ADF01624BD410B36797CDE4E41A5FDA42`, file `8A1534111D36B181650CB269F0C09D3741AA0B35D3B5A1AAB848F212F838EEAB`, scientific surface `48A024C8089FE4DA19DB67D76290CD4C23A94FF9BBA1303F5A383FF124135AE6`, controller `A5F35F418246C050CE787019DE6CD40C29109CD88A30C48AFBD21DDDDBF207EF`, derivation law `2CACA650C19B61246F4FC38801BDB8041063C90F09FC306F2DF74DA6CC18E5B4`, scorer `8BF9146886167545CFA7A3C34980614407A5C5BF02D7229F47209FB7F22B0F04`, and resource accountant `978F5586138AB759D56573B93B7F81313C530D608EE268CEFB23920F56179545`.
 - [x] Create zero task instances, expected bits, labels, prompts, request hashes, seeds, Python code, authority, runtime state, model contact, or follow-on execution during design.
 - [x] Add the exact private evaluator path to the existing narrow `catalytic_kernel_0_private` ignore convention before private creation; create the evaluator exclusively and never expose its bytes through tracked state.
 - [x] Manually author eight distinct entailment microcases with 38–45 passage words, 10–16 question words, two to four named entities, no external knowledge, no ambiguous pronouns, and balanced comparison, ownership, location, and temporal relations.
@@ -78,7 +82,7 @@ Preserved three-parent evidence:
 
 Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, general worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** `SEPARATELY_AUTHORIZE_AND_EXECUTE_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1`. Bind a fresh external authority to the published static commit and exact preregistration; execute no more than 16 one-generation requests and stop before publication or follow-on design.
+**Next exact action:** `AUTHORIZE_AND_EXECUTE_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1_ATTEMPT_2`. Bind a fresh external authority to the published successor commit and exact attempt-2 preregistration; execute no more than 16 one-generation requests and stop before publication or follow-on design.
 
 ---
 

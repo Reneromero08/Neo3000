@@ -612,6 +612,10 @@ That implementation boundary is complete as `two-shard-semantic-xor-worker-basel
 
 Canonical preregistration `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1.json` has artifact SHA-256 `41AA06744924D4705A4EC03FC418FA6F2A407BACD007E96988AF29CBEE49BEA2`. Protected scoring cannot open the evaluator until all 16 captures exist and cleanup/postflight pass; resource comparison uses exact integer cross-products over fresh prompt-plus-completion tokens per correct label. No authority, sidecar, model request, generation, capture, result, archive, ledger record, or follow-on exists. The next boundary is `SEPARATELY_AUTHORIZE_AND_EXECUTE_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1`.
 
+That first attempt is now consumed and terminal `INCONCLUSIVE`. It executed from `5605c5d28a6fdbc7e1e7ee855c0515f88ad50997`, captured only the first direct baseline, and stopped without retry because the HTTP 200 response exhausted the frozen eight-token ceiling before strict JSON closure. Archive `4447C61747E89084EE9882B238575AF1BF8E21589CDAB78532BD381A1C5741D8` preserves the result; no worker or synthesis request started and protected scoring remained unopened.
+
+Attempt 2 is a bounded execution amendment, not a retry or redesign. It changes only the shared worker/synthesis/baseline completion ceiling from 8 to 16 after the pinned tokenizer measured observed pretty valid schemas at 10–13 tokens. Corpus, protected evaluator, tasks, request order, seeds, schemas, scoring, resource comparison, and claim locks remain fixed. Canonical successor preregistration `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_2.json` has artifact SHA-256 `1BF0EEF30D0EE71993F02C12ADC7D58ADF01624BD410B36797CDE4E41A5FDA42`; one fresh authority bound to the published successor commit is required before execution.
+
 First intervention: **HoloState-v1 Live Prefix Lattice**
 
 ```text

@@ -217,10 +217,13 @@ class SemanticXorWorkerBaselineEvaluationTests(unittest.TestCase):
         ]
         self.assertFalse(probe.build_synthesis_request(self.corpus, probe.TASK_IDS[0], artifacts)["cache_prompt"])
 
-    def test_15_valid_schema_outputs_fit_eight_token_ceiling(self) -> None:
+    def test_15_valid_compact_and_pretty_schema_outputs_fit_completion_ceiling(self) -> None:
         lengths = self.artifact["prompts_and_schemas"]["valid_output_token_lengths"]
-        self.assertLessEqual(max(lengths.values()), 8)
-        self.assertEqual(self.artifact["prompts_and_schemas"]["maximum_completion_tokens"], 8)
+        self.assertLessEqual(max(lengths.values()), probe.MAXIMUM_COMPLETION_TOKENS)
+        self.assertEqual(
+            self.artifact["prompts_and_schemas"]["maximum_completion_tokens"],
+            probe.MAXIMUM_COMPLETION_TOKENS,
+        )
 
     def test_16_execution_order_and_route_first_balance_are_exact(self) -> None:
         expected = []
@@ -348,9 +351,13 @@ class SemanticXorWorkerBaselineEvaluationTests(unittest.TestCase):
                 "logical_prompt_tokens": 10 if probe.request_role(request_id) != "baseline" else 40,
                 "cached_prompt_tokens": 0,
                 "completion_tokens": 2,
-                "maximum_output_tokens": 8,
+                "maximum_output_tokens": probe.MAXIMUM_COMPLETION_TOKENS,
                 "generation_count": 1,
-                "maximum_request_context": 18 if probe.request_role(request_id) != "baseline" else 48,
+                "maximum_request_context": (
+                    10 + probe.MAXIMUM_COMPLETION_TOKENS
+                    if probe.request_role(request_id) != "baseline"
+                    else 40 + probe.MAXIMUM_COMPLETION_TOKENS
+                ),
             }
             for request_id in probe.REQUEST_IDS
         ]
@@ -371,9 +378,9 @@ class SemanticXorWorkerBaselineEvaluationTests(unittest.TestCase):
                 "logical_prompt_tokens": 10,
                 "cached_prompt_tokens": 0,
                 "completion_tokens": 1,
-                "maximum_output_tokens": 8,
+                "maximum_output_tokens": probe.MAXIMUM_COMPLETION_TOKENS,
                 "generation_count": 1,
-                "maximum_request_context": 18,
+                "maximum_request_context": 10 + probe.MAXIMUM_COMPLETION_TOKENS,
             }
             for request_id in probe.REQUEST_IDS
         ]
@@ -442,6 +449,37 @@ class SemanticXorWorkerBaselineEvaluationTests(unittest.TestCase):
         self.assertEqual(self.artifact["claim_locks"], probe.LOCKED_CLAIMS)
         self.assertFalse(self.artifact["claim_locks"]["automatic_promotion"])
         self.assertEqual(self.artifact["capture_and_execution_law"]["maximum_generations"], 16)
+
+    def test_31_completion_ceiling_covers_observed_pretty_json_forms(self) -> None:
+        tokenizer = probe.asymmetry.OfflineTokenizer(self.model_path)
+        pretty_outputs = (
+            json.dumps({"bit": 0}, indent=2),
+            json.dumps({"bit": 1}, indent=2),
+            json.dumps({"label": "SAME"}, indent=2),
+            json.dumps({"label": "DIFFERENT"}, indent=2),
+        )
+        self.assertEqual(probe.MAXIMUM_COMPLETION_TOKENS, 16)
+        self.assertLessEqual(
+            max(tokenizer.length(value) for value in pretty_outputs),
+            probe.MAXIMUM_COMPLETION_TOKENS,
+        )
+
+    def test_32_successor_preregistration_preserves_consumed_attempt_and_one_change(self) -> None:
+        repair = self.artifact["completion_budget_repair"]
+        self.assertEqual(repair["predecessor_attempt"], probe.PREDECESSOR_ATTEMPT)
+        self.assertEqual(repair["maximum_completion_tokens_before"], 8)
+        self.assertEqual(
+            repair["maximum_completion_tokens_after"],
+            probe.MAXIMUM_COMPLETION_TOKENS,
+        )
+        self.assertTrue(repair["source_attempt_preserved"])
+        self.assertTrue(repair["source_authority_consumed"])
+        self.assertTrue(repair["source_attempt_retry_forbidden"])
+        self.assertTrue(repair["fresh_successor_authority_required"])
+        self.assertEqual(
+            repair["only_scientific_surface_change"],
+            "uniform completion ceiling 8 to 16",
+        )
 
 
 if __name__ == "__main__":

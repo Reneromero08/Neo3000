@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Easy 35B semantic-XOR corpus and protected evaluator frozen
+## Checkpoint 2: Semantic-XOR successor attempt prepared after bounded output failure
 
 `balanced-opaque-five-support-two-worker-synthesis-probe-v1` executed once from protected main `563cbf5a72a763af8a2cde2394a5ea5beb008bad`. One consumed authority admitted exactly `worker-A`, `worker-B`, and `synthesis-AB`; all three one-generation requests completed with authenticated captures and zero retries.
 
@@ -22,7 +22,7 @@ General worker synthesis, transfer, equal-budget advantage, reduced fresh comput
 
 The separately authorized design is complete as `two-shard-semantic-xor-worker-synthesis-family-v1`, with design classification `TWO_SHARD_SEMANTIC_XOR_TASK_FAMILY_STATICALLY_ADMISSIBLE`. The scientific question is whether two isolated workers can generate binary semantic judgments absent from controller-readable structured form and one fixed XOR can synthesize an exact useful label.
 
-Each future shard is an easy Agents-A1 35B-calibrated natural-language microcase: passage at most 120 words, binary question at most 24 words, at most four entities, one explicit negation, and one depth-two temporal, comparison, ownership, or implication chain. Workers see one shard each and emit only `{"bit":0}` or `{"bit":1}` under an eight-token ceiling. Synthesis sees only the two authenticated bits and XOR and emits only `SAME` or `DIFFERENT` under the same ceiling. The protected evaluator remains unavailable to prompt construction and dispatch.
+Each shard is an easy Agents-A1 35B-calibrated natural-language microcase: passage at most 120 words, binary question at most 24 words, at most four entities, one explicit negation, and one depth-two temporal, comparison, ownership, or implication chain. The original design used an eight-token ceiling for worker, synthesis, and baseline JSON. The consumed first attempt demonstrated that the model may pretty-print a valid schema and exhaust eight tokens before closure; the successor execution amendment raises only this shared ceiling to 16. The protected evaluator remains unavailable to prompt construction and dispatch.
 
 The future four-task corpus must be manually authored and cover `00 / 01 / 10 / 11` exactly once. A direct ordinary-inference baseline receives both exact shards and the same XOR rule. Fresh-inference advantage requires at least equal final accuracy and fewer fresh prompt-plus-completion tokens per correct label across all four retained tasks; smaller per-request context alone is insufficient.
 
@@ -38,7 +38,11 @@ The separately authorized static implementation is complete as `two-shard-semant
 
 Canonical preregistration `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1.json` has artifact SHA-256 `41AA06744924D4705A4EC03FC418FA6F2A407BACD007E96988AF29CBEE49BEA2`. No authority, sidecar, model request, generation, capture, result, archive, publication record, or follow-on design was created.
 
-**Next exact action:** `SEPARATELY_AUTHORIZE_AND_EXECUTE_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1`. Bind one fresh external authority to the published static commit and exact preregistration; do not publish or design a follow-on automatically.
+The first live attempt executed from protected main `5605c5d28a6fdbc7e1e7ee855c0515f88ad50997`. After a pre-consumption stable-server restart, it consumed authority receipt `E61D53E8842E08327D3544CE5A846DA4CB8B23306B7ECEF78419F951F530477D`, started and captured only `sx-016fb6886053-baseline`, and stopped with failure `D9F454B180D10FCDDC68CBC79AAE5D8A59EFC35EF3A54BEA587A91377D414D6D`. The response was HTTP 200 but ended `length` after eight tokens before strict JSON closure. Cleanup and postflight passed, no worker or synthesis request started, zero retries occurred, protected scoring remained unopened, and archive `4447C61747E89084EE9882B238575AF1BF8E21589CDAB78532BD381A1C5741D8` preserves the terminal attempt.
+
+Successor preregistration `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_2.json` binds the consumed predecessor and changes only the uniform completion ceiling from 8 to 16. The pinned tokenizer measures the observed valid pretty schemas at 10–13 tokens. The attempt-2 preregistration artifact is `1BF0EEF30D0EE71993F02C12ADC7D58ADF01624BD410B36797CDE4E41A5FDA42`, file SHA-256 `8A1534111D36B181650CB269F0C09D3741AA0B35D3B5A1AAB848F212F838EEAB`, frozen scientific binding `48A024C8089FE4DA19DB67D76290CD4C23A94FF9BBA1303F5A383FF124135AE6`, controller binding `A5F35F418246C050CE787019DE6CD40C29109CD88A30C48AFBD21DDDDBF207EF`, synthesis derivation law `2CACA650C19B61246F4FC38801BDB8041063C90F09FC306F2DF74DA6CC18E5B4`, protected scorer `8BF9146886167545CFA7A3C34980614407A5C5BF02D7229F47209FB7F22B0F04`, and resource accountant `978F5586138AB759D56573B93B7F81313C530D608EE268CEFB23920F56179545`.
+
+**Next exact action:** `AUTHORIZE_AND_EXECUTE_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1_ATTEMPT_2`. Bind one fresh external authority to the published successor commit and exact attempt-2 preregistration; do not retry the consumed attempt or publish automatically.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 

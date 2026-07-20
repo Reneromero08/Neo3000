@@ -41,13 +41,17 @@ PROTECTED_EVALUATOR_PATH = Path(
 )
 PROTECTED_EVALUATOR_SHA256 = "437112DC9A06E4CB3CF1824A738BB13887212B23A38E2AF12A94374A9259D163"
 PROTECTED_EVALUATOR_SIZE = 968
-PREREGISTRATION_PATH = Path("lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1.json")
+PREREGISTRATION_PATH = Path(
+    "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_2.json"
+)
 PRIVATE_ROOT_PATH = source_binding.PRIVATE_ROOT_PATH
 EXPECTED_EVIDENCE_ROOT_COMMITMENT = "7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD"
-STATE_ROOT = Path("state/catalytic_kernel_0/two_shard_semantic_xor_worker_baseline_evaluation_v1")
+STATE_ROOT = Path(
+    "state/catalytic_kernel_0/two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_2"
+)
 ARCHIVE_ROOT = Path("state/catalytic_kernel_0/two_shard_semantic_xor_worker_baseline_evidence_archive/v1")
 AUTHORITY_RECEIPT_PATH = Path(
-    "state/catalytic_kernel_0_authority.two-shard-semantic-xor-worker-baseline-v1.authority.consumed.json"
+    "state/catalytic_kernel_0_authority.two-shard-semantic-xor-worker-baseline-v1-attempt-2.authority.consumed.json"
 )
 TASK_IDS = scientific.TASK_IDS
 REQUEST_IDS = scientific.REQUEST_IDS
@@ -58,7 +62,23 @@ WORKER_ROLES = ("worker-A", "worker-B")
 REQUEST_ROLES = ("worker-A", "worker-B", "synthesis", "baseline")
 MAXIMUM_TOTAL_MODEL_GENERATIONS = 16
 MAXIMUM_MODEL_GENERATIONS_PER_REQUEST = 1
-MAXIMUM_COMPLETION_TOKENS = 8
+MAXIMUM_COMPLETION_TOKENS = 16
+PREDECESSOR_ATTEMPT = {
+    "authorized_commit": "5605c5d28a6fdbc7e1e7ee855c0515f88ad50997",
+    "authority_receipt_sha256": "E61D53E8842E08327D3544CE5A846DA4CB8B23306B7ECEF78419F951F530477D",
+    "manifest_sha256": "D118A4F30CAC1EF5B892655CCB5A237BCBDEC1F5A31BC7A0F1D45FFB929F6CD1",
+    "result_sha256": "1CB608735DC1A8D84937B7E1B1B8EFB8521CAF82D4355172D41389BD32FCF942",
+    "closure_sha256": "5773086158F9740E423C4142529CC1071240FBD8A6C2229C9A426D0F06A4FC8B",
+    "journal_sha256": "5D4CE39C54E1584DCB1876B8ED1F8F1B875C16F85F40A749C2F2F2536414568F",
+    "capture_sha256": "7010019E486CC95527C53B9702227C24ADB4C29EDA164FF4FF48B7BB46ABF73B",
+    "archive_sha256": "4447C61747E89084EE9882B238575AF1BF8E21589CDAB78532BD381A1C5741D8",
+    "failure_sha256": "D9F454B180D10FCDDC68CBC79AAE5D8A59EFC35EF3A54BEA587A91377D414D6D",
+    "terminal_classification": "INCONCLUSIVE",
+    "started_request_count": 1,
+    "captured_request_count": 1,
+    "completed_model_generations": 1,
+    "retry_allowed": False,
+}
 MODEL_SHA256 = asymmetry.EXPECTED_MODEL_SHA256
 BINARY_SHA256 = transaction.BINARY_SHA256
 
@@ -709,8 +729,15 @@ def account_resources(
         _require(isinstance(logical, int) and logical > 0, "logical prompt token evidence changed")
         _require(cached == 0, "cached prompt tokens must be zero")
         _require(isinstance(completion, int) and completion > 0, "completion token evidence changed")
-        _require(record["maximum_output_tokens"] == 8 and record["generation_count"] == 1, "request resource ceiling changed")
-        _require(record["maximum_request_context"] == logical + 8, "maximum request context changed")
+        _require(
+            record["maximum_output_tokens"] == MAXIMUM_COMPLETION_TOKENS
+            and record["generation_count"] == 1,
+            "request resource ceiling changed",
+        )
+        _require(
+            record["maximum_request_context"] == logical + MAXIMUM_COMPLETION_TOKENS,
+            "maximum request context changed",
+        )
         normalized.append(
             {
                 **dict(record),
@@ -866,8 +893,17 @@ def build_preregistration_document(repository: Path, model_path: Path) -> dict[s
         "worker_bit_1": tokenizer.length('{"bit":1}'),
         "label_same": tokenizer.length('{"label":"SAME"}'),
         "label_different": tokenizer.length('{"label":"DIFFERENT"}'),
+        "pretty_worker_bit_0": tokenizer.length(json.dumps({"bit": 0}, indent=2)),
+        "pretty_worker_bit_1": tokenizer.length(json.dumps({"bit": 1}, indent=2)),
+        "pretty_label_same": tokenizer.length(json.dumps({"label": "SAME"}, indent=2)),
+        "pretty_label_different": tokenizer.length(
+            json.dumps({"label": "DIFFERENT"}, indent=2)
+        ),
     }
-    _require(max(valid_output_token_lengths.values()) <= MAXIMUM_COMPLETION_TOKENS, "valid schema output exceeds eight-token ceiling")
+    _require(
+        max(valid_output_token_lengths.values()) <= MAXIMUM_COMPLETION_TOKENS,
+        "valid compact or pretty schema output exceeds completion-token ceiling",
+    )
     body = {
         "schema_version": 1,
         "design_id": DESIGN_ID,
@@ -876,6 +912,39 @@ def build_preregistration_document(repository: Path, model_path: Path) -> dict[s
         "scientific_questions": {
             "capability": "Can isolated semantic-bit workers and a separate XOR synthesis solve all four frozen tasks without controller-readable answers?",
             "resource": "Does the worker-synthesis route use fewer fresh prompt-plus-completion tokens per correct label than one same-evidence direct request?",
+        },
+        "completion_budget_repair": {
+            "predecessor_attempt": dict(PREDECESSOR_ATTEMPT),
+            "demonstrated_boundary": {
+                "request_id": REQUEST_IDS[0],
+                "http_status": 200,
+                "finish_reason": "length",
+                "completion_tokens": 8,
+                "failure": "strict JSON response exhausted the frozen ceiling before closure",
+            },
+            "maximum_completion_tokens_before": 8,
+            "maximum_completion_tokens_after": MAXIMUM_COMPLETION_TOKENS,
+            "maximum_observed_valid_pretty_output_tokens": max(
+                valid_output_token_lengths.values()
+            ),
+            "source_attempt_preserved": True,
+            "source_authority_consumed": True,
+            "source_attempt_retry_forbidden": True,
+            "fresh_successor_authority_required": True,
+            "only_scientific_surface_change": "uniform completion ceiling 8 to 16",
+            "unchanged": [
+                "public corpus",
+                "protected evaluator",
+                "task identities",
+                "request order",
+                "request seeds",
+                "temperature",
+                "cache policy",
+                "worker and label schemas",
+                "scoring law",
+                "resource comparison law",
+                "claim locks",
+            ],
         },
         "frozen_sources": contract["source_identities"],
         "task_ids": list(TASK_IDS),
@@ -896,7 +965,7 @@ def build_preregistration_document(repository: Path, model_path: Path) -> dict[s
         "prompts_and_schemas": {
             "system_prompt_sha256": contract["system_prompt_sha256"],
             "response_schema_sha256": contract["response_schema_sha256"],
-            "maximum_completion_tokens": 8,
+            "maximum_completion_tokens": MAXIMUM_COMPLETION_TOKENS,
             "valid_output_token_lengths": valid_output_token_lengths,
             "maximum_valid_output_tokens": max(valid_output_token_lengths.values()),
             "fixed_payload_canonical_token_lengths": fixed_payload_token_lengths,
@@ -1212,9 +1281,9 @@ def _resource_record(capture: Mapping[str, Any], request_id: str) -> dict[str, A
         "logical_prompt_tokens": prompt,
         "cached_prompt_tokens": cached,
         "completion_tokens": completion,
-        "maximum_output_tokens": 8,
+        "maximum_output_tokens": MAXIMUM_COMPLETION_TOKENS,
         "generation_count": 1,
-        "maximum_request_context": prompt + 8,
+        "maximum_request_context": prompt + MAXIMUM_COMPLETION_TOKENS,
     }
 
 

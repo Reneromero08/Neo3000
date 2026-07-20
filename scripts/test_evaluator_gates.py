@@ -589,6 +589,10 @@ class EvaluatorGateTests(unittest.TestCase):
             "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1.json",
             EVALUATOR["protected_paths"]["files"],
         )
+        self.assertIn(
+            "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_2.json",
+            EVALUATOR["protected_paths"]["files"],
+        )
 
 
 if __name__ == "__main__":
