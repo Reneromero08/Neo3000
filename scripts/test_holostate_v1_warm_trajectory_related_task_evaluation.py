@@ -122,6 +122,40 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
                 probe.public_pair_sha256(self.by_id[pair_id]),
             )
 
+    def test_01b_zero_output_stream_ignores_prompt_progress_token_markers(self):
+        events = [
+            b'data: {"content":"","tokens":[0],"stop":false,"tokens_predicted":0,"tokens_evaluated":3,"prompt_progress":{"total":3,"cache":0,"processed":3}}\n',
+            b'data: {"content":"","tokens":[],"stop":true,"tokens_predicted":0,"tokens_evaluated":3,"stop_type":"limit","timings":{"predicted_n":0}}\n',
+        ]
+
+        class Response:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def __iter__(self):
+                return iter(events)
+
+        recorded = []
+        with mock.patch.object(probe.urllib.request, "urlopen", return_value=Response()):
+            value = probe._stream_raw_completion(
+                port=9494,
+                payload=probe._raw_completion_payload(
+                    "checkpoint", seed=1, cache_prompt=False, n_predict=0
+                ),
+                recorder=recorded.append,
+            )
+        self.assertEqual(value.completion_tokens, 0)
+        self.assertEqual(value.generated_token_ids, [])
+        self.assertEqual(value.generated_token_count, 0)
+        self.assertEqual(value.nonempty_token_array_event_count, 0)
+        self.assertEqual(value.empty_token_array_event_count, 1)
+        self.assertEqual(recorded, events)
+
     def test_02_exact_preregistration_reconstruction(self):
         value = probe.validate_preregistration(ROOT)
         self.assertEqual(value["design_id"], probe.DESIGN_ID)
@@ -870,7 +904,7 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         finally:
             shutil.rmtree(repository, ignore_errors=True)
 
-    def test_37_attempt_5_preserves_attempt_4_terminal_evidence(self):
+    def test_37_attempt_6_preserves_attempt_5_terminal_evidence(self):
         prior = probe.verify_prior_execution(ROOT, probe._load_private_root(ROOT))
         self.assertEqual(prior["authority_receipt_sha256"], probe.PRIOR_AUTHORITY_RECEIPT_SHA256)
         self.assertEqual(prior["evidence_sha256"], probe.PRIOR_EVIDENCE_SHA256)
@@ -878,7 +912,7 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         self.assertFalse((ROOT / probe.AUTHORITY_RECEIPT_PATH).exists())
         self.assertFalse((ROOT / probe.STATE_ROOT).exists())
 
-    def test_38_attempt_4_capture_retains_normalized_chat_accounting(self):
+    def test_38_attempt_5_capture_retains_normalized_accounting(self):
         path = (
             ROOT
             / probe.PRIOR_STATE_ROOT

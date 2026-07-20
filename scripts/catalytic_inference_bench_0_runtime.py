@@ -1667,7 +1667,18 @@ class _HoloStateAdapter:
     def postflight(self, *, preflight: Mapping[str, Any]) -> Mapping[str, Any]:
         runtime = preflight["runtime"]
         report = self.custody.validate_postclaim_custody(runtime["custody"])
-        self.h.verify_binary_identity(runtime["binary"])
+        binary_identity = preflight.get("metadata", {}).get("binary_identity")
+        if not isinstance(binary_identity, Mapping):
+            raise CatalyticInferenceRuntimeError("preflight binary identity is missing at postflight")
+        expected_sha256 = binary_identity.get("sha256")
+        expected_runtime_version = binary_identity.get("runtime_version")
+        if not isinstance(expected_sha256, str) or not isinstance(expected_runtime_version, str):
+            raise CatalyticInferenceRuntimeError("preflight binary identity is malformed at postflight")
+        self.h.verify_binary_identity_against(
+            runtime["binary"],
+            expected_sha256=expected_sha256,
+            expected_runtime_version=expected_runtime_version,
+        )
         self.h.verify_model(runtime["model"], runtime["evaluator"])
         self.h.require_stable(runtime["stable_pids"])
         if self.h.listener_pids(self.h.PORT):

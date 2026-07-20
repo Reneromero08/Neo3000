@@ -1,27 +1,27 @@
 {
-  "artifact_sha256": "9BDB84694638A0066E0572E3FE2C28B0CF8240551687219FC1650E1878B4F93D",
+  "artifact_sha256": "35EE6DE54B1146247C305AB447C2B7EDB173781AAD060BF17FCD6845E16BFDA4",
   "attempt": {
-    "attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-5",
-    "prior_attempt_archive_sha256": "BEF9D3E36080D29CDE8F33A7C5CE842F1D774E46093E2F740784A7C4F18768DD",
+    "attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-6",
+    "prior_attempt_archive_sha256": "AA40B8BBA2F4872C84FA7104264BBD9162F4196777FF071DFF7F0006D972D494",
     "prior_attempt_carrier_operations": 0,
     "prior_attempt_evidence_sha256": {
-      "captures/warm-trajectory-archive-01-task-a.json": "6CFA87719F336EF8B4841E0ED4A866B65EDCEFD5C7F2C5B4AAE70492B8B955A9",
-      "closure.json": "3E3FF03DA99FAED8BA19650B7E6D42A9B30E77902FE57F9186E8BB75679093A0",
-      "journal.jsonl": "E802460EC42A64E55ECC1A9147C160C5F69851D70C9C02B506CDD61A19A5950D",
-      "manifest.json": "EE9DAB0A9E8062292E7B519CC75410B81089524FAB2E554D839E680B9FEC185A",
-      "result.json": "05840E52327BE306D5781C6FFE81A040A50E89301C3860C6945F58CC97A59207"
+      "captures/warm-trajectory-archive-01-task-a.json": "967DBEF2959E68F6F0F01301B24773A50B1E0A0D6A3B61593D426CCC88F3FBC0",
+      "closure.json": "A2F314E7AF5B4255B75673A1AF9F611AD8A0764CD0CB93D4845E8D460F3A6162",
+      "journal.jsonl": "0E26DB80F2C3A378E4E5806D18A4FAF4C1E55B8218D6A7D2CC4478513DBBA9CC",
+      "manifest.json": "1EEF60313EEBD7E07A15C09974576B7C99BBFE2E2BA791DF5F9BE605E65695E3",
+      "result.json": "13CE78DD00182BD74D05AFE94134A6BEEB6B8BBA8618419C588637F184802825"
     },
-    "prior_attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-4",
+    "prior_attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-5",
     "prior_attempt_model_requests": 1,
     "prior_attempt_runtime_root_created": true,
     "prior_attempt_terminal_classification": "INCONCLUSIVE",
-    "prior_authority_receipt_sha256": "9631B4F62528B6D099255E5B22F34A77F2A9F733DE7F74877CD2BA57B65B4E4B",
-    "runtime_binary_changed": true,
+    "prior_authority_receipt_sha256": "DB7C0C334429500F4E1C8B813D0BF68704BD9E8692CD7201B0917971E451BC79",
+    "runtime_binary_changed": false,
     "runtime_binary_identity": {
       "runtime_version": "160 (89762c0)",
       "sha256": "EFA521C4DC4189C89CC71B34CDB46079143857A4D49148E2D4411D3F7599FEE5"
     },
-    "runtime_repair": "honor n_predict=0 before next-token sampling",
+    "runtime_repair": "honor explicit streamed predicted_n=0, exclude prompt-progress token markers from generated-token evidence, and reverify the admitted binary identity at postflight",
     "scientific_surface_changed": false
   },
   "authority": {
@@ -40,7 +40,7 @@
     },
     "controller": {
       "algorithm": "sha256-canonical-callable-source-v1",
-      "sha256": "38DDFB4EBBCB281E6B3F68CEB8994112ABDB05F8134909E185258FFD97FAF915"
+      "sha256": "B766AE4371FB9DCCA6664EB0D5335C60D5483206BE2FC95D7C330F9B4720758E"
     },
     "frozen_scientific": {
       "algorithm": "sha256-canonical-scientific-surface-v1",
@@ -138,7 +138,7 @@
     },
     "resource_accounting": {
       "algorithm": "sha256-canonical-callable-source-v1",
-      "sha256": "9B19875C750EFC7D3583EB473FEC46D9697C676142FEBB3B884DF247FC7DBEEB"
+      "sha256": "1FB748E2014692AE600AE94EC68FF0F15E9BFFC946F6CB835F6777882B3A77BA"
     }
   },
   "claim_locks": [

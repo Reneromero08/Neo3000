@@ -643,6 +643,50 @@ class CatalyticInferenceBench0RuntimeTests(unittest.TestCase):
                 ),
             )
 
+    def test_postflight_reverifies_the_binary_identity_admitted_by_preflight(self) -> None:
+        adapter = object.__new__(_HoloStateAdapter)
+        adapter.custody = types.SimpleNamespace(
+            validate_postclaim_custody=mock.Mock(
+                return_value=types.SimpleNamespace(
+                    changed_evidence_paths=("result.json",),
+                    historical_namespace_hashes={},
+                )
+            )
+        )
+        adapter.h = types.SimpleNamespace(
+            PORT=9494,
+            verify_binary_identity_against=mock.Mock(return_value={}),
+            verify_model=mock.Mock(return_value={}),
+            require_stable=mock.Mock(return_value={}),
+            listener_pids=mock.Mock(return_value=set()),
+            git_read=mock.Mock(side_effect=["c" * 40, "# branch.oid " + "c" * 40]),
+        )
+        preflight = {
+            "metadata": {
+                "binary_identity": {
+                    "sha256": "A" * 64,
+                    "runtime_version": "160 (89762c0)",
+                }
+            },
+            "runtime": {
+                "custody": {},
+                "binary": Path("candidate-llama-server.exe"),
+                "model": Path("model.gguf"),
+                "evaluator": {},
+                "stable_pids": {42},
+                "candidate_root": Path("candidate"),
+                "candidate_head": "c" * 40,
+                "candidate_status": "# branch.oid " + "c" * 40,
+            },
+        }
+        result = adapter.postflight(preflight=preflight)
+        self.assertTrue(result["passed"])
+        adapter.h.verify_binary_identity_against.assert_called_once_with(
+            Path("candidate-llama-server.exe"),
+            expected_sha256="A" * 64,
+            expected_runtime_version="160 (89762c0)",
+        )
+
     @staticmethod
     def _resource(
         boundary: str,

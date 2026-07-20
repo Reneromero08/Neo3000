@@ -31,8 +31,8 @@ class WarmTrajectoryEvaluationError(ValueError):
 
 
 DESIGN_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1"
-ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-5"
-PRIOR_ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-4"
+ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-6"
+PRIOR_ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-5"
 FAMILY_ID = "holostate-v1-warm-trajectory-related-task-family-v1"
 STARTING_PROTECTED_MAIN = "1a07ca0cc366d53e682e13440810716533f60f98"
 PUBLIC_CORPUS_PATH = Path(
@@ -49,39 +49,39 @@ PREREGISTRATION_PATH = Path(
     "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1.json"
 )
 STATE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-5"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-6"
 )
 ARCHIVE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-5"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-6"
 )
 PRIOR_AUTHORITY_RECEIPT_PATH = Path(
     "state/catalytic_kernel_0_authority."
-    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-4.authority.consumed.json"
+    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-5.authority.consumed.json"
 )
 AUTHORITY_RECEIPT_PATH = Path(
     "state/catalytic_kernel_0_authority."
-    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-5.authority.consumed.json"
+    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-6.authority.consumed.json"
 )
 PRIOR_AUTHORITY_RECEIPT_SHA256 = (
-    "9631B4F62528B6D099255E5B22F34A77F2A9F733DE7F74877CD2BA57B65B4E4B"
+    "DB7C0C334429500F4E1C8B813D0BF68704BD9E8692CD7201B0917971E451BC79"
 )
 PRIOR_STATE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-4"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-5"
 )
 PRIOR_ARCHIVE_PATH = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-4/"
-    "BEF9D3E36080D29CDE8F33A7C5CE842F1D774E46093E2F740784A7C4F18768DD"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-5/"
+    "AA40B8BBA2F4872C84FA7104264BBD9162F4196777FF071DFF7F0006D972D494"
 )
 PRIOR_EVIDENCE_SHA256 = {
-    "manifest.json": "EE9DAB0A9E8062292E7B519CC75410B81089524FAB2E554D839E680B9FEC185A",
-    "journal.jsonl": "E802460EC42A64E55ECC1A9147C160C5F69851D70C9C02B506CDD61A19A5950D",
-    "result.json": "05840E52327BE306D5781C6FFE81A040A50E89301C3860C6945F58CC97A59207",
-    "closure.json": "3E3FF03DA99FAED8BA19650B7E6D42A9B30E77902FE57F9186E8BB75679093A0",
+    "manifest.json": "1EEF60313EEBD7E07A15C09974576B7C99BBFE2E2BA791DF5F9BE605E65695E3",
+    "journal.jsonl": "0E26DB80F2C3A378E4E5806D18A4FAF4C1E55B8218D6A7D2CC4478513DBBA9CC",
+    "result.json": "13CE78DD00182BD74D05AFE94134A6BEEB6B8BBA8618419C588637F184802825",
+    "closure.json": "A2F314E7AF5B4255B75673A1AF9F611AD8A0764CD0CB93D4845E8D460F3A6162",
     "captures/warm-trajectory-archive-01-task-a.json": (
-        "6CFA87719F336EF8B4841E0ED4A866B65EDCEFD5C7F2C5B4AAE70492B8B955A9"
+        "967DBEF2959E68F6F0F01301B24773A50B1E0A0D6A3B61593D426CCC88F3FBC0"
     ),
 }
-PRIOR_ARCHIVE_SHA256 = "BEF9D3E36080D29CDE8F33A7C5CE842F1D774E46093E2F740784A7C4F18768DD"
+PRIOR_ARCHIVE_SHA256 = "AA40B8BBA2F4872C84FA7104264BBD9162F4196777FF071DFF7F0006D972D494"
 EXPECTED_EVIDENCE_ROOT_COMMITMENT = (
     "7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD"
 )
@@ -545,6 +545,7 @@ def controller_binding() -> dict[str, Any]:
             JournalWriter.append,
             capture_request_once,
             _chat_sse_terminal_accounting,
+            _stream_raw_completion,
             normalized_capture_execution,
             _task_a_terminal_token_index,
             render_checkpoint_and_task_b,
@@ -570,6 +571,7 @@ def resource_binding() -> dict[str, Any]:
     return _callable_binding(
         [
             _chat_sse_terminal_accounting,
+            _stream_raw_completion,
             normalized_capture_execution,
             resource_record,
             carrier_operation_record,
@@ -607,8 +609,11 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "prior_attempt_evidence_sha256": PRIOR_EVIDENCE_SHA256,
             "prior_attempt_archive_sha256": PRIOR_ARCHIVE_SHA256,
             "scientific_surface_changed": False,
-            "runtime_binary_changed": True,
-            "runtime_repair": "honor n_predict=0 before next-token sampling",
+            "runtime_binary_changed": False,
+            "runtime_repair": (
+                "honor explicit streamed predicted_n=0, exclude prompt-progress token markers "
+                "from generated-token evidence, and reverify the admitted binary identity at postflight"
+            ),
             "runtime_binary_identity": {
                 "sha256": BINARY_SHA256,
                 "runtime_version": RUNTIME_VERSION,
@@ -1274,7 +1279,7 @@ def _stream_raw_completion(
             if isinstance(event.get("prompt_progress"), Mapping):
                 progress.append(dict(event["prompt_progress"]))
             tokens = event.get("tokens")
-            if isinstance(tokens, list):
+            if isinstance(tokens, list) and "prompt_progress" not in event:
                 if tokens:
                     nonempty_arrays += 1
                     token_ids.extend(int(item) for item in tokens)
@@ -1285,7 +1290,12 @@ def _stream_raw_completion(
                 final = event
     timings = final.get("timings") if isinstance(final.get("timings"), Mapping) else {}
     last_progress = progress[-1] if progress else {}
-    completion = int(timings.get("predicted_n") or final.get("tokens_predicted") or len(token_ids))
+    if "predicted_n" in timings:
+        completion = int(timings["predicted_n"])
+    elif "tokens_predicted" in final:
+        completion = int(final["tokens_predicted"])
+    else:
+        completion = len(token_ids)
     prompt_tokens = int(last_progress.get("total") or final.get("tokens_evaluated") or 0)
     cached = int(last_progress.get("cache") or 0)
     return SimpleNamespace(
