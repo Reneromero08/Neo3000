@@ -239,6 +239,7 @@
       "lab/two_shard_semantic_xor_worker_synthesis_family_v1_corpus_binding_1.json",
       "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1.json",
       "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_2.json",
+      "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]

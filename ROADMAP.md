@@ -616,6 +616,10 @@ That first attempt is now consumed and terminal `INCONCLUSIVE`. It executed from
 
 Attempt 2 is a bounded execution amendment, not a retry or redesign. It changes only the shared worker/synthesis/baseline completion ceiling from 8 to 16 after the pinned tokenizer measured observed pretty valid schemas at 10–13 tokens. Corpus, protected evaluator, tasks, request order, seeds, schemas, scoring, resource comparison, and claim locks remain fixed. Canonical successor preregistration `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_2.json` has artifact SHA-256 `1BF0EEF30D0EE71993F02C12ADC7D58ADF01624BD410B36797CDE4E41A5FDA42`; one fresh authority bound to the published successor commit is required before execution.
 
+Attempt 2 is consumed and terminal `INCONCLUSIVE`. Its first baseline response contained complete valid JSON at exactly 16 completion tokens, but the server returned `finish_reason=length` before the required stop marker. No other request started and no retry occurred; archive `9E5F9D89B5FAAA71B550B465CF5EDAF99399FEEF3D56786A733527C9CEF74628` preserves the exact evidence.
+
+Attempt 3 is the final bounded output-budget correction in this lineage. It changes only the uniform completion ceiling from 16 to 32, preserves both consumed predecessors and every task, request, seed, schema, evaluator, scoring, resource, and claim boundary, and uses distinct attempt-3 state and authority paths. Canonical preregistration `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3.json` has artifact SHA-256 `650B72BD09ED153505B867AD33FAF6F1D7EE96FA2C76F2A84189975440CB8A66`; one fresh authority bound to the published Attempt-3 commit is required before execution.
+
 First intervention: **HoloState-v1 Live Prefix Lattice**
 
 ```text

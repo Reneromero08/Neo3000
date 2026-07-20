@@ -458,7 +458,7 @@ class SemanticXorWorkerBaselineEvaluationTests(unittest.TestCase):
             json.dumps({"label": "SAME"}, indent=2),
             json.dumps({"label": "DIFFERENT"}, indent=2),
         )
-        self.assertEqual(probe.MAXIMUM_COMPLETION_TOKENS, 16)
+        self.assertEqual(probe.MAXIMUM_COMPLETION_TOKENS, 32)
         self.assertLessEqual(
             max(tokenizer.length(value) for value in pretty_outputs),
             probe.MAXIMUM_COMPLETION_TOKENS,
@@ -466,8 +466,12 @@ class SemanticXorWorkerBaselineEvaluationTests(unittest.TestCase):
 
     def test_32_successor_preregistration_preserves_consumed_attempt_and_one_change(self) -> None:
         repair = self.artifact["completion_budget_repair"]
-        self.assertEqual(repair["predecessor_attempt"], probe.PREDECESSOR_ATTEMPT)
+        self.assertEqual(
+            repair["predecessor_attempts"],
+            [dict(value) for value in probe.PREDECESSOR_ATTEMPTS],
+        )
         self.assertEqual(repair["maximum_completion_tokens_before"], 8)
+        self.assertEqual(repair["intermediate_completion_tokens"], 16)
         self.assertEqual(
             repair["maximum_completion_tokens_after"],
             probe.MAXIMUM_COMPLETION_TOKENS,
@@ -478,7 +482,7 @@ class SemanticXorWorkerBaselineEvaluationTests(unittest.TestCase):
         self.assertTrue(repair["fresh_successor_authority_required"])
         self.assertEqual(
             repair["only_scientific_surface_change"],
-            "uniform completion ceiling 8 to 16",
+            "uniform completion ceiling 8 to 32 through preserved 16-token attempt",
         )
 
 

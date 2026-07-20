@@ -42,16 +42,16 @@ PROTECTED_EVALUATOR_PATH = Path(
 PROTECTED_EVALUATOR_SHA256 = "437112DC9A06E4CB3CF1824A738BB13887212B23A38E2AF12A94374A9259D163"
 PROTECTED_EVALUATOR_SIZE = 968
 PREREGISTRATION_PATH = Path(
-    "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_2.json"
+    "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3.json"
 )
 PRIVATE_ROOT_PATH = source_binding.PRIVATE_ROOT_PATH
 EXPECTED_EVIDENCE_ROOT_COMMITMENT = "7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD"
 STATE_ROOT = Path(
-    "state/catalytic_kernel_0/two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_2"
+    "state/catalytic_kernel_0/two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3"
 )
 ARCHIVE_ROOT = Path("state/catalytic_kernel_0/two_shard_semantic_xor_worker_baseline_evidence_archive/v1")
 AUTHORITY_RECEIPT_PATH = Path(
-    "state/catalytic_kernel_0_authority.two-shard-semantic-xor-worker-baseline-v1-attempt-2.authority.consumed.json"
+    "state/catalytic_kernel_0_authority.two-shard-semantic-xor-worker-baseline-v1-attempt-3.authority.consumed.json"
 )
 TASK_IDS = scientific.TASK_IDS
 REQUEST_IDS = scientific.REQUEST_IDS
@@ -62,8 +62,8 @@ WORKER_ROLES = ("worker-A", "worker-B")
 REQUEST_ROLES = ("worker-A", "worker-B", "synthesis", "baseline")
 MAXIMUM_TOTAL_MODEL_GENERATIONS = 16
 MAXIMUM_MODEL_GENERATIONS_PER_REQUEST = 1
-MAXIMUM_COMPLETION_TOKENS = 16
-PREDECESSOR_ATTEMPT = {
+MAXIMUM_COMPLETION_TOKENS = 32
+PREDECESSOR_ATTEMPT_1 = {
     "authorized_commit": "5605c5d28a6fdbc7e1e7ee855c0515f88ad50997",
     "authority_receipt_sha256": "E61D53E8842E08327D3544CE5A846DA4CB8B23306B7ECEF78419F951F530477D",
     "manifest_sha256": "D118A4F30CAC1EF5B892655CCB5A237BCBDEC1F5A31BC7A0F1D45FFB929F6CD1",
@@ -79,6 +79,26 @@ PREDECESSOR_ATTEMPT = {
     "completed_model_generations": 1,
     "retry_allowed": False,
 }
+PREDECESSOR_ATTEMPT_2 = {
+    "authorized_commit": "21c0449524b82db96d5e9826cbe743f0a7c7c9d9",
+    "authority_id_sha256": "75C72A52418FAD4A2B348C584296C430BBB8FC7D71F5740F041F8E0A3E4D0D55",
+    "authority_receipt_sha256": "A8E199A4D160F222BB65A6C288BF89475B11DFEC9E62BBCDA24E83AAB54E5A44",
+    "manifest_sha256": "1835D003283C06B7BDFF81840B567DC0935720C66D0D390F50AAF65EECC39BDE",
+    "result_sha256": "4357FC297F6AEBD81BB32F7709A5BF039EDE1D396502D9E981A077168CD9F009",
+    "closure_sha256": "9363DBD195B3A1FBC9AE6C547576891169F425784FEA3C4015AB8A93C5FB7608",
+    "journal_sha256": "CF7E846523362B32206A87559A93DF7F7ABCD9C28417B1A79E9B1B0174ABAB23",
+    "capture_sha256": "B540285AEEBE54386104888BA478EB391302AE1DE442D201AB58CE0AEA802D55",
+    "archive_sha256": "9E5F9D89B5FAAA71B550B465CF5EDAF99399FEEF3D56786A733527C9CEF74628",
+    "failure_sha256": "D9F454B180D10FCDDC68CBC79AAE5D8A59EFC35EF3A54BEA587A91377D414D6D",
+    "terminal_classification": "INCONCLUSIVE",
+    "started_request_count": 1,
+    "captured_request_count": 1,
+    "completed_model_generations": 1,
+    "completion_tokens": 16,
+    "captured_json_complete": True,
+    "retry_allowed": False,
+}
+PREDECESSOR_ATTEMPTS = (PREDECESSOR_ATTEMPT_1, PREDECESSOR_ATTEMPT_2)
 MODEL_SHA256 = asymmetry.EXPECTED_MODEL_SHA256
 BINARY_SHA256 = transaction.BINARY_SHA256
 
@@ -914,7 +934,7 @@ def build_preregistration_document(repository: Path, model_path: Path) -> dict[s
             "resource": "Does the worker-synthesis route use fewer fresh prompt-plus-completion tokens per correct label than one same-evidence direct request?",
         },
         "completion_budget_repair": {
-            "predecessor_attempt": dict(PREDECESSOR_ATTEMPT),
+            "predecessor_attempts": [dict(value) for value in PREDECESSOR_ATTEMPTS],
             "demonstrated_boundary": {
                 "request_id": REQUEST_IDS[0],
                 "http_status": 200,
@@ -923,6 +943,7 @@ def build_preregistration_document(repository: Path, model_path: Path) -> dict[s
                 "failure": "strict JSON response exhausted the frozen ceiling before closure",
             },
             "maximum_completion_tokens_before": 8,
+            "intermediate_completion_tokens": 16,
             "maximum_completion_tokens_after": MAXIMUM_COMPLETION_TOKENS,
             "maximum_observed_valid_pretty_output_tokens": max(
                 valid_output_token_lengths.values()
@@ -931,7 +952,7 @@ def build_preregistration_document(repository: Path, model_path: Path) -> dict[s
             "source_authority_consumed": True,
             "source_attempt_retry_forbidden": True,
             "fresh_successor_authority_required": True,
-            "only_scientific_surface_change": "uniform completion ceiling 8 to 16",
+            "only_scientific_surface_change": "uniform completion ceiling 8 to 32 through preserved 16-token attempt",
             "unchanged": [
                 "public corpus",
                 "protected evaluator",
