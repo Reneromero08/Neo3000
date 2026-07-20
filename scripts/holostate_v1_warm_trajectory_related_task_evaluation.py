@@ -81,6 +81,14 @@ REQUEST_ORDER = tuple(
         *(f"{pair_id}-task-b-{route}" for route in ROUTE_ORDER[pair_id]),
     )
 )
+CARRIER_OPERATION_ORDER = tuple(
+    operation_id
+    for pair_id in PAIR_IDS
+    for operation_id in (
+        f"{pair_id}-carrier-materialization",
+        f"{pair_id}-carrier-closure-readdress",
+    )
+)
 TASK_A_MAX_TOKENS = 512
 TASK_B_MAX_TOKENS = 128
 MAXIMUM_GENERATIONS = 12
@@ -510,7 +518,16 @@ def scorer_binding() -> dict[str, Any]:
 
 
 def resource_binding() -> dict[str, Any]:
-    return _callable_binding([resource_record, account_resources, exact_ratio])
+    return _callable_binding(
+        [
+            resource_record,
+            carrier_operation_record,
+            verify_carrier_operation_record,
+            verify_journal_event,
+            account_resources,
+            exact_ratio,
+        ]
+    )
 
 
 def closure_binding() -> dict[str, Any]:
@@ -548,6 +565,7 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
         "protected_evaluator": evaluator,
         "execution": {
             "request_order": list(REQUEST_ORDER),
+            "carrier_operation_order": list(CARRIER_OPERATION_ORDER),
             "route_order": {key: list(value) for key, value in ROUTE_ORDER.items()},
             "seeds": scientific["body"]["seeds"],
             "fixed_request_template_sha256": scientific["body"]["fixed_request_template_sha256"],
@@ -555,6 +573,10 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "catalytic_task_b_generations": 4,
             "direct_task_b_generations": 4,
             "maximum_generations": MAXIMUM_GENERATIONS,
+            "carrier_materialization_inference_requests": 4,
+            "carrier_closure_readdress_inference_requests": 4,
+            "total_inference_requests": 20,
+            "zero_output_carrier_requests_are_not_generations": True,
             "one_physical_slot": True,
             "one_sidecar_epoch": True,
             "temperature": 0,
@@ -584,13 +606,25 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "checkpoint_reuse_required": True,
             "checkpoint_materialization_reads_prior_cache": False,
             "checkpoint_readdress_required_immediately_after_catalytic_branch": True,
+            "checkpoint_closure_scope": "immediate-post-catalytic-readdress",
+            "direct_replay_root_survival_claimed": False,
             "direct_route_cannot_feed_catalytic_cache": True,
             "direct_cached_prompt_tokens_required": 0,
             "restart_persistence_claimed": False,
         },
         "resource_law": {
             "shared_task_a_reported_separately": True,
-            "primary_comparison": "marginal catalytic Task B versus direct replay Task B",
+            "primary_comparison": (
+                "complete marginal catalytic carrier cycle versus direct replay Task B"
+            ),
+            "complete_catalytic_marginal_includes": [
+                "fresh checkpoint materialization",
+                "catalytic Task-B continuation",
+                "immediate post-catalytic closure/readdress",
+            ],
+            "zero_output_prompt_inference_is_counted": True,
+            "carrier_operations_authenticated_in_journal": True,
+            "suffix_only_diagnostic_has_no_decision_authority": True,
             "fresh_prompt_plus_completion_tokens": True,
             "exact_tokens_per_correct": True,
             "integer_cross_products": True,
@@ -791,6 +825,49 @@ class JournalWriter:
         self.previous = event_sha
         self.count += 1
         return event
+
+
+def verify_journal_event(
+    event: Mapping[str, Any],
+    key: bytes,
+    *,
+    expected_previous: str,
+    expected_ordinal: int,
+    expected_state: str | None = None,
+) -> dict[str, Any]:
+    _require(
+        set(event)
+        == {
+            "schema_version",
+            "design_id",
+            "ordinal",
+            "observed_at",
+            "state",
+            "request_id",
+            "facts",
+            "previous_event_sha256",
+            "event_sha256",
+        },
+        "journal event surface changed",
+    )
+    body = {name: value for name, value in event.items() if name != "event_sha256"}
+    expected_sha = hmac.new(
+        key,
+        b"neo3000/holostate-warm-trajectory/journal-event/v1\0"
+        + canonical_json_bytes(body),
+        hashlib.sha256,
+    ).hexdigest().upper()
+    _require(
+        event.get("schema_version") == 1
+        and event.get("design_id") == DESIGN_ID
+        and event.get("ordinal") == expected_ordinal
+        and event.get("previous_event_sha256") == expected_previous
+        and hmac.compare_digest(str(event.get("event_sha256", "")), expected_sha),
+        "journal event authentication changed",
+    )
+    if expected_state is not None:
+        _require(event.get("state") == expected_state, "journal event state changed")
+    return dict(event)
 
 
 CAPTURE_EXECUTION_FIELDS = (
@@ -1017,6 +1094,9 @@ def resource_record(capture: Mapping[str, Any], request_id: str) -> dict[str, An
     _require(logical > 0 and 0 <= cached <= logical and completion > 0, "capture resource data is invalid")
     return {
         "request_id": request_id,
+        "operation_id": request_id,
+        "operation_kind": "model-generation",
+        "inference_request_count": 1,
         "logical_prompt_tokens": logical,
         "reused_prompt_tokens": cached,
         "fresh_prompt_tokens": logical - cached,
@@ -1027,18 +1107,159 @@ def resource_record(capture: Mapping[str, Any], request_id: str) -> dict[str, An
     }
 
 
+def carrier_operation_record(
+    execution: Any,
+    *,
+    operation_id: str,
+    pair_id: str,
+    operation_kind: str,
+    payload: Mapping[str, Any],
+    checkpoint_id: str,
+    operation_ordinal: int,
+) -> dict[str, Any]:
+    _require(pair_id in PAIR_IDS, "carrier operation pair changed")
+    _require(
+        operation_kind in {"carrier-materialization", "carrier-closure-readdress"},
+        "carrier operation kind changed",
+    )
+    expected_id = f"{pair_id}-{operation_kind}"
+    _require(operation_id == expected_id, "carrier operation ID changed")
+    _require(
+        1 <= operation_ordinal <= len(CARRIER_OPERATION_ORDER)
+        and CARRIER_OPERATION_ORDER[operation_ordinal - 1] == operation_id,
+        "carrier operation order changed",
+    )
+    expected_cache = operation_kind == "carrier-closure-readdress"
+    _require(
+        payload.get("n_predict") == 0
+        and payload.get("cache_prompt") is expected_cache,
+        "carrier operation payload law changed",
+    )
+    logical = int(_capture_value(execution, "prompt_tokens") or 0)
+    reused = int(_capture_value(execution, "cached_prompt_tokens") or 0)
+    completion = int(_capture_value(execution, "completion_tokens") or 0)
+    http_status = int(_capture_value(execution, "http_status") or 0)
+    stop_evidence = _capture_value(execution, "terminal_stop_evidence")
+    _require(logical > 0 and 0 <= reused <= logical, "carrier operation prompt accounting is invalid")
+    _require(completion == 0, "zero-output carrier operation generated completion tokens")
+    _require(
+        http_status == 200
+        and isinstance(stop_evidence, Mapping)
+        and stop_evidence.get("observed") is True
+        and stop_evidence.get("stop") is True,
+        "carrier operation terminal evidence is invalid",
+    )
+    fresh = logical - reused
+    return {
+        "operation_id": operation_id,
+        "pair_id": pair_id,
+        "operation_kind": operation_kind,
+        "operation_ordinal": operation_ordinal,
+        "checkpoint_id": checkpoint_id,
+        "payload_sha256": json_sha256(payload),
+        "cache_prompt": expected_cache,
+        "n_predict": 0,
+        "inference_request_count": 1,
+        "generation_count": 0,
+        "logical_prompt_tokens": logical,
+        "reused_prompt_tokens": reused,
+        "fresh_prompt_tokens": fresh,
+        "completion_tokens": 0,
+        "fresh_prompt_plus_completion_tokens": fresh,
+        "maximum_request_context": logical,
+        "terminal_http_status": http_status,
+        "terminal_stop_evidence": dict(stop_evidence),
+    }
+
+
+def verify_carrier_operation_record(
+    record: Mapping[str, Any],
+    *,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    required = {
+        "operation_id",
+        "pair_id",
+        "operation_kind",
+        "operation_ordinal",
+        "checkpoint_id",
+        "payload_sha256",
+        "cache_prompt",
+        "n_predict",
+        "inference_request_count",
+        "generation_count",
+        "logical_prompt_tokens",
+        "reused_prompt_tokens",
+        "fresh_prompt_tokens",
+        "completion_tokens",
+        "fresh_prompt_plus_completion_tokens",
+        "maximum_request_context",
+        "terminal_http_status",
+        "terminal_stop_evidence",
+    }
+    _require(set(record) == required, "carrier operation evidence surface changed")
+    pair_id = str(record["pair_id"])
+    operation_kind = str(record["operation_kind"])
+    operation_id = str(record["operation_id"])
+    ordinal = int(record["operation_ordinal"])
+    _require(pair_id in PAIR_IDS, "carrier operation evidence pair changed")
+    _require(operation_id == f"{pair_id}-{operation_kind}", "carrier operation evidence ID changed")
+    _require(
+        1 <= ordinal <= len(CARRIER_OPERATION_ORDER)
+        and CARRIER_OPERATION_ORDER[ordinal - 1] == operation_id,
+        "carrier operation evidence order changed",
+    )
+    expected_cache = operation_kind == "carrier-closure-readdress"
+    _require(
+        operation_kind in {"carrier-materialization", "carrier-closure-readdress"}
+        and record["payload_sha256"] == json_sha256(payload)
+        and payload.get("n_predict") == 0
+        and payload.get("cache_prompt") is expected_cache
+        and record["cache_prompt"] is expected_cache
+        and record["n_predict"] == 0,
+        "carrier operation evidence payload changed",
+    )
+    logical = int(record["logical_prompt_tokens"])
+    reused = int(record["reused_prompt_tokens"])
+    fresh = int(record["fresh_prompt_tokens"])
+    _require(
+        logical > 0
+        and 0 <= reused <= logical
+        and fresh == logical - reused
+        and record["completion_tokens"] == 0
+        and record["fresh_prompt_plus_completion_tokens"] == fresh
+        and record["maximum_request_context"] == logical
+        and record["inference_request_count"] == 1
+        and record["generation_count"] == 0,
+        "carrier operation evidence arithmetic changed",
+    )
+    stop = record["terminal_stop_evidence"]
+    _require(
+        record["terminal_http_status"] == 200
+        and isinstance(stop, Mapping)
+        and stop.get("observed") is True
+        and stop.get("stop") is True,
+        "carrier operation evidence terminal state changed",
+    )
+    return dict(record)
+
+
 def exact_ratio(tokens: int, correct: int) -> dict[str, Any]:
     return {"numerator": tokens, "denominator": correct, "defined": correct > 0}
 
 
-def account_resources(records: Sequence[Mapping[str, Any]], scoring: Mapping[str, Any]) -> dict[str, Any]:
+def account_resources(
+    records: Sequence[Mapping[str, Any]],
+    carrier_operations: Sequence[Mapping[str, Any]],
+    scoring: Mapping[str, Any],
+) -> dict[str, Any]:
     def summarize(name: str, selected: Sequence[Mapping[str, Any]], correct: int) -> dict[str, Any]:
         fresh_prompt = sum(int(item["fresh_prompt_tokens"]) for item in selected)
         completion = sum(int(item["completion_tokens"]) for item in selected)
         total = fresh_prompt + completion
         return {
             "route": name,
-            "request_count": len(selected),
+            "request_count": sum(int(item["inference_request_count"]) for item in selected),
             "generation_count": sum(int(item["generation_count"]) for item in selected),
             "logical_prompt_tokens": sum(int(item["logical_prompt_tokens"]) for item in selected),
             "reused_prompt_tokens": sum(int(item["reused_prompt_tokens"]) for item in selected),
@@ -1050,43 +1271,89 @@ def account_resources(records: Sequence[Mapping[str, Any]], scoring: Mapping[str
             "fresh_tokens_per_correct": exact_ratio(total, correct),
         }
 
+    _require(tuple(item["request_id"] for item in records) == REQUEST_ORDER, "generation resource order changed")
+    _require(
+        tuple(item["operation_id"] for item in carrier_operations) == CARRIER_OPERATION_ORDER,
+        "carrier operation resource order changed",
+    )
     shared = [item for item in records if str(item["request_id"]).endswith("task-a")]
-    catalytic = [item for item in records if str(item["request_id"]).endswith("task-b-catalytic")]
+    catalytic_suffix = [item for item in records if str(item["request_id"]).endswith("task-b-catalytic")]
     direct = [item for item in records if str(item["request_id"]).endswith("task-b-direct")]
-    _require(len(shared) == len(catalytic) == len(direct) == 4, "resource route geometry changed")
-    catalytic_summary = summarize("catalytic-task-b", catalytic, int(scoring["catalytic_task_b_correct"]))
+    materialization = [
+        item for item in carrier_operations if item["operation_kind"] == "carrier-materialization"
+    ]
+    closure = [
+        item for item in carrier_operations if item["operation_kind"] == "carrier-closure-readdress"
+    ]
+    _require(
+        len(shared) == len(catalytic_suffix) == len(direct) == len(materialization) == len(closure) == 4,
+        "resource route geometry changed",
+    )
+    catalytic_correct = int(scoring["catalytic_task_b_correct"])
+    direct_correct = int(scoring["direct_task_b_correct"])
+    materialization_summary = summarize("carrier-materialization", materialization, catalytic_correct)
+    catalytic_suffix_summary = summarize("catalytic-task-b-suffix", catalytic_suffix, catalytic_correct)
+    closure_summary = summarize("immediate-post-catalytic-closure-readdress", closure, catalytic_correct)
+    complete_catalytic_summary = summarize(
+        "complete-catalytic-marginal-cycle",
+        [*materialization, *catalytic_suffix, *closure],
+        catalytic_correct,
+    )
     direct_summary = summarize("direct-replay-task-b", direct, int(scoring["direct_task_b_correct"]))
     shared_summary = summarize("shared-task-a", shared, int(scoring["task_a_correct"]))
+    all_records = [*records, *carrier_operations]
     total_sequence = {
-        "request_count": 12,
-        "generation_count": 12,
-        "logical_prompt_tokens": sum(int(item["logical_prompt_tokens"]) for item in records),
-        "reused_prompt_tokens": sum(int(item["reused_prompt_tokens"]) for item in records),
-        "fresh_prompt_tokens": sum(int(item["fresh_prompt_tokens"]) for item in records),
-        "completion_tokens": sum(int(item["completion_tokens"]) for item in records),
+        "request_count": sum(int(item["inference_request_count"]) for item in all_records),
+        "generation_count": sum(int(item["generation_count"]) for item in all_records),
+        "logical_prompt_tokens": sum(int(item["logical_prompt_tokens"]) for item in all_records),
+        "reused_prompt_tokens": sum(int(item["reused_prompt_tokens"]) for item in all_records),
+        "fresh_prompt_tokens": sum(int(item["fresh_prompt_tokens"]) for item in all_records),
+        "completion_tokens": sum(int(item["completion_tokens"]) for item in all_records),
     }
     total_sequence["fresh_prompt_plus_completion_tokens"] = (
         total_sequence["fresh_prompt_tokens"] + total_sequence["completion_tokens"]
     )
     cross = {
-        "catalytic_tokens_x_direct_correct": (
-            catalytic_summary["fresh_prompt_plus_completion_tokens"] * direct_summary["correct_answers"]
+        "complete_catalytic_tokens_x_direct_correct": (
+            complete_catalytic_summary["fresh_prompt_plus_completion_tokens"] * direct_correct
         ),
-        "direct_tokens_x_catalytic_correct": (
-            direct_summary["fresh_prompt_plus_completion_tokens"] * catalytic_summary["correct_answers"]
+        "direct_tokens_x_complete_catalytic_correct": (
+            direct_summary["fresh_prompt_plus_completion_tokens"] * catalytic_correct
+        ),
+    }
+    suffix_cross = {
+        "catalytic_suffix_tokens_x_direct_correct": (
+            catalytic_suffix_summary["fresh_prompt_plus_completion_tokens"] * direct_correct
+        ),
+        "direct_tokens_x_catalytic_suffix_correct": (
+            direct_summary["fresh_prompt_plus_completion_tokens"] * catalytic_correct
         ),
     }
     return {
         "shared_task_a": shared_summary,
-        "catalytic_task_b": catalytic_summary,
+        "carrier_materialization": materialization_summary,
+        "catalytic_task_b_suffix": catalytic_suffix_summary,
+        "carrier_closure_readdress": closure_summary,
+        "complete_catalytic_marginal": complete_catalytic_summary,
         "direct_task_b": direct_summary,
         "total_sequence_shared_task_a_counted_once": total_sequence,
         "integer_cross_products": cross,
-        "catalytic_fresh_tokens_per_correct_strictly_lower": (
-            catalytic_summary["correct_answers"] > 0
-            and direct_summary["correct_answers"] > 0
-            and cross["catalytic_tokens_x_direct_correct"] < cross["direct_tokens_x_catalytic_correct"]
+        "complete_catalytic_fresh_tokens_per_correct_strictly_lower": (
+            catalytic_correct > 0
+            and direct_correct > 0
+            and cross["complete_catalytic_tokens_x_direct_correct"]
+            < cross["direct_tokens_x_complete_catalytic_correct"]
         ),
+        "secondary_suffix_only_diagnostic": {
+            "decision_authority": False,
+            "integer_cross_products": suffix_cross,
+            "suffix_fresh_tokens_per_correct_strictly_lower": (
+                catalytic_correct > 0
+                and direct_correct > 0
+                and suffix_cross["catalytic_suffix_tokens_x_direct_correct"]
+                < suffix_cross["direct_tokens_x_catalytic_suffix_correct"]
+            ),
+        },
     }
 
 
@@ -1204,6 +1471,7 @@ def verify_checkpoint_closure(
     original: Mapping[str, Any],
     reconstructed: Mapping[str, Any],
     reuse: Mapping[str, Any],
+    closure_operation: Mapping[str, Any],
 ) -> dict[str, Any]:
     immutable_fields = (
         "checkpoint_id",
@@ -1218,17 +1486,40 @@ def verify_checkpoint_closure(
         "scope",
     )
     unchanged = all(original.get(key) == reconstructed.get(key) for key in immutable_fields)
+    operation_bound = (
+        closure_operation.get("operation_kind") == "carrier-closure-readdress"
+        and closure_operation.get("checkpoint_id") == original.get("checkpoint_id")
+        and closure_operation.get("completion_tokens") == 0
+        and closure_operation.get("terminal_http_status") == 200
+    )
     result = {
+        "scope": "immediate-post-catalytic-readdress",
         "checkpoint_identity_unchanged": unchanged,
         "model_configuration_prefix_identity_unchanged": unchanged,
-        "branch_did_not_overwrite_root_before_closure": unchanged,
+        "branch_did_not_overwrite_root_before_immediate_closure": (
+            unchanged and reuse.get("root_readdressable_immediately_after_catalytic") is True
+        ),
         "root_readdressable_immediately_after_catalytic": reuse.get("root_readdressable_immediately_after_catalytic") is True,
         "checkpoint_freshly_materialized_before_catalytic": reuse.get("checkpoint_freshly_materialized") is True,
         "direct_route_did_not_read_checkpoint": reuse.get("direct_route_fresh") is True,
-        "temporary_branch_state_retired_by_final_cleanup": True,
+        "closure_operation_accounted": operation_bound,
+        "direct_replay_preserved_root_claimed": False,
+        "final_process_cleanup_required_separately": True,
         "restart_persistence_claimed": False,
     }
-    result["passed"] = all(value is True for key, value in result.items() if key != "restart_persistence_claimed")
+    result["passed"] = all(
+        result[key] is True
+        for key in (
+            "checkpoint_identity_unchanged",
+            "model_configuration_prefix_identity_unchanged",
+            "branch_did_not_overwrite_root_before_immediate_closure",
+            "root_readdressable_immediately_after_catalytic",
+            "checkpoint_freshly_materialized_before_catalytic",
+            "direct_route_did_not_read_checkpoint",
+            "closure_operation_accounted",
+            "final_process_cleanup_required_separately",
+        )
+    )
     return result
 
 
@@ -1378,7 +1669,9 @@ def classify_result(
     task_a_all = scoring.get("task_a_correct") == 4 and scoring.get("task_a_state_correct") == 4
     catalytic = int(scoring.get("catalytic_task_b_correct") or 0)
     direct = int(scoring.get("direct_task_b_correct") or 0)
-    advantage = resources.get("catalytic_fresh_tokens_per_correct_strictly_lower") is True
+    advantage = (
+        resources.get("complete_catalytic_fresh_tokens_per_correct_strictly_lower") is True
+    )
     if task_a_all and catalytic >= direct and advantage:
         return "PROCESS_LOCAL_WARM_TRAJECTORY_CATALYTIC_INFERENCE_SUPPORTED"
     if task_a_all and catalytic > direct and not advantage:
@@ -1419,6 +1712,7 @@ def _finalize_scientific_result(
     outcomes: Mapping[str, Mapping[str, Any]],
     captured: Sequence[str],
     resource_records: Sequence[Mapping[str, Any]],
+    carrier_operation_records: Sequence[Mapping[str, Any]],
     checkpoint_reports: Mapping[str, Mapping[str, Any]],
     cleanup: Mapping[str, Any],
     postflight: Mapping[str, Any],
@@ -1435,7 +1729,7 @@ def _finalize_scientific_result(
         cleanup_passed=cleanup.get("passed") is True,
         postflight_passed=postflight.get("passed") is True,
     )
-    resources = account_resources(resource_records, scoring)
+    resources = account_resources(resource_records, carrier_operation_records, scoring)
     closure_passed = all(report["closure"]["passed"] for report in checkpoint_reports.values())
     classification = classify_result(
         scoring,
@@ -1450,6 +1744,7 @@ def _finalize_scientific_result(
         "status": "complete",
         "terminal_classification": classification,
         "completed_model_generations": len(captured),
+        "completed_carrier_inference_operations": len(carrier_operation_records),
         "retry_count": 0,
         "request_dispositions": {request_id: "captured" for request_id in REQUEST_ORDER},
         "scoring": scoring,
@@ -1547,10 +1842,13 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
         "public_corpus_sha256": PUBLIC_CORPUS_SHA256,
         "protected_evaluator_sha256": PROTECTED_EVALUATOR_SHA256,
         "request_order": list(REQUEST_ORDER),
+        "carrier_operation_order": list(CARRIER_OPERATION_ORDER),
         "route_order": {key: list(value) for key, value in ROUTE_ORDER.items()},
         "fixed_request_template_sha256": fixed_request_templates(corpus),
         "preflight": public_preflight,
         "maximum_model_generations": MAXIMUM_GENERATIONS,
+        "maximum_carrier_inference_operations": len(CARRIER_OPERATION_ORDER),
+        "zero_output_carrier_operations_count_as_prompt_inference": True,
         "retry_allowed": False,
         "raw_authority_id_persisted": False,
     }
@@ -1562,6 +1860,8 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
     outcomes: dict[str, dict[str, Any]] = {pair_id: {} for pair_id in PAIR_IDS}
     checkpoint_reports: dict[str, dict[str, Any]] = {}
     resource_records: list[dict[str, Any]] = []
+    carrier_operation_records: list[dict[str, Any]] = []
+    carrier_operation_ordinal = 0
     sidecar: Any | None = None
     readiness: Mapping[str, Any] | None = None
     cleanup: Mapping[str, Any] = {"passed": False}
@@ -1674,21 +1974,32 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
 
                 warm_execution: Any | None = None
                 readdress_execution: Any | None = None
+                materialization_record: dict[str, Any] | None = None
+                closure_operation_record: dict[str, Any] | None = None
+                materialization_event_sha256: str | None = None
+                closure_event_sha256: str | None = None
                 for route in ROUTE_ORDER[pair_id]:
                     request_id = f"{pair_id}-task-b-{route}"
                     _require(REQUEST_ORDER[len(started)] == request_id, "Task-B route order changed")
                     if route == "catalytic" and warm_execution is None:
                         warm_execution = perform_warm()
-                        journal.append(
-                            "checkpoint-warmed",
-                            request_id=request_id,
-                            facts={
-                                "checkpoint_id": identity["checkpoint_id"],
-                                "checkpoint_token_count": identity["checkpoint_token_count"],
-                                "prompt_tokens": _capture_value(warm_execution, "prompt_tokens"),
-                                "cached_prompt_tokens": _capture_value(warm_execution, "cached_prompt_tokens"),
-                            },
+                        carrier_operation_ordinal += 1
+                        materialization_record = carrier_operation_record(
+                            warm_execution,
+                            operation_id=f"{pair_id}-carrier-materialization",
+                            pair_id=pair_id,
+                            operation_kind="carrier-materialization",
+                            payload=warm_payload,
+                            checkpoint_id=str(identity["checkpoint_id"]),
+                            operation_ordinal=carrier_operation_ordinal,
                         )
+                        carrier_operation_records.append(materialization_record)
+                        materialization_event = journal.append(
+                            "carrier-operation-captured",
+                            request_id=materialization_record["operation_id"],
+                            facts=materialization_record,
+                        )
+                        materialization_event_sha256 = str(materialization_event["event_sha256"])
                     raw_payload = _raw_completion_payload(
                         str(geometry["full_prompt"]),
                         seed=derive_seed(pair_id, "task-b"),
@@ -1767,20 +2078,33 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
                             ),
                             timeout=1_000,
                         )
-                        journal.append(
-                            "checkpoint-readdressed",
-                            request_id=request_id,
-                            facts={
-                                "checkpoint_id": identity["checkpoint_id"],
-                                "prompt_tokens": _capture_value(readdress_execution, "prompt_tokens"),
-                                "cached_prompt_tokens": _capture_value(readdress_execution, "cached_prompt_tokens"),
-                                "immediately_after_catalytic": True,
-                                "direct_route_completed_before_checkpoint_materialization": ROUTE_ORDER[pair_id][0] == "direct",
-                            },
+                        carrier_operation_ordinal += 1
+                        closure_operation_record = carrier_operation_record(
+                            readdress_execution,
+                            operation_id=f"{pair_id}-carrier-closure-readdress",
+                            pair_id=pair_id,
+                            operation_kind="carrier-closure-readdress",
+                            payload=readdress_payload,
+                            checkpoint_id=str(identity["checkpoint_id"]),
+                            operation_ordinal=carrier_operation_ordinal,
                         )
+                        carrier_operation_records.append(closure_operation_record)
+                        closure_event = journal.append(
+                            "carrier-operation-captured",
+                            request_id=closure_operation_record["operation_id"],
+                            facts=closure_operation_record,
+                        )
+                        closure_event_sha256 = str(closure_event["event_sha256"])
 
                 _require(warm_execution is not None, "checkpoint was never warmed")
                 _require(readdress_execution is not None, "checkpoint was not readdressed after catalytic Task B")
+                _require(
+                    materialization_record is not None
+                    and closure_operation_record is not None
+                    and materialization_event_sha256 is not None
+                    and closure_event_sha256 is not None,
+                    "carrier operation evidence is incomplete",
+                )
                 catalytic_capture = captures[f"{pair_id}-task-b-catalytic"]
                 direct_capture = captures[f"{pair_id}-task-b-direct"]
                 reuse = evaluate_checkpoint_reuse(
@@ -1797,13 +2121,28 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
                     task_a_capture_sha256=capture_a["capture_sha256"],
                     preflight_metadata=full_preflight["metadata"],
                 )
-                closure = verify_checkpoint_closure(identity, reconstructed_identity, reuse)
+                closure = verify_checkpoint_closure(
+                    identity,
+                    reconstructed_identity,
+                    reuse,
+                    closure_operation_record,
+                )
                 _require(reuse["passed"] and closure["passed"], f"checkpoint reuse/closure failed: {pair_id}")
                 checkpoint_reports[pair_id] = {
                     "identity": identity,
                     "geometry": {key: value for key, value in geometry.items() if not key.endswith("_prompt") and not key.endswith("_ids")},
                     "reuse": reuse,
                     "closure": closure,
+                    "carrier_operations": {
+                        "materialization": {
+                            **materialization_record,
+                            "journal_event_sha256": materialization_event_sha256,
+                        },
+                        "closure_readdress": {
+                            **closure_operation_record,
+                            "journal_event_sha256": closure_event_sha256,
+                        },
+                    },
                 }
                 journal.append(
                     "pair-closed",
@@ -1813,9 +2152,15 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
                         "checkpoint_id": identity["checkpoint_id"],
                         "reuse_passed": True,
                         "closure_passed": True,
+                        "closure_scope": "immediate-post-catalytic-readdress",
                     },
                 )
             _require(tuple(started) == REQUEST_ORDER and tuple(captured) == REQUEST_ORDER, "execution did not complete exact frozen order")
+            _require(
+                tuple(item["operation_id"] for item in carrier_operation_records)
+                == CARRIER_OPERATION_ORDER,
+                "execution did not complete exact carrier operation order",
+            )
         except BaseException as exc:
             terminal_error = exc
         finally:
@@ -1840,6 +2185,7 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
                     outcomes,
                     captured,
                     resource_records,
+                    carrier_operation_records,
                     checkpoint_reports,
                     cleanup,
                     postflight,
@@ -1857,6 +2203,7 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
                 "status": "inconclusive",
                 "terminal_classification": "INCONCLUSIVE",
                 "completed_model_generations": len(captured),
+                "completed_carrier_inference_operations": len(carrier_operation_records),
                 "retry_count": 0,
                 "started_requests": list(started),
                 "captured_requests": list(captured),

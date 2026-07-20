@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "68F2447D47BC912CF171AA4E7DF5CD7552016EC9992C2FD1D2E50339B07BE6A3",
+  "artifact_sha256": "26EC282FE645396BA6C7979EE7FDDAA5E9BBFE4AC98F89419EE5F4D70234AD42",
   "authority": {
     "authorized_commit_must_equal_protected_main": true,
     "fresh_external_authority_id": true,
@@ -12,11 +12,11 @@
   "bindings": {
     "checkpoint_closure": {
       "algorithm": "sha256-canonical-callable-source-v1",
-      "sha256": "CFED70705B4AA064AE283424436558D159BD2FB153D86197B0138FB0411F3AC2"
+      "sha256": "594291B4C6A64F7C1C8BA8F78E6EC91161E90347E58C6013D31F9063AFEB5B6B"
     },
     "controller": {
       "algorithm": "sha256-canonical-callable-source-v1",
-      "sha256": "D08A10550762E3BDEEFAFB6FC3340BAA5EC101FE4977BF441C60D39B6707F84A"
+      "sha256": "D1C352A73FEEC0ADC1A4C2AE9F03E230D9528D15A31CE48125AA403BA693FD98"
     },
     "frozen_scientific": {
       "algorithm": "sha256-canonical-scientific-surface-v1",
@@ -110,11 +110,11 @@
     },
     "protected_scorer": {
       "algorithm": "sha256-canonical-callable-source-v1",
-      "sha256": "0B5B079DDA160C535722967E2EBA7F60991AA522B24AD055A18D14FF698B92B7"
+      "sha256": "A3FF0CFB35649F24C4517D52B7F770A5A9D19D8648398240FA8C07B2E0C39171"
     },
     "resource_accounting": {
       "algorithm": "sha256-canonical-callable-source-v1",
-      "sha256": "80EFD822CDCDCBDB90E7F47BC574E8C485C0FB7D3D8DE3EBA3D8AC94D4FD2705"
+      "sha256": "0D3290ECFDA111732DFE8E0AD603300AF109BB1A17E8F269B9D45EAA08E05D36"
     }
   },
   "claim_locks": [
@@ -160,6 +160,18 @@
   },
   "design_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1",
   "execution": {
+    "carrier_closure_readdress_inference_requests": 4,
+    "carrier_materialization_inference_requests": 4,
+    "carrier_operation_order": [
+      "warm-trajectory-archive-01-carrier-materialization",
+      "warm-trajectory-archive-01-carrier-closure-readdress",
+      "warm-trajectory-refuge-02-carrier-materialization",
+      "warm-trajectory-refuge-02-carrier-closure-readdress",
+      "warm-trajectory-observatory-03-carrier-materialization",
+      "warm-trajectory-observatory-03-carrier-closure-readdress",
+      "warm-trajectory-clinic-04-carrier-materialization",
+      "warm-trajectory-clinic-04-carrier-closure-readdress"
+    ],
     "catalytic_task_b_generations": 4,
     "direct_task_b_generations": 4,
     "fixed_request_template_sha256": {
@@ -236,7 +248,9 @@
     "task_a_maximum_completion_tokens": 512,
     "task_b_maximum_completion_tokens": 128,
     "temperature": 0,
-    "thinking_disabled": true
+    "thinking_disabled": true,
+    "total_inference_requests": 20,
+    "zero_output_carrier_requests_are_not_generations": true
   },
   "holostate_law": {
     "carrier": "HoloState-v1 Live Prefix Lattice",
@@ -245,6 +259,7 @@
       "Task-B choices",
       "Task-B response schema"
     ],
+    "checkpoint_closure_scope": "immediate-post-catalytic-readdress",
     "checkpoint_contains": [
       "shared evidence",
       "Task-A request",
@@ -261,6 +276,7 @@
       "Task-B question and choices",
       "Task-B response schema"
     ],
+    "direct_replay_root_survival_claimed": false,
     "direct_route_cannot_feed_catalytic_cache": true,
     "restart_persistence_claimed": false,
     "scope": "process-local"
@@ -327,12 +343,20 @@
     "tracked": false
   },
   "resource_law": {
+    "carrier_operations_authenticated_in_journal": true,
+    "complete_catalytic_marginal_includes": [
+      "fresh checkpoint materialization",
+      "catalytic Task-B continuation",
+      "immediate post-catalytic closure/readdress"
+    ],
     "exact_tokens_per_correct": true,
     "fresh_prompt_plus_completion_tokens": true,
     "integer_cross_products": true,
-    "primary_comparison": "marginal catalytic Task B versus direct replay Task B",
+    "primary_comparison": "complete marginal catalytic carrier cycle versus direct replay Task B",
     "shared_task_a_reported_separately": true,
-    "wall_clock_separate": true
+    "suffix_only_diagnostic_has_no_decision_authority": true,
+    "wall_clock_separate": true,
+    "zero_output_prompt_inference_is_counted": true
   },
   "runtime_artifacts_absent": true,
   "schema_version": 1,

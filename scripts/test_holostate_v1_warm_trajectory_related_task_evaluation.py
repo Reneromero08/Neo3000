@@ -279,7 +279,26 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
             readdress_execution=execution(prompt=count, cached=count, completion=0),
         )
         self.assertFalse(rejected["passed"])
-        self.assertTrue(probe.verify_checkpoint_closure(identity, dict(identity), reuse)["passed"])
+        closure_payload = probe._raw_completion_payload(
+            str(geometry["checkpoint_prompt"]),
+            seed=probe.derive_seed(pair["pair_id"], "task-b"),
+            cache_prompt=True,
+            n_predict=0,
+        )
+        closure_operation = probe.carrier_operation_record(
+            execution(prompt=count, cached=count, completion=0),
+            operation_id=f"{pair['pair_id']}-carrier-closure-readdress",
+            pair_id=pair["pair_id"],
+            operation_kind="carrier-closure-readdress",
+            payload=closure_payload,
+            checkpoint_id=identity["checkpoint_id"],
+            operation_ordinal=6,
+        )
+        self.assertTrue(
+            probe.verify_checkpoint_closure(
+                identity, dict(identity), reuse, closure_operation
+            )["passed"]
+        )
 
     def test_14_resource_arithmetic_and_integer_cross_products(self):
         records = []
@@ -288,6 +307,9 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
             records.append(
                 {
                     "request_id": request_id,
+                    "operation_id": request_id,
+                    "operation_kind": "model-generation",
+                    "inference_request_count": 1,
                     "logical_prompt_tokens": 100,
                     "reused_prompt_tokens": route_cached,
                     "fresh_prompt_tokens": 100 - route_cached,
@@ -297,17 +319,60 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
                     "generation_count": 1,
                 }
             )
+        carrier_operations = []
+        for ordinal, operation_id in enumerate(probe.CARRIER_OPERATION_ORDER, 1):
+            is_closure = operation_id.endswith("carrier-closure-readdress")
+            carrier_operations.append(
+                {
+                    "operation_id": operation_id,
+                    "pair_id": operation_id.split("-carrier-")[0],
+                    "operation_kind": (
+                        "carrier-closure-readdress" if is_closure else "carrier-materialization"
+                    ),
+                    "operation_ordinal": ordinal,
+                    "checkpoint_id": f"checkpoint-{ordinal}",
+                    "payload_sha256": "A" * 64,
+                    "cache_prompt": is_closure,
+                    "n_predict": 0,
+                    "inference_request_count": 1,
+                    "generation_count": 0,
+                    "logical_prompt_tokens": 30 if not is_closure else 10,
+                    "reused_prompt_tokens": 0 if not is_closure else 5,
+                    "fresh_prompt_tokens": 30 if not is_closure else 5,
+                    "completion_tokens": 0,
+                    "fresh_prompt_plus_completion_tokens": 30 if not is_closure else 5,
+                    "maximum_request_context": 30 if not is_closure else 10,
+                    "terminal_http_status": 200,
+                    "terminal_stop_evidence": {"observed": True, "stop": True},
+                }
+            )
         resources = probe.account_resources(
             records,
+            carrier_operations,
             {"task_a_correct": 4, "catalytic_task_b_correct": 4, "direct_task_b_correct": 4},
         )
-        self.assertEqual(resources["catalytic_task_b"]["fresh_prompt_plus_completion_tokens"], 200)
+        self.assertEqual(resources["catalytic_task_b_suffix"]["fresh_prompt_plus_completion_tokens"], 200)
+        self.assertEqual(resources["carrier_materialization"]["fresh_prompt_plus_completion_tokens"], 120)
+        self.assertEqual(resources["carrier_closure_readdress"]["fresh_prompt_plus_completion_tokens"], 20)
+        self.assertEqual(resources["complete_catalytic_marginal"]["fresh_prompt_plus_completion_tokens"], 340)
         self.assertEqual(resources["direct_task_b"]["fresh_prompt_plus_completion_tokens"], 440)
-        self.assertTrue(resources["catalytic_fresh_tokens_per_correct_strictly_lower"])
+        self.assertEqual(resources["complete_catalytic_marginal"]["request_count"], 12)
+        self.assertEqual(resources["complete_catalytic_marginal"]["generation_count"], 4)
+        self.assertEqual(resources["total_sequence_shared_task_a_counted_once"]["request_count"], 20)
+        self.assertEqual(resources["total_sequence_shared_task_a_counted_once"]["generation_count"], 12)
+        self.assertEqual(resources["shared_task_a"]["request_count"], 4)
+        self.assertEqual(
+            resources["integer_cross_products"],
+            {
+                "complete_catalytic_tokens_x_direct_correct": 1360,
+                "direct_tokens_x_complete_catalytic_correct": 1760,
+            },
+        )
+        self.assertTrue(resources["complete_catalytic_fresh_tokens_per_correct_strictly_lower"])
 
     def test_15_decision_law(self):
         scoring = {"task_a_correct": 4, "task_a_state_correct": 4, "catalytic_task_b_correct": 4, "direct_task_b_correct": 4}
-        resources = {"catalytic_fresh_tokens_per_correct_strictly_lower": True}
+        resources = {"complete_catalytic_fresh_tokens_per_correct_strictly_lower": True}
         self.assertEqual(
             probe.classify_result(scoring, resources, reuse_closure_passed=True, cleanup_passed=True, postflight_passed=True),
             "PROCESS_LOCAL_WARM_TRAJECTORY_CATALYTIC_INFERENCE_SUPPORTED",
@@ -543,6 +608,207 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         )
         probe._assert_public_no_smuggle(scoring)
         self.assertFalse(scoring["protected_answers_disclosed"])
+
+    def test_30_zero_output_carrier_operation_counts_prompt_inference(self):
+        pair_id = probe.PAIR_IDS[0]
+        payload = probe._raw_completion_payload(
+            "checkpoint", seed=probe.derive_seed(pair_id, "task-b"), cache_prompt=False, n_predict=0
+        )
+        record = probe.carrier_operation_record(
+            execution(prompt=240, cached=0, completion=0, content=""),
+            operation_id=f"{pair_id}-carrier-materialization",
+            pair_id=pair_id,
+            operation_kind="carrier-materialization",
+            payload=payload,
+            checkpoint_id="checkpoint-1",
+            operation_ordinal=1,
+        )
+        self.assertEqual(record["generation_count"], 0)
+        self.assertEqual(record["completion_tokens"], 0)
+        self.assertEqual(record["fresh_prompt_tokens"], 240)
+        self.assertEqual(record["fresh_prompt_plus_completion_tokens"], 240)
+        self.assertEqual(probe.verify_carrier_operation_record(record, payload=payload), record)
+
+    def test_31_carrier_operation_is_authenticated_and_replayable_from_journal(self):
+        temp = Path(tempfile.mkdtemp(prefix="warm-trajectory-journal-", dir=ROOT / "state"))
+        try:
+            key = b"j" * 32
+            pair_id = probe.PAIR_IDS[0]
+            payload = probe._raw_completion_payload(
+                "checkpoint",
+                seed=probe.derive_seed(pair_id, "task-b"),
+                cache_prompt=False,
+                n_predict=0,
+            )
+            record = probe.carrier_operation_record(
+                execution(prompt=200, cached=0, completion=0, content=""),
+                operation_id=f"{pair_id}-carrier-materialization",
+                pair_id=pair_id,
+                operation_kind="carrier-materialization",
+                payload=payload,
+                checkpoint_id="checkpoint-1",
+                operation_ordinal=1,
+            )
+            writer = probe.JournalWriter(temp / "journal.jsonl", key)
+            event = writer.append(
+                "carrier-operation-captured",
+                request_id=record["operation_id"],
+                facts=record,
+            )
+            replayed = json.loads((temp / "journal.jsonl").read_text(encoding="utf-8"))
+            verified = probe.verify_journal_event(
+                replayed,
+                key,
+                expected_previous="0" * 64,
+                expected_ordinal=1,
+                expected_state="carrier-operation-captured",
+            )
+            self.assertEqual(verified, event)
+            self.assertEqual(
+                probe.verify_carrier_operation_record(verified["facts"], payload=payload),
+                record,
+            )
+            tampered = dict(replayed)
+            tampered["facts"] = {**record, "fresh_prompt_tokens": 199}
+            with self.assertRaisesRegex(probe.WarmTrajectoryEvaluationError, "authentication"):
+                probe.verify_journal_event(
+                    tampered,
+                    key,
+                    expected_previous="0" * 64,
+                    expected_ordinal=1,
+                )
+        finally:
+            shutil.rmtree(temp, ignore_errors=True)
+
+    def test_32_suffix_only_savings_cannot_trigger_supported_classification(self):
+        records = []
+        for request_id in probe.REQUEST_ORDER:
+            route_cached = 60 if request_id.endswith("task-b-catalytic") else 0
+            records.append(
+                {
+                    "request_id": request_id,
+                    "operation_id": request_id,
+                    "operation_kind": "model-generation",
+                    "inference_request_count": 1,
+                    "logical_prompt_tokens": 100,
+                    "reused_prompt_tokens": route_cached,
+                    "fresh_prompt_tokens": 100 - route_cached,
+                    "completion_tokens": 10,
+                    "fresh_prompt_plus_completion_tokens": 110 - route_cached,
+                    "maximum_request_context": 200,
+                    "generation_count": 1,
+                }
+            )
+        carrier_operations = []
+        for ordinal, operation_id in enumerate(probe.CARRIER_OPERATION_ORDER, 1):
+            is_closure = operation_id.endswith("carrier-closure-readdress")
+            fresh = 0 if is_closure else 100
+            carrier_operations.append(
+                {
+                    "operation_id": operation_id,
+                    "pair_id": operation_id.split("-carrier-")[0],
+                    "operation_kind": (
+                        "carrier-closure-readdress" if is_closure else "carrier-materialization"
+                    ),
+                    "operation_ordinal": ordinal,
+                    "checkpoint_id": f"checkpoint-{ordinal}",
+                    "payload_sha256": "A" * 64,
+                    "cache_prompt": is_closure,
+                    "n_predict": 0,
+                    "inference_request_count": 1,
+                    "generation_count": 0,
+                    "logical_prompt_tokens": 100,
+                    "reused_prompt_tokens": 100 if is_closure else 0,
+                    "fresh_prompt_tokens": fresh,
+                    "completion_tokens": 0,
+                    "fresh_prompt_plus_completion_tokens": fresh,
+                    "maximum_request_context": 100,
+                    "terminal_http_status": 200,
+                    "terminal_stop_evidence": {"observed": True, "stop": True},
+                }
+            )
+        scoring = {
+            "task_a_correct": 4,
+            "task_a_state_correct": 4,
+            "catalytic_task_b_correct": 4,
+            "direct_task_b_correct": 4,
+        }
+        resources = probe.account_resources(records, carrier_operations, scoring)
+        self.assertTrue(
+            resources["secondary_suffix_only_diagnostic"][
+                "suffix_fresh_tokens_per_correct_strictly_lower"
+            ]
+        )
+        self.assertFalse(resources["complete_catalytic_fresh_tokens_per_correct_strictly_lower"])
+        self.assertEqual(
+            probe.classify_result(
+                scoring,
+                resources,
+                reuse_closure_passed=True,
+                cleanup_passed=True,
+                postflight_passed=True,
+            ),
+            "PROCESS_LOCAL_WARM_TRAJECTORY_REUSE_SUPPORTED_WITHOUT_TASK_ADVANTAGE",
+        )
+
+    def test_33_closure_scope_is_immediate_and_does_not_claim_direct_preservation(self):
+        pair = self.by_id[probe.PAIR_IDS[0]]
+        task_a_json = probe.canonical_json_text(
+            {"state": ["a", "b", "c", "d"], "answer": "A"}
+        )
+        geometry = probe.render_checkpoint_and_task_b(FakeHoloState(), pair, task_a_json)
+        identity = probe.checkpoint_identity(
+            geometry,
+            pair_id=pair["pair_id"],
+            task_a_capture_sha256="D" * 64,
+            preflight_metadata={
+                "model_identity": {"sha256": probe.MODEL_SHA256},
+                "binary_identity": {"sha256": probe.BINARY_SHA256},
+                "stable": {"chat_template_sha256": "C" * 64},
+            },
+        )
+        count = identity["checkpoint_token_count"]
+        payload = probe._raw_completion_payload(
+            str(geometry["checkpoint_prompt"]),
+            seed=probe.derive_seed(pair["pair_id"], "task-b"),
+            cache_prompt=True,
+            n_predict=0,
+        )
+        operation = probe.carrier_operation_record(
+            execution(prompt=count, cached=count, completion=0, content=""),
+            operation_id=f"{pair['pair_id']}-carrier-closure-readdress",
+            pair_id=pair["pair_id"],
+            operation_kind="carrier-closure-readdress",
+            payload=payload,
+            checkpoint_id=identity["checkpoint_id"],
+            operation_ordinal=2,
+        )
+        closure = probe.verify_checkpoint_closure(
+            identity,
+            dict(identity),
+            {
+                "root_readdressable_immediately_after_catalytic": True,
+                "checkpoint_freshly_materialized": True,
+                "direct_route_fresh": True,
+            },
+            operation,
+        )
+        self.assertTrue(closure["passed"])
+        self.assertEqual(closure["scope"], "immediate-post-catalytic-readdress")
+        self.assertFalse(closure["direct_replay_preserved_root_claimed"])
+        self.assertTrue(closure["final_process_cleanup_required_separately"])
+
+    def test_34_preregistration_binds_complete_cycle_accounting_without_scientific_drift(self):
+        value = probe.build_preregistration_document(ROOT)
+        self.assertEqual(value["execution"]["carrier_operation_order"], list(probe.CARRIER_OPERATION_ORDER))
+        self.assertEqual(value["execution"]["total_inference_requests"], 20)
+        self.assertEqual(value["execution"]["maximum_generations"], 12)
+        self.assertTrue(value["resource_law"]["zero_output_prompt_inference_is_counted"])
+        self.assertTrue(value["resource_law"]["suffix_only_diagnostic_has_no_decision_authority"])
+        self.assertEqual(
+            value["bindings"]["frozen_scientific"]["sha256"],
+            "EB8A386E6453DB0B1948C4542F35AEFDEF58D5EB1CBFAB46FEC4D309101BC6C7",
+        )
 
 
 if __name__ == "__main__":
