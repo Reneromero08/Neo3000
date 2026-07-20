@@ -1,0 +1,375 @@
+{
+  "artifact_sha256": "1C34C4FB65569C31984FD8E611D3F95AC344D61CCD594DE02BE4BE856C671F30",
+  "authority": {
+    "fresh_external_one_shot": true,
+    "maximum_generations": 12,
+    "required_for_live_execution": true,
+    "retry_allowed": false
+  },
+  "bindings": {
+    "closure": {
+      "algorithm": "sha256-canonical-callable-source-v1",
+      "sha256": "1D8F15D0E04E34B7604244F3A2D9D4C904766133B722BCCC6C76777CCE007B4E"
+    },
+    "controller": {
+      "algorithm": "sha256-canonical-callable-source-v1",
+      "sha256": "B076CC521D62213768E86BEDEB38F2B2E54611BCAFEFAE823BE7DD4E94CD172B"
+    },
+    "inherited_prefix_derivation": {
+      "algorithm": "sha256-canonical-callable-source-v1",
+      "sha256": "4A587BDA2DCD98CDACEB11966B89C03A9B654A814DB8CBDEABA62E1F56832A9D"
+    },
+    "protected_scorer": {
+      "algorithm": "sha256-canonical-callable-source-v1",
+      "sha256": "CD0509280C18C2FA2BCA186ECFD792B657D0AE6D64551BFFBDB379D23D9F01AD"
+    },
+    "resource_accounting": {
+      "algorithm": "sha256-canonical-callable-source-v1",
+      "sha256": "D4C8D21F4D83DF67A8F8A9C58E1EE97C6A28CC9100E21E180D756FDC92FE72ED"
+    },
+    "scientific": {
+      "algorithm": "sha256-canonical-scientific-surface-v1",
+      "body": {
+        "corpus_sha256": "A45FF0A6DCD8E3E75CBE0B0F7A572DB023B0E7CE81093F7C82155D0A4DC3D4A9",
+        "design_id": "holostate-v1-inherited-task-a-carrier-evaluation-v1",
+        "fixed_request_template_sha256": {
+          "warm-trajectory-archive-01-task-a": "B8E66591C671B6DEBA97D11B392DB29B727E54FB628787A07156A2284CD17533",
+          "warm-trajectory-archive-01-task-b-direct": "C7B5D9E5971EB35B5A18813A70438CF41C98E67F750B7FD1C51A7DBD6E85C5EF",
+          "warm-trajectory-archive-01-task-b-inherited": "6E106256A896C7E7ECD52E0857E8A1124A3C70FED2967AA3E6FCC772A6E9D848",
+          "warm-trajectory-clinic-04-task-a": "6839C608822F7D759D23D9ADDCFB9E5A29C5597578FF2A4485CEC3E5F89C680C",
+          "warm-trajectory-clinic-04-task-b-direct": "4B1D7676E540864ACB1F73244D06FFFCBA1A798DC352E6B7F1E0E5E7C09A1B42",
+          "warm-trajectory-clinic-04-task-b-inherited": "2519B7DFAC40BC33005874093D14071F0C6CBB8F6F5B6EFE266ED1A7667A66FB",
+          "warm-trajectory-observatory-03-task-a": "72CBB3D6084622E6CFA7323AFDE19518E847FC093F2236388E5D5C11BFB7CF96",
+          "warm-trajectory-observatory-03-task-b-direct": "69DC7ADD1A4DC7235C7910E7155E82FCBFC630265678127613CF6670A101D463",
+          "warm-trajectory-observatory-03-task-b-inherited": "DB41AA8BCEA9C9662B311DA335E32F5101DFE57D569F0617A600922EC99A1D3A",
+          "warm-trajectory-refuge-02-task-a": "18C2ACDFD37A767D9B36A5B775B04A6C03008B173CB5908B26D6E56D5250FA61",
+          "warm-trajectory-refuge-02-task-b-direct": "B05C7198153EE8471C28793254A849E05ACE9C21B4DA5C0B9428AE2A173B079E",
+          "warm-trajectory-refuge-02-task-b-inherited": "A28CB46599E1A33ABD44B26899BA73B6B7723A9E5051CDC0A0F2D63A8B290924"
+        },
+        "inference_order": [
+          "warm-trajectory-archive-01-task-a",
+          "warm-trajectory-archive-01-task-b-inherited",
+          "warm-trajectory-archive-01-carrier-closure-readdress",
+          "warm-trajectory-archive-01-task-b-direct",
+          "warm-trajectory-refuge-02-task-a",
+          "warm-trajectory-refuge-02-task-b-inherited",
+          "warm-trajectory-refuge-02-carrier-closure-readdress",
+          "warm-trajectory-refuge-02-task-b-direct",
+          "warm-trajectory-observatory-03-task-a",
+          "warm-trajectory-observatory-03-task-b-inherited",
+          "warm-trajectory-observatory-03-carrier-closure-readdress",
+          "warm-trajectory-observatory-03-task-b-direct",
+          "warm-trajectory-clinic-04-task-a",
+          "warm-trajectory-clinic-04-task-b-inherited",
+          "warm-trajectory-clinic-04-carrier-closure-readdress",
+          "warm-trajectory-clinic-04-task-b-direct"
+        ],
+        "materialization_operations": 0,
+        "maximum_generations": 12,
+        "maximum_inference_requests": 16,
+        "no_retry_after_start": true,
+        "one_generation_maximum_per_request": true,
+        "one_physical_slot": true,
+        "one_sidecar_epoch": true,
+        "pair_sha256": {
+          "warm-trajectory-archive-01": "5D8E5D340C392E655EC147623F1578D9030B7F4C0F2D8568196BCEEA1D2C81BD",
+          "warm-trajectory-clinic-04": "844AF3DF891478CBCD892E0B9B2328DE1D9B5262CC129493E8A842C69CAAA421",
+          "warm-trajectory-observatory-03": "21218A64658342522E72898766279B7B9F555040707ED187D90AAED31077DFD5",
+          "warm-trajectory-refuge-02": "792E7159597F559ECF688563F6F15FEC9A9FC089C0A0501834E5EBBD244176F8"
+        },
+        "parsers_binding": {
+          "algorithm": "sha256-canonical-callable-source-v1",
+          "sha256": "3D7FF6430C5C23C4837BFC5900F50727E1158AB037FCA884ED612C207C6FCB26"
+        },
+        "request_constructor_binding": {
+          "algorithm": "sha256-canonical-callable-source-v1",
+          "sha256": "52440DAF9C3AC9D109B8D4EDA9721139A6CEDC7DF9A4EA55D859D701251406C6"
+        },
+        "request_order": [
+          "warm-trajectory-archive-01-task-a",
+          "warm-trajectory-archive-01-task-b-inherited",
+          "warm-trajectory-archive-01-task-b-direct",
+          "warm-trajectory-refuge-02-task-a",
+          "warm-trajectory-refuge-02-task-b-inherited",
+          "warm-trajectory-refuge-02-task-b-direct",
+          "warm-trajectory-observatory-03-task-a",
+          "warm-trajectory-observatory-03-task-b-inherited",
+          "warm-trajectory-observatory-03-task-b-direct",
+          "warm-trajectory-clinic-04-task-a",
+          "warm-trajectory-clinic-04-task-b-inherited",
+          "warm-trajectory-clinic-04-task-b-direct"
+        ],
+        "route_order": [
+          "task-a",
+          "task-b-inherited",
+          "closure-readdress",
+          "task-b-direct"
+        ],
+        "seeds": {
+          "warm-trajectory-archive-01": {
+            "task_a": 1811608144,
+            "task_b_shared": 1832504555
+          },
+          "warm-trajectory-clinic-04": {
+            "task_a": 676779906,
+            "task_b_shared": 120440515
+          },
+          "warm-trajectory-observatory-03": {
+            "task_a": 1429783017,
+            "task_b_shared": 267551026
+          },
+          "warm-trajectory-refuge-02": {
+            "task_a": 1602627551,
+            "task_b_shared": 1085300477
+          }
+        },
+        "source_adjudication_sha256": "2E7399FA57EE31E6B83A8B76F8065D6F5E1682BA91EB561C9EDB2439DB58A925",
+        "source_record_sha256": "DE406303E7DBAB2D8E8E95B94A5ED17DD52F1FFF5E3141112077833C58ED0A6E",
+        "source_selection_sha256": "C14F334F95D5100FBBA0CD690388D1DD1BAA17DC5351C9E6773F82E6D05E6B92"
+      },
+      "sha256": "F2B334AF6F32292AF9FB7B521934FF6459510F54253A2E4817F97DE11725ABCB"
+    }
+  },
+  "claim_locks": {
+    "automatic_promotion": false,
+    "complete_catalytic_lifecycle": "LOCKED",
+    "exact_restoration": "LOCKED",
+    "general_catalytic_inference": "LOCKED",
+    "restart_persistent_state": "LOCKED",
+    "sota": "LOCKED",
+    "superiority": "LOCKED",
+    "transfer_beyond_four_pairs": "LOCKED"
+  },
+  "decision_law": {
+    "advantage_supported": "PROCESS_LOCAL_INHERITED_TASK_A_CARRIER_FRESH_TOKEN_ADVANTAGE_SUPPORTED",
+    "exact_reuse_not_supported": "PROCESS_LOCAL_INHERITED_TASK_A_CARRIER_EXACT_REUSE_NOT_SUPPORTED",
+    "inconclusive": "infrastructure, custody, incomplete panel, direct-cache contamination, evaluator, cleanup, or postflight failure only",
+    "reuse_without_advantage": "PROCESS_LOCAL_INHERITED_TASK_A_CARRIER_REUSE_SUPPORTED_WITHOUT_FRESH_TOKEN_ADVANTAGE",
+    "task_a_textual_latent_accuracy_is_admission_gate": false
+  },
+  "design_id": "holostate-v1-inherited-task-a-carrier-evaluation-v1",
+  "evidence": {
+    "append_only_authenticated_journal": true,
+    "authenticated_captures": 12,
+    "authenticated_inherited_prefix_derivations": 4,
+    "closure_operation_records": 4,
+    "terminal_documents": [
+      "receipt",
+      "manifest",
+      "result",
+      "closure",
+      "archive"
+    ]
+  },
+  "execution": {
+    "closure": {
+      "cache_prompt": true,
+      "n_predict": 0
+    },
+    "closure_operation_order": [
+      "warm-trajectory-archive-01-carrier-closure-readdress",
+      "warm-trajectory-refuge-02-carrier-closure-readdress",
+      "warm-trajectory-observatory-03-carrier-closure-readdress",
+      "warm-trajectory-clinic-04-carrier-closure-readdress"
+    ],
+    "fixed_request_template_sha256": {
+      "warm-trajectory-archive-01-task-a": "B8E66591C671B6DEBA97D11B392DB29B727E54FB628787A07156A2284CD17533",
+      "warm-trajectory-archive-01-task-b-direct": "C7B5D9E5971EB35B5A18813A70438CF41C98E67F750B7FD1C51A7DBD6E85C5EF",
+      "warm-trajectory-archive-01-task-b-inherited": "6E106256A896C7E7ECD52E0857E8A1124A3C70FED2967AA3E6FCC772A6E9D848",
+      "warm-trajectory-clinic-04-task-a": "6839C608822F7D759D23D9ADDCFB9E5A29C5597578FF2A4485CEC3E5F89C680C",
+      "warm-trajectory-clinic-04-task-b-direct": "4B1D7676E540864ACB1F73244D06FFFCBA1A798DC352E6B7F1E0E5E7C09A1B42",
+      "warm-trajectory-clinic-04-task-b-inherited": "2519B7DFAC40BC33005874093D14071F0C6CBB8F6F5B6EFE266ED1A7667A66FB",
+      "warm-trajectory-observatory-03-task-a": "72CBB3D6084622E6CFA7323AFDE19518E847FC093F2236388E5D5C11BFB7CF96",
+      "warm-trajectory-observatory-03-task-b-direct": "69DC7ADD1A4DC7235C7910E7155E82FCBFC630265678127613CF6670A101D463",
+      "warm-trajectory-observatory-03-task-b-inherited": "DB41AA8BCEA9C9662B311DA335E32F5101DFE57D569F0617A600922EC99A1D3A",
+      "warm-trajectory-refuge-02-task-a": "18C2ACDFD37A767D9B36A5B775B04A6C03008B173CB5908B26D6E56D5250FA61",
+      "warm-trajectory-refuge-02-task-b-direct": "B05C7198153EE8471C28793254A849E05ACE9C21B4DA5C0B9428AE2A173B079E",
+      "warm-trajectory-refuge-02-task-b-inherited": "A28CB46599E1A33ABD44B26899BA73B6B7723A9E5051CDC0A0F2D63A8B290924"
+    },
+    "fixed_route_order_not_counterbalanced": true,
+    "inference_order": [
+      "warm-trajectory-archive-01-task-a",
+      "warm-trajectory-archive-01-task-b-inherited",
+      "warm-trajectory-archive-01-carrier-closure-readdress",
+      "warm-trajectory-archive-01-task-b-direct",
+      "warm-trajectory-refuge-02-task-a",
+      "warm-trajectory-refuge-02-task-b-inherited",
+      "warm-trajectory-refuge-02-carrier-closure-readdress",
+      "warm-trajectory-refuge-02-task-b-direct",
+      "warm-trajectory-observatory-03-task-a",
+      "warm-trajectory-observatory-03-task-b-inherited",
+      "warm-trajectory-observatory-03-carrier-closure-readdress",
+      "warm-trajectory-observatory-03-task-b-direct",
+      "warm-trajectory-clinic-04-task-a",
+      "warm-trajectory-clinic-04-task-b-inherited",
+      "warm-trajectory-clinic-04-carrier-closure-readdress",
+      "warm-trajectory-clinic-04-task-b-direct"
+    ],
+    "materialization_operations": 0,
+    "maximum_inference_requests": 16,
+    "maximum_model_generations": 12,
+    "no_inference_between_task_a_and_inherited_task_b": true,
+    "one_generation_maximum_per_request": true,
+    "pair_ids": [
+      "warm-trajectory-archive-01",
+      "warm-trajectory-refuge-02",
+      "warm-trajectory-observatory-03",
+      "warm-trajectory-clinic-04"
+    ],
+    "pair_sequence": [
+      "task-a",
+      "task-b-inherited",
+      "closure-readdress",
+      "task-b-direct"
+    ],
+    "physical_slots": 1,
+    "request_order": [
+      "warm-trajectory-archive-01-task-a",
+      "warm-trajectory-archive-01-task-b-inherited",
+      "warm-trajectory-archive-01-task-b-direct",
+      "warm-trajectory-refuge-02-task-a",
+      "warm-trajectory-refuge-02-task-b-inherited",
+      "warm-trajectory-refuge-02-task-b-direct",
+      "warm-trajectory-observatory-03-task-a",
+      "warm-trajectory-observatory-03-task-b-inherited",
+      "warm-trajectory-observatory-03-task-b-direct",
+      "warm-trajectory-clinic-04-task-a",
+      "warm-trajectory-clinic-04-task-b-inherited",
+      "warm-trajectory-clinic-04-task-b-direct"
+    ],
+    "scientific_retry_allowed": false,
+    "seeds": {
+      "warm-trajectory-archive-01": {
+        "task_a": 1811608144,
+        "task_b_shared": 1832504555
+      },
+      "warm-trajectory-clinic-04": {
+        "task_a": 676779906,
+        "task_b_shared": 120440515
+      },
+      "warm-trajectory-observatory-03": {
+        "task_a": 1429783017,
+        "task_b_shared": 267551026
+      },
+      "warm-trajectory-refuge-02": {
+        "task_a": 1602627551,
+        "task_b_shared": 1085300477
+      }
+    },
+    "sidecar_epochs": 1,
+    "task_a": {
+      "cache_prompt": false,
+      "maximum_completion_tokens": 512,
+      "temperature": 0
+    },
+    "task_b_direct": {
+      "cache_prompt": false,
+      "maximum_completion_tokens": 128,
+      "temperature": 0
+    },
+    "task_b_inherited": {
+      "cache_prompt": true,
+      "maximum_completion_tokens": 128,
+      "temperature": 0
+    }
+  },
+  "inherited_prefix_law": {
+    "bound_fields": [
+      "task_a_capture_sha256",
+      "full_task_b_prompt_sha256",
+      "full_token_sha256",
+      "inherited_terminal_prefix_sha256",
+      "inherited_terminal_prefix_token_sha256",
+      "expected_inherited_prefix_token_count",
+      "suffix_token_count",
+      "dynamic_task_b_request_sha256"
+    ],
+    "derived_after_authenticated_task_a_capture": true,
+    "exact_equality_justification": "The inherited request follows a fresh Task A on one slot; the derived prefix is the maximal admissible prior sequence, so larger reuse cannot be attributed to this intervention.",
+    "fallback_materialization": false,
+    "false_gate_continues_panel": true,
+    "historical_counts_are_prior_feasibility_only": true,
+    "historical_prefix_counts": [
+      1004,
+      1052,
+      1031,
+      1098
+    ],
+    "live_gate": "cached_prompt_tokens == derived expected_inherited_prefix_token_count",
+    "rematerialization": false,
+    "semantic_retry": false
+  },
+  "intervention": "Continue directly from the executable slot state left by Task A, without a separate fresh checkpoint-materialization request.",
+  "model_contact": false,
+  "next_action": "AUTHORIZE_ONE_LIVE_INHERITED_TASK_A_CARRIER_EVALUATION",
+  "protected_scoring": {
+    "duplicate_keys_rejected": true,
+    "protected_answers_disclosed": false,
+    "read_count": 1,
+    "required_before_open": {
+      "captures": 12,
+      "cleanup_passed": true,
+      "closures": 4,
+      "postflight_passed": true
+    }
+  },
+  "resource_law": {
+    "actual_closure_cost_included": true,
+    "comparison": "exact integer cross-products of fresh prompt-plus-completion tokens per correct Task-B answer",
+    "historical_projection": {
+      "decision_authority": false,
+      "tokens": 1251
+    },
+    "materialization_cost": 0,
+    "primary_inherited_marginal": [
+      "task-b-inherited",
+      "closure-readdress"
+    ],
+    "shared_task_a_reported_once": true
+  },
+  "runtime_artifacts_created": false,
+  "runtime_identity": {
+    "binary_sha256": "EFA521C4DC4189C89CC71B34CDB46079143857A4D49148E2D4411D3F7599FEE5",
+    "model_sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+    "physical_slot": 0,
+    "runtime_version": "160 (89762c0)"
+  },
+  "schema_version": 1,
+  "selection_classification": "INHERITED_TASK_A_CARRIER_SELECTED",
+  "source_bindings": {
+    "attempt_7_adjudication": {
+      "path": "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1_attempt_7_adjudication_1.json",
+      "sha256": "2E7399FA57EE31E6B83A8B76F8065D6F5E1682BA91EB561C9EDB2439DB58A925"
+    },
+    "protected_evaluator": {
+      "bytes_hashed": false,
+      "bytes_opened": false,
+      "bytes_parsed": false,
+      "expected_sha256_from_tracked_binding": "AAC8CC0DEE3C748F92A9BA350E8EF32063171F5AF9B24754D55B1A7E71B0BE3E",
+      "expected_size_bytes_from_tracked_binding": 1895,
+      "ignored": true,
+      "path": "state/catalytic_kernel_0_private/holostate_v1_warm_trajectory_related_task_family_v1_evaluator.json",
+      "regular": true,
+      "reparse_point": false,
+      "sha256_verified": false,
+      "size_bytes_from_filesystem_metadata": 1895,
+      "symlink": false,
+      "tracked": false
+    },
+    "public_corpus": {
+      "path": "lab/holostate_v1_warm_trajectory_related_task_family_v1_public_tasks.json",
+      "sha256": "A45FF0A6DCD8E3E75CBE0B0F7A572DB023B0E7CE81093F7C82155D0A4DC3D4A9"
+    },
+    "published_record": {
+      "id": "neo-exp-0048",
+      "line": 61,
+      "sha256": "DE406303E7DBAB2D8E8E95B94A5ED17DD52F1FFF5E3141112077833C58ED0A6E"
+    },
+    "successor_decision": {
+      "path": "lab/holostate_v1_warm_trajectory_successor_selection_1.json",
+      "sha256": "C14F334F95D5100FBBA0CD690388D1DD1BAA17DC5351C9E6773F82E6D05E6B92"
+    }
+  },
+  "starting_protected_main": "fc5123325558b89f15c83b9d41484b1bf5da7615",
+  "status": "statically-preregistered-unexecuted"
+}

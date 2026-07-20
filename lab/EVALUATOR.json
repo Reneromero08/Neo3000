@@ -207,6 +207,8 @@
       "scripts/test_catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation_adjudication.py",
       "scripts/holostate_v1_warm_trajectory_related_task_evaluation.py",
       "scripts/test_holostate_v1_warm_trajectory_related_task_evaluation.py",
+      "scripts/holostate_v1_inherited_task_a_carrier_evaluation.py",
+      "scripts/test_holostate_v1_inherited_task_a_carrier_evaluation.py",
       "tools/server/server-context.cpp",
       "tools/server/server-task.cpp",
       ".gitignore",
@@ -250,6 +252,7 @@
       "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1.json",
       "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1_attempt_7_adjudication_1.json",
       "lab/holostate_v1_warm_trajectory_successor_selection_1.json",
+      "lab/holostate_v1_inherited_task_a_carrier_evaluation_v1.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]
@@ -375,6 +378,8 @@
     ,"scripts/test_holostate_v1_warm_trajectory_related_task_evaluation.py"
     ,"scripts/holostate_v1_warm_trajectory_related_task_evaluation_adjudication.py"
     ,"scripts/test_holostate_v1_warm_trajectory_related_task_evaluation_adjudication.py"
+    ,"scripts/holostate_v1_inherited_task_a_carrier_evaluation.py"
+    ,"scripts/test_holostate_v1_inherited_task_a_carrier_evaluation.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"

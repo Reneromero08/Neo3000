@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Inherited Task-A carrier successor selected
+## Checkpoint 2: Inherited Task-A carrier evaluation statically prepared
 
 Attempt 7 completed the frozen four-pair panel from protected commit `20798cb5712decea8a0acb158ceeaa0a012c7844`. Its immutable live terminal classification remains `INCONCLUSIVE`; the static adjudication does not rewrite that result.
 
@@ -13,6 +13,10 @@ Canonical artifact `lab/holostate_v1_warm_trajectory_related_task_evaluation_v1_
 Static successor selection chooses `INHERITED_TASK_A_CARRIER_SELECTED`. The minimum executable change is to issue related Task B immediately after Task A on the same cache-enabled slot and omit the separate fresh materialization. Attempt-7 accounting projects inherited suffix plus measured closure at `723 + 528 = 1251` fresh tokens versus observed direct replay `4908`; this is not a result and requires exact inherited-prefix reuse to be reconstructed before contact and observed live. Pure closure/root-copy is not selected, and two-branch amortization remains only a fallback.
 
 Decision artifact `lab/holostate_v1_warm_trajectory_successor_selection_1.json`, SHA-256 `C14F334F95D5100FBBA0CD690388D1DD1BAA17DC5351C9E6773F82E6D05E6B92`, binds the selection with zero authority, sidecar, model contact, generation, runtime root, live evidence, successor corpus, or successor implementation.
+
+The selected successor is now exactly preregistered as `holostate-v1-inherited-task-a-carrier-evaluation-v1`. Every pair is frozen as `Task A → inherited Task B → closure/readdress → direct Task B` inside one physical-slot lease. The controller permits 12 generations and exactly 16 inference-bearing requests, performs zero materializations, derives the inherited prefix and dynamic Task-B request identity from the authenticated exact Task-A JSON before contact, and treats absent or partial inherited reuse as a valid negative scientific result rather than an early stop.
+
+Preregistration artifact/file SHA-256 values are `1C34C4FB65569C31984FD8E611D3F95AC344D61CCD594DE02BE4BE856C671F30` / `C549D1D8700D4316A3F623687EB19D5893F9608308D675F2CE3344EDD3818523`. Derivation/controller/scorer/resource/closure bindings are `4A587BDA2DCD98CDACEB11966B89C03A9B654A814DB8CBDEABA62E1F56832A9D`, `B076CC521D62213768E86BEDEB38F2B2E54611BCAFEFAE823BE7DD4E94CD172B`, `CD0509280C18C2FA2BCA186ECFD792B657D0AE6D64551BFFBDB379D23D9F01AD`, `D4C8D21F4D83DF67A8F8A9C58E1EE97C6A28CC9100E21E180D756FDC92FE72ED`, and `1D8F15D0E04E34B7604244F3A2D9D4C904766133B722BCCC6C76777CCE007B4E`. Static preparation created no authority, runtime root, sidecar, model request, generation, capture, result, archive, ledger record, or follow-on.
 
 `balanced-opaque-five-support-two-worker-synthesis-probe-v1` executed once from protected main `563cbf5a72a763af8a2cde2394a5ea5beb008bad`. One consumed authority admitted exactly `worker-A`, `worker-B`, and `synthesis-AB`; all three one-generation requests completed with authenticated captures and zero retries.
 
@@ -96,7 +100,7 @@ Attempt 5 executed once from `a38e86e45e0cfc20e2882167755a8d7df91ecd51` and pres
 
 Attempt 6 executed once from `3eaa86ffb690611f3549272bdd367c778ddf8da2` and completed one full pair with exact catalytic checkpoint reuse `1004/1004`, direct reuse `0/1180`, and closure readdress `872/1004`. The closure gate correctly failed; cleanup/postflight passed. The controller incorrectly stopped the panel on that scientific false gate. Attempt 7 records the false gate and continues without changing the closure predicate or terminal decision law. Preregistration artifact/file are `9370CD0A2A041BD46A765728B1A93B622BB66BD3EEFF71D45E80189C453C1002` / `469062E6AEEE953988AF4DC035E4A2155673063B2E3C6D9699294CE7799BE68A`; controller identity is `AC85A6FDADE3D4515B5C3DF7A9766BF74CC8D0EDF57192D028FF041C5939A8E1`; frozen scientific, scorer, resource, and closure identities remain unchanged.
 
-**Next exact action:** `PREPARE_INHERITED_TASK_A_CARRIER_EVALUATION`. Freeze the same four matched pairs with Task A directly inherited by cache-enabled same-slot Task B, no materialization, measured closure, and a cache-disabled fresh direct baseline. Create no authority or live state during preparation.
+**Next exact action:** `AUTHORIZE_ONE_LIVE_INHERITED_TASK_A_CARRIER_EVALUATION`. Bind one fresh external authority to the final protected preparation commit and execute no other experiment.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 
