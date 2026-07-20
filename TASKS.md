@@ -6,8 +6,8 @@
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
 **Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Preserve semantic-XOR Attempt 3 exactly: all 16 frozen requests completed once with 16 authenticated captures, zero retry, clean shutdown, and passing postflight. Its live controller wrote terminal `INCONCLUSIVE` only because the protected scorer expected the frozen `cells_present_once` witness as boolean `true` instead of its exact sorted four-cell array. Zero-contact replay under the corrected exact schema supports worker capability `4/4` versus direct baseline `3/4`, but not fresh-token efficiency advantage.
-**Next exact action:** `STATICALLY_ADJUDICATE_AND_PUBLISH_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1_ATTEMPT_3`. Bind the immutable Attempt-3 archive and corrected scorer, publish no private evaluator values, and keep general catalytic-inference and advantage claims locked.
+**Active bounded objective:** Preserve published semantic-XOR Attempt-3 adjudication exactly. The live controller remains terminal `INCONCLUSIVE`; zero-contact forensic replay supports bounded worker capability `4/4` versus direct baseline `3/4`, while fresh-token efficiency advantage remains unsupported.
+**Next exact action:** `STATICALLY_EVALUATE_WORKER_PLUS_CONTROLLER_XOR_ROUTE_FROM_ATTEMPT_3_CAPTURES`. Use only preserved Attempt-3 worker and direct-baseline captures, remove the four model-synthesis requests from accounting, and keep the analysis explicitly post hoc until separately confirmed.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -88,7 +88,8 @@
 - [x] Replay and authenticate all 16 captures with zero model contact. Recover worker-A `4/4`, worker-B `4/4`, semantic bits `8/8`, XOR fidelity `4/4`, worker-route final accuracy `4/4`, and direct baseline `3/4`; support `NON_CONTROLLER_RECONSTRUCTIBLE_SEMANTIC_XOR_WORKER_SYNTHESIS_SUPPORTED` only.
 - [x] Compute exact resource comparison: worker route `3005/4` fresh tokens per correct label versus direct baseline `1430/3`; cross-products `9015 > 5720`; classify `SEMANTIC_XOR_WORKER_SYNTHESIS_ADVANTAGE_NOT_SUPPORTED`.
 - [x] Bind the durable post-generation scorer repair without authorizing a new live run in Attempt-4 artifact `3C0D97B767C4B426FB6D919A4DC2A867EC977809B38F1856175E5ED884979D01`.
-- [ ] Statically adjudicate and publish the immutable Attempt-3 evidence and corrected zero-contact scoring. Add no authority, model request, retry, or follow-on experiment.
+- [x] Statically adjudicate and publish the immutable Attempt-3 evidence and corrected zero-contact scoring. Preserve the live `INCONCLUSIVE` result; publish adjudication artifact SHA-256 `2CFA45DE2FDF6E904C341115F7DB63B1D0707C5AF5D88616B2A992D3063D1C1B` and canonical `neo-exp-0047` at line 60, SHA-256 `B253E5AD9C4861CCCBF05AD1F67F5ED28E097A06418F113A4F123E220E0D21D4`; add no authority, model request, retry, or follow-on experiment.
+- [ ] Statically evaluate the worker-plus-controller XOR route from preserved Attempt-3 worker and direct-baseline captures only. Exclude all four model-synthesis requests from accounting and treat the result as a post hoc diagnostic until separately confirmed.
 
 - [x] Statically implement and preregister `balanced-opaque-relational-carrier-v2-deterministic-rank-head-extraction` with controller-native selection of committed transform rank position zero before private mapping. Preserve borrow, both branch requests, transform, restore, six logical stages, one physical slot, one sidecar epoch, exact frozen geometry, metadata-only persistence, custody, restoration, and all claim locks. Make no live request and reserve no run.
 

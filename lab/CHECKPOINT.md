@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Checkpoint 2: Semantic-XOR successor attempt prepared after bounded output failure
+## Checkpoint 2: Semantic-XOR Attempt-3 forensic adjudication published
 
-**Status:** NEO-EXP-0046 PRESERVED / SEMANTIC-XOR ATTEMPT 1 INCONCLUSIVE AND CONSUMED / ATTEMPT 2 MINIMALLY REPAIRED / BROADER CLAIMS LOCKED
+**Status:** SOURCE ATTEMPT-3 `INCONCLUSIVE` PRESERVED / ZERO-CONTACT WORKER SYNTHESIS CAPABILITY SUPPORTED / FRESH-INFERENCE ADVANTAGE NOT SUPPORTED / NEO-EXP-0047 PUBLISHED / BROADER CLAIMS LOCKED
 
 - [x] Preserve the three-worker diagnostic from synchronized source `6c760b2d5f8296f795724d061f1d91a0e4171c27`, then admit the separately authorized two-worker decision at synchronized clean `main` `c8942f7b4ecf7ab555b54393fc63c4cbb5a366b3`; exact frozen suite SHA-256 remains `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
 - [x] Scan only the eight public task projections and all 80 three-example shards. Locally eligible shard counts by task index are `[2,2,0,0,2,1,1,0]`; no task reaches the three distinct worker shards required by the frozen geometry.
@@ -56,6 +56,8 @@
 - [x] Preserve the live terminal result as `INCONCLUSIVE` after post-generation scorer failure `B8CC47CFA8CB7D8B5914A6703502887C4DA2F251F8E035675BB87ABE1C33A444`; identify the sole defect as boolean-versus-exact-array comparison for the frozen `cells_present_once` witness.
 - [x] Correct only that scorer predicate, verify the evaluator remains exact at SHA-256 `437112DC9A06E4CB3CF1824A738BB13887212B23A38E2AF12A94374A9259D163`, and bind static repair artifact `3C0D97B767C4B426FB6D919A4DC2A867EC977809B38F1856175E5ED884979D01` without new authority or model contact.
 - [x] Reverify the receipt, 70-event journal, 16 capture HMACs, fixed and derived request bindings, raw transport replay, archive members, cleanup, and postflight. Recover capability `8/8` semantic bits, `4/4` XOR fidelity, worker route `4/4`, baseline `3/4`; reject fresh-token advantage because `3005/4 > 1430/3`.
+- [x] Reproduce the original scorer failure SHA-256 `B8CC47CFA8CB7D8B5914A6703502887C4DA2F251F8E035675BB87ABE1C33A444`, change only the aggregate witness predicate during zero-contact replay, and preserve the protected evaluator at SHA-256 `437112DC9A06E4CB3CF1824A738BB13887212B23A38E2AF12A94374A9259D163`.
+- [x] Publish canonical adjudication artifact SHA-256 `2CFA45DE2FDF6E904C341115F7DB63B1D0707C5AF5D88616B2A992D3063D1C1B` and canonical `neo-exp-0047` at line 60, SHA-256 `B253E5AD9C4861CCCBF05AD1F67F5ED28E097A06418F113A4F123E220E0D21D4`. Preserve the live `INCONCLUSIVE` truth and distinguish it from the supported forensic capability and negative efficiency classifications.
 - [x] Create zero task instances, expected bits, labels, prompts, request hashes, seeds, Python code, authority, runtime state, model contact, or follow-on execution during design.
 - [x] Add the exact private evaluator path to the existing narrow `catalytic_kernel_0_private` ignore convention before private creation; create the evaluator exclusively and never expose its bytes through tracked state.
 - [x] Manually author eight distinct entailment microcases with 38–45 passage words, 10–16 question words, two to four named entities, no external knowledge, no ambiguous pronouns, and balanced comparison, ownership, location, and temporal relations.
@@ -88,7 +90,7 @@ Preserved three-parent evidence:
 
 Full commutativity, associativity, arbitrary n-parent generalization, formal algebra, separate seed or binding invariance, transfer, general worker synthesis, general catalytic inference, a complete new cycle, task advantage, reduced fresh computation, compute amplification, superiority, SOTA, and automatic promotion remain locked.
 
-**Next exact action:** `STATICALLY_ADJUDICATE_AND_PUBLISH_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1_ATTEMPT_3`. Bind the immutable archive and corrected scorer with zero model contact; publish only bounded capability and negative efficiency findings.
+**Next exact action:** `STATICALLY_EVALUATE_WORKER_PLUS_CONTROLLER_XOR_ROUTE_FROM_ATTEMPT_3_CAPTURES`. Use preserved worker and direct-baseline captures only, exclude all four model-synthesis requests from accounting, and treat the result as a post hoc diagnostic until separately confirmed.
 
 ---
 

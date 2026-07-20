@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Semantic-XOR capability recovered from complete Attempt-3 evidence
+## Checkpoint 2: Semantic-XOR Attempt-3 capability adjudicated and published
 
 `balanced-opaque-five-support-two-worker-synthesis-probe-v1` executed once from protected main `563cbf5a72a763af8a2cde2394a5ea5beb008bad`. One consumed authority admitted exactly `worker-A`, `worker-B`, and `synthesis-AB`; all three one-generation requests completed with authenticated captures and zero retries.
 
@@ -52,7 +52,11 @@ Zero-contact authenticated replay under the corrected exact witness supports `NO
 
 Attempt-4 static repair artifact `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_4.json` binds the immutable Attempt-3 evidence and changes only the protected scorer's aggregate-witness shape. Artifact SHA-256 is `3C0D97B767C4B426FB6D919A4DC2A867EC977809B38F1856175E5ED884979D01`, file SHA-256 `7DEA4056B706ADFFD0C020E7887D21B0C03B85F53769F7E8E5ABAA833979195C`, frozen scientific binding `39182B20C74A0B804774CA9E4A0D54FA52E1970A7564DE82A28C98C38925B8A3`, controller `25885ECA37DD7E70AC1D216EBE411E85E4514763B0FAB983F7D564148B20CE55`, scorer `FC5CF38976F40A521684FCC2F9A25A3C85C29ADA5BEBF8A3133E586C6B924B05`, resource accountant `978F5586138AB759D56573B93B7F81313C530D608EE268CEFB23920F56179545`, and derivation law `80A68493FE5F2F10501F091F1E0DDCC04165A039E52B298DD862013D4CB0F08D`. It creates no new live authority or run.
 
-**Next exact action:** `STATICALLY_ADJUDICATE_AND_PUBLISH_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1_ATTEMPT_3`. Publish only the bounded capability and negative efficiency result; keep general catalytic inference, transfer, superiority, and SOTA locked.
+Canonical adjudication artifact `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3_adjudication_1.json`, SHA-256 `2CFA45DE2FDF6E904C341115F7DB63B1D0707C5AF5D88616B2A992D3063D1C1B`, and canonical `neo-exp-0047` at `lab/results.jsonl:60`, SHA-256 `B253E5AD9C4861CCCBF05AD1F67F5ED28E097A06418F113A4F123E220E0D21D4`, bind all three consumed histories and the static Attempt-4 repair. The publication preserves Attempt 3's original terminal `INCONCLUSIVE` and separately supports `NON_CONTROLLER_RECONSTRUCTIBLE_SEMANTIC_XOR_WORKER_SYNTHESIS_SUPPORTED` plus `SEMANTIC_XOR_WORKER_SYNTHESIS_ADVANTAGE_NOT_SUPPORTED`.
+
+The bounded interpretation is `TWO_ISOLATED_MODEL_GENERATED_SEMANTIC_JUDGMENT_STREAMS_WERE_COMBINED_THROUGH_XOR_INTO_CORRECT_FINAL_LABELS_ON_ALL_FOUR_FROZEN_TASKS_WHILE_THE_SAME_EVIDENCE_DIRECT_BASELINE_SOLVED_THREE_OF_FOUR`. General worker synthesis, transfer, reduced fresh computation, compute amplification, complete catalytic inference, superiority, SOTA, and automatic promotion remain locked.
+
+**Next exact action:** `STATICALLY_EVALUATE_WORKER_PLUS_CONTROLLER_XOR_ROUTE_FROM_ATTEMPT_3_CAPTURES`. Use only preserved worker and direct-baseline captures, omit the four model-synthesis requests from accounting, and keep the result explicitly post hoc until separately confirmed.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 

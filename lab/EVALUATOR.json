@@ -203,6 +203,8 @@
       "scripts/catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation_scientific.py",
       "scripts/catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation.py",
       "scripts/test_catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation.py",
+      "scripts/catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation_adjudication.py",
+      "scripts/test_catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation_adjudication.py",
       "tools/server/server-context.cpp",
       "tools/server/server-task.cpp",
       ".gitignore",
@@ -241,6 +243,7 @@
       "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_2.json",
       "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3.json",
       "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_4.json",
+      "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3_adjudication_1.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]
@@ -360,6 +363,8 @@
     ,"scripts/catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation_scientific.py"
     ,"scripts/catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation.py"
     ,"scripts/test_catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation.py"
+    ,"scripts/catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation_adjudication.py"
+    ,"scripts/test_catalytic_kernel_0_two_shard_semantic_xor_worker_baseline_evaluation_adjudication.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"
