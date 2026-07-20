@@ -41,6 +41,22 @@ def test_completion(prompt: str, n_predict: int, re_content: str, n_prompt: int,
         assert res.body["tokens"] == []
 
 
+def test_completion_zero_predict_evaluates_prompt_without_sampling():
+    global server
+    server.start()
+    res = server.make_request("POST", "/completion", data={
+        "n_predict": 0,
+        "prompt": "Materialize this prompt without generating a token.",
+        "return_tokens": True,
+    })
+    assert res.status_code == 200
+    assert res.body["timings"]["prompt_n"] > 0
+    assert res.body["timings"]["predicted_n"] == 0
+    assert res.body["content"] == ""
+    assert res.body["tokens"] == []
+    assert res.body["stop_type"] == "limit"
+
+
 @pytest.mark.parametrize("prompt,n_predict,re_content,n_prompt,n_predicted,truncated", [
     ("I believe the meaning of life is", 8, "(going|bed)+", 18, 8, False),
     ("Write a joke about AI from a very long prompt which will not be truncated", 64, "(princesses|everyone|kids|Anna|forest)+", 46, 64, False),

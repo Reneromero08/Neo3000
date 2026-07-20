@@ -508,13 +508,13 @@ struct server_slot {
 
         timings.prompt_n            = n_prompt_tokens_processed;
         timings.prompt_ms           = t_prompt_processing;
-        timings.prompt_per_token_ms = t_prompt_processing / n_prompt_tokens_processed;
-        timings.prompt_per_second   = 1e3 / t_prompt_processing * n_prompt_tokens_processed;
+        timings.prompt_per_token_ms = n_prompt_tokens_processed > 0 ? t_prompt_processing / n_prompt_tokens_processed : 0.0;
+        timings.prompt_per_second   = t_prompt_processing > 0.0 ? 1e3 / t_prompt_processing * n_prompt_tokens_processed : 0.0;
 
         timings.predicted_n            = n_decoded;
         timings.predicted_ms           = t_token_generation;
-        timings.predicted_per_token_ms = t_token_generation / n_decoded;
-        timings.predicted_per_second   = 1e3 / t_token_generation * n_decoded;
+        timings.predicted_per_token_ms = n_decoded > 0 ? t_token_generation / n_decoded : 0.0;
+        timings.predicted_per_second   = t_token_generation > 0.0 ? 1e3 / t_token_generation * n_decoded : 0.0;
 
         // Add speculative metrics
         if (n_draft_total > 0) {
@@ -3758,6 +3758,29 @@ private:
 
                 // prompt evaluated for next-token prediction
                 slot.state = SLOT_STATE_GENERATING;
+
+                // A zero-token request is used to materialize the evaluated prompt in the
+                // server cache. Complete it before sampling so it remains a true
+                // zero-output operation.
+                if (!slot.has_budget(params_base)) {
+                    const int64_t t_now = ggml_time_us();
+
+                    slot.t_start_generation  = t_now;
+                    slot.t_print_last        = t_now;
+                    slot.n_decoded_last      = 0;
+                    slot.t_prompt_processing = (slot.t_start_generation - slot.t_start_process_prompt) / 1e3;
+                    slot.t_token_generation  = 0.0;
+                    slot.stop                = STOP_TYPE_LIMIT;
+                    slot.has_next_token      = false;
+
+                    metrics.on_prompt_eval(slot);
+                    slot.print_timings();
+                    send_final_response(slot);
+                    metrics.on_prediction(slot);
+                    slot.release();
+                    slot.i_batch = -1;
+                    return;
+                }
 
                 if (slot.can_speculate()) {
                     common_speculative_begin(spec.get(), slot.id, slot.prompt.tokens.get_text_tokens());

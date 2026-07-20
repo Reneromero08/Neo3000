@@ -31,8 +31,8 @@ class WarmTrajectoryEvaluationError(ValueError):
 
 
 DESIGN_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1"
-ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-4"
-PRIOR_ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-3"
+ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-5"
+PRIOR_ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-4"
 FAMILY_ID = "holostate-v1-warm-trajectory-related-task-family-v1"
 STARTING_PROTECTED_MAIN = "1a07ca0cc366d53e682e13440810716533f60f98"
 PUBLIC_CORPUS_PATH = Path(
@@ -49,44 +49,44 @@ PREREGISTRATION_PATH = Path(
     "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1.json"
 )
 STATE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-4"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-5"
 )
 ARCHIVE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-4"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-5"
 )
 PRIOR_AUTHORITY_RECEIPT_PATH = Path(
     "state/catalytic_kernel_0_authority."
-    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-3.authority.consumed.json"
+    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-4.authority.consumed.json"
 )
 AUTHORITY_RECEIPT_PATH = Path(
     "state/catalytic_kernel_0_authority."
-    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-4.authority.consumed.json"
+    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-5.authority.consumed.json"
 )
 PRIOR_AUTHORITY_RECEIPT_SHA256 = (
-    "352B9EAE0CFBD13E009928EED4A9E300E6C114B2A205F7AC4C9B3C10D34C721A"
+    "9631B4F62528B6D099255E5B22F34A77F2A9F733DE7F74877CD2BA57B65B4E4B"
 )
 PRIOR_STATE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-3"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-4"
 )
 PRIOR_ARCHIVE_PATH = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-3/"
-    "EBDDE88262BA24D0659988BB69051101CA99E584EDF1CBFBD8647E092D403B13"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-4/"
+    "BEF9D3E36080D29CDE8F33A7C5CE842F1D774E46093E2F740784A7C4F18768DD"
 )
 PRIOR_EVIDENCE_SHA256 = {
-    "manifest.json": "A2C7E362913AD9B49E58F27B6542C7031CA568D61BB3A4280729107D65BB48D3",
-    "journal.jsonl": "0C34BF92AEE3A5F6D11955ED122BDCE0C633DA35FCD350B24F1F39E72ECE043B",
-    "result.json": "B4D3F6C08586A4233A16BD5951A3F10E90414F1B200801A0EB14AE70F5E60AA1",
-    "closure.json": "EBF5EBC86DE64F23F9B7EB0117D747DF0C52370422CCA69711673719D7D508B9",
+    "manifest.json": "EE9DAB0A9E8062292E7B519CC75410B81089524FAB2E554D839E680B9FEC185A",
+    "journal.jsonl": "E802460EC42A64E55ECC1A9147C160C5F69851D70C9C02B506CDD61A19A5950D",
+    "result.json": "05840E52327BE306D5781C6FFE81A040A50E89301C3860C6945F58CC97A59207",
+    "closure.json": "3E3FF03DA99FAED8BA19650B7E6D42A9B30E77902FE57F9186E8BB75679093A0",
     "captures/warm-trajectory-archive-01-task-a.json": (
-        "9FB12220C9B7E061BDE22640BF038AFF6A6A30594D33C5204386B4051B9E4815"
+        "6CFA87719F336EF8B4841E0ED4A866B65EDCEFD5C7F2C5B4AAE70492B8B955A9"
     ),
 }
-PRIOR_ARCHIVE_SHA256 = "EBDDE88262BA24D0659988BB69051101CA99E584EDF1CBFBD8647E092D403B13"
+PRIOR_ARCHIVE_SHA256 = "BEF9D3E36080D29CDE8F33A7C5CE842F1D774E46093E2F740784A7C4F18768DD"
 EXPECTED_EVIDENCE_ROOT_COMMITMENT = (
     "7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD"
 )
 MODEL_SHA256 = "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2"
-BINARY_SHA256 = "5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B"
+BINARY_SHA256 = "1166D5650C9BD9ACDD4C94EC5E1C72454F22CDC8C71035CAA0FBC450E95D5E00"
 PAIR_IDS = (
     "warm-trajectory-archive-01",
     "warm-trajectory-refuge-02",
@@ -606,6 +606,8 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "prior_attempt_evidence_sha256": PRIOR_EVIDENCE_SHA256,
             "prior_attempt_archive_sha256": PRIOR_ARCHIVE_SHA256,
             "scientific_surface_changed": False,
+            "runtime_binary_changed": True,
+            "runtime_repair": "honor n_predict=0 before next-token sampling",
         },
         "status": "statically-preregistered-unexecuted",
         "starting_protected_main": STARTING_PROTECTED_MAIN,

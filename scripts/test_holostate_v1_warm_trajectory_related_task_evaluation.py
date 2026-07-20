@@ -859,7 +859,7 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         finally:
             shutil.rmtree(repository, ignore_errors=True)
 
-    def test_37_attempt_4_preserves_attempt_3_terminal_evidence(self):
+    def test_37_attempt_5_preserves_attempt_4_terminal_evidence(self):
         prior = probe.verify_prior_execution(ROOT, probe._load_private_root(ROOT))
         self.assertEqual(prior["authority_receipt_sha256"], probe.PRIOR_AUTHORITY_RECEIPT_SHA256)
         self.assertEqual(prior["evidence_sha256"], probe.PRIOR_EVIDENCE_SHA256)
@@ -867,7 +867,7 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         self.assertFalse((ROOT / probe.AUTHORITY_RECEIPT_PATH).exists())
         self.assertFalse((ROOT / probe.STATE_ROOT).exists())
 
-    def test_38_attempt_3_capture_retains_normalized_chat_accounting(self):
+    def test_38_attempt_4_capture_retains_normalized_chat_accounting(self):
         path = (
             ROOT
             / probe.PRIOR_STATE_ROOT
