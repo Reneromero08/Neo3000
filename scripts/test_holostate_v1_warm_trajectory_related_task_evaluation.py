@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -16,6 +18,46 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 import holostate_v1_warm_trajectory_related_task_evaluation as probe
+
+
+@contextmanager
+def evaluator_access_spy(evaluator_path: Path, *, deny: bool):
+    target = evaluator_path.resolve(strict=False)
+    events = {"open": 0, "read_bytes": 0, "sha256_file": 0}
+    original_open = Path.open
+    original_read_bytes = Path.read_bytes
+    original_sha256_file = probe.sha256_file
+
+    def is_target(path) -> bool:
+        return Path(path).resolve(strict=False) == target
+
+    def guarded_open(path, *args, **kwargs):
+        if is_target(path):
+            events["open"] += 1
+            if deny:
+                raise AssertionError("protected evaluator was opened before terminal scoring")
+        return original_open(path, *args, **kwargs)
+
+    def guarded_read_bytes(path):
+        if is_target(path):
+            events["read_bytes"] += 1
+            if deny:
+                raise AssertionError("protected evaluator bytes were read before terminal scoring")
+        return original_read_bytes(path)
+
+    def guarded_sha256_file(path):
+        if is_target(path):
+            events["sha256_file"] += 1
+            if deny:
+                raise AssertionError("protected evaluator bytes were hashed before terminal scoring")
+        return original_sha256_file(path)
+
+    with (
+        mock.patch.object(Path, "open", guarded_open),
+        mock.patch.object(Path, "read_bytes", guarded_read_bytes),
+        mock.patch.object(probe, "sha256_file", guarded_sha256_file),
+    ):
+        yield events
 
 
 class FakeHoloState:
@@ -299,6 +341,208 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
         self.assertEqual(result["status"], "pass")
         self.assertEqual(result["model_requests_issued"], 0)
         self.assertEqual(result["sidecar_launches"], 0)
+
+    def _terminal_outcomes(self):
+        evaluator = json.loads((ROOT / probe.PROTECTED_EVALUATOR_PATH).read_bytes())
+        outcomes = {}
+        for pair_id in probe.PAIR_IDS:
+            protected = evaluator["task_pairs"][pair_id]
+            outcomes[pair_id] = {
+                "task_a": {
+                    "state": [str(group[0]) for group in protected["state_required_concepts"]],
+                    "answer": protected["task_a_answer"],
+                },
+                "catalytic_answer": protected["task_b_answer"],
+                "direct_answer": protected["task_b_answer"],
+            }
+        return outcomes
+
+    def test_19_precontact_custody_is_metadata_only(self):
+        evaluator_path = ROOT / probe.PROTECTED_EVALUATOR_PATH
+        with evaluator_access_spy(evaluator_path, deny=True) as events:
+            custody = probe.protected_evaluator_custody(ROOT)
+        self.assertEqual(events, {"open": 0, "read_bytes": 0, "sha256_file": 0})
+        self.assertEqual(
+            custody["expected_sha256_from_tracked_binding"],
+            probe.PROTECTED_EVALUATOR_SHA256,
+        )
+        self.assertFalse(custody["bytes_opened"])
+        self.assertFalse(custody["bytes_hashed"])
+        self.assertFalse(custody["bytes_parsed"])
+        self.assertFalse(custody["sha256_verified"])
+
+    def test_20_preregistration_reconstruction_never_reads_evaluator(self):
+        evaluator_path = ROOT / probe.PROTECTED_EVALUATOR_PATH
+        with evaluator_access_spy(evaluator_path, deny=True) as events:
+            rendered = probe.build_preregistration_document(ROOT)
+            validated = probe.validate_preregistration(ROOT)
+        self.assertEqual(rendered, validated)
+        self.assertEqual(events, {"open": 0, "read_bytes": 0, "sha256_file": 0})
+
+    def test_21_static_validation_never_reads_evaluator(self):
+        evaluator_path = ROOT / probe.PROTECTED_EVALUATOR_PATH
+        with evaluator_access_spy(evaluator_path, deny=True) as events:
+            result = probe.validate_static(ROOT)
+        self.assertEqual(result["status"], "pass")
+        self.assertEqual(events, {"open": 0, "read_bytes": 0, "sha256_file": 0})
+
+    def test_22_live_preflight_before_authority_never_reads_evaluator(self):
+        class CompletePreflight:
+            completed = False
+
+            def __init__(self, _repository):
+                pass
+
+            def preflight(self, **_kwargs):
+                type(self).completed = True
+                return {"metadata": {"stable": {"head": "a" * 40}}, "runtime": {}}
+
+        args = SimpleNamespace(
+            repository=str(ROOT),
+            design_id=probe.DESIGN_ID,
+            binary="unused",
+            model="unused",
+            external_authority_id="unused",
+            authorized_commit="a" * 40,
+        )
+        evaluator_path = ROOT / probe.PROTECTED_EVALUATOR_PATH
+        with (
+            evaluator_access_spy(evaluator_path, deny=True) as events,
+            mock.patch.object(probe.kernel, "CatalyticKernel0Adapter", CompletePreflight),
+            mock.patch.object(
+                probe,
+                "_public_preflight",
+                return_value={"stable": {"head": "a" * 40}},
+            ),
+            self.assertRaisesRegex(probe.WarmTrajectoryEvaluationError, "authority ID must be"),
+        ):
+            probe.run_evaluation(args, repository_root=ROOT)
+        self.assertTrue(CompletePreflight.completed)
+        self.assertEqual(events, {"open": 0, "read_bytes": 0, "sha256_file": 0})
+        self.assertFalse((ROOT / probe.AUTHORITY_RECEIPT_PATH).exists())
+        self.assertFalse((ROOT / probe.STATE_ROOT).exists())
+
+    def test_23_all_request_and_checkpoint_constructors_are_evaluator_blind(self):
+        evaluator_path = ROOT / probe.PROTECTED_EVALUATOR_PATH
+        with evaluator_access_spy(evaluator_path, deny=True) as events:
+            hashes = probe.fixed_request_templates(self.corpus)
+            for pair_id in probe.PAIR_IDS:
+                pair = self.by_id[pair_id]
+                task_a_json = probe.canonical_json_text(
+                    {"state": ["one", "two", "three", "four"], "answer": "A"}
+                )
+                probe.task_a_payload(pair)
+                probe.task_b_request_template(pair, "catalytic")
+                probe.task_b_request_template(pair, "direct")
+                probe.render_checkpoint_and_task_b(FakeHoloState(), pair, task_a_json)
+        self.assertEqual(tuple(hashes), probe.REQUEST_ORDER)
+        self.assertEqual(events, {"open": 0, "read_bytes": 0, "sha256_file": 0})
+
+    def test_24_protected_scoring_refuses_fewer_than_twelve_captures(self):
+        with mock.patch.object(probe, "_load_protected_evaluator_after_terminal_gates") as loader:
+            with self.assertRaisesRegex(probe.WarmTrajectoryEvaluationError, "before all captures"):
+                probe.score_protected(
+                    ROOT,
+                    self.corpus,
+                    {},
+                    completed_capture_ids=probe.REQUEST_ORDER[:-1],
+                    cleanup_passed=True,
+                    postflight_passed=True,
+                )
+            loader.assert_not_called()
+
+    def test_25_protected_scoring_refuses_before_cleanup(self):
+        with mock.patch.object(probe, "_load_protected_evaluator_after_terminal_gates") as loader:
+            with self.assertRaisesRegex(probe.WarmTrajectoryEvaluationError, "cleanup/postflight"):
+                probe.score_protected(
+                    ROOT,
+                    self.corpus,
+                    {},
+                    completed_capture_ids=probe.REQUEST_ORDER,
+                    cleanup_passed=False,
+                    postflight_passed=True,
+                )
+            loader.assert_not_called()
+
+    def test_26_protected_scoring_refuses_before_postflight(self):
+        with mock.patch.object(probe, "_load_protected_evaluator_after_terminal_gates") as loader:
+            with self.assertRaisesRegex(probe.WarmTrajectoryEvaluationError, "cleanup/postflight"):
+                probe.score_protected(
+                    ROOT,
+                    self.corpus,
+                    {},
+                    completed_capture_ids=probe.REQUEST_ORDER,
+                    cleanup_passed=True,
+                    postflight_passed=False,
+                )
+            loader.assert_not_called()
+
+    def test_27_terminal_scoring_opens_hashes_and_parses_exactly_once(self):
+        evaluator_path = ROOT / probe.PROTECTED_EVALUATOR_PATH
+        outcomes = self._terminal_outcomes()
+        original_json_loads = probe.json.loads
+        with (
+            evaluator_access_spy(evaluator_path, deny=False) as events,
+            mock.patch.object(probe.json, "loads", wraps=original_json_loads) as loads,
+        ):
+            scoring = probe.score_protected(
+                ROOT,
+                self.corpus,
+                outcomes,
+                completed_capture_ids=probe.REQUEST_ORDER,
+                cleanup_passed=True,
+                postflight_passed=True,
+            )
+        self.assertEqual(events, {"open": 1, "read_bytes": 1, "sha256_file": 0})
+        self.assertEqual(loads.call_count, 1)
+        custody = scoring["protected_evaluator_custody"]
+        self.assertTrue(custody["bytes_opened"])
+        self.assertTrue(custody["bytes_hashed"])
+        self.assertTrue(custody["bytes_parsed"])
+        self.assertTrue(custody["sha256_verified"])
+        self.assertEqual(scoring["task_a_correct"], 4)
+        self.assertEqual(scoring["catalytic_task_b_correct"], 4)
+        self.assertEqual(scoring["direct_task_b_correct"], 4)
+
+    def test_28_same_size_evaluator_tampering_fails_terminal_hash_gate(self):
+        temp = Path(tempfile.mkdtemp(prefix="warm-trajectory-evaluator-", dir=ROOT / "state"))
+        try:
+            subprocess.run(["git", "init", "--quiet"], cwd=temp, check=True)
+            relative = probe.PROTECTED_EVALUATOR_PATH
+            (temp / ".gitignore").write_text(
+                f"/{relative.as_posix()}\n", encoding="utf-8", newline="\n"
+            )
+            target = temp / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            tampered = bytearray((ROOT / relative).read_bytes())
+            tampered[10] ^= 1
+            target.write_bytes(tampered)
+            self.assertEqual(target.stat().st_size, probe.PROTECTED_EVALUATOR_SIZE)
+            with self.assertRaisesRegex(probe.WarmTrajectoryEvaluationError, "hash changed"):
+                probe.score_protected(
+                    temp,
+                    self.corpus,
+                    self._terminal_outcomes(),
+                    completed_capture_ids=probe.REQUEST_ORDER,
+                    cleanup_passed=True,
+                    postflight_passed=True,
+                )
+        finally:
+            shutil.rmtree(temp, ignore_errors=True)
+
+    def test_29_public_surfaces_exclude_protected_values(self):
+        preregistration = probe.build_preregistration_document(ROOT)
+        probe._assert_public_no_smuggle(preregistration)
+        scoring = probe.score_protected(
+            ROOT,
+            self.corpus,
+            self._terminal_outcomes(),
+            completed_capture_ids=probe.REQUEST_ORDER,
+            cleanup_passed=True,
+            postflight_passed=True,
+        )
+        probe._assert_public_no_smuggle(scoring)
+        self.assertFalse(scoring["protected_answers_disclosed"])
 
 
 if __name__ == "__main__":

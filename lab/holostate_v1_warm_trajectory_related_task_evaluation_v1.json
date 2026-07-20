@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "C3A4A768A63657802FDB597BA008D44C6297B4AD11AF13D64F5507A6BC261EE7",
+  "artifact_sha256": "68F2447D47BC912CF171AA4E7DF5CD7552016EC9992C2FD1D2E50339B07BE6A3",
   "authority": {
     "authorized_commit_must_equal_protected_main": true,
     "fresh_external_authority_id": true,
@@ -110,7 +110,7 @@
     },
     "protected_scorer": {
       "algorithm": "sha256-canonical-callable-source-v1",
-      "sha256": "BD3F15E5AE8A71F97DCB80506B77BDE6808B8F80DEBA88BD5D4A026A7CABEFAA"
+      "sha256": "0B5B079DDA160C535722967E2EBA7F60991AA522B24AD055A18D14FF698B92B7"
     },
     "resource_accounting": {
       "algorithm": "sha256-canonical-callable-source-v1",
@@ -312,12 +312,18 @@
     }
   },
   "protected_evaluator": {
+    "bytes_hashed": false,
     "bytes_opened": false,
+    "bytes_parsed": false,
+    "expected_sha256_from_tracked_binding": "AAC8CC0DEE3C748F92A9BA350E8EF32063171F5AF9B24754D55B1A7E71B0BE3E",
+    "expected_size_bytes_from_tracked_binding": 1895,
     "ignored": true,
     "path": "state/catalytic_kernel_0_private/holostate_v1_warm_trajectory_related_task_family_v1_evaluator.json",
     "regular": true,
-    "sha256": "AAC8CC0DEE3C748F92A9BA350E8EF32063171F5AF9B24754D55B1A7E71B0BE3E",
-    "size_bytes": 1895,
+    "reparse_point": false,
+    "sha256_verified": false,
+    "size_bytes_from_filesystem_metadata": 1895,
+    "symlink": false,
     "tracked": false
   },
   "resource_law": {

@@ -2,7 +2,7 @@
 
 ## Checkpoint 2: Integrated HoloState warm-trajectory evaluation statically prepared
 
-**Status:** SOURCE ATTEMPT-3 PRESERVED / POST HOC WORKER-PLUS-CONTROLLER DIAGNOSTIC CLOSED / INTEGRATED HOLOSTATE EVALUATION PREREGISTERED / ZERO LIVE CONTACT / BROADER CLAIMS LOCKED
+**Status:** SOURCE ATTEMPT-3 PRESERVED / INTEGRATED HOLOSTATE EVALUATION PREREGISTERED / PROTECTED EVALUATOR PRECONTACT ACCESS REPAIRED / ZERO LIVE CONTACT / BROADER CLAIMS LOCKED
 
 - [x] Preserve the three-worker diagnostic from synchronized source `6c760b2d5f8296f795724d061f1d91a0e4171c27`, then admit the separately authorized two-worker decision at synchronized clean `main` `c8942f7b4ecf7ab555b54393fc63c4cbb5a366b3`; exact frozen suite SHA-256 remains `4B9961D5054BE5D98EF315D2DEAE9D1604E0042A69CB02A8B81FDF513BC1FC92`.
 - [x] Scan only the eight public task projections and all 80 three-example shards. Locally eligible shard counts by task index are `[2,2,0,0,2,1,1,0]`; no task reaches the three distinct worker shards required by the frozen geometry.
@@ -94,8 +94,10 @@ Full commutativity, associativity, arbitrary n-parent generalization, formal alg
 - [x] Close the semantic-XOR proxy line and implement the direct integrated successor `holostate-v1-warm-trajectory-related-task-evaluation-v1` with four frozen related task pairs and 12 maximum future generations.
 - [x] Bind one shared Task-A generation and exact process-local checkpoint per pair, catalytic Task-B checkpoint continuation, same-information direct replay, counterbalanced route order, paired Task-B seeds, raw authenticated capture, protected delayed scoring, and exact checkpoint identity/reuse/readdress/closure evidence.
 - [x] Preserve all live state absent. Create no authority, receipt, runtime root, sidecar, model request, generation, capture, result, archive, ledger record, or automatic follow-on during static preparation.
+- [x] Repair the sole delayed-access defect. Precontact evaluator custody now checks only regular/non-reparse metadata, exact metadata size, ignored status, untracked status, and the expected tracked binding; it truthfully reports bytes unopened, unhashed, unparsed, and hash unverified.
+- [x] Permit exactly one terminal evaluator read only after all 12 captures, cleanup, and postflight. Verify exact byte size and SHA-256, reject duplicate JSON keys, score without disclosing protected values, and reject same-size tampering. Bind preregistration artifact/file `68F2447D47BC912CF171AA4E7DF5CD7552016EC9992C2FD1D2E50339B07BE6A3` / `5DDAC3E162A6B1A43292347B43B5DADA9ADE5A7D0C44598BDC1E6CB97DD4617F` and scorer `0B5B079DDA160C535722967E2EBA7F60991AA522B24AD055A18D14FF698B92B7`.
 
-**Next exact action:** `AUTHORIZE_ONE_LIVE_HOLOSTATE_WARM_TRAJECTORY_RELATED_TASK_EVALUATION` from the final pushed preparation commit with one fresh external authority. Do not infer general catalytic inference before the frozen live comparison completes.
+**Next exact action:** `INDEPENDENT_STATIC_AUDIT_WARM_TRAJECTORY_EVALUATOR_ISOLATION`, followed only on acceptance by one fresh-authority live execution from the final pushed repair commit. Do not infer general catalytic inference before the frozen live comparison completes.
 
 ---
 

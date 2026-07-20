@@ -11,6 +11,7 @@ import json
 import os
 import re
 import shutil
+import stat as stat_module
 import subprocess
 import time
 import urllib.request
@@ -246,10 +247,17 @@ def public_pair_sha256(pair: Mapping[str, Any]) -> str:
 
 def protected_evaluator_custody(repository: Path) -> dict[str, Any]:
     path = repository / PROTECTED_EVALUATOR_PATH
-    _require(path.is_file() and not path.is_symlink(), "protected evaluator is missing or unsafe")
-    stat = path.stat()
-    _require(stat.st_size == PROTECTED_EVALUATOR_SIZE, "protected evaluator size changed")
-    _require(sha256_file(path) == PROTECTED_EVALUATOR_SHA256, "protected evaluator hash changed")
+    _require(path.exists(), "protected evaluator is missing or unsafe")
+    metadata = path.lstat()
+    file_attributes = int(getattr(metadata, "st_file_attributes", 0))
+    reparse_flag = int(getattr(stat_module, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+    _require(
+        stat_module.S_ISREG(metadata.st_mode)
+        and not path.is_symlink()
+        and file_attributes & reparse_flag == 0,
+        "protected evaluator is missing or unsafe",
+    )
+    _require(metadata.st_size == PROTECTED_EVALUATOR_SIZE, "protected evaluator size changed")
     ignored = subprocess.run(
         ["git", "check-ignore", "--quiet", "--", PROTECTED_EVALUATOR_PATH.as_posix()],
         cwd=repository,
@@ -260,12 +268,18 @@ def protected_evaluator_custody(repository: Path) -> dict[str, Any]:
     _require(not tracked, "protected evaluator must remain untracked")
     return {
         "path": PROTECTED_EVALUATOR_PATH.as_posix(),
-        "sha256": PROTECTED_EVALUATOR_SHA256,
-        "size_bytes": PROTECTED_EVALUATOR_SIZE,
+        "expected_sha256_from_tracked_binding": PROTECTED_EVALUATOR_SHA256,
+        "expected_size_bytes_from_tracked_binding": PROTECTED_EVALUATOR_SIZE,
+        "size_bytes_from_filesystem_metadata": int(metadata.st_size),
         "regular": True,
+        "symlink": False,
+        "reparse_point": False,
         "ignored": True,
         "tracked": False,
         "bytes_opened": False,
+        "bytes_hashed": False,
+        "bytes_parsed": False,
+        "sha256_verified": False,
     }
 
 
@@ -485,7 +499,14 @@ def controller_binding() -> dict[str, Any]:
 
 
 def scorer_binding() -> dict[str, Any]:
-    return _callable_binding([score_protected, classify_result])
+    return _callable_binding(
+        [
+            protected_evaluator_custody,
+            _load_protected_evaluator_after_terminal_gates,
+            score_protected,
+            classify_result,
+        ]
+    )
 
 
 def resource_binding() -> dict[str, Any]:
@@ -1240,18 +1261,44 @@ def _pair_by_id(corpus: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
     return {str(item["pair_id"]): item for item in corpus["task_pairs"]}
 
 
-def _load_protected_evaluator_after_terminal_gates(repository: Path) -> dict[str, Any]:
+def _load_protected_evaluator_after_terminal_gates(
+    repository: Path,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     custody = protected_evaluator_custody(repository)
     path = repository / PROTECTED_EVALUATOR_PATH
-    value = json.loads(path.read_bytes())
+    data = path.read_bytes()
+    _require(len(data) == PROTECTED_EVALUATOR_SIZE, "protected evaluator byte size changed")
+    observed_sha256 = sha256_bytes(data)
+    _require(
+        observed_sha256 == PROTECTED_EVALUATOR_SHA256,
+        "protected evaluator hash changed",
+    )
+
+    def reject_duplicate_keys(pairs: Sequence[tuple[str, Any]]) -> dict[str, Any]:
+        value: dict[str, Any] = {}
+        for key, item in pairs:
+            _require(key not in value, "protected evaluator contains a duplicate JSON key")
+            value[key] = item
+        return value
+
+    value = json.loads(data, object_pairs_hook=reject_duplicate_keys)
     _require(
         isinstance(value, dict)
         and value.get("evaluator_id") == f"{FAMILY_ID}-protected-evaluator"
         and value.get("corpus_id") == FAMILY_ID,
         "protected evaluator identity changed",
     )
-    custody["bytes_opened"] = True
-    return value
+    custody.update(
+        {
+            "observed_size_bytes": len(data),
+            "observed_sha256": observed_sha256,
+            "bytes_opened": True,
+            "bytes_hashed": True,
+            "bytes_parsed": True,
+            "sha256_verified": True,
+        }
+    )
+    return value, custody
 
 
 def score_protected(
@@ -1265,7 +1312,7 @@ def score_protected(
 ) -> dict[str, Any]:
     _require(tuple(completed_capture_ids) == REQUEST_ORDER, "protected evaluator opened before all captures")
     _require(cleanup_passed and postflight_passed, "protected evaluator opened before cleanup/postflight")
-    evaluator = _load_protected_evaluator_after_terminal_gates(repository)
+    evaluator, evaluator_custody = _load_protected_evaluator_after_terminal_gates(repository)
     answers = evaluator.get("task_pairs")
     _require(isinstance(answers, Mapping) and set(answers) == set(PAIR_IDS), "protected task inventory changed")
     by_id = _pair_by_id(corpus)
@@ -1313,6 +1360,7 @@ def score_protected(
         "direct_task_b_correct": direct_correct,
         "per_pair": per_pair,
         "protected_evaluator_sha256": PROTECTED_EVALUATOR_SHA256,
+        "protected_evaluator_custody": evaluator_custody,
         "protected_answers_disclosed": False,
     }
 
