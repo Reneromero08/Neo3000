@@ -800,6 +800,12 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
 
     def test_34_preregistration_binds_complete_cycle_accounting_without_scientific_drift(self):
         value = probe.build_preregistration_document(ROOT)
+        self.assertEqual(value["attempt"]["attempt_id"], probe.ATTEMPT_ID)
+        self.assertEqual(
+            value["attempt"]["prior_authority_receipt_sha256"],
+            probe.PRIOR_AUTHORITY_RECEIPT_SHA256,
+        )
+        self.assertFalse(value["attempt"]["scientific_surface_changed"])
         self.assertEqual(value["execution"]["carrier_operation_order"], list(probe.CARRIER_OPERATION_ORDER))
         self.assertEqual(value["execution"]["total_inference_requests"], 20)
         self.assertEqual(value["execution"]["maximum_generations"], 12)
@@ -809,6 +815,56 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
             value["bindings"]["frozen_scientific"]["sha256"],
             "EB8A386E6453DB0B1948C4542F35AEFDEF58D5EB1CBFAB46FEC4D309101BC6C7",
         )
+
+    def test_35_receipt_verifier_accepts_persisted_flags_without_raw_authority_key(self):
+        repository = Path(tempfile.mkdtemp(prefix="warm-trajectory-receipt-positive-", dir=ROOT / "state"))
+        try:
+            root = b"receipt-positive-root"
+            authority = probe.build_external_authority(
+                "1" * 64,
+                authorized_commit="a" * 40,
+                current_commit="a" * 40,
+                preregistration_sha256="B" * 64,
+            )
+            receipt = probe.consume_authority_once(repository, root, authority)
+            self.assertEqual(receipt["attempt_id"], probe.ATTEMPT_ID)
+            self.assertFalse(receipt["raw_authority_id_persisted"])
+            self.assertFalse(receipt["authority"]["raw_authority_id_persisted"])
+            self.assertFalse(probe._contains_exact_mapping_key(receipt, "raw_authority_id"))
+        finally:
+            shutil.rmtree(repository, ignore_errors=True)
+
+    def test_36_receipt_verifier_rejects_exact_raw_authority_key(self):
+        repository = Path(tempfile.mkdtemp(prefix="warm-trajectory-receipt-negative-", dir=ROOT / "state"))
+        try:
+            root = b"receipt-negative-root"
+            authority = probe.build_external_authority(
+                "2" * 64,
+                authorized_commit="b" * 40,
+                current_commit="b" * 40,
+                preregistration_sha256="C" * 64,
+            )
+            probe.consume_authority_once(repository, root, authority)
+            path = repository / probe.AUTHORITY_RECEIPT_PATH
+            value = json.loads(path.read_bytes())
+            value["authority"]["raw_authority_id"] = "not-a-real-authority"
+            body = {key: item for key, item in value.items() if key != "receipt_hmac_sha256"}
+            value["receipt_hmac_sha256"] = probe._authority_hmac(root, body)
+            path.write_bytes(probe.canonical_json_bytes(value) + b"\n")
+            with self.assertRaisesRegex(
+                probe.WarmTrajectoryEvaluationError,
+                "authority receipt disclosure boundary changed",
+            ):
+                probe.verify_authority_receipt(repository, root)
+        finally:
+            shutil.rmtree(repository, ignore_errors=True)
+
+    def test_37_attempt_2_preserves_and_authenticates_attempt_1_receipt(self):
+        prior = probe.verify_prior_authority_receipt(ROOT, probe._load_private_root(ROOT))
+        self.assertEqual(prior["receipt_sha256"], probe.PRIOR_AUTHORITY_RECEIPT_SHA256)
+        self.assertFalse(probe._contains_exact_mapping_key(prior, "raw_authority_id"))
+        self.assertFalse((ROOT / probe.AUTHORITY_RECEIPT_PATH).exists())
+        self.assertFalse((ROOT / probe.STATE_ROOT).exists())
 
 
 if __name__ == "__main__":

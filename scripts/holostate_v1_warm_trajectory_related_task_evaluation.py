@@ -31,6 +31,8 @@ class WarmTrajectoryEvaluationError(ValueError):
 
 
 DESIGN_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1"
+ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-2"
+PRIOR_ATTEMPT_ID = "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-1"
 FAMILY_ID = "holostate-v1-warm-trajectory-related-task-family-v1"
 STARTING_PROTECTED_MAIN = "1a07ca0cc366d53e682e13440810716533f60f98"
 PUBLIC_CORPUS_PATH = Path(
@@ -47,14 +49,21 @@ PREREGISTRATION_PATH = Path(
     "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1.json"
 )
 STATE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evaluation_v1/attempt-2"
 )
 ARCHIVE_ROOT = Path(
-    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1"
+    "state/catalytic_kernel_0/holostate_v1_warm_trajectory_related_task_evidence_archive/v1/attempt-2"
+)
+PRIOR_AUTHORITY_RECEIPT_PATH = Path(
+    "state/catalytic_kernel_0_authority."
+    "holostate-v1-warm-trajectory-related-task-evaluation-v1.authority.consumed.json"
 )
 AUTHORITY_RECEIPT_PATH = Path(
     "state/catalytic_kernel_0_authority."
-    "holostate-v1-warm-trajectory-related-task-evaluation-v1.authority.consumed.json"
+    "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-2.authority.consumed.json"
+)
+PRIOR_AUTHORITY_RECEIPT_SHA256 = (
+    "88E7AEA3486FEC2CF4996393A48AB301D78A6CAE241FD006D5D5C2CE4DD6AF12"
 )
 EXPECTED_EVIDENCE_ROOT_COMMITMENT = (
     "7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD"
@@ -222,6 +231,18 @@ def _assert_public_no_smuggle(value: Any) -> None:
                 visit(child)
 
     visit(value)
+
+
+def _contains_exact_mapping_key(value: Any, forbidden_key: str) -> bool:
+    if isinstance(value, Mapping):
+        return any(
+            str(key).lower() == forbidden_key.lower()
+            or _contains_exact_mapping_key(child, forbidden_key)
+            for key, child in value.items()
+        )
+    if isinstance(value, list):
+        return any(_contains_exact_mapping_key(child, forbidden_key) for child in value)
+    return False
 
 
 def load_public_corpus(repository: Path) -> dict[str, Any]:
@@ -497,6 +518,12 @@ def controller_binding() -> dict[str, Any]:
         [
             build_external_authority,
             consume_authority_once,
+            _verify_authority_receipt_path,
+            verify_authority_receipt,
+            verify_prior_authority_receipt,
+            _contains_exact_mapping_key,
+            _experiment_key,
+            JournalWriter.append,
             capture_request_once,
             render_checkpoint_and_task_b,
             checkpoint_identity,
@@ -545,6 +572,15 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
     artifact = {
         "schema_version": 1,
         "design_id": DESIGN_ID,
+        "attempt": {
+            "attempt_id": ATTEMPT_ID,
+            "prior_attempt_id": PRIOR_ATTEMPT_ID,
+            "prior_authority_receipt_sha256": PRIOR_AUTHORITY_RECEIPT_SHA256,
+            "prior_attempt_model_requests": 0,
+            "prior_attempt_carrier_operations": 0,
+            "prior_attempt_runtime_root_created": False,
+            "scientific_surface_changed": False,
+        },
         "status": "statically-preregistered-unexecuted",
         "starting_protected_main": STARTING_PROTECTED_MAIN,
         "hypothesis": (
@@ -716,6 +752,7 @@ def build_external_authority(
         "schema_version": 1,
         "authority_kind": "external-one-shot-holostate-warm-trajectory-v1",
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
         "authorized_commit": authorized_commit,
         "authority_id_sha256": authority_id_sha256(raw_authority_id),
         "preregistration_file_sha256": preregistration_sha256,
@@ -728,7 +765,10 @@ def build_external_authority(
 def _experiment_key(root: bytes) -> bytes:
     return hmac.new(
         root,
-        b"neo3000/holostate-warm-trajectory/experiment-key/v1\0" + DESIGN_ID.encode("utf-8"),
+        b"neo3000/holostate-warm-trajectory/experiment-key/v1\0"
+        + DESIGN_ID.encode("utf-8")
+        + b"\0"
+        + ATTEMPT_ID.encode("utf-8"),
         hashlib.sha256,
     ).digest()
 
@@ -747,6 +787,7 @@ def consume_authority_once(repository: Path, root: bytes, authority: Mapping[str
     body = {
         "schema_version": 1,
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
         "authority": dict(authority),
         "consumed_at": _utc_now(),
         "raw_authority_id_persisted": False,
@@ -756,8 +797,12 @@ def consume_authority_once(repository: Path, root: bytes, authority: Mapping[str
     return verify_authority_receipt(repository, root)
 
 
-def verify_authority_receipt(repository: Path, root: bytes) -> dict[str, Any]:
-    path = repository / AUTHORITY_RECEIPT_PATH
+def _verify_authority_receipt_path(
+    path: Path,
+    root: bytes,
+    *,
+    expected_attempt_id: str | None,
+) -> dict[str, Any]:
     value = json.loads(_regular_bytes(path, "warm-trajectory authority receipt", 64 * 1024))
     _require(isinstance(value, dict), "authority receipt is not an object")
     supplied = str(value.get("receipt_hmac_sha256", ""))
@@ -765,11 +810,32 @@ def verify_authority_receipt(repository: Path, root: bytes) -> dict[str, Any]:
     _require(hmac.compare_digest(supplied, _authority_hmac(root, body)), "authority receipt HMAC changed")
     _require(
         value.get("design_id") == DESIGN_ID
+        and value.get("attempt_id") == expected_attempt_id
+        and isinstance(value.get("authority"), Mapping)
+        and value["authority"].get("raw_authority_id_persisted") is False
         and value.get("raw_authority_id_persisted") is False
-        and "raw_authority_id" not in canonical_json_text(value),
+        and not _contains_exact_mapping_key(value, "raw_authority_id"),
         "authority receipt disclosure boundary changed",
     )
     return {**value, "receipt_sha256": sha256_file(path)}
+
+
+def verify_authority_receipt(repository: Path, root: bytes) -> dict[str, Any]:
+    return _verify_authority_receipt_path(
+        repository / AUTHORITY_RECEIPT_PATH,
+        root,
+        expected_attempt_id=ATTEMPT_ID,
+    )
+
+
+def verify_prior_authority_receipt(repository: Path, root: bytes) -> dict[str, Any]:
+    path = repository / PRIOR_AUTHORITY_RECEIPT_PATH
+    data = _regular_bytes(path, "prior warm-trajectory authority receipt", 64 * 1024)
+    _require(
+        sha256_bytes(data) == PRIOR_AUTHORITY_RECEIPT_SHA256,
+        "prior warm-trajectory authority receipt changed",
+    )
+    return _verify_authority_receipt_path(path, root, expected_attempt_id=None)
 
 
 class RunLock(AbstractContextManager["RunLock"]):
@@ -804,6 +870,7 @@ class JournalWriter:
         body = {
             "schema_version": 1,
             "design_id": DESIGN_ID,
+            "attempt_id": ATTEMPT_ID,
             "ordinal": self.count + 1,
             "observed_at": _utc_now(),
             "state": state,
@@ -840,6 +907,7 @@ def verify_journal_event(
         == {
             "schema_version",
             "design_id",
+            "attempt_id",
             "ordinal",
             "observed_at",
             "state",
@@ -860,6 +928,7 @@ def verify_journal_event(
     _require(
         event.get("schema_version") == 1
         and event.get("design_id") == DESIGN_ID
+        and event.get("attempt_id") == ATTEMPT_ID
         and event.get("ordinal") == expected_ordinal
         and event.get("previous_event_sha256") == expected_previous
         and hmac.compare_digest(str(event.get("event_sha256", "")), expected_sha),
@@ -935,6 +1004,7 @@ def capture_request_once(
     body = {
         "schema_version": 1,
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
         "request_id": request_id,
         "model_request_sha256": model_request_sha256,
         "generation_ordinal": generation_ordinal,
@@ -973,6 +1043,7 @@ def verify_capture(
     body = {key: item for key, item in value.items() if key != "capture_hmac_sha256"}
     _require(
         value.get("design_id") == DESIGN_ID
+        and value.get("attempt_id") == ATTEMPT_ID
         and value.get("request_id") == request_id
         and value.get("model_request_sha256") == model_request_sha256
         and value.get("generation_ordinal") == generation_ordinal
@@ -1409,6 +1480,7 @@ def checkpoint_identity(
     body = {
         "schema_version": 1,
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
         "pair_id": pair_id,
         "task_a_capture_sha256": task_a_capture_sha256,
         "checkpoint_prompt_sha256": geometry["checkpoint_prompt_sha256"],
@@ -1741,6 +1813,7 @@ def _finalize_scientific_result(
     return {
         "schema_version": 1,
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
         "status": "complete",
         "terminal_classification": classification,
         "completed_model_generations": len(captured),
@@ -1780,7 +1853,14 @@ def _archive_terminal(repository: Path, paths: Mapping[str, Path]) -> dict[str, 
                 }
             )
     members.sort(key=lambda item: item["path"])
-    body = {"schema_version": 1, "design_id": DESIGN_ID, "members": members}
+    body = {
+        "schema_version": 1,
+        "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
+        "prior_attempt_id": PRIOR_ATTEMPT_ID,
+        "prior_authority_receipt_sha256": PRIOR_AUTHORITY_RECEIPT_SHA256,
+        "members": members,
+    }
     archive_sha = json_sha256(body)
     archive = repository / ARCHIVE_ROOT / archive_sha
     _require(not archive.exists(), "terminal archive content address already exists")
@@ -1827,6 +1907,7 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
         preregistration_sha256=preregistration_file_sha,
     )
     root = _load_private_root(repository)
+    prior_receipt = verify_prior_authority_receipt(repository, root)
     experiment_key = _experiment_key(root)
     receipt = consume_authority_once(repository, root, authority)
     paths["run_root"].mkdir(parents=True, exist_ok=False)
@@ -1834,6 +1915,9 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
     manifest = {
         "schema_version": 1,
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
+        "prior_attempt_id": PRIOR_ATTEMPT_ID,
+        "prior_authority_receipt_sha256": prior_receipt["receipt_sha256"],
         "authorized_commit": current_commit,
         "authority_receipt_sha256": receipt["receipt_sha256"],
         "authority_id_sha256": authority["authority_id_sha256"],
@@ -2200,6 +2284,7 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
             result = {
                 "schema_version": 1,
                 "design_id": DESIGN_ID,
+                "attempt_id": ATTEMPT_ID,
                 "status": "inconclusive",
                 "terminal_classification": "INCONCLUSIVE",
                 "completed_model_generations": len(captured),
@@ -2222,6 +2307,9 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
         closure_document = {
             "schema_version": 1,
             "design_id": DESIGN_ID,
+            "attempt_id": ATTEMPT_ID,
+            "prior_attempt_id": PRIOR_ATTEMPT_ID,
+            "prior_authority_receipt_sha256": PRIOR_AUTHORITY_RECEIPT_SHA256,
             "status": result["status"],
             "result_sha256": sha256_file(paths["result"]),
             "manifest_sha256": sha256_file(paths["manifest"]),
@@ -2239,6 +2327,7 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
 
 def validate_static(repository: Path) -> dict[str, Any]:
     preregistration = validate_preregistration(repository)
+    prior_receipt = verify_prior_authority_receipt(repository, _load_private_root(repository))
     corpus = load_public_corpus(repository)
     diagnostic = preregistration["post_hoc_semantic_xor_accounting"]
     worker = diagnostic["worker_plus_controller_route"]
@@ -2253,6 +2342,8 @@ def validate_static(repository: Path) -> dict[str, Any]:
     return {
         "status": "pass",
         "design_id": DESIGN_ID,
+        "attempt_id": ATTEMPT_ID,
+        "prior_authority_receipt_sha256": prior_receipt["receipt_sha256"],
         "artifact_sha256": preregistration["artifact_sha256"],
         "preregistration_file_sha256": sha256_file(repository / PREREGISTRATION_PATH),
         "public_corpus_sha256": PUBLIC_CORPUS_SHA256,
