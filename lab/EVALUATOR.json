@@ -240,6 +240,7 @@
       "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1.json",
       "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_2.json",
       "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3.json",
+      "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_4.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]

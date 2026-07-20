@@ -300,7 +300,7 @@ class SemanticXorWorkerBaselineEvaluationTests(unittest.TestCase):
             "private_salt_hex": "D" * 64,
             "entries": entries,
             "cell_coverage_validation": {
-                "cells_present_once": True,
+                "cells_present_once": ["00", "01", "10", "11"],
                 "exact_four_cell_coverage": True,
                 "worker_a_bit_balance": {"0": 2, "1": 2},
                 "worker_b_bit_balance": {"0": 2, "1": 2},
@@ -484,6 +484,11 @@ class SemanticXorWorkerBaselineEvaluationTests(unittest.TestCase):
             repair["only_scientific_surface_change"],
             "uniform completion ceiling 8 to 32 through preserved 16-token attempt",
         )
+        scoring_repair = self.artifact["post_generation_scoring_repair"]
+        self.assertEqual(scoring_repair["source_attempt"], probe.PREDECESSOR_ATTEMPT_3)
+        self.assertEqual(scoring_repair["model_requests_required_for_recovery"], 0)
+        self.assertFalse(scoring_repair["new_authority_required_for_recovery"])
+        self.assertTrue(scoring_repair["source_result_and_archive_immutable"])
 
 
 if __name__ == "__main__":

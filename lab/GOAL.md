@@ -1,6 +1,6 @@
 # Active Goal
 
-## Checkpoint 2: Semantic-XOR successor attempt prepared after bounded output failure
+## Checkpoint 2: Semantic-XOR capability recovered from complete Attempt-3 evidence
 
 `balanced-opaque-five-support-two-worker-synthesis-probe-v1` executed once from protected main `563cbf5a72a763af8a2cde2394a5ea5beb008bad`. One consumed authority admitted exactly `worker-A`, `worker-B`, and `synthesis-AB`; all three one-generation requests completed with authenticated captures and zero retries.
 
@@ -46,7 +46,13 @@ Attempt 2 is also consumed and terminal `INCONCLUSIVE`. Its first baseline respo
 
 Attempt-3 preregistration `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3.json` binds both consumed predecessors and changes only the uniform completion ceiling to 32. Its artifact SHA-256 is `650B72BD09ED153505B867AD33FAF6F1D7EE96FA2C76F2A84189975440CB8A66`, file SHA-256 `E5D690D89D0E2F7CB00F3031524E6DD481D4D670EA5DB3FCC7EC8C8C05088ABC`, frozen scientific binding `39182B20C74A0B804774CA9E4A0D54FA52E1970A7564DE82A28C98C38925B8A3`, controller binding `0604A058E4715EF3A9E23E5E14A61F7E5CD9CACB654AFF98E4CE39256F855351`, synthesis derivation law `80A68493FE5F2F10501F091F1E0DDCC04165A039E52B298DD862013D4CB0F08D`, protected scorer `8BF9146886167545CFA7A3C34980614407A5C5BF02D7229F47209FB7F22B0F04`, and resource accountant `978F5586138AB759D56573B93B7F81313C530D608EE268CEFB23920F56179545`.
 
-**Next exact action:** `AUTHORIZE_AND_EXECUTE_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1_ATTEMPT_3`. Bind one fresh external authority to the published Attempt-3 commit and exact preregistration; do not retry either consumed attempt or publish automatically.
+Attempt 3 executed once from `957aa19339e539145572671f3f8c0be9c070b535`, completed all 16 generations and captures with zero retry, passed cleanup/postflight, and archived 21 evidence members at `9FE208E22A0810E84B24AF495D9694C832A2CF1FB3BB3F9EB3545BE0E7371173`. The controller wrote terminal `INCONCLUSIVE` only after generation because scorer failure `B8CC47CFA8CB7D8B5914A6703502887C4DA2F251F8E035675BB87ABE1C33A444` compared the evaluator's exact sorted four-cell array witness to boolean `true`.
+
+Zero-contact authenticated replay under the corrected exact witness supports `NON_CONTROLLER_RECONSTRUCTIBLE_SEMANTIC_XOR_WORKER_SYNTHESIS_SUPPORTED`: worker A `4/4`, worker B `4/4`, semantic bits `8/8`, XOR fidelity `4/4`, worker route `4/4`, direct baseline `3/4`. It does not support inference efficiency: worker route used `3005/4` fresh tokens per correct label, direct baseline `1430/3`, and exact cross-products are `9015 > 5720`.
+
+Attempt-4 static repair artifact `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_4.json` binds the immutable Attempt-3 evidence and changes only the protected scorer's aggregate-witness shape. Artifact SHA-256 is `3C0D97B767C4B426FB6D919A4DC2A867EC977809B38F1856175E5ED884979D01`, file SHA-256 `7DEA4056B706ADFFD0C020E7887D21B0C03B85F53769F7E8E5ABAA833979195C`, frozen scientific binding `39182B20C74A0B804774CA9E4A0D54FA52E1970A7564DE82A28C98C38925B8A3`, controller `25885ECA37DD7E70AC1D216EBE411E85E4514763B0FAB983F7D564148B20CE55`, scorer `FC5CF38976F40A521684FCC2F9A25A3C85C29ADA5BEBF8A3133E586C6B924B05`, resource accountant `978F5586138AB759D56573B93B7F81313C530D608EE268CEFB23920F56179545`, and derivation law `80A68493FE5F2F10501F091F1E0DDCC04165A039E52B298DD862013D4CB0F08D`. It creates no new live authority or run.
+
+**Next exact action:** `STATICALLY_ADJUDICATE_AND_PUBLISH_TWO_SHARD_SEMANTIC_XOR_WORKER_BASELINE_EVALUATION_V1_ATTEMPT_3`. Publish only the bounded capability and negative efficiency result; keep general catalytic inference, transfer, superiority, and SOTA locked.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 

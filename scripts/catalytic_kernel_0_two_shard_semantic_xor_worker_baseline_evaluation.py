@@ -42,16 +42,16 @@ PROTECTED_EVALUATOR_PATH = Path(
 PROTECTED_EVALUATOR_SHA256 = "437112DC9A06E4CB3CF1824A738BB13887212B23A38E2AF12A94374A9259D163"
 PROTECTED_EVALUATOR_SIZE = 968
 PREREGISTRATION_PATH = Path(
-    "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3.json"
+    "lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_4.json"
 )
 PRIVATE_ROOT_PATH = source_binding.PRIVATE_ROOT_PATH
 EXPECTED_EVIDENCE_ROOT_COMMITMENT = "7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD"
 STATE_ROOT = Path(
-    "state/catalytic_kernel_0/two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3"
+    "state/catalytic_kernel_0/two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_4"
 )
 ARCHIVE_ROOT = Path("state/catalytic_kernel_0/two_shard_semantic_xor_worker_baseline_evidence_archive/v1")
 AUTHORITY_RECEIPT_PATH = Path(
-    "state/catalytic_kernel_0_authority.two-shard-semantic-xor-worker-baseline-v1-attempt-3.authority.consumed.json"
+    "state/catalytic_kernel_0_authority.two-shard-semantic-xor-worker-baseline-v1-attempt-4.authority.consumed.json"
 )
 TASK_IDS = scientific.TASK_IDS
 REQUEST_IDS = scientific.REQUEST_IDS
@@ -98,7 +98,30 @@ PREDECESSOR_ATTEMPT_2 = {
     "captured_json_complete": True,
     "retry_allowed": False,
 }
-PREDECESSOR_ATTEMPTS = (PREDECESSOR_ATTEMPT_1, PREDECESSOR_ATTEMPT_2)
+PREDECESSOR_ATTEMPT_3 = {
+    "authorized_commit": "957aa19339e539145572671f3f8c0be9c070b535",
+    "authority_id_sha256": "9284373AD2A5E0CFB83DE37570B3C9511FA8D11179E417FB64F515200174E985",
+    "authority_receipt_sha256": "53F76D646C30803346AAFC8E4934C645AA9149997EBF2052CD890BDCDABB97FC",
+    "manifest_sha256": "6408820E958B6877DAD19B4DABBE18E9551952BFB000AFD3173F9E6B6257BA09",
+    "result_sha256": "AA1A9F22A45C8B6F5CAFFE5FDFE409458C25E80B9BAFB4A7B2E1D8AE696087CF",
+    "closure_sha256": "9123B3E882BABFE1B887ADFA0AA464ED446F64BBF3008E63BC736B2A7B619CD1",
+    "journal_sha256": "203038539C79859389C7B83F0513807DDBEECD7D8EB4E043278FA727F34C76DA",
+    "archive_sha256": "9FE208E22A0810E84B24AF495D9694C832A2CF1FB3BB3F9EB3545BE0E7371173",
+    "failure_sha256": "B8CC47CFA8CB7D8B5914A6703502887C4DA2F251F8E035675BB87ABE1C33A444",
+    "terminal_classification": "INCONCLUSIVE",
+    "started_request_count": 16,
+    "captured_request_count": 16,
+    "completed_model_generations": 16,
+    "cleanup_passed": True,
+    "postflight_passed": True,
+    "protected_scoring_completed": False,
+    "retry_allowed": False,
+}
+PREDECESSOR_ATTEMPTS = (
+    PREDECESSOR_ATTEMPT_1,
+    PREDECESSOR_ATTEMPT_2,
+    PREDECESSOR_ATTEMPT_3,
+)
 MODEL_SHA256 = asymmetry.EXPECTED_MODEL_SHA256
 BINARY_SHA256 = transaction.BINARY_SHA256
 
@@ -672,7 +695,7 @@ def score_protected_outcomes(
     _require(
         isinstance(coverage, dict)
         and coverage.get("exact_four_cell_coverage") is True
-        and coverage.get("cells_present_once") is True
+        and coverage.get("cells_present_once") == ["00", "01", "10", "11"]
         and coverage.get("worker_a_bit_balance") == {"0": 2, "1": 2}
         and coverage.get("worker_b_bit_balance") == {"0": 2, "1": 2}
         and coverage.get("final_label_balance") == {"DIFFERENT": 2, "SAME": 2},
@@ -966,6 +989,18 @@ def build_preregistration_document(repository: Path, model_path: Path) -> dict[s
                 "resource comparison law",
                 "claim locks",
             ],
+        },
+        "post_generation_scoring_repair": {
+            "source_attempt": dict(PREDECESSOR_ATTEMPT_3),
+            "demonstrated_failure": "protected evaluator aggregate balance changed",
+            "frozen_evaluator_identity_unchanged": True,
+            "actual_cells_present_once_witness": "exact sorted four-cell array",
+            "incorrect_expected_shape": "boolean true",
+            "correct_expected_shape": "exact sorted four-cell array",
+            "model_requests_required_for_recovery": 0,
+            "new_authority_required_for_recovery": False,
+            "source_result_and_archive_immutable": True,
+            "claim_expansion": False,
         },
         "frozen_sources": contract["source_identities"],
         "task_ids": list(TASK_IDS),

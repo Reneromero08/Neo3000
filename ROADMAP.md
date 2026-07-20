@@ -620,6 +620,10 @@ Attempt 2 is consumed and terminal `INCONCLUSIVE`. Its first baseline response c
 
 Attempt 3 is the final bounded output-budget correction in this lineage. It changes only the uniform completion ceiling from 16 to 32, preserves both consumed predecessors and every task, request, seed, schema, evaluator, scoring, resource, and claim boundary, and uses distinct attempt-3 state and authority paths. Canonical preregistration `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_3.json` has artifact SHA-256 `650B72BD09ED153505B867AD33FAF6F1D7EE96FA2C76F2A84189975440CB8A66`; one fresh authority bound to the published Attempt-3 commit is required before execution.
 
+Attempt 3 then completed all 16 frozen generations and captures exactly once with zero retry, clean shutdown, and passing postflight. The live controller remained terminal `INCONCLUSIVE` only because the protected scorer compared the frozen evaluator's exact sorted `00 / 01 / 10 / 11` coverage array to boolean `true`. Immutable archive `9FE208E22A0810E84B24AF495D9694C832A2CF1FB3BB3F9EB3545BE0E7371173` contains 21 verified members.
+
+Zero-contact authenticated replay after correcting only that predicate supports bounded semantic-XOR worker synthesis: all eight worker bits, all four XOR relations, and all four worker-route final labels are correct, versus three of four direct baselines. Fresh-inference advantage is not supported: worker route uses `3005/4` fresh tokens per correct label versus direct baseline `1430/3`. Static repair artifact `lab/ck0_two_shard_semantic_xor_worker_baseline_evaluation_v1_attempt_4.json`, SHA-256 `3C0D97B767C4B426FB6D919A4DC2A867EC977809B38F1856175E5ED884979D01`, authorizes no new run. The next boundary is static adjudication and publication only.
+
 First intervention: **HoloState-v1 Live Prefix Lattice**
 
 ```text
