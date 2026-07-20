@@ -1359,6 +1359,27 @@ def _default_adapter(repository_root: Path) -> RuntimeAdapter:
     return _HoloStateAdapter(repository_root)
 
 
+def _preflight_binary_identity(runtime: Any, binary: Path, args: Any) -> Mapping[str, Any]:
+    expected_sha256 = _arg(args, "expected_binary_sha256")
+    expected_runtime_version = _arg(args, "expected_runtime_version")
+    if expected_sha256 is None and expected_runtime_version is None:
+        return runtime.verify_binary_identity(binary)
+    if (
+        not isinstance(expected_sha256, str)
+        or not SHA256_PATTERN.fullmatch(expected_sha256)
+        or not isinstance(expected_runtime_version, str)
+        or not re.fullmatch(r"[1-9][0-9]* \([0-9a-f]{7,40}\)", expected_runtime_version)
+    ):
+        raise CatalyticInferenceRuntimeError(
+            "explicit runtime binary identity is incomplete or malformed"
+        )
+    return runtime.verify_binary_identity_against(
+        binary,
+        expected_sha256=expected_sha256,
+        expected_runtime_version=expected_runtime_version,
+    )
+
+
 class _HoloStateAdapter:
     """Thin default adapter around existing HoloState safety helpers."""
 
@@ -1392,7 +1413,7 @@ class _HoloStateAdapter:
             raise CatalyticInferenceRuntimeError("--model must be an exact absolute path")
         binary = Path(binary_arg).resolve()
         model = Path(model_arg).resolve()
-        binary_identity = self.h.verify_binary_identity(binary)
+        binary_identity = _preflight_binary_identity(self.h, binary, args)
         model_identity = self.h.verify_model(model, evaluator)
         branch = self.h.git_read(repository_root, "branch", "--show-current")
         head = self.h.git_read(repository_root, "rev-parse", "HEAD")

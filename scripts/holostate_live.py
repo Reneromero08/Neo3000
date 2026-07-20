@@ -18,6 +18,7 @@ from ctypes import wintypes
 import hashlib
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -3941,16 +3942,33 @@ def binary_version(binary: Path) -> str:
     return line.removeprefix("version:").strip()
 
 
-def verify_binary_identity(binary: Path) -> dict[str, Any]:
+def verify_binary_identity_against(
+    binary: Path,
+    *,
+    expected_sha256: str,
+    expected_runtime_version: str,
+) -> dict[str, Any]:
     if not binary.is_file():
         raise NeoLoopError(f"missing HoloState binary: {binary}")
+    if not re.fullmatch(r"[0-9A-F]{64}", expected_sha256):
+        raise NeoLoopError("expected HoloState binary hash is malformed")
+    if not re.fullmatch(r"[1-9][0-9]* \([0-9a-f]{7,40}\)", expected_runtime_version):
+        raise NeoLoopError("expected HoloState runtime version is malformed")
     actual_hash = sha256_file(binary)
     version = binary_version(binary)
-    if actual_hash != EXPECTED_BINARY_SHA256 or version != EXPECTED_RUNTIME_VERSION:
+    if actual_hash != expected_sha256 or version != expected_runtime_version:
         raise NeoLoopError(
             f"binary identity mismatch: sha={actual_hash}, version={version}"
         )
     return {"path": str(binary.resolve()), "sha256": actual_hash, "runtime_version": version}
+
+
+def verify_binary_identity(binary: Path) -> dict[str, Any]:
+    return verify_binary_identity_against(
+        binary,
+        expected_sha256=EXPECTED_BINARY_SHA256,
+        expected_runtime_version=EXPECTED_RUNTIME_VERSION,
+    )
 
 
 def verify_model(model: Path, evaluator: dict[str, Any]) -> dict[str, Any]:
@@ -4527,10 +4545,12 @@ class LiveSidecar:
         model = self.preverified_model_identity
         if binary is None or model is None:
             raise HoloStateReadinessError("preverified-runtime-identity-missing")
+        expected_binary_sha256 = binary.get("sha256")
+        expected_runtime_version = binary.get("runtime_version")
         if (
             Path(str(binary.get("path", ""))).resolve() != self.binary
-            or binary.get("sha256") != EXPECTED_BINARY_SHA256
-            or binary.get("runtime_version") != EXPECTED_RUNTIME_VERSION
+            or not isinstance(expected_binary_sha256, str)
+            or not isinstance(expected_runtime_version, str)
             or not self.binary.is_file()
         ):
             raise HoloStateReadinessError("preverified-binary-identity-changed")
@@ -4544,7 +4564,11 @@ class LiveSidecar:
             raise HoloStateReadinessError("preverified-model-identity-changed")
         self.acquire_runtime_identity_locks()
         try:
-            current_binary = verify_binary_identity(self.binary)
+            current_binary = verify_binary_identity_against(
+                self.binary,
+                expected_sha256=expected_binary_sha256,
+                expected_runtime_version=expected_runtime_version,
+            )
             current_model = verify_model(self.model, self.evaluator)
             if canonical_json_bytes(current_binary) != canonical_json_bytes(binary):
                 raise HoloStateReadinessError("binary-identity-changed-before-launch")

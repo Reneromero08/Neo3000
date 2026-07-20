@@ -31,6 +31,7 @@ from catalytic_inference_bench_0_runtime import (  # noqa: E402
     _normalized_transport,
     _path_is_link_or_reparse,
     _porcelain_v2_status_is_clean,
+    _preflight_binary_identity,
     _require_request_safety,
     _safe_exception,
     run_catalytic_inference_bench_0,
@@ -607,6 +608,41 @@ class FakeAdapter:
 
 
 class CatalyticInferenceBench0RuntimeTests(unittest.TestCase):
+    def test_preflight_accepts_one_exact_experiment_binary_identity(self) -> None:
+        binary = Path("candidate-llama-server.exe")
+        expected = {
+            "path": str(binary),
+            "sha256": "A" * 64,
+            "runtime_version": "160 (89762c0)",
+        }
+        runtime = types.SimpleNamespace(
+            verify_binary_identity=mock.Mock(),
+            verify_binary_identity_against=mock.Mock(return_value=expected),
+        )
+        args = argparse.Namespace(
+            expected_binary_sha256="A" * 64,
+            expected_runtime_version="160 (89762c0)",
+        )
+        self.assertEqual(_preflight_binary_identity(runtime, binary, args), expected)
+        runtime.verify_binary_identity.assert_not_called()
+        runtime.verify_binary_identity_against.assert_called_once_with(
+            binary,
+            expected_sha256="A" * 64,
+            expected_runtime_version="160 (89762c0)",
+        )
+        with self.assertRaisesRegex(
+            CatalyticInferenceRuntimeError,
+            "explicit runtime binary identity is incomplete or malformed",
+        ):
+            _preflight_binary_identity(
+                runtime,
+                binary,
+                argparse.Namespace(
+                    expected_binary_sha256="A" * 64,
+                    expected_runtime_version=None,
+                ),
+            )
+
     @staticmethod
     def _resource(
         boundary: str,

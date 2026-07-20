@@ -1397,10 +1397,12 @@ class WorkerProtocolV3ContractTests(unittest.TestCase):
             sidecar.evaluator = self.evaluator
             sidecar.readiness_control = self.protocol["readiness_control"]
             sidecar.runtime_identity_lock_handles = []
+            custom_binary_sha256 = "A" * 64
+            custom_runtime_version = "160 (89762c0)"
             sidecar.preverified_binary_identity = {
                 "path": str(binary.resolve()),
-                "sha256": holo.EXPECTED_BINARY_SHA256,
-                "runtime_version": holo.EXPECTED_RUNTIME_VERSION,
+                "sha256": custom_binary_sha256,
+                "runtime_version": custom_runtime_version,
             }
             sidecar.preverified_model_identity = {
                 "path": str(model.resolve()),
@@ -1409,7 +1411,7 @@ class WorkerProtocolV3ContractTests(unittest.TestCase):
             }
             with mock.patch.object(holo, "EXPECTED_MODEL_SIZE", 4), mock.patch.object(
                 holo,
-                "verify_binary_identity",
+                "verify_binary_identity_against",
                 return_value=sidecar.preverified_binary_identity,
             ) as binary_verify, mock.patch.object(
                 holo,
@@ -1418,9 +1420,13 @@ class WorkerProtocolV3ContractTests(unittest.TestCase):
             ) as model_verify:
                 binary_identity, model_identity = sidecar.runtime_identities()
             sidecar.release_runtime_identity_locks()
-            binary_verify.assert_called_once_with(binary.resolve())
+            binary_verify.assert_called_once_with(
+                binary.resolve(),
+                expected_sha256=custom_binary_sha256,
+                expected_runtime_version=custom_runtime_version,
+            )
             model_verify.assert_called_once_with(model.resolve(), self.evaluator)
-            self.assertEqual(binary_identity["sha256"], holo.EXPECTED_BINARY_SHA256)
+            self.assertEqual(binary_identity["sha256"], custom_binary_sha256)
             self.assertEqual(model_identity["sha256"], holo.EXPECTED_MODEL_SHA256)
 
     @unittest.skipUnless(os.name == "nt", "Windows replacement custody")

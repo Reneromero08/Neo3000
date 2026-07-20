@@ -86,7 +86,8 @@ EXPECTED_EVIDENCE_ROOT_COMMITMENT = (
     "7999FE7862527BE08589EFF15B8AD7CFBC9F81C44C1FB7804E0AF31F34BD72FD"
 )
 MODEL_SHA256 = "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2"
-BINARY_SHA256 = "1166D5650C9BD9ACDD4C94EC5E1C72454F22CDC8C71035CAA0FBC450E95D5E00"
+BINARY_SHA256 = "EFA521C4DC4189C89CC71B34CDB46079143857A4D49148E2D4411D3F7599FEE5"
+RUNTIME_VERSION = "160 (89762c0)"
 PAIR_IDS = (
     "warm-trajectory-archive-01",
     "warm-trajectory-refuge-02",
@@ -608,6 +609,10 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "scientific_surface_changed": False,
             "runtime_binary_changed": True,
             "runtime_repair": "honor n_predict=0 before next-token sampling",
+            "runtime_binary_identity": {
+                "sha256": BINARY_SHA256,
+                "runtime_version": RUNTIME_VERSION,
+            },
         },
         "status": "statically-preregistered-unexecuted",
         "starting_protected_main": STARTING_PROTECTED_MAIN,
@@ -2077,6 +2082,8 @@ def run_evaluation(args: argparse.Namespace, *, repository_root: Path | None = N
     _require(not paths["receipt"].exists(), "warm-trajectory authority receipt already exists")
 
     live = kernel.CatalyticKernel0Adapter(repository)
+    args.expected_binary_sha256 = BINARY_SHA256
+    args.expected_runtime_version = RUNTIME_VERSION
     full_preflight = live.preflight(
         args=args,
         repository_root=repository,

@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "ACB19F0360E6EECFF2C858E7FFC2FDD9D8637CFCE775D41AA8B51FDCE07C75CD",
+  "artifact_sha256": "9BDB84694638A0066E0572E3FE2C28B0CF8240551687219FC1650E1878B4F93D",
   "attempt": {
     "attempt_id": "holostate-v1-warm-trajectory-related-task-evaluation-v1-attempt-5",
     "prior_attempt_archive_sha256": "BEF9D3E36080D29CDE8F33A7C5CE842F1D774E46093E2F740784A7C4F18768DD",
@@ -17,6 +17,10 @@
     "prior_attempt_terminal_classification": "INCONCLUSIVE",
     "prior_authority_receipt_sha256": "9631B4F62528B6D099255E5B22F34A77F2A9F733DE7F74877CD2BA57B65B4E4B",
     "runtime_binary_changed": true,
+    "runtime_binary_identity": {
+      "runtime_version": "160 (89762c0)",
+      "sha256": "EFA521C4DC4189C89CC71B34CDB46079143857A4D49148E2D4411D3F7599FEE5"
+    },
     "runtime_repair": "honor n_predict=0 before next-token sampling",
     "scientific_surface_changed": false
   },
@@ -36,7 +40,7 @@
     },
     "controller": {
       "algorithm": "sha256-canonical-callable-source-v1",
-      "sha256": "26BB86B5589BBF74DF8DE85767A30FBA4D70ABDD0FFC62C2BCE2AC2FEEE3AD8E"
+      "sha256": "38DDFB4EBBCB281E6B3F68CEB8994112ABDB05F8134909E185258FFD97FAF915"
     },
     "frozen_scientific": {
       "algorithm": "sha256-canonical-scientific-surface-v1",

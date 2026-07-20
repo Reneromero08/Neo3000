@@ -459,6 +459,10 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
                 pass
 
             def preflight(self, **_kwargs):
+                if _kwargs["args"].expected_binary_sha256 != probe.BINARY_SHA256:
+                    raise AssertionError("Attempt-5 binary hash was not passed to preflight")
+                if _kwargs["args"].expected_runtime_version != probe.RUNTIME_VERSION:
+                    raise AssertionError("Attempt-5 runtime version was not passed to preflight")
                 type(self).completed = True
                 return {"metadata": {"stable": {"head": "a" * 40}}, "runtime": {}}
 
@@ -806,6 +810,13 @@ class WarmTrajectoryStaticTests(unittest.TestCase):
             probe.PRIOR_AUTHORITY_RECEIPT_SHA256,
         )
         self.assertFalse(value["attempt"]["scientific_surface_changed"])
+        self.assertEqual(
+            value["attempt"]["runtime_binary_identity"],
+            {
+                "sha256": probe.BINARY_SHA256,
+                "runtime_version": probe.RUNTIME_VERSION,
+            },
+        )
         self.assertEqual(value["execution"]["carrier_operation_order"], list(probe.CARRIER_OPERATION_ORDER))
         self.assertEqual(value["execution"]["total_inference_requests"], 20)
         self.assertEqual(value["execution"]["maximum_generations"], 12)
