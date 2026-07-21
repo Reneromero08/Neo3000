@@ -25,6 +25,9 @@ enum server_task_type {
     SERVER_TASK_TYPE_SLOT_SAVE,
     SERVER_TASK_TYPE_SLOT_RESTORE,
     SERVER_TASK_TYPE_SLOT_ERASE,
+    SERVER_TASK_TYPE_SLOT_ROOT_SAVE,
+    SERVER_TASK_TYPE_SLOT_ROOT_RESTORE,
+    SERVER_TASK_TYPE_SLOT_ROOT_ERASE,
     SERVER_TASK_TYPE_GET_LORA,
     SERVER_TASK_TYPE_SET_LORA,
 };
@@ -158,11 +161,12 @@ struct server_task {
 
     server_task_type type;
 
-    // used by SERVER_TASK_TYPE_SLOT_SAVE, SERVER_TASK_TYPE_SLOT_RESTORE, SERVER_TASK_TYPE_SLOT_ERASE
+    // used by the file-backed and RAM-root slot actions
     struct slot_action {
         int id_slot;
         std::string filename;
         std::string filepath;
+        std::string root_id;
     };
     slot_action slot_action;
 
@@ -548,6 +552,19 @@ struct server_task_result_slot_save_load : server_task_result {
 
 struct server_task_result_slot_erase : server_task_result {
     size_t n_erased;
+
+    virtual json to_json() override;
+};
+
+struct server_task_result_slot_ram_root : server_task_result {
+    std::string action;
+    std::string root_id;
+    int id_slot_source;
+
+    size_t n_tokens;
+    size_t n_bytes;
+    size_t n_checkpoints;
+    double t_ms;
 
     virtual json to_json() override;
 };

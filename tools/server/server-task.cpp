@@ -1566,6 +1566,25 @@ json server_task_result_slot_erase::to_json() {
 }
 
 //
+// server_task_result_slot_ram_root
+//
+
+json server_task_result_slot_ram_root::to_json() {
+    return json {
+        { "id_slot",        id_slot },
+        { "id_slot_source", id_slot_source },
+        { "action",         action },
+        { "root_id",        root_id },
+        { "n_tokens",       n_tokens },
+        { "n_bytes",        n_bytes },
+        { "n_checkpoints",  n_checkpoints },
+        { "timings", {
+            { "root_ms", t_ms }
+        }},
+    };
+}
+
+//
 // server_task_result_get_lora
 //
 

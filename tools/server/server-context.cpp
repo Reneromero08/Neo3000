@@ -848,6 +848,27 @@ struct server_metrics {
 };
 
 
+struct server_slot_ram_root {
+    std::string id;
+    int id_slot_source = -1;
+
+    server_prompt prompt;
+    std::vector<uint8_t> data_spec;
+    bool has_spec_state = false;
+
+    std::vector<common_adapter_lora_info> lora;
+
+    llama_pos pos_min_tgt = -1;
+    llama_pos pos_max_tgt = -1;
+    llama_pos pos_min_dft = -1;
+    llama_pos pos_max_dft = -1;
+
+    size_t size() const {
+        return prompt.size() + data_spec.size() + prompt.tokens.size() * sizeof(llama_token);
+    }
+};
+
+
 //
 // server_context_impl (private implementation)
 //
@@ -921,6 +942,7 @@ private:
     int n_empty_consecutive = 0;
 
     std::unique_ptr<server_prompt_cache> prompt_cache;
+    std::unique_ptr<server_slot_ram_root> slot_ram_root;
 
     server_metrics metrics;
 
@@ -938,6 +960,8 @@ private:
     int64_t t_last_load_progress_ms = 0;
 
     void destroy() {
+        // RAM roots are bound to the currently loaded model, contexts, and LoRA adapter identities.
+        slot_ram_root.reset();
         spec.reset();
         ctx_dft.reset();
         model_dft.reset();
@@ -2656,6 +2680,197 @@ private:
                     res->id       = task.id;
                     res->id_slot  = id_slot;
                     res->n_erased = n_erased;
+                    queue_results.send(std::move(res));
+                } break;
+            case SERVER_TASK_TYPE_SLOT_ROOT_SAVE:
+                {
+                    if (!check_no_mtmd(task.id)) {
+                        break;
+                    }
+
+                    const int id_slot = task.slot_action.id_slot;
+                    server_slot * slot = get_slot_by_id(id_slot);
+                    if (slot == nullptr) {
+                        send_error(task, "Invalid slot ID", ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
+                    if (slot->is_processing()) {
+                        SRV_DBG("requested slot is unavailable, defer task, id_task = %d\n", task.id);
+                        queue_tasks.defer(std::move(task));
+                        break;
+                    }
+                    if (slot_ram_root) {
+                        send_error(task, "A RAM root already exists; erase it before saving another root", ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
+                    if (slot->prompt.tokens.empty()) {
+                        send_error(task, "Cannot save an empty slot as a RAM root", ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
+                    GGML_ASSERT(slot->prompt.data.size() == 0);
+
+                    const int64_t t_start = ggml_time_us();
+                    auto root = std::make_unique<server_slot_ram_root>();
+                    root->id             = task.slot_action.root_id;
+                    root->id_slot_source = id_slot;
+                    root->prompt         = slot->prompt.clone();
+                    root->lora           = slot->lora;
+
+                    // Full polymorphic host state is required here. Qwen35MoE is hybrid
+                    // (attention + recurrent), while DSV4 exactness also requires its compressed
+                    // caches; seq_cp or partial-only state is therefore not an exact RAM root.
+                    const size_t size_tgt = llama_state_seq_get_size_ext(ctx_tgt, id_slot, LLAMA_STATE_SEQ_FLAGS_NONE);
+                    const size_t size_dft = ctx_dft ? llama_state_seq_get_size_ext(ctx_dft.get(), id_slot, LLAMA_STATE_SEQ_FLAGS_NONE) : 0;
+                    root->prompt.data.main.resize(size_tgt);
+                    root->prompt.data.drft.resize(size_dft);
+
+                    const size_t written_tgt = llama_state_seq_get_data_ext(
+                            ctx_tgt, root->prompt.data.main.data(), size_tgt, id_slot, LLAMA_STATE_SEQ_FLAGS_NONE);
+                    const size_t written_dft = ctx_dft ? llama_state_seq_get_data_ext(
+                            ctx_dft.get(), root->prompt.data.drft.data(), size_dft, id_slot, LLAMA_STATE_SEQ_FLAGS_NONE) : 0;
+                    if (written_tgt != size_tgt || written_dft != size_dft) {
+                        send_error(task, "Unable to serialize the complete slot state into the RAM root", ERROR_TYPE_SERVER);
+                        break;
+                    }
+
+                    root->has_spec_state = common_speculative_get_state(spec.get(), id_slot, root->data_spec);
+                    root->pos_min_tgt = llama_memory_seq_pos_min(llama_get_memory(ctx_tgt), id_slot);
+                    root->pos_max_tgt = llama_memory_seq_pos_max(llama_get_memory(ctx_tgt), id_slot);
+                    if (ctx_dft) {
+                        root->pos_min_dft = llama_memory_seq_pos_min(llama_get_memory(ctx_dft.get()), id_slot);
+                        root->pos_max_dft = llama_memory_seq_pos_max(llama_get_memory(ctx_dft.get()), id_slot);
+                    }
+
+                    const size_t root_size = root->size();
+                    if (params_base.cache_ram_mib > 0 &&
+                            root_size > 1024ull * 1024ull * (size_t) params_base.cache_ram_mib) {
+                        send_error(task, "RAM root exceeds the configured --cache-ram limit", ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
+
+                    const size_t n_tokens      = root->prompt.tokens.size();
+                    const size_t n_checkpoints = root->prompt.checkpoints.size();
+                    slot_ram_root = std::move(root);
+
+                    auto res = std::make_unique<server_task_result_slot_ram_root>();
+                    res->id               = task.id;
+                    res->id_slot          = id_slot;
+                    res->id_slot_source   = id_slot;
+                    res->action           = "root-save";
+                    res->root_id          = slot_ram_root->id;
+                    res->n_tokens         = n_tokens;
+                    res->n_bytes          = root_size;
+                    res->n_checkpoints    = n_checkpoints;
+                    res->t_ms             = (ggml_time_us() - t_start) / 1000.0;
+                    queue_results.send(std::move(res));
+                } break;
+            case SERVER_TASK_TYPE_SLOT_ROOT_RESTORE:
+                {
+                    if (!check_no_mtmd(task.id)) {
+                        break;
+                    }
+
+                    const int id_slot = task.slot_action.id_slot;
+                    server_slot * slot = get_slot_by_id(id_slot);
+                    if (slot == nullptr) {
+                        send_error(task, "Invalid slot ID", ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
+                    if (slot->is_processing()) {
+                        SRV_DBG("requested slot is unavailable, defer task, id_task = %d\n", task.id);
+                        queue_tasks.defer(std::move(task));
+                        break;
+                    }
+                    if (!slot_ram_root || slot_ram_root->id != task.slot_action.root_id) {
+                        send_error(task, "RAM root not found", ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
+                    if (!are_lora_equal(slot->lora, slot_ram_root->lora)) {
+                        send_error(task, "RAM root LoRA state does not match the destination slot", ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
+
+                    server_prompt restored_prompt = slot_ram_root->prompt.clone();
+                    restored_prompt.data = {};
+
+                    const int64_t t_start = ggml_time_us();
+                    slot->prompt_clear(false);
+                    slot->prompt.checkpoints.clear();
+                    slot->prompt.data = {};
+
+                    const auto & data_tgt = slot_ram_root->prompt.data.main;
+                    const auto & data_dft = slot_ram_root->prompt.data.drft;
+                    const size_t read_tgt = llama_state_seq_set_data_ext(
+                            ctx_tgt, data_tgt.data(), data_tgt.size(), id_slot, LLAMA_STATE_SEQ_FLAGS_NONE);
+                    const size_t read_dft = ctx_dft ? llama_state_seq_set_data_ext(
+                            ctx_dft.get(), data_dft.data(), data_dft.size(), id_slot, LLAMA_STATE_SEQ_FLAGS_NONE) : 0;
+
+                    const bool sizes_ok = read_tgt == data_tgt.size() && read_dft == data_dft.size();
+                    const bool positions_ok = sizes_ok &&
+                            llama_memory_seq_pos_min(llama_get_memory(ctx_tgt), id_slot) == slot_ram_root->pos_min_tgt &&
+                            llama_memory_seq_pos_max(llama_get_memory(ctx_tgt), id_slot) == slot_ram_root->pos_max_tgt &&
+                            (!ctx_dft || (
+                                llama_memory_seq_pos_min(llama_get_memory(ctx_dft.get()), id_slot) == slot_ram_root->pos_min_dft &&
+                                llama_memory_seq_pos_max(llama_get_memory(ctx_dft.get()), id_slot) == slot_ram_root->pos_max_dft));
+                    if (!positions_ok) {
+                        common_context_seq_rm(ctx_tgt, id_slot, -1, -1);
+                        if (ctx_dft) {
+                            common_context_seq_rm(ctx_dft.get(), id_slot, -1, -1);
+                        }
+                        send_error(task, "Unable to restore the complete RAM-root state", ERROR_TYPE_SERVER);
+                        break;
+                    }
+
+                    if (slot_ram_root->has_spec_state) {
+                        common_speculative_set_state(spec.get(), id_slot, slot_ram_root->data_spec);
+                    }
+                    slot->prompt = std::move(restored_prompt);
+                    slot->spec_draft.clear();
+                    slot->spec_prompt.clear();
+                    slot->spec_i_batch.clear();
+                    slot->spec_ckpt.clear();
+
+                    auto res = std::make_unique<server_task_result_slot_ram_root>();
+                    res->id               = task.id;
+                    res->id_slot          = id_slot;
+                    res->id_slot_source   = slot_ram_root->id_slot_source;
+                    res->action           = "root-restore";
+                    res->root_id          = slot_ram_root->id;
+                    res->n_tokens         = slot->prompt.tokens.size();
+                    res->n_bytes          = slot_ram_root->size();
+                    res->n_checkpoints    = slot->prompt.checkpoints.size();
+                    res->t_ms             = (ggml_time_us() - t_start) / 1000.0;
+                    queue_results.send(std::move(res));
+                } break;
+            case SERVER_TASK_TYPE_SLOT_ROOT_ERASE:
+                {
+                    const int id_slot = task.slot_action.id_slot;
+                    if (get_slot_by_id(id_slot) == nullptr) {
+                        send_error(task, "Invalid slot ID", ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
+                    if (!slot_ram_root || slot_ram_root->id != task.slot_action.root_id) {
+                        send_error(task, "RAM root not found", ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
+
+                    const int id_slot_source = slot_ram_root->id_slot_source;
+                    const size_t n_tokens = slot_ram_root->prompt.tokens.size();
+                    const size_t n_bytes = slot_ram_root->size();
+                    const size_t n_checkpoints = slot_ram_root->prompt.checkpoints.size();
+                    const int64_t t_start = ggml_time_us();
+                    slot_ram_root.reset();
+
+                    auto res = std::make_unique<server_task_result_slot_ram_root>();
+                    res->id               = task.id;
+                    res->id_slot          = id_slot;
+                    res->id_slot_source   = id_slot_source;
+                    res->action           = "root-erase";
+                    res->root_id          = task.slot_action.root_id;
+                    res->n_tokens         = n_tokens;
+                    res->n_bytes          = n_bytes;
+                    res->n_checkpoints    = n_checkpoints;
+                    res->t_ms             = (ggml_time_us() - t_start) / 1000.0;
                     queue_results.send(std::move(res));
                 } break;
             case SERVER_TASK_TYPE_GET_LORA:
@@ -4543,11 +4758,6 @@ void server_routes::init_routes() {
 
     this->post_slots = [this](const server_http_req & req) {
         auto res = create_response();
-        if (params.slot_save_path.empty()) {
-            res->error(format_error_response("This server does not support slots action. Start it with `--slot-save-path`", ERROR_TYPE_NOT_SUPPORTED));
-            return res;
-        }
-
         std::string id_slot_str = req.get_param("id_slot");
 
         int id_slot;
@@ -4559,6 +4769,24 @@ void server_routes::init_routes() {
         }
 
         std::string action = req.get_param("action");
+
+        if (action == "root-save" || action == "root-restore" || action == "root-erase") {
+            if (params.cache_ram_mib == 0) {
+                res->error(format_error_response("RAM-root slot actions require --cache-ram", ERROR_TYPE_NOT_SUPPORTED));
+                return res;
+            }
+            const server_task_type type = action == "root-save"
+                    ? SERVER_TASK_TYPE_SLOT_ROOT_SAVE
+                    : action == "root-restore"
+                        ? SERVER_TASK_TYPE_SLOT_ROOT_RESTORE
+                        : SERVER_TASK_TYPE_SLOT_ROOT_ERASE;
+            return handle_slots_ram_root(req, id_slot, type);
+        }
+
+        if (params.slot_save_path.empty()) {
+            res->error(format_error_response("File-backed slot actions require --slot-save-path", ERROR_TYPE_NOT_SUPPORTED));
+            return res;
+        }
 
         if (action == "save") {
             return handle_slots_save(req, id_slot);
@@ -5245,6 +5473,43 @@ std::unique_ptr<server_res_generator> server_routes::handle_slots_erase(const se
     }
 
     GGML_ASSERT(dynamic_cast<server_task_result_slot_erase*>(result.get()) != nullptr);
+    res->ok(result->to_json());
+    return res;
+}
+
+std::unique_ptr<server_res_generator> server_routes::handle_slots_ram_root(
+        const server_http_req & req,
+        int id_slot,
+        server_task_type type) {
+    auto res = create_response();
+    const json request_data = json::parse(req.body);
+    std::string root_id = request_data.at("root_id");
+    if (!fs_validate_filename(root_id)) {
+        res->error(format_error_response("Invalid root_id", ERROR_TYPE_INVALID_REQUEST));
+        return res;
+    }
+
+    auto & rd = res->rd;
+    {
+        server_task task(type);
+        task.id = rd.get_new_id();
+        task.slot_action.id_slot = id_slot;
+        task.slot_action.root_id = std::move(root_id);
+        rd.post_task(std::move(task));
+    }
+
+    auto result = rd.next(req.should_stop);
+    if (!result) {
+        GGML_ASSERT(req.should_stop());
+        return res;
+    }
+
+    if (result->is_error()) {
+        res->error(result->to_json());
+        return res;
+    }
+
+    GGML_ASSERT(dynamic_cast<server_task_result_slot_ram_root *>(result.get()) != nullptr);
     res->ok(result->to_json());
     return res;
 }
