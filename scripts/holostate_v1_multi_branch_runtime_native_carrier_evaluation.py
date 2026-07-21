@@ -86,6 +86,8 @@ MAXIMUM_INFERENCE_REQUESTS = 24
 SNAPSHOT_SAVE_COUNT = 4
 SNAPSHOT_RESTORE_COUNT = 8
 SNAPSHOT_CONTROL_COUNT = 12
+GENERATION_TERMINAL_FINISH_REASONS = ("eos",)
+ROOT_READDRESS_TERMINAL_FINISH_REASONS = ("limit",)
 MAX_CAPTURE_BYTES = warm_source.MAX_CAPTURE_BYTES
 MAX_STATE_BYTES = warm_source.MAX_STATE_BYTES
 N_SWA = 0
@@ -612,6 +614,81 @@ def build_branch_derivation(
 CAPTURE_EXECUTION_FIELDS = warm_source.CAPTURE_EXECUTION_FIELDS
 
 
+def validate_inference_terminal_evidence(
+    execution: Any,
+    *,
+    operation_kind: str,
+) -> dict[str, Any]:
+    _require(
+        operation_kind in {"model-generation", "zero-output-root-readdress"},
+        "terminal-evidence operation kind is unsupported",
+    )
+    http_status = warm_source._capture_value(execution, "http_status")
+    stop = warm_source._capture_value(execution, "terminal_stop_evidence")
+    finish_reason = warm_source._capture_value(execution, "finish_reason")
+    completion_tokens = warm_source._capture_value(execution, "completion_tokens")
+    generated_token_count = warm_source._capture_value(execution, "generated_token_count")
+    _require(type(http_status) is int and http_status == 200, "terminal HTTP status is invalid")
+    _require(
+        isinstance(stop, Mapping)
+        and stop.get("observed") is True
+        and stop.get("stop") is True,
+        "observed terminal stop evidence is invalid",
+    )
+    _require(isinstance(finish_reason, str), "terminal finish reason is malformed")
+
+    if operation_kind == "model-generation":
+        generated = warm_source._capture_value(execution, "generated_token_ids")
+        count_match = warm_source._capture_value(execution, "completion_token_count_match")
+        generated_hash = warm_source._capture_value(execution, "generated_token_sha256")
+        _require(finish_reason in GENERATION_TERMINAL_FINISH_REASONS, "generation terminal finish reason is invalid")
+        _require(
+            isinstance(generated, list)
+            and bool(generated)
+            and all(type(item) is int for item in generated),
+            "generation emitted-token array is missing or malformed",
+        )
+        _require(
+            type(generated_token_count) is int
+            and generated_token_count == len(generated)
+            and type(completion_tokens) is int
+            and completion_tokens == len(generated)
+            and count_match is True,
+            "generation completion and emitted-token counts differ",
+        )
+        expected_hash = sha256_bytes(canonical_json_bytes(generated))
+        _require(generated_hash == expected_hash, "generation emitted-token hash is invalid")
+        return {
+            "terminal_http_status": http_status,
+            "terminal_stop_evidence": dict(stop),
+            "terminal_finish_reason": finish_reason,
+            "terminal_evidence_passed": True,
+            "generated_token_count": generated_token_count,
+            "generated_token_sha256": expected_hash,
+            "completion_tokens": completion_tokens,
+        }
+
+    _require(
+        finish_reason in ROOT_READDRESS_TERMINAL_FINISH_REASONS,
+        "root-readdress terminal finish reason is invalid",
+    )
+    _require(
+        type(completion_tokens) is int
+        and completion_tokens == 0
+        and type(generated_token_count) is int
+        and generated_token_count == 0,
+        "root-readdress terminal token counts are invalid",
+    )
+    return {
+        "terminal_http_status": http_status,
+        "terminal_stop_evidence": dict(stop),
+        "terminal_finish_reason": finish_reason,
+        "terminal_evidence_passed": True,
+        "generated_token_count": generated_token_count,
+        "completion_tokens": completion_tokens,
+    }
+
+
 def _capture_hmac(key: bytes, body: Mapping[str, Any]) -> str:
     return hmac.new(
         key,
@@ -708,7 +785,8 @@ def verify_capture(
         "capture raw response identity changed",
     )
     _require(isinstance(value.get("execution"), Mapping) and set(value["execution"]) == set(CAPTURE_EXECUTION_FIELDS), "capture execution surface changed")
-    return {**value, "capture_sha256": sha256_bytes(data)}
+    terminal = validate_inference_terminal_evidence(value["execution"], operation_kind="model-generation")
+    return {**value, "capture_sha256": sha256_bytes(data), "terminal_evidence": terminal}
 
 
 def _record_hmac(key: bytes, domain: bytes, body: Mapping[str, Any]) -> str:
@@ -871,6 +949,7 @@ def restore_snapshot(
 
 def resource_record(capture: Mapping[str, Any], request_id: str) -> dict[str, Any]:
     execution = normalized_capture_execution(capture)
+    terminal = validate_inference_terminal_evidence(execution, operation_kind="model-generation")
     logical = int(execution.get("prompt_tokens") or 0)
     reused = int(execution.get("cached_prompt_tokens") or 0)
     completion = int(execution.get("completion_tokens") or 0)
@@ -878,6 +957,7 @@ def resource_record(capture: Mapping[str, Any], request_id: str) -> dict[str, An
     return {
         "request_id": request_id,
         "operation_kind": "model-generation",
+        **terminal,
         "request_count": 1,
         "generation_count": 1,
         "logical_prompt_tokens": logical,
@@ -900,7 +980,7 @@ def root_readdress_record(
     logical = int(warm_source._capture_value(execution, "prompt_tokens") or 0)
     reused = int(warm_source._capture_value(execution, "cached_prompt_tokens") or 0)
     completion = int(warm_source._capture_value(execution, "completion_tokens") or 0)
-    stop = warm_source._capture_value(execution, "terminal_stop_evidence")
+    terminal = validate_inference_terminal_evidence(execution, operation_kind="zero-output-root-readdress")
     _require(logical > 0 and 0 <= reused <= logical and completion == 0, "root-readdress accounting is invalid")
     _require(payload.get("cache_prompt") is True and payload.get("n_predict") == 0, "root-readdress request law changed")
     _require(len(payload.get("prompt", [])) > predicted_boundary, "root-readdress suffix is empty")
@@ -920,9 +1000,9 @@ def root_readdress_record(
         "maximum_request_context": logical,
         "predicted_carrier_count": predicted_boundary,
         "observed_cached_prompt_tokens": reused,
-        "root_readdress_gate": reused == predicted_boundary,
+        "root_readdress_gate": terminal["terminal_evidence_passed"] is True and reused == predicted_boundary,
         "snapshot_sha256": snapshot_sha256,
-        "terminal_stop_evidence": stop,
+        **terminal,
         "request_sha256": json_sha256(payload),
     }
 
@@ -983,6 +1063,12 @@ def score_protected(
     _require(tuple(completed_readdress_ids) == READDRESS_ORDER, "protected evaluator opened before all four readdresses")
     _require(tuple(completed_snapshot_control_ids) == SNAPSHOT_CONTROL_ORDER, "protected evaluator opened before all snapshot controls")
     _require(cleanup_passed and postflight_passed, "protected evaluator opened before cleanup/postflight")
+    for request_id in REQUEST_ORDER:
+        _require(request_id in captures, "protected scoring capture set is incomplete")
+        validate_inference_terminal_evidence(
+            normalized_capture_execution(captures[request_id]),
+            operation_kind="model-generation",
+        )
     evaluator, custody = _load_protected_evaluator_after_terminal_gates(repository)
     root_truth = evaluator["roots"]
     per_root: dict[str, Any] = {}
@@ -1132,6 +1218,8 @@ def classify_result(
         and cleanup_passed
         and postflight_passed
         and all(direct_freshness.values())
+        and len(readdress_records) == 4
+        and all(value.get("terminal_evidence_passed") is True for value in readdress_records)
     ):
         return "INCONCLUSIVE"
     live_reports = [value for value in reuse_reports.values() if value["route"] == "live-root"]
@@ -1180,15 +1268,26 @@ def snapshot_binding() -> dict[str, Any]:
 
 
 def scorer_binding() -> dict[str, Any]:
-    return _callable_binding([_load_protected_evaluator_after_terminal_gates, score_protected])
+    return _callable_binding([
+        validate_inference_terminal_evidence,
+        _load_protected_evaluator_after_terminal_gates,
+        score_protected,
+    ])
 
 
 def resource_binding() -> dict[str, Any]:
-    return _callable_binding([resource_record, root_readdress_record, exact_ratio, _route_summary, account_resources])
+    return _callable_binding([
+        validate_inference_terminal_evidence,
+        resource_record,
+        root_readdress_record,
+        exact_ratio,
+        _route_summary,
+        account_resources,
+    ])
 
 
 def closure_binding() -> dict[str, Any]:
-    return _callable_binding([root_readdress_record, classify_result])
+    return _callable_binding([validate_inference_terminal_evidence, root_readdress_record, classify_result])
 
 
 def scientific_binding(corpus: Mapping[str, Any]) -> dict[str, Any]:
@@ -1220,6 +1319,7 @@ def controller_binding() -> dict[str, Any]:
     return _callable_binding([
         _task_a_payload,
         _branch_payload,
+        validate_inference_terminal_evidence,
         capture_request_once,
         verify_capture,
         write_authenticated_record,
@@ -1366,6 +1466,47 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "visible_content_retokenization_forbidden": True,
             "hidden_reasoning_forbidden": True,
         },
+        "terminal_evidence_law": {
+            "shared_validator": "validate_inference_terminal_evidence",
+            "model_generation": {
+                "required_http_status": 200,
+                "required_terminal_observed": True,
+                "required_terminal_stop": True,
+                "allowed_finish_reasons": list(GENERATION_TERMINAL_FINISH_REASONS),
+                "generated_token_ids": "nonempty exact integer array",
+                "generated_token_count_equals_array_length": True,
+                "completion_tokens_equal_array_length": True,
+                "completion_token_count_match_required": True,
+                "generated_token_sha256_recomputed_from_canonical_array": True,
+                "validated_before_capture_admission_accounting_reuse_and_scoring": True,
+            },
+            "task_a_additional": {
+                "canonical_terminal_eog_required": True,
+                "exact_eog_identity_required": True,
+                "visible_emitted_tokens_reconstruct_content": True,
+                "only_terminal_eog_excluded_from_retained_root": True,
+            },
+            "root_readdress": {
+                "required_http_status": 200,
+                "required_terminal_observed": True,
+                "required_terminal_stop": True,
+                "allowed_finish_reasons": list(ROOT_READDRESS_TERMINAL_FINISH_REASONS),
+                "completion_tokens_required": 0,
+                "generated_token_count_required": 0,
+                "gate": "terminal_evidence_passed and observed_cached_prompt_tokens == predicted_carrier_count",
+            },
+            "failure": {
+                "classification": "INCONCLUSIVE",
+                "scored": False,
+                "counted_as_valid_generation": False,
+                "counted_as_valid_root_readdress": False,
+                "scientific_false_reuse_gate": False,
+                "retry": False,
+                "prompt_repair": False,
+                "fallback_materialization": False,
+                "replacement_authority": False,
+            },
+        },
         "strict_extension_law": {
             "construction": "retained root token vector plus independently tokenized frozen chat-template continuation suffix",
             "suffix_begins_with_captured_terminal_eog": True,
@@ -1456,13 +1597,14 @@ def build_preregistration_document(repository: Path) -> dict[str, Any]:
             "snapshot_resources_reported_separately": True,
             "snapshot_resources_treated_as_free_total_compute": False,
             "historical_projection_decision_authority": False,
+            "terminal_evidence_required_before_resource_admission": True,
         },
         "decision_law": {
             "advantage": "PROCESS_LOCAL_MULTI_BRANCH_RUNTIME_NATIVE_CARRIER_FRESH_TOKEN_ADVANTAGE_SUPPORTED",
             "reuse_without_advantage": "PROCESS_LOCAL_MULTI_BRANCH_RUNTIME_NATIVE_CARRIER_REUSE_SUPPORTED_WITHOUT_FRESH_TOKEN_ADVANTAGE",
             "live_only": "PROCESS_LOCAL_LIVE_ROOT_STRICT_EXTENSION_SUPPORTED_WITHOUT_SNAPSHOT_BRANCH_ISOLATION",
             "reuse_not_supported": "PROCESS_LOCAL_MULTI_BRANCH_RUNTIME_NATIVE_CARRIER_REUSE_NOT_SUPPORTED",
-            "inconclusive": "custody, incomplete execution, direct contamination, evaluator, cleanup, or postflight failure only",
+            "inconclusive": "custody, incomplete or nonterminal transport evidence, direct contamination, evaluator, cleanup, or postflight failure only",
         },
         "claim_locks": {
             "exact_lexical_prefix_inheritance": "LOCKED",
@@ -2356,6 +2498,14 @@ def validate_static(repository: Path) -> dict[str, Any]:
     _require(preregistration["execution"]["retry_paths"] == 0 and preregistration["execution"]["outcome_early_stop"] is False, "retry or early stop entered design")
     _require(preregistration["root_token_array_law"]["prompt_type"] == "exact integer token array", "exact-token Task-A law changed")
     _require(preregistration["root_token_array_law"]["visible_content_retokenization_forbidden"] is True, "visible retokenization became admissible")
+    terminal_law = preregistration["terminal_evidence_law"]
+    _require(
+        terminal_law["model_generation"]["allowed_finish_reasons"] == ["eos"]
+        and terminal_law["root_readdress"]["allowed_finish_reasons"] == ["limit"]
+        and terminal_law["failure"]["classification"] == "INCONCLUSIVE"
+        and terminal_law["failure"]["retry"] is False,
+        "terminal-evidence admission law changed",
+    )
     _require(preregistration["strict_extension_law"]["catalytic_and_direct_complete_token_arrays_identical"] is True, "same-token control law changed")
     _require(preregistration["strict_extension_law"]["observed_cache_telemetry_used_for_prediction"] is False, "telemetry entered prediction")
     _require(preregistration["source_predicted_boundary_law"]["false_gate_continues_panel"] is True, "false scientific gate became an early stop")
@@ -2413,6 +2563,8 @@ def validate_static(repository: Path) -> dict[str, Any]:
         "actual_root_readdress_cost_included": True,
         "snapshot_costs_reported_separately": True,
         "protected_evaluator_delayed": True,
+        "generation_terminal_evidence_fail_closed": True,
+        "root_readdress_terminal_evidence_fail_closed": True,
         "runtime_artifacts_absent": True,
     }
     return {

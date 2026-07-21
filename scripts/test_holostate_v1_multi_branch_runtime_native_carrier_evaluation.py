@@ -45,40 +45,114 @@ class FakeCodec:
         return bytes(token_ids).decode("utf-8")
 
 
+def generation_execution(
+    *,
+    prompt=100,
+    cached=0,
+    completion=5,
+    http_status=200,
+    observed=True,
+    stop=True,
+    finish_reason="eos",
+    generated_token_ids=None,
+    generated_token_count=None,
+    completion_token_count_match=True,
+    generated_token_sha256=None,
+    content="A",
+):
+    generated = list(range(100, 100 + completion)) if generated_token_ids is None else generated_token_ids
+    count = len(generated) if generated_token_count is None else generated_token_count
+    generated_hash = (
+        probe.sha256_bytes(probe.canonical_json_bytes(generated))
+        if generated_token_sha256 is None
+        else generated_token_sha256
+    )
+    return {
+        "content": content,
+        "reasoning_content": "",
+        "tool_calls": [],
+        "prompt_tokens": prompt,
+        "cached_prompt_tokens": cached,
+        "completion_tokens": completion,
+        "generated_token_ids": generated,
+        "generated_token_count": count,
+        "completion_token_count_match": completion_token_count_match,
+        "generated_token_sha256": generated_hash,
+        "nonempty_token_array_event_count": 1 if generated else 0,
+        "empty_token_array_event_count": 1,
+        "token_merge_modes": ["append"] if generated else [],
+        "terminal_stop_evidence": {"observed": observed, "stop": stop},
+        "finish_reason": finish_reason,
+        "http_status": http_status,
+        "event_count": 2,
+    }
+
+
 def task_a_capture(prompt_tokens):
     text = '{"state":["one","two","three","four"],"answer":"A"}'
     generated = [*text.encode("utf-8"), FakeCodec.EOG]
+    execution = generation_execution(
+        prompt=len(prompt_tokens),
+        completion=len(generated),
+        generated_token_ids=generated,
+        content=text,
+    )
     return {
         "model_request_sha256": "A" * 64,
         "capture_sha256": "B" * 64,
-        "execution": {
-            "content": text,
-            "reasoning_content": "",
-            "tool_calls": [],
-            "prompt_tokens": len(prompt_tokens),
-            "cached_prompt_tokens": 0,
-            "completion_tokens": len(generated),
-            "generated_token_ids": generated,
-            "generated_token_count": len(generated),
-            "completion_token_count_match": True,
-            "terminal_stop_evidence": {"observed": True, "stop": True},
-            "finish_reason": "eos",
-            "event_count": 2,
-        },
+        "execution": execution,
     }
 
 
-def generation_capture(*, prompt=100, cached=0, completion=5):
-    return {
-        "execution": {
-            "prompt_tokens": prompt,
-            "cached_prompt_tokens": cached,
-            "completion_tokens": completion,
-            "terminal_stop_evidence": {"observed": True, "stop": True},
-            "finish_reason": "eos",
-            "event_count": 2,
-        }
-    }
+def generation_capture(**kwargs):
+    return {"execution": generation_execution(**kwargs)}
+
+
+def readdress_execution(*, http_status=200, observed=True, stop=True, finish_reason="limit", cached=3):
+    return SimpleNamespace(
+        prompt_tokens=4,
+        cached_prompt_tokens=cached,
+        completion_tokens=0,
+        generated_token_ids=[],
+        generated_token_count=0,
+        completion_token_count_match=True,
+        generated_token_sha256=probe.sha256_bytes(probe.canonical_json_bytes([])),
+        terminal_stop_evidence={"observed": observed, "stop": stop},
+        finish_reason=finish_reason,
+        http_status=http_status,
+    )
+
+
+def raw_sse_fixture(*, stop=True, stop_type="eos", tokens=(100, 101, 102, 103, 104)):
+    first = probe.canonical_json_bytes({"content": "A", "tokens": list(tokens)})
+    terminal = probe.canonical_json_bytes({
+        "content": "",
+        "tokens": [],
+        "stop": stop,
+        "stop_type": stop_type,
+        "timings": {"predicted_n": len(tokens)},
+    })
+    return b"data: " + first + b"\n" + b"data: " + terminal + b"\n"
+
+
+def capture_with_raw_sse(base, execution, *, raw=None):
+    request_id = probe.REQUEST_ORDER[0]
+    raw_bytes = raw_sse_fixture() if raw is None else raw
+
+    def invoke(recorder):
+        for line in raw_bytes.splitlines(keepends=True):
+            recorder(line)
+        return SimpleNamespace(**execution)
+
+    return probe.capture_request_once(
+        base / "capture.json",
+        base / ".capture.raw.partial",
+        experiment_key=b"k" * 32,
+        request_id=request_id,
+        model_request_sha256="D" * 64,
+        generation_ordinal=1,
+        invoke=invoke,
+    )
 
 
 class FakeLive:
@@ -265,12 +339,7 @@ class MultiBranchCarrierPreparationTests(unittest.TestCase):
 
     def test_10_zero_output_readdress_is_counted_as_fresh_inference(self):
         payload = probe._branch_payload([1, 2, 3, 4], seed=1, cache_prompt=True, n_predict=0)
-        execution = SimpleNamespace(
-            prompt_tokens=4,
-            cached_prompt_tokens=3,
-            completion_tokens=0,
-            terminal_stop_evidence={"observed": True, "stop": True},
-        )
+        execution = readdress_execution()
         value = probe.root_readdress_record(
             execution,
             root_id=probe.ROOT_IDS[0],
@@ -279,6 +348,8 @@ class MultiBranchCarrierPreparationTests(unittest.TestCase):
             snapshot_sha256="A" * 64,
         )
         self.assertTrue(value["root_readdress_gate"])
+        self.assertTrue(value["terminal_evidence_passed"])
+        self.assertEqual(value["terminal_finish_reason"], "limit")
         self.assertEqual(value["generation_count"], 0)
         self.assertEqual(value["inference_request_count"], 1)
         self.assertEqual(value["fresh_prompt_tokens"], 1)
@@ -343,7 +414,10 @@ class MultiBranchCarrierPreparationTests(unittest.TestCase):
             }
             for branch_id in probe.BRANCH_IDS
         }
-        readdresses = [{"root_readdress_gate": True} for _ in probe.ROOT_IDS]
+        readdresses = [
+            {"root_readdress_gate": True, "terminal_evidence_passed": True}
+            for _ in probe.ROOT_IDS
+        ]
         direct = {branch_id: True for branch_id in probe.BRANCH_IDS}
         common = dict(
             scoring=scoring, resources=resources, reuse_reports=reports,
@@ -417,6 +491,156 @@ class MultiBranchCarrierPreparationTests(unittest.TestCase):
         self.assertEqual(value["model_requests_issued"], 0)
         self.assertEqual(value["ledger_records_appended"], 0)
         self.assertEqual(value["next_action"], "AUTHORIZE_ONE_LIVE_MULTI_BRANCH_RUNTIME_NATIVE_CARRIER_EVALUATION")
+
+
+    def test_18_generation_rejects_non_200_http_status(self):
+        with self.assertRaisesRegex(probe.MultiBranchCarrierEvaluationError, "HTTP"):
+            probe.validate_inference_terminal_evidence(
+                generation_execution(http_status=503),
+                operation_kind="model-generation",
+            )
+
+    def test_19_generation_rejects_missing_observed_terminal_sse(self):
+        execution = generation_execution(observed=False, stop=None, finish_reason="stop")
+        raw = b'data: {"content":"A","tokens":[100,101,102,103,104]}\n'
+        with tempfile.TemporaryDirectory() as temporary:
+            with self.assertRaisesRegex(probe.MultiBranchCarrierEvaluationError, "observed terminal"):
+                capture_with_raw_sse(Path(temporary), execution, raw=raw)
+
+    def test_20_generation_rejects_stop_false(self):
+        with self.assertRaisesRegex(probe.MultiBranchCarrierEvaluationError, "observed terminal"):
+            probe.validate_inference_terminal_evidence(
+                generation_execution(stop=False),
+                operation_kind="model-generation",
+            )
+
+    def test_21_generation_rejects_missing_emitted_ids(self):
+        with self.assertRaisesRegex(probe.MultiBranchCarrierEvaluationError, "emitted-token array"):
+            probe.validate_inference_terminal_evidence(
+                generation_execution(generated_token_ids=[]),
+                operation_kind="model-generation",
+            )
+
+    def test_22_generation_rejects_completion_token_mismatch(self):
+        with self.assertRaisesRegex(probe.MultiBranchCarrierEvaluationError, "counts differ"):
+            probe.validate_inference_terminal_evidence(
+                generation_execution(
+                    completion=5,
+                    generated_token_ids=[100, 101, 102, 103],
+                    completion_token_count_match=False,
+                ),
+                operation_kind="model-generation",
+            )
+
+    def test_23_generation_rejects_incorrect_generated_token_hash(self):
+        with self.assertRaisesRegex(probe.MultiBranchCarrierEvaluationError, "token hash"):
+            probe.validate_inference_terminal_evidence(
+                generation_execution(generated_token_sha256="0" * 64),
+                operation_kind="model-generation",
+            )
+
+    def test_24_valid_task_a_eos_evidence_still_passes(self):
+        prompt = [1, 2, 3]
+        capture = task_a_capture(prompt)
+        terminal = probe.validate_inference_terminal_evidence(
+            capture["execution"],
+            operation_kind="model-generation",
+        )
+        self.assertTrue(terminal["terminal_evidence_passed"])
+        self.assertEqual(terminal["terminal_finish_reason"], "eos")
+        root = probe.derive_retained_root(capture, prompt, FakeCodec(), {"eos_token": "<eos>"})
+        self.assertEqual(root["generated_token_count"], len(capture["execution"]["generated_token_ids"]))
+
+    def test_25_valid_branch_terminal_capture_passes(self):
+        execution = generation_execution()
+        with tempfile.TemporaryDirectory() as temporary:
+            capture = capture_with_raw_sse(Path(temporary), execution)
+        self.assertTrue(capture["terminal_evidence"]["terminal_evidence_passed"])
+        self.assertEqual(capture["terminal_evidence"]["terminal_finish_reason"], "eos")
+        self.assertEqual(
+            capture["terminal_evidence"]["generated_token_sha256"],
+            probe.sha256_bytes(probe.canonical_json_bytes(execution["generated_token_ids"])),
+        )
+
+    def test_26_zero_output_readdress_rejects_missing_terminal_stop(self):
+        with self.assertRaisesRegex(probe.MultiBranchCarrierEvaluationError, "observed terminal"):
+            probe.validate_inference_terminal_evidence(
+                readdress_execution(observed=False, stop=None),
+                operation_kind="zero-output-root-readdress",
+            )
+
+    def test_27_zero_output_readdress_rejects_invalid_http_status(self):
+        with self.assertRaisesRegex(probe.MultiBranchCarrierEvaluationError, "HTTP"):
+            probe.validate_inference_terminal_evidence(
+                readdress_execution(http_status=500),
+                operation_kind="zero-output-root-readdress",
+            )
+
+    def test_28_valid_zero_output_readdress_passes_before_cache_gate(self):
+        payload = probe._branch_payload([1, 2, 3, 4], seed=1, cache_prompt=True, n_predict=0)
+        record = probe.root_readdress_record(
+            readdress_execution(),
+            root_id=probe.ROOT_IDS[0],
+            payload=payload,
+            predicted_boundary=3,
+            snapshot_sha256="A" * 64,
+        )
+        self.assertEqual(record["terminal_http_status"], 200)
+        self.assertEqual(record["terminal_stop_evidence"], {"observed": True, "stop": True})
+        self.assertEqual(record["terminal_finish_reason"], "limit")
+        self.assertTrue(record["terminal_evidence_passed"])
+        self.assertTrue(record["root_readdress_gate"])
+
+    def test_29_terminal_failure_cannot_enter_resources_or_protected_scoring(self):
+        invalid = generation_capture(observed=False, stop=None, finish_reason="stop")
+        with self.assertRaises(probe.MultiBranchCarrierEvaluationError):
+            probe.resource_record(invalid, probe.REQUEST_ORDER[0])
+        captures = {request_id: invalid for request_id in probe.REQUEST_ORDER}
+        with mock.patch.object(probe, "_load_protected_evaluator_after_terminal_gates") as loader:
+            with self.assertRaises(probe.MultiBranchCarrierEvaluationError):
+                probe.score_protected(
+                    ROOT,
+                    captures,
+                    completed_capture_ids=probe.REQUEST_ORDER,
+                    completed_readdress_ids=probe.READDRESS_ORDER,
+                    completed_snapshot_control_ids=probe.SNAPSHOT_CONTROL_ORDER,
+                    cleanup_passed=True,
+                    postflight_passed=True,
+                )
+            loader.assert_not_called()
+
+    def test_30_valid_scientifically_false_reuse_gate_continues_panel(self):
+        capture = generation_capture(prompt=10, cached=2)
+        report = probe.evaluate_reuse(
+            {
+                "branch_id": probe.BRANCH_IDS[0],
+                "route": "live-root",
+                "source_predicted_executable_boundary": {
+                    "predicted_executable_carrier_count": 3,
+                },
+            },
+            capture,
+        )
+        self.assertFalse(report["runtime_native_carrier_gate"])
+        self.assertTrue(report["continue_panel"])
+
+    def test_31_terminal_law_and_exact_preregistration_reconstruct(self):
+        preregistration = probe.validate_preregistration(ROOT)
+        law = preregistration["terminal_evidence_law"]
+        self.assertEqual(law["model_generation"]["allowed_finish_reasons"], ["eos"])
+        self.assertEqual(law["root_readdress"]["allowed_finish_reasons"], ["limit"])
+        self.assertEqual(law["failure"]["classification"], "INCONCLUSIVE")
+        self.assertFalse(law["failure"]["retry"])
+
+    def test_32_terminal_repair_creates_no_authority_or_live_state(self):
+        value = probe.validate_static(ROOT)
+        self.assertTrue(value["authority_receipt_absent"])
+        self.assertEqual(value["sidecar_launches"], 0)
+        self.assertEqual(value["model_requests_issued"], 0)
+        self.assertEqual(value["model_generations"], 0)
+        self.assertEqual(value["captures_created"], 0)
+        self.assertEqual(value["results_created"], 0)
+        self.assertEqual(value["archives_created"], 0)
 
 
 if __name__ == "__main__":
