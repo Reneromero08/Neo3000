@@ -254,6 +254,7 @@
       "lab/holostate_v1_warm_trajectory_successor_selection_1.json",
       "lab/holostate_v1_inherited_task_a_carrier_evaluation_v1.json",
       "lab/holostate_v1_inherited_task_a_carrier_evaluation_v1_adjudication_1.json",
+      "lab/holostate_v1_executable_reuse_boundary_response_selection_1.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]
@@ -2626,6 +2627,13 @@
       "dsv4_arbitrary_partial_rollback_supported": false,
       "telemetry_reports_post_restore_n_past": true
     },
+    "boundary_response_selection": {
+      "artifact_path": "lab/holostate_v1_executable_reuse_boundary_response_selection_1.json",
+      "artifact_sha256": "F04325799786F46D8E3180DB9773DED182D38ED1E9D0C92E2CBC2B1D72FD28C1",
+      "classification": "RUNTIME_NATIVE_EXECUTABLE_CARRIER_BOUNDARY_SELECTED",
+      "same_panel_line_retired": true,
+      "next_action": "PREPARE_MULTI_BRANCH_RUNTIME_NATIVE_CARRIER_EVALUATION"
+    },
     "zero_contact_adjudication": {
       "authenticated_journal_events": 38,
       "authenticated_captures": 12,
@@ -2650,7 +2658,7 @@
       "sota": "LOCKED",
       "automatic_promotion": false
     },
-    "next_boundary": "STATICALLY_SELECT_MINIMUM_RESPONSE_TO_EXECUTABLE_REUSE_BOUNDARY"
+    "next_boundary": "PREPARE_MULTI_BRANCH_RUNTIME_NATIVE_CARRIER_EVALUATION"
   },
   "candidate_editable_paths": {
     "description": "Candidates may only modify files under these paths.",
