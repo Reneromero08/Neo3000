@@ -48,6 +48,43 @@ class CatalyticFrontierRamRootTests(unittest.TestCase):
         self.assertEqual(identity["sha256"], "A" * 64)
         self.assertEqual(identity["runtime_version"], "178 (6c63039)")
 
+    def test_live_restore_discriminator_separates_restore_from_live_state(self) -> None:
+        self.assertEqual(
+            ram_root.classify_live_restore(
+                expected="D",
+                live_answer="D",
+                restored_answer="C",
+                direct_answer="D",
+            ),
+            "restore-divergence",
+        )
+        self.assertEqual(
+            ram_root.classify_live_restore(
+                expected="D",
+                live_answer="C",
+                restored_answer="C",
+                direct_answer="D",
+            ),
+            "live-prefix-state-divergence",
+        )
+        self.assertEqual(
+            ram_root.classify_live_restore(
+                expected="D",
+                live_answer="C",
+                restored_answer="D",
+                direct_answer="D",
+            ),
+            "live-route-only-divergence",
+        )
+        self.assertEqual(
+            ram_root.classify_live_restore(
+                expected="D",
+                live_answer="D",
+                restored_answer="D",
+                direct_answer="C",
+            ),
+            "direct-control-failed",
+        )
 
 if __name__ == "__main__":
     unittest.main()

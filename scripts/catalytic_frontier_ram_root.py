@@ -53,6 +53,26 @@ def validate_root_response(
     }
 
 
+def classify_live_restore(
+    *,
+    expected: str,
+    live_answer: str,
+    restored_answer: str,
+    direct_answer: str,
+) -> str:
+    if direct_answer != expected:
+        return "direct-control-failed"
+    if live_answer == expected and restored_answer != expected:
+        return "restore-divergence"
+    if live_answer != expected and live_answer == restored_answer:
+        return "live-prefix-state-divergence"
+    if live_answer != expected and restored_answer == expected:
+        return "live-route-only-divergence"
+    if live_answer == expected and restored_answer == expected:
+        return "no-live-or-restore-divergence"
+    return "multiple-cached-route-divergence"
+
+
 def run_branch(
     *,
     sidecar: Any,
@@ -121,6 +141,17 @@ def evaluate(
         validated.update(label=label, client_wall_seconds=wall)
         restores.append(validated)
 
+    tick_2_live = run_branch(
+        sidecar=sidecar,
+        codec=codec,
+        retained=retained,
+        tick=2,
+        route="live-catalytic",
+        cache_prompt=True,
+    )
+    harness.require(tick_2_live["cached_prompt_tokens"] == retained_count, "RAM-root live tick 2 missed full root")
+
+    restore("after-live-tick-2")
     tick_1 = run_branch(
         sidecar=sidecar,
         codec=codec,
@@ -167,12 +198,15 @@ def evaluate(
     harness.require(tick_2_direct["cached_prompt_tokens"] == 0, "RAM-root direct tick 2 was not fresh")
     harness.require(tick_2_replay["cached_prompt_tokens"] == retained_count, "RAM-root replay missed full root")
     harness.require(
-        tick_2["input_token_sha256"] == tick_2_direct["input_token_sha256"] == tick_2_replay["input_token_sha256"],
+        tick_2_live["input_token_sha256"]
+        == tick_2["input_token_sha256"]
+        == tick_2_direct["input_token_sha256"]
+        == tick_2_replay["input_token_sha256"],
         "RAM-root tick-2 route token arrays differ",
     )
     generated_hashes = [
         item["execution"].get("generated_token_sha256")
-        for item in (tick_2, tick_2_direct, tick_2_replay)
+        for item in (tick_2_live, tick_2, tick_2_direct, tick_2_replay)
     ]
     harness.require(
         all(isinstance(value, str) and len(value) == 64 for value in generated_hashes),
@@ -187,14 +221,15 @@ def evaluate(
 
     catalytic_fresh = sum(
         int(item["fresh_model_tokens"])
-        for item in (task_a, tick_1, tick_2, tick_2_replay)
+        for item in (task_a, tick_2_live, tick_1, tick_2, tick_2_replay)
     )
     direct_fresh = int(tick_2_direct["fresh_model_tokens"])
-    all_correct = all(item["correct"] for item in (tick_1, tick_2, tick_2_direct, tick_2_replay))
-    route_classification = sustained.classify_route_failure(
-        str(tick_2["expected"]),
-        str(tick_2["answer"]),
-        str(tick_2_direct["answer"]),
+    all_correct = all(item["correct"] for item in (tick_2_live, tick_1, tick_2, tick_2_direct, tick_2_replay))
+    route_classification = classify_live_restore(
+        expected=str(tick_2["expected"]),
+        live_answer=str(tick_2_live["answer"]),
+        restored_answer=str(tick_2["answer"]),
+        direct_answer=str(tick_2_direct["answer"]),
     )
     accepted = all_correct and generated_hash_equal and tick_2_replay["answer"] == tick_2["answer"]
     return {
@@ -202,9 +237,10 @@ def evaluate(
         "mechanism": "bounded-named-native-ram-root",
         "model": "Agents-A1",
         "verdict": "accept" if accepted else "reject",
-        "discriminator": "tick-2 file carrier previously returned C while direct returned D",
+        "discriminator": "untouched live root versus restored root versus fresh direct tick 2",
         "utility": {
             "tick_1_catalytic": tick_1["answer"],
+            "tick_2_live_catalytic": tick_2_live["answer"],
             "tick_2_catalytic": tick_2["answer"],
             "tick_2_direct": tick_2_direct["answer"],
             "tick_2_catalytic_replay": tick_2_replay["answer"],
@@ -221,13 +257,18 @@ def evaluate(
             "save": {**save, "client_wall_seconds": save_wall},
             "restores": restores,
             "restore_count": len(restores),
-            "non_consuming_repeatable": len(restores) == 4,
+            "non_consuming_repeatable": len(restores) == 5,
             "identity_and_size_invariant": True,
             "final_restore_before_erase": restores[-1]["label"] == "final-root-closure",
             "erase": {**erase, "client_wall_seconds": erase_wall},
         },
         "routes": {
             "task_a": harness.token_summary(task_a),
+            "tick_2_live_catalytic": {
+                "answer": tick_2_live["answer"],
+                "generated_token_sha256": tick_2_live["execution"].get("generated_token_sha256"),
+                **harness.token_summary(tick_2_live),
+            },
             "tick_1_catalytic": {
                 "answer": tick_1["answer"],
                 "generated_token_sha256": tick_1["execution"].get("generated_token_sha256"),
