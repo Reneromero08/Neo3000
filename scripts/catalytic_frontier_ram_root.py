@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -162,9 +163,6 @@ def evaluate(
     )
     restore("final-root-closure")
 
-    harness.require(tick_2["correct"], f"RAM-root catalytic tick 2 is incorrect: {tick_2['answer']}")
-    harness.require(tick_2_direct["correct"], f"RAM-root direct tick 2 is incorrect: {tick_2_direct['answer']}")
-    harness.require(tick_2_replay["correct"], f"RAM-root replay tick 2 is incorrect: {tick_2_replay['answer']}")
     harness.require(tick_2["cached_prompt_tokens"] == retained_count, "RAM-root tick 2 missed full root")
     harness.require(tick_2_direct["cached_prompt_tokens"] == 0, "RAM-root direct tick 2 was not fresh")
     harness.require(tick_2_replay["cached_prompt_tokens"] == retained_count, "RAM-root replay missed full root")
@@ -180,7 +178,7 @@ def evaluate(
         all(isinstance(value, str) and len(value) == 64 for value in generated_hashes),
         "RAM-root tick-2 route lacks exact generated-token evidence",
     )
-    harness.require(len(set(generated_hashes)) == 1, "RAM-root tick-2 generated token arrays differ")
+    generated_hash_equal = len(set(generated_hashes)) == 1
 
     resources_with_root = harness.process_resources(sidecar, baseline_private)
     erase_raw, erase_wall = harness.ram_root_action(action="root-erase", root_id=ROOT_ID)
@@ -192,18 +190,28 @@ def evaluate(
         for item in (task_a, tick_1, tick_2, tick_2_replay)
     )
     direct_fresh = int(tick_2_direct["fresh_model_tokens"])
+    all_correct = all(item["correct"] for item in (tick_1, tick_2, tick_2_direct, tick_2_replay))
+    route_classification = sustained.classify_route_failure(
+        str(tick_2["expected"]),
+        str(tick_2["answer"]),
+        str(tick_2_direct["answer"]),
+    )
+    accepted = all_correct and generated_hash_equal and tick_2_replay["answer"] == tick_2["answer"]
     return {
         "status": "complete",
         "mechanism": "bounded-named-native-ram-root",
         "model": "Agents-A1",
+        "verdict": "accept" if accepted else "reject",
         "discriminator": "tick-2 file carrier previously returned C while direct returned D",
         "utility": {
             "tick_1_catalytic": tick_1["answer"],
             "tick_2_catalytic": tick_2["answer"],
             "tick_2_direct": tick_2_direct["answer"],
             "tick_2_catalytic_replay": tick_2_replay["answer"],
-            "all_correct": True,
-            "tick_2_generated_token_hash_equal": True,
+            "all_correct": all_correct,
+            "tick_2_generated_token_hash_equal": generated_hash_equal,
+            "route_classification": route_classification,
+            "replay_matches_first_catalytic": tick_2_replay["answer"] == tick_2["answer"],
         },
         "fresh_model_compute": {
             "catalytic_path_including_task_a_and_replay": catalytic_fresh,
@@ -220,10 +228,26 @@ def evaluate(
         },
         "routes": {
             "task_a": harness.token_summary(task_a),
-            "tick_1_catalytic": harness.token_summary(tick_1),
-            "tick_2_catalytic": harness.token_summary(tick_2),
-            "tick_2_direct": harness.token_summary(tick_2_direct),
-            "tick_2_catalytic_replay": harness.token_summary(tick_2_replay),
+            "tick_1_catalytic": {
+                "answer": tick_1["answer"],
+                "generated_token_sha256": tick_1["execution"].get("generated_token_sha256"),
+                **harness.token_summary(tick_1),
+            },
+            "tick_2_catalytic": {
+                "answer": tick_2["answer"],
+                "generated_token_sha256": tick_2["execution"].get("generated_token_sha256"),
+                **harness.token_summary(tick_2),
+            },
+            "tick_2_direct": {
+                "answer": tick_2_direct["answer"],
+                "generated_token_sha256": tick_2_direct["execution"].get("generated_token_sha256"),
+                **harness.token_summary(tick_2_direct),
+            },
+            "tick_2_catalytic_replay": {
+                "answer": tick_2_replay["answer"],
+                "generated_token_sha256": tick_2_replay["execution"].get("generated_token_sha256"),
+                **harness.token_summary(tick_2_replay),
+            },
         },
         "resources_with_root": resources_with_root,
         "resources_after_erase": resources_after_erase,
@@ -235,6 +259,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--model", type=Path, default=harness.DEFAULT_MODEL)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--server-log-output", type=Path)
     return parser.parse_args()
 
 
@@ -251,6 +276,10 @@ def main() -> int:
     result: dict[str, Any] | None = None
     cleanup: Mapping[str, Any] | None = None
     error: BaseException | None = None
+    if args.server_log_output is not None:
+        os.environ["LLAMA_ARG_LOG_VERBOSITY"] = "1000"
+        os.environ["LLAMA_SERVER_SLOTS_DEBUG"] = "1"
+
     try:
         sidecar = harness.DiscoverySidecar(
             binary,
@@ -284,7 +313,20 @@ def main() -> int:
     except BaseException as exc:
         error = exc
     finally:
-        cleanup = harness.live_runtime.safe_sidecar_cleanup(sidecar)
+        cleanup = dict(harness.live_runtime.safe_sidecar_cleanup(sidecar))
+        if args.server_log_output is not None:
+            trace_record: dict[str, Any] = {"requested": str(args.server_log_output)}
+            try:
+                log_path = Path(str(sidecar.readiness.get("log_path"))) if sidecar is not None else None
+                if log_path is None or not log_path.is_file():
+                    raise FileNotFoundError("sidecar log is unavailable")
+                args.server_log_output.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(log_path, args.server_log_output)
+                trace_record.update(copied=True, bytes=args.server_log_output.stat().st_size)
+            except BaseException as exc:
+                trace_record.update(copied=False, error=f"{type(exc).__name__}: {exc}")
+            cleanup["server_log_copy"] = trace_record
+
         shutil.rmtree(state_root, ignore_errors=True)
 
     if error is not None:
