@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Catalytic frontier: bounded fanout signal replicated, unbounded endpoint open
+## Catalytic frontier: bounded fanout replicated, full-boundary RAM root rejected, unbounded endpoint open
 
-**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / TWO GEOMETRIES / FIXED ROOT RESIDENCY / UNBOUNDED CLAIM NOT YET SUPPORTED
+**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / TWO GEOMETRIES / FIXED ROOT RESIDENCY / 285-TOKEN LIVE-PREFIX STATE REJECTED / UNBOUNDED CLAIM NOT YET SUPPORTED
 
 - Candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c` packages the retryable live-carrier and eight-projection fanout harness plus five focused no-model tests.
 - Datacenter: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5786802030`, `2.3747072600`, `3.3070996147`; average fresh tokens per useful branch `492.5`, `320.25`, `227.125` at N=`2,4,8`.
@@ -12,8 +12,14 @@
 - Canonical compact record: `neo-exp-0050` at `lab/results.jsonl:63`, SHA-256 `5D90FCDABC8AD103A43803821E91C769641D8687BF74C6F7D68CE16593916EB6`. Claim ceiling is `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`.
 - The observed mechanism retains a nonzero suffix/output compute floor and therefore does not yet establish infinite or unbounded catalytic inference.
 - Source correction for the next runtime intervention: Agents-A1 `qwen35moe` selects `llama_memory_hybrid` (attention KV plus recurrent state), so exact retained roots must use the full polymorphic per-sequence serializer with flags NONE; the DSV4 label/path is not Agents-A1's memory implementation.
+- Native source `6c63039622bca389e1b8c6a223303c5b91b62f21`, binary SHA-256 `E46FCE576B42AB6A4A03F21BDC60B2343F7AB1BCD04B967B92145699C243551E`, captures full hybrid per-sequence state with flags NONE.
+- The untouched live, restored, and replayed 285-token roots all returned deterministic wrong tick-2 `C`; a cache-disabled evaluation of the identical 369-token array returned correct `D`. Classification: `LIVE_PREFIX_STATE_DIVERGENCE`; serialization/restore is not required to produce the failure.
+- The root held `285` tokens, `137,572,752` bytes, and one checkpoint across five invariant non-consuming restores, final restore, and explicit erase. Peak isolated WDDM was `2252.88 MiB`; stable PID `3860` remained healthy and port `9494` retired.
+- Trace telemetry binds the retained root to `270` prompt plus `15` generated visible tokens and reports `n_rs_seq=0`; an in-place one-token rollback would not have a valid matching recurrent-state rollback and is not authorized.
+- Canonical compact rejection: `neo-exp-0051` at `lab/results.jsonl:64`, SHA-256 `421D79DDB0916AB06C533BF6CE8B54E73BCBAEDFB92D059895A964EC2F46F81E`. `neo-exp-0050` and the N=8 bounded claim ceiling remain valid; this full-boundary RAM-root mechanism is rejected.
 
-**Next exact action:** run sustained distinct fanout beyond N=8 with one bounded carrier, then test in-memory state copy and lower-level recurrent/KV/activation/weight mechanisms against the same utility and total-compute gates.
+**Next exact action:** materialize a cache-disabled zero-output 270-token Task-A prompt root, require admitted cache `270`, re-evaluate the 15 known generated Task-A tokens plus the unchanged 84-token continuation, and compare with the identical fresh direct control.
+
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
 **Status:** PUBLISHED INHERITED-CARRIER RESULT PRESERVED / MULTI-BRANCH RUNTIME-NATIVE EVALUATION TERMINAL-BOUND AND FROZEN / SAME-PANEL LINE RETIRED / ZERO MODEL CONTACT / BROADER CLAIMS LOCKED

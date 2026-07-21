@@ -1,5 +1,15 @@
 # Active Goal
 
+## Catalytic frontier override [ACTIVE]
+
+The actual frontier objective is infinite, unbounded catalytic inference: fixed-active-residency catalytic reuse for every finite N over unbounded duration, with equal utility, all costs counted, exact restoration or declared closure, and cumulative saved fresh work growing with N. N=8 is only a waypoint.
+
+`neo-exp-0050` supports bounded fanout amortization through N=8 and does not establish the unbounded endpoint.
+
+`neo-exp-0051` rejects the completed-generation 285-token native RAM root: untouched live, restored, and replay routes produced the same wrong tick-2 result while the identical fresh route was correct. This proves that serialization is not required for the observed live-prefix-state failure.
+
+The next exact action is a cache-disabled zero-output 270-token prompt-only native RAM root followed by re-evaluation of the 15 known generated Task-A tokens and unchanged continuation. Broader recurrent, KV/activation, CUDA, weight-level, and unbounded claims remain pending separate measured evidence.
+
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
 Attempt 7 completed the frozen four-pair panel from protected commit `20798cb5712decea8a0acb158ceeaa0a012c7844`. Its immutable live terminal classification remains `INCONCLUSIVE`; the static adjudication does not rewrite that result.

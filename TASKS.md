@@ -5,10 +5,11 @@
 **Baseline evidence through:** CatalyticSwarm-0 v2 integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`; bound `reviewable-accept` result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Frontier exact-commit evidence:** `neo-exp-0050` at `lab/results.jsonl:63`, SHA-256 `5D90FCDABC8AD103A43803821E91C769641D8687BF74C6F7D68CE16593916EB6`, candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c`; two Agents-A1 geometries passed N=`2,4,8`
+**Latest causal boundary:** `neo-exp-0051` at `lab/results.jsonl:64`, SHA-256 `421D79DDB0916AB06C533BF6CE8B54E73BCBAEDFB92D059895A964EC2F46F81E`; untouched live, restored, and replayed 285-token native RAM roots returned wrong tick-2 `C` while the identical fresh route returned correct `D`
 **Claim ceiling:** `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`
-**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED`
-**Active bounded objective:** Extend the exact carrier beyond N=8 under fixed residency, measure its asymptotic fresh-compute floor, then reduce that floor through runtime-native state copy, recurrent state, KV/activation, or weight-level mechanisms without losing Agents-A1 utility.
-**Next exact action:** `RUN_SUSTAINED_FIXED_RESIDENCY_FANOUT_AND_IN_MEMORY_STATE_COPY_DISCRIMINATORS` — N=8 is a waypoint; literal or induction-backed unbounded catalytic inference remains unproven.
+**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED / FULL_BOUNDARY_NATIVE_RAM_ROOT_REJECTED_FOR_SEMANTIC_REUSE`
+**Active bounded objective:** Extend exact fixed-residency reuse beyond N=8, localize the live-prefix utility failure, then reduce the nonzero fresh-compute floor through safe prompt-boundary, recurrent, KV/activation, CUDA, or weight-level mechanisms without losing Agents-A1 utility.
+**Next exact action:** `TEST_270_TOKEN_PROMPT_ONLY_NATIVE_RAM_ROOT` — materialize a cache-disabled zero-output prompt root, re-evaluate the 15 known Task-A generated tokens plus the unchanged continuation, and compare with the identical fresh control.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -29,6 +30,13 @@ The user-authorized discovery branch `codex/catalytic-frontier` supersedes the d
 - Measured amplification rose from about `1.57x` at N=2 to `2.38x` at N=4 and `3.31x` at N=8 while average fresh tokens per useful branch fell on both geometries.
 - One root snapshot and one physical slot remained sufficient through N=8; both roots restored byte-exactly and the stable listener remained unchanged.
 - This supports bounded fanout amortization only. It does not establish infinite fanout, zero marginal compute, arbitrary-task transfer, production promotion, superiority, or SOTA.
+
+## Catalytic frontier execution queue [ACTIVE]
+
+- Executed evidence: the file-slot carrier is rejected for sustained semantic reuse after cached tick 2 returned `C` and the identical fresh control returned `D`.
+- Executed evidence: full-boundary native RAM-root reuse is rejected after untouched live, restored, and replay routes returned `C` while fresh direct returned `D`; bind `neo-exp-0051`.
+- [ ] Materialize a cache-disabled zero-output 270-token Task-A prompt root, require admitted cache `270`, then re-evaluate the 15 known generated Task-A tokens plus the unchanged 84-token continuation against the identical fresh direct control.
+
 ---
 
 ## Active queue: deterministic rank-head extraction v2
