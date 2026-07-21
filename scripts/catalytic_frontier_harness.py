@@ -46,6 +46,46 @@ def require(condition: bool, message: str) -> None:
         raise FrontierHarnessError(message)
 
 
+def load_discovery_sidecar_contract() -> tuple[dict[str, Any], dict[str, Any]]:
+    """Load only the executable sidecar contract used by retryable discovery.
+
+    The frozen one-shot evaluator lock also binds task boards, claim ledgers,
+    and publication machinery. Those identities are intentionally outside a
+    retryable mechanism probe. Runtime/model/template identities and launch
+    safety remain validated here and again by ``LiveSidecar`` at launch.
+    """
+    evaluator = live_runtime.load_json(live_runtime.EVALUATOR_PATH)
+    require(isinstance(evaluator, dict), "runtime evaluator is not an object")
+    contract = live_runtime.validate_holostate_contract(
+        evaluator.get("holostate_live_contract", {})
+    )
+    model = evaluator.get("model", {})
+    require(
+        isinstance(model, Mapping)
+        and model.get("sha256") == live_runtime.EXPECTED_MODEL_SHA256
+        and model.get("size_bytes") == live_runtime.EXPECTED_MODEL_SIZE,
+        "runtime evaluator model identity differs from Agents-A1",
+    )
+    memory = evaluator.get("memory", {})
+    require(
+        isinstance(memory, Mapping)
+        and memory.get("candidate_vram_mib_ceiling") == live_runtime.VRAM_CEILING_MIB
+        and isinstance(memory.get("sample_interval_seconds"), (int, float))
+        and float(memory["sample_interval_seconds"]) > 0
+        and isinstance(memory.get("telemetry_grace_seconds"), (int, float))
+        and float(memory["telemetry_grace_seconds"]) >= 0,
+        "runtime evaluator memory policy is invalid",
+    )
+    timeouts = evaluator.get("timeouts", {})
+    require(
+        isinstance(timeouts, Mapping)
+        and isinstance(timeouts.get("candidate_health_seconds"), (int, float))
+        and float(timeouts["candidate_health_seconds"]) > 0,
+        "runtime evaluator candidate readiness timeout is invalid",
+    )
+    return evaluator, contract
+
+
 def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest().upper()
 
@@ -401,7 +441,7 @@ def main() -> int:
     repository = Path(__file__).resolve().parents[1]
     corpus = carrier.load_public_corpus(repository)
     roots = {str(item["root_id"]): item for item in corpus["roots"]}
-    evaluator, live_contract, _worker, _predecessor, _lock = live_runtime.load_locked_catalytic_swarm_0_v2()
+    evaluator, live_contract = load_discovery_sidecar_contract()
     stable_pids = live_runtime.require_stable()
     require(len(stable_pids) == 1, "frontier harness requires the existing sole stable listener")
     require(not live_runtime.listener_pids(live_runtime.PORT), "frontier sidecar port is occupied")

@@ -407,9 +407,7 @@ def main() -> int:
     repository = Path(__file__).resolve().parents[1]
     corpus = harness.carrier.load_public_corpus(repository)
     roots = {str(item["root_id"]): item for item in corpus["roots"]}
-    evaluator, live_contract, _worker, _predecessor, _lock = (
-        harness.live_runtime.load_locked_catalytic_swarm_0_v2()
-    )
+    evaluator, live_contract = harness.load_discovery_sidecar_contract()
     stable_pids = harness.live_runtime.require_stable()
     harness.require(len(stable_pids) == 1, "frontier fanout requires the existing sole stable listener")
     harness.require(not harness.live_runtime.listener_pids(harness.live_runtime.PORT), "frontier port is occupied")

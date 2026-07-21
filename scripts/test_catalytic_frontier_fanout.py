@@ -4,6 +4,7 @@ from __future__ import annotations
 import unittest
 import sys
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -80,6 +81,16 @@ class CatalyticFrontierFanoutTests(unittest.TestCase):
         invalid = dict(execution, completion_tokens=2)
         with self.assertRaises(harness.FrontierHarnessError):
             harness.validate_minimal_closure_terminal(invalid)
+
+    def test_discovery_loader_does_not_verify_one_shot_governance_lock(self) -> None:
+        with mock.patch.object(
+            harness.live_runtime,
+            "verify_lock",
+            side_effect=AssertionError("one-shot governance lock was consulted"),
+        ):
+            evaluator, contract = harness.load_discovery_sidecar_contract()
+        self.assertEqual(evaluator["model"]["sha256"], harness.live_runtime.EXPECTED_MODEL_SHA256)
+        self.assertEqual(contract["binary_identity"]["sha256"], harness.live_runtime.EXPECTED_BINARY_SHA256)
 
 
 if __name__ == "__main__":

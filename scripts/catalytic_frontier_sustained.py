@@ -372,9 +372,7 @@ def main() -> int:
     args = parse_args()
     binary = args.binary.resolve(strict=True)
     model = args.model.resolve(strict=True)
-    evaluator, live_contract, _worker, _predecessor, _lock = (
-        harness.live_runtime.load_locked_catalytic_swarm_0_v2()
-    )
+    evaluator, live_contract = harness.load_discovery_sidecar_contract()
     stable_pids = harness.live_runtime.require_stable()
     harness.require(len(stable_pids) == 1, "sustained frontier requires the sole stable listener")
     harness.require(not harness.live_runtime.listener_pids(harness.live_runtime.PORT), "frontier port is occupied")
