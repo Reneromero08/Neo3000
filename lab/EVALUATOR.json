@@ -209,6 +209,8 @@
       "scripts/test_holostate_v1_warm_trajectory_related_task_evaluation.py",
       "scripts/holostate_v1_inherited_task_a_carrier_evaluation.py",
       "scripts/test_holostate_v1_inherited_task_a_carrier_evaluation.py",
+      "scripts/holostate_v1_multi_branch_runtime_native_carrier_evaluation.py",
+      "scripts/test_holostate_v1_multi_branch_runtime_native_carrier_evaluation.py",
       "tools/server/server-context.cpp",
       "tools/server/server-task.cpp",
       ".gitignore",
@@ -255,6 +257,9 @@
       "lab/holostate_v1_inherited_task_a_carrier_evaluation_v1.json",
       "lab/holostate_v1_inherited_task_a_carrier_evaluation_v1_adjudication_1.json",
       "lab/holostate_v1_executable_reuse_boundary_response_selection_1.json",
+      "lab/holostate_v1_multi_branch_runtime_native_carrier_family_v1_public_tasks.json",
+      "lab/holostate_v1_multi_branch_runtime_native_carrier_family_v1_corpus_binding_1.json",
+      "lab/holostate_v1_multi_branch_runtime_native_carrier_evaluation_v1.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]
@@ -382,6 +387,8 @@
     ,"scripts/test_holostate_v1_warm_trajectory_related_task_evaluation_adjudication.py"
     ,"scripts/holostate_v1_inherited_task_a_carrier_evaluation.py"
     ,"scripts/test_holostate_v1_inherited_task_a_carrier_evaluation.py"
+    ,"scripts/holostate_v1_multi_branch_runtime_native_carrier_evaluation.py"
+    ,"scripts/test_holostate_v1_multi_branch_runtime_native_carrier_evaluation.py"
     ,"scripts/holostate_v1_inherited_task_a_carrier_evaluation_adjudication.py"
     ,"scripts/test_holostate_v1_inherited_task_a_carrier_evaluation_adjudication.py"
   ],

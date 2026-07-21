@@ -38,6 +38,7 @@ from catalytic_inference_bench_0_runtime import (
     _HoloStateAdapter,
     _normalized_transport,
     _public_preflight,
+    _require_safe_state_ancestry,
     validate_run_id,
 )
 from catalytic_swarm_1_v2_root_law import RootCacheObservation, adjudicate_root_cache
@@ -281,6 +282,23 @@ class CatalyticKernel0Adapter(_HoloStateAdapter):
     ) -> tuple[Any, Mapping[str, Any]]:
         runtime = preflight["runtime"]
         readiness_control = runtime["predecessor"]["readiness_control"]
+        slot_save_path = runtime.get("slot_save_path")
+        slot_save_owner = runtime.get("slot_save_owner")
+        if slot_save_path is not None:
+            if not isinstance(slot_save_path, Path) or not isinstance(slot_save_owner, Path):
+                raise CatalyticKernel0Error("slot-save custody paths are malformed")
+            resolved_slot_path = slot_save_path.resolve(strict=False)
+            resolved_owner = slot_save_owner.resolve(strict=False)
+            try:
+                resolved_slot_path.relative_to(resolved_owner)
+            except ValueError as exc:
+                raise CatalyticKernel0Error("slot-save path escaped the owned run root") from exc
+            _require_safe_state_ancestry(self.repository_root, resolved_slot_path)
+            if resolved_slot_path.exists() and (
+                not resolved_slot_path.is_dir() or resolved_slot_path.is_symlink() or any(resolved_slot_path.iterdir())
+            ):
+                raise CatalyticKernel0Error("slot-save path must be a safe empty directory")
+            slot_save_path = resolved_slot_path
         temp_root = Path(tempfile.mkdtemp(prefix=f"neo3000-ck0-{run_id}-"))
         runtime["temp_root"] = temp_root
         deadline = time.monotonic() + float(readiness_control["readiness_deadline_seconds"])
@@ -297,6 +315,7 @@ class CatalyticKernel0Adapter(_HoloStateAdapter):
             preverified_binary_identity=preflight["metadata"]["binary_identity"],
             preverified_model_identity=preflight["metadata"]["model_identity"],
             state_root=temp_root,
+            slot_save_path=slot_save_path,
             wddm_policy=None,
             advisory_wddm=True,
             stable_health_recovery_policy=self.h.StableHealthRecoveryPolicy(

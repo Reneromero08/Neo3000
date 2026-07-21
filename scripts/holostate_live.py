@@ -4174,6 +4174,7 @@ class LiveSidecar:
         preverified_binary_identity: dict[str, Any] | None = None,
         preverified_model_identity: dict[str, Any] | None = None,
         state_root: Path | None = None,
+        slot_save_path: Path | None = None,
         wddm_policy: WddmTelemetryPolicy | None = None,
         advisory_wddm: bool = False,
         stable_health_recovery_policy: StableHealthRecoveryPolicy | None = None,
@@ -4207,6 +4208,7 @@ class LiveSidecar:
         self.runtime_identity_lock_handles: list[tuple[Path, int]] = []
         self.runtime_identity_file_ids: dict[str, dict[str, int]] = {}
         self.state_root = state_root.resolve() if state_root is not None else STATE_ROOT.resolve()
+        self.slot_save_path = slot_save_path.resolve() if slot_save_path is not None else None
         self.runtime_root = (
             self.state_root / "runtime" if state_root is not None else RUNTIME_ROOT
         )
@@ -4723,6 +4725,9 @@ class LiveSidecar:
             "--cache-ram", str(CACHE_RAM_MIB),
             "--cache-idle-slots",
         ]
+        if self.slot_save_path is not None:
+            self.slot_save_path.mkdir(parents=True, exist_ok=True)
+            args.extend(["--slot-save-path", str(self.slot_save_path)])
         env = os.environ.copy()
         env.update({"TMP": str(self.runtime), "TEMP": str(self.runtime), "TMPDIR": str(self.runtime)})
         creationflags = 0

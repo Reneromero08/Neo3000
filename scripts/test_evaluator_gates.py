@@ -603,5 +603,22 @@ class EvaluatorGateTests(unittest.TestCase):
         )
 
 
+    def test_multi_branch_runtime_native_carrier_surface_is_protected(self) -> None:
+        controller_paths = (
+            "scripts/holostate_v1_multi_branch_runtime_native_carrier_evaluation.py",
+            "scripts/test_holostate_v1_multi_branch_runtime_native_carrier_evaluation.py",
+        )
+        artifact_paths = (
+            "lab/holostate_v1_multi_branch_runtime_native_carrier_family_v1_public_tasks.json",
+            "lab/holostate_v1_multi_branch_runtime_native_carrier_family_v1_corpus_binding_1.json",
+            "lab/holostate_v1_multi_branch_runtime_native_carrier_evaluation_v1.json",
+        )
+        for path in controller_paths:
+            self.assertIn(path, EVALUATOR["protected_paths"]["files"])
+            self.assertIn(path, EVALUATOR["controller_files"])
+        for path in artifact_paths:
+            self.assertIn(path, EVALUATOR["protected_paths"]["files"])
+
+
 if __name__ == "__main__":
     unittest.main()

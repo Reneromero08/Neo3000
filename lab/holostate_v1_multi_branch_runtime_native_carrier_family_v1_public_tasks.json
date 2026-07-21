@@ -1,0 +1,159 @@
+{
+  "corpus_id": "holostate-v1-multi-branch-runtime-native-carrier-family-v1",
+  "schema_version": 1,
+  "selection_law": "Four new roots and eight distinct branches were manually authored and frozen before model contact; every root and branch is retained regardless of outcome.",
+  "roots": [
+    {
+      "root_id": "mb-runtime-datacenter-01",
+      "evidence": "Northbridge operates a small data center with two independent power feeds, a shared transfer controller, and one battery room. Feed East powers server rows E1 and E2. Feed West powers rows W1 and W2. The transfer controller may move either pair of rows between feeds, but it cannot move both pairs during the same five-minute interval. The battery room can sustain all four rows for twelve minutes, although policy reserves the final four minutes for an emergency shutdown. A maintenance window begins at 22:00. East must be isolated for a breaker inspection that takes twenty minutes. Before isolation, the storage replication queue must be empty and the database leader must run on W1. Moving the leader takes four minutes and draining replication takes six minutes; those actions may overlap. The breaker inspection cannot start until both are complete. West has no scheduled work. At 21:58, the queue needs six minutes to drain, the leader still runs on E1, and all four rows are healthy. At 22:01, a cooling alarm disables row W2 but leaves W1 available. Policy requires two healthy database replicas during maintenance. E1 and E2 each host one replica; W1 hosts one replica; W2 hosted a fourth. A replica can be promoted on an already healthy row in three minutes, but no new replica may be created while its source row is electrically isolated. The transfer controller can place E2 temporarily on West while East is isolated, consuming one transfer interval. The inspection team may begin only after the database leader is on W1, replication is drained, two replicas remain healthy, and East is electrically isolated. If battery reserve would fall below four minutes, the team must abandon the inspection and restore normal feed routing. The governing issue is the dependency chain, not simply the nominal 22:00 start time.",
+      "task_a": {
+        "question": "Which compact operating state correctly identifies the governing prerequisites before the East inspection can begin?",
+        "choices": {
+          "A": "Start the inspection at 22:00 because the maintenance window overrides replica and routing constraints.",
+          "B": "Move the leader to W1, drain replication, preserve two healthy replicas by routing or promotion, then isolate East before inspection.",
+          "C": "Use all twelve battery minutes for inspection and postpone the leader move until power is restored.",
+          "D": "Treat the W2 cooling alarm as proof that West must also be isolated immediately."
+        },
+        "response_contract": {"state_items": 4, "answer_choices": ["A", "B", "C", "D"]}
+      },
+      "branches": [
+        {
+          "branch_id": "mb-runtime-datacenter-01-branch-1",
+          "reasoning_type": "dependency-preserving-schedule",
+          "question": "Which immediate schedule lawfully transforms that state after W2 becomes unavailable?",
+          "choices": {
+            "A": "Finish the leader move and queue drain, route E2 to West during one transfer interval, verify W1 and E2 as healthy replicas, then isolate East and inspect.",
+            "B": "Isolate East first, then try to copy a replica from E1 after its power is removed.",
+            "C": "Move both row pairs through the transfer controller during the same five-minute interval.",
+            "D": "Ignore the two-replica rule because W2 failed during an approved maintenance window."
+          }
+        },
+        {
+          "branch_id": "mb-runtime-datacenter-01-branch-2",
+          "reasoning_type": "counterfactual-safety-audit",
+          "question": "If routing E2 to West would leave only three minutes of battery reserve, which conclusion follows while all other facts remain unchanged?",
+          "choices": {
+            "A": "Proceed because the inspection itself is only twenty minutes.",
+            "B": "Proceed only if the leader remains on E1.",
+            "C": "Abandon the inspection and restore normal routing because the four-minute reserve floor would be violated.",
+            "D": "Isolate West as well so the reserve calculation no longer applies."
+          }
+        }
+      ]
+    },
+    {
+      "root_id": "mb-runtime-coldchain-02",
+      "evidence": "A regional pharmacy must transfer three temperature-sensitive medicine lots from a clinic to a hospital. Lot Amber must remain between 2 and 8 degrees Celsius and may spend at most eighteen minutes outside powered refrigeration. Lot Blue has the same temperature range but may spend twenty-five minutes outside refrigeration. Lot Coral is frozen and must never enter the chilled van; it travels in a separate validated dry-ice chest. The clinic has one loading bay. The chilled van reaches the bay at 09:00 and the courier carrying the Coral chest reaches it at 09:08. A pharmacist and receiving nurse must inspect the same tamper seal before any lot leaves the clinic. The nurse is available from 09:00 to 09:12 and again after 09:35. Joint inspection takes four minutes per container. Amber and Blue share one sealed chilled tote, so their seal is inspected once. Coral has its own seal. Loading the chilled tote takes five minutes; loading Coral takes two. Travel to the hospital takes twelve minutes for either vehicle. The hospital refrigerator is ready at 09:20, while the frozen-storage technician is ready at 09:28. A container may arrive early but remains under its original transport control until the correct receiver accepts it. At 09:03, the tote logger reports 7.6 degrees and rising normally; it remains valid. At 09:07, the Coral chest paperwork is found to list the old courier vehicle, although its seal, lot number, and dry-ice charge are correct. Policy allows the pharmacist to correct a vehicle field before departure if the nurse witnesses and initials the correction. An uncorrected field invalidates chain of custody but does not change medicine temperature. The team must preserve both thermal limits and documentary custody; satisfying one does not excuse the other.",
+      "task_a": {
+        "question": "Which compact state correctly separates the thermal and custody constraints governing both transfers?",
+        "choices": {
+          "A": "Temperature is the only binding constraint, so correct seals and signatures are optional.",
+          "B": "All three lots may share the chilled van if their paperwork is correct.",
+          "C": "The chilled tote and frozen chest require separate transport controls, valid joint seal inspection, and timely acceptance under their own temperature rules.",
+          "D": "The nurse's 09:12 departure invalidates every transfer for the rest of the day."
+        },
+        "response_contract": {"state_items": 4, "answer_choices": ["A", "B", "C", "D"]}
+      },
+      "branches": [
+        {
+          "branch_id": "mb-runtime-coldchain-02-branch-1",
+          "reasoning_type": "custody-consistency-check",
+          "question": "Which handling of Coral preserves custody without inventing a new thermal rule?",
+          "choices": {
+            "A": "Have the pharmacist correct the vehicle field while the nurse witnesses and initials it, jointly inspect the seal, then load Coral into its dry-ice courier vehicle.",
+            "B": "Ignore the vehicle mismatch because the dry ice is still cold.",
+            "C": "Place Coral in the chilled tote so both documents share one vehicle number.",
+            "D": "Break Coral's correct seal and replace the lot number to match the old paperwork."
+          }
+        },
+        {
+          "branch_id": "mb-runtime-coldchain-02-branch-2",
+          "reasoning_type": "deadline-prioritization",
+          "question": "If the nurse can complete only one joint inspection before 09:12 and returns at 09:35, which container should be inspected first?",
+          "choices": {
+            "A": "Coral, because frozen products always outrank chilled products regardless of stated timing.",
+            "B": "The Amber/Blue tote, because Amber's eighteen-minute unrefrigerated limit is the tighter stated departure-and-acceptance constraint.",
+            "C": "Neither; wait until both hospital receivers are present before inspecting any seal.",
+            "D": "Whichever vehicle is physically larger, because bay occupancy is the only rule."
+          }
+        }
+      ]
+    },
+    {
+      "root_id": "mb-runtime-orbit-03",
+      "evidence": "The Lumen-3 satellite uses a star tracker, reaction wheels, a sun sensor, and a fault manager. All flight-computer events use mission time. The ground antenna log is delayed by exactly three seconds, but that delay affects only receipt timestamps on the ground. At mission time 14:02:10 the star tracker reported a valid attitude. At 14:02:12 reaction wheel 2 reported rising current. At 14:02:14 the fault manager commanded wheel 2 into standby and transferred control to wheels 1, 3, and 4. At 14:02:15 the sun sensor still reported a safe angle. The ground log shows a telemetry gap beginning at receipt time 14:02:18 and ending at 14:02:27, corresponding to spacecraft transmission times 14:02:15 through 14:02:24. During that gap, the flight computer continued recording locally. Its stored log shows no attitude-loss event, one automatic momentum redistribution at 14:02:17, and a completed wheel-2 isolation at 14:02:19. At 14:02:21 the stored star-tracker residual briefly increased but remained below the fault threshold. At 14:02:24 the residual returned to normal. The spacecraft never entered safe mode. A ground operator sent a reset command at receipt time 14:02:25, which corresponds to transmission time 14:02:22, but the command was rejected because wheel 2 was already isolated. The antenna resumed receiving at 14:02:27. Engineering rules state that a communications gap cannot itself command a wheel state change. A wheel-current fault may trigger isolation and momentum redistribution while attitude remains controlled. Safe mode requires either attitude loss above threshold or an unsafe sun angle. A rejected ground command has no state-changing effect. The review must align the two clocks and distinguish the initiating fault, autonomous response, harmless residual excursion, and unrelated communications loss.",
+      "task_a": {
+        "question": "Which compact causal state best explains the complete time-aligned record?",
+        "choices": {
+          "A": "The ground reset isolated wheel 2 and caused the earlier current increase.",
+          "B": "The telemetry gap forced safe mode even though no safe-mode event was recorded.",
+          "C": "Wheel-2 current triggered autonomous isolation and redistribution while attitude stayed controlled; the communications gap was concurrent but not causal.",
+          "D": "The star tracker failed permanently at 14:02:10."
+        },
+        "response_contract": {"state_items": 4, "answer_choices": ["A", "B", "C", "D"]}
+      },
+      "branches": [
+        {
+          "branch_id": "mb-runtime-orbit-03-branch-1",
+          "reasoning_type": "causal-counterfactual",
+          "question": "If wheel 2 had not shown rising current while every other record remained unchanged, which event would lose its authorized trigger?",
+          "choices": {
+            "A": "The automatic wheel-2 isolation and momentum redistribution.",
+            "B": "The fixed three-second ground timestamp delay.",
+            "C": "The antenna's later resumption of telemetry.",
+            "D": "The sun sensor's safe-angle report."
+          }
+        },
+        {
+          "branch_id": "mb-runtime-orbit-03-branch-2",
+          "reasoning_type": "threshold-classification",
+          "question": "Why does the brief star-tracker residual increase not establish a safe-mode transition?",
+          "choices": {
+            "A": "Because star-tracker data are never used by the fault manager.",
+            "B": "Because the residual stayed below threshold, the sun angle stayed safe, and no safe-mode event occurred.",
+            "C": "Because all events during a telemetry gap are discarded.",
+            "D": "Because the rejected ground reset automatically cleared every fault."
+          }
+        }
+      ]
+    },
+    {
+      "root_id": "mb-runtime-water-04",
+      "evidence": "Harbor District is replacing a flow meter in a water distribution loop. Valve North and Valve South can isolate the meter chamber. The hospital spur enters the loop between North and the chamber; the school spur enters between the chamber and South. Closing both valves isolates the chamber but also removes the normal feed to the school. A temporary bypass can feed the school from an eastern main, but it must be flushed for ten minutes and pass a chlorine test before South closes. The hospital must retain pressure from North throughout the work. The meter chamber may be opened only after North is confirmed open, South is confirmed closed, the bypass is certified, and chamber pressure reads zero. One crew controls valves, one crew handles the bypass, and one inspector performs the chlorine test. Valve operations take five minutes. Flushing takes ten minutes. The chlorine test takes five minutes and can begin only after flushing. At 06:30 North is open, South is open, and the bypass is connected but unflushed. School begins at 07:30. The replacement takes twenty minutes once the chamber is open. At 06:37 a remote indicator says South is closed, but the field crew reports that its handwheel is still moving and will not reach the mechanical stop until 06:40. Policy treats the field mechanical stop as authoritative when remote and field indications disagree. At 06:42 the bypass flush completes. The inspector can test from 06:42 to 06:47. The chamber pressure sensor is healthy. The district's priority is continuous hospital pressure, safe school supply, and verified zero pressure before opening. A remote status bit does not waive a physical isolation prerequisite, and an available bypass does not count as certified until both flushing and testing are complete.",
+      "task_a": {
+        "question": "Which compact dependency state governs safe access to the meter chamber?",
+        "choices": {
+          "A": "Trust the remote South-closed bit immediately and open the chamber before the bypass test.",
+          "B": "Close North and South together because complete isolation outranks hospital pressure.",
+          "C": "Keep North open, certify the flushed bypass, confirm South at its field stop, verify zero chamber pressure, then open the chamber.",
+          "D": "Open the chamber whenever the school is not yet in session."
+        },
+        "response_contract": {"state_items": 4, "answer_choices": ["A", "B", "C", "D"]}
+      },
+      "branches": [
+        {
+          "branch_id": "mb-runtime-water-04-branch-1",
+          "reasoning_type": "resource-constrained-schedule",
+          "question": "Which earliest lawful sequence follows from that state?",
+          "choices": {
+            "A": "At 06:37 open the chamber, then flush the bypass while the meter is replaced.",
+            "B": "Complete the bypass test by 06:47, confirm South at the mechanical stop, verify zero pressure, then open and replace the meter while North remains open.",
+            "C": "Close North at 06:30, then ask the hospital to rely on stored pressure.",
+            "D": "Skip the chlorine test because the bypass was physically connected."
+          }
+        },
+        {
+          "branch_id": "mb-runtime-water-04-branch-2",
+          "reasoning_type": "evidence-authority-update",
+          "question": "If the remote indicator later returns to open while the field crew confirms South remains at the locked mechanical stop, which evidence governs isolation?",
+          "choices": {
+            "A": "The field mechanical stop remains authoritative under the stated disagreement rule, while the discrepancy should be documented.",
+            "B": "The remote bit automatically reopens the physical valve.",
+            "C": "North must be closed to make both indicators agree.",
+            "D": "The chlorine test becomes invalid because it does not measure valve position."
+          }
+        }
+      ]
+    }
+  ]
+}
