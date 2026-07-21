@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import tempfile
 import time
@@ -84,6 +85,36 @@ def load_discovery_sidecar_contract() -> tuple[dict[str, Any], dict[str, Any]]:
         "runtime evaluator candidate readiness timeout is invalid",
     )
     return evaluator, contract
+
+
+def discovery_binary_identity(binary: Path) -> dict[str, Any]:
+    resolved = binary.resolve()
+    require(resolved.is_file(), f"discovery binary is missing: {resolved}")
+    sha256 = live_runtime.sha256_file(resolved)
+    version = live_runtime.binary_version(resolved)
+    require(bool(re.fullmatch(r"[0-9A-F]{64}", sha256)), "discovery binary hash is malformed")
+    require(
+        bool(re.fullmatch(r"[1-9][0-9]* \([0-9a-f]{7,40}\)", version)),
+        "discovery binary runtime version is malformed",
+    )
+    return {"path": str(resolved), "sha256": sha256, "runtime_version": version}
+
+
+class DiscoverySidecar(live_runtime.LiveSidecar):
+    """LiveSidecar with an exact experimental binary identity frozen at construction."""
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.discovery_expected_binary = discovery_binary_identity(self.binary)
+
+    def runtime_identities(self) -> tuple[dict[str, Any], dict[str, Any]]:
+        current_binary = discovery_binary_identity(self.binary)
+        require(
+            current_binary == self.discovery_expected_binary,
+            "discovery binary identity changed before launch",
+        )
+        return current_binary, live_runtime.verify_model(self.model, self.evaluator)
+
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -229,6 +260,16 @@ def snapshot_action(*, action: str, filename: str) -> tuple[dict[str, Any], floa
         {"filename": filename},
     )
 
+
+
+def ram_root_action(*, action: str, root_id: str) -> tuple[dict[str, Any], float]:
+    require(action in {"root-save", "root-restore", "root-erase"}, "unsupported RAM-root action")
+    require(bool(root_id), "RAM root ID is empty")
+    return request_json(
+        "POST",
+        f"http://127.0.0.1:{live_runtime.PORT}/slots/0?action={action}",
+        {"root_id": root_id},
+    )
 
 def token_summary(record: Mapping[str, Any]) -> dict[str, Any]:
     return {
