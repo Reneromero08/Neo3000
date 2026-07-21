@@ -21,6 +21,12 @@ class CatalyticFrontierSustainedTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             sustained.phase_at(-1)
 
+    def test_route_failure_classification_separates_carrier_from_task(self) -> None:
+        self.assertEqual(sustained.classify_route_failure("D", "C", "D"), "carrier-route-divergence")
+        self.assertEqual(sustained.classify_route_failure("D", "C", "C"), "task-or-model-utility-failure")
+        self.assertEqual(sustained.classify_route_failure("D", "C", "B"), "independent-route-disagreement")
+        self.assertEqual(sustained.classify_route_failure("D", "D", "D"), "no-failure")
+
     def test_geometric_milestones_cover_every_power_of_two(self) -> None:
         self.assertEqual(sustained.geometric_milestones(2), (2,))
         self.assertEqual(sustained.geometric_milestones(16), (2, 4, 8, 16))

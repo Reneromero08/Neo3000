@@ -74,6 +74,15 @@ def phase_at(tick: int) -> str:
         raise ValueError("tick must be nonnegative")
     return PHASE_CYCLE[tick % len(PHASE_CYCLE)]
 
+def classify_route_failure(expected: str, catalytic: str, direct: str) -> str:
+    if catalytic == expected and direct == expected:
+        return "no-failure"
+    if catalytic != expected and direct == expected:
+        return "carrier-route-divergence"
+    if catalytic == direct:
+        return "task-or-model-utility-failure"
+    return "independent-route-disagreement"
+
 
 def branch_spec(tick: int) -> dict[str, Any]:
     return {
@@ -195,7 +204,27 @@ def evaluate(
         )
         record = harness.run_completion(sidecar, f"{ROOT_ID}:branch-{tick}:catalytic", payload)
         answer = harness.carrier.parse_branch_output(record["content"])
-        harness.require(answer == spec["answer"], f"catalytic tick {tick} is incorrect: {answer}")
+        if answer != spec["answer"]:
+            diagnostic_payload = harness.carrier._branch_payload(
+                tokens,
+                seed=fanout.derive_seed(ROOT_ID, f"branch-{tick}"),
+                cache_prompt=False,
+            )
+            diagnostic = harness.run_completion(
+                sidecar,
+                f"{ROOT_ID}:branch-{tick}:direct-failure-control",
+                diagnostic_payload,
+            )
+            direct_answer = harness.carrier.parse_branch_output(diagnostic["content"])
+            harness.require(
+                diagnostic["cached_prompt_tokens"] == 0,
+                f"direct failure control tick {tick} was not fresh",
+            )
+            classification = classify_route_failure(spec["answer"], answer, direct_answer)
+            raise harness.FrontierHarnessError(
+                f"tick {tick} utility failure: expected={spec['answer']} catalytic={answer} "
+                f"direct={direct_answer} classification={classification}"
+            )
         harness.require(record["cached_prompt_tokens"] == retained_count, f"tick {tick} missed full root")
         catalytic_correct += 1
         catalytic_fresh += int(record["fresh_model_tokens"])
