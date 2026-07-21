@@ -253,6 +253,7 @@
       "lab/holostate_v1_warm_trajectory_related_task_evaluation_v1_attempt_7_adjudication_1.json",
       "lab/holostate_v1_warm_trajectory_successor_selection_1.json",
       "lab/holostate_v1_inherited_task_a_carrier_evaluation_v1.json",
+      "lab/holostate_v1_inherited_task_a_carrier_evaluation_v1_adjudication_1.json",
       "lab/EVALUATOR.lock.json",
       "lab/results.jsonl"
     ]
@@ -380,6 +381,8 @@
     ,"scripts/test_holostate_v1_warm_trajectory_related_task_evaluation_adjudication.py"
     ,"scripts/holostate_v1_inherited_task_a_carrier_evaluation.py"
     ,"scripts/test_holostate_v1_inherited_task_a_carrier_evaluation.py"
+    ,"scripts/holostate_v1_inherited_task_a_carrier_evaluation_adjudication.py"
+    ,"scripts/test_holostate_v1_inherited_task_a_carrier_evaluation_adjudication.py"
   ],
   "benchmark_prompt_sources": [
     "scripts/baseline_harness.py"
@@ -2572,6 +2575,82 @@
       "automatic_promotion": false
     },
     "next_boundary": "STATICALLY_SELECT_MINIMUM_SUCCESSOR_FOR_WARM_TRAJECTORY_AMORTIZATION_OR_INHERITED_CARRIER_STATE"
+  },
+  "holostate_v1_inherited_task_a_carrier_adjudication": {
+    "id": "holostate-v1-inherited-task-a-carrier-evaluation-v1-adjudication-1",
+    "source_execution": {
+      "protected_commit": "26aa75a27ee17d625c0965a1ccb96373d925f735",
+      "live_terminal_classification": "PROCESS_LOCAL_INHERITED_TASK_A_CARRIER_EXACT_REUSE_NOT_SUPPORTED",
+      "model_generations": 12,
+      "inference_operations": 16,
+      "scientific_retries": 0,
+      "authority_receipt_sha256": "C96D4C4B23A10ACB520FE632419BE5FF9A706EAF50CF439BDE5774F75F902191",
+      "manifest_sha256": "776C42850D94DA539AF556536C9A3397640F52790EA162B150890347AA9BA613",
+      "journal_sha256": "18E0E09E24A8B75C48EE67E0CEEBD518E4E5779592C6DECE048487DF3B370162",
+      "journal_head_sha256": "642EAD610B04AEBE4428A93DD9750F6247999A0FB45549D97FC2168B6CEF1453",
+      "result_sha256": "983527C02A3EE1B6F08F8633191E7150F7DE9B07D2884C233A056CF5E0EADE14",
+      "closure_sha256": "485634A3E29261517BA698E077C42E4CA136DFE1C916004C286E6402711C0363",
+      "archive_sha256": "9BC81ECDC0363B2032E15C94DB28DB7D1E434DCCA1EE86FCB140279DDB20D9E6"
+    },
+    "publication": {
+      "artifact_path": "lab/holostate_v1_inherited_task_a_carrier_evaluation_v1_adjudication_1.json",
+      "artifact_sha256": "CC7658ECA40C4A586FE6AF56B9B8751080BEAA0A53BD1B8C30121F4B9CEB3882",
+      "record_id": "neo-exp-0049",
+      "record_line": 62,
+      "record_sha256": "B133161184777A50BB90430515CFD74EE4EE9FFC394B720ECA69DDBE2ECE88A6",
+      "verdict": "accept-bounded-partial-reuse-advantage-evidence"
+    },
+    "classifications": {
+      "partial_reuse": "PROCESS_LOCAL_INHERITED_TASK_A_PARTIAL_PREFIX_REUSE_REPLICATED",
+      "exact_reuse": "EXACT_INHERITED_TASK_A_PREFIX_REUSE_NOT_SUPPORTED",
+      "fresh_token_efficiency": "PROCESS_LOCAL_INHERITED_TASK_A_PARTIAL_REUSE_WITH_EQUAL_ACCURACY_AND_FRESH_TOKEN_ADVANTAGE_SUPPORTED",
+      "causal_attribution": "EXECUTABLE_REUSE_LIMITED_BY_MIXED_CHECKPOINT_AND_TOKENIZATION_BOUNDARIES_CONFIRMED",
+      "exact_restoration": "EXACT_INHERITED_TASK_A_CARRIER_RESTORATION_NOT_SUPPORTED"
+    },
+    "resource_accounting": {
+      "inherited_marginal_fresh_tokens": 2761,
+      "direct_task_b_fresh_tokens": 4908,
+      "inherited_task_b_correct": 4,
+      "direct_task_b_correct": 4,
+      "inherited_tokens_x_direct_correct": 11044,
+      "direct_tokens_x_inherited_correct": 19632,
+      "fresh_token_reduction_numerator": 2147,
+      "fresh_token_reduction_denominator": 4908
+    },
+    "causal_boundary": {
+      "chat_template_token_divergence": 4,
+      "n_ubatch": 128,
+      "safe_checkpoint_rollback_tokens": 128,
+      "task_a_prompt_to_admitted_cache_shortfall_per_pair": 132,
+      "raw_common_prefix_reconstructed_exactly": true,
+      "dsv4_arbitrary_partial_rollback_supported": false,
+      "telemetry_reports_post_restore_n_past": true
+    },
+    "zero_contact_adjudication": {
+      "authenticated_journal_events": 38,
+      "authenticated_captures": 12,
+      "raw_sse_reconstructions": 12,
+      "authenticated_derivations": 4,
+      "closure_records": 4,
+      "archive_evidence_members": 21,
+      "archive_physical_files": 22,
+      "model_requests": 0,
+      "sidecar_launches": 0,
+      "model_generations": 0,
+      "authorities_created_or_consumed": 0
+    },
+    "claim_limits": {
+      "complete_catalytic_lifecycle": "LOCKED",
+      "exact_inherited_prefix_reuse": "LOCKED",
+      "exact_restoration": "LOCKED",
+      "general_catalytic_inference": "LOCKED",
+      "restart_persistent_state": "LOCKED",
+      "transfer": "LOCKED",
+      "superiority": "LOCKED",
+      "sota": "LOCKED",
+      "automatic_promotion": false
+    },
+    "next_boundary": "STATICALLY_SELECT_MINIMUM_RESPONSE_TO_EXECUTABLE_REUSE_BOUNDARY"
   },
   "candidate_editable_paths": {
     "description": "Candidates may only modify files under these paths.",
