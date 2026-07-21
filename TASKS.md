@@ -4,10 +4,11 @@
 **Current RSI level:** Level 1, supervised bounded RSI available
 **Baseline evidence through:** CatalyticSwarm-0 v2 integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`; bound `reviewable-accept` result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
-**Claim ceiling:** `NEO3000_BASELINE_OPERATIONAL`
-**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN`
-**Active bounded objective:** Preserve the published inherited Task-A carrier result and retired same-panel line while holding the four-root, eight-branch runtime-native carrier evaluation frozen, terminal-evidence fail-closed, and unexecuted under every existing claim lock.
-**Next exact action:** `AUTHORIZE_ONE_LIVE_MULTI_BRANCH_RUNTIME_NATIVE_CARRIER_EVALUATION` — separately authorize one execution of the frozen held-out panel; do not execute automatically.
+**Frontier exact-commit evidence:** `neo-exp-0050` at `lab/results.jsonl:63`, SHA-256 `5D90FCDABC8AD103A43803821E91C769641D8687BF74C6F7D68CE16593916EB6`, candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c`; two Agents-A1 geometries passed N=`2,4,8`
+**Claim ceiling:** `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`
+**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED`
+**Active bounded objective:** Extend the exact carrier beyond N=8 under fixed residency, measure its asymptotic fresh-compute floor, then reduce that floor through runtime-native state copy, recurrent state, KV/activation, or weight-level mechanisms without losing Agents-A1 utility.
+**Next exact action:** `RUN_SUSTAINED_FIXED_RESIDENCY_FANOUT_AND_IN_MEMORY_STATE_COPY_DISCRIMINATORS` — N=8 is a waypoint; literal or induction-backed unbounded catalytic inference remains unproven.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -20,6 +21,14 @@
 - The next unchecked item in the active queue is the default next action.
 - A narrative report does not replace this task board.
 
+## Catalytic frontier discovery overlay [ACTIVE]
+
+The user-authorized discovery branch `codex/catalytic-frontier` supersedes the default queue while it remains active. It does not consume or rename the frozen one-shot evaluation below.
+
+- Exact emitted-token root reuse, restored branching, and counted closure produced equal utility with improving fresh-token amplification on datacenter and cold-chain geometries.
+- Measured amplification rose from about `1.57x` at N=2 to `2.38x` at N=4 and `3.31x` at N=8 while average fresh tokens per useful branch fell on both geometries.
+- One root snapshot and one physical slot remained sufficient through N=8; both roots restored byte-exactly and the stable listener remained unchanged.
+- This supports bounded fanout amortization only. It does not establish infinite fanout, zero marginal compute, arbitrary-task transfer, production promotion, superiority, or SOTA.
 ---
 
 ## Active queue: deterministic rank-head extraction v2

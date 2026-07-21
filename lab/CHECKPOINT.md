@@ -1,5 +1,19 @@
 # Checkpoint Ledger
 
+## Catalytic frontier: bounded fanout signal replicated, unbounded endpoint open
+
+**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / TWO GEOMETRIES / FIXED ROOT RESIDENCY / UNBOUNDED CLAIM NOT YET SUPPORTED
+
+- Candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c` packages the retryable live-carrier and eight-projection fanout harness plus five focused no-model tests.
+- Datacenter: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5786802030`, `2.3747072600`, `3.3070996147`; average fresh tokens per useful branch `492.5`, `320.25`, `227.125` at N=`2,4,8`.
+- Cold-chain: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5702970297`, `2.3830613831`, `3.3158469945`; average fresh tokens per useful branch `505.0`, `321.75`, `228.75`.
+- Every catalytic branch and recurrent closure reused the complete `620`- or `627`-token root. One `78,577,168`- or `78,720,696`-byte snapshot restored byte-exactly after N=8.
+- Carrier creation, every suffix/output token, and one counted closure token at each N=`2,4,8` checkpoint are included. Peak isolated WDDM residency was `2286.9 MiB`; stable PID `3860` remained healthy.
+- Canonical compact record: `neo-exp-0050` at `lab/results.jsonl:63`, SHA-256 `5D90FCDABC8AD103A43803821E91C769641D8687BF74C6F7D68CE16593916EB6`. Claim ceiling is `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`.
+- The observed mechanism retains a nonzero suffix/output compute floor and therefore does not yet establish infinite or unbounded catalytic inference.
+- Source correction for the next runtime intervention: Agents-A1 `qwen35moe` selects `llama_memory_hybrid` (attention KV plus recurrent state), so exact retained roots must use the full polymorphic per-sequence serializer with flags NONE; the DSV4 label/path is not Agents-A1's memory implementation.
+
+**Next exact action:** run sustained distinct fanout beyond N=8 with one bounded carrier, then test in-memory state copy and lower-level recurrent/KV/activation/weight mechanisms against the same utility and total-compute gates.
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
 **Status:** PUBLISHED INHERITED-CARRIER RESULT PRESERVED / MULTI-BRANCH RUNTIME-NATIVE EVALUATION TERMINAL-BOUND AND FROZEN / SAME-PANEL LINE RETIRED / ZERO MODEL CONTACT / BROADER CLAIMS LOCKED
