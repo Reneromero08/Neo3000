@@ -91,6 +91,29 @@ class CatalyticFrontierRamPrefixDiscriminatorTests(unittest.TestCase):
             with self.subTest(values=values), self.assertRaises(harness.FrontierHarnessError):
                 discriminator.validate_frozen_boundary(**values)
 
+    def test_saved_root_checkpoint_count_tracks_launch_control(self) -> None:
+        self.assertEqual(
+            discriminator.validate_saved_root_checkpoint_count(
+                {"n_checkpoints": 0},
+                context_checkpoints=0,
+            ),
+            0,
+        )
+        self.assertEqual(
+            discriminator.validate_saved_root_checkpoint_count(
+                {"n_checkpoints": 1},
+                context_checkpoints=8,
+            ),
+            1,
+        )
+        for context_checkpoints, observed in ((0, 1), (8, 0), (7, 0)):
+            with self.subTest(context_checkpoints=context_checkpoints, observed=observed):
+                with self.assertRaises(harness.FrontierHarnessError):
+                    discriminator.validate_saved_root_checkpoint_count(
+                        {"n_checkpoints": observed},
+                        context_checkpoints=context_checkpoints,
+                    )
+
     def test_restored_root_rejects_slot_metadata_drift(self) -> None:
         base = {
             "root_id": discriminator.ROOT_ID,
@@ -227,6 +250,7 @@ class CatalyticFrontierRamPrefixDiscriminatorTests(unittest.TestCase):
         self.assertEqual(result["carrier"]["restore_count"], 4)
         self.assertTrue(result["carrier"]["final_restore_before_erase"])
         self.assertTrue(result["carrier"]["response_metadata_invariant"])
+        self.assertEqual(result["carrier"]["expected_checkpoint_count"], 1)
         self.assertEqual(result["classification"], "exact-live-restore-replay-equivalence")
         self.assertEqual(result["verdict"], "accept")
         self.assertEqual(result["fresh_model_compute"]["total_measured_run"], 1_246)

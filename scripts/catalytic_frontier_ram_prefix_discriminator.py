@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 from typing import Any, Mapping
 
+import catalytic_frontier_checkpoint_control as checkpoint_control
 import catalytic_frontier_fanout as fanout
 import catalytic_frontier_harness as harness
 import catalytic_frontier_ram_root as ram_root
@@ -54,6 +55,20 @@ def validate_frozen_boundary(*, tick: int, root_count: int, retained_count: int)
     harness.require(retained_count - root_count == 15, "generated Task-A tail count changed")
 
 
+def validate_saved_root_checkpoint_count(
+    saved: Mapping[str, Any],
+    *,
+    context_checkpoints: int,
+) -> int:
+    harness.require(
+        context_checkpoints in (0, checkpoint_control.FROZEN_CONTEXT_CHECKPOINTS),
+        "context checkpoint count must remain exactly 0 or 8",
+    )
+    expected = 0 if context_checkpoints == 0 else 1
+    harness.require(saved.get("n_checkpoints") == expected, "saved root checkpoint count differs")
+    return expected
+
+
 def validate_restored_root(
     response_raw: Mapping[str, Any],
     *,
@@ -89,6 +104,7 @@ def evaluate(
     props: Mapping[str, Any],
     baseline_private: int | None,
     tick: int,
+    context_checkpoints: int = checkpoint_control.FROZEN_CONTEXT_CHECKPOINTS,
 ) -> dict[str, Any]:
     prompt_text = codec.render_messages(
         harness.carrier.task_a_messages(sustained.ROOT),
@@ -126,6 +142,10 @@ def evaluate(
     save_raw, save_wall = harness.ram_root_action(action="root-save", root_id=ROOT_ID)
     save = ram_root.validate_root_response(save_raw, action="root-save")
     harness.require(save["n_tokens"] == root_count, "prompt RAM-root count differs")
+    expected_root_checkpoints = validate_saved_root_checkpoint_count(
+        save,
+        context_checkpoints=context_checkpoints,
+    )
     restores: list[dict[str, Any]] = []
 
     def restore(label: str) -> None:
@@ -257,6 +277,7 @@ def evaluate(
             "restores": restores,
             "restore_count": len(restores),
             "non_consuming_repeatable": len(restores) == 4,
+            "expected_checkpoint_count": expected_root_checkpoints,
             "response_metadata_invariant": True,
             "final_restore_before_erase": restores[-1]["label"] == "final-root-closure",
             "erase": {**erase, "client_wall_seconds": erase_wall},
@@ -273,6 +294,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--binary", type=Path, default=ram_root.DEFAULT_BINARY)
     parser.add_argument("--model", type=Path, default=harness.DEFAULT_MODEL)
     parser.add_argument("--tick", type=int, default=DEFAULT_TICK)
+    parser.add_argument("--ctx-checkpoints", type=int, choices=(0, 8), default=checkpoint_control.FROZEN_CONTEXT_CHECKPOINTS)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--server-log-output", type=Path)
     return parser.parse_args()
@@ -296,7 +318,7 @@ def main() -> int:
         os.environ["LLAMA_ARG_LOG_VERBOSITY"] = "1000"
         os.environ["LLAMA_SERVER_SLOTS_DEBUG"] = "1"
     try:
-        sidecar = harness.DiscoverySidecar(
+        sidecar = checkpoint_control.ScopedCheckpointDiscoverySidecar(
             binary,
             model,
             evaluator,
@@ -305,6 +327,7 @@ def main() -> int:
             stable_pids=set(stable_pids),
             state_root=state_root,
             advisory_wddm=True,
+            context_checkpoints=args.ctx_checkpoints,
         )
         readiness = sidecar.launch()
         baseline_private = None
@@ -318,13 +341,16 @@ def main() -> int:
             props=codec.props(),
             baseline_private=baseline_private,
             tick=args.tick,
+            context_checkpoints=args.ctx_checkpoints,
         )
+        result["launch_configuration"] = readiness.get("launch_configuration")
         result["readiness"] = {
             "pid": readiness.get("pid"),
             "readiness_seconds": readiness.get("readiness_seconds"),
             "binary": readiness.get("binary"),
             "model": readiness.get("model"),
             "baseline_private_bytes": baseline_private,
+            "launch_configuration": readiness.get("launch_configuration"),
         }
     except BaseException as exc:
         error = exc
