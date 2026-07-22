@@ -2,7 +2,32 @@
 
 ## Catalytic frontier override [ACTIVE]
 
-The actual frontier objective is infinite, unbounded catalytic inference: fixed-active-residency catalytic reuse for every finite N over unbounded duration, with equal utility, all costs counted, exact restoration or declared closure, and cumulative saved fresh work growing with N. N=8 is only a waypoint.
+The actual frontier objective is infinite, unbounded catalytic compute for local Agents-A1 inference: a holographic runtime in which quality-accepted useful inference can grow without a fixed cumulative ceiling because restorable relational carriers are retained, projected, and recursively reused under bounded active local residency.
+
+This is not a claim of infinite instantaneous FLOPs, infinite memory, or one sufficiently large finite fanout. It is a claim target about unbounded cumulative useful baseline-equivalent inference.
+
+The intended mechanism is holographic and recursive: preserve a relational process-object, project useful observables without prematurely consuming it, restore or close the borrowed substrate, and allow verified outputs or invariants to become lawful carriers for later inference.
+
+Track four independent scaling axes:
+
+- `N` — useful fanout or projections from one carrier
+- `T` — reuse duration across tokens, tasks, sessions, and restarts
+- `R` — recursive carrier depth and admissible boundary expansion
+- `B` — breadth of independently useful channels, task families, and workloads
+
+`N = infinity` alone is not the goal. It is one necessary scaling question inside the larger unbounded-compute objective.
+
+The unbounded endpoint requires:
+
+- cumulative quality-accepted baseline-equivalent inference that can grow without a fixed ceiling
+- compute amplification that can grow without a fixed ceiling, or a justified fresh-compute ratio tending toward zero
+- bounded active physical residency at every finite stage
+- preserved Agents-A1 utility, tool validity, Pi compatibility, and daily-driver stability
+- all carrier creation, branching, verification, storage, control, and closure costs counted
+- exact restoration or explicitly declared closure
+- a constructive recurrence, inductive invariant, or formal bridge in addition to finite empirical scaling
+
+Current results remain bounded evidence. N=8 is the accepted fanout waypoint; N=16 positive amortization did not pass strict utility; no unbounded bridge has been established.
 
 `neo-exp-0050` supports bounded fanout amortization through N=8 and does not establish the unbounded endpoint.
 
@@ -24,7 +49,7 @@ The actual frontier objective is infinite, unbounded catalytic inference: fixed-
 
 `neo-exp-0059` completes the frozen direct-only checkpoint-zero qualification without carrier contact. Cold-chain achieves exact `16/16`; datacenter is preserved as rejected at `15/16` after a single unambiguous branch-9 miss. All 32 direct branches are cache-disabled with zero cached prompt tokens, and the trace contains zero checkpoint creation, carrier, snapshot, or root-operation activity. This establishes one trustworthy direct panel, not two, and creates no carrier, N=32/N=64, equal-utility N=16, or unbounded-inference authority.
 
-The `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` operation is closed at this mixed accepted/rejected evidence boundary. The long-term catalytic objective and claim ceiling are unchanged, but frontier execution is paused pending explicit realignment. No retry, observed-answer replacement, new panel, carrier evaluation, scaling run, new mechanism, promotion, or follow-on experiment is authorized by this handoff.
+The `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` operation is closed at this mixed accepted/rejected evidence boundary. The long-term catalytic objective and claim ceiling are unchanged. The documents are now aligned, but frontier execution remains paused pending explicit post-realignment authorization. No retry, observed-answer replacement, new panel, carrier evaluation, scaling run, new mechanism, promotion, or follow-on experiment is authorized by this handoff.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 

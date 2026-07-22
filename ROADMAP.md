@@ -6,27 +6,34 @@ This is the durable navigation spine for Neo3000. Any agent should be able to en
 
 Neo3000 is a performance-first local inference engine for Agents-A1. It began from a pinned `llama.cpp` runtime and is evolving toward catalytic, phase-native, recursively reusable inference.
 
-The objective is to reduce fresh computation per useful token while preserving model capability, Pi compatibility, reproducibility, and daily-driver stability.
+Its literal north star is infinite, unbounded catalytic compute for local Agents-A1 inference: a holographic runtime in which quality-accepted useful inference can grow without a fixed cumulative ceiling because restorable relational carriers are retained, projected, and recursively reused under bounded active local residency.
+
+Here, infinite/unbounded means unbounded cumulative useful baseline-equivalent inference, not infinite instantaneous FLOPs, infinite memory, or one sufficiently large finite fanout.
+
+The operational objective is to reduce fresh computation per useful token while preserving model capability, Pi compatibility, reproducibility, and daily-driver stability, then extend that reduction across fanout, duration, recursive carrier depth, and workload breadth.
 
 ---
 
 # 1. Read order and authority
 
-Every agent must read:
+Every agent must read the seven core authority files in this exact order:
 
 ```text
 1. AGENTS.md
 2. TASKS.md
 3. ROADMAP.md
-4. docs/CATALYTIC_RUNTIME_ROADMAP.md
-5. lab/GOAL.md
-6. lab/CHECKPOINT.md
-7. lab/EVALUATOR.json, when present
-8. lab/BASELINE_PROTOCOL.md
-9. lab/results.jsonl
-10. NEO3000.md
-11. README.md
+4. lab/GOAL.md
+5. lab/CHECKPOINT.md
+6. lab/BASELINE_PROTOCOL.md
+7. lab/results.jsonl
 ```
+
+After the core sequence, read supporting material when relevant:
+
+- `docs/CATALYTIC_RUNTIME_ROADMAP.md` for detailed catalytic architecture
+- `lab/EVALUATOR.json` for a candidate cycle
+- `NEO3000.md` for runtime operations
+- `README.md` for repository orientation
 
 | File | Authority |
 |---|---|
@@ -95,25 +102,17 @@ LM Studio is **not** an unlock dependency. It may be used as optional historical
 
 ```text
 RSI-0: CLOSED
+-> Checkpoint 0: CLOSED / NEO3000_BASELINE_OPERATIONAL
 -> SUPERVISED_BOUNDED_RSI_AVAILABLE unlocked for Level 1 supervised work
--> Checkpoint 1A: trace substrate remains active and paused
--> Checkpoint 2: ACTIVE; v4 executed once, Fast reviewable-accept, Deep reject
--> First catalytic intervention: HoloState-v1 Live Prefix Lattice
--> HoloState worker v1: instrumentation reject; Fast/Deep capability untested
--> HoloState worker v2: executed once; inconclusive at readiness before canary
--> HoloState worker v3: readiness pass; canary instrumentation reject; Fast/Deep untested
--> HoloState worker v4: reviewable-accept; process-local micro-worker unlocked
--> CatalyticSwarm-0: executed once; control qualification pass, readiness inconclusive on exact-PID WDDM telemetry loss before canary
--> CatalyticSwarm-0 v2: structured micro-worker and bounded swarm control reviewable-accept
--> CatalyticSwarm-1: executed once; inconclusive on the first serial-chain comparison before any task completed
--> CatalyticSwarm-1 cache-admission diagnostic: executed once / reviewable-accept / no retry; exact public-root reuse proven for both probes
--> CatalyticSwarm-1 v2: command attempt consumed / preclaim fail-closed / zero requests / no retry
--> CatalyticSwarm-1 v3: command invocation consumed / preclaim fail-closed / one control artifact / no retry
--> CatalyticSwarm-1 v4: executed once / partial 775 requests / inconclusive / consumed / no retry
--> CatalyticSwarm-1 v5: executed once / 775 completed and durably represented / record 775 rejected / consumed / no retry
--> CatalyticSwarm-1 v6: consumed at runtime-preclaim / harness self-contamination / zero requests / no retry
--> Track A claim verification: PAUSED; no CS1-v7 authorized or planned
--> Track B mechanism discovery: deterministic rank-head CK0 v2 replicated across two private bindings; the executed position-seed crossover supports a matched-binding presentation-position effect; the completed AB/BA probe supports a unique-intersection-like transform under one binding and seed; a frozen four-request hard out-of-sample successor now jointly changes one private binding and one commit-derived seed, while separate seed/binding invariance and all broad claims remain locked
+-> Checkpoint 1A: trace substrate PAUSED
+-> Checkpoint 2: ACTIVE architecturally; catalytic-frontier execution PAUSED
+-> neo-exp-0050: exact process-local equal-utility fanout amortization accepted through N=2,4,8
+-> neo-exp-0051..0057: carrier boundary localized; checkpoint-free tick-11 native RAM-root lifecycle exact
+-> neo-exp-0058: N=16 fixed-residency positive token/wall amortization observed; strict utility gate rejected
+-> neo-exp-0059: direct-only cold-chain accepted 16/16; datacenter rejected 15/16; no carrier contact
+-> claim ceiling: PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8
+-> next exact action: AWAIT_EXPLICIT_POST_REALIGNMENT_AUTHORIZATION
+-> all earlier CS1, CK0, and HoloState evidence remains historical and frozen unless separately reopened
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
@@ -268,6 +267,12 @@ This level unlocks when Checkpoint 5 closes.
 ## Level 3: Recursive compute amplification [LONG-RANGE TARGET]
 
 Useful computation survives as executable state and reduces equivalent future compute, rather than only improving source code between runs.
+
+This target is literal unbounded cumulative useful local inference under bounded active physical residency, not infinite instantaneous hardware throughput.
+
+Progress is measured independently along `N` fanout, `T` duration, `R` recursive carrier depth, and `B` boundary/workload breadth.
+
+No finite value on any one axis establishes the endpoint. The unlock requires a constructive recurrence, inductive invariant, or formal bridge plus quality-accepted finite scaling evidence.
 
 This is the long-range target of Checkpoint 7.
 
@@ -895,13 +900,34 @@ Start with operations whose inverse or closure is exact and performance-relevant
 
 Allow useful computation to return as substrate or operator for later inference.
 
-Central metric:
+This checkpoint targets infinite, unbounded catalytic compute for local LLM inference in the precise sense of unbounded cumulative useful baseline-equivalent inference under bounded active physical residency.
+
+Track:
+
+- `N`: useful projections per carrier
+- `T`: lawful reuse across tokens, tasks, sessions, and restarts
+- `R`: recursive carrier depth and boundary expansion
+- `B`: independently useful channel, task-family, and workload breadth
+
+Central metrics:
 
 ```text
 compute amplification = equivalent baseline compute / fresh compute executed
+fresh-compute ratio = fresh compute executed / equivalent baseline compute
 ```
 
-This metric must be grounded in removed or reused operator work. Wall-clock speed alone is insufficient.
+Acceptance requires:
+
+- cumulative quality-accepted baseline-equivalent inference grows without a fixed ceiling
+- compute amplification can grow without a fixed ceiling, or fresh-compute ratio follows a justified path toward zero
+- active physical residency remains bounded at every finite stage
+- Agents-A1 utility, tool validity, Pi compatibility, and daily-driver stability remain inside declared gates
+- carrier creation, branching, verification, storage, control, and closure costs are counted
+- every borrowed carrier is exactly restored or explicitly closed
+
+Finite scaling results remain bounded evidence. An unbounded claim additionally requires a constructive recurrence, inductive invariant, or formal bridge that shows the accepted mechanism can continue across the declared axes without a fixed cumulative ceiling.
+
+These metrics must be grounded in removed or reused operator work. Wall-clock speed alone is insufficient.
 
 ---
 

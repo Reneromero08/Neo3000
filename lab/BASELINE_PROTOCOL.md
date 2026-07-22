@@ -2,7 +2,9 @@
 
 ## Purpose
 
-This protocol freezes the minimum runtime surface and measurement procedure required to close Checkpoint 0. It exists to prevent the benchmark from changing while the engine is being tuned.
+This protocol froze the minimum runtime surface and measurement procedure required to close Checkpoint 0. It exists to prevent the benchmark from changing while the engine is being tuned.
+
+Checkpoint 0 is now closed. This file remains the immutable historical baseline procedure; catalytic scaling and unbounded-claim gates live in `AGENTS.md`, `TASKS.md`, `ROADMAP.md`, `lab/GOAL.md`, and `lab/CHECKPOINT.md`.
 
 The protocol is not a model-quality benchmark and does not authorize catalytic claims.
 
@@ -187,9 +189,9 @@ Use these states:
 
 Do not check a parent gate because a related command succeeded.
 
-## Current claim ceiling
+## Historical Checkpoint 0 claim ladder
 
-Until the complete Checkpoint 0 exit gate closes:
+During Checkpoint 0, until its complete exit gate closed:
 
 ```text
 NEO3000_FOUNDATION_INITIALIZED

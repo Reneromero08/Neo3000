@@ -1,5 +1,32 @@
 # Checkpoint Ledger
 
+## Goal/evidence boundary [ALIGNED]
+
+Neo3000's north star is infinite, unbounded catalytic compute for local Agents-A1 inference: unbounded cumulative quality-accepted useful inference under bounded active local residency, enabled by restorable relational carriers that can be projected and recursively reused.
+
+This ledger does not claim that endpoint. Its strongest current frontier evidence is bounded by `neo-exp-0050` through `neo-exp-0059`:
+
+| Axis | Meaning | Current evidence boundary |
+|---|---|---|
+| `N` | useful fanout or projections per carrier | equal-utility amortization accepted through N=8; N=16 positive amortization observed but strict utility rejected |
+| `T` | reuse duration across tokens, tasks, sessions, and restarts | exact checkpoint-free process-local lifecycle shown at bounded duration; no unbounded-duration or restart result |
+| `R` | recursive carrier depth and boundary expansion | no constructive carrier recurrence or recursively expanding accepted chain established |
+| `B` | useful channel, task-family, and workload breadth | two geometries accepted through N=8; at N=16 one direct panel accepted and one rejected; no unbounded breadth |
+
+`N = infinity` is not equivalent to infinite instantaneous compute and would not, by itself, establish the full goal.
+
+The unbounded claim gate requires:
+
+- cumulative useful baseline-equivalent inference that can grow without a fixed ceiling
+- compute amplification without a fixed ceiling, or a justified fresh-compute ratio tending toward zero
+- bounded active physical residency at every finite stage
+- preserved Agents-A1 utility, tool validity, Pi compatibility, and daily-driver stability
+- complete creation, branch, verification, storage, control, and closure accounting
+- exact restoration or explicitly declared closure
+- a constructive recurrence, inductive invariant, or formal bridge plus finite scaling evidence
+
+Documentation alignment creates no experimental authority and does not change any verdict, metric, artifact identity, or claim ceiling.
+
 ## Catalytic frontier: direct-only two-panel qualification closed; one accepted, one rejected; frontier paused
 
 **Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE NATIVE RAM-ROOT LIFECYCLE EXACT AT TICK11 / CHECKPOINT-FREE N16 FIXED RESIDENCY AND POSITIVE TOKEN-WALL AMORTIZATION / COLDCHAIN DIRECT N16 QUALIFIED / DATACENTER DIRECT N16 REJECTED 15 OF 16 / TWO ACCEPTED PANELS NOT ESTABLISHED / CARRIER AND SCALING BLOCKED / FRONTIER PAUSED / UNBOUNDED CLAIM NOT YET SUPPORTED
@@ -69,7 +96,7 @@
 - Canonical compact rejection: `neo-exp-0059` at `lab/results.jsonl:72`, SHA-256 `283585C80B90EDF22D0251060469A7A4930428582C43C3746B34F02990C7C54C`. Cold-chain is preserved as qualified; datacenter is preserved as rejected; two accepted panels, carrier authority, equal-utility N=16, N=32/N=64, and the unbounded endpoint remain unsupported. The claim ceiling is unchanged.
 - The operation ends here by explicit user boundary. No unchanged-panel retry, observed-answer replacement, new panel, carrier evaluation, scaling run, mechanism, promotion, or follow-on experiment was executed.
 
-**Next exact action:** `STOP_AT_CLEAN_QUALIFIER_CHECKPOINT_PENDING_LONG_TERM_REALIGNMENT`. Await explicit new direction; the completed operation authorizes no further frontier execution.
+**Next exact action:** `AWAIT_EXPLICIT_POST_REALIGNMENT_AUTHORIZATION`. The documents are aligned; the completed operation and this documentation update authorize no further frontier execution.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 

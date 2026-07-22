@@ -2,7 +2,22 @@
 
 ## Mission
 
-Build Neo3000 into the fastest trustworthy daily-driver runtime for Agents-A1, then push its compute architecture toward catalytic, phase-native, recursively reusable inference.
+Build Neo3000 into the fastest trustworthy daily-driver runtime for Agents-A1 while pursuing infinite, unbounded catalytic compute for local LLM inference: a holographic runtime in which quality-accepted useful inference can grow without a fixed cumulative ceiling because restorable relational carriers are retained, projected, and recursively reused under bounded active local residency.
+
+## North-star contract
+
+The destination is literal infinite/unbounded cumulative useful local inference. It is not a claim of infinite instantaneous FLOPs, infinite memory, or a sufficiently large finite fanout.
+
+Track four independent scaling axes:
+
+- `N`: useful fanout or projections from one carrier
+- `T`: reuse duration across tokens, tasks, sessions, and restarts
+- `R`: recursive carrier depth, where useful outputs can become lawful substrate for later inference
+- `B`: breadth of independently useful boundary channels, task families, and workloads
+
+`N = infinity` alone is not the goal. The target requires cumulative useful baseline-equivalent inference to grow without a fixed ceiling while fresh-compute ratio can trend toward zero, active physical residency remains bounded at every finite stage, Agents-A1 utility and Pi compatibility are preserved, all costs are counted, and every borrowed carrier is exactly restored or explicitly closed.
+
+No finite experiment proves the unbounded endpoint by size alone. Any unbounded claim requires both finite scaling evidence and a constructive recurrence, inductive invariant, or formal bridge showing why the mechanism can continue without a fixed cumulative ceiling. Goal language must never be mistaken for current evidence.
 
 ## Mandatory entry sequence
 
@@ -24,15 +39,11 @@ An agent must not rely on chat history when the repository task board says somet
 
 ## Current mode
 
-Checkpoint 0 is verification mode.
+Checkpoint 0 is closed. Checkpoint 2 remains the active architectural checkpoint, but the `codex/catalytic-frontier` execution cursor is paused at the clean `neo-exp-0059` qualifier boundary.
 
-Do not add novel catalytic mechanisms before the imported baseline:
+Current evidence supports only `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`. The checkpoint-free N=16 run showed fixed-residency positive token and wall amortization but failed its strict utility gate; the direct-only qualifier then accepted cold-chain at `16/16`, rejected datacenter at `15/16`, and created no carrier authority.
 
-- builds successfully with CUDA
-- loads the exact Agents-A1 GGUF
-- streams through the OpenAI-compatible server
-- works from Pi
-- produces fixed baseline measurements
+Documentation alignment does not authorize execution. Await explicit post-realignment authorization before any retry, replacement panel, carrier evaluation, N=32/N=64 scaling, new mechanism, promotion, or follow-on experiment.
 
 During later exploration, enter the hypothesis fully and use delusional optimism as a generative engine. Assume a proposal may be right long enough to break every removable barrier. This stance generates mechanisms and experiments. It is not itself proof.
 
@@ -103,15 +114,34 @@ Each experiment should record:
   "candidate_commit": "sha",
   "model_hash": "sha256",
   "configuration": {},
+  "scaling_axes": {
+    "N": null,
+    "T": null,
+    "R": null,
+    "B": null
+  },
   "metrics_before": {},
   "metrics_after": {},
+  "compute_accounting": {
+    "equivalent_baseline_compute": null,
+    "fresh_compute": null,
+    "compute_amplification": null,
+    "fresh_compute_ratio": null
+  },
+  "active_residency": {},
+  "restoration_or_closure": {},
+  "unbounded_bridge": {
+    "claimed": false,
+    "kind": "none|recurrence|induction|formal",
+    "artifact": null
+  },
   "quality_gates": {},
   "verdict": "accept|reject|inconclusive",
   "next_boundary": "one sentence"
 }
 ```
 
-Append compact JSON objects to `lab/results.jsonl` only after measurements exist.
+These additional scaling and bridge fields apply to future claim-bearing catalytic experiments; historical records are not rewritten. Append compact JSON objects to `lab/results.jsonl` only after measurements exist.
 
 ## Self-improvement loop
 
