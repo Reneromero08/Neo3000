@@ -18,7 +18,9 @@ The actual frontier objective is infinite, unbounded catalytic inference: fixed-
 
 `neo-exp-0056` changes only context checkpoints `8 -> 0` and makes the unchanged 270-token cached tick-11 route exactly correct with the same generated-token hash as fresh direct. The checkpoint-enabled server execution path is causal for the prior failure; forced partitioning versus checkpoint capture is not yet separated.
 
-The next exact action keeps checkpoints disabled and boundary 270 fixed while reintroducing only native RAM-root save, non-consuming restore, replay, final closure, and erase. Boundary 256 is retired as the immediate path because checkpoint-free 270 is already exact.
+`neo-exp-0057` holds checkpoints disabled and boundary 270 fixed while reintroducing native RAM-root save, four restores, replay, final restoration, and erase. Untouched-live, restored, direct, and restored-replay tick-11 routes all return correct `B` with identical generated tokens; all root operations report zero checkpoints. Exact checkpoint-free process-local carrier closure is therefore supported at this one-tick boundary, but sustained N=16 utility and the unbounded endpoint remain open.
+
+The next exact action keeps checkpoints disabled and boundary 270 fixed while rerunning the existing sustained 16-branch RAM-root panel with unchanged prompts and all costs counted. Boundary 256 remains retired as the immediate path because checkpoint-free 270 is exact through the complete root lifecycle.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 

@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Catalytic frontier: checkpoint-free 270-token prefix is exact at tick 11, RAM-root lifecycle next
+## Catalytic frontier: checkpoint-free native RAM-root lifecycle is exact at tick 11, sustained N=16 next
 
-**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / POSITIVE N=16 AMORTIZATION WITH UTILITY FAILURE / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE 270-TOKEN PREFIX EXACT / RAM-ROOT LIFECYCLE REQUALIFICATION PENDING / UNBOUNDED CLAIM NOT YET SUPPORTED
+**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / POSITIVE N=16 AMORTIZATION WITH UTILITY FAILURE / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE 270-TOKEN PREFIX EXACT / CHECKPOINT-FREE NATIVE RAM-ROOT LIFECYCLE EXACT AT TICK11 / SUSTAINED N16 REQUALIFICATION PENDING / UNBOUNDED CLAIM NOT YET SUPPORTED
 
 - Candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c` packages the retryable live-carrier and eight-projection fanout harness plus five focused no-model tests.
 - Datacenter: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5786802030`, `2.3747072600`, `3.3070996147`; average fresh tokens per useful branch `492.5`, `320.25`, `227.125` at N=`2,4,8`.
@@ -45,8 +45,15 @@
 - The one-factor result supports `CONTEXT_CHECKPOINT_ENABLED_EXECUTION_PATH_CAUSAL_AT_TICK11`. It does not separately identify checkpoint-forced batch partitioning versus checkpoint capture; both were removed by the one flag.
 - Canonical compact acceptance: `neo-exp-0056` at `lab/results.jsonl:69`, SHA-256 `99AE4C7CCFF1AA318EE506B7B91709B9F6E9F5B667C76FFEA3BBC470F825AE19`. External result/trace SHA-256 values are `BF27743DEEF041DCAADF1D2398CBCF29E631ED93EC0E64E828B1E4626AF31C07` / `B313F98EE67FA22420800945B72F0BDE3E4D45F1EB2E3BE5BBEE782C60542C73`.
 - Boundary 256 is not the next intervention because checkpoint-free boundary 270 is already exact. The smallest carrier step is to hold checkpoint zero and 270 fixed while reintroducing only RAM-root save and restore.
+- Controller `28aa7d2c25e67136460b2c9e824fae65b54abfe7` held checkpoint zero, boundary 270, full 370-token arrays, model, binary, seed, sampler, batch geometry, and route controls fixed while adding only native root save, four restores including final closure, replay, and erase.
+- Untouched-live, restored, fresh-direct, and restored-replay tick-11 routes all returned correct `B`; every route emitted generated-token SHA-256 `4553BBC00B6AF27C3EBDE8F36EA9237A37B5D9C1AA182FBC65CDA71411A4B888` over identical input-token SHA-256 `9BEA7B413086C200961C0EB593B0D4F3FD62987DCC3BDA18903ABCE07543ACEE`.
+- Each carrier-backed route admitted 270 cached prompt tokens and used 106 fresh model tokens versus 376 for fresh direct. The 71,400,764-byte root reported `n_checkpoints=0` at save, every restore, and erase; restore count was four, metadata was invariant, final restoration completed, and explicit erase closed the carrier.
+- The complete measured run counted 286 Task-A tokens, 270 root-materialization tokens, and 694 tokens across all four downstream routes, totaling 1,250 fresh model tokens. Accounted request plus client root-operation wall was 64.938 seconds; the outer envelope was 217.063 seconds.
+- Root-resident host-private growth was 206,888,960 bytes; post-erase growth was 135,348,224 bytes and peak WDDM was 2,252.88 MiB. Sidecar PID `49620` stopped, port `9494` retired, and stable PID `3860` remained healthy.
+- Trace evidence reports checkpoint disablement once, no enabled line, zero checkpoint creations, and `main/do_checkpoint = no` on every task path. This closes the single-tick checkpoint-free native RAM-root lifecycle; it does not establish sustained N=16 utility or unbounded inference.
+- Canonical compact acceptance: `neo-exp-0057` at `lab/results.jsonl:70`, SHA-256 `D94B7115E4F4691EA23526A99753A27AFBC62F05E8B961AF3163C18FD42DA05A`. External result/trace SHA-256 values are `F35A720551E3F0673865116191E77A360DFE79AEC57E4FA008727D4B9B9936A0` / `7D9B405584A359EC8D25A5682F6209A73EDD4A3C879CAD828B86F88729A673EA`.
 
-**Next exact action:** hold `--ctx-checkpoints 0` and boundary 270 fixed; reintroduce the native RAM-root save/restore lifecycle in the exact tick-11 live/restored/fresh-direct/replay discriminator. Require zero context-checkpoint creations, saved-root checkpoint count zero, metadata-invariant non-consuming restores, exact generated hashes, final restore, explicit erase, and clean sidecar teardown.
+**Next exact action:** hold `--ctx-checkpoints 0` and boundary 270 fixed; rerun the existing sustained 16-branch native RAM-root panel with unchanged tasks and direct controls. Count carrier materialization, save, every branch, restoration, extraction, final closure, erase, wall, tokens, and residency; require exact carrier/direct route equivalence and clean sidecar teardown.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
