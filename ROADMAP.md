@@ -123,6 +123,8 @@ No-retry law is run-local: consumed identities and evidence remain immutable, wh
 
 Automatic promotion and stable inference modification remain forbidden.
 
+**Navigation authority:** the current-state block above and the top cursor in `TASKS.md` are the only live operation selectors. Any later use of `active`, `current`, `authorized`, `next action`, or `next task` inside checkpoint narratives records that historical boundary only and cannot override the frontier cursor.
+
 ## Catalytic runtime architecture summary
 
 `docs/CATALYTIC_RUNTIME_ROADMAP.md` is the authoritative detailed architecture;
@@ -262,11 +264,13 @@ cycle count is bounded
 
 This level is unlocked because Checkpoint RSI-0 is closed.
 
-## Level 2: Autonomous bounded RSI [LOCKED]
+## Level 2: General autonomous bounded RSI [LOCKED]
 
 Agents-A1 may execute several candidate cycles from a declared goal without manual command execution. It may revise or stop based on measured results, but may not automatically replace stable.
 
 This level unlocks when Checkpoint 5 closes.
+
+This lock does not revoke the narrower user-authorized catalytic-frontier mode described in the current-state section. At Level 1, that branch-scoped mode may autonomously select and execute successive isolated candidate experiments under the immutable goal, evidence, stable-server, and no-promotion laws. Level 2 is the broader framework unlock in which several candidate cycles may be launched from an arbitrary declared goal under the general RSI controller.
 
 ## Level 3: Recursive compute amplification [LONG-RANGE TARGET]
 
@@ -503,9 +507,9 @@ Automatic stable promotion remains forbidden.
 
 ## Checkpoint 1: Compute map
 
-Status: **ACTIVE**
+Status: **PAUSED**
 
-Active bounded objective:
+Paused performance-substrate objective:
 
 ```text
 Checkpoint 1A:
@@ -587,7 +591,7 @@ Source: `alesha-pro/llama.cpp`, `ds4-longctx` branch. Use: provenance and candid
 
 Status: **ACTIVE**
 
-### Current relational-synthesis frontier
+### Historical relational-synthesis frontier [SUPERSEDED BY CURRENT-STATE CURSOR]
 
 Published `neo-exp-0045` supports `THREE_PARENT_GLOBAL_RELATIONAL_INVARIANT_EXTRACTION_SUPPORTED_ON_TWO_MATCHED_GEOMETRIES`, with bounded interpretation `TRANSFORM_SELECTS_AN_INVARIANT_IDENTIFIABLE_ONLY_FROM_THE_COMPLETE_THREE_PARENT_RELATION_AND_NOT_FROM_ANY_SINGLE_PARENT_OR_PARENT_PAIR`. All six rank-zero selections matched the frozen unique three-way commitment across T0/T1 and cyclic orders `ABC`, `BCA`, and `CAB`; first-listed, lexical-first, first-parent, last-parent, and first-presented-pair decoy predictions were false throughout.
 
@@ -689,7 +693,7 @@ Chat-template alignment remains a low-risk adjunct, not a standalone successor. 
 
 The completed four-pair line is retired; it will not be rerun merely to apply a prospective carrier definition. Canonical decision artifact `lab/holostate_v1_executable_reuse_boundary_response_selection_1.json`, SHA-256 `F04325799786F46D8E3180DB9773DED182D38ED1E9D0C92E2CBC2B1D72FD28C1`, binds the selection, candidate assessments, same-panel retirement, and claim locks without adding a result-ledger record.
 
-The multi-branch runtime-native carrier evaluation is statically frozen as `holostate-v1-multi-branch-runtime-native-carrier-evaluation-v1`: four new roots, eight distinct branches, exact emitted-token roots, strict token-array extensions, one-slot snapshot reconstitution, exact same-token direct controls, four root readdresses, and separate snapshot accounting under 20-generation / 24-inference / 12-control ceilings. Terminal evidence is now fail-closed before admission: generations require HTTP 200, an observed `eos` stop, and exact nonempty emitted IDs/counts/hash; zero-output readdress requires HTTP 200, an observed `limit` stop, and zero counts. Incomplete transport becomes `INCONCLUSIVE` and cannot become a scientific gate, score, resource record, retry, repair, materialization, or authority. The panel remains unexecuted. The next exact action is `AUTHORIZE_ONE_LIVE_MULTI_BRANCH_RUNTIME_NATIVE_CARRIER_EVALUATION`; general catalytic inference, complete lifecycle, exact restoration, transfer, restart persistence, superiority, SOTA, and automatic promotion remain locked.
+The multi-branch runtime-native carrier evaluation was statically frozen as `holostate-v1-multi-branch-runtime-native-carrier-evaluation-v1`: four new roots, eight distinct branches, exact emitted-token roots, strict token-array extensions, one-slot snapshot reconstitution, exact same-token direct controls, four root readdresses, and separate snapshot accounting under 20-generation / 24-inference / 12-control ceilings. Terminal evidence was fail-closed before admission: generations required HTTP 200, an observed `eos` stop, and exact nonempty emitted IDs/counts/hash; zero-output readdress required HTTP 200, an observed `limit` stop, and zero counts. Incomplete transport became `INCONCLUSIVE` and could not become a scientific gate, score, resource record, retry, repair, materialization, or authority. The panel was unexecuted at that boundary. Its historical next action was `AUTHORIZE_ONE_LIVE_MULTI_BRANCH_RUNTIME_NATIVE_CARRIER_EVALUATION`; this is not current authority. General catalytic inference, complete lifecycle, exact restoration, transfer, restart persistence, superiority, SOTA, and automatic promotion remained locked.
 
 First intervention: **HoloState-v1 Live Prefix Lattice**
 

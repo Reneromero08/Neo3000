@@ -77,7 +77,9 @@ The user-authorized discovery branch `codex/catalytic-frontier` supersedes the d
 
 ---
 
-## Active queue: deterministic rank-head extraction v2
+## Historical queue: deterministic rank-head extraction v2 [CLOSED / SUPERSEDED]
+
+This preserved queue is evidence history only. It does not compete with the active catalytic-frontier cursor at the top of this file.
 
 - [x] Version the deterministic rank-head CK0 v2 external authority contract and repair the canonical public CLI bootstrap. Bind the exact 16-file implementation at `EDD064D36DD8FB123B1D095A2C613540C67BB3DCD71F6F23C6F565AAEAB4A837`; activate authority object schema `279BABE4626FEE8F69B178A0CBC23AECD58B9BFDC5579BE633B75B337797CE72` and receipt schema `898DE481CE8F896F7B6D006E7BB1357AF507597BE2EE9B31F0D3DC6337723CC5`; reject historical and intermediate identities; blacklist consumed authority-ID hash `541C7E61EBB30366D7007D8BA5EC30DB720B0817FA29CABB1625536D6B720A66`; and receive `PASS / PASS / PASS` from the authority/no-reuse, CLI/no-retry, and custody/run-design auditors.
 - [x] Preserve the failed pre-consumption invocation as non-scientific incident artifact `95B778474FC87C0369B3070EFAF9C12931A137094EFAAF0F98FDA6FC8AC83DCD`; retire `ck0-balanced-v2-rank-head-b1-full-r1` without replacement authority or retry; reserve binding-1 `ck0-balanced-v2-rank-head-b1-full-r2` followed by binding-2 `ck0-balanced-v2-rank-head-b2-full-r1`. Preserve zero runtime receipts, runtime roots, sidecars, model requests, inference, scientific results, or claim expansion.
@@ -780,7 +782,7 @@ Lane F remains thinking-disabled at 64 tokens. Lane D remains reasoning-auto at 
 - [x] Statically preregister exactly `ck0-balanced-v1b2-full-r1`, `ck0-balanced-v1b2-delete-a-r1`, and `ck0-balanced-v1b2-delete-b-r1` as reserved and unconsumed with zero authorized invocations. Only the full run is separately authorizable; both deletion controls remain unauthorized until a visible terminal full result.
 - [x] Preserve `lab/results.jsonl` unchanged. Create no runtime directory, live evidence, model output, claim unlock, cross-binding replication status, transfer status, Deep request, or automatic promotion.
 
-**Next exact action:** separately authorize only one `ck0-balanced-v1b2-full-r1` live operation from the final pushed static package. Both deletion controls remain unauthorized; a collapsed or inconclusive full result does not authorize them.
+**Historical next action at that boundary:** separately authorize only one `ck0-balanced-v1b2-full-r1` live operation from the final pushed static package. This instruction is superseded by the active catalytic-frontier cursor at the top of this file. Both deletion controls remain unauthorized; a collapsed or inconclusive full result does not authorize them.
 
 Preserved v1 executed boundary:
 
@@ -800,7 +802,7 @@ Preserved HoloState-v1 integration evidence:
 
 ---
 
-# Handoff
+# Historical handoff [SUPERSEDED BY ACTIVE FRONTIER CURSOR]
 
 - [x] Checkpoint 0 closed.
 - [x] All Pi gates verified by user.
@@ -811,4 +813,4 @@ Preserved HoloState-v1 integration evidence:
 - [x] Stable/candidate worktree design created.
 - [x] Evaluator manifest and neo-loop core created.
 - [x] Supervised RSI prompt template added.
-Next task: preserve CIB0 a1-a6, CK0 a1-a6, all three terminal binding-1 balanced-opaque runs, and the binding-2 static package exactly. Separately authorize only `ck0-balanced-v1b2-full-r1`; both deletion controls and all broader claims remain locked.
+Historical next task at that boundary: preserve CIB0 a1-a6, CK0 a1-a6, all three terminal binding-1 balanced-opaque runs, and the binding-2 static package exactly. This instruction is not current authority. The active catalytic-frontier cursor at the top of this file governs successor work.

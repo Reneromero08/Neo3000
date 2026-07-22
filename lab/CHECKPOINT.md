@@ -240,7 +240,7 @@ Full commutativity, associativity, arbitrary n-parent generalization, formal alg
 - [x] Execute Attempt 6 once from `3eaa86ffb690611f3549272bdd367c778ddf8da2`. Preserve three model captures, two carrier operations, exact catalytic reuse `1004/1004`, direct reuse `0/1180`, closure readdress `872/1004`, terminal `INCONCLUSIVE`, cleanup/postflight pass, zero retry, and archive `6AC053C53C48C9552283D6D3F75CFC635CDCF40540AA5369A2342ABE21C49AD5`. Identify the sole stop as the controller's erroneous exception on a scientifically valid false closure gate.
 - [x] Prepare Attempt 7 to record false reuse/closure gates and continue the remaining frozen pairs. Preserve the exact closure predicate and terminal `INCONCLUSIVE` law. Preregistration artifact/file are `9370CD0A2A041BD46A765728B1A93B622BB66BD3EEFF71D45E80189C453C1002` / `469062E6AEEE953988AF4DC035E4A2155673063B2E3C6D9699294CE7799BE68A`; controller is `AC85A6FDADE3D4515B5C3DF7A9766BF74CC8D0EDF57192D028FF041C5939A8E1`; frozen scientific, scorer, resource, and closure identities remain unchanged.
 
-**Next exact action:** `STATICALLY_SELECT_MINIMUM_RESPONSE_TO_EXECUTABLE_REUSE_BOUNDARY`. Do not create authority or execute a successor automatically.
+**Historical next action at that boundary:** `STATICALLY_SELECT_MINIMUM_RESPONSE_TO_EXECUTABLE_REUSE_BOUNDARY`. This is not current authority.
 
 ---
 
@@ -269,7 +269,7 @@ Full commutativity, associativity, arbitrary n-parent generalization, formal alg
 - [x] Publish adjudication artifact `lab/ck0_balanced_opaque_rank_head_v2_position_seed_crossover_adjudication_1.json` at SHA-256 `DD829AE6C4F38EDA325462AD24D030AA7DF3E74FC69D54C80DE1F9996C820B53` and canonical `neo-exp-0042` at line 55, SHA-256 `DAF072E43700F71A76537843507C578FEA38679AA15DC9A0C783090B29D5D0E8`.
 - [x] Complete bounded static publication qualification: exact archive/capture verification, zero-contact replay, adjudication reconstruction/publication validation, focused publication `7/7`, evaluator `28/28`, changed-file compilation, 19 scientific JSON documents and 55 JSONL records, private/no-smuggle scans, regenerated evaluator lock, and protected preflight. Run no complete CPU suite because no executed runtime source changed.
 
-**Next exact action:** separately authorize one bounded static scientific design choice for the next smallest discriminating experiment; do not authorize execution automatically.
+**Historical next action at that boundary:** separately authorize one bounded static scientific design choice for the next smallest discriminating experiment; do not authorize execution automatically. This is not current authority.
 
 ---
 
@@ -304,7 +304,7 @@ Full commutativity, associativity, arbitrary n-parent generalization, formal alg
 - [x] Complete static audit qualification: asymmetry reconstruction `8/8`, prior forensic regression `6/6`, affected rank-head-v2 regression `168/168`, evaluator gates `28/28`, changed-file compilation, all 48 JSON documents and 54 JSONL records, exact canonical audit bytes, a 2,446-path private/tracked-byte scan, regenerated evaluator lock, and protected preflight pass. No complete CPU suite is required because no runtime-bound source changed.
 - [x] Keep Parent-B dependence, bilateral parent dependence, general two-parent necessity, transfer, general catalytic inference, task advantage, superiority, SOTA, broader/restart HoloState, Deep, and automatic promotion locked.
 
-**Next exact action:** separately authorize static implementation and preregistration of `balanced-opaque-transform-only-position-seed-panel-v1`; create no authority and perform no live execution.
+**Historical next action at that boundary:** separately authorize static implementation and preregistration of `balanced-opaque-transform-only-position-seed-panel-v1`; create no authority and perform no live execution. This is not current authority.
 
 ---
 
@@ -323,7 +323,7 @@ Full commutativity, associativity, arbitrary n-parent generalization, formal alg
 - [x] Receive terminal `PASS / PASS / PASS` from exactly three read-only auditors: authority schema/no reuse, CLI caller gate/no retry, and custody/run design. No auditor edited files or performed live execution.
 - [x] Preserve zero active-v2 authority creation/consumption, receipts, secrets, runtime roots, sidecars, leases, model requests, retries, deletion controls, evidence rewrites, or claim expansion. PR #17 remains open and unmerged; only its exact final two file contents were incorporated.
 
-**Next exact action:** `Separately authorize only ck0-balanced-v2-rank-head-b1-full-r2 with a fresh external authority ID bound to the exact repaired protected commit.` The retired r1 and historical authority are permanently ineligible; binding-2 remains unauthorized.
+**Historical next action at that boundary:** `Separately authorize only ck0-balanced-v2-rank-head-b1-full-r2 with a fresh external authority ID bound to the exact repaired protected commit.` The retired r1 and historical authority are permanently ineligible; binding-2 remains unauthorized. This is not current authority.
 
 ---
 
@@ -340,7 +340,7 @@ Full commutativity, associativity, arbitrary n-parent generalization, formal alg
 - [x] Bind the exact four implementation files at SHA-256 `07B3F6BFD59909D369F794C07D1CEEBEE5CA4A27C668F44BD18733F03173688F`. Preregistration artifact SHA-256 is `F208A55C48EBE316564F1FFEE66857F5388503F3911FAC65AAF29159BACACB31`, canonical document SHA-256 is `4CF4188EE83AE7B2A16422A022CECC1B1C77F5C47971A4A44B1A5746F2A10CD8`, and design-contract SHA-256 is `15B7363BBC9FDA14BC270C4236DCB2BB5950926C013CB3BE6BEB74EEE4A0C8AB`.
 - [x] Preserve `BALANCED_OPAQUE_TRANSFORM_STAGE_SINGLETON_RESOLUTION_REPLICATED_ACROSS_TWO_PRIVATE_BINDINGS_ON_FROZEN_GEOMETRY` only with qualifier `EXECUTION_PREREGISTRATION_SEMANTIC_IDENTITY_VERIFIED_BYTE_SERIALIZATION_UNRECOVERED`. Binding-2 remains historically `BALANCED_OPAQUE_RELATIONAL_COLLAPSED`; no claim expands.
 
-**Next exact action:** `Separately authorize a static deterministic-rank-head v2 runtime-integration and run-design operation; no live execution.` No run ID, reservation, secret, authority, integration, inference, sidecar, retry, deletion control, or live action is authorized.
+**Historical next action at that boundary:** `Separately authorize a static deterministic-rank-head v2 runtime-integration and run-design operation; no live execution.` No run ID, reservation, secret, authority, integration, inference, sidecar, retry, deletion control, or live action is authorized. This is not current authority.
 
 ---
 
@@ -359,7 +359,7 @@ Full commutativity, associativity, arbitrary n-parent generalization, formal alg
 - [x] Select Lane A and `IMPLEMENT_DETERMINISTIC_RANK_HEAD_EXTRACTION`. Unlock only qualified non-production `BALANCED_OPAQUE_TRANSFORM_STAGE_SINGLETON_RESOLUTION_REPLICATED_ACROSS_TWO_PRIVATE_BINDINGS_ON_FROZEN_GEOMETRY`; preserve binding-2 terminal `BALANCED_OPAQUE_RELATIONAL_COLLAPSED` and extraction finding `MODEL_AUTHORED_EXTRACTION_CLOSURE_NOT_REPLICATED_ACROSS_PRIVATE_BINDINGS`.
 - [x] Preserve raw manifest/result/closure, consumed authority receipt, both private roots, both historical preregistrations, `lab/results.jsonl`, all historical classifications, and both unauthorized deletion controls. The adjudication made zero model requests, launched zero sidecars, created no authority, reservation, or secret, and changed no runtime mechanism or existing test.
 
-**Next exact action:** `Statically implement and preregister balanced-opaque-relational-carrier-v2-deterministic-rank-head-extraction with no live execution.` Preserve the custody qualifier and all locked claims; reserve no run and grant no authority.
+**Historical next action at that boundary:** `Statically implement and preregister balanced-opaque-relational-carrier-v2-deterministic-rank-head-extraction with no live execution.` Preserve the custody qualifier and all locked claims; reserve no run and grant no authority. This is not current authority.
 
 ---
 
@@ -394,7 +394,7 @@ The two original auditor roles returned terminal `PASS / PASS` on the same froze
 - [x] Reserve only `ck0-balanced-v1b2-full-r1`, `ck0-balanced-v1b2-delete-a-r1`, and `ck0-balanced-v1b2-delete-b-r1`, all unconsumed with `authorized_invocations = 0`. Create no runtime directory, live result, model request, sidecar, or claim unlock.
 - [x] Preserve `lab/results.jsonl` unchanged and keep cross-binding replication, general two-parent necessity, transfer, general catalytic inference, advantage, superiority, SOTA, broader/restart HoloState, Deep, and promotion locked.
 
-**Next exact action:** separately authorize only `ck0-balanced-v1b2-full-r1`. Both deletion controls remain unauthorized until that full-information run is terminally published as visible; collapse or inconclusion does not authorize them.
+**Historical next action at that boundary:** separately authorize only `ck0-balanced-v1b2-full-r1`. Both deletion controls remain unauthorized until that full-information run is terminally published as visible; collapse or inconclusion does not authorize them. This is not current authority.
 
 ## Historical checkpoint: Balanced opaque CK0 causal package adjudicated; fresh-binding replication selected
 
@@ -434,7 +434,7 @@ The two original auditor roles returned terminal `PASS / PASS` on the same froze
 - [x] Apply the frozen decision law and select `REPLICATE_TRIAD_UNDER_FRESH_PRIVATE_BINDING`. Freeze `balanced-opaque-relational-carrier-v1-binding-2` and future run-ID labels only; create no implementation, preregistration, private root, run key, reservation, or live authorization.
 - [x] Preserve `BALANCED_OPAQUE_RELATIONAL_FULL_INFORMATION_VISIBLE`, both directional balanced-carrier dependence statuses, and the bilateral balanced-carrier status exactly. Unlock no new claim; keep general two-parent necessity, transfer, general catalytic inference, advantage, superiority, SOTA, broader/restart HoloState, Deep, and promotion locked.
 
-**Next exact action:** separately authorize one static-only implementation and preregistration operation for `balanced-opaque-relational-carrier-v1-binding-2`. A later operation may create the independent private root and reserve `ck0-balanced-v1b2-full-r1`, `ck0-balanced-v1b2-delete-a-r1`, and `ck0-balanced-v1b2-delete-b-r1`; no live run or deletion-control authority exists now.
+**Historical next action at that boundary:** separately authorize one static-only implementation and preregistration operation for `balanced-opaque-relational-carrier-v1-binding-2`. A later operation may create the independent private root and reserve `ck0-balanced-v1b2-full-r1`, `ck0-balanced-v1b2-delete-a-r1`, and `ck0-balanced-v1b2-delete-b-r1`; no live run or deletion-control authority exists now. This is not current authority.
 
 ## Historical checkpoint: CK0 Branch-B information-deletion control complete
 
@@ -450,7 +450,7 @@ The two original auditor roles returned terminal `PASS / PASS` on the same froze
 - [x] Bind post-execution artifact SHA-256 `162600D74A96C6E4C1797484D6123C2FFD710296CEDFFEC859A6DA008D70B512`, a6 manifest SHA-256 `84EC7998242E7AE11F1238C59E354FB883BC91ACB33E8FAB78AE34365E1B13B3`, result SHA-256 `C606B1C25B7C2F126F3334FFBCA6DA47A477822BBEFCBFA0AF88C3634B64316E`, and closure-file SHA-256 `5ECBBF0693A485F5C1A47663E3EB7007BE71C6699097994ED9487D14BE23C34B`.
 - [x] Preserve only the existing non-production status `BRANCH_A_INFORMATION_DEPENDENCE_SUPPORTED_ON_FROZEN_CARRIER`. Unlock no Branch-B dependence or bilateral dependence status; keep general two-parent necessity, transfer, task advantage, superiority, SOTA, general catalytic inference, broader process-local/restart persistence, Deep, and automatic promotion locked.
 
-**Next exact action:** preserve CIB0 a1-a6 and CK0 a1-a6 exactly. Both directional information-deletion authorizations are consumed; no further run or causal follow-on is authorized.
+**Historical next action at that boundary:** preserve CIB0 a1-a6 and CK0 a1-a6 exactly. Both directional information-deletion authorizations are consumed; no further run or causal follow-on is authorized under that consumed operation. This is not current authority.
 
 ## Historical checkpoint: CK0 Branch-A information-deletion control complete
 
@@ -466,7 +466,7 @@ The two original auditor roles returned terminal `PASS / PASS` on the same froze
 - [x] Bind a5 manifest SHA-256 `DB8E28F898E4D9342CB53077FF416B84AA5F71596F71294E661AA36CCAE2F00B`, result SHA-256 `60C8BE5B5F9634FA9C30311BC7CEEDFD822C5A882E83BEDBA3B0257EEC024AFB`, and closure-file SHA-256 `E86DC79CE32FFF5B1740CE8D2A733C7D304156F7E775541BF705263A267C729F`.
 - [x] Unlock only non-production status `BRANCH_A_INFORMATION_DEPENDENCE_SUPPORTED_ON_FROZEN_CARRIER`. Keep Branch-B necessity, general two-parent necessity, transfer, task advantage, superiority, SOTA, general catalytic inference, broader process-local/restart persistence, Deep, and automatic promotion locked.
 
-**Next exact action:** preserve CIB0 a1-a6 and CK0 a1-a5 exactly. The sole Branch-A information-deletion authorization is consumed; no further run or causal follow-on is authorized.
+**Historical next action at that boundary:** preserve CIB0 a1-a6 and CK0 a1-a5 exactly. The sole Branch-A information-deletion authorization is consumed; no further run or causal follow-on is authorized under that consumed operation. This is not current authority.
 
 ## Historical checkpoint: CK0 unresolved-support exact replication complete
 
@@ -482,7 +482,7 @@ The two original auditor roles returned terminal `PASS / PASS` on the same froze
 - [x] Unlock only non-production status `BOUNDED_RELATIONAL_UNCERTAINTY_REDUCTION_REPLICATED`. Exact statement: “The bounded CK0 unresolved-support catalytic mechanism reproduced once under the exact frozen carrier, implementation, model, binary, seeds, and six-request process.”
 - [x] Keep task advantage, superiority, SOTA, general catalytic inference, broader process-local/restart persistence, Deep, and automatic promotion locked.
 
-**Next exact action:** preserve CIB0 a1-a6 and CK0 a1-a4 exactly. The sole preregistered replication authorization is consumed; no further run or causal follow-on is authorized.
+**Historical next action at that boundary:** preserve CIB0 a1-a6 and CK0 a1-a4 exactly. The sole preregistered replication authorization is consumed; no further run or causal follow-on is authorized under that consumed operation. This is not current authority.
 
 ## Historical checkpoint: CK0 unresolved complementary carrier executed once
 
@@ -499,7 +499,7 @@ The two original auditor roles returned terminal `PASS / PASS` on the same froze
 - [x] Restoration and cleanup passed with zero active leases, identical carrier/root identity, exact root reuse, free port 9494, stable PID `37084`, archived candidate custody, historical CIB0 tree `57CE7FFFEBBB925BBD3B37F55A9394037720018748776C2C42DD17961D8ECCBD`, and historical CK0 a1/a2 tree `BB15C248EFBF075F77899161FC6EEDCD28830097CB6D0B67D7BB7F368ADCC249` preserved.
 - [x] Bind manifest `CA4B5781F9023380AA218E6E881F98706A2077BB420359095E0C0C2043FEF389`, result `EB6BA8376D2B594D31A86478BC409E7EB4734C5AF3B6082F6292721B26BDFD4B`, and closure-file `34825DE4069B63E5A03E380A9580926EEFFE4746611FADC49757524CF3EA6B4D`. Classification is `CATALYTIC_KERNEL_VISIBLE`; all task-advantage, superiority, SOTA, general catalytic inference, persistence, Deep, and promotion claims remain locked.
 
-**Next exact action:** preserve CK0 a1-a3 exactly. No rerun or additional carrier profile is authorized.
+**Historical next action at that boundary:** preserve CK0 a1-a3 exactly. No rerun or additional carrier profile is authorized under that consumed operation. This is not current authority.
 
 ## Historical checkpoint: CIB0 frozen and Catalytic Kernel 0 cycle closed
 
@@ -521,7 +521,7 @@ The two original auditor roles returned terminal `PASS / PASS` on the same froze
 - [x] Trusted restoration passed with zero active leases, identical carrier/root identities, CIB0 tree preserved, sidecar retired, port 9494 free, stable server preserved, and all temporary state removed.
 - [x] Bind result SHA-256 `3161D42296E6CEB4E2803D00ADB790A23E98CD7556FDBD17FA1C4EC4B44EC85F`, manifest SHA-256 `3E2FB2040513EF44CA02A5D0EFFE91A1AC60C3D0357E18820526402C12409E8E`, and closure SHA-256 `6F179087C48F98A0E0BF88B7D264AD55D9068E74643C6C9EAB1C56ACA3335AD4` as `CATALYTIC_KERNEL_COLLAPSED`. All production, advantage, SOTA, broader HoloState, persistence, Deep, and promotion claims remain locked.
 
-**Next exact action:** preserve CK0 a1 and a2 exactly. No further live execution, tuning, semantic repair, successor, or claim action is authorized; any follow-on requires a separately authorized static boundary.
+**Historical next action at that boundary:** preserve CK0 a1 and a2 exactly. No further live execution, tuning, semantic repair, successor, or claim action was authorized at that boundary. This is not current authority.
 
 ## Historical checkpoint: CS1 loop closed and Catalytic Inference Bench 0 statically ready
 
@@ -540,7 +540,7 @@ The two original auditor roles returned terminal `PASS / PASS` on the same froze
 - [x] Changed bench/custody Python files compile; evaluator lock validation and protected preflight pass.
 - [x] Static verification launched zero sidecars and made zero model requests.
 
-**Next exact action:** commit and fast-forward push the verified architecture, then execute one repeatable `explore-catalytic-inference-0` run on `cs1-task-06` under a new run ID. Do not execute any CS1 command, expose hidden data, claim task advantage or SOTA, run Deep, or promote automatically.
+**Historical next action at that boundary:** commit and fast-forward push the verified architecture, then execute one repeatable `explore-catalytic-inference-0` run on `cs1-task-06` under a new run ID. Do not execute any CS1 command, expose hidden data, claim task advantage or SOTA, run Deep, or promote automatically. This is not current authority.
 
 ## Checkpoint 0: Baseline parity
 
