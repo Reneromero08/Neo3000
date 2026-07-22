@@ -25,11 +25,11 @@ The unbounded claim gate requires:
 - exact restoration or explicitly declared closure
 - a constructive recurrence, inductive invariant, or formal bridge plus finite scaling evidence
 
-Documentation alignment creates no experimental authority and does not change any verdict, metric, artifact identity, or claim ceiling.
+The aligned north-star contract plus current user direction authorizes bounded autonomous non-retry successor cycles. This changes no existing verdict, metric, artifact identity, or claim ceiling.
 
-## Catalytic frontier: direct-only two-panel qualification closed; one accepted, one rejected; frontier paused
+## Catalytic frontier: direct-only two-panel qualification closed; one accepted, one rejected; autonomous successor mode active
 
-**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE NATIVE RAM-ROOT LIFECYCLE EXACT AT TICK11 / CHECKPOINT-FREE N16 FIXED RESIDENCY AND POSITIVE TOKEN-WALL AMORTIZATION / COLDCHAIN DIRECT N16 QUALIFIED / DATACENTER DIRECT N16 REJECTED 15 OF 16 / TWO ACCEPTED PANELS NOT ESTABLISHED / CARRIER AND SCALING BLOCKED / FRONTIER PAUSED / UNBOUNDED CLAIM NOT YET SUPPORTED
+**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE NATIVE RAM-ROOT LIFECYCLE EXACT AT TICK11 / CHECKPOINT-FREE N16 FIXED RESIDENCY AND POSITIVE TOKEN-WALL AMORTIZATION / COLDCHAIN DIRECT N16 QUALIFIED / DATACENTER DIRECT N16 REJECTED 15 OF 16 / TWO ACCEPTED PANELS NOT ESTABLISHED / BOUNDED AUTONOMOUS NON-RETRY SUCCESSOR MODE ACTIVE / UNBOUNDED CLAIM NOT YET SUPPORTED
 
 - Candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c` packages the retryable live-carrier and eight-projection fanout harness plus five focused no-model tests.
 - Datacenter: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5786802030`, `2.3747072600`, `3.3070996147`; average fresh tokens per useful branch `492.5`, `320.25`, `227.125` at N=`2,4,8`.
@@ -94,9 +94,9 @@ Documentation alignment creates no experimental authority and does not change an
 - Trace evidence reports checkpoint disablement once, zero enablement, zero checkpoint creation, 68 `do_checkpoint = no` decisions, and zero yes decisions. Carrier operations, snapshot operations, cache-enabled branches, and slot save/restore/erase activity are all zero.
 - Sidecar PID `56072` stopped, port `9494` retired, stable PID `3860` remained the sole healthy listener on `9292`, and peak isolated WDDM was 2,252.88 MiB. External result/trace identities are 24,386 bytes / `07E276EA127AD96A7BC3E10B4FBFD0B807A02FE538CD7BB75CF67073BDF35638` and 2,575,786 bytes / `A9B6BDCCEE89FA7BDE4FF6FA88C363CD61BE51156E800C43C8496D4A2F69264F`.
 - Canonical compact rejection: `neo-exp-0059` at `lab/results.jsonl:72`, SHA-256 `283585C80B90EDF22D0251060469A7A4930428582C43C3746B34F02990C7C54C`. Cold-chain is preserved as qualified; datacenter is preserved as rejected; two accepted panels, carrier authority, equal-utility N=16, N=32/N=64, and the unbounded endpoint remain unsupported. The claim ceiling is unchanged.
-- The operation ends here by explicit user boundary. No unchanged-panel retry, observed-answer replacement, new panel, carrier evaluation, scaling run, mechanism, promotion, or follow-on experiment was executed.
+- The `neo-exp-0059` operation ended at this exact boundary: no unchanged-panel retry, observed-answer replacement, new panel, carrier evaluation, scaling run, mechanism, promotion, or follow-on experiment occurred inside that operation. Its closure does not prohibit later successors under new IDs.
 
-**Next exact action:** `AWAIT_EXPLICIT_POST_REALIGNMENT_AUTHORIZATION`. The documents are aligned; the completed operation and this documentation update authorize no further frontier execution.
+**Next exact action:** `AUTONOMOUSLY_SELECT_PREREGISTER_AND_EXECUTE_MINIMUM_NON_RETRY_SUCCESSOR`. Continue bounded candidate-only cycles without routine per-cycle permission; preserve consumed evidence and all stable/promotion locks.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 

@@ -39,11 +39,35 @@ An agent must not rely on chat history when the repository task board says somet
 
 ## Current mode
 
-Checkpoint 0 is closed. Checkpoint 2 remains the active architectural checkpoint, but the `codex/catalytic-frontier` execution cursor is paused at the clean `neo-exp-0059` qualifier boundary.
+Checkpoint 0 is closed. Checkpoint 2 remains the active architectural checkpoint, and bounded autonomous successor execution resumes from the clean `neo-exp-0059` qualifier boundary.
 
 Current evidence supports only `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`. The checkpoint-free N=16 run showed fixed-residency positive token and wall amortization but failed its strict utility gate; the direct-only qualifier then accepted cold-chain at `16/16`, rejected datacenter at `15/16`, and created no carrier authority.
 
-Documentation alignment does not authorize execution. Await explicit post-realignment authorization before any retry, replacement panel, carrier evaluation, N=32/N=64 scaling, new mechanism, promotion, or follow-on experiment.
+Bounded autonomous catalytic-frontier successor mode is active.
+
+Within `codex/catalytic-frontier`, an agent may continue without per-cycle human authorization to:
+
+- choose the smallest evidence-driven causal hypothesis
+- create a new experiment or attempt ID and preregister its gates
+- modify candidate/frontier mechanisms while preserving stable isolation
+- build and execute bounded candidate experiments against identical direct controls
+- append one compact result, update the active control documents, and make meaningful local commits
+- continue into the next bounded successor cycle when the result and safety gates identify a lawful next action
+
+`No retry` is scoped to a consumed experiment or attempt identity and its immutable evidence. It forbids rerunning, overwriting, answer-replacing, or outcome-shopping that consumed operation.
+
+A new successor is not a retry when it has a new ID, an evidence-motivated hypothesis, a declared causal intervention, fresh preregistration, complete accounting, and preserved predecessor evidence. Replication is also allowed when declared prospectively under a new ID.
+
+Historical no-authority and no-follow-on statements remain binding only on the historical operation they close; they do not override this active frontier authority.
+
+Autonomy does not authorize:
+
+- rerunning a consumed experiment or rewriting its result
+- deleting or weakening negative evidence
+- mutating the stable server, stable worktree, or protected main history
+- pushing, merging, or promoting a candidate automatically
+- expanding to substantial external physical resources without user approval
+- emitting an unbounded/infinite claim without the finite evidence and constructive bridge required by the north-star contract
 
 During later exploration, enter the hypothesis fully and use delusional optimism as a generative engine. Assume a proposal may be right long enough to break every removable barrier. This stance generates mechanisms and experiments. It is not itself proof.
 
@@ -159,7 +183,7 @@ Once Checkpoint 0 and the benchmark harness are complete, a bounded Agents-A1 lo
 10. append one result
 11. update the checkpoint and task board only when an acceptance gate is actually closed
 
-Stop immediately on:
+Stop the affected cycle immediately on:
 
 - build-system drift unrelated to the hypothesis
 - model-output corruption
@@ -169,5 +193,7 @@ Stop immediately on:
 - stable-server mutation
 - repeated crashes
 - restoration or branch-isolation failure
+
+These conditions stop the affected cycle, not the research program. Preserve the failure, restore the violated gate candidate-side when possible, create a new successor ID, and continue; request user direction only when safe repair requires stable/main mutation, substantial external resources, or another out-of-scope action.
 
 Automatic promotion is forbidden until a later checkpoint explicitly authorizes it.

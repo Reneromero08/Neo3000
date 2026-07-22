@@ -49,7 +49,17 @@ Current results remain bounded evidence. N=8 is the accepted fanout waypoint; N=
 
 `neo-exp-0059` completes the frozen direct-only checkpoint-zero qualification without carrier contact. Cold-chain achieves exact `16/16`; datacenter is preserved as rejected at `15/16` after a single unambiguous branch-9 miss. All 32 direct branches are cache-disabled with zero cached prompt tokens, and the trace contains zero checkpoint creation, carrier, snapshot, or root-operation activity. This establishes one trustworthy direct panel, not two, and creates no carrier, N=32/N=64, equal-utility N=16, or unbounded-inference authority.
 
-The `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` operation is closed at this mixed accepted/rejected evidence boundary. The long-term catalytic objective and claim ceiling are unchanged. The documents are now aligned, but frontier execution remains paused pending explicit post-realignment authorization. No retry, observed-answer replacement, new panel, carrier evaluation, scaling run, new mechanism, promotion, or follow-on experiment is authorized by this handoff.
+The `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` operation is closed at this mixed accepted/rejected evidence boundary. The long-term catalytic objective and claim ceiling are unchanged, and its accepted cold-chain and rejected datacenter evidence remain immutable.
+
+Bounded autonomous non-retry successor mode is active from this checkpoint.
+
+`No retry` means no rerun, overwrite, answer replacement, or outcome-conditioned repair of a consumed experiment ID. It does not prohibit a new panel, carrier evaluation, scaling run, causal discriminator, prospective replication, or mechanism under a new ID and preregistered contract.
+
+The agent may autonomously select, prepare, execute, adjudicate, record, and locally commit successive candidate-only experiments while stable remains protected and every result updates the N/T/R/B evidence map.
+
+Every cycle must preserve predecessor evidence, make one causal intervention, count all costs, enforce quality/restoration gates, and leave the next exact action truthful.
+
+Historical no-follow-on statements are local closures for their named operations and do not suspend this active frontier authority.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 

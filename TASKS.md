@@ -7,9 +7,9 @@
 **Frontier exact-commit evidence:** `neo-exp-0050` at `lab/results.jsonl:63`, SHA-256 `5D90FCDABC8AD103A43803821E91C769641D8687BF74C6F7D68CE16593916EB6`, candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c`; two Agents-A1 geometries passed N=`2,4,8`
 **Latest causal boundary:** `neo-exp-0059` at `lab/results.jsonl:72`, SHA-256 `283585C80B90EDF22D0251060469A7A4930428582C43C3746B34F02990C7C54C`; the frozen direct-only checkpoint-zero qualifier completed all 32 branches with zero cache reuse: cold-chain passed `16/16`, datacenter was rejected at `15/16`, and no carrier authority was created.
 **Claim ceiling:** `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`
-**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED / CHECKPOINT_ENABLED_EXECUTION_PATH_CAUSAL_AT_TICK11 / CHECKPOINT_FREE_NATIVE_RAM_ROOT_LIFECYCLE_EXACT_AT_TICK11 / CHECKPOINT_FREE_N16_FIXED_RESIDENCY_AND_POSITIVE_AMORTIZATION / WEAK_DIRECT_BASELINE_REJECTS_EQUAL_UTILITY / COLDCHAIN_STRONG_DIRECT_N16_QUALIFIED / DATACENTER_STRONG_DIRECT_N16_REJECTED_15_OF_16 / TWO_ACCEPTED_PANELS_NOT_ESTABLISHED / CARRIER_BLOCKED / FRONTIER_PAUSED`
-**Active bounded objective:** `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` is closed from one frozen, no-retry execution: preserve the accepted cold-chain panel and rejected datacenter panel exactly, create no carrier authority, and stop at this clean evidence checkpoint.
-**Next exact action:** `AWAIT_EXPLICIT_POST_REALIGNMENT_AUTHORIZATION` — the documents are aligned, but no carrier, N=32/N=64 scaling, panel retry or replacement, new mechanism, promotion, or follow-on experiment is authorized.
+**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED / CHECKPOINT_ENABLED_EXECUTION_PATH_CAUSAL_AT_TICK11 / CHECKPOINT_FREE_NATIVE_RAM_ROOT_LIFECYCLE_EXACT_AT_TICK11 / CHECKPOINT_FREE_N16_FIXED_RESIDENCY_AND_POSITIVE_AMORTIZATION / WEAK_DIRECT_BASELINE_REJECTS_EQUAL_UTILITY / COLDCHAIN_STRONG_DIRECT_N16_QUALIFIED / DATACENTER_STRONG_DIRECT_N16_REJECTED_15_OF_16 / TWO_ACCEPTED_PANELS_NOT_ESTABLISHED / BOUNDED_AUTONOMOUS_NON_RETRY_SUCCESSOR_MODE_ACTIVE`
+**Closed predecessor objective:** `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` ended in one frozen no-retry execution; preserve the accepted cold-chain panel and rejected datacenter panel exactly. Its closure does not block the active autonomous successor objective below.
+**Next exact action:** `AUTONOMOUSLY_SELECT_PREREGISTER_AND_EXECUTE_MINIMUM_NON_RETRY_SUCCESSOR` — continue bounded candidate-only research without per-cycle permission; preserve every consumed experiment, use a new ID and one evidence-driven causal intervention, and keep stable mutation and automatic promotion forbidden.
 
 ## Long-term destination [ALIGNED]
 
@@ -38,7 +38,7 @@ At every finite stage, acceptance requires:
 - exact restoration or explicitly declared closure
 - no extrapolation from a large finite `N` without the bridge argument
 
-Execution remains paused at `neo-exp-0059` until the user separately authorizes one bounded post-realignment action.
+Bounded autonomous successor execution is active from `neo-exp-0059`. After each cycle, preserve the result, update the active cursor, and continue to the next lawful N/T/R/B or ordinary-speed intervention without requesting routine per-cycle authorization.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -73,7 +73,7 @@ The user-authorized discovery branch `codex/catalytic-frontier` supersedes the d
 - [x] Hold checkpoints at zero and boundary at 270; reintroduce the native RAM-root save/restore/replay/closure/erase lifecycle in the exact tick-11 discriminator. `neo-exp-0057` passes exact live/restored/direct/replay equivalence with root checkpoint count zero throughout and clean closure.
 - [x] Hold checkpoints at zero and boundary at 270; rerun the existing sustained 16-branch RAM-root panel with unchanged task geometry, exact direct controls, and every declared cost counted. `neo-exp-0058` yields `2.3837301587x` fresh-token and `1.2040314982x` wall amplification under one fixed root, but rejects strict utility at catalytic/direct `10/16` versus `9/16`.
 - [x] Execute the frozen direct-only qualification of the datacenter and cold-chain 16-branch panels once with checkpoints zero and no carrier path. `neo-exp-0059` preserves cold-chain as accepted at `16/16` and datacenter as rejected at `15/16`; the sole datacenter miss is valid evidence, not a key defect, so the two-accepted-panel gate remains closed.
-- [ ] Await explicit post-realignment authorization from this clean checkpoint; documentation alignment alone authorizes no retry, replacement panel, carrier, N=32/N=64 scaling, new mechanism, promotion, or follow-on experiment.
+- [ ] Continue bounded autonomous non-retry successor cycles from `neo-exp-0059`. Select the smallest high-information next experiment from live evidence; a new unused direct panel, carrier discriminator, scaling step, or new mechanism is allowed when its prerequisites are met. Never rerun or rewrite a consumed ID, and never mutate or promote stable automatically.
 
 ---
 

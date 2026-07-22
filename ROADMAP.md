@@ -105,19 +105,23 @@ RSI-0: CLOSED
 -> Checkpoint 0: CLOSED / NEO3000_BASELINE_OPERATIONAL
 -> SUPERVISED_BOUNDED_RSI_AVAILABLE unlocked for Level 1 supervised work
 -> Checkpoint 1A: trace substrate PAUSED
--> Checkpoint 2: ACTIVE architecturally; catalytic-frontier execution PAUSED
+-> Checkpoint 2: ACTIVE; bounded autonomous non-retry catalytic-frontier successor cycles ACTIVE
 -> neo-exp-0050: exact process-local equal-utility fanout amortization accepted through N=2,4,8
 -> neo-exp-0051..0057: carrier boundary localized; checkpoint-free tick-11 native RAM-root lifecycle exact
 -> neo-exp-0058: N=16 fixed-residency positive token/wall amortization observed; strict utility gate rejected
 -> neo-exp-0059: direct-only cold-chain accepted 16/16; datacenter rejected 15/16; no carrier contact
 -> claim ceiling: PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8
--> next exact action: AWAIT_EXPLICIT_POST_REALIGNMENT_AUTHORIZATION
+-> next exact action: AUTONOMOUSLY_SELECT_PREREGISTER_AND_EXECUTE_MINIMUM_NON_RETRY_SUCCESSOR
 -> all earlier CS1, CK0, and HoloState evidence remains historical and frozen unless separately reopened
 ```
 
 The global claim ceiling remains `NEO3000_BASELINE_OPERATIONAL`. The separate mechanism status `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN` records what HoloState-0 demonstrated without claiming restart persistence.
 
-No autonomous RSI. No automatic promotion. No stable inference modification outside declared candidate cycles.
+Bounded autonomous frontier research is permitted at Level 1 inside isolated candidate cycles. The agent may select and execute successive experiments, update the evidence cursor, and continue without routine per-cycle approval.
+
+No-retry law is run-local: consumed identities and evidence remain immutable, while new evidence-driven successor and prospective replication IDs remain allowed.
+
+Automatic promotion and stable inference modification remain forbidden.
 
 ## Catalytic runtime architecture summary
 
