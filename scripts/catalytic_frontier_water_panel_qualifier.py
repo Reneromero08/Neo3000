@@ -12,6 +12,7 @@ import json
 import os
 import shutil
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -23,6 +24,9 @@ import catalytic_frontier_strong_panel_qualifier as base
 ROOT_ID = "mb-runtime-water-04"
 PANEL_SIZE = 16
 PANEL_ORDER = tuple(range(1, PANEL_SIZE + 1))
+STARTUP_HEALTH_RECOVERY_SECONDS = 15.0
+STARTUP_HEALTH_RECOVERY_SUCCESSES = 3
+STARTUP_READINESS_CONTROL_SHA256 = "3A7CD00D378A03325ED83F31CB4F211C50D3FF2242FF9684FD71955C97E63626"
 PANEL_EXTENSION: list[dict[str, Any]] = [
     {
         "question": "Which service must retain pressure from North throughout the work?",
@@ -149,6 +153,56 @@ def panel_for(root: Mapping[str, Any]) -> list[dict[str, Any]]:
     return panel
 
 
+def startup_health_recovery_policy() -> Any:
+    return harness.live_runtime.StableHealthRecoveryPolicy(
+        maximum_consecutive_failure_seconds=STARTUP_HEALTH_RECOVERY_SECONDS,
+        required_consecutive_successes=STARTUP_HEALTH_RECOVERY_SUCCESSES,
+    )
+
+
+def startup_readiness_control(evaluator: Mapping[str, Any]) -> dict[str, Any]:
+    protocol = evaluator.get("holostate_worker_protocol_v4")
+    harness.require(isinstance(protocol, Mapping), "worker-v4 readiness protocol is unavailable")
+    control = protocol.get("readiness_control")
+    harness.require(isinstance(control, Mapping), "worker-v4 readiness control is unavailable")
+    control_copy = dict(control)
+    control_hash = harness.sha256_bytes(harness.carrier.canonical_json_bytes(control_copy))
+    harness.require(
+        control_hash == STARTUP_READINESS_CONTROL_SHA256,
+        "worker-v4 readiness control identity changed",
+    )
+    return control_copy
+
+
+def build_sidecar(
+    *,
+    binary: Path,
+    model: Path,
+    evaluator: dict[str, Any],
+    live_contract: dict[str, Any],
+    stable_pids: set[int],
+    state_root: Path,
+    context_checkpoints: int,
+) -> Any:
+    readiness_control = startup_readiness_control(evaluator)
+    readiness_deadline_at = time.monotonic() + float(readiness_control["readiness_deadline_seconds"])
+    return checkpoint_control.ScopedCheckpointDiscoverySidecar(
+        binary,
+        model,
+        evaluator,
+        live_contract,
+        detached=False,
+        stable_pids=stable_pids,
+        readiness_control=readiness_control,
+        prelaunch_evidence={"stable_pids": sorted(stable_pids)},
+        readiness_deadline_at=readiness_deadline_at,
+        state_root=state_root,
+        advisory_wddm=True,
+        context_checkpoints=context_checkpoints,
+        stable_health_recovery_policy=startup_health_recovery_policy(),
+    )
+
+
 def evaluate(
     *,
     sidecar: Any,
@@ -211,15 +265,13 @@ def main() -> int:
         os.environ["LLAMA_ARG_LOG_VERBOSITY"] = "1000"
         os.environ["LLAMA_SERVER_SLOTS_DEBUG"] = "1"
     try:
-        sidecar = checkpoint_control.ScopedCheckpointDiscoverySidecar(
-            binary,
-            model,
-            evaluator,
-            live_contract,
-            detached=False,
+        sidecar = build_sidecar(
+            binary=binary,
+            model=model,
+            evaluator=evaluator,
+            live_contract=live_contract,
             stable_pids=set(stable_pids),
             state_root=state_root,
-            advisory_wddm=True,
             context_checkpoints=args.ctx_checkpoints,
         )
         readiness = sidecar.launch()

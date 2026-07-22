@@ -65,5 +65,50 @@ class CatalyticFrontierWaterPanelQualifierTests(unittest.TestCase):
         self.assertEqual(args.ctx_checkpoints, 0)
 
 
+    def test_startup_health_recovery_is_bounded_and_startup_only(self) -> None:
+        policy = qualifier.startup_health_recovery_policy()
+        self.assertEqual(policy.maximum_consecutive_failure_seconds, 15.0)
+        self.assertEqual(policy.required_consecutive_successes, 3)
+        evaluator = qualifier.harness.live_runtime.load_json(
+            qualifier.harness.live_runtime.EVALUATOR_PATH
+        )
+        control = qualifier.startup_readiness_control(evaluator)
+        self.assertEqual(
+            qualifier.harness.sha256_bytes(
+                qualifier.harness.carrier.canonical_json_bytes(control)
+            ),
+            qualifier.STARTUP_READINESS_CONTROL_SHA256,
+        )
+        with (
+            mock.patch.object(
+                qualifier.checkpoint_control,
+                "ScopedCheckpointDiscoverySidecar",
+            ) as sidecar_type,
+            mock.patch.object(qualifier.time, "monotonic", return_value=100.0),
+        ):
+            built = qualifier.build_sidecar(
+                binary=Path("candidate.exe"),
+                model=Path("model.gguf"),
+                evaluator=evaluator,
+                live_contract={},
+                stable_pids={3860},
+                state_root=Path("state-root"),
+                context_checkpoints=0,
+            )
+        self.assertIs(built, sidecar_type.return_value)
+        kwargs = sidecar_type.call_args.kwargs
+        self.assertEqual(kwargs["readiness_control"], control)
+        self.assertEqual(kwargs["readiness_deadline_at"], 280.0)
+        self.assertEqual(kwargs["prelaunch_evidence"], {"stable_pids": [3860]})
+        self.assertEqual(kwargs["context_checkpoints"], 0)
+        integrated_policy = kwargs["stable_health_recovery_policy"]
+        self.assertEqual(integrated_policy.maximum_consecutive_failure_seconds, 15.0)
+        self.assertEqual(integrated_policy.required_consecutive_successes, 3)
+        launch_source = inspect.getsource(qualifier.harness.live_runtime.LiveSidecar.launch)
+        active_source = inspect.getsource(qualifier.harness.live_runtime.LiveSidecar.require_active)
+        self.assertIn("if self.readiness_control is None", launch_source)
+        self.assertIn("stable_health_recovery_policy=self.stable_health_recovery_policy", launch_source)
+        self.assertNotIn("stable_health_recovery_policy", active_source)
+
 if __name__ == "__main__":
     unittest.main()
