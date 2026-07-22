@@ -5,11 +5,11 @@
 **Baseline evidence through:** CatalyticSwarm-0 v2 integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`; bound `reviewable-accept` result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Frontier exact-commit evidence:** `neo-exp-0050` at `lab/results.jsonl:63`, SHA-256 `5D90FCDABC8AD103A43803821E91C769641D8687BF74C6F7D68CE16593916EB6`, candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c`; two Agents-A1 geometries passed N=`2,4,8`
-**Latest causal boundary:** `neo-exp-0057` at `lab/results.jsonl:70`, SHA-256 `D94B7115E4F4691EA23526A99753A27AFBC62F05E8B961AF3163C18FD42DA05A`; with context checkpoints held at zero, the 270-token native RAM root remained exact through live use, four restores including final closure, replay, and erase, with every root operation reporting zero checkpoints.
+**Latest causal boundary:** `neo-exp-0058` at `lab/results.jsonl:71`, SHA-256 `494D8084DC693FE69E63B96E4C7D4B730E7EE19C48D712C5BA96857E7D1FB2D9`; checkpoint-free N=16 preserves one fixed zero-checkpoint root and positive token/wall amortization, repairs tick 11, and scores catalytic/direct `10/16` versus `9/16`, but fails the strict utility/equality gate on a weak direct baseline.
 **Claim ceiling:** `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`
-**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED / CHECKPOINT_ENABLED_EXECUTION_PATH_CAUSAL_AT_TICK11 / CHECKPOINT_FREE_270_TOKEN_PREFIX_EXACT / CHECKPOINT_FREE_NATIVE_RAM_ROOT_LIFECYCLE_EXACT_AT_TICK11 / SUSTAINED_N16_REQUALIFICATION_PENDING`
-**Active bounded objective:** Hold checkpoints disabled and boundary 270 fixed while testing one native RAM root across the existing 16-branch panel with exact direct controls and all carrier, branch, restoration, extraction, closure, wall, token, and residency costs counted.
-**Next exact action:** `RUN_CHECKPOINT_FREE_270_RAM_ROOT_N16` — apply only `--ctx-checkpoints 0` to the existing sustained N=16 controller, preserve its frozen prompts/routes/accounting, require exact carrier/direct route equivalence, final restoration, explicit erase, clean teardown, and fixed-residency evidence.
+**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED / CHECKPOINT_ENABLED_EXECUTION_PATH_CAUSAL_AT_TICK11 / CHECKPOINT_FREE_NATIVE_RAM_ROOT_LIFECYCLE_EXACT_AT_TICK11 / CHECKPOINT_FREE_N16_FIXED_RESIDENCY_AND_POSITIVE_AMORTIZATION / WEAK_DIRECT_BASELINE_REJECTS_EQUAL_UTILITY / STRONG_PANEL_QUALIFICATION_PENDING`
+**Active bounded objective:** Build two 16-branch task panels derived from the already-exact datacenter and cold-chain geometries, qualify each with cache-disabled direct inference first, and admit a panel to carrier testing only if direct utility is near-perfect, preferably `16/16`.
+**Next exact action:** `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` — extend the datacenter and cold-chain families without changing the carrier mechanism, run direct-only Agents-A1 qualification, freeze panels only at the declared utility threshold, and record rejected candidates rather than tuning against carrier outcomes.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -42,7 +42,8 @@ The user-authorized discovery branch `codex/catalytic-frontier` supersedes the d
 - [x] Change only sidecar context checkpoints from `8` to `0`. `neo-exp-0056` makes the cached and fresh-direct tick-11 routes exactly correct with the same generated-token hash; the checkpoint-enabled execution path is causal, while forced partitioning versus checkpoint capture remains unseparated.
 - [x] Retire the conditional `270 -> 256` boundary change because checkpoint-free 270 is already exact; preserve 256 as a future alignment control only if another checkpoint-free divergence requires it.
 - [x] Hold checkpoints at zero and boundary at 270; reintroduce the native RAM-root save/restore/replay/closure/erase lifecycle in the exact tick-11 discriminator. `neo-exp-0057` passes exact live/restored/direct/replay equivalence with root checkpoint count zero throughout and clean closure.
-- [ ] Hold checkpoints at zero and boundary at 270; rerun the existing sustained 16-branch RAM-root panel with unchanged task geometry, exact direct controls, and every declared cost counted.
+- [x] Hold checkpoints at zero and boundary at 270; rerun the existing sustained 16-branch RAM-root panel with unchanged task geometry, exact direct controls, and every declared cost counted. `neo-exp-0058` yields `2.3837301587x` fresh-token and `1.2040314982x` wall amplification under one fixed root, but rejects strict utility at catalytic/direct `10/16` versus `9/16`.
+- [ ] Qualify two 16-branch panels derived from the already-exact datacenter and cold-chain geometries using cache-disabled direct inference first; require near-perfect direct utility before any carrier run or N=32/N=64 scaling claim.
 
 ---
 

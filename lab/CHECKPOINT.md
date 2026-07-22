@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Catalytic frontier: checkpoint-free native RAM-root lifecycle is exact at tick 11, sustained N=16 next
+## Catalytic frontier: checkpoint-free N=16 amortizes under fixed residency; stronger direct baselines next
 
-**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / POSITIVE N=16 AMORTIZATION WITH UTILITY FAILURE / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE 270-TOKEN PREFIX EXACT / CHECKPOINT-FREE NATIVE RAM-ROOT LIFECYCLE EXACT AT TICK11 / SUSTAINED N16 REQUALIFICATION PENDING / UNBOUNDED CLAIM NOT YET SUPPORTED
+**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE NATIVE RAM-ROOT LIFECYCLE EXACT AT TICK11 / CHECKPOINT-FREE N16 FIXED RESIDENCY AND POSITIVE TOKEN-WALL AMORTIZATION / WEAK DIRECT BASELINE REJECTS EQUAL UTILITY / STRONG TWO-PANEL QUALIFICATION PENDING / UNBOUNDED CLAIM NOT YET SUPPORTED
 
 - Candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c` packages the retryable live-carrier and eight-projection fanout harness plus five focused no-model tests.
 - Datacenter: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5786802030`, `2.3747072600`, `3.3070996147`; average fresh tokens per useful branch `492.5`, `320.25`, `227.125` at N=`2,4,8`.
@@ -52,8 +52,15 @@
 - Root-resident host-private growth was 206,888,960 bytes; post-erase growth was 135,348,224 bytes and peak WDDM was 2,252.88 MiB. Sidecar PID `49620` stopped, port `9494` retired, and stable PID `3860` remained healthy.
 - Trace evidence reports checkpoint disablement once, no enabled line, zero checkpoint creations, and `main/do_checkpoint = no` on every task path. This closes the single-tick checkpoint-free native RAM-root lifecycle; it does not establish sustained N=16 utility or unbounded inference.
 - Canonical compact acceptance: `neo-exp-0057` at `lab/results.jsonl:70`, SHA-256 `D94B7115E4F4691EA23526A99753A27AFBC62F05E8B961AF3163C18FD42DA05A`. External result/trace SHA-256 values are `F35A720551E3F0673865116191E77A360DFE79AEC57E4FA008727D4B9B9936A0` / `7D9B405584A359EC8D25A5682F6209A73EDD4A3C879CAD828B86F88729A673EA`.
+- Controller `0a7b14e70355c6294a1b760412db3a31bffedba9` changed only explicit context checkpoints `8 -> 0` relative to the prior sustained N=16 panel; task family, route order, token arrays, seeds, sampler, closures, restoration schedule, accounting, and teardown remained unchanged.
+- Catalytic/direct utility is `10/16` versus `9/16`. Per-tick trace reconstruction yields carrier `CDDACCDACBBADBBA` and direct `CCDACCDACBBADBBA`: tick 2 is the sole route-answer difference and favors the correct carrier `D` over direct `C`; ticks `3,6,7,10,13,14` are jointly wrong; tick 11 is correct `B` on both routes and the prior harmful divergence is repaired.
+- At N=16, the carrier counts 556 creation tokens, 1,687 branch tokens, and 277 closure tokens for 2,520 total versus 6,007 direct. Cumulative saved fresh work is 3,487 tokens, compute amplification is `2.3837301587301587`, average fresh work is `157.5` tokens per branch, and catalytic/direct wall is `178.296 / 214.674` seconds for `1.2040314981828761` wall amplification.
+- The single root remains 270 tokens and 71,400,764 bytes with zero checkpoints through 24 restores, final restoration, and erase. Root-resident host-private growth is 230,666,240 bytes, post-erase growth is 159,125,504 bytes, controller growth is -94,208 bytes, and peak WDDM is 2,252.88 MiB.
+- The trace reports checkpoint disablement once, zero enablement, zero checkpoint creation, 38 `do_checkpoint = no` decisions, and zero yes decisions. Sidecar PID `7972` stopped, port `9494` retired, and stable PID `3860` remained healthy.
+- Relative to checkpoint-enabled `neo-exp-0053`, root bytes fall from 137,265,192 to 71,400,764, checkpoint payload falls from one to zero, catalytic utility rises from `8/16` to `10/16`, and tick 11 is repaired while direct remains `9/16`. The strict equal-utility result remains rejected because this rotor panel is an unreliable direct-utility instrument.
+- Canonical compact rejection: `neo-exp-0058` at `lab/results.jsonl:71`, SHA-256 `494D8084DC693FE69E63B96E4C7D4B730E7EE19C48D712C5BA96857E7D1FB2D9`. External result/trace SHA-256 values are `9D96B5BF243078A2445DA9567BF55EB21C8ABEB3C540BC9E367D8583D8D83AD1` / `D5F4CCFFCBD71D15D625734ECA0C4E5DEB2B7530B5EE643EFE397ECB034CFC1E`.
 
-**Next exact action:** hold `--ctx-checkpoints 0` and boundary 270 fixed; rerun the existing sustained 16-branch native RAM-root panel with unchanged tasks and direct controls. Count carrier materialization, save, every branch, restoration, extraction, final closure, erase, wall, tokens, and residency; require exact carrier/direct route equivalence and clean sidecar teardown.
+**Next exact action:** design and directly qualify two 16-branch panels derived from the already-exact datacenter and cold-chain geometries. Admit only panels with near-perfect cache-disabled Agents-A1 utility, preferably `16/16`; do not run the carrier or advance to N=32/N=64 until the direct instrument is trustworthy.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 

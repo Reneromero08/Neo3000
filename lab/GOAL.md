@@ -20,7 +20,9 @@ The actual frontier objective is infinite, unbounded catalytic inference: fixed-
 
 `neo-exp-0057` holds checkpoints disabled and boundary 270 fixed while reintroducing native RAM-root save, four restores, replay, final restoration, and erase. Untouched-live, restored, direct, and restored-replay tick-11 routes all return correct `B` with identical generated tokens; all root operations report zero checkpoints. Exact checkpoint-free process-local carrier closure is therefore supported at this one-tick boundary, but sustained N=16 utility and the unbounded endpoint remain open.
 
-The next exact action keeps checkpoints disabled and boundary 270 fixed while rerunning the existing sustained 16-branch RAM-root panel with unchanged prompts and all costs counted. Boundary 256 remains retired as the immediate path because checkpoint-free 270 is exact through the complete root lifecycle.
+`neo-exp-0058` holds checkpoints disabled and runs the unchanged 16-branch rotor panel. One fixed 71,400,764-byte root survives 24 restores and closes cleanly while fresh-token amplification reaches `2.3837301587`, wall amplification reaches `1.2040314982`, and average fresh work falls to `157.5` tokens per branch. The strict result is still rejected: catalytic/direct utility is `10/16` versus `9/16`, six ticks are jointly wrong, and the sole route-answer difference at tick 2 favors the carrier. Tick 11 is repaired. This supports fixed-residency positive amortization at N=16, not equal-utility N=16 or the unbounded endpoint.
+
+The next exact action is direct-first qualification of two stronger 16-branch task panels derived from the already-exact datacenter and cold-chain geometries. Freeze only panels with near-perfect cache-disabled direct utility, preferably `16/16`, before reusing the checkpoint-free carrier. Boundary 256 remains retired, and N=32/N=64 scaling waits for a trustworthy utility instrument.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
