@@ -8,7 +8,7 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import catalytic_frontier_fanout as fanout
 import catalytic_frontier_harness as harness
@@ -17,6 +17,7 @@ import catalytic_frontier_sustained as sustained
 
 DEFAULT_BINARY = Path("build/candidate/bin/Release/llama-server.exe")
 ROOT_ID = sustained.ROOT_ID
+ROOT_BOUNDARIES = ("completed-generation", "prompt-only")
 
 
 def validate_root_response(
@@ -73,6 +74,15 @@ def classify_live_restore(
     return "multiple-cached-route-divergence"
 
 
+def prompt_root_materialization_payload(prompt_tokens: Sequence[int]) -> dict[str, Any]:
+    return harness.carrier._branch_payload(
+        prompt_tokens,
+        seed=fanout.derive_seed(ROOT_ID, "prompt-root-materialize"),
+        cache_prompt=False,
+        n_predict=0,
+    )
+
+
 def run_branch(
     *,
     sidecar: Any,
@@ -108,7 +118,9 @@ def evaluate(
     codec: Any,
     props: Mapping[str, Any],
     baseline_private: int | None,
+    root_boundary: str,
 ) -> dict[str, Any]:
+    harness.require(root_boundary in ROOT_BOUNDARIES, "RAM-root boundary mode is invalid")
     prompt_text = codec.render_messages(
         harness.carrier.task_a_messages(sustained.ROOT),
         harness.carrier.CHAT_TEMPLATE_KWARGS,
@@ -128,10 +140,34 @@ def evaluate(
         props,
     )
     retained_count = int(retained["retained_root_token_count"])
+    root_count = retained_count
+    root_materialization: dict[str, Any] | None = None
+    if root_boundary == "prompt-only":
+        materialization_payload = prompt_root_materialization_payload(prompt_tokens)
+        root_materialization = harness.run_completion(
+            sidecar,
+            f"{ROOT_ID}:prompt-root-materialize",
+            materialization_payload,
+            operation_kind="zero-output-root-readdress",
+        )
+        harness.require(
+            root_materialization["prompt_tokens"] == len(prompt_tokens),
+            "RAM-root prompt materialization token count changed",
+        )
+        harness.require(
+            root_materialization["cached_prompt_tokens"] == 0,
+            "RAM-root prompt materialization was not fresh",
+        )
+        harness.require(
+            root_materialization["completion_tokens"] == 0,
+            "RAM-root prompt materialization emitted output",
+        )
+        root_count = len(prompt_tokens)
+
 
     save_raw, save_wall = harness.ram_root_action(action="root-save", root_id=ROOT_ID)
     save = validate_root_response(save_raw, action="root-save")
-    harness.require(save["n_tokens"] == retained_count, "RAM-root saved token count differs from retained root")
+    harness.require(save["n_tokens"] == root_count, "RAM-root saved token count differs from selected boundary")
 
     restores: list[dict[str, Any]] = []
 
@@ -149,7 +185,7 @@ def evaluate(
         route="live-catalytic",
         cache_prompt=True,
     )
-    harness.require(tick_2_live["cached_prompt_tokens"] == retained_count, "RAM-root live tick 2 missed full root")
+    harness.require(tick_2_live["cached_prompt_tokens"] == root_count, "RAM-root live tick 2 missed selected root")
 
     restore("after-live-tick-2")
     tick_1 = run_branch(
@@ -161,7 +197,7 @@ def evaluate(
         cache_prompt=True,
     )
     harness.require(tick_1["correct"], f"RAM-root catalytic tick 1 is incorrect: {tick_1['answer']}")
-    harness.require(tick_1["cached_prompt_tokens"] == retained_count, "RAM-root tick 1 missed full root")
+    harness.require(tick_1["cached_prompt_tokens"] == root_count, "RAM-root tick 1 missed selected root")
 
     restore("after-tick-1")
     tick_2 = run_branch(
@@ -194,9 +230,9 @@ def evaluate(
     )
     restore("final-root-closure")
 
-    harness.require(tick_2["cached_prompt_tokens"] == retained_count, "RAM-root tick 2 missed full root")
+    harness.require(tick_2["cached_prompt_tokens"] == root_count, "RAM-root tick 2 missed selected root")
     harness.require(tick_2_direct["cached_prompt_tokens"] == 0, "RAM-root direct tick 2 was not fresh")
-    harness.require(tick_2_replay["cached_prompt_tokens"] == retained_count, "RAM-root replay missed full root")
+    harness.require(tick_2_replay["cached_prompt_tokens"] == root_count, "RAM-root replay missed selected root")
     harness.require(
         tick_2_live["input_token_sha256"]
         == tick_2["input_token_sha256"]
@@ -223,6 +259,8 @@ def evaluate(
         int(item["fresh_model_tokens"])
         for item in (task_a, tick_2_live, tick_1, tick_2, tick_2_replay)
     )
+    if root_materialization is not None:
+        catalytic_fresh += int(root_materialization["fresh_model_tokens"])
     direct_fresh = int(tick_2_direct["fresh_model_tokens"])
     all_correct = all(item["correct"] for item in (tick_2_live, tick_1, tick_2, tick_2_direct, tick_2_replay))
     route_classification = classify_live_restore(
@@ -234,10 +272,22 @@ def evaluate(
     accepted = all_correct and generated_hash_equal and tick_2_replay["answer"] == tick_2["answer"]
     return {
         "status": "complete",
-        "mechanism": "bounded-named-native-ram-root",
+        "mechanism": f"bounded-named-native-ram-root-{root_boundary}",
         "model": "Agents-A1",
         "verdict": "accept" if accepted else "reject",
-        "discriminator": "untouched live root versus restored root versus fresh direct tick 2",
+        "discriminator": (
+            "untouched live root versus restored root versus fresh direct tick 2"
+            if root_boundary == "completed-generation"
+            else "prompt-only root with generated tail re-evaluation versus fresh direct tick 2"
+        ),
+        "root_boundary": {
+            "type": root_boundary,
+            "task_a_prompt_tokens": len(prompt_tokens),
+            "completed_generation_tokens": retained_count,
+            "saved_tokens": root_count,
+            "reprocessed_generated_tail_tokens": retained_count - root_count,
+            "zero_output_materialized": root_materialization is not None,
+        },
         "utility": {
             "tick_1_catalytic": tick_1["answer"],
             "tick_2_live_catalytic": tick_2_live["answer"],
@@ -250,7 +300,11 @@ def evaluate(
             "replay_matches_first_catalytic": tick_2_replay["answer"] == tick_2["answer"],
         },
         "fresh_model_compute": {
-            "catalytic_path_including_task_a_and_replay": catalytic_fresh,
+            "complete_catalytic_path_including_task_a_materialization_and_replay": catalytic_fresh,
+            "prompt_root_materialization": (
+                int(root_materialization["fresh_model_tokens"])
+                if root_materialization is not None else 0
+            ),
             "tick_2_direct_control": direct_fresh,
         },
         "carrier": {
@@ -264,6 +318,11 @@ def evaluate(
         },
         "routes": {
             "task_a": harness.token_summary(task_a),
+            **(
+                {"prompt_root_materialization": harness.token_summary(root_materialization)}
+                if root_materialization is not None
+                else {}
+            ),
             "tick_2_live_catalytic": {
                 "answer": tick_2_live["answer"],
                 "generated_token_sha256": tick_2_live["execution"].get("generated_token_sha256"),
@@ -301,6 +360,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", type=Path, default=harness.DEFAULT_MODEL)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--server-log-output", type=Path)
+    parser.add_argument("--root-boundary", choices=ROOT_BOUNDARIES, default="completed-generation")
     return parser.parse_args()
 
 
@@ -343,6 +403,7 @@ def main() -> int:
             codec=codec,
             props=codec.props(),
             baseline_private=baseline_private,
+            root_boundary=args.root_boundary,
         )
         result["readiness"] = {
             "pid": readiness.get("pid"),

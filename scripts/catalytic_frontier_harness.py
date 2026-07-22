@@ -177,7 +177,13 @@ def validate_minimal_closure_terminal(execution: Mapping[str, Any]) -> dict[str,
     }
 
 
-def run_completion(sidecar: Any, label: str, payload: Mapping[str, Any]) -> dict[str, Any]:
+def run_completion(
+    sidecar: Any,
+    label: str,
+    payload: Mapping[str, Any],
+    *,
+    operation_kind: str = "model-generation",
+) -> dict[str, Any]:
     print(f"[frontier] start {label}", flush=True)
     started = time.monotonic()
     execution = sidecar.guarded(
@@ -197,7 +203,7 @@ def run_completion(sidecar: Any, label: str, payload: Mapping[str, Any]) -> dict
         else:
             terminal = carrier.validate_inference_terminal_evidence(
                 normalized,
-                operation_kind="model-generation",
+                operation_kind=operation_kind,
             )
     except Exception as exc:
         raise FrontierHarnessError(

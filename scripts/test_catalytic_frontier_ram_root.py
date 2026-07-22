@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 import unittest
+from types import SimpleNamespace
 from pathlib import Path
 from unittest import mock
 
@@ -84,6 +85,41 @@ class CatalyticFrontierRamRootTests(unittest.TestCase):
                 direct_answer="C",
             ),
             "direct-control-failed",
+        )
+
+    def test_prompt_root_materialization_payload_is_fresh_and_zero_output(self) -> None:
+        tokens = [11, 22, 33]
+        payload = ram_root.prompt_root_materialization_payload(tokens)
+        self.assertEqual(payload["prompt"], tokens)
+        self.assertEqual(payload["n_predict"], 0)
+        self.assertIs(payload["cache_prompt"], False)
+        self.assertNotIn("grammar", payload)
+        self.assertEqual(payload["id_slot"], 0)
+
+    def test_run_completion_forwards_zero_output_terminal_kind(self) -> None:
+        execution = SimpleNamespace(
+            prompt_tokens=3,
+            cached_prompt_tokens=0,
+            completion_tokens=0,
+        )
+        sidecar = mock.Mock()
+        sidecar.guarded.return_value = execution
+        with mock.patch.object(
+            harness.carrier,
+            "validate_inference_terminal_evidence",
+            return_value={"terminal_evidence_passed": True},
+        ) as validate:
+            record = harness.run_completion(
+                sidecar,
+                "zero-output-probe",
+                {"prompt": [11, 22, 33], "n_predict": 0},
+                operation_kind="zero-output-root-readdress",
+
+            )
+        self.assertEqual(record["fresh_model_tokens"], 3)
+        self.assertEqual(
+            validate.call_args.kwargs["operation_kind"],
+            "zero-output-root-readdress",
         )
 
 if __name__ == "__main__":
