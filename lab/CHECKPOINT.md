@@ -27,9 +27,9 @@ The unbounded claim gate requires:
 
 The aligned north-star contract plus current user direction authorizes bounded autonomous non-retry successor cycles. This changes no existing verdict, metric, artifact identity, or claim ceiling.
 
-## Catalytic frontier: direct-only two-panel qualification closed; one accepted, one rejected; autonomous successor mode active
+## Catalytic frontier: water direct panel frozen; first live identity stopped before readiness; bounded successor preparation active
 
-**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE NATIVE RAM-ROOT LIFECYCLE EXACT AT TICK11 / CHECKPOINT-FREE N16 FIXED RESIDENCY AND POSITIVE TOKEN-WALL AMORTIZATION / COLDCHAIN DIRECT N16 QUALIFIED / DATACENTER DIRECT N16 REJECTED 15 OF 16 / TWO ACCEPTED PANELS NOT ESTABLISHED / BOUNDED AUTONOMOUS NON-RETRY SUCCESSOR MODE ACTIVE / UNBOUNDED CLAIM NOT YET SUPPORTED
+**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE NATIVE RAM-ROOT LIFECYCLE EXACT AT TICK11 / CHECKPOINT-FREE N16 FIXED RESIDENCY AND POSITIVE TOKEN-WALL AMORTIZATION / COLDCHAIN DIRECT N16 QUALIFIED / DATACENTER DIRECT N16 REJECTED 15 OF 16 / WATER DIRECT N16 PANEL PREREGISTERED BUT UNMEASURED / FIRST WATER LIVE IDENTITY INCONCLUSIVE BEFORE READINESS / TWO ACCEPTED PANELS NOT ESTABLISHED / BOUNDED AUTONOMOUS NON-RETRY SUCCESSOR MODE ACTIVE / UNBOUNDED CLAIM NOT YET SUPPORTED
 
 - Candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c` packages the retryable live-carrier and eight-projection fanout harness plus five focused no-model tests.
 - Datacenter: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5786802030`, `2.3747072600`, `3.3070996147`; average fresh tokens per useful branch `492.5`, `320.25`, `227.125` at N=`2,4,8`.
@@ -95,8 +95,14 @@ The aligned north-star contract plus current user direction authorizes bounded a
 - Sidecar PID `56072` stopped, port `9494` retired, stable PID `3860` remained the sole healthy listener on `9292`, and peak isolated WDDM was 2,252.88 MiB. External result/trace identities are 24,386 bytes / `07E276EA127AD96A7BC3E10B4FBFD0B807A02FE538CD7BB75CF67073BDF35638` and 2,575,786 bytes / `A9B6BDCCEE89FA7BDE4FF6FA88C363CD61BE51156E800C43C8496D4A2F69264F`.
 - Canonical compact rejection: `neo-exp-0059` at `lab/results.jsonl:72`, SHA-256 `283585C80B90EDF22D0251060469A7A4930428582C43C3746B34F02990C7C54C`. Cold-chain is preserved as qualified; datacenter is preserved as rejected; two accepted panels, carrier authority, equal-utility N=16, N=32/N=64, and the unbounded endpoint remain unsupported. The claim ceiling is unchanged.
 - The `neo-exp-0059` operation ended at this exact boundary: no unchanged-panel retry, observed-answer replacement, new panel, carrier evaluation, scaling run, mechanism, promotion, or follow-on experiment occurred inside that operation. Its closure does not prohibit later successors under new IDs.
+- Commit `b2f638654fffdfb17f25f4a3832370fc4252870e` freezes the unused water-root direct panel before live contact: canonical SHA-256 `47DD356BA39422EF58019CE60B84A69FCAEC455FE11B758103935CE65DE33841`, expected sequence `BACDABCDABCDABCD`, balanced keys, exact 16/16 gate, explicit checkpoint zero, and zero carrier/root/snapshot/cache-enabled paths. Independent audit found no implementation or key blocker.
+- Planned experiment identity `neo-exp-0060` was invoked once from that clean commit after pinned model/binary, stable PID `3860`, free port `9494`, and unused artifact-path gates passed. Sidecar PID `42136` began loading the model but a legacy strict stable-health probe failed before readiness admission.
+- The controller stopped inside `launch()` before `evaluate()`: Task-A requests, branch requests, and model generations are all zero. No result or trace artifact exists, so `lab/results.jsonl` remains unchanged and the water panel remains scientifically unmeasured.
+- Cleanup stopped PID `42136`, removed runtime state, freed port `9494`, and found stable PID `3860` healthy. Frontier remained clean at `b2f638654fffdfb17f25f4a3832370fc4252870e`; main remained clean at `0707f07534644184518f6da0b0e60bb048d4a74c`.
+- Classification is `INCONCLUSIVE_PRE_READINESS_ENGINEERING_FAILURE`. This consumes the planned experiment identity without a scientific verdict, panel score, retry, result record, or claim change.
+- The smallest one-variable successor is infrastructure-only: enable the repository's already tested startup-only stable-health recovery policy for at most 15 seconds and require three consecutive successes. It may not recover after readiness, change the panel or scientific controls, or reinterpret the consumed failure.
 
-**Next exact action:** `AUTONOMOUSLY_SELECT_PREREGISTER_AND_EXECUTE_MINIMUM_NON_RETRY_SUCCESSOR`. Continue bounded candidate-only cycles without routine per-cycle permission; preserve consumed evidence and all stable/promotion locks.
+**Next exact action:** `PREPARE_BOUNDED_STARTUP_HEALTH_RECOVERY_SUCCESSOR_FOR_WATER_DIRECT_N16`. Statically implement, test, audit, ledger, and commit under a new experiment ID, then stop before live stable-server contact unless separately authorized by the active `/goal` pause gate.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
