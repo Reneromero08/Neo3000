@@ -16,6 +16,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping
 
+import catalytic_frontier_checkpoint_control as checkpoint_control
 import catalytic_frontier_fanout as fanout
 import catalytic_frontier_ram_root as ram_root
 import catalytic_frontier_harness as harness
@@ -132,6 +133,19 @@ def generated_token_hash(record: Mapping[str, Any], label: str) -> str:
     harness.require(isinstance(value, str) and len(value) == 64, f"{label} lacks generated-token evidence")
     return value
 
+def validate_saved_root_checkpoint_count(
+    saved: Mapping[str, Any],
+    *,
+    context_checkpoints: int,
+) -> int:
+    harness.require(
+        context_checkpoints in (0, checkpoint_control.FROZEN_CONTEXT_CHECKPOINTS),
+        "context checkpoint count must remain exactly 0 or 8",
+    )
+    expected = 0 if context_checkpoints == 0 else 1
+    harness.require(saved.get("n_checkpoints") == expected, "saved root checkpoint count differs")
+    return expected
+
 
 def classify_sustained_result(
     *,
@@ -160,6 +174,7 @@ def evaluate(
     fanout_count: int,
     baseline_sidecar_private: int | None,
     baseline_controller_private: int | None,
+    context_checkpoints: int = checkpoint_control.FROZEN_CONTEXT_CHECKPOINTS,
 ) -> dict[str, Any]:
     milestones = geometric_milestones(fanout_count)
     prompt_text = codec.render_messages(harness.carrier.task_a_messages(ROOT), harness.carrier.CHAT_TEMPLATE_KWARGS)
@@ -192,6 +207,10 @@ def evaluate(
     save_raw, save_seconds = harness.ram_root_action(action="root-save", root_id=ROOT_ID)
     save = ram_root.validate_root_response(save_raw, action="root-save")
     harness.require(save["n_tokens"] == root_count, "prompt RAM-root count differs")
+    expected_root_checkpoints = validate_saved_root_checkpoint_count(
+        save,
+        context_checkpoints=context_checkpoints,
+    )
 
     restore_count = 0
     restore_bytes = 0
@@ -454,6 +473,7 @@ def evaluate(
             "completed_generation_tokens": retained_count,
             "reprocessed_generated_tail_tokens_per_branch": retained_count - root_count,
             "save": {**save, "client_wall_seconds": save_seconds},
+            "expected_checkpoint_count": expected_root_checkpoints,
             "active_root_count": 1,
             "full_root_reuse_every_branch": True,
             "identity_and_size_invariant": True,
@@ -496,6 +516,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--binary", type=Path, default=ram_root.DEFAULT_BINARY)
     parser.add_argument("--model", type=Path, default=harness.DEFAULT_MODEL)
     parser.add_argument("--fanout", type=int, choices=FANOUT_CHOICES, default=16)
+    parser.add_argument("--ctx-checkpoints", type=int, choices=(0, 8), default=checkpoint_control.FROZEN_CONTEXT_CHECKPOINTS)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--server-log-output", type=Path)
     return parser.parse_args()
@@ -518,7 +539,7 @@ def main() -> int:
         os.environ["LLAMA_ARG_LOG_VERBOSITY"] = "1000"
         os.environ["LLAMA_SERVER_SLOTS_DEBUG"] = "1"
     try:
-        sidecar = harness.DiscoverySidecar(
+        sidecar = checkpoint_control.ScopedCheckpointDiscoverySidecar(
             binary,
             model,
             evaluator,
@@ -527,6 +548,7 @@ def main() -> int:
             stable_pids=set(stable_pids),
             state_root=state_root,
             advisory_wddm=True,
+            context_checkpoints=args.ctx_checkpoints,
         )
         readiness = sidecar.launch()
         baseline_sidecar_private = None
@@ -543,7 +565,9 @@ def main() -> int:
             fanout_count=args.fanout,
             baseline_sidecar_private=baseline_sidecar_private,
             baseline_controller_private=baseline_controller_private,
+            context_checkpoints=args.ctx_checkpoints,
         )
+        result["launch_configuration"] = readiness.get("launch_configuration")
         result["readiness"] = {
             "pid": readiness.get("pid"),
             "readiness_seconds": readiness.get("readiness_seconds"),
@@ -551,6 +575,7 @@ def main() -> int:
             "model": readiness.get("model"),
             "baseline_sidecar_private_bytes": baseline_sidecar_private,
             "baseline_controller_private_bytes": baseline_controller_private,
+            "launch_configuration": readiness.get("launch_configuration"),
         }
     except BaseException as exc:
         error = exc

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 import unittest
+from unittest import mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -48,6 +49,38 @@ class CatalyticFrontierSustainedTests(unittest.TestCase):
             stats.as_dict(),
             {"count": 3, "mean": 5.0, "minimum": 3.0, "maximum": 7.0},
         )
+
+    def test_saved_root_checkpoint_count_tracks_launch_control(self) -> None:
+        self.assertEqual(
+            sustained.validate_saved_root_checkpoint_count(
+                {"n_checkpoints": 0},
+                context_checkpoints=0,
+            ),
+            0,
+        )
+        self.assertEqual(
+            sustained.validate_saved_root_checkpoint_count(
+                {"n_checkpoints": 1},
+                context_checkpoints=8,
+            ),
+            1,
+        )
+        for context_checkpoints, observed in ((0, 1), (8, 0), (7, 0)):
+            with self.subTest(context_checkpoints=context_checkpoints, observed=observed):
+                with self.assertRaises(sustained.harness.FrontierHarnessError):
+                    sustained.validate_saved_root_checkpoint_count(
+                        {"n_checkpoints": observed},
+                        context_checkpoints=context_checkpoints,
+                    )
+
+    def test_checkpoint_cli_exposes_zero_control(self) -> None:
+        with mock.patch.object(
+            sys,
+            "argv",
+            ["catalytic_frontier_ram_sustained.py", "--ctx-checkpoints", "0"],
+        ):
+            args = sustained.parse_args()
+        self.assertEqual(args.ctx_checkpoints, 0)
 
     def test_sustained_acceptance_requires_both_routes_and_exact_generated_tokens(self) -> None:
         self.assertEqual(
