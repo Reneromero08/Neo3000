@@ -6,13 +6,15 @@ The actual frontier objective is infinite, unbounded catalytic inference: fixed-
 
 `neo-exp-0050` supports bounded fanout amortization through N=8 and does not establish the unbounded endpoint.
 
-`neo-exp-0051` rejects the completed-generation 285-token native RAM root: untouched live, restored, and replay routes produced the same wrong tick-2 result while the identical fresh route was correct. This proves that serialization is not required for the observed live-prefix-state failure.
+`neo-exp-0051` rejects the post-save completed-generation 285-token native RAM root: post-save live, restored, and replay routes produced the same wrong tick-2 result while the identical fresh route was correct. Restore/deserialization is not required as the sole cause; that experiment did not isolate possible root-save mutation.
 
 `neo-exp-0052` supports exact reuse of a 270-token prompt-only native RAM root on one rotor discriminator: live, restored, fresh-direct, and replay tick 2 produced the same correct answer and generated-token hash after the 15-token Task-A tail was re-evaluated. All setup and branch costs remain counted.
 
 `neo-exp-0053` exposes a split boundary. One fixed prompt root achieved positive N=16 fresh-token and all-declared-wall amortization, but the fresh model failed seven rotor ticks and the restored root alone diverged from the correct fresh route at tick 11. Therefore neither utility-preserving N=16 nor the unbounded endpoint is established.
 
-The next exact action is the smallest tick-11 live/restored/fresh-direct/replay discriminator. Only after prompt-prefill versus serialization/repeated-restore causality is separated should the task family or the recurrent, KV/activation, CUDA, or weight-level mechanism change.
+`neo-exp-0054` rejects the post-save 270-token prompt prefix as an exact tick-11 runtime carrier: post-save untouched-live, restored, and replay all produce the same wrong `D`, while identical fresh prefill produces correct `B`. Restore/deserialization and repeat restoration are not required as sole causes, but root-save mutation remains experimentally open.
+
+The next exact action removes root-save entirely: run tick 11 immediately after fresh zero-output materialization of the exact 270-token prompt, then compare with the identical cache-disabled fresh-direct route. Partition geometry is conditional on persistent pre-save divergence; under the current checkpoint-enabled launch, 256 would split as `124 + 128 + 4` and is not yet a true two-segment alignment.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 

@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Catalytic frontier: bounded fanout replicated, N=16 amortizes but fails utility and tick-11 exactness
+## Catalytic frontier: N=16 amortizes, tick-11 post-save path diverges, root-save control next
 
-**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / 285-TOKEN COMPLETED-GENERATION ROOT REJECTED / 270-TOKEN PROMPT ROOT EXACT THROUGH ROTOR N=8 / POSITIVE N=16 AMORTIZATION / DIRECT UTILITY AND TICK-11 PREFIX EQUIVALENCE FAILED / UNBOUNDED CLAIM NOT YET SUPPORTED
+**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / POSITIVE N=16 AMORTIZATION WITH UTILITY FAILURE / 270-TOKEN POST-SAVE LIVE PROMPT PREFIX DIVERGES AT TICK11 / RESTORE DESERIALIZATION AND REPEATABILITY EXONERATED AS SOLE CAUSES / ROOT-SAVE MUTATION CONTROL PENDING / PARTITION GEOMETRY UNRESOLVED / UNBOUNDED CLAIM NOT YET SUPPORTED
 
 - Candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c` packages the retryable live-carrier and eight-projection fanout harness plus five focused no-model tests.
 - Datacenter: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5786802030`, `2.3747072600`, `3.3070996147`; average fresh tokens per useful branch `492.5`, `320.25`, `227.125` at N=`2,4,8`.
@@ -13,7 +13,7 @@
 - The observed mechanism retains a nonzero suffix/output compute floor and therefore does not yet establish infinite or unbounded catalytic inference.
 - Source correction for the next runtime intervention: Agents-A1 `qwen35moe` selects `llama_memory_hybrid` (attention KV plus recurrent state), so exact retained roots must use the full polymorphic per-sequence serializer with flags NONE; the DSV4 label/path is not Agents-A1's memory implementation.
 - Native source `6c63039622bca389e1b8c6a223303c5b91b62f21`, binary SHA-256 `E46FCE576B42AB6A4A03F21BDC60B2343F7AB1BCD04B967B92145699C243551E`, captures full hybrid per-sequence state with flags NONE.
-- The untouched live, restored, and replayed 285-token roots all returned deterministic wrong tick-2 `C`; a cache-disabled evaluation of the identical 369-token array returned correct `D`. Classification: `LIVE_PREFIX_STATE_DIVERGENCE`; serialization/restore is not required to produce the failure.
+- The post-save live, restored, and replayed 285-token routes all returned deterministic wrong tick-2 `C`; a cache-disabled evaluation of the identical 369-token array returned correct `D`. Classification: `POST_SAVE_LIVE_PREFIX_STATE_DIVERGENCE`; restore/deserialization is not required as the sole cause, while root-save mutation was not isolated.
 - The root held `285` tokens, `137,572,752` bytes, and one checkpoint across five invariant non-consuming restores, final restore, and explicit erase. Peak isolated WDDM was `2252.88 MiB`; stable PID `3860` remained healthy and port `9494` retired.
 - Trace telemetry binds the retained root to `270` prompt plus `15` generated visible tokens and reports `n_rs_seq=0`; an in-place one-token rollback would not have a valid matching recurrent-state rollback and is not authorized.
 - Canonical compact rejection: `neo-exp-0051` at `lab/results.jsonl:64`, SHA-256 `421D79DDB0916AB06C533BF6CE8B54E73BCBAEDFB92D059895A964EC2F46F81E`. `neo-exp-0050` and the N=8 bounded claim ceiling remain valid; this full-boundary RAM-root mechanism is rejected.
@@ -28,8 +28,13 @@
 - Route answers and generated tokens were exact through N=8. Tick 11 alone separated the routes: expected/direct `B`, restored catalytic `D`, under identical input-token arrays. This is the next causal discriminator; it is independent of the seven shared task/model failures.
 - The root remained one named object with invariant identity, token count, byte count, and checkpoint count across all restores. Host private growth was `425,660,416` bytes with root and `288,124,928` after erase; sidecar cleanup, stable PID `3860`, and port `9494` retirement passed.
 - Canonical compact rejection: `neo-exp-0053` at `lab/results.jsonl:66`, SHA-256 `F511A50788D198F53363CDE6CCC2F443122ECC394C127ABBBE248C5A2675C238`. The earlier N=8 claim ceiling remains unchanged; no unbounded or utility-preserving N=16 claim is unlocked.
+- Controller `bd51c9ae1cc758bb46e0ce22252b6ad744c5f4bb` hard-pinned tick 11, prompt/completed boundaries `270/285`, identical input-token SHA-256 `9BEA7B413086C200961C0EB593B0D4F3FD62987DCC3BDA18903ABCE07543ACEE`, route seed/sampler, four metadata-invariant restores, final restore, and explicit erase.
+- Post-save untouched-live, restored, and restored-replay routes each admitted `270`, evaluated `100`, returned wrong `D`, and emitted generated-token SHA-256 `0CA13167369ED1835BB8938644A7CCEF6EDE0BD65AE31C256931C54D3FA9FB31`. Fresh direct admitted zero, evaluated `370`, returned correct `B`, and emitted `4553BBC00B6AF27C3EBDE8F36EA9237A37B5D9C1AA182FBC65CDA71411A4B888`.
+- Classification is `POST_SAVE_LIVE_PROMPT_PREFIX_DIVERGENCE`: restore/deserialization and repeated restoration are not required for failure, restored replay is deterministic, and identical submitted tokens are insufficient runtime identity for this discriminator. Root-save mutation is not experimentally exonerated; a source audit found no explicit live-slot write in the save path, but source inspection is not a causal control.
+- Canonical compact rejection: `neo-exp-0054` at `lab/results.jsonl:67`, SHA-256 `4749A0EA128F6F8B984A27EE7DACAE11EA16E96FF89174700F01DE71052F5150`. The root remained `270` tokens and `137,265,192` bytes; peak WDDM was `2284.89 MiB`; sidecar cleanup, stable PID `3860`, and port `9494` retirement passed.
+- Partition geometry remains conditional. Under the current checkpoint-enabled launch, a 256-token materialization is predicted to split as `124 + 128 + 4`; `n_ubatch=128` is a ceiling, so 256 cannot yet be called two aligned recurrent segments.
 
-**Next exact action:** run a narrow tick-11 live/restored/fresh-direct/replay discriminator from a fresh 270-token prompt root with identical token arrays and seeds, then bind whether the divergence exists before serialization, only after restore, or only after repeated restores.
+**Next exact action:** run tick 11 immediately after fresh cache-disabled zero-output materialization of the exact 270-token prompt and before any root-save, restore, replay, or erase action; compare with the identical cache-disabled fresh-direct route. Only a persistent pre-save `D` versus direct `B` authorizes a later partition-geometry intervention.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 

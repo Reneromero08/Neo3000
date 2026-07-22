@@ -5,11 +5,11 @@
 **Baseline evidence through:** CatalyticSwarm-0 v2 integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`; bound `reviewable-accept` result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Frontier exact-commit evidence:** `neo-exp-0050` at `lab/results.jsonl:63`, SHA-256 `5D90FCDABC8AD103A43803821E91C769641D8687BF74C6F7D68CE16593916EB6`, candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c`; two Agents-A1 geometries passed N=`2,4,8`
-**Latest causal boundary:** `neo-exp-0053` at `lab/results.jsonl:66`, SHA-256 `F511A50788D198F53363CDE6CCC2F443122ECC394C127ABBBE248C5A2675C238`; N=16 produced positive token and wall amortization under fixed root residency, but fresh direct utility failed 7/16 ticks and restored prompt-root reuse alone diverged from the correct direct route at tick 11
+**Latest causal boundary:** `neo-exp-0054` at `lab/results.jsonl:67`, SHA-256 `4749A0EA128F6F8B984A27EE7DACAE11EA16E96FF89174700F01DE71052F5150`; post-save untouched-live, restored, and replayed 270-token prompt routes all returned tick-11 `D` with the same generated-token hash while identical fresh direct returned correct `B`. Restore/deserialization is not required for failure, but root-save mutation remains experimentally open.
 **Claim ceiling:** `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`
-**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED / FULL_BOUNDARY_NATIVE_RAM_ROOT_REJECTED / PROMPT_ONLY_ROOT_EXACT_THROUGH_N8_ON_ROTOR / PROMPT_ONLY_ROOT_DIVERGES_AT_TICK11`
-**Active bounded objective:** Localize the tick-11 prompt-root divergence between untouched live prompt state, restored prompt state, fresh direct prefill, and restored replay before changing the task family or reducing the residual suffix/output floor.
-**Next exact action:** `LOCALIZE_PROMPT_ROOT_TICK11_DIVERGENCE` — run one tick-11 live/restored/fresh-direct/replay discriminator from a fresh 270-token prompt root with identical token arrays, seeds, model, binary, and explicit root closure.
+**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED / FULL_BOUNDARY_NATIVE_RAM_ROOT_REJECTED / 270_TOKEN_POST_SAVE_LIVE_PATH_DIVERGENCE_AT_TICK11 / RESTORE_DESERIALIZATION_EXONERATED / ROOT_SAVE_MUTATION_OPEN`
+**Active bounded objective:** Remove root-save from the causal path by running tick 11 immediately after the exact 270-token zero-output materialization, then compare with the identical cache-disabled fresh-direct route.
+**Next exact action:** `RUN_PRE_SAVE_LIVE_TICK11_CONTROL` — use no root-save, restore, replay, or erase action. Proceed to a partition-geometry intervention only if the pre-save cached route still returns `D` while identical fresh direct returns `B`.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -37,7 +37,9 @@ The user-authorized discovery branch `codex/catalytic-frontier` supersedes the d
 - Executed evidence: full-boundary native RAM-root reuse is rejected after untouched live, restored, and replay routes returned `C` while fresh direct returned `D`; bind `neo-exp-0051`.
 - Executed evidence: a cache-disabled zero-output 270-token prompt root admitted exactly `270`; live, restored, direct, and replay tick 2 all returned `D` with identical generated-token hashes, binding `neo-exp-0052`.
 - [x] Run 16 distinct branches from one 270-token prompt-only native RAM root with every declared cost counted. `neo-exp-0053` rejects utility-preserving sustained reuse: direct utility was `9/16`, catalytic utility was `8/16`, and tick 11 alone diverged between routes despite positive N=16 token and wall amortization.
-- [ ] Run the narrow tick-11 live/restored/fresh-direct/replay prompt-root discriminator; separate prompt-prefill path dependence from serialization or repeated-restore effects before changing any other mechanism.
+- [x] Run the narrow tick-11 post-save-live/restored/fresh-direct/replay 270-token prompt-root discriminator. `neo-exp-0054` shows the post-save live path already diverges; restore/deserialization is not required and replay is deterministic, while root-save mutation remains open.
+- [ ] Run tick 11 immediately after fresh 270-token zero-output materialization and before any root action; compare that cached route with the identical cache-disabled fresh-direct route.
+- [ ] Conditional on pre-save `D` versus direct `B`, isolate partition geometry in a separate one-causal-intervention experiment. Do not label a 256-token checkpoint-enabled root as two aligned `n_ubatch=128` segments: current checkpoint offsets split it as `124 + 128 + 4`.
 
 ---
 
