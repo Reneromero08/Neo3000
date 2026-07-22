@@ -20,6 +20,39 @@ import catalytic_frontier_sustained as sustained
 
 DEFAULT_TICK = prefix.DEFAULT_TICK
 ROOT_ID = prefix.ROOT_ID
+FROZEN_CONTEXT_CHECKPOINTS = 8
+
+
+class ScopedCheckpointDiscoverySidecar(harness.DiscoverySidecar):
+    """Apply one checkpoint-count launch intervention and always restore the controller global."""
+
+    def __init__(self, *args: Any, context_checkpoints: int, **kwargs: Any):
+        harness.require(
+            context_checkpoints in (0, FROZEN_CONTEXT_CHECKPOINTS),
+            "context checkpoint override must be exactly 0 or 8",
+        )
+        super().__init__(*args, **kwargs)
+        self.context_checkpoints = context_checkpoints
+
+    def launch(self) -> dict[str, Any]:
+        previous = int(harness.live_runtime.CTX_CHECKPOINTS)
+        harness.require(
+            previous == FROZEN_CONTEXT_CHECKPOINTS,
+            "LiveSidecar checkpoint baseline drifted from 8",
+        )
+        harness.live_runtime.CTX_CHECKPOINTS = self.context_checkpoints
+        try:
+            readiness = dict(super().launch())
+        finally:
+            harness.live_runtime.CTX_CHECKPOINTS = previous
+        readiness["launch_configuration"] = {
+            "n_batch": 512,
+            "n_ubatch": 128,
+            "context_checkpoints": self.context_checkpoints,
+            "checkpoint_min_step": int(harness.live_runtime.CHECKPOINT_MIN_STEP),
+            "global_restored_after_launch": harness.live_runtime.CTX_CHECKPOINTS == previous,
+        }
+        return readiness
 
 
 def classify_presave_routes(
@@ -197,6 +230,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--binary", type=Path, default=ram_root.DEFAULT_BINARY)
     parser.add_argument("--model", type=Path, default=harness.DEFAULT_MODEL)
     parser.add_argument("--tick", type=int, default=DEFAULT_TICK)
+    parser.add_argument("--ctx-checkpoints", type=int, choices=(0, 8), default=FROZEN_CONTEXT_CHECKPOINTS)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--server-log-output", type=Path)
     return parser.parse_args()
@@ -220,7 +254,7 @@ def main() -> int:
         os.environ["LLAMA_ARG_LOG_VERBOSITY"] = "1000"
         os.environ["LLAMA_SERVER_SLOTS_DEBUG"] = "1"
     try:
-        sidecar = harness.DiscoverySidecar(
+        sidecar = ScopedCheckpointDiscoverySidecar(
             binary,
             model,
             evaluator,
@@ -229,6 +263,7 @@ def main() -> int:
             stable_pids=set(stable_pids),
             state_root=state_root,
             advisory_wddm=True,
+            context_checkpoints=args.ctx_checkpoints,
         )
         readiness = sidecar.launch()
         baseline_private = None
@@ -243,12 +278,14 @@ def main() -> int:
             baseline_private=baseline_private,
             tick=args.tick,
         )
+        result["launch_configuration"] = readiness.get("launch_configuration")
         result["readiness"] = {
             "pid": readiness.get("pid"),
             "readiness_seconds": readiness.get("readiness_seconds"),
             "binary": readiness.get("binary"),
             "model": readiness.get("model"),
             "baseline_private_bytes": baseline_private,
+            "launch_configuration": readiness.get("launch_configuration"),
         }
     except BaseException as exc:
         error = exc

@@ -14,6 +14,56 @@ import catalytic_frontier_ram_root as ram_root
 
 
 class CatalyticFrontierPresavePrefixDiscriminatorTests(unittest.TestCase):
+    def checkpoint_sidecar(self) -> discriminator.ScopedCheckpointDiscoverySidecar:
+        sidecar = object.__new__(discriminator.ScopedCheckpointDiscoverySidecar)
+        sidecar.context_checkpoints = 0
+        return sidecar
+
+    def test_checkpoint_override_is_zero_during_launch_and_restored_on_success(self) -> None:
+        observed: list[int] = []
+
+        def parent_launch(_sidecar: object) -> dict[str, object]:
+            observed.append(harness.live_runtime.CTX_CHECKPOINTS)
+            return {"pid": 7}
+
+        sidecar = self.checkpoint_sidecar()
+        with (
+            mock.patch.object(harness.live_runtime, "CTX_CHECKPOINTS", 8),
+            mock.patch.object(
+                harness.DiscoverySidecar,
+                "launch",
+                autospec=True,
+                side_effect=parent_launch,
+            ),
+        ):
+            readiness = sidecar.launch()
+            self.assertEqual(harness.live_runtime.CTX_CHECKPOINTS, 8)
+
+        self.assertEqual(observed, [0])
+        self.assertEqual(readiness["pid"], 7)
+        self.assertEqual(readiness["launch_configuration"]["context_checkpoints"], 0)
+        self.assertTrue(readiness["launch_configuration"]["global_restored_after_launch"])
+
+    def test_checkpoint_override_restores_global_when_launch_fails(self) -> None:
+        observed: list[int] = []
+
+        def parent_launch(_sidecar: object) -> dict[str, object]:
+            observed.append(harness.live_runtime.CTX_CHECKPOINTS)
+            raise RuntimeError("synthetic launch failure")
+
+        sidecar = self.checkpoint_sidecar()
+        with mock.patch.object(harness.live_runtime, "CTX_CHECKPOINTS", 8):
+            with mock.patch.object(
+                harness.DiscoverySidecar,
+                "launch",
+                autospec=True,
+                side_effect=parent_launch,
+            ), self.assertRaisesRegex(RuntimeError, "synthetic launch failure"):
+                sidecar.launch()
+            self.assertEqual(harness.live_runtime.CTX_CHECKPOINTS, 8)
+
+        self.assertEqual(observed, [0])
+
     def test_exact_presave_prefix_equivalence(self) -> None:
         self.assertEqual(
             discriminator.classify_presave_routes(
