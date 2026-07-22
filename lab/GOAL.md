@@ -14,7 +14,9 @@ The actual frontier objective is infinite, unbounded catalytic inference: fixed-
 
 `neo-exp-0054` rejects the post-save 270-token prompt prefix as an exact tick-11 runtime carrier: post-save untouched-live, restored, and replay all produce the same wrong `D`, while identical fresh prefill produces correct `B`. Restore/deserialization and repeat restoration are not required as sole causes, but root-save mutation remains experimentally open.
 
-The next exact action removes root-save entirely: run tick 11 immediately after fresh zero-output materialization of the exact 270-token prompt, then compare with the identical cache-disabled fresh-direct route. Partition geometry is conditional on persistent pre-save divergence; under the current checkpoint-enabled launch, 256 would split as `124 + 128 + 4` and is not yet a true two-segment alignment.
+`neo-exp-0055` proves the tick-11 divergence exists before any root action: immediate pre-save cached execution returns wrong `D`, identical fresh direct returns correct `B`, and the verbose trace contains zero root-action entries. RAM-root save, serialization, deserialization, and restore are therefore not required for this observed failure.
+
+The next exact action changes only context checkpoints `8 -> 0` while preserving the no-root 270-token discriminator. This removes checkpoint-forced partitioning without claiming full alignment. If `D` versus `B` persists, hold checkpoints disabled and change only materialization boundary `270 -> 256`; that is the first design in which cached and direct recurrent schedules both match `[128,128,114]`.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
