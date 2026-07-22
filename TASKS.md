@@ -5,11 +5,11 @@
 **Baseline evidence through:** CatalyticSwarm-0 v2 integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`; bound `reviewable-accept` result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Frontier exact-commit evidence:** `neo-exp-0050` at `lab/results.jsonl:63`, SHA-256 `5D90FCDABC8AD103A43803821E91C769641D8687BF74C6F7D68CE16593916EB6`, candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c`; two Agents-A1 geometries passed N=`2,4,8`
-**Latest causal boundary:** `neo-exp-0055` at `lab/results.jsonl:68`, SHA-256 `9FE0E2687AD6ECAF1E6EF1CD2AE3F7C97985CD5A61123E785A397A753EF22129`; immediate pre-save cached tick-11 returned `D` while identical fresh direct returned correct `B`, with zero root operations and zero root-action trace entries. RAM-root save, serialization, deserialization, and restore are not required for the divergence.
+**Latest causal boundary:** `neo-exp-0056` at `lab/results.jsonl:69`, SHA-256 `99AE4C7CCFF1AA318EE506B7B91709B9F6E9F5B667C76FFEA3BBC470F825AE19`; changing only context checkpoints `8 -> 0` changed the immediate cached tick-11 route from wrong `D` to correct `B` with the exact fresh-direct generated-token hash and unchanged compute counts.
 **Claim ceiling:** `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`
-**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED / FULL_BOUNDARY_NATIVE_RAM_ROOT_REJECTED / PRE_SAVE_270_TOKEN_MATERIALIZED_PREFIX_DIVERGENCE_AT_TICK11 / RAM_ROOT_APIS_EXONERATED / CONTEXT_CHECKPOINT_GEOMETRY_OPEN`
-**Active bounded objective:** Remove only server context checkpoints while holding the complete no-root 270-token discriminator fixed, then test whether checkpoint-forced partitioning caused the divergence.
-**Next exact action:** `RUN_CHECKPOINT_FREE_270_PRESAVE_TICK11` — launch the same controller with `--ctx-checkpoints 0`, require the verbose trace to say checkpoints are disabled with zero checkpoint creations and zero root actions, and preserve every token, seed, sampler, route, and accounting gate.
+**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED / CHECKPOINT_ENABLED_EXECUTION_PATH_CAUSAL_AT_TICK11 / CHECKPOINT_FREE_270_TOKEN_PREFIX_EXACT / RAM_ROOT_LIFECYCLE_REQUALIFICATION_PENDING`
+**Active bounded objective:** Hold checkpoints disabled and boundary 270 fixed while reintroducing only native RAM-root save, non-consuming restore, replay, final closure, and erase.
+**Next exact action:** `RUN_CHECKPOINT_FREE_270_RAM_ROOT_TICK11` — repeat the exact live/restored/fresh-direct/replay discriminator with `--ctx-checkpoints 0`, require root metadata invariance with zero checkpoints, exact generated hashes, final restore, explicit erase, and checkpoint-free trace evidence.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -39,8 +39,9 @@ The user-authorized discovery branch `codex/catalytic-frontier` supersedes the d
 - [x] Run 16 distinct branches from one 270-token prompt-only native RAM root with every declared cost counted. `neo-exp-0053` rejects utility-preserving sustained reuse: direct utility was `9/16`, catalytic utility was `8/16`, and tick 11 alone diverged between routes despite positive N=16 token and wall amortization.
 - [x] Run the narrow tick-11 post-save-live/restored/fresh-direct/replay 270-token prompt-root discriminator. `neo-exp-0054` shows the post-save live path already diverges; restore/deserialization is not required and replay is deterministic, while root-save mutation remains open.
 - [x] Run tick 11 immediately after fresh 270-token zero-output materialization and before any root action. `neo-exp-0055` returns cached `D` versus direct `B`; its trace contains zero root actions, so RAM-root APIs are exonerated for this observed divergence.
-- [ ] Change only sidecar context checkpoints from `8` to `0`; rerun the identical no-root 270-token pre-save/direct discriminator and require checkpoint-free trace evidence.
-- [ ] Conditional on persistent checkpoint-free `D` versus direct `B`, change only materialization boundary `270 -> 256` while holding checkpoints disabled. That yields matched recurrent schedules `[128,128,114]`; do not run or call 256 aligned with checkpoints enabled.
+- [x] Change only sidecar context checkpoints from `8` to `0`. `neo-exp-0056` makes the cached and fresh-direct tick-11 routes exactly correct with the same generated-token hash; the checkpoint-enabled execution path is causal, while forced partitioning versus checkpoint capture remains unseparated.
+- [x] Retire the conditional `270 -> 256` boundary change because checkpoint-free 270 is already exact; preserve 256 as a future alignment control only if another checkpoint-free divergence requires it.
+- [ ] Hold checkpoints at zero and boundary at 270; reintroduce the native RAM-root save/restore/replay/closure/erase lifecycle in the exact tick-11 discriminator before sustained fanout.
 
 ---
 

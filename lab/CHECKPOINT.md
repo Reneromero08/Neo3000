@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Catalytic frontier: N=16 amortizes, tick-11 diverges before any root action, checkpoint-free control next
+## Catalytic frontier: checkpoint-free 270-token prefix is exact at tick 11, RAM-root lifecycle next
 
-**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / POSITIVE N=16 AMORTIZATION WITH UTILITY FAILURE / 270-TOKEN PRE-SAVE MATERIALIZED PREFIX DIVERGES AT TICK11 / RAM-ROOT APIS EXONERATED FOR OBSERVED DIVERGENCE / CONTEXT-CHECKPOINT GEOMETRY CONTROL PENDING / UNBOUNDED CLAIM NOT YET SUPPORTED
+**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / POSITIVE N=16 AMORTIZATION WITH UTILITY FAILURE / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE 270-TOKEN PREFIX EXACT / RAM-ROOT LIFECYCLE REQUALIFICATION PENDING / UNBOUNDED CLAIM NOT YET SUPPORTED
 
 - Candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c` packages the retryable live-carrier and eight-projection fanout harness plus five focused no-model tests.
 - Datacenter: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5786802030`, `2.3747072600`, `3.3070996147`; average fresh tokens per useful branch `492.5`, `320.25`, `227.125` at N=`2,4,8`.
@@ -39,8 +39,14 @@
 - Classification is `PRE_SAVE_MATERIALIZED_PREFIX_DIVERGENCE`: root-save mutation, serialization, deserialization, and repeated restore are not required for this observed failure. The divergence exists in the freshly materialized cached execution path itself.
 - Canonical compact rejection: `neo-exp-0055` at `lab/results.jsonl:68`, SHA-256 `9FE0E2687AD6ECAF1E6EF1CD2AE3F7C97985CD5A61123E785A397A753EF22129`. External result/trace SHA-256 values are `FBEFA74A7594D8D19AD16F53A0B93901F4FA640AFD8BE4AB185F9993B60BAAAF` / `722159682CAA77F3C9BD7E93A85CDC48E59DC77813FB1604ED7B0626BAB29381`.
 - Source and trace audit selects a strict one-factor control: checkpoints `8 -> 0` with boundary 270 unchanged. This removes checkpoint-forced splits but does not fully align recurrent schedules; only a persistent failure authorizes checkpoint-free boundary 256, whose cached and direct schedules both become `[128,128,114]`.
+- Controller `a628a406c969a93e16aced6bd1b106cfeb285245` changed only explicit context checkpoints `8 -> 0`; evaluate, boundary 270, full 370-token arrays, input hash, seeds, sampler, model, binary, no-root route order, accounting, and teardown remained unchanged.
+- Pre-save cached and fresh-direct tick-11 routes both returned correct `B` and emitted exact generated-token SHA-256 `4553BBC00B6AF27C3EBDE8F36EA9237A37B5D9C1AA182FBC65CDA71411A4B888`. Cached admitted `270` and used `106` fresh tokens; direct admitted zero and used `376`; total measured compute remained `1,038`.
+- The trace reports `context checkpoints disabled` exactly once, no enabled line, zero checkpoint creations, and zero root actions. The scoped launch global restored to 8 after launch; sidecar PID `36204` stopped, port `9494` retired, stable PID `3860` stayed healthy, and peak WDDM was `2252.88 MiB`.
+- The one-factor result supports `CONTEXT_CHECKPOINT_ENABLED_EXECUTION_PATH_CAUSAL_AT_TICK11`. It does not separately identify checkpoint-forced batch partitioning versus checkpoint capture; both were removed by the one flag.
+- Canonical compact acceptance: `neo-exp-0056` at `lab/results.jsonl:69`, SHA-256 `99AE4C7CCFF1AA318EE506B7B91709B9F6E9F5B667C76FFEA3BBC470F825AE19`. External result/trace SHA-256 values are `BF27743DEEF041DCAADF1D2398CBCF29E631ED93EC0E64E828B1E4626AF31C07` / `B313F98EE67FA22420800945B72F0BDE3E4D45F1EB2E3BE5BBEE782C60542C73`.
+- Boundary 256 is not the next intervention because checkpoint-free boundary 270 is already exact. The smallest carrier step is to hold checkpoint zero and 270 fixed while reintroducing only RAM-root save and restore.
 
-**Next exact action:** change only `--ctx-checkpoints 8 -> 0` and rerun the identical no-root 270-token pre-save/direct tick-11 discriminator. Require startup trace `context checkpoints disabled`, zero checkpoint creations, zero root actions, unchanged 370-token input hash, and unchanged accounting. Only persistent `D` versus direct `B` authorizes the separate checkpoint-free `270 -> 256` boundary change.
+**Next exact action:** hold `--ctx-checkpoints 0` and boundary 270 fixed; reintroduce the native RAM-root save/restore lifecycle in the exact tick-11 live/restored/fresh-direct/replay discriminator. Require zero context-checkpoint creations, saved-root checkpoint count zero, metadata-invariant non-consuming restores, exact generated hashes, final restore, explicit erase, and clean sidecar teardown.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 

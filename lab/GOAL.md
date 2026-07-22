@@ -16,7 +16,9 @@ The actual frontier objective is infinite, unbounded catalytic inference: fixed-
 
 `neo-exp-0055` proves the tick-11 divergence exists before any root action: immediate pre-save cached execution returns wrong `D`, identical fresh direct returns correct `B`, and the verbose trace contains zero root-action entries. RAM-root save, serialization, deserialization, and restore are therefore not required for this observed failure.
 
-The next exact action changes only context checkpoints `8 -> 0` while preserving the no-root 270-token discriminator. This removes checkpoint-forced partitioning without claiming full alignment. If `D` versus `B` persists, hold checkpoints disabled and change only materialization boundary `270 -> 256`; that is the first design in which cached and direct recurrent schedules both match `[128,128,114]`.
+`neo-exp-0056` changes only context checkpoints `8 -> 0` and makes the unchanged 270-token cached tick-11 route exactly correct with the same generated-token hash as fresh direct. The checkpoint-enabled server execution path is causal for the prior failure; forced partitioning versus checkpoint capture is not yet separated.
+
+The next exact action keeps checkpoints disabled and boundary 270 fixed while reintroducing only native RAM-root save, non-consuming restore, replay, final closure, and erase. Boundary 256 is retired as the immediate path because checkpoint-free 270 is already exact.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
