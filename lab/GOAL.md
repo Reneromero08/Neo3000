@@ -8,7 +8,9 @@ The actual frontier objective is infinite, unbounded catalytic inference: fixed-
 
 `neo-exp-0051` rejects the completed-generation 285-token native RAM root: untouched live, restored, and replay routes produced the same wrong tick-2 result while the identical fresh route was correct. This proves that serialization is not required for the observed live-prefix-state failure.
 
-The next exact action is a cache-disabled zero-output 270-token prompt-only native RAM root followed by re-evaluation of the 15 known generated Task-A tokens and unchanged continuation. Broader recurrent, KV/activation, CUDA, weight-level, and unbounded claims remain pending separate measured evidence.
+`neo-exp-0052` supports exact reuse of a 270-token prompt-only native RAM root on one rotor discriminator: live, restored, fresh-direct, and replay tick 2 produced the same correct answer and generated-token hash after the 15-token Task-A tail was re-evaluated. All setup and branch costs remain counted.
+
+The next exact action is sustained N=16 distinct fanout from that one prompt-only root with a fresh same-token direct control per branch. Broader recurrent, KV/activation, CUDA, weight-level, arbitrary-task, and unbounded claims remain pending separate measured evidence.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 

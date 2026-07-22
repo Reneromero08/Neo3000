@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Catalytic frontier: bounded fanout replicated, full-boundary RAM root rejected, unbounded endpoint open
+## Catalytic frontier: bounded fanout replicated, prompt-only native RAM root exact, unbounded endpoint open
 
-**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / TWO GEOMETRIES / FIXED ROOT RESIDENCY / 285-TOKEN LIVE-PREFIX STATE REJECTED / UNBOUNDED CLAIM NOT YET SUPPORTED
+**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / 285-TOKEN COMPLETED-GENERATION ROOT REJECTED / 270-TOKEN PROMPT-ONLY ROOT EXACT ON ONE DISCRIMINATOR / UNBOUNDED CLAIM NOT YET SUPPORTED
 
 - Candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c` packages the retryable live-carrier and eight-projection fanout harness plus five focused no-model tests.
 - Datacenter: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5786802030`, `2.3747072600`, `3.3070996147`; average fresh tokens per useful branch `492.5`, `320.25`, `227.125` at N=`2,4,8`.
@@ -17,8 +17,13 @@
 - The root held `285` tokens, `137,572,752` bytes, and one checkpoint across five invariant non-consuming restores, final restore, and explicit erase. Peak isolated WDDM was `2252.88 MiB`; stable PID `3860` remained healthy and port `9494` retired.
 - Trace telemetry binds the retained root to `270` prompt plus `15` generated visible tokens and reports `n_rs_seq=0`; an in-place one-token rollback would not have a valid matching recurrent-state rollback and is not authorized.
 - Canonical compact rejection: `neo-exp-0051` at `lab/results.jsonl:64`, SHA-256 `421D79DDB0916AB06C533BF6CE8B54E73BCBAEDFB92D059895A964EC2F46F81E`. `neo-exp-0050` and the N=8 bounded claim ceiling remain valid; this full-boundary RAM-root mechanism is rejected.
+- Controller `aa77b24c05dc79acbf8fd1237b804d6296a29ba5` changed only root construction: one fresh cache-disabled zero-output request materialized the exact 270-token Task-A prompt before root-save.
+- Live, restored, fresh-direct, and replay tick 2 all returned correct `D` with identical generated-token SHA-256 `0CA13167369ED1835BB8938644A7CCEF6EDE0BD65AE31C256931C54D3FA9FB31`; restored tick 1 returned correct `C`.
+- The prompt root held `270` tokens, `137,265,192` bytes, and one checkpoint across five invariant restores and explicit erase. Task-A cost `286` fresh tokens, materialization cost `270`, each cached branch cost `105`, and the fresh tick-2 control cost `375`; no single-branch or sustained advantage is claimed from this discriminator.
+- This localizes the prior failure to reuse across the 15-token autoregressive generation tail. The static prompt prefix and full RAM serialization remain viable on this one rotor task; arbitrary-task transfer and unbounded reuse remain open.
+- Canonical compact acceptance: `neo-exp-0052` at `lab/results.jsonl:65`, SHA-256 `51A83544920DA28A2B13F8DF89DF756E6ABDA2619B431C3A50286A9183E8F502`. Peak isolated WDDM was `2284.9 MiB`; stable PID `3860` remained healthy and port `9494` retired.
 
-**Next exact action:** materialize a cache-disabled zero-output 270-token Task-A prompt root, require admitted cache `270`, re-evaluate the 15 known generated Task-A tokens plus the unchanged 84-token continuation, and compare with the identical fresh direct control.
+**Next exact action:** run 16 distinct branches from one 270-token prompt-only native RAM root with a fresh same-token direct control per branch and every materialization, restore, erase, memory, utility, and wall cost counted.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
