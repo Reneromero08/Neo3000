@@ -178,10 +178,18 @@ def evaluate_panel(
     props: Mapping[str, Any],
     root: Mapping[str, Any],
     baseline_private: int | None,
+    panel_override: list[dict[str, Any]] | None = None,
+    branch_order_override: tuple[int, ...] | None = None,
 ) -> dict[str, Any]:
     root_id = str(root["root_id"])
-    panel = strong_panel_for(root)
-    branch_order = PANEL_ORDERS[root_id]
+    panel = strong_panel_for(root) if panel_override is None else panel_override
+    branch_order = PANEL_ORDERS[root_id] if branch_order_override is None else branch_order_override
+    harness.require(len(panel) == PANEL_SIZE, "direct qualification panel must contain sixteen branches")
+    harness.require(len({str(item["question"]) for item in panel}) == PANEL_SIZE, "direct panel questions must be distinct")
+    harness.require(
+        set(branch_order) == set(range(1, PANEL_SIZE + 1)),
+        "direct panel order must cover each branch exactly once",
+    )
     prompt_text = codec.render_messages(
         harness.carrier.task_a_messages(root),
         harness.carrier.CHAT_TEMPLATE_KWARGS,
