@@ -22,7 +22,9 @@ The actual frontier objective is infinite, unbounded catalytic inference: fixed-
 
 `neo-exp-0058` holds checkpoints disabled and runs the unchanged 16-branch rotor panel. One fixed 71,400,764-byte root survives 24 restores and closes cleanly while fresh-token amplification reaches `2.3837301587`, wall amplification reaches `1.2040314982`, and average fresh work falls to `157.5` tokens per branch. The strict result is still rejected: catalytic/direct utility is `10/16` versus `9/16`, six ticks are jointly wrong, and the sole route-answer difference at tick 2 favors the carrier. Tick 11 is repaired. This supports fixed-residency positive amortization at N=16, not equal-utility N=16 or the unbounded endpoint.
 
-The next exact action is direct-first qualification of two stronger 16-branch task panels derived from the already-exact datacenter and cold-chain geometries. Freeze only panels with near-perfect cache-disabled direct utility, preferably `16/16`, before reusing the checkpoint-free carrier. Boundary 256 remains retired, and N=32/N=64 scaling waits for a trustworthy utility instrument.
+`neo-exp-0059` completes the frozen direct-only checkpoint-zero qualification without carrier contact. Cold-chain achieves exact `16/16`; datacenter is preserved as rejected at `15/16` after a single unambiguous branch-9 miss. All 32 direct branches are cache-disabled with zero cached prompt tokens, and the trace contains zero checkpoint creation, carrier, snapshot, or root-operation activity. This establishes one trustworthy direct panel, not two, and creates no carrier, N=32/N=64, equal-utility N=16, or unbounded-inference authority.
+
+The `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` operation is closed at this mixed accepted/rejected evidence boundary. The long-term catalytic objective and claim ceiling are unchanged, but frontier execution is paused pending explicit realignment. No retry, observed-answer replacement, new panel, carrier evaluation, scaling run, new mechanism, promotion, or follow-on experiment is authorized by this handoff.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 

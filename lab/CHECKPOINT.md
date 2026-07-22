@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Catalytic frontier: checkpoint-free N=16 amortizes under fixed residency; stronger direct baselines next
+## Catalytic frontier: direct-only two-panel qualification closed; one accepted, one rejected; frontier paused
 
-**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE NATIVE RAM-ROOT LIFECYCLE EXACT AT TICK11 / CHECKPOINT-FREE N16 FIXED RESIDENCY AND POSITIVE TOKEN-WALL AMORTIZATION / WEAK DIRECT BASELINE REJECTS EQUAL UTILITY / STRONG TWO-PANEL QUALIFICATION PENDING / UNBOUNDED CLAIM NOT YET SUPPORTED
+**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE NATIVE RAM-ROOT LIFECYCLE EXACT AT TICK11 / CHECKPOINT-FREE N16 FIXED RESIDENCY AND POSITIVE TOKEN-WALL AMORTIZATION / COLDCHAIN DIRECT N16 QUALIFIED / DATACENTER DIRECT N16 REJECTED 15 OF 16 / TWO ACCEPTED PANELS NOT ESTABLISHED / CARRIER AND SCALING BLOCKED / FRONTIER PAUSED / UNBOUNDED CLAIM NOT YET SUPPORTED
 
 - Candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c` packages the retryable live-carrier and eight-projection fanout harness plus five focused no-model tests.
 - Datacenter: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5786802030`, `2.3747072600`, `3.3070996147`; average fresh tokens per useful branch `492.5`, `320.25`, `227.125` at N=`2,4,8`.
@@ -60,7 +60,16 @@
 - Relative to checkpoint-enabled `neo-exp-0053`, root bytes fall from 137,265,192 to 71,400,764, checkpoint payload falls from one to zero, catalytic utility rises from `8/16` to `10/16`, and tick 11 is repaired while direct remains `9/16`. The strict equal-utility result remains rejected because this rotor panel is an unreliable direct-utility instrument.
 - Canonical compact rejection: `neo-exp-0058` at `lab/results.jsonl:71`, SHA-256 `494D8084DC693FE69E63B96E4C7D4B730E7EE19C48D712C5BA96857E7D1FB2D9`. External result/trace SHA-256 values are `9D96B5BF243078A2445DA9567BF55EB21C8ABEB3C540BC9E367D8583D8D83AD1` / `D5F4CCFFCBD71D15D625734ECA0C4E5DEB2B7530B5EE643EFE397ECB034CFC1E`.
 
-**Next exact action:** design and directly qualify two 16-branch panels derived from the already-exact datacenter and cold-chain geometries. Admit only panels with near-perfect cache-disabled Agents-A1 utility, preferably `16/16`; do not run the carrier or advance to N=32/N=64 until the direct instrument is trustworthy.
+- Controller `2e61ad020fcb35f98744e38a54388cf4edc14db6` froze two 16-branch panels before live contact, passed 6/6 focused and 56/56 full no-model tests, then ran exactly once with explicit context checkpoints zero. The controller exposes zero carrier, RAM-root, snapshot, cache-enabled, retry, and outcome-early-stop paths.
+- Every one of 32 direct branches completed with cached prompt tokens zero. Cold-chain exactly matched `BADCABDCCBDACBDA` for `16/16`; datacenter produced `ACBADCABABDACBDD` against `ACBADCABCBDACBDD` for `15/16`.
+- Datacenter branch 9 was the sole miss: a leader move starting at 21:58 and taking four minutes is uniquely complete at 22:02, option `C`, while direct inference returned 22:04, option `A`. Independent audit confirms the public evidence and key are unambiguous, so the rejected result is preserved and is not reclassified as an instrument defect.
+- The 32 direct branches consumed 23,713 fresh model tokens and two Task-A requests consumed 1,248, for 24,961 total. Branch plus Task-A wall was 513.285 seconds datacenter and 439.499 seconds cold-chain, totaling 952.784 seconds. Panel wall fields alone are branch-only and are not represented as all-in.
+- Trace evidence reports checkpoint disablement once, zero enablement, zero checkpoint creation, 68 `do_checkpoint = no` decisions, and zero yes decisions. Carrier operations, snapshot operations, cache-enabled branches, and slot save/restore/erase activity are all zero.
+- Sidecar PID `56072` stopped, port `9494` retired, stable PID `3860` remained the sole healthy listener on `9292`, and peak isolated WDDM was 2,252.88 MiB. External result/trace identities are 24,386 bytes / `07E276EA127AD96A7BC3E10B4FBFD0B807A02FE538CD7BB75CF67073BDF35638` and 2,575,786 bytes / `A9B6BDCCEE89FA7BDE4FF6FA88C363CD61BE51156E800C43C8496D4A2F69264F`.
+- Canonical compact rejection: `neo-exp-0059` at `lab/results.jsonl:72`, SHA-256 `283585C80B90EDF22D0251060469A7A4930428582C43C3746B34F02990C7C54C`. Cold-chain is preserved as qualified; datacenter is preserved as rejected; two accepted panels, carrier authority, equal-utility N=16, N=32/N=64, and the unbounded endpoint remain unsupported. The claim ceiling is unchanged.
+- The operation ends here by explicit user boundary. No unchanged-panel retry, observed-answer replacement, new panel, carrier evaluation, scaling run, mechanism, promotion, or follow-on experiment was executed.
+
+**Next exact action:** `STOP_AT_CLEAN_QUALIFIER_CHECKPOINT_PENDING_LONG_TERM_REALIGNMENT`. Await explicit new direction; the completed operation authorizes no further frontier execution.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
