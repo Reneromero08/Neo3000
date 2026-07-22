@@ -1,8 +1,8 @@
 # Checkpoint Ledger
 
-## Catalytic frontier: bounded fanout replicated, prompt-only native RAM root exact, unbounded endpoint open
+## Catalytic frontier: bounded fanout replicated, N=16 amortizes but fails utility and tick-11 exactness
 
-**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / 285-TOKEN COMPLETED-GENERATION ROOT REJECTED / 270-TOKEN PROMPT-ONLY ROOT EXACT ON ONE DISCRIMINATOR / UNBOUNDED CLAIM NOT YET SUPPORTED
+**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / 285-TOKEN COMPLETED-GENERATION ROOT REJECTED / 270-TOKEN PROMPT ROOT EXACT THROUGH ROTOR N=8 / POSITIVE N=16 AMORTIZATION / DIRECT UTILITY AND TICK-11 PREFIX EQUIVALENCE FAILED / UNBOUNDED CLAIM NOT YET SUPPORTED
 
 - Candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c` packages the retryable live-carrier and eight-projection fanout harness plus five focused no-model tests.
 - Datacenter: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5786802030`, `2.3747072600`, `3.3070996147`; average fresh tokens per useful branch `492.5`, `320.25`, `227.125` at N=`2,4,8`.
@@ -22,8 +22,14 @@
 - The prompt root held `270` tokens, `137,265,192` bytes, and one checkpoint across five invariant restores and explicit erase. Task-A cost `286` fresh tokens, materialization cost `270`, each cached branch cost `105`, and the fresh tick-2 control cost `375`; no single-branch or sustained advantage is claimed from this discriminator.
 - This localizes the prior failure to reuse across the 15-token autoregressive generation tail. The static prompt prefix and full RAM serialization remain viable on this one rotor task; arbitrary-task transfer and unbounded reuse remain open.
 - Canonical compact acceptance: `neo-exp-0052` at `lab/results.jsonl:65`, SHA-256 `51A83544920DA28A2B13F8DF89DF756E6ABDA2619B431C3A50286A9183E8F502`. Peak isolated WDDM was `2284.9 MiB`; stable PID `3860` remained healthy and port `9494` retired.
+- Controller `40d321eb53cca8cdf7e5362cd44db8ef9a997d7a` sustained one `270`-token, `137,265,192`-byte prompt root through 16 distinct branches, 24 invariant restores, four closure probes, final restore, and explicit erase. Controller private growth was `98,304` bytes; peak isolated WDDM was `2284.9 MiB`.
+- At N=16, all declared fresh-token costs were `2,520` catalytic versus `6,007` direct: `3,487` saved and `2.3837301587x` amplification. All declared lifecycle wall costs were `178.546` versus `201.075` seconds: `1.1261803681x`. Fixed-residency amortization is therefore visible, but it is not an acceptance because utility and exactness failed.
+- Fresh direct utility was only `9/16`; catalytic utility was `8/16`. Both routes shared wrong answers at ticks `3,6,7,10,13,14,15`, so this rotor question family cannot support an equal-utility sustained claim.
+- Route answers and generated tokens were exact through N=8. Tick 11 alone separated the routes: expected/direct `B`, restored catalytic `D`, under identical input-token arrays. This is the next causal discriminator; it is independent of the seven shared task/model failures.
+- The root remained one named object with invariant identity, token count, byte count, and checkpoint count across all restores. Host private growth was `425,660,416` bytes with root and `288,124,928` after erase; sidecar cleanup, stable PID `3860`, and port `9494` retirement passed.
+- Canonical compact rejection: `neo-exp-0053` at `lab/results.jsonl:66`, SHA-256 `F511A50788D198F53363CDE6CCC2F443122ECC394C127ABBBE248C5A2675C238`. The earlier N=8 claim ceiling remains unchanged; no unbounded or utility-preserving N=16 claim is unlocked.
 
-**Next exact action:** run 16 distinct branches from one 270-token prompt-only native RAM root with a fresh same-token direct control per branch and every materialization, restore, erase, memory, utility, and wall cost counted.
+**Next exact action:** run a narrow tick-11 live/restored/fresh-direct/replay discriminator from a fresh 270-token prompt root with identical token arrays and seeds, then bind whether the divergence exists before serialization, only after restore, or only after repeated restores.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 

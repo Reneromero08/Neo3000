@@ -5,11 +5,11 @@
 **Baseline evidence through:** CatalyticSwarm-0 v2 integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`; bound `reviewable-accept` result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`
 **Executed evaluation:** `catalytic_swarm_1` equal-budget task-advantage contract `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`; executed once, inconclusive
 **Frontier exact-commit evidence:** `neo-exp-0050` at `lab/results.jsonl:63`, SHA-256 `5D90FCDABC8AD103A43803821E91C769641D8687BF74C6F7D68CE16593916EB6`, candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c`; two Agents-A1 geometries passed N=`2,4,8`
-**Latest causal boundary:** `neo-exp-0052` at `lab/results.jsonl:65`, SHA-256 `51A83544920DA28A2B13F8DF89DF756E6ABDA2619B431C3A50286A9183E8F502`; one 270-token prompt-only native RAM root restored exact tick-2 answer and generated-token equivalence across live, restored, direct, and replay routes
+**Latest causal boundary:** `neo-exp-0053` at `lab/results.jsonl:66`, SHA-256 `F511A50788D198F53363CDE6CCC2F443122ECC394C127ABBBE248C5A2675C238`; N=16 produced positive token and wall amortization under fixed root residency, but fresh direct utility failed 7/16 ticks and restored prompt-root reuse alone diverged from the correct direct route at tick 11
 **Claim ceiling:** `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`
-**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED / FULL_BOUNDARY_NATIVE_RAM_ROOT_REJECTED / PROMPT_ONLY_NATIVE_RAM_ROOT_EXACT_REUSE_SUPPORTED_ON_ONE_DISCRIMINATOR`
-**Active bounded objective:** Scale the exact 270-token prompt-only root beyond the single discriminator under fixed residency, measure its amortized fresh-compute floor, then reduce that floor through recurrent, KV/activation, CUDA, or weight-level mechanisms without losing Agents-A1 utility.
-**Next exact action:** `RUN_PROMPT_ONLY_NATIVE_RAM_ROOT_N16` — execute 16 distinct branches from one 270-token root with a fresh same-token direct control per branch and every materialization, restore, erase, memory, utility, and wall cost counted.
+**Mechanism status:** `EXACT_PROCESS_LOCAL_HOLOSTATE_REUSE_PROVEN / BOUNDED_CATALYTIC_FANOUT_ADVANTAGE_REPLICATED / FULL_BOUNDARY_NATIVE_RAM_ROOT_REJECTED / PROMPT_ONLY_ROOT_EXACT_THROUGH_N8_ON_ROTOR / PROMPT_ONLY_ROOT_DIVERGES_AT_TICK11`
+**Active bounded objective:** Localize the tick-11 prompt-root divergence between untouched live prompt state, restored prompt state, fresh direct prefill, and restored replay before changing the task family or reducing the residual suffix/output floor.
+**Next exact action:** `LOCALIZE_PROMPT_ROOT_TICK11_DIVERGENCE` — run one tick-11 live/restored/fresh-direct/replay discriminator from a fresh 270-token prompt root with identical token arrays, seeds, model, binary, and explicit root closure.
 
 `ROADMAP.md` defines phase order and RSI unlock levels. This file is the executable queue.
 
@@ -36,7 +36,8 @@ The user-authorized discovery branch `codex/catalytic-frontier` supersedes the d
 - Executed evidence: the file-slot carrier is rejected for sustained semantic reuse after cached tick 2 returned `C` and the identical fresh control returned `D`.
 - Executed evidence: full-boundary native RAM-root reuse is rejected after untouched live, restored, and replay routes returned `C` while fresh direct returned `D`; bind `neo-exp-0051`.
 - Executed evidence: a cache-disabled zero-output 270-token prompt root admitted exactly `270`; live, restored, direct, and replay tick 2 all returned `D` with identical generated-token hashes, binding `neo-exp-0052`.
-- [ ] Run 16 distinct branches from one 270-token prompt-only native RAM root; require a fresh same-token direct control for every branch and count Task-A, materialization, suffix/output, restore, erase, memory, and wall costs.
+- [x] Run 16 distinct branches from one 270-token prompt-only native RAM root with every declared cost counted. `neo-exp-0053` rejects utility-preserving sustained reuse: direct utility was `9/16`, catalytic utility was `8/16`, and tick 11 alone diverged between routes despite positive N=16 token and wall amortization.
+- [ ] Run the narrow tick-11 live/restored/fresh-direct/replay prompt-root discriminator; separate prompt-prefill path dependence from serialization or repeated-restore effects before changing any other mechanism.
 
 ---
 

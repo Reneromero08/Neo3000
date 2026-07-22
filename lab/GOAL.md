@@ -10,7 +10,9 @@ The actual frontier objective is infinite, unbounded catalytic inference: fixed-
 
 `neo-exp-0052` supports exact reuse of a 270-token prompt-only native RAM root on one rotor discriminator: live, restored, fresh-direct, and replay tick 2 produced the same correct answer and generated-token hash after the 15-token Task-A tail was re-evaluated. All setup and branch costs remain counted.
 
-The next exact action is sustained N=16 distinct fanout from that one prompt-only root with a fresh same-token direct control per branch. Broader recurrent, KV/activation, CUDA, weight-level, arbitrary-task, and unbounded claims remain pending separate measured evidence.
+`neo-exp-0053` exposes a split boundary. One fixed prompt root achieved positive N=16 fresh-token and all-declared-wall amortization, but the fresh model failed seven rotor ticks and the restored root alone diverged from the correct fresh route at tick 11. Therefore neither utility-preserving N=16 nor the unbounded endpoint is established.
+
+The next exact action is the smallest tick-11 live/restored/fresh-direct/replay discriminator. Only after prompt-prefill versus serialization/repeated-restore causality is separated should the task family or the recurrent, KV/activation, CUDA, or weight-level mechanism change.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
