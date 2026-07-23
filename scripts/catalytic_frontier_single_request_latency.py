@@ -999,6 +999,17 @@ def require_unused_artifact_paths(*paths: Path | None) -> None:
             harness.require(not path.resolve(strict=False).exists(), f"latency artifact path already exists: {path}")
 
 
+def cleanup_peak_wddm_bytes(cleanup: Mapping[str, Any]) -> int | None:
+    wddm = cleanup.get("wddm")
+    if not isinstance(wddm, Mapping):
+        return None
+    for key in ("peak_dedicated_bytes", "peak_bytes"):
+        value = wddm.get(key)
+        if type(value) is int:
+            return int(value)
+    return None
+
+
 def finalize_result_after_cleanup(
     result: dict[str, Any],
     *,
@@ -1013,8 +1024,7 @@ def finalize_result_after_cleanup(
     result["cleanup_gate"] = cleanup_gate
     root_storage = result.get("trial_design", {}).get("root_storage")
     if root_storage == "device":
-        wddm = cleanup_record.get("wddm")
-        peak_wddm_bytes = wddm.get("peak_bytes") if isinstance(wddm, Mapping) else None
+        peak_wddm_bytes = cleanup_peak_wddm_bytes(cleanup_record)
         wddm_gate = type(peak_wddm_bytes) is int and int(peak_wddm_bytes) <= 6000 * 1024 * 1024
         result["metrics"]["cuda_root"]["peak_wddm_bytes"] = peak_wddm_bytes
         result["metrics"]["cuda_root"]["maximum_wddm_bytes"] = 6000 * 1024 * 1024

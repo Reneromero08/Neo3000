@@ -101,6 +101,17 @@ class CudaRootLatencyTests(unittest.TestCase):
         self.assertIn("cuda_device_bytes_zero_after_erase", source)
         self.assertIn("cuda_wddm_at_or_below_6000_mib", source)
 
+    def test_cleanup_wddm_accepts_current_dedicated_schema_and_legacy_schema(self):
+        self.assertEqual(
+            latency.cleanup_peak_wddm_bytes({"wddm": {"peak_dedicated_bytes": 2_444_107_776}}),
+            2_444_107_776,
+        )
+        self.assertEqual(
+            latency.cleanup_peak_wddm_bytes({"wddm": {"peak_bytes": 2_444_107_776}}),
+            2_444_107_776,
+        )
+        self.assertIsNone(latency.cleanup_peak_wddm_bytes({"wddm": {"peak_dedicated_bytes": None}}))
+
 
 if __name__ == "__main__":
     unittest.main()
