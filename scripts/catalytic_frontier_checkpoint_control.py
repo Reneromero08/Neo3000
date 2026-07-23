@@ -13,6 +13,7 @@ NGRAM_CACHE_SERVER_ARGS = ("--spec-type", "ngram-cache")
 CUDA_ROOT_SERVER_ARGS = ("--cache-ram-root-device",)
 DEFAULT_MOE_SERVER_ARGS = ("--cpu-moe",)
 PARTIAL_MOE_26_SERVER_ARGS = ("--n-cpu-moe", "26")
+PARTIAL_MOE_33_SERVER_ARGS = ("--n-cpu-moe", "33")
 
 
 def normalize_server_launch_args(values: Sequence[str]) -> tuple[str, ...]:
@@ -27,8 +28,12 @@ def normalize_server_launch_args(values: Sequence[str]) -> tuple[str, ...]:
 def normalize_moe_server_args(values: Sequence[str]) -> tuple[str, ...]:
     normalized = tuple(values)
     harness.require(
-        normalized in (DEFAULT_MOE_SERVER_ARGS, PARTIAL_MOE_26_SERVER_ARGS),
-        "scoped MoE arguments must be exact all-CPU or n-cpu-moe 26",
+        normalized in (
+            DEFAULT_MOE_SERVER_ARGS,
+            PARTIAL_MOE_26_SERVER_ARGS,
+            PARTIAL_MOE_33_SERVER_ARGS,
+        ),
+        "scoped MoE arguments must be exact all-CPU, n-cpu-moe 26, or n-cpu-moe 33",
     )
     return normalized
 
@@ -98,7 +103,13 @@ class ScopedCheckpointDiscoverySidecar(harness.DiscoverySidecar):
             "global_restored_after_launch": harness.live_runtime.CTX_CHECKPOINTS == previous,
             "server_launch_args": self.server_launch_args(),
             "moe_server_args": self.moe_launch_args(),
-            "n_cpu_moe": 26 if tuple(self.moe_launch_args()) == PARTIAL_MOE_26_SERVER_ARGS else 40,
+            "n_cpu_moe": (
+                26
+                if tuple(self.moe_launch_args()) == PARTIAL_MOE_26_SERVER_ARGS
+                else 33
+                if tuple(self.moe_launch_args()) == PARTIAL_MOE_33_SERVER_ARGS
+                else 40
+            ),
             "speculative_type": "ngram-cache" if tuple(self.server_launch_args()) == NGRAM_CACHE_SERVER_ARGS else "none",
             "root_storage": "device" if tuple(self.server_launch_args()) == CUDA_ROOT_SERVER_ARGS else "host",
         }

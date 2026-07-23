@@ -5,6 +5,7 @@ from pathlib import Path
 import catalytic_frontier_checkpoint_control as checkpoint
 import catalytic_frontier_cuda_root_host_control as host_control
 import catalytic_frontier_cuda_root_partial_moe_latency as partial_moe
+import catalytic_frontier_cuda_root_partial_moe_33_latency as partial_moe_33
 import catalytic_frontier_single_request_latency as latency
 
 
@@ -143,6 +144,16 @@ class CudaRootLatencyTests(unittest.TestCase):
             5_483 * 1024 * 1024,
         )
         self.assertIsNone(latency.readiness_peak_wddm_bytes({"wddm": {}}))
+
+    def test_repaired_partial_moe_profile_is_exactly_seven_gpu_expert_layers(self):
+        self.assertEqual(checkpoint.PARTIAL_MOE_33_SERVER_ARGS, ("--n-cpu-moe", "33"))
+        self.assertEqual(
+            checkpoint.normalize_moe_server_args(("--n-cpu-moe", "33")),
+            checkpoint.PARTIAL_MOE_33_SERVER_ARGS,
+        )
+        source = inspect.getsource(partial_moe_33)
+        self.assertIn("PARTIAL_MOE_33_SERVER_ARGS", source)
+        self.assertIn('root_storage="device"', source)
 
 
 if __name__ == "__main__":

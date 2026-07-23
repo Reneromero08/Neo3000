@@ -1168,7 +1168,10 @@ def main(
             and launch_configuration.get("root_storage") == root_storage,
             "sidecar launch identity differs from the preregistered storage and speculative modes",
         )
-        if moe_server_args == water.checkpoint_control.PARTIAL_MOE_26_SERVER_ARGS:
+        if moe_server_args in (
+            water.checkpoint_control.PARTIAL_MOE_26_SERVER_ARGS,
+            water.checkpoint_control.PARTIAL_MOE_33_SERVER_ARGS,
+        ):
             readiness_wddm_bytes = readiness_peak_wddm_bytes(readiness)
             harness.require(
                 type(readiness_wddm_bytes) is int and readiness_wddm_bytes <= 6000 * 1024 * 1024,
