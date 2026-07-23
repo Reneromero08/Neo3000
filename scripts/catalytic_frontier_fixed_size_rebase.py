@@ -683,7 +683,7 @@ def evaluate(
         "mechanism": "pinned-host-base-plus-fixed-output-cuda-capsule-rebase",
         "verdict": "accept" if accepted_before_cleanup else "reject",
         "classification": classification,
-        "geometry": {"N": 1, "T": 3, "R": 3, "B": 2},
+        "geometry": {"N": 1, "T": 3, "R": 3, "B": 1},
         "claim_ceiling": (
             "exact fixed-size recursive state rebase for the bounded finite-state recurrence; "
             "not arbitrary-history semantic compaction or unbounded inference"
