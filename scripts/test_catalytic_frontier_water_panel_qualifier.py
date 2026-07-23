@@ -137,6 +137,78 @@ class CatalyticFrontierWaterPanelQualifierTests(unittest.TestCase):
             launch_source.index("self.process = subprocess.Popen"),
         )
 
+    def test_controlled_discovery_seeds_base_runtime_identity_contract(self) -> None:
+        binary = Path("candidate.exe").resolve()
+        model = Path("model.gguf").resolve()
+        evaluator = {"model": {"sha256": qualifier.harness.live_runtime.EXPECTED_MODEL_SHA256}}
+        binary_identity = {
+            "path": str(binary),
+            "sha256": qualifier.PINNED_BINARY_SHA256,
+            "runtime_version": "178 (6c63039)",
+        }
+
+        def initialize_base(
+            sidecar: object,
+            binary_arg: Path,
+            model_arg: Path,
+            evaluator_arg: dict[str, object],
+            _contract: dict[str, object],
+            _detached: bool,
+            **kwargs: object,
+        ) -> None:
+            sidecar.binary = binary_arg.resolve()
+            sidecar.model = model_arg.resolve()
+            sidecar.evaluator = evaluator_arg
+            sidecar.readiness_control = kwargs.get("readiness_control")
+            sidecar.preverified_binary_identity = kwargs.get("preverified_binary_identity")
+            sidecar.preverified_model_identity = kwargs.get("preverified_model_identity")
+
+        with (
+            mock.patch.object(
+                qualifier.harness.live_runtime.LiveSidecar,
+                "__init__",
+                autospec=True,
+                side_effect=initialize_base,
+            ),
+            mock.patch.object(
+                qualifier.harness,
+                "discovery_binary_identity",
+                return_value=binary_identity,
+            ),
+        ):
+            sidecar = qualifier.harness.DiscoverySidecar(
+                binary,
+                model,
+                evaluator,
+                {},
+                False,
+                readiness_control={"enabled": True},
+            )
+
+        self.assertEqual(sidecar.preverified_binary_identity, binary_identity)
+        self.assertEqual(
+            sidecar.preverified_model_identity,
+            {
+                "path": str(model),
+                "sha256": qualifier.harness.live_runtime.EXPECTED_MODEL_SHA256,
+                "size_bytes": qualifier.harness.live_runtime.EXPECTED_MODEL_SIZE,
+            },
+        )
+
+    def test_controlled_discovery_delegates_runtime_locking_to_base(self) -> None:
+        sidecar = object.__new__(qualifier.harness.DiscoverySidecar)
+        sidecar.readiness_control = {"enabled": True}
+        identities = ({"sha256": "binary"}, {"sha256": "model"})
+        with mock.patch.object(
+            qualifier.harness.live_runtime.LiveSidecar,
+            "runtime_identities",
+            autospec=True,
+            return_value=identities,
+        ) as base_runtime_identities:
+            observed = sidecar.runtime_identities()
+        self.assertEqual(observed, identities)
+        base_runtime_identities.assert_called_once_with(sidecar)
+
     def test_readiness_deadline_starts_only_after_runtime_identity_hashing(self) -> None:
         sidecar = object.__new__(qualifier.checkpoint_control.ScopedCheckpointDiscoverySidecar)
         sidecar.readiness_control = {"readiness_deadline_seconds": 180.0}

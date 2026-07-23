@@ -106,8 +106,26 @@ class DiscoverySidecar(live_runtime.LiveSidecar):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.discovery_expected_binary = discovery_binary_identity(self.binary)
+        if self.readiness_control is not None:
+            expected_model = {
+                "path": str(self.model),
+                "sha256": live_runtime.EXPECTED_MODEL_SHA256,
+                "size_bytes": live_runtime.EXPECTED_MODEL_SIZE,
+            }
+            require(
+                self.preverified_binary_identity in (None, self.discovery_expected_binary),
+                "controlled discovery binary identity changed before construction",
+            )
+            require(
+                self.preverified_model_identity in (None, expected_model),
+                "controlled discovery model identity changed before construction",
+            )
+            self.preverified_binary_identity = dict(self.discovery_expected_binary)
+            self.preverified_model_identity = expected_model
 
     def runtime_identities(self) -> tuple[dict[str, Any], dict[str, Any]]:
+        if self.readiness_control is not None:
+            return super().runtime_identities()
         current_binary = discovery_binary_identity(self.binary)
         require(
             current_binary == self.discovery_expected_binary,
