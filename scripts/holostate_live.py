@@ -4643,6 +4643,10 @@ class LiveSidecar:
         """Return a scoped default-empty extension for experimental server flags."""
         return []
 
+    def moe_launch_args(self) -> list[str]:
+        """Return the default exact all-CPU expert placement."""
+        return ["--cpu-moe"]
+
     def launch(self) -> dict[str, Any]:
         if self.readiness_control is None:
             if listener_pids(PORT):
@@ -4703,6 +4707,9 @@ class LiveSidecar:
             str(self.state_root),
         )
         self.log_handle = log_path.open("w", encoding="utf-8")
+        moe_args = self.moe_launch_args()
+        if not moe_args or not all(isinstance(item, str) and item for item in moe_args):
+            raise NeoLoopError("sidecar MoE launch arguments must be non-empty strings")
         args = [
             str(self.binary),
             "--model", str(self.model),
@@ -4719,7 +4726,7 @@ class LiveSidecar:
             "--flash-attn", "auto",
             "--cache-type-k", "f16",
             "--cache-type-v", "f16",
-            "--cpu-moe",
+            *moe_args,
             "--cache-prompt",
             "--metrics",
             "--no-webui",

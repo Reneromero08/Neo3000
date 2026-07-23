@@ -1011,6 +1011,17 @@ def cleanup_peak_wddm_bytes(cleanup: Mapping[str, Any]) -> int | None:
     return None
 
 
+def readiness_peak_wddm_bytes(readiness: Mapping[str, Any]) -> int | None:
+    wddm = readiness.get("wddm")
+    if not isinstance(wddm, Mapping):
+        return None
+    for key in ("peak_dedicated_bytes", "peak_bytes"):
+        value = wddm.get(key)
+        if type(value) is int:
+            return int(value)
+    return None
+
+
 def finalize_result_after_cleanup(
     result: dict[str, Any],
     *,
@@ -1084,11 +1095,13 @@ def main(
     speculative_mode: str = "none",
     root_storage: str = "host",
     runtime_identity: str = "canonical",
+    moe_server_args: tuple[str, ...] = water.checkpoint_control.DEFAULT_MOE_SERVER_ARGS,
 ) -> int:
     args = parse_args()
     harness.require(speculative_mode in SPECULATIVE_MODES, "unsupported latency speculative mode")
     harness.require(root_storage in ROOT_STORAGE_MODES, "unsupported latency root storage mode")
     harness.require(runtime_identity in RUNTIME_IDENTITY_MODES, "unsupported latency runtime identity")
+    moe_server_args = water.checkpoint_control.normalize_moe_server_args(moe_server_args)
     harness.require(speculative_mode == "none" or root_storage == "host", "speculation and device root cannot be combined")
     harness.require(root_storage != "device" or runtime_identity == "cuda-bundle", "device root requires the CUDA runtime bundle")
     repository = Path(__file__).resolve().parents[1]
@@ -1136,6 +1149,7 @@ def main(
                 if speculative_mode == "ngram-cache"
                 else ()
             ),
+            moe_server_args=moe_server_args,
         )
         readiness = sidecar.launch()
         launch_configuration = readiness.get("launch_configuration")
@@ -1149,10 +1163,17 @@ def main(
         harness.require(
             isinstance(launch_configuration, Mapping)
             and launch_configuration.get("server_launch_args") == expected_launch_args
+            and launch_configuration.get("moe_server_args") == list(moe_server_args)
             and launch_configuration.get("speculative_type") == speculative_mode
             and launch_configuration.get("root_storage") == root_storage,
             "sidecar launch identity differs from the preregistered storage and speculative modes",
         )
+        if moe_server_args == water.checkpoint_control.PARTIAL_MOE_26_SERVER_ARGS:
+            readiness_wddm_bytes = readiness_peak_wddm_bytes(readiness)
+            harness.require(
+                type(readiness_wddm_bytes) is int and readiness_wddm_bytes <= 6000 * 1024 * 1024,
+                "partial-MoE readiness WDDM is missing or above 6000 MiB",
+            )
         baseline_private = None
         process_memory = readiness.get("process_memory")
         if isinstance(process_memory, Mapping) and isinstance(process_memory.get("private_bytes"), int):
@@ -1171,6 +1192,7 @@ def main(
         result["launch_configuration"] = readiness.get("launch_configuration")
         result["cuda_runtime_sha256"] = cuda_runtime_sha256
         result["runtime_identity"] = runtime_identity
+        result["moe_server_args"] = list(moe_server_args)
         result["readiness"] = {
             "pid": readiness.get("pid"),
             "readiness_seconds": readiness.get("readiness_seconds"),
@@ -1178,6 +1200,7 @@ def main(
             "model": readiness.get("model"),
             "baseline_private_bytes": baseline_private,
             "launch_configuration": readiness.get("launch_configuration"),
+            "wddm": readiness.get("wddm"),
         }
     except BaseException as exc:
         error = exc

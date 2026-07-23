@@ -11,6 +11,8 @@ import catalytic_frontier_harness as harness
 FROZEN_CONTEXT_CHECKPOINTS = 8
 NGRAM_CACHE_SERVER_ARGS = ("--spec-type", "ngram-cache")
 CUDA_ROOT_SERVER_ARGS = ("--cache-ram-root-device",)
+DEFAULT_MOE_SERVER_ARGS = ("--cpu-moe",)
+PARTIAL_MOE_26_SERVER_ARGS = ("--n-cpu-moe", "26")
 
 
 def normalize_server_launch_args(values: Sequence[str]) -> tuple[str, ...]:
@@ -18,6 +20,15 @@ def normalize_server_launch_args(values: Sequence[str]) -> tuple[str, ...]:
     harness.require(
         normalized in ((), NGRAM_CACHE_SERVER_ARGS, CUDA_ROOT_SERVER_ARGS),
         "scoped server launch arguments must be empty, exact ngram-cache, or exact CUDA root",
+    )
+    return normalized
+
+
+def normalize_moe_server_args(values: Sequence[str]) -> tuple[str, ...]:
+    normalized = tuple(values)
+    harness.require(
+        normalized in (DEFAULT_MOE_SERVER_ARGS, PARTIAL_MOE_26_SERVER_ARGS),
+        "scoped MoE arguments must be exact all-CPU or n-cpu-moe 26",
     )
     return normalized
 
@@ -31,6 +42,7 @@ class ScopedCheckpointDiscoverySidecar(harness.DiscoverySidecar):
         context_checkpoints: int,
         readiness_deadline_seconds_after_identity: float | None = None,
         server_launch_args: Sequence[str] = (),
+        moe_server_args: Sequence[str] = DEFAULT_MOE_SERVER_ARGS,
         **kwargs: Any,
     ):
         harness.require(
@@ -46,9 +58,13 @@ class ScopedCheckpointDiscoverySidecar(harness.DiscoverySidecar):
         self.context_checkpoints = context_checkpoints
         self.readiness_deadline_seconds_after_identity = readiness_deadline_seconds_after_identity
         self.scoped_server_launch_args = normalize_server_launch_args(server_launch_args)
+        self.scoped_moe_server_args = normalize_moe_server_args(moe_server_args)
 
     def server_launch_args(self) -> list[str]:
         return list(getattr(self, "scoped_server_launch_args", ()))
+
+    def moe_launch_args(self) -> list[str]:
+        return list(getattr(self, "scoped_moe_server_args", DEFAULT_MOE_SERVER_ARGS))
 
     def runtime_identities(self) -> tuple[dict[str, Any], dict[str, Any]]:
         identities = super().runtime_identities()
@@ -81,6 +97,8 @@ class ScopedCheckpointDiscoverySidecar(harness.DiscoverySidecar):
             "checkpoint_min_step": int(harness.live_runtime.CHECKPOINT_MIN_STEP),
             "global_restored_after_launch": harness.live_runtime.CTX_CHECKPOINTS == previous,
             "server_launch_args": self.server_launch_args(),
+            "moe_server_args": self.moe_launch_args(),
+            "n_cpu_moe": 26 if tuple(self.moe_launch_args()) == PARTIAL_MOE_26_SERVER_ARGS else 40,
             "speculative_type": "ngram-cache" if tuple(self.server_launch_args()) == NGRAM_CACHE_SERVER_ARGS else "none",
             "root_storage": "device" if tuple(self.server_launch_args()) == CUDA_ROOT_SERVER_ARGS else "host",
         }

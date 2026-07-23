@@ -4,6 +4,7 @@ from pathlib import Path
 
 import catalytic_frontier_checkpoint_control as checkpoint
 import catalytic_frontier_cuda_root_host_control as host_control
+import catalytic_frontier_cuda_root_partial_moe_latency as partial_moe
 import catalytic_frontier_single_request_latency as latency
 
 
@@ -121,6 +122,27 @@ class CudaRootLatencyTests(unittest.TestCase):
         self.assertIn('runtime_identity="cuda-bundle"', source)
         self.assertNotIn("--cache-ram-root-device", source)
         self.assertEqual(latency.RUNTIME_IDENTITY_MODES, ("canonical", "cuda-bundle"))
+
+    def test_partial_moe_profile_is_exact_and_cuda_root_stays_enabled(self):
+        self.assertEqual(checkpoint.DEFAULT_MOE_SERVER_ARGS, ("--cpu-moe",))
+        self.assertEqual(checkpoint.PARTIAL_MOE_26_SERVER_ARGS, ("--n-cpu-moe", "26"))
+        self.assertEqual(
+            checkpoint.normalize_moe_server_args(("--n-cpu-moe", "26")),
+            checkpoint.PARTIAL_MOE_26_SERVER_ARGS,
+        )
+        with self.assertRaises(Exception):
+            checkpoint.normalize_moe_server_args(("--n-cpu-moe", "25"))
+        source = inspect.getsource(partial_moe)
+        self.assertIn('root_storage="device"', source)
+        self.assertIn('runtime_identity="cuda-bundle"', source)
+        self.assertIn("PARTIAL_MOE_26_SERVER_ARGS", source)
+
+    def test_partial_moe_readiness_uses_current_wddm_schema(self):
+        self.assertEqual(
+            latency.readiness_peak_wddm_bytes({"wddm": {"peak_dedicated_bytes": 5_483 * 1024 * 1024}}),
+            5_483 * 1024 * 1024,
+        )
+        self.assertIsNone(latency.readiness_peak_wddm_bytes({"wddm": {}}))
 
 
 if __name__ == "__main__":
