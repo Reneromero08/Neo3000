@@ -2,7 +2,32 @@
 
 ## Catalytic frontier override [ACTIVE]
 
-The actual frontier objective is infinite, unbounded catalytic inference: fixed-active-residency catalytic reuse for every finite N over unbounded duration, with equal utility, all costs counted, exact restoration or declared closure, and cumulative saved fresh work growing with N. N=8 is only a waypoint.
+The actual frontier objective is infinite, unbounded catalytic compute for local Agents-A1 inference: a holographic runtime in which quality-accepted useful inference can grow without a fixed cumulative ceiling because restorable relational carriers are retained, projected, and recursively reused under bounded active local residency.
+
+This is not a claim of infinite instantaneous FLOPs, infinite memory, or one sufficiently large finite fanout. It is a claim target about unbounded cumulative useful baseline-equivalent inference.
+
+The intended mechanism is holographic and recursive: preserve a relational process-object, project useful observables without prematurely consuming it, restore or close the borrowed substrate, and allow verified outputs or invariants to become lawful carriers for later inference.
+
+Track four independent scaling axes:
+
+- `N` — useful fanout or projections from one carrier
+- `T` — reuse duration across tokens, tasks, sessions, and restarts
+- `R` — recursive carrier depth and admissible boundary expansion
+- `B` — breadth of independently useful channels, task families, and workloads
+
+`N = infinity` alone is not the goal. It is one necessary scaling question inside the larger unbounded-compute objective.
+
+The unbounded endpoint requires:
+
+- cumulative quality-accepted baseline-equivalent inference that can grow without a fixed ceiling
+- compute amplification that can grow without a fixed ceiling, or a justified fresh-compute ratio tending toward zero
+- bounded active physical residency at every finite stage
+- preserved Agents-A1 utility, tool validity, Pi compatibility, and daily-driver stability
+- all carrier creation, branching, verification, storage, control, and closure costs counted
+- exact restoration or explicitly declared closure
+- a constructive recurrence, inductive invariant, or formal bridge in addition to finite empirical scaling
+
+Current results remain bounded evidence. N=8 is the accepted fanout waypoint; N=16 positive amortization did not pass strict utility; no unbounded bridge has been established.
 
 `neo-exp-0050` supports bounded fanout amortization through N=8 and does not establish the unbounded endpoint.
 
@@ -24,7 +49,21 @@ The actual frontier objective is infinite, unbounded catalytic inference: fixed-
 
 `neo-exp-0059` completes the frozen direct-only checkpoint-zero qualification without carrier contact. Cold-chain achieves exact `16/16`; datacenter is preserved as rejected at `15/16` after a single unambiguous branch-9 miss. All 32 direct branches are cache-disabled with zero cached prompt tokens, and the trace contains zero checkpoint creation, carrier, snapshot, or root-operation activity. This establishes one trustworthy direct panel, not two, and creates no carrier, N=32/N=64, equal-utility N=16, or unbounded-inference authority.
 
-The `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` operation is closed at this mixed accepted/rejected evidence boundary. The long-term catalytic objective and claim ceiling are unchanged, but frontier execution is paused pending explicit realignment. No retry, observed-answer replacement, new panel, carrier evaluation, scaling run, new mechanism, promotion, or follow-on experiment is authorized by this handoff.
+The `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` operation is closed at this mixed accepted/rejected evidence boundary. The long-term catalytic objective and claim ceiling are unchanged, and its accepted cold-chain and rejected datacenter evidence remain immutable.
+
+Bounded autonomous non-retry successor mode is active from this checkpoint.
+
+**Current exact action:** follow the single active cursor at the top of `TASKS.md`: `AUTONOMOUSLY_SELECT_PREREGISTER_AND_EXECUTE_MINIMUM_NON_RETRY_SUCCESSOR`. Every later next-action statement in this file is a historical boundary record and has no current authority.
+
+**Navigation authority:** after this point, words such as `active`, `current`, `authorized`, `next action`, and `next task` inside preserved experiment narratives describe their historical boundary only. They cannot override the frontier objective or the `TASKS.md` cursor.
+
+`No retry` means no rerun, overwrite, answer replacement, or outcome-conditioned repair of a consumed experiment ID. It does not prohibit a new panel, carrier evaluation, scaling run, causal discriminator, prospective replication, or mechanism under a new ID and preregistered contract.
+
+The agent may autonomously select, prepare, execute, adjudicate, record, and locally commit successive candidate-only experiments while stable remains protected and every result updates the N/T/R/B evidence map.
+
+Every cycle must preserve predecessor evidence, make one causal intervention, count all costs, enforce quality/restoration gates, and leave the next exact action truthful.
+
+Historical no-follow-on statements are local closures for their named operations and do not suspend this active frontier authority.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
@@ -48,7 +87,7 @@ The minimum response is `RUNTIME_NATIVE_EXECUTABLE_CARRIER_BOUNDARY_SELECTED`. F
 
 Chat alignment is adjunct-only because removing the four-token scaffold does not itself prove exact token identity or a fixed reuse gain. The smallest future full-live-inheritance route is stronger but still controller-level: authenticate emitted token IDs, omit only the terminal EOG that never entered retained state, and make each branch input an exact token-array strict extension. With the bound Qwen3.5-MoE `n_swa=0`, source inspection predicts that this can bypass checkpoint restoration and admit the complete retained terminal prefix. This remains unexecuted and does not establish branch restoration or closure. Engine-level terminal-checkpoint and sequence-copy changes are deferred; the source-present full-state snapshot surface may be tested first if branch isolation requires it. The completed same-panel line is retired.
 
-Decision artifact `lab/holostate_v1_executable_reuse_boundary_response_selection_1.json`, SHA-256 `F04325799786F46D8E3180DB9773DED182D38ED1E9D0C92E2CBC2B1D72FD28C1`, now feeds the frozen `holostate-v1-multi-branch-runtime-native-carrier-evaluation-v1`. Its terminal evidence is fail-closed: generated captures admit only HTTP 200 plus observed `eos` with exact nonempty emitted IDs/counts/hash; zero-output readdress admits only HTTP 200 plus observed `limit` with zero counts. Transport failure is `INCONCLUSIVE` and cannot enter resources, reuse, scoring, retry, repair, materialization, or authority. The next exact action is `AUTHORIZE_ONE_LIVE_MULTI_BRANCH_RUNTIME_NATIVE_CARRIER_EVALUATION`; this repair itself creates no authority or execution state.
+Decision artifact `lab/holostate_v1_executable_reuse_boundary_response_selection_1.json`, SHA-256 `F04325799786F46D8E3180DB9773DED182D38ED1E9D0C92E2CBC2B1D72FD28C1`, fed the frozen `holostate-v1-multi-branch-runtime-native-carrier-evaluation-v1`. Its terminal evidence was fail-closed: generated captures admitted only HTTP 200 plus observed `eos` with exact nonempty emitted IDs/counts/hash; zero-output readdress admitted only HTTP 200 plus observed `limit` with zero counts. Transport failure was `INCONCLUSIVE` and could not enter resources, reuse, scoring, retry, repair, materialization, or authority. Its historical next action was `AUTHORIZE_ONE_LIVE_MULTI_BRANCH_RUNTIME_NATIVE_CARRIER_EVALUATION`; this is not current authority.
 
 The public corpus / ignored protected evaluator / corpus-binding file hashes remain `81CD66E50A2DA9E0A9D60FC39367CACC0CA81B6EB97A39951E0EB549F6E82920` / `8114EB04EECF9EDD0865DE3A1C3801770801609BC41D6E89755D710EDD52C476` / `89F40BED6E964ABC25800291087A8FE76C0C8A0683F248BAAA2544C5218B8423`. Repaired preregistration artifact/file hashes are `4079F628584787CC0F58196C12238B41EE11D85026E9FF54280B554B455B31B0` / `04DFA13E96FC615318DCB012EA21789C3C7AA547BC08CD49EC9F66E5D666E405`. Scientific/controller/root/strict-extension/boundary/snapshot/scorer/resource/closure bindings are `E9999EA02CFD09CCCE18D51FCA231957D90BA6579BD2671046779542948D526A`, `20A14451A9DDD08283EF999004A7EBEEA263AE50D3B0F1C91C72492182C1381A`, `D6A029C717A91B728B20B64D38E125D4C00C2AF87D379270F66492EE99D906F9`, `572BD0FA28626D6F09E356017FE0D0FECCB81B73406D5A49B42684C08776E2AC`, `FB5B0F564240A3C23992D3453750C4FCD6ECD5BE038AC2F0C41522569E86CEE7`, `B4BBC51790C8AA4231E65D67CAF1AA187FC54B2FD049DE39C4249321390694FF`, `5475BE10CCE63E54A0B992320E90F0DAC71B7B4577950D0E8B1B6961CC2A7E2C`, `B41EB54E8DF902F529AB388A72EF36F5748247F647DF2007C4D671CC2C493F22`, and `BBCF8DD02A8522C7A1205F81618F1D8C9ECA374936FE387FF942FA606256485B`. The scientific, root, strict-extension, boundary, snapshot, corpus, evaluator, and corpus-binding identities are unchanged. Static repair created no authority, runtime root, sidecar, model request, generation, capture, result, archive, ledger record, or follow-on.
 
@@ -134,7 +173,7 @@ Attempt 5 executed once from `a38e86e45e0cfc20e2882167755a8d7df91ecd51` and pres
 
 Attempt 6 executed once from `3eaa86ffb690611f3549272bdd367c778ddf8da2` and completed one full pair with exact catalytic checkpoint reuse `1004/1004`, direct reuse `0/1180`, and closure readdress `872/1004`. The closure gate correctly failed; cleanup/postflight passed. The controller incorrectly stopped the panel on that scientific false gate. Attempt 7 records the false gate and continues without changing the closure predicate or terminal decision law. Preregistration artifact/file are `9370CD0A2A041BD46A765728B1A93B622BB66BD3EEFF71D45E80189C453C1002` / `469062E6AEEE953988AF4DC035E4A2155673063B2E3C6D9699294CE7799BE68A`; controller identity is `AC85A6FDADE3D4515B5C3DF7A9766BF74CC8D0EDF57192D028FF041C5939A8E1`; frozen scientific, scorer, resource, and closure identities remain unchanged.
 
-**Next exact action:** `STATICALLY_SELECT_MINIMUM_RESPONSE_TO_EXECUTABLE_REUSE_BOUNDARY`. Do not execute or authorize a successor in this operation.
+**Historical next action at that boundary:** `STATICALLY_SELECT_MINIMUM_RESPONSE_TO_EXECUTABLE_REUSE_BOUNDARY`. This is preserved evidence history, not current authority.
 
 ## Historical checkpoint: Within-binding position-seed crossover adjudicated
 
@@ -170,19 +209,19 @@ Static qualification passes: asymmetry reconstruction `8/8`, prior forensic regr
 
 Parent-B dependence and bilateral parent dependence are not supported. General two-parent necessity, transfer, general catalytic inference, task advantage, superiority, SOTA, broader or restart-persistent HoloState, Deep, and automatic promotion remain locked.
 
-**Next exact action:** separately authorize static implementation and preregistration of `balanced-opaque-transform-only-position-seed-panel-v1`; create no authority and perform no live execution.
+**Historical next action at that boundary:** separately authorize static implementation and preregistration of `balanced-opaque-transform-only-position-seed-panel-v1`; create no authority and perform no live execution. This is preserved evidence history, not current authority.
 
 ## Historical checkpoint: Rank-head CK0 v2 authority versioned; pre-consumption run retired
 
 The repaired deterministic rank-head CK0 v2 package is complete at the static boundary. The exact 16-file normalized implementation binding is `EDD064D36DD8FB123B1D095A2C613540C67BB3DCD71F6F23C6F565AAEAB4A837`. Run-design artifact SHA-256 is `C4A0378BCD04E2A2F823049A15FE63EE4E2E4BC6519215DB21B528460683EAEA`; canonical document SHA-256 is `5712D3EC5436BCF45ECD763C2E05D742FBE2D7C72BB91EBEDCF5769AE362A5CF`. The canonical public CLI is now the sole supported bootstrap; direct lower-level script execution rejects before parsing, admission, authority consumption, or mutation.
 
-The active authority schema versions are `rank-head-v2-external-one-shot-v2` and `rank-head-v2-authority-consumption-v2`, with exact object and receipt schema hashes `279BABE4626FEE8F69B178A0CBC23AECD58B9BFDC5579BE633B75B337797CE72` and `898DE481CE8F896F7B6D006E7BB1357AF507597BE2EE9B31F0D3DC6337723CC5`. Historical v1 schemas remain evidence-only and inactive. Intermediate v1-version/r2-enum identities are rejected. Consumed historical authority-ID hash `541C7E61EBB30366D7007D8BA5EC30DB720B0817FA29CABB1625536D6B720A66` is permanently blacklisted before private loading or mutation.
+The authority schema versions active at that historical boundary were `rank-head-v2-external-one-shot-v2` and `rank-head-v2-authority-consumption-v2`, with exact object and receipt schema hashes `279BABE4626FEE8F69B178A0CBC23AECD58B9BFDC5579BE633B75B337797CE72` and `898DE481CE8F896F7B6D006E7BB1357AF507597BE2EE9B31F0D3DC6337723CC5`. Historical v1 schemas remained evidence-only and inactive. Intermediate v1-version/r2-enum identities were rejected. Consumed historical authority-ID hash `541C7E61EBB30366D7007D8BA5EC30DB720B0817FA29CABB1625536D6B720A66` remains permanently blacklisted before private loading or mutation.
 
 Historical run `ck0-balanced-v2-rank-head-b1-full-r1` is retired as `RETIRED_PRECONSUMPTION_COMMAND_INVOKED`. Its one supplied external authorization was spent by command invocation, but execution failed at caller identity before runtime authority consumption. Incident artifact `95B778474FC87C0369B3070EFAF9C12931A137094EFAAF0F98FDA6FC8AC83DCD` records zero runtime receipt, runtime root, run lock, sidecar, lease, model request, scientific observation, result, or closure. It authorizes neither retry nor replacement authority for the retired run.
 
-Active run order is exactly binding-1 `ck0-balanced-v2-rank-head-b1-full-r2`, then binding-2 `ck0-balanced-v2-rank-head-b2-full-r1`. The r2 run-key commitment is `F2C5FC9BBD24C4FABF873F78D044B4DD51A43310C5B16E71BFAA78F48E9ABA1E`; binding-2 remains `FEC400325777606A697687F990A24968B6AE787EDF444339A1639AE9BCFA8AC1`. Binding-2 remains unauthorized until r2 is terminally visible through raw evidence, exact active authority, private recomputation, restoration/custody, and exactly one tracked split-schema publication record. There is no retry, deletion control, automatic follow-on, or third run.
+The historical run order at that boundary was binding-1 `ck0-balanced-v2-rank-head-b1-full-r2`, then binding-2 `ck0-balanced-v2-rank-head-b2-full-r1`. The r2 run-key commitment was `F2C5FC9BBD24C4FABF873F78D044B4DD51A43310C5B16E71BFAA78F48E9ABA1E`; binding-2 was `FEC400325777606A697687F990A24968B6AE787EDF444339A1639AE9BCFA8AC1`. This sequence is preserved evidence history, not current authority.
 
-Existing private roots, creation receipts, source commitments, and historical raw evidence remain unchanged and undisclosed. Focused static qualification passes `84 / 84`. Exactly three read-only auditors returned `PASS / PASS / PASS`: authority-schema/no-reuse, CLI-caller/no-retry, and custody/run-design. This repair created no authority, receipt, secret, runtime root, sidecar, model request, inference, or scientific result. The next exact action is: `Separately authorize only ck0-balanced-v2-rank-head-b1-full-r2 with a fresh external authority ID bound to the exact repaired protected commit.` Binding-2 and every broader claim remain locked.
+Existing private roots, creation receipts, source commitments, and historical raw evidence remain unchanged and undisclosed. Focused static qualification passed `84 / 84`. Exactly three read-only auditors returned `PASS / PASS / PASS`: authority-schema/no-reuse, CLI-caller/no-retry, and custody/run-design. This repair created no authority, receipt, secret, runtime root, sidecar, model request, inference, or scientific result. Its historical next action was: `Separately authorize only ck0-balanced-v2-rank-head-b1-full-r2 with a fresh external authority ID bound to the exact repaired protected commit.` This is not current authority.
 
 ## Historical checkpoint: Deterministic rank-head v2 statically implemented and preregistered
 
@@ -196,7 +235,7 @@ Under that qualified Verdict B, the selected lane is Lane A and the selected out
 
 The authorized static goal is complete. `balanced-opaque-relational-carrier-v2-deterministic-rank-head-extraction` preserves borrow, branch-a, branch-b, transform, and restore as exactly five model requests inside six logical stages. Its distinct carrier root is `4B82F399ACE797BDF40012ABB4D1254021F838B58BAED66153D4042EF3C7585C`; extraction has no model request or response schema. The controller verifies transform shape and run-bound commitment, freezes rank position zero and its exact commitment/length facts before private mapping, then maps and scores only that frozen alias and verifies receipt schema `FEB391B98051993712D44552A3DA3FC32D319A856F779B44EEC1449A98CE3B18` under the run key.
 
-The exact four-file implementation binding is `07B3F6BFD59909D369F794C07D1CEEBEE5CA4A27C668F44BD18733F03173688F`. Focused tests pass 13 / 13 and 12 / 12; the real private historical matrix remains full/full=`5/5`, delete-A=`3/5`, delete-B=`3/5`, binding-2 full=`5/5`; final read-only audits are `PASS / PASS`; and the preregistration reconstructs exactly with no run IDs, secret, authority, runtime integration, inference, sidecar, or live execution. The next exact action is: `Separately authorize a static deterministic-rank-head v2 runtime-integration and run-design operation; no live execution.` End-to-end cross-binding replication, binding-2 parent dependence, causal dependence replicated across bindings, general two-parent necessity, transfer, general catalytic inference, task advantage, superiority, SOTA, broader or restart-persistent HoloState, Deep, and automatic promotion remain locked.
+The exact four-file implementation binding is `07B3F6BFD59909D369F794C07D1CEEBEE5CA4A27C668F44BD18733F03173688F`. Focused tests passed 13 / 13 and 12 / 12; the real private historical matrix remained full/full=`5/5`, delete-A=`3/5`, delete-B=`3/5`, binding-2 full=`5/5`; final read-only audits were `PASS / PASS`; and the preregistration reconstructed exactly with no run IDs, secret, authority, runtime integration, inference, sidecar, or live execution. Its historical next action was: `Separately authorize a static deterministic-rank-head v2 runtime-integration and run-design operation; no live execution.` This is not current authority.
 
 ## Historical checkpoint: Binding-2 external one-shot authority bridge repair
 
@@ -252,7 +291,7 @@ Track A claim verification is paused. CS1-v1 through CS1-v6 are consumed and har
 
 The generic custody repair captures a clean ordinary/tracked/staged baseline and explicit byte inventories of all ignored historical CS1 namespaces before claim. After claim it permits only exact allowlisted paths in the authorized runtime root and rejects any tracked/staged change, outside untracked path, predecessor mutation, unknown successor namespace, symlinked root, or historical evidence drift. The ignore law is now `/state/catalytic_swarm_1_v*/`, not a broad `state/` exclusion.
 
-Track B mechanism discovery is active through Catalytic Inference Bench 0. A complete epoch uses one physical slot and exactly 13 requests on `cs1-task-06`: warm, direct baseline, three seed proposals, three relational transforms, three verifier/reconcilers, final extraction, and restoration. Runs are repeatable and run-ID-addressed, persist bounded normalized metadata only, never send hidden examples or answer keys to the model, and cannot unlock task advantage, SOTA, broader HoloState, restart persistence, Deep, or automatic promotion. The next exact action is to push the statically verified architecture and execute the first bounded run.
+At that historical boundary, Track B mechanism discovery was active through Catalytic Inference Bench 0. A complete epoch used one physical slot and exactly 13 requests on `cs1-task-06`: warm, direct baseline, three seed proposals, three relational transforms, three verifier/reconcilers, final extraction, and restoration. Runs were repeatable and run-ID-addressed, persisted bounded normalized metadata only, never sent hidden examples or answer keys to the model, and could not unlock task advantage, SOTA, broader HoloState, restart persistence, Deep, or automatic promotion. Its historical next action was to push the statically verified architecture and execute the first bounded run. This is not current authority.
 
 The exploratory contract pins the suite/root hashes, binds every dependent observation to the exact sent assignment and ordered consumed-artifact hashes, binds evidence-linked parent-rank deltas to explicit relation-graph edges, requires extraction to name the edges it consumed, and treats missing borrow, lineage, extraction, or trusted restoration as inconclusive. Restoration requires a hashed run-ID-bound runtime receipt for root/cache identity, zero leases, cleanup, port retirement, and custody; model self-attestation is insufficient. Terminal closure binds the manifest, result, checkpoint, final custody, and absent run lock.
 
@@ -334,11 +373,11 @@ CS1-v3 is `COMMAND INVOCATION CONSUMED / PRECLAIM FAIL-CLOSED / NO RETRY`. Its e
 
 CS1-v4 is `EXECUTED ONCE / PARTIAL / INCONCLUSIVE / NO RETRY`. Its semantic seven-key projection and all seven immutable runtime artifacts are preserved. Claim contract SHA-256 is `2ba862a097da4b3c6bb2e2fbececa49296b38a8c9b5b047f6c281b84c3111ece`; runtime-evidence binding is `d7949912512316d551bf6466895fe7d52b44fe568590782b85e23c4cbd6e53e4`; immutable scheduler identity remains `fe455e7b049f4fb0b1ab1a13899e3da18b4b2bbec824a664a38599d0a4fd2a3e`.
 
-## Active bounded objective
+## Historical bounded objective [SUPERSEDED BY CATALYTIC FRONTIER OVERRIDE]
 
-Preserve CS1-v1 through CS1-v6 as consumed no-retry evidence. Do not invoke any consumed command. The next exact action is the repeatable, non-claiming Catalytic Inference Bench 0 from final pushed protected `main`, bound to exact model and binary identities. Task advantage, SOTA, broader process-local HoloState, restart persistence, Deep, and automatic promotion remain locked.
+At that historical boundary, the next exact action was the repeatable, non-claiming Catalytic Inference Bench 0 from final pushed protected `main`, bound to exact model and binary identities. Preserve CS1-v1 through CS1-v6 as consumed no-retry evidence and do not invoke any consumed command. This paragraph is not current authority; the catalytic-frontier override and `TASKS.md` cursor govern current work.
 
-## Claim state
+## Historical claim-state snapshot [SUPERSEDED]
 
 ```text
 SUPERVISED_BOUNDED_RSI_AVAILABLE
