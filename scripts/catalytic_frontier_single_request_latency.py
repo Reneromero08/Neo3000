@@ -45,6 +45,7 @@ MIN_MEDIAN_SPEEDUP = 1.25
 MAX_DIRECT_CONTROL_DRIFT_FRACTION = 0.10
 SPECULATIVE_MODES = ("none", "ngram-cache")
 ROOT_STORAGE_MODES = ("host", "device")
+RUNTIME_IDENTITY_MODES = ("canonical", "cuda-bundle")
 STRICT_PREFIX_NO_SPEC_MEDIANS = {
     "predicted_ms": 225.1865,
     "effective_wall_seconds_including_restore": 0.46100000001024455,
@@ -1077,11 +1078,19 @@ def finalize_result_after_cleanup(
     return result
 
 
-def main(*, root_boundary: str = "task-a", speculative_mode: str = "none", root_storage: str = "host") -> int:
+def main(
+    *,
+    root_boundary: str = "task-a",
+    speculative_mode: str = "none",
+    root_storage: str = "host",
+    runtime_identity: str = "canonical",
+) -> int:
     args = parse_args()
     harness.require(speculative_mode in SPECULATIVE_MODES, "unsupported latency speculative mode")
     harness.require(root_storage in ROOT_STORAGE_MODES, "unsupported latency root storage mode")
+    harness.require(runtime_identity in RUNTIME_IDENTITY_MODES, "unsupported latency runtime identity")
     harness.require(speculative_mode == "none" or root_storage == "host", "speculation and device root cannot be combined")
+    harness.require(root_storage != "device" or runtime_identity == "cuda-bundle", "device root requires the CUDA runtime bundle")
     repository = Path(__file__).resolve().parents[1]
     binary = args.binary.resolve(strict=True)
     expected_candidate = (repository / DEFAULT_BINARY).resolve(strict=True)
@@ -1089,7 +1098,7 @@ def main(*, root_boundary: str = "task-a", speculative_mode: str = "none", root_
         binary == expected_candidate,
         "latency discriminator requires the isolated frontier candidate binary path",
     )
-    if root_storage == "device":
+    if runtime_identity == "cuda-bundle":
         cuda_runtime_sha256 = verify_cuda_root_runtime(binary)
     else:
         cuda_runtime_sha256 = None
@@ -1161,6 +1170,7 @@ def main(*, root_boundary: str = "task-a", speculative_mode: str = "none", root_
         )
         result["launch_configuration"] = readiness.get("launch_configuration")
         result["cuda_runtime_sha256"] = cuda_runtime_sha256
+        result["runtime_identity"] = runtime_identity
         result["readiness"] = {
             "pid": readiness.get("pid"),
             "readiness_seconds": readiness.get("readiness_seconds"),

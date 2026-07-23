@@ -1,7 +1,9 @@
 import unittest
+import inspect
 from pathlib import Path
 
 import catalytic_frontier_checkpoint_control as checkpoint
+import catalytic_frontier_cuda_root_host_control as host_control
 import catalytic_frontier_single_request_latency as latency
 
 
@@ -111,6 +113,14 @@ class CudaRootLatencyTests(unittest.TestCase):
             2_444_107_776,
         )
         self.assertIsNone(latency.cleanup_peak_wddm_bytes({"wddm": {"peak_dedicated_bytes": None}}))
+
+    def test_same_runtime_host_control_changes_only_root_storage(self):
+        source = inspect.getsource(host_control)
+        self.assertIn('root_boundary="strict-prefix"', source)
+        self.assertIn('root_storage="host"', source)
+        self.assertIn('runtime_identity="cuda-bundle"', source)
+        self.assertNotIn("--cache-ram-root-device", source)
+        self.assertEqual(latency.RUNTIME_IDENTITY_MODES, ("canonical", "cuda-bundle"))
 
 
 if __name__ == "__main__":
