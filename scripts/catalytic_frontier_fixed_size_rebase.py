@@ -337,7 +337,7 @@ def rebase_child(
         sidecar,
         f"{fixed.ROOT_ID}:fixed-size-rebase:materialize-{step}",
         payload,
-        operation_kind="fixed-output-capsule-rebase",
+        operation_kind="zero-output-root-readdress",
         batch_owned_request=True,
     )
     require(materialized["prompt_tokens"] == EXPECTED_CHILD_TOKENS, "rebase prompt count changed")
@@ -421,7 +421,7 @@ def evaluate(
         sidecar,
         f"{fixed.ROOT_ID}:fixed-size:base-materialize",
         materialize_payload,
-        operation_kind="zero-output-fixed-base-materialization",
+        operation_kind="zero-output-root-readdress",
     )
     require(parent_materialization["fresh_prompt_tokens"] == EXPECTED_BASE_TOKENS, "base replay changed")
     base_saved = root_action(

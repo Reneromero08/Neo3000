@@ -133,6 +133,17 @@ class FixedSizeRebaseTests(unittest.TestCase):
                 expected_total_device_bytes_after=fixed_size.EXPECTED_CHILD_DEVICE_BYTES,
             )
 
+    def test_zero_output_paths_use_supported_terminal_evidence_kind(self):
+        source = (SCRIPTS / "catalytic_frontier_fixed_size_rebase.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertEqual(
+            source.count('operation_kind="zero-output-root-readdress"'),
+            2,
+        )
+        self.assertNotIn('operation_kind="fixed-output-capsule-rebase"', source)
+        self.assertNotIn('operation_kind="zero-output-fixed-base-materialization"', source)
+
 
 if __name__ == "__main__":
     unittest.main()
