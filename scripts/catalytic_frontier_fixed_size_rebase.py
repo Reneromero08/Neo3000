@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""neo-exp-0075 pinned-base fixed-output CUDA capsule rebase.
+"""neo-exp-0075/0076 pinned-base fixed-output CUDA capsule rebase.
 
 The accepted C -> D -> B -> B recurrence remains fixed.  One immutable
 689-token host root pins the expensive base state.  One replaceable 695-token
@@ -7,6 +7,10 @@ CUDA root contains the complete 690-token branch prefix followed by the five
 exact visible IDs of the latest output.  After every verified transition the
 old CUDA child is erased, the base is restored, exactly six tokens are
 materialized, and a same-size replacement child is saved.
+
+The default R=3 path is the executed 0075 contract.  The only admitted
+successor changes recursive depth to R=16 while preserving the mechanism,
+state transition, paired controls, accounting, and closure gates.
 """
 from __future__ import annotations
 
@@ -29,6 +33,8 @@ import catalytic_frontier_water_panel_qualifier as water
 
 
 EXPERIMENT_ID = "neo-exp-0075"
+DEPTH_SCALING_EXPERIMENT_ID = "neo-exp-0076"
+SUPPORTED_RECURSIVE_DEPTHS = (3, 16)
 BASE_ROOT_ID = f"{fixed.ROOT_ID}-fixed-base"
 EXPECTED_BASE_TOKENS = 689
 EXPECTED_COMPLETE_BRANCH_TOKENS = 690
@@ -50,8 +56,35 @@ def require(condition: bool, message: str) -> None:
     harness.require(condition, message)
 
 
+def experiment_id_for_depth(recursive_depth: int) -> str:
+    require(recursive_depth in SUPPORTED_RECURSIVE_DEPTHS, "unsupported recursive depth")
+    return EXPERIMENT_ID if recursive_depth == 3 else DEPTH_SCALING_EXPERIMENT_ID
+
+
+def pair_route_orders_for_depth(recursive_depth: int) -> tuple[tuple[str, str], ...]:
+    require(recursive_depth in SUPPORTED_RECURSIVE_DEPTHS, "unsupported recursive depth")
+    return tuple(PAIR_ROUTE_ORDERS[index % len(PAIR_ROUTE_ORDERS)] for index in range(recursive_depth))
+
+
+def expected_state_sequence_for_depth(recursive_depth: int) -> tuple[str, ...]:
+    require(recursive_depth in SUPPORTED_RECURSIVE_DEPTHS, "unsupported recursive depth")
+    return ("C", "D", *(["B"] * (recursive_depth - 1)))
+
+
+def accepted_classification_for_depth(recursive_depth: int) -> str:
+    require(recursive_depth in SUPPORTED_RECURSIVE_DEPTHS, "unsupported recursive depth")
+    return f"pinned-base-fixed-output-cuda-capsule-rebase-r{recursive_depth}-supported-bounded"
+
+
+def next_boundary_for_depth(recursive_depth: int) -> str:
+    require(recursive_depth in SUPPORTED_RECURSIVE_DEPTHS, "unsupported recursive depth")
+    if recursive_depth == 3:
+        return "PRESERVE_FIXED_SIZE_R3_AND_SCALE_RECURSIVE_DEPTH_WITH_CONSTANT_CARRIER"
+    return "PRESERVE_FIXED_SIZE_R16_AND_SELECT_NEXT_FAST_CATALYTIC_N_T_R_B_BOUNDARY"
+
+
 def child_root_id(step: int, answer: str) -> str:
-    require(step in range(0, 4), "capsule step is out of range")
+    require(type(step) is int and step >= 0, "capsule step is out of range")
     require(answer in fixed.TRANSITION, "capsule answer is invalid")
     return f"{fixed.ROOT_ID}-fixed-capsule-r{step}-{answer}"
 
@@ -357,7 +390,14 @@ def rebase_child(
     return next_child, child_tokens, operations, materialized
 
 
-def classify(*, integrity: bool, fixed_size: bool, saved_work_law: bool, speedup: float) -> str:
+def classify(
+    *,
+    integrity: bool,
+    fixed_size: bool,
+    saved_work_law: bool,
+    speedup: float,
+    recursive_depth: int = 3,
+) -> str:
     if not integrity:
         return "fixed-size-rebase-integrity-failure"
     if not fixed_size:
@@ -366,7 +406,7 @@ def classify(*, integrity: bool, fixed_size: bool, saved_work_law: bool, speedup
         return "fixed-size-rebase-saved-work-law-failure"
     if speedup < MIN_FULL_LIFECYCLE_WALL_SPEEDUP:
         return "fixed-size-rebase-without-preregistered-wall-gate"
-    return "pinned-base-fixed-output-cuda-capsule-rebase-r3-supported-bounded"
+    return accepted_classification_for_depth(recursive_depth)
 
 
 def evaluate(
@@ -376,7 +416,11 @@ def evaluate(
     props: Mapping[str, Any],
     root: Mapping[str, Any],
     baseline_private: int | None,
+    recursive_depth: int = 3,
 ) -> dict[str, Any]:
+    experiment_id = experiment_id_for_depth(recursive_depth)
+    route_orders = pair_route_orders_for_depth(recursive_depth)
+    expected_sequence = expected_state_sequence_for_depth(recursive_depth)
     panel = water.panel_for(root)
     require(water.base._panel_hash(panel) == fixed.PANEL_SHA256, "water panel identity changed")
     seed_spec = panel[fixed.SEED_BRANCH_NUMBER - 1]
@@ -502,7 +546,7 @@ def evaluate(
     observed_sequence = [seed_state["answer"]]
     prior_state = seed_state
     cumulative_avoided = 0
-    for step, route_order in enumerate(PAIR_ROUTE_ORDERS, start=1):
+    for step, route_order in enumerate(route_orders, start=1):
         pair: dict[str, dict[str, Any]] = {}
         for route in route_order:
             record = run_successor_route(
@@ -629,7 +673,7 @@ def evaluate(
     )
     direct_wall = sum(float(record["effective_wall_seconds"]) for record in direct_records)
     lifecycle_speedup = direct_wall / catalytic_wall
-    exact_sequence = tuple(observed_sequence) == EXPECTED_STATE_SEQUENCE
+    exact_sequence = tuple(observed_sequence) == expected_sequence
     paired_identity = all(
         step["paired_prompt_identity_exact"]
         and step["paired_generated_identity_exact"]
@@ -648,6 +692,10 @@ def evaluate(
         and step["cumulative_avoided_fresh_prompt_tokens"] == EXPECTED_BASE_TOKENS * step["step"]
         for step in steps
     )
+    fixed_point_child_hash_invariant = (
+        len(steps) >= 2
+        and len({str(step["child_token_sha256"]) for step in steps[1:]}) == 1
+    )
     base_invariant = all(
         operation["n_tokens"] == EXPECTED_BASE_TOKENS
         and operation["n_bytes"] == EXPECTED_BASE_HOST_BYTES
@@ -663,6 +711,7 @@ def evaluate(
     integrity = (
         exact_sequence
         and paired_identity
+        and fixed_point_child_hash_invariant
         and base_invariant
         and bank_invariant
         and final_base_erase["n_roots_after"] == 0
@@ -673,19 +722,19 @@ def evaluate(
         fixed_size=fixed_size,
         saved_work_law=saved_work_law,
         speedup=lifecycle_speedup,
+        recursive_depth=recursive_depth,
     )
-    accepted_before_cleanup = (
-        classification == "pinned-base-fixed-output-cuda-capsule-rebase-r3-supported-bounded"
-    )
+    accepted_before_cleanup = classification == accepted_classification_for_depth(recursive_depth)
     return {
         "status": "complete-pending-cleanup",
-        "experiment_id": EXPERIMENT_ID,
+        "experiment_id": experiment_id,
         "mechanism": "pinned-host-base-plus-fixed-output-cuda-capsule-rebase",
         "verdict": "accept" if accepted_before_cleanup else "reject",
         "classification": classification,
-        "geometry": {"N": 1, "T": 3, "R": 3, "B": 1},
+        "geometry": {"N": 1, "T": recursive_depth, "R": recursive_depth, "B": 1},
         "claim_ceiling": (
-            "exact fixed-size recursive state rebase for the bounded finite-state recurrence; "
+            f"exact fixed-size recursive state rebase through R={recursive_depth} for the "
+            "bounded finite-state recurrence; "
             "not arbitrary-history semantic compaction or unbounded inference"
         ),
         "shared_prerequisite": {
@@ -755,8 +804,16 @@ def evaluate(
         "quality_gates": {
             "qualified_panel_identity_exact": True,
             "seed_output_and_generated_token_identity_exact": True,
-            "state_sequence_C_D_B_B_exact": exact_sequence,
+            "state_sequence_exact": exact_sequence,
             "final_B_to_B_fixed_point_exact": observed_sequence[-2:] == ["B", "B"],
+            "B_fixed_point_stable_after_entry": (
+                observed_sequence[2:] == ["B"] * (recursive_depth - 1)
+            ),
+            "fixed_point_child_hash_invariant": fixed_point_child_hash_invariant,
+            "preregistered_pair_route_order_exact": tuple(
+                tuple(step["route_order"]) for step in steps
+            )
+            == route_orders,
             "paired_prompt_and_generated_identity_exact": paired_identity,
             "base_root_metadata_invariant": base_invariant,
             "root_bank_capacity_two_exact": bank_invariant,
@@ -789,11 +846,9 @@ def evaluate(
             "unbounded_catalytic_inference_established": False,
             "automatic_promotion": False,
         },
-        "next_boundary": (
-            "PRESERVE_FIXED_SIZE_R3_AND_SCALE_RECURSIVE_DEPTH_WITH_CONSTANT_CARRIER"
-            if accepted_before_cleanup
-            else "PRESERVE_EXECUTED_EVIDENCE_AND_LOCALIZE_THE_FIRST_FAILED_GATE_WITHOUT_RETRY"
-        ),
+        "next_boundary": next_boundary_for_depth(recursive_depth)
+        if accepted_before_cleanup
+        else "PRESERVE_EXECUTED_EVIDENCE_AND_LOCALIZE_THE_FIRST_FAILED_GATE_WITHOUT_RETRY",
     }
 
 
@@ -802,6 +857,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--model", type=Path, default=harness.DEFAULT_MODEL)
     parser.add_argument("--ctx-checkpoints", type=int, choices=(0,), default=0)
+    parser.add_argument(
+        "--recursive-depth",
+        type=int,
+        choices=SUPPORTED_RECURSIVE_DEPTHS,
+        default=3,
+    )
     parser.add_argument("--output", type=Path)
     parser.add_argument("--server-log-output", type=Path)
     return parser.parse_args()
@@ -813,6 +874,7 @@ def finalize_after_cleanup(
     cleanup: Mapping[str, Any],
     cleanup_wall_seconds: float,
     stable_pids: set[int],
+    recursive_depth: int = 3,
 ) -> dict[str, Any]:
     cleanup_record = dict(cleanup)
     cleanup_record["retirement_wall_seconds"] = cleanup_wall_seconds
@@ -838,12 +900,8 @@ def finalize_after_cleanup(
     result["status"] = "complete"
     result["verdict"] = "accept" if accepted else "reject"
     if accepted:
-        result["classification"] = (
-            "pinned-base-fixed-output-cuda-capsule-rebase-r3-supported-bounded"
-        )
-        result["next_boundary"] = (
-            "PRESERVE_FIXED_SIZE_R3_AND_SCALE_RECURSIVE_DEPTH_WITH_CONSTANT_CARRIER"
-        )
+        result["classification"] = accepted_classification_for_depth(recursive_depth)
+        result["next_boundary"] = next_boundary_for_depth(recursive_depth)
     elif scientific_gate:
         result["classification"] = "fixed-size-rebase-cleanup-or-residency-failure"
         result["next_boundary"] = (
@@ -854,6 +912,7 @@ def finalize_after_cleanup(
 
 def main() -> int:
     args = parse_args()
+    experiment_id = experiment_id_for_depth(args.recursive_depth)
     repository = Path(__file__).resolve().parents[1]
     binary = args.binary.resolve(strict=True)
     require(
@@ -869,7 +928,9 @@ def main() -> int:
     stable_pids = harness.live_runtime.require_stable()
     require(len(stable_pids) == 1, "fixed-size rebase requires the sole stable listener")
     require(not harness.live_runtime.listener_pids(harness.live_runtime.PORT), "frontier port is occupied")
-    state_root = Path(tempfile.mkdtemp(prefix="neo3000-fixed-size-rebase-"))
+    state_root = Path(
+        tempfile.mkdtemp(prefix=f"neo3000-fixed-size-rebase-r{args.recursive_depth}-")
+    )
     sidecar: Any | None = None
     result: dict[str, Any] | None = None
     cleanup: Mapping[str, Any] | None = None
@@ -913,6 +974,7 @@ def main() -> int:
             props=codec.props(),
             root=roots[fixed.ROOT_ID],
             baseline_private=baseline_private,
+            recursive_depth=args.recursive_depth,
         )
         result["runtime_identity"] = {
             "binary_runtime_version": harness.live_runtime.binary_version(binary),
@@ -952,7 +1014,7 @@ def main() -> int:
             json.dumps(
                 {
                     "status": "engineering-failure",
-                    "experiment_id": EXPERIMENT_ID,
+                    "experiment_id": experiment_id,
                     "error_type": type(error).__name__,
                     "error": str(error),
                     "cleanup": cleanup,
@@ -968,6 +1030,7 @@ def main() -> int:
         cleanup=dict(cleanup or {}),
         cleanup_wall_seconds=cleanup_wall_seconds,
         stable_pids=set(stable_pids),
+        recursive_depth=args.recursive_depth,
     )
     encoded = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True)
     if args.output is not None:

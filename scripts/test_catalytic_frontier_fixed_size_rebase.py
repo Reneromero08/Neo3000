@@ -89,6 +89,43 @@ class FixedSizeRebaseTests(unittest.TestCase):
             accepted,
         )
 
+    def test_recursive_depth_contract_extends_only_the_accepted_fixed_point(self):
+        self.assertEqual(
+            fixed_size.experiment_id_for_depth(16),
+            "neo-exp-0076",
+        )
+        sequence = fixed_size.expected_state_sequence_for_depth(16)
+        self.assertEqual(len(sequence), 17)
+        self.assertEqual(sequence[:3], ("C", "D", "B"))
+        self.assertEqual(set(sequence[2:]), {"B"})
+        orders = fixed_size.pair_route_orders_for_depth(16)
+        self.assertEqual(len(orders), 16)
+        self.assertEqual(
+            orders,
+            tuple(
+                fixed_size.PAIR_ROUTE_ORDERS[index % 3]
+                for index in range(16)
+            ),
+        )
+        self.assertEqual(
+            fixed_size.classify(
+                integrity=True,
+                fixed_size=True,
+                saved_work_law=True,
+                speedup=fixed_size.MIN_FULL_LIFECYCLE_WALL_SPEEDUP,
+                recursive_depth=16,
+            ),
+            "pinned-base-fixed-output-cuda-capsule-rebase-r16-supported-bounded",
+        )
+
+    def test_capsule_ids_support_preregistered_r16_without_changing_shape(self):
+        self.assertEqual(
+            fixed_size.child_root_id(16, "B"),
+            "mb-runtime-water-04-fixed-capsule-r16-B",
+        )
+        with self.assertRaises(RuntimeError):
+            fixed_size.child_root_id(-1, "B")
+
     def test_root_validator_binds_bank_and_storage_receipts(self):
         response = {
             "action": "root-save",
