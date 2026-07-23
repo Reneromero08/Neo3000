@@ -42,7 +42,43 @@ EXPECTED_RETAINED_ROOT_TOKENS = 612
 EXPECTED_BRANCH_PROMPT_TOKENS = 690
 MIN_PAIRED_WINS = 3
 MIN_MEDIAN_SPEEDUP = 1.25
+MAX_DIRECT_CONTROL_DRIFT_FRACTION = 0.10
 DEFAULT_BINARY = Path("build/candidate/bin/Release/llama-server.exe")
+ROOT_BOUNDARIES: dict[str, dict[str, Any]] = {
+    "task-a": {
+        "expected_root_tokens": EXPECTED_PROMPT_ROOT_TOKENS,
+        "expected_cached_prompt_tokens": EXPECTED_PROMPT_ROOT_TOKENS,
+        "expected_fresh_prompt_tokens": EXPECTED_BRANCH_PROMPT_TOKENS - EXPECTED_PROMPT_ROOT_TOKENS,
+        "predecessor_medians": None,
+        "predecessor_direct_medians": None,
+    },
+    "full-prompt": {
+        "expected_root_tokens": EXPECTED_BRANCH_PROMPT_TOKENS,
+        # server-context.cpp TAG_PROMPT_LOGITS deliberately re-evaluates one token
+        # when an active slot exactly matches the submitted prompt.
+        "expected_cached_prompt_tokens": EXPECTED_BRANCH_PROMPT_TOKENS - 1,
+        "expected_fresh_prompt_tokens": 1,
+        "predecessor_medians": {
+            "prompt_ms": 2498.008,
+            "ttft_seconds_including_restore": 2.6165000000037253,
+            "effective_wall_seconds_including_restore": 2.9130000000077416,
+        },
+        "predecessor_direct_medians": {
+            "prompt_ms": 10185.8015,
+            "ttft_seconds": 10.25800000000163,
+            "effective_wall_seconds": 10.57050000000163,
+        },
+    },
+}
+
+
+def select_root_boundary(name: str, *, prompt_tokens: Sequence[int], branch_tokens: Sequence[int]) -> dict[str, Any]:
+    harness.require(name in ROOT_BOUNDARIES, f"unsupported latency root boundary: {name}")
+    selected = dict(ROOT_BOUNDARIES[name])
+    selected["name"] = name
+    selected["tokens"] = list(branch_tokens if name == "full-prompt" else prompt_tokens)
+    harness.require(len(selected["tokens"]) == selected["expected_root_tokens"], "latency root-boundary token count changed")
+    return selected
 
 
 class TimingRecorder:
@@ -238,6 +274,8 @@ def classify_result(
     effective_wall_speedup: float,
     full_lifecycle_wall_advantage: bool,
     full_lifecycle_fresh_advantage: bool,
+    predecessor_improvement_gate: bool = True,
+    direct_control_drift_gate: bool = True,
 ) -> str:
     if not utility_exact:
         return "single-request-utility-or-identity-failure"
@@ -248,6 +286,8 @@ def classify_result(
         and effective_wall_speedup >= MIN_MEDIAN_SPEEDUP
         and full_lifecycle_wall_advantage
         and full_lifecycle_fresh_advantage
+        and predecessor_improvement_gate
+        and direct_control_drift_gate
     ):
         return "fast-single-request-catalytic-latency-supported-bounded"
     return "exact-reuse-without-preregistered-latency-gate"
@@ -260,6 +300,7 @@ def evaluate(
     props: Mapping[str, Any],
     root: Mapping[str, Any],
     baseline_private: int | None,
+    root_boundary: str = "task-a",
 ) -> dict[str, Any]:
     panel = water.panel_for(root)
     harness.require(water.base._panel_hash(panel) == PANEL_SHA256, "qualified water panel identity changed")
@@ -291,26 +332,28 @@ def evaluate(
     )
     branch_tokens, _ = branch_request(codec, retained, spec, cache_prompt=False)
     harness.require(len(branch_tokens) == EXPECTED_BRANCH_PROMPT_TOKENS, "latency branch prompt count changed")
+    boundary = select_root_boundary(root_boundary, prompt_tokens=prompt_tokens, branch_tokens=branch_tokens)
+    root_tokens = list(boundary["tokens"])
 
     materialization_payload = harness.carrier._branch_payload(
-        prompt_tokens,
+        root_tokens,
         seed=shared_tasks.derive_seed(ROOT_ID, "single-request-latency-prompt-root-materialize"),
         cache_prompt=False,
         n_predict=0,
     )
     materialization = harness.run_completion(
         sidecar,
-        f"{ROOT_ID}:latency:prompt-root-materialize",
+        f"{ROOT_ID}:latency:{root_boundary}-root-materialize",
         materialization_payload,
         operation_kind="zero-output-root-readdress",
     )
-    harness.require(materialization["prompt_tokens"] == len(prompt_tokens), "materialized prompt count changed")
+    harness.require(materialization["prompt_tokens"] == len(root_tokens), "materialized root-boundary prompt count changed")
     harness.require(materialization["cached_prompt_tokens"] == 0, "prompt-root materialization reused cache")
     harness.require(materialization["completion_tokens"] == 0, "prompt-root materialization emitted output")
 
     save_raw, save_wall = harness.ram_root_action(action="root-save", root_id=ROOT_ID)
     saved = validate_root_response(save_raw, action="root-save")
-    harness.require(saved["n_tokens"] == len(prompt_tokens), "saved prompt-root token count changed")
+    harness.require(saved["n_tokens"] == len(root_tokens), "saved root-boundary token count changed")
     root_operations: list[dict[str, Any]] = [{**saved, "client_wall_seconds": save_wall}]
 
     def restore(label: str) -> dict[str, Any]:
@@ -335,9 +378,14 @@ def evaluate(
             label=f"{ROOT_ID}:latency:{label}:{route}",
         )
         if route == "catalytic":
-            harness.require(record["cached_prompt_tokens"] == len(prompt_tokens), "catalytic route missed exact prompt root")
+            harness.require(
+                record["cached_prompt_tokens"] == boundary["expected_cached_prompt_tokens"],
+                "catalytic route cached-prompt split changed",
+            )
+            harness.require(record["fresh_prompt_tokens"] == boundary["expected_fresh_prompt_tokens"], "catalytic route fresh-prompt split changed")
         else:
             harness.require(record["cached_prompt_tokens"] == 0, "direct route reused prompt cache")
+            harness.require(record["fresh_prompt_tokens"] == len(branch_tokens), "direct route fresh-prompt count changed")
         record.update(
             counted=counted,
             pair=pair,
@@ -389,7 +437,8 @@ def evaluate(
         all(bool(record["correct"]) for record in all_routes)
         and len(input_hashes) == 1
         and len(generated_hashes) == 1
-        and all(record["cached_prompt_tokens"] == len(prompt_tokens) for record in catalytic)
+        and all(record["cached_prompt_tokens"] == boundary["expected_cached_prompt_tokens"] for record in catalytic)
+        and all(record["fresh_prompt_tokens"] == boundary["expected_fresh_prompt_tokens"] for record in catalytic)
         and all(record["cached_prompt_tokens"] == 0 for record in direct)
     )
 
@@ -402,6 +451,33 @@ def evaluate(
     prompt_speedup = statistics.median(direct_prompt_ms) / statistics.median(catalytic_prompt_ms)
     ttft_speedup = statistics.median(direct_ttft) / statistics.median(catalytic_ttft)
     effective_wall_speedup = statistics.median(direct_effective_wall) / statistics.median(catalytic_effective_wall)
+    predecessor_speedups: dict[str, float] | None = None
+    predecessor_improvement_gate = True
+    predecessor = boundary.get("predecessor_medians")
+    if isinstance(predecessor, Mapping):
+        predecessor_speedups = {
+            "prompt": float(predecessor["prompt_ms"]) / statistics.median(catalytic_prompt_ms),
+            "ttft_including_restore": float(predecessor["ttft_seconds_including_restore"]) / statistics.median(catalytic_ttft),
+            "effective_wall_including_restore": float(predecessor["effective_wall_seconds_including_restore"])
+            / statistics.median(catalytic_effective_wall),
+        }
+        predecessor_improvement_gate = all(value >= MIN_MEDIAN_SPEEDUP for value in predecessor_speedups.values())
+    direct_control_drift: dict[str, float] | None = None
+    direct_control_drift_gate = True
+    predecessor_direct = boundary.get("predecessor_direct_medians")
+    if isinstance(predecessor_direct, Mapping):
+        observed_direct = {
+            "prompt_ms": statistics.median(direct_prompt_ms),
+            "ttft_seconds": statistics.median(direct_ttft),
+            "effective_wall_seconds": statistics.median(direct_effective_wall),
+        }
+        direct_control_drift = {
+            key: abs(float(observed_direct[key]) / float(reference) - 1.0)
+            for key, reference in predecessor_direct.items()
+        }
+        direct_control_drift_gate = all(
+            value <= MAX_DIRECT_CONTROL_DRIFT_FRACTION for value in direct_control_drift.values()
+        )
     paired_wins = sum(int(pair["catalytic_won"]) for pair in pairs)
 
     median_direct_wall = statistics.median(direct_effective_wall)
@@ -431,13 +507,15 @@ def evaluate(
         effective_wall_speedup=effective_wall_speedup,
         full_lifecycle_wall_advantage=full_lifecycle_wall_advantage,
         full_lifecycle_fresh_advantage=full_lifecycle_fresh_advantage,
+        predecessor_improvement_gate=predecessor_improvement_gate,
+        direct_control_drift_gate=direct_control_drift_gate,
     )
     accepted = classification == "fast-single-request-catalytic-latency-supported-bounded"
     all_request_records = [task_a, materialization, *all_routes]
 
     return {
         "status": "complete",
-        "mechanism": "checkpoint-free-prompt-root-single-request-latency",
+        "mechanism": f"checkpoint-free-{root_boundary}-root-single-request-latency",
         "verdict": "accept" if accepted else "reject",
         "classification": classification,
         "model": "Agents-A1",
@@ -447,7 +525,9 @@ def evaluate(
             "expected": EXPECTED_ANSWER,
             "panel_sha256": PANEL_SHA256,
             "prompt_tokens": len(branch_tokens),
-            "prompt_root_tokens": len(prompt_tokens),
+            "task_a_prompt_tokens": len(prompt_tokens),
+            "prompt_root_tokens": len(root_tokens),
+            "root_boundary": root_boundary,
             "retained_root_tokens": int(retained["retained_root_token_count"]),
             "input_token_sha256": next(iter(input_hashes)),
             "generated_token_sha256": next(iter(generated_hashes)) if len(generated_hashes) == 1 else None,
@@ -460,6 +540,9 @@ def evaluate(
             "minimum_paired_wins": MIN_PAIRED_WINS,
             "minimum_median_speedup": MIN_MEDIAN_SPEEDUP,
             "context_checkpoints": 0,
+            "root_boundary": root_boundary,
+            "expected_catalytic_cached_prompt_tokens": boundary["expected_cached_prompt_tokens"],
+            "expected_catalytic_fresh_prompt_tokens": boundary["expected_fresh_prompt_tokens"],
         },
         "metrics": {
             "paired_wins": paired_wins,
@@ -470,6 +553,12 @@ def evaluate(
             "ttft_seconds": {"catalytic": distribution(catalytic_ttft), "direct": distribution(direct_ttft)},
             "effective_wall_seconds": {"catalytic": distribution(catalytic_effective_wall), "direct": distribution(direct_effective_wall)},
             "fresh_model_tokens_per_request": {"catalytic_median": median_catalytic_fresh, "direct_median": median_direct_fresh},
+            "speedup_vs_neo_exp_0062_543_root": predecessor_speedups,
+            "direct_control_drift_vs_neo_exp_0062": {
+                "maximum_allowed_fraction": MAX_DIRECT_CONTROL_DRIFT_FRACTION,
+                "absolute_fraction_by_metric": direct_control_drift,
+                "gate": direct_control_drift_gate,
+            },
             "break_even": {
                 "preparation_and_closure_wall_seconds": preparation_and_closure_wall,
                 "closure_wall_seconds": closure_wall,
@@ -513,8 +602,11 @@ def evaluate(
             "all_warmup_and_counted_outputs_correct": all(bool(record["correct"]) for record in all_routes),
             "all_input_token_arrays_identical": len(input_hashes) == 1,
             "all_generated_token_hashes_identical": len(generated_hashes) == 1,
-            "catalytic_cached_prompt_tokens_exact": all(record["cached_prompt_tokens"] == len(prompt_tokens) for record in catalytic),
+            "catalytic_cached_prompt_tokens_exact": all(record["cached_prompt_tokens"] == boundary["expected_cached_prompt_tokens"] for record in catalytic),
+            "catalytic_fresh_prompt_tokens_exact": all(record["fresh_prompt_tokens"] == boundary["expected_fresh_prompt_tokens"] for record in catalytic),
             "direct_cached_prompt_tokens_zero": all(record["cached_prompt_tokens"] == 0 for record in direct),
+            "predecessor_543_root_median_speedup_gate": predecessor_improvement_gate,
+            "direct_control_drift_within_10_percent": direct_control_drift_gate,
             "checkpoint_count_zero": saved["n_checkpoints"] == 0,
             "root_metadata_invariant": all(
                 record.get("n_tokens") == saved["n_tokens"]
@@ -536,7 +628,11 @@ def evaluate(
             "automatic_promotion": False,
         },
         "next_boundary": (
-            "PROFILE_AND_CAUSALLY_LOCALIZE_THE_DOMINANT_REMAINING_SINGLE_REQUEST_HOT_PATH_WITH_THE_SAME_EXACT_CONTROL"
+            (
+                "PROFILE_DECODE_AND_RESTORE_OVERHEAD_AFTER_FULL_PROMPT_ROOT_WITH_THE_SAME_N1_CONTROL"
+                if root_boundary == "full-prompt"
+                else "PROFILE_AND_CAUSALLY_LOCALIZE_THE_DOMINANT_REMAINING_SINGLE_REQUEST_HOT_PATH_WITH_THE_SAME_EXACT_CONTROL"
+            )
             if accepted
             else "PRESERVE_EXACT_REUSE_AND_LOCALIZE_WHICH_LATENCY_COMPONENT_FAILED_BEFORE_ANY_RUNTIME_INTERVENTION"
         ),
@@ -561,7 +657,7 @@ def require_unused_artifact_paths(*paths: Path | None) -> None:
             harness.require(not path.resolve(strict=False).exists(), f"latency artifact path already exists: {path}")
 
 
-def main() -> int:
+def main(*, root_boundary: str = "task-a") -> int:
     args = parse_args()
     repository = Path(__file__).resolve().parents[1]
     binary = args.binary.resolve(strict=True)
@@ -609,6 +705,7 @@ def main() -> int:
             props=codec.props(),
             root=roots[ROOT_ID],
             baseline_private=baseline_private,
+            root_boundary=root_boundary,
         )
         result["launch_configuration"] = readiness.get("launch_configuration")
         result["readiness"] = {
