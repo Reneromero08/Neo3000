@@ -26,6 +26,7 @@ The unbounded claim gate requires:
 - a constructive recurrence, inductive invariant, or formal bridge plus finite scaling evidence
 
 The aligned north-star contract plus current user direction authorizes bounded autonomous non-retry successor cycles. This changes no existing verdict, metric, artifact identity, or claim ceiling.
+Standing frontier authorization covers bounded read-only stable health checks and one isolated candidate sidecar launch per experiment. Safety failures retire only the affected attempt identity and do not block the research goal. Separate authorization is reserved for stable/main mutation, promotion/merge/push, destructive action, substantial external resources, or material expansion outside the frontier objective.
 
 ## Catalytic frontier: water direct panel frozen; first live identity stopped before readiness; bounded successor preparation active
 
@@ -108,7 +109,7 @@ The aligned north-star contract plus current user direction authorizes bounded a
 - Checkpoint/water/test identities are `C222B288B5349161ED051239E3E9A32B3D31727837B987DBB79C6B98EBC3921C` / `852838B303DEEE6B7C713EF4A2546CDACDCC144F8BD4A4391559ACBFB403E273` / `574624800C25D76F51B182C64F2F7F75C3494E76F4285C5799D58B4134665A9B`; unchanged harness/live-runtime/evaluator identities are `505895F9999FA534AF56A539262FCF11397A12AC5BF270574A6850C4556EBDFA` / `2ADDD9D5DB80340F9A2189FFBDE0EEB29D27263B01A15B260E08294D0E5C8B36` / `77A509912481032B1FF2F08AA4FEF40CEEFED863A3A475B4A6C23139C99B437E`. Validation passes 7/7 water, 6/6 inherited panel within 63/63 frontier, and 19/19 readiness. Two independent read-only audits clear the final repair. Static preparation launched no sidecar process and contacted no model, server, or stable endpoint.
 - Superseding precontact identities: a zero-contact invocation audit found that the inherited default resolves to protected-stable launcher SHA-256 `5D0C5F7CE5CEBE35B564C21521ECD426F809445521D3C55C0581A9543F15541B`, whereas the water panel is frozen to experimental launcher SHA-256 `E46FCE576B42AB6A4A03F21BDC60B2343F7AB1BCD04B967B92145699C243551E`. The water controller now rejects any non-pinned binary before `require_stable()` or listener inspection; existing discovery checks still reject later drift from sidecar construction onward. New water/test SHA-256 identities are `0831B149A3A4E6591A8B07E1602BEBA7BCD733DE6B0AB2ACB9B38BC702B11A5B` / `5AAF69A04222D771C8CEE9AB7D29B0D8513187D7A559C0D696A3782344A5E13F`; validation passes 8/8 water and 64/64 full frontier, and independent read-only audit finds no blocker. No model, server, stable endpoint, listener, sidecar, or live runtime was contacted.
 
-**Next exact action:** `AWAIT_SEPARATE_LIVE_STABLE_CONTACT_AUTHORIZATION_FOR_WATER_DIRECT_N16`. Planned `neo-exp-0061` is statically prepared; do not invoke it, probe the stable endpoint, or launch a sidecar until separately authorized under the active `/goal` pause gate.
+**Next exact action:** `EXECUTE_NEO_EXP_0061_DIRECT_ONLY_WATER_N16`. Invoke the already-preregistered experiment exactly once from the clean committed frontier head with the pinned identities and checkpoint zero. Preserve no carrier, no retry for the consumed identity, no promotion, and no same-cycle follow-on.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
