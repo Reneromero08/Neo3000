@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""neo-exp-0075/0076 pinned-base fixed-output CUDA capsule rebase.
+"""Pinned-base fixed-output CUDA capsule rebase experiment engine.
 
-The accepted C -> D -> B -> B recurrence remains fixed.  One immutable
+The executed default remains the C -> D -> B -> B recurrence.  One immutable
 689-token host root pins the expensive base state.  One replaceable 695-token
 CUDA root contains the complete 690-token branch prefix followed by the five
 exact visible IDs of the latest output.  After every verified transition the
 old CUDA child is erased, the base is restored, exactly six tokens are
 materialized, and a same-size replacement child is saved.
 
-The default R=3 path is the executed 0075 contract.  The only admitted
-successor changes recursive depth to R=16 while preserving the mechanism,
-state transition, paired controls, accounting, and closure gates.
+The default R=3 path is the executed 0075 contract.  R=16 with the same
+absorbing transition is the executed 0076 contract.  A caller may supply one
+fully bound recurrence contract while preserving the carrier, paired controls,
+accounting, and closure gates.
 """
 from __future__ import annotations
 
@@ -20,6 +21,7 @@ import os
 import shutil
 import tempfile
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -56,6 +58,204 @@ def require(condition: bool, message: str) -> None:
     harness.require(condition, message)
 
 
+@dataclass(frozen=True)
+class RecurrenceContract:
+    experiment_id: str
+    recurrence_id: str
+    recursive_depth: int
+    transition: tuple[tuple[str, str], ...]
+    transition_content: str
+    expected_state_sequence: tuple[str, ...]
+    accepted_classification: str
+    next_boundary: str
+    claim_ceiling: str
+    minimum_wall_speedup: float = MIN_FULL_LIFECYCLE_WALL_SPEEDUP
+    maximum_catalytic_wall_seconds: float | None = None
+    exact_cycle_period: int | None = None
+    expected_base_branch_sha256: str | None = None
+    expected_suffix_token_count: int | None = None
+    expected_suffix_sha256: str | None = None
+    expected_generated_sha256: tuple[tuple[str, str], ...] = ()
+    expected_child_sha256: tuple[tuple[str, str], ...] = ()
+    expected_request_sha256: tuple[tuple[str, str], ...] = ()
+
+    def transition_map(self) -> dict[str, str]:
+        return dict(self.transition)
+
+    def generated_hash_map(self) -> dict[str, str]:
+        return dict(self.expected_generated_sha256)
+
+    def child_hash_map(self) -> dict[str, str]:
+        return dict(self.expected_child_sha256)
+
+    def request_hash_map(self) -> dict[str, str]:
+        return dict(self.expected_request_sha256)
+
+
+def validate_contract(contract: RecurrenceContract) -> RecurrenceContract:
+    transition = contract.transition_map()
+    require(set(transition) == {"A", "B", "C", "D"}, "recurrence transition domain changed")
+    require(
+        all(answer in transition for answer in transition.values()),
+        "recurrence transition leaves the four-state domain",
+    )
+    require(contract.recursive_depth > 0, "recurrence depth must be positive")
+    require(
+        len(contract.expected_state_sequence) == contract.recursive_depth + 1,
+        "recurrence state sequence length changed",
+    )
+    require(
+        contract.expected_state_sequence[0] == fixed.SEED_EXPECTED_ANSWER,
+        "recurrence seed state changed",
+    )
+    for prior, successor in zip(
+        contract.expected_state_sequence,
+        contract.expected_state_sequence[1:],
+    ):
+        require(transition[prior] == successor, "recurrence state sequence violates transition law")
+    require(contract.minimum_wall_speedup > 0.0, "recurrence speed gate must be positive")
+    if contract.maximum_catalytic_wall_seconds is not None:
+        require(
+            contract.maximum_catalytic_wall_seconds > 0.0,
+            "recurrence catalytic-wall ceiling must be positive",
+        )
+    if contract.exact_cycle_period is not None:
+        require(contract.exact_cycle_period > 1, "recurrence cycle period must exceed one")
+        require(
+            contract.recursive_depth % contract.exact_cycle_period == 0,
+            "recurrence depth must contain whole exact cycles",
+        )
+        require(
+            contract.expected_base_branch_sha256 is not None,
+            "periodic recurrence base-branch hash is unbound",
+        )
+        require(
+            contract.expected_suffix_token_count is not None
+            and contract.expected_suffix_sha256 is not None,
+            "periodic recurrence suffix identity is unbound",
+        )
+        for pairs, label in (
+            (contract.expected_generated_sha256, "generated"),
+            (contract.expected_child_sha256, "child"),
+            (contract.expected_request_sha256, "request"),
+        ):
+            mapping = dict(pairs)
+            require(set(mapping) == set(transition), f"{label} hash domain changed")
+            require(len(set(mapping.values())) == len(transition), f"{label} hashes are not distinct")
+    return contract
+
+
+def absorbing_contract(recursive_depth: int) -> RecurrenceContract:
+    return validate_contract(
+        RecurrenceContract(
+            experiment_id=experiment_id_for_depth(recursive_depth),
+            recurrence_id="absorbing-fixed-point",
+            recursive_depth=recursive_depth,
+            transition=tuple(fixed.TRANSITION.items()),
+            transition_content=fixed.transition_user_content(),
+            expected_state_sequence=expected_state_sequence_for_depth(recursive_depth),
+            accepted_classification=accepted_classification_for_depth(recursive_depth),
+            next_boundary=next_boundary_for_depth(recursive_depth),
+            claim_ceiling=(
+                f"exact fixed-size recursive state rebase through R={recursive_depth} for the "
+                "bounded finite-state recurrence; "
+                "not arbitrary-history semantic compaction or unbounded inference"
+            ),
+        )
+    )
+
+
+def recurrence_evidence(
+    contract: RecurrenceContract,
+    observed_sequence: Sequence[str],
+    steps: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    active = validate_contract(contract)
+    transition = active.transition_map()
+    cycle_period = active.exact_cycle_period
+    generated_hash_sequence = [str(step["generated_token_sha256"]) for step in steps]
+    child_hash_sequence = [str(step["child_token_sha256"]) for step in steps]
+    request_hash_sequence = [str(step["prompt_token_sha256"]) for step in steps]
+
+    def exact_period(values: Sequence[str], period: int) -> bool:
+        return (
+            len(values) >= period
+            and len(set(values)) == period
+            and all(value == values[index % period] for index, value in enumerate(values))
+        )
+
+    def orbit(start: str, period: int) -> list[str]:
+        values = [start]
+        for _unused in range(period):
+            values.append(transition[values[-1]])
+        return values
+
+    fixed_point_child_hash_invariant = (
+        len(steps) >= 2
+        and len({str(step["child_token_sha256"]) for step in steps[1:]}) == 1
+    )
+    transition_bijective = len(set(transition.values())) == len(transition)
+    transition_has_no_fixed_point = all(source != target for source, target in transition.items())
+    transition_cycle_identity = cycle_period is not None and all(
+        orbit(answer, cycle_period)[-1] == answer
+        for answer in transition
+    )
+    transition_no_early_collision = cycle_period is not None and all(
+        len(set(orbit(answer, cycle_period)[:-1])) == cycle_period
+        for answer in transition
+    )
+    state_sequence_period_exact = (
+        cycle_period is not None
+        and exact_period(observed_sequence[:-1], cycle_period)
+        and observed_sequence[-1] == observed_sequence[0]
+    )
+    generated_hash_period_exact = cycle_period is not None and exact_period(
+        generated_hash_sequence,
+        cycle_period,
+    )
+    child_hash_period_exact = cycle_period is not None and exact_period(
+        child_hash_sequence,
+        cycle_period,
+    )
+    request_hash_period_exact = cycle_period is not None and exact_period(
+        request_hash_sequence,
+        cycle_period,
+    )
+    reversible_cycle_integrity = (
+        cycle_period is not None
+        and transition_bijective
+        and transition_has_no_fixed_point
+        and transition_cycle_identity
+        and transition_no_early_collision
+        and state_sequence_period_exact
+        and generated_hash_period_exact
+        and child_hash_period_exact
+        and request_hash_period_exact
+    )
+    recurrence_hash_invariant = (
+        fixed_point_child_hash_invariant
+        if cycle_period is None
+        else reversible_cycle_integrity
+    )
+    return {
+        "cycle_period": cycle_period,
+        "generated_hash_sequence": generated_hash_sequence,
+        "child_hash_sequence": child_hash_sequence,
+        "request_hash_sequence": request_hash_sequence,
+        "fixed_point_child_hash_invariant": fixed_point_child_hash_invariant,
+        "transition_bijective": transition_bijective,
+        "transition_has_no_fixed_point": transition_has_no_fixed_point,
+        "transition_cycle_identity": transition_cycle_identity,
+        "transition_no_early_collision": transition_no_early_collision,
+        "state_sequence_period_exact": state_sequence_period_exact,
+        "generated_hash_period_exact": generated_hash_period_exact,
+        "child_hash_period_exact": child_hash_period_exact,
+        "request_hash_period_exact": request_hash_period_exact,
+        "reversible_cycle_integrity": reversible_cycle_integrity,
+        "recurrence_hash_invariant": recurrence_hash_invariant,
+    }
+
+
 def experiment_id_for_depth(recursive_depth: int) -> str:
     require(recursive_depth in SUPPORTED_RECURSIVE_DEPTHS, "unsupported recursive depth")
     return EXPERIMENT_ID if recursive_depth == 3 else DEPTH_SCALING_EXPERIMENT_ID
@@ -83,9 +283,17 @@ def next_boundary_for_depth(recursive_depth: int) -> str:
     return "PRESERVE_FIXED_SIZE_R16_AND_SELECT_NEXT_FAST_CATALYTIC_N_T_R_B_BOUNDARY"
 
 
-def child_root_id(step: int, answer: str) -> str:
+def child_root_id(
+    step: int,
+    answer: str,
+    *,
+    valid_states: Sequence[str] | None = None,
+) -> str:
     require(type(step) is int and step >= 0, "capsule step is out of range")
-    require(answer in fixed.TRANSITION, "capsule answer is invalid")
+    require(
+        answer in set(valid_states or fixed.TRANSITION),
+        "capsule answer is invalid",
+    )
     return f"{fixed.ROOT_ID}-fixed-capsule-r{step}-{answer}"
 
 
@@ -268,6 +476,7 @@ def run_successor_route(
     prior_state: Mapping[str, Any],
     step: int,
     route: str,
+    contract: RecurrenceContract,
 ) -> dict[str, Any]:
     require(route in {"catalytic", "direct"}, "unsupported fixed-size route")
     restore: dict[str, Any] | None = None
@@ -290,8 +499,25 @@ def run_successor_route(
         prior_state=prior_state,
         seed=shared_tasks.derive_seed(fixed.ROOT_ID, f"fixed-size-rebase-step-{step}"),
         cache_prompt=route == "catalytic",
+        transition_content=contract.transition_content,
     )
     require(len(tokens) == EXPECTED_DIRECT_FRESH_TOKENS, "fixed-size successor prompt changed")
+    if contract.expected_suffix_token_count is not None:
+        require(
+            ancestry["suffix_token_count"] == contract.expected_suffix_token_count,
+            "recurrence suffix token count changed",
+        )
+    if contract.expected_suffix_sha256 is not None:
+        require(
+            ancestry["suffix_token_sha256"] == contract.expected_suffix_sha256,
+            "recurrence suffix token hash changed",
+        )
+    request_hashes = contract.request_hash_map()
+    if request_hashes:
+        require(
+            ancestry["request_token_sha256"] == request_hashes[str(prior_state["answer"])],
+            "recurrence request token hash changed",
+        )
     recorder = latency.TimingRecorder()
     record = harness.run_completion(
         sidecar,
@@ -301,8 +527,14 @@ def run_successor_route(
         batch_owned_request=True,
     )
     state = fixed.generated_state(record, codec=codec, props=props)
-    expected_answer = fixed.TRANSITION[str(prior_state["answer"])]
+    expected_answer = contract.transition_map()[str(prior_state["answer"])]
     require(state["answer"] == expected_answer, f"fixed-size step {step} answer is incorrect")
+    generated_hashes = contract.generated_hash_map()
+    if generated_hashes:
+        require(
+            state["generated_token_sha256"] == generated_hashes[expected_answer],
+            "recurrence generated-token hash changed",
+        )
     require(record["prompt_tokens"] == len(tokens), f"fixed-size step {step} prompt count changed")
     expected_cached = EXPECTED_CHILD_TOKENS if route == "catalytic" else 0
     expected_fresh = EXPECTED_SUCCESSOR_FRESH_TOKENS if route == "catalytic" else EXPECTED_DIRECT_FRESH_TOKENS
@@ -335,6 +567,7 @@ def rebase_child(
     base_branch_tokens: Sequence[int],
     next_state: Mapping[str, Any],
     step: int,
+    contract: RecurrenceContract,
 ) -> tuple[dict[str, Any], list[int], list[dict[str, Any]], dict[str, Any]]:
     operations: list[dict[str, Any]] = []
     erased = root_action(
@@ -379,13 +612,24 @@ def rebase_child(
     require(materialized["completion_tokens"] == 0, "rebase emitted output")
     next_child = root_action(
         action="root-save",
-        root_id=child_root_id(step, str(next_state["answer"])),
+        root_id=child_root_id(
+            step,
+            str(next_state["answer"]),
+            valid_states=contract.transition_map(),
+        ),
         storage="device",
         expected_tokens=EXPECTED_CHILD_TOKENS,
         expected_roots_after=2,
         expected_total_device_bytes_after=EXPECTED_CHILD_DEVICE_BYTES,
         label=f"step-{step}:save-rebased-child",
     )
+    child_hashes = contract.child_hash_map()
+    if child_hashes:
+        require(
+            harness.sha256_bytes(harness.carrier.canonical_json_bytes(child_tokens))
+            == child_hashes[str(next_state["answer"])],
+            "recurrence child token hash changed",
+        )
     operations.append(next_child)
     return next_child, child_tokens, operations, materialized
 
@@ -397,16 +641,24 @@ def classify(
     saved_work_law: bool,
     speedup: float,
     recursive_depth: int = 3,
+    catalytic_wall_seconds: float | None = None,
+    contract: RecurrenceContract | None = None,
 ) -> str:
+    active = validate_contract(contract or absorbing_contract(recursive_depth))
     if not integrity:
         return "fixed-size-rebase-integrity-failure"
     if not fixed_size:
         return "fixed-size-rebase-growth-failure"
     if not saved_work_law:
         return "fixed-size-rebase-saved-work-law-failure"
-    if speedup < MIN_FULL_LIFECYCLE_WALL_SPEEDUP:
+    if speedup < active.minimum_wall_speedup:
         return "fixed-size-rebase-without-preregistered-wall-gate"
-    return accepted_classification_for_depth(recursive_depth)
+    if active.maximum_catalytic_wall_seconds is not None and (
+        catalytic_wall_seconds is None
+        or catalytic_wall_seconds > active.maximum_catalytic_wall_seconds
+    ):
+        return "fixed-size-rebase-above-preregistered-catalytic-wall-ceiling"
+    return active.accepted_classification
 
 
 def evaluate(
@@ -417,10 +669,16 @@ def evaluate(
     root: Mapping[str, Any],
     baseline_private: int | None,
     recursive_depth: int = 3,
+    contract: RecurrenceContract | None = None,
 ) -> dict[str, Any]:
-    experiment_id = experiment_id_for_depth(recursive_depth)
+    active = validate_contract(contract or absorbing_contract(recursive_depth))
+    require(
+        active.recursive_depth == recursive_depth,
+        "recurrence contract depth differs from requested depth",
+    )
+    experiment_id = active.experiment_id
     route_orders = pair_route_orders_for_depth(recursive_depth)
-    expected_sequence = expected_state_sequence_for_depth(recursive_depth)
+    expected_sequence = active.expected_state_sequence
     panel = water.panel_for(root)
     require(water.base._panel_hash(panel) == fixed.PANEL_SHA256, "water panel identity changed")
     seed_spec = panel[fixed.SEED_BRANCH_NUMBER - 1]
@@ -454,6 +712,12 @@ def evaluate(
         len(base_branch_tokens) == EXPECTED_COMPLETE_BRANCH_TOKENS,
         "complete branch prompt count changed",
     )
+    if active.expected_base_branch_sha256 is not None:
+        require(
+            harness.sha256_bytes(harness.carrier.canonical_json_bytes(base_branch_tokens))
+            == active.expected_base_branch_sha256,
+            "complete branch token hash changed",
+        )
     parent_tokens = list(base_branch_tokens[:EXPECTED_BASE_TOKENS])
     materialize_payload = harness.carrier._branch_payload(
         parent_tokens,
@@ -527,9 +791,20 @@ def evaluate(
         "seed cache split changed",
     )
     child_tokens = compact_child_tokens(base_branch_tokens, seed_state)
+    seed_child_hashes = active.child_hash_map()
+    if seed_child_hashes:
+        require(
+            harness.sha256_bytes(harness.carrier.canonical_json_bytes(child_tokens))
+            == seed_child_hashes[str(seed_state["answer"])],
+            "seed child token hash changed",
+        )
     child_root = root_action(
         action="root-save",
-        root_id=child_root_id(0, seed_state["answer"]),
+        root_id=child_root_id(
+            0,
+            seed_state["answer"],
+            valid_states=active.transition_map(),
+        ),
         storage="device",
         expected_tokens=EXPECTED_CHILD_TOKENS,
         expected_roots_after=2,
@@ -558,6 +833,7 @@ def evaluate(
                 prior_state=prior_state,
                 step=step,
                 route=route,
+                contract=active,
             )
             pair[route] = record
             records.append(record)
@@ -577,6 +853,7 @@ def evaluate(
             base_branch_tokens=base_branch_tokens,
             next_state=agreed_state,
             step=step,
+            contract=active,
         )
         root_operations.extend(rebase_ops)
         rebases.append(materialized)
@@ -692,10 +969,22 @@ def evaluate(
         and step["cumulative_avoided_fresh_prompt_tokens"] == EXPECTED_BASE_TOKENS * step["step"]
         for step in steps
     )
-    fixed_point_child_hash_invariant = (
-        len(steps) >= 2
-        and len({str(step["child_token_sha256"]) for step in steps[1:]}) == 1
-    )
+    transition = active.transition_map()
+    recurrence = recurrence_evidence(active, observed_sequence, steps)
+    cycle_period = recurrence["cycle_period"]
+    generated_hash_sequence = recurrence["generated_hash_sequence"]
+    child_hash_sequence = recurrence["child_hash_sequence"]
+    request_hash_sequence = recurrence["request_hash_sequence"]
+    fixed_point_child_hash_invariant = recurrence["fixed_point_child_hash_invariant"]
+    transition_bijective = recurrence["transition_bijective"]
+    transition_has_no_fixed_point = recurrence["transition_has_no_fixed_point"]
+    transition_cycle_identity = recurrence["transition_cycle_identity"]
+    transition_no_early_collision = recurrence["transition_no_early_collision"]
+    state_sequence_period_exact = recurrence["state_sequence_period_exact"]
+    generated_hash_period_exact = recurrence["generated_hash_period_exact"]
+    child_hash_period_exact = recurrence["child_hash_period_exact"]
+    request_hash_period_exact = recurrence["request_hash_period_exact"]
+    recurrence_hash_invariant = recurrence["recurrence_hash_invariant"]
     base_invariant = all(
         operation["n_tokens"] == EXPECTED_BASE_TOKENS
         and operation["n_bytes"] == EXPECTED_BASE_HOST_BYTES
@@ -711,7 +1000,7 @@ def evaluate(
     integrity = (
         exact_sequence
         and paired_identity
-        and fixed_point_child_hash_invariant
+        and recurrence_hash_invariant
         and base_invariant
         and bank_invariant
         and final_base_erase["n_roots_after"] == 0
@@ -723,8 +1012,42 @@ def evaluate(
         saved_work_law=saved_work_law,
         speedup=lifecycle_speedup,
         recursive_depth=recursive_depth,
+        catalytic_wall_seconds=catalytic_wall,
+        contract=active,
     )
-    accepted_before_cleanup = classification == accepted_classification_for_depth(recursive_depth)
+    accepted_before_cleanup = classification == active.accepted_classification
+    if cycle_period is None:
+        recurrence_quality_gates = {
+            "final_B_to_B_fixed_point_exact": observed_sequence[-2:] == ["B", "B"],
+            "B_fixed_point_stable_after_entry": (
+                observed_sequence[2:] == ["B"] * (recursive_depth - 1)
+            ),
+            "fixed_point_child_hash_invariant": fixed_point_child_hash_invariant,
+        }
+    else:
+        recurrence_quality_gates = {
+            "transition_bijection_exact": transition_bijective,
+            "transition_has_no_fixed_point": transition_has_no_fixed_point,
+            "transition_fourth_power_identity": (
+                cycle_period == 4 and transition_cycle_identity
+            ),
+            "transition_no_early_collision": transition_no_early_collision,
+            "period4_state_sequence_exact": (
+                cycle_period == 4 and state_sequence_period_exact
+            ),
+            "period4_generated_hash_invariant": (
+                cycle_period == 4 and generated_hash_period_exact
+            ),
+            "period4_request_hash_invariant": (
+                cycle_period == 4 and request_hash_period_exact
+            ),
+            "period4_child_hash_invariant": (
+                cycle_period == 4 and child_hash_period_exact
+            ),
+            "four_distinct_states_exact": (
+                len(set(observed_sequence[:-1])) == cycle_period
+            ),
+        }
     return {
         "status": "complete-pending-cleanup",
         "experiment_id": experiment_id,
@@ -732,11 +1055,21 @@ def evaluate(
         "verdict": "accept" if accepted_before_cleanup else "reject",
         "classification": classification,
         "geometry": {"N": 1, "T": recursive_depth, "R": recursive_depth, "B": 1},
-        "claim_ceiling": (
-            f"exact fixed-size recursive state rebase through R={recursive_depth} for the "
-            "bounded finite-state recurrence; "
-            "not arbitrary-history semantic compaction or unbounded inference"
-        ),
+        "claim_ceiling": active.claim_ceiling,
+        "recurrence": {
+            "id": active.recurrence_id,
+            "transition": transition,
+            "seed": expected_sequence[0],
+            "period": cycle_period,
+            "expected_sequence": list(expected_sequence),
+            "observed_sequence": observed_sequence,
+            "bijective": transition_bijective,
+            "has_no_fixed_point": transition_has_no_fixed_point,
+            "cycle_identity": transition_cycle_identity if cycle_period is not None else None,
+            "no_early_collision": (
+                transition_no_early_collision if cycle_period is not None else None
+            ),
+        },
         "shared_prerequisite": {
             "task_a": harness.token_summary(task_a),
             "seed": {
@@ -751,7 +1084,11 @@ def evaluate(
         "roots": {
             "base": base_saved,
             "seed_child": {
-                "root_id": child_root_id(0, seed_state["answer"]),
+                "root_id": child_root_id(
+                    0,
+                    seed_state["answer"],
+                    valid_states=active.transition_map(),
+                ),
                 "n_tokens": EXPECTED_CHILD_TOKENS,
             },
             "final_child": child_root,
@@ -790,7 +1127,17 @@ def evaluate(
                 "catalytic_wall_seconds": catalytic_wall,
                 "direct_wall_seconds": direct_wall,
                 "wall_speedup": lifecycle_speedup,
-                "minimum_wall_speedup": MIN_FULL_LIFECYCLE_WALL_SPEEDUP,
+                "minimum_wall_speedup": active.minimum_wall_speedup,
+                "maximum_catalytic_wall_seconds": active.maximum_catalytic_wall_seconds,
+            },
+            "recurrence_law": {
+                "generated_token_sha256_each_step": generated_hash_sequence,
+                "child_token_sha256_each_step": child_hash_sequence,
+                "request_token_sha256_each_step": request_hash_sequence,
+                "exact_cycle_period": cycle_period,
+                "generated_hash_period_exact": generated_hash_period_exact,
+                "child_hash_period_exact": child_hash_period_exact,
+                "request_hash_period_exact": request_hash_period_exact,
             },
             "residency": {
                 "with_base": resources_with_base,
@@ -805,11 +1152,7 @@ def evaluate(
             "qualified_panel_identity_exact": True,
             "seed_output_and_generated_token_identity_exact": True,
             "state_sequence_exact": exact_sequence,
-            "final_B_to_B_fixed_point_exact": observed_sequence[-2:] == ["B", "B"],
-            "B_fixed_point_stable_after_entry": (
-                observed_sequence[2:] == ["B"] * (recursive_depth - 1)
-            ),
-            "fixed_point_child_hash_invariant": fixed_point_child_hash_invariant,
+            **recurrence_quality_gates,
             "preregistered_pair_route_order_exact": tuple(
                 tuple(step["route_order"]) for step in steps
             )
@@ -841,18 +1184,33 @@ def evaluate(
             "fully_counted_wall_speedup_at_least_1_25": (
                 lifecycle_speedup >= MIN_FULL_LIFECYCLE_WALL_SPEEDUP
             ),
+            "fully_counted_wall_speedup_at_least_preregistered_minimum": (
+                lifecycle_speedup >= active.minimum_wall_speedup
+            ),
+            "catalytic_wall_at_or_below_preregistered_ceiling": (
+                active.maximum_catalytic_wall_seconds is None
+                or catalytic_wall <= active.maximum_catalytic_wall_seconds
+            ),
             "fanout_claimed": False,
             "arbitrary_history_compaction_claimed": False,
             "unbounded_catalytic_inference_established": False,
             "automatic_promotion": False,
         },
-        "next_boundary": next_boundary_for_depth(recursive_depth)
+        "next_boundary": active.next_boundary
         if accepted_before_cleanup
         else "PRESERVE_EXECUTED_EVIDENCE_AND_LOCALIZE_THE_FIRST_FAILED_GATE_WITHOUT_RETRY",
     }
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(
+    *,
+    recursive_depth_choices: Sequence[int] = SUPPORTED_RECURSIVE_DEPTHS,
+    recursive_depth_default: int = 3,
+) -> argparse.Namespace:
+    require(
+        recursive_depth_default in recursive_depth_choices,
+        "recursive-depth default is not admitted",
+    )
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--model", type=Path, default=harness.DEFAULT_MODEL)
@@ -860,8 +1218,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--recursive-depth",
         type=int,
-        choices=SUPPORTED_RECURSIVE_DEPTHS,
-        default=3,
+        choices=tuple(recursive_depth_choices),
+        default=recursive_depth_default,
     )
     parser.add_argument("--output", type=Path)
     parser.add_argument("--server-log-output", type=Path)
@@ -875,7 +1233,13 @@ def finalize_after_cleanup(
     cleanup_wall_seconds: float,
     stable_pids: set[int],
     recursive_depth: int = 3,
+    contract: RecurrenceContract | None = None,
 ) -> dict[str, Any]:
+    active = validate_contract(contract or absorbing_contract(recursive_depth))
+    require(
+        active.recursive_depth == recursive_depth,
+        "cleanup recurrence contract depth changed",
+    )
     cleanup_record = dict(cleanup)
     cleanup_record["retirement_wall_seconds"] = cleanup_wall_seconds
     cleanup_gate = harness.live_runtime.cleanup_integrity(cleanup_record, stable_pids)
@@ -897,11 +1261,13 @@ def finalize_after_cleanup(
         frontier_port_free=cleanup_record.get("port_free") is True,
         fixed_size_recursive_cuda_capsule_rebase_supported=accepted,
     )
+    if active.exact_cycle_period == 4:
+        result["quality_gates"]["reversible_period4_fixed_size_recurrence_supported"] = accepted
     result["status"] = "complete"
     result["verdict"] = "accept" if accepted else "reject"
     if accepted:
-        result["classification"] = accepted_classification_for_depth(recursive_depth)
-        result["next_boundary"] = next_boundary_for_depth(recursive_depth)
+        result["classification"] = active.accepted_classification
+        result["next_boundary"] = active.next_boundary
     elif scientific_gate:
         result["classification"] = "fixed-size-rebase-cleanup-or-residency-failure"
         result["next_boundary"] = (
@@ -910,9 +1276,16 @@ def finalize_after_cleanup(
     return result
 
 
-def main() -> int:
-    args = parse_args()
-    experiment_id = experiment_id_for_depth(args.recursive_depth)
+def main(*, contract: RecurrenceContract | None = None) -> int:
+    active = validate_contract(contract) if contract is not None else None
+    args = parse_args(
+        recursive_depth_choices=(
+            (active.recursive_depth,) if active is not None else SUPPORTED_RECURSIVE_DEPTHS
+        ),
+        recursive_depth_default=active.recursive_depth if active is not None else 3,
+    )
+    active = active or absorbing_contract(args.recursive_depth)
+    experiment_id = active.experiment_id
     repository = Path(__file__).resolve().parents[1]
     binary = args.binary.resolve(strict=True)
     require(
@@ -929,7 +1302,12 @@ def main() -> int:
     require(len(stable_pids) == 1, "fixed-size rebase requires the sole stable listener")
     require(not harness.live_runtime.listener_pids(harness.live_runtime.PORT), "frontier port is occupied")
     state_root = Path(
-        tempfile.mkdtemp(prefix=f"neo3000-fixed-size-rebase-r{args.recursive_depth}-")
+        tempfile.mkdtemp(
+            prefix=(
+                f"neo3000-fixed-size-rebase-{active.recurrence_id}-"
+                f"r{args.recursive_depth}-"
+            )
+        )
     )
     sidecar: Any | None = None
     result: dict[str, Any] | None = None
@@ -975,6 +1353,7 @@ def main() -> int:
             root=roots[fixed.ROOT_ID],
             baseline_private=baseline_private,
             recursive_depth=args.recursive_depth,
+            contract=active,
         )
         result["runtime_identity"] = {
             "binary_runtime_version": harness.live_runtime.binary_version(binary),
@@ -1031,6 +1410,7 @@ def main() -> int:
         cleanup_wall_seconds=cleanup_wall_seconds,
         stable_pids=set(stable_pids),
         recursive_depth=args.recursive_depth,
+        contract=active,
     )
     encoded = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True)
     if args.output is not None:

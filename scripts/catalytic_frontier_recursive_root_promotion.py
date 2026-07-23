@@ -137,6 +137,7 @@ def derive_promoted_successor(
     prior_state: Mapping[str, Any],
     seed: int,
     cache_prompt: bool,
+    transition_content: str | None = None,
 ) -> tuple[list[int], dict[str, Any], dict[str, Any]]:
     visible = list(prior_state["visible_token_ids"])
     generated = list(prior_state["generated_token_ids"])
@@ -148,7 +149,11 @@ def derive_promoted_successor(
     suffix = harness.carrier.derive_continuation_suffix(
         codec,
         terminal_eog_id=int(prior_state["terminal_eog_id"]),
-        user_content=fixed.transition_user_content(),
+        user_content=(
+            fixed.transition_user_content()
+            if transition_content is None
+            else transition_content
+        ),
     )
     require(
         generated == [*visible, int(prior_state["terminal_eog_id"])],
