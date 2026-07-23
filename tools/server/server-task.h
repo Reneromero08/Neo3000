@@ -563,6 +563,11 @@ struct server_task_result_slot_ram_root : server_task_result {
 
     size_t n_tokens;
     size_t n_bytes;
+    size_t n_host_bytes;
+    size_t n_device_bytes;
+    size_t n_device_bytes_after;
+    size_t n_gpu_bytes;
+    size_t n_gpu_bytes_after;
     size_t n_checkpoints;
     double t_ms;
 

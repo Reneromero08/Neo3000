@@ -44,6 +44,7 @@ MIN_PAIRED_WINS = 3
 MIN_MEDIAN_SPEEDUP = 1.25
 MAX_DIRECT_CONTROL_DRIFT_FRACTION = 0.10
 SPECULATIVE_MODES = ("none", "ngram-cache")
+ROOT_STORAGE_MODES = ("host", "device")
 STRICT_PREFIX_NO_SPEC_MEDIANS = {
     "predicted_ms": 225.1865,
     "effective_wall_seconds_including_restore": 0.46100000001024455,
@@ -58,6 +59,22 @@ MAX_NGRAM_PRIVATE_GROWTH_BYTES = 128 * 1024 * 1024
 STRICT_PREFIX_NO_SPEC_AFTER_ERASE_PRIVATE_GROWTH_BYTES = 109_101_056
 STRICT_PREFIX_NO_SPEC_DIRECT_LIFECYCLE_WALL_SECONDS = 58.123999999981606
 STRICT_PREFIX_NO_SPEC_DIRECT_LIFECYCLE_FRESH_TOKENS = 3397
+STRICT_PREFIX_HOST_ROOT_RESTORE_SERVER_MEDIAN_MS = 13.9525
+CUDA_ROOT_MIN_RESTORE_SPEEDUP = 2.0
+CUDA_ROOT_MIN_EFFECTIVE_WALL_SPEEDUP = 1.02
+STRICT_PREFIX_LOGICAL_ROOT_BYTES = 79_991_940
+CUDA_ROOT_RUNTIME_SHA256 = {
+    "ggml-base.dll": "F648098AB0FCECA45A1EEC2AE147022383DCC6CD31392199F5CD6E5A5277AF3F",
+    "ggml-cpu.dll": "64B9D97113CC0AB57C8DA0E3237B4EFC0271B4E0AA377080295D138BCABC92A1",
+    "ggml-cuda.dll": "C4BCC1C7AF82475E1C1CD3A56C3AF9CDA3EE50AE8C7819D9A314C6B6F62DC787",
+    "ggml.dll": "6E6A8BE1DAFA42356C15DDA9C0A39CC7BA34E4ABA8D402693F0EFCB57CD9E2D1",
+    "llama-common.dll": "EBB25179767CAFB6EBDEEA0A1E7A16490CD66C7D6645083F853DE63D371FC6AE",
+    "llama-server-impl.dll": "0D5C4FDBDBB894F25075D347C74798C8A9648F58C34A96560670A9179672E27D",
+    "llama-server.exe": "98F9795C04A50305D09042230950F0F657EA7140EAF945CDD36C58291E965346",
+    "llama.dll": "2D92EC62987EA9BA4EA82FD68C0631A0A95E62BCB3058E715100FF5AA19BAA14",
+    "mtmd.dll": "712AF620E960154C6F9CA72FA29670B155763E67C0837ED18B1FDFF97DF9C62B",
+}
+CUDA_ROOT_BINARY_SHA256 = CUDA_ROOT_RUNTIME_SHA256["llama-server.exe"]
 DEFAULT_BINARY = Path("build/candidate/bin/Release/llama-server.exe")
 ROOT_BOUNDARIES: dict[str, dict[str, Any]] = {
     "task-a": {
@@ -186,12 +203,29 @@ class TimingRecorder:
         }
 
 
+def verify_cuda_root_runtime(binary: Path) -> dict[str, str]:
+    harness.require(binary.name == "llama-server.exe", "CUDA-root runtime entrypoint changed")
+    observed: dict[str, str] = {}
+    for name, expected_sha256 in CUDA_ROOT_RUNTIME_SHA256.items():
+        runtime_file = (binary.parent / name).resolve(strict=True)
+        harness.require(runtime_file.parent == binary.parent, f"CUDA-root runtime path escaped for {name}")
+        observed_sha256 = harness.live_runtime.sha256_file(runtime_file)
+        harness.require(
+            observed_sha256 == expected_sha256,
+            f"CUDA-root runtime identity drifted for {name}: {observed_sha256}",
+        )
+        observed[name] = observed_sha256
+    return observed
+
+
 def validate_root_response(
     response: Mapping[str, Any],
     *,
     action: str,
     expected: Mapping[str, Any] | None = None,
+    root_storage: str = "host",
 ) -> dict[str, Any]:
+    harness.require(root_storage in ROOT_STORAGE_MODES, "unsupported RAM-root storage mode")
     harness.require(response.get("action") == action, f"RAM-root action mismatch for {action}")
     harness.require(response.get("root_id") == ROOT_ID, f"RAM-root identity mismatch for {action}")
     harness.require(type(response.get("id_slot")) is int, f"RAM-root slot missing for {action}")
@@ -201,9 +235,36 @@ def validate_root_response(
     harness.require(int(response["n_tokens"]) > 0, f"RAM-root is empty for {action}")
     harness.require(int(response["n_bytes"]) > 0, f"RAM-root has no state bytes for {action}")
     harness.require(int(response["n_checkpoints"]) == 0, f"RAM-root checkpoint count changed for {action}")
+    if root_storage == "device":
+        for key in ("n_host_bytes", "n_device_bytes", "n_device_bytes_after", "n_gpu_bytes", "n_gpu_bytes_after"):
+            harness.require(type(response.get(key)) is int, f"RAM-root {key} missing for {action}")
+            harness.require(int(response[key]) >= 0, f"RAM-root {key} is negative for {action}")
+        harness.require(
+            int(response["n_bytes"]) == int(response["n_host_bytes"]) + int(response["n_device_bytes"]),
+            f"RAM-root logical byte accounting changed for {action}",
+        )
+        harness.require(int(response["n_device_bytes"]) > 0, f"RAM-root has no device tensor bytes for {action}")
+        harness.require(int(response["n_gpu_bytes"]) > 0, f"RAM-root has no GPU-backed tensor bytes for {action}")
+        harness.require(
+            int(response["n_gpu_bytes"]) <= int(response["n_device_bytes"]),
+            f"RAM-root GPU byte accounting exceeds device state for {action}",
+        )
+        expected_after = 0 if action == "root-erase" else int(response["n_device_bytes"])
+        harness.require(
+            int(response["n_device_bytes_after"]) == expected_after,
+            f"RAM-root device-state closure changed for {action}",
+        )
+        expected_gpu_after = 0 if action == "root-erase" else int(response["n_gpu_bytes"])
+        harness.require(
+            int(response["n_gpu_bytes_after"]) == expected_gpu_after,
+            f"RAM-root GPU-state closure changed for {action}",
+        )
     if expected is not None:
         for key in ("root_id", "n_tokens", "n_bytes", "n_checkpoints"):
             harness.require(response.get(key) == expected.get(key), f"RAM-root {key} changed at {action}")
+        if root_storage == "device":
+            for key in ("n_host_bytes", "n_device_bytes", "n_gpu_bytes"):
+                harness.require(response.get(key) == expected.get(key), f"RAM-root {key} changed at {action}")
     timings = response.get("timings")
     harness.require(
         isinstance(timings, Mapping) and isinstance(timings.get("root_ms"), (int, float)),
@@ -215,6 +276,11 @@ def validate_root_response(
         "id_slot": response["id_slot"],
         "n_tokens": response["n_tokens"],
         "n_bytes": response["n_bytes"],
+        "n_host_bytes": response.get("n_host_bytes"),
+        "n_device_bytes": response.get("n_device_bytes"),
+        "n_device_bytes_after": response.get("n_device_bytes_after"),
+        "n_gpu_bytes": response.get("n_gpu_bytes"),
+        "n_gpu_bytes_after": response.get("n_gpu_bytes_after"),
         "n_checkpoints": response["n_checkpoints"],
         "server_root_ms": float(timings["root_ms"]),
     }
@@ -368,8 +434,11 @@ def evaluate(
     baseline_private: int | None,
     root_boundary: str = "task-a",
     speculative_mode: str = "none",
+    root_storage: str = "host",
 ) -> dict[str, Any]:
     harness.require(speculative_mode in SPECULATIVE_MODES, "unsupported latency speculative mode")
+    harness.require(root_storage in ROOT_STORAGE_MODES, "unsupported latency root storage mode")
+    harness.require(speculative_mode == "none" or root_storage == "host", "speculation and device root cannot be combined")
     panel = water.panel_for(root)
     harness.require(water.base._panel_hash(panel) == PANEL_SHA256, "qualified water panel identity changed")
     spec = panel[BRANCH_NUMBER - 1]
@@ -420,13 +489,18 @@ def evaluate(
     harness.require(materialization["completion_tokens"] == 0, "prompt-root materialization emitted output")
 
     save_raw, save_wall = harness.ram_root_action(action="root-save", root_id=ROOT_ID)
-    saved = validate_root_response(save_raw, action="root-save")
+    saved = validate_root_response(save_raw, action="root-save", root_storage=root_storage)
     harness.require(saved["n_tokens"] == len(root_tokens), "saved root-boundary token count changed")
+    if root_storage == "device":
+        harness.require(
+            saved["n_bytes"] == STRICT_PREFIX_LOGICAL_ROOT_BYTES,
+            "CUDA RAM-root logical state size differs from canonical strict-prefix root",
+        )
     root_operations: list[dict[str, Any]] = [{**saved, "client_wall_seconds": save_wall}]
 
     def restore(label: str) -> dict[str, Any]:
         response_raw, wall = harness.ram_root_action(action="root-restore", root_id=ROOT_ID)
-        response = validate_root_response(response_raw, action="root-restore", expected=saved)
+        response = validate_root_response(response_raw, action="root-restore", expected=saved, root_storage=root_storage)
         response.update(label=label, client_wall_seconds=wall)
         root_operations.append(response)
         return response
@@ -516,7 +590,7 @@ def evaluate(
     final_restore = restore("final-root-closure")
     resources_after_trials_with_root = harness.process_resources(sidecar, baseline_private)
     erase_raw, erase_wall = harness.ram_root_action(action="root-erase", root_id=ROOT_ID)
-    erased = validate_root_response(erase_raw, action="root-erase", expected=saved)
+    erased = validate_root_response(erase_raw, action="root-erase", expected=saved, root_storage=root_storage)
     erased.update(client_wall_seconds=erase_wall)
     root_operations.append(erased)
     resources_after_erase = harness.process_resources(sidecar, baseline_private)
@@ -644,6 +718,37 @@ def evaluate(
         counted_direct_lifecycle_fresh = STRICT_PREFIX_NO_SPEC_DIRECT_LIFECYCLE_FRESH_TOKENS
     full_lifecycle_wall_advantage = counted_catalytic_lifecycle_wall < counted_direct_lifecycle_wall
     full_lifecycle_fresh_advantage = counted_catalytic_lifecycle_fresh < counted_direct_lifecycle_fresh
+    counted_restore_server_ms = [float(record["restore"]["server_root_ms"]) for record in catalytic]
+    cuda_root_metrics: dict[str, Any] | None = None
+    cuda_root_gate = True
+    if root_storage == "device":
+        restore_distribution = distribution(counted_restore_server_ms)
+        restore_speedup = STRICT_PREFIX_HOST_ROOT_RESTORE_SERVER_MEDIAN_MS / restore_distribution["median"]
+        wall_speedup_vs_host = STRICT_PREFIX_NO_SPEC_MEDIANS["effective_wall_seconds_including_restore"] / median_catalytic_wall
+        device_accounting_gate = (
+            int(saved["n_host_bytes"]) > 0
+            and int(saved["n_device_bytes"]) > 0
+            and int(saved["n_gpu_bytes"]) > 0
+            and int(saved["n_gpu_bytes"]) <= int(saved["n_device_bytes"])
+            and int(saved["n_host_bytes"]) < int(saved["n_bytes"])
+            and int(erased["n_device_bytes_after"]) == 0
+            and int(erased["n_gpu_bytes_after"]) == 0
+        )
+        cuda_root_gate = (
+            restore_speedup >= CUDA_ROOT_MIN_RESTORE_SPEEDUP
+            and wall_speedup_vs_host >= CUDA_ROOT_MIN_EFFECTIVE_WALL_SPEEDUP
+            and device_accounting_gate
+        )
+        cuda_root_metrics = {
+            "canonical_host_restore_server_median_ms": STRICT_PREFIX_HOST_ROOT_RESTORE_SERVER_MEDIAN_MS,
+            "counted_device_restore_server_ms": restore_distribution,
+            "restore_server_speedup": restore_speedup,
+            "minimum_restore_server_speedup": CUDA_ROOT_MIN_RESTORE_SPEEDUP,
+            "effective_wall_speedup_vs_neo_exp_0064_host_root": wall_speedup_vs_host,
+            "minimum_effective_wall_speedup": CUDA_ROOT_MIN_EFFECTIVE_WALL_SPEEDUP,
+            "device_accounting_gate": device_accounting_gate,
+            "gate": cuda_root_gate,
+        }
     classification = classify_result(
         utility_exact=utility_exact,
         paired_wins=paired_wins,
@@ -664,18 +769,28 @@ def evaluate(
             and ngram_private_growth_gate
             else "strict-prefix-plus-ngram-cache-without-preregistered-latency-gate"
         )
+    if root_storage == "device":
+        classification = (
+            "cuda-resident-strict-prefix-root-latency-supported-bounded"
+            if classification == "fast-single-request-catalytic-latency-supported-bounded"
+            and cuda_root_gate
+            else "cuda-resident-strict-prefix-root-without-preregistered-latency-gate"
+        )
     accepted = classification in {
         "fast-single-request-catalytic-latency-supported-bounded",
         "strict-prefix-plus-ngram-cache-latency-supported-bounded",
+        "cuda-resident-strict-prefix-root-latency-supported-bounded",
     }
     all_request_records = [task_a, materialization, *all_routes]
 
     return {
         "status": "complete",
         "mechanism": (
-            f"checkpoint-free-{root_boundary}-root-single-request-latency"
-            if speculative_mode == "none"
+            f"checkpoint-free-{root_boundary}-CUDA-resident-root-single-request-latency"
+            if root_storage == "device"
             else f"checkpoint-free-{root_boundary}-root-{speculative_mode}-single-request-latency"
+            if speculative_mode != "none"
+            else f"checkpoint-free-{root_boundary}-root-single-request-latency"
         ),
         "verdict": "accept" if accepted else "reject",
         "classification": classification,
@@ -702,6 +817,7 @@ def evaluate(
             "minimum_median_speedup": MIN_MEDIAN_SPEEDUP,
             "context_checkpoints": 0,
             "root_boundary": root_boundary,
+            "root_storage": root_storage,
             "speculative_mode": speculative_mode,
             "cache_disabled_route_label": "ngram-only" if speculative_mode == "ngram-cache" else "direct",
             "learning_warmup_charged": speculative_mode == "ngram-cache",
@@ -721,6 +837,7 @@ def evaluate(
             "effective_wall_seconds": {"catalytic": distribution(catalytic_effective_wall), control_metric_label: distribution(direct_effective_wall)},
             "fresh_model_tokens_per_request": {"catalytic_median": median_catalytic_fresh, f"{control_metric_label}_median": median_direct_fresh},
             "speedup_vs_neo_exp_0062_543_root": predecessor_speedups,
+            "cuda_root": cuda_root_metrics,
             "ngram_cache": {
                 "catalytic_counted_draft_tokens": draft_metrics["catalytic_draft_tokens"],
                 "catalytic_counted_accepted_draft_tokens": draft_metrics["catalytic_accepted_draft_tokens"],
@@ -811,9 +928,18 @@ def evaluate(
             "root_metadata_invariant": all(
                 record.get("n_tokens") == saved["n_tokens"]
                 and record.get("n_bytes") == saved["n_bytes"]
+                and (root_storage != "device" or record.get("n_host_bytes") == saved["n_host_bytes"])
+                and (root_storage != "device" or record.get("n_device_bytes") == saved["n_device_bytes"])
+                and (root_storage != "device" or record.get("n_gpu_bytes") == saved["n_gpu_bytes"])
                 and record.get("n_checkpoints") == 0
                 for record in root_operations
             ),
+            "cuda_device_bytes_nonzero": root_storage != "device" or int(saved["n_device_bytes"]) > 0,
+            "cuda_gpu_bytes_nonzero": root_storage != "device" or int(saved["n_gpu_bytes"]) > 0,
+            "cuda_device_bytes_zero_after_erase": root_storage != "device" or int(erased["n_device_bytes_after"]) == 0,
+            "cuda_gpu_bytes_zero_after_erase": root_storage != "device" or int(erased["n_gpu_bytes_after"]) == 0,
+            "cuda_restore_speedup_gate": root_storage != "device" or bool(cuda_root_metrics and cuda_root_metrics["restore_server_speedup"] >= CUDA_ROOT_MIN_RESTORE_SPEEDUP),
+            "cuda_effective_wall_speedup_gate": root_storage != "device" or bool(cuda_root_metrics and cuda_root_metrics["effective_wall_speedup_vs_neo_exp_0064_host_root"] >= CUDA_ROOT_MIN_EFFECTIVE_WALL_SPEEDUP),
             "final_restore_before_erase": final_restore["action"] == "root-restore",
             "explicit_erase": erased["action"] == "root-erase",
             "paired_win_gate": paired_wins >= MIN_PAIRED_WINS,
@@ -834,6 +960,11 @@ def evaluate(
             "automatic_promotion": False,
         },
         "next_boundary": (
+            "PROFILE_NEXT_CUDA_CATALYTIC_HOT_PATH_AFTER_ACCEPTED_DEVICE_ROOT"
+            if accepted and root_storage == "device"
+            else "PRESERVE_DEVICE_ROOT_EVIDENCE_AND_LOCALIZE_FAILED_CUDA_GATE_WITHOUT_RETRY"
+            if root_storage == "device"
+            else
             (
                 "PROFILE_REMAINING_STRICT_PREFIX_PLUS_NGRAM_CACHE_N1_LATENCY_WITH_THE_SAME_EXACT_CONTROL"
                 if root_boundary == "strict-prefix" and speculative_mode == "ngram-cache"
@@ -880,6 +1011,25 @@ def finalize_result_after_cleanup(
     result["cleanup"] = cleanup_record
     cleanup_gate = harness.live_runtime.cleanup_integrity(cleanup_record, stable_pids)
     result["cleanup_gate"] = cleanup_gate
+    root_storage = result.get("trial_design", {}).get("root_storage")
+    if root_storage == "device":
+        wddm = cleanup_record.get("wddm")
+        peak_wddm_bytes = wddm.get("peak_bytes") if isinstance(wddm, Mapping) else None
+        wddm_gate = type(peak_wddm_bytes) is int and int(peak_wddm_bytes) <= 6000 * 1024 * 1024
+        result["metrics"]["cuda_root"]["peak_wddm_bytes"] = peak_wddm_bytes
+        result["metrics"]["cuda_root"]["maximum_wddm_bytes"] = 6000 * 1024 * 1024
+        result["metrics"]["cuda_root"]["wddm_gate"] = wddm_gate
+        quality_gates = result["quality_gates"]
+        quality_gates["cuda_wddm_at_or_below_6000_mib"] = wddm_gate
+        quality_gates["candidate_process_retired"] = cleanup_gate["passed"] is True
+        accepted = result.get("verdict") == "accept" and cleanup_gate["passed"] is True and wddm_gate
+        quality_gates["fast_single_request_catalytic_inference_supported"] = accepted
+        if not accepted:
+            result["verdict"] = "reject"
+            result["classification"] = "cuda-resident-strict-prefix-root-without-preregistered-latency-gate"
+            result["next_boundary"] = "PRESERVE_DEVICE_ROOT_EVIDENCE_AND_LOCALIZE_FAILED_CUDA_GATE_WITHOUT_RETRY"
+        return result
+
     if result.get("trial_design", {}).get("speculative_mode") != "ngram-cache":
         return result
 
@@ -917,9 +1067,11 @@ def finalize_result_after_cleanup(
     return result
 
 
-def main(*, root_boundary: str = "task-a", speculative_mode: str = "none") -> int:
+def main(*, root_boundary: str = "task-a", speculative_mode: str = "none", root_storage: str = "host") -> int:
     args = parse_args()
     harness.require(speculative_mode in SPECULATIVE_MODES, "unsupported latency speculative mode")
+    harness.require(root_storage in ROOT_STORAGE_MODES, "unsupported latency root storage mode")
+    harness.require(speculative_mode == "none" or root_storage == "host", "speculation and device root cannot be combined")
     repository = Path(__file__).resolve().parents[1]
     binary = args.binary.resolve(strict=True)
     expected_candidate = (repository / DEFAULT_BINARY).resolve(strict=True)
@@ -927,7 +1079,11 @@ def main(*, root_boundary: str = "task-a", speculative_mode: str = "none") -> in
         binary == expected_candidate,
         "latency discriminator requires the isolated frontier candidate binary path",
     )
-    water.require_pinned_binary(binary)
+    if root_storage == "device":
+        cuda_runtime_sha256 = verify_cuda_root_runtime(binary)
+    else:
+        cuda_runtime_sha256 = None
+        water.require_pinned_binary(binary)
     model = args.model.resolve(strict=True)
     require_unused_artifact_paths(args.output, args.server_log_output)
     corpus = harness.carrier.load_public_corpus(repository)
@@ -955,19 +1111,28 @@ def main(*, root_boundary: str = "task-a", speculative_mode: str = "none") -> in
             state_root=state_root,
             context_checkpoints=args.ctx_checkpoints,
             server_launch_args=(
-                water.checkpoint_control.NGRAM_CACHE_SERVER_ARGS
+                water.checkpoint_control.CUDA_ROOT_SERVER_ARGS
+                if root_storage == "device"
+                else water.checkpoint_control.NGRAM_CACHE_SERVER_ARGS
                 if speculative_mode == "ngram-cache"
                 else ()
             ),
         )
         readiness = sidecar.launch()
         launch_configuration = readiness.get("launch_configuration")
-        expected_launch_args = list(water.checkpoint_control.NGRAM_CACHE_SERVER_ARGS) if speculative_mode == "ngram-cache" else []
+        expected_launch_args = (
+            list(water.checkpoint_control.CUDA_ROOT_SERVER_ARGS)
+            if root_storage == "device"
+            else list(water.checkpoint_control.NGRAM_CACHE_SERVER_ARGS)
+            if speculative_mode == "ngram-cache"
+            else []
+        )
         harness.require(
             isinstance(launch_configuration, Mapping)
             and launch_configuration.get("server_launch_args") == expected_launch_args
-            and launch_configuration.get("speculative_type") == speculative_mode,
-            "sidecar speculative launch identity differs from the preregistered mode",
+            and launch_configuration.get("speculative_type") == speculative_mode
+            and launch_configuration.get("root_storage") == root_storage,
+            "sidecar launch identity differs from the preregistered storage and speculative modes",
         )
         baseline_private = None
         process_memory = readiness.get("process_memory")
@@ -982,8 +1147,10 @@ def main(*, root_boundary: str = "task-a", speculative_mode: str = "none") -> in
             baseline_private=baseline_private,
             root_boundary=root_boundary,
             speculative_mode=speculative_mode,
+            root_storage=root_storage,
         )
         result["launch_configuration"] = readiness.get("launch_configuration")
+        result["cuda_runtime_sha256"] = cuda_runtime_sha256
         result["readiness"] = {
             "pid": readiness.get("pid"),
             "readiness_seconds": readiness.get("readiness_seconds"),

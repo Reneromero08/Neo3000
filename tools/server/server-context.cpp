@@ -856,6 +856,12 @@ struct server_slot_ram_root {
     std::vector<uint8_t> data_spec;
     bool has_spec_state = false;
 
+    llama_state_seq_flags state_flags = LLAMA_STATE_SEQ_FLAGS_NONE;
+    size_t n_device_bytes_tgt = 0;
+    size_t n_device_bytes_dft = 0;
+    size_t n_gpu_bytes_tgt = 0;
+    size_t n_gpu_bytes_dft = 0;
+
     std::vector<common_adapter_lora_info> lora;
 
     llama_pos pos_min_tgt = -1;
@@ -863,8 +869,20 @@ struct server_slot_ram_root {
     llama_pos pos_min_dft = -1;
     llama_pos pos_max_dft = -1;
 
-    size_t size() const {
+    size_t host_size() const {
         return prompt.size() + data_spec.size() + prompt.tokens.size() * sizeof(llama_token);
+    }
+
+    size_t device_size() const {
+        return n_device_bytes_tgt + n_device_bytes_dft;
+    }
+
+    size_t gpu_size() const {
+        return n_gpu_bytes_tgt + n_gpu_bytes_dft;
+    }
+
+    size_t size() const {
+        return host_size() + device_size();
     }
 };
 
@@ -959,8 +977,26 @@ private:
 
     int64_t t_last_load_progress_ms = 0;
 
+    size_t clear_ram_root_device_data(const server_slot_ram_root & root) {
+        if (!(root.state_flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE)) {
+            return 0;
+        }
+
+        size_t n_cleared = 0;
+        if (ctx_tgt != nullptr) {
+            n_cleared += llama_state_seq_clear_device_data(ctx_tgt, root.id_slot_source);
+        }
+        if (ctx_dft) {
+            n_cleared += llama_state_seq_clear_device_data(ctx_dft.get(), root.id_slot_source);
+        }
+        return n_cleared;
+    }
+
     void destroy() {
         // RAM roots are bound to the currently loaded model, contexts, and LoRA adapter identities.
+        if (slot_ram_root) {
+            clear_ram_root_device_data(*slot_ram_root);
+        }
         slot_ram_root.reset();
         spec.reset();
         ctx_dft.reset();
@@ -2715,20 +2751,30 @@ private:
                     root->id_slot_source = id_slot;
                     root->prompt         = slot->prompt.clone();
                     root->lora           = slot->lora;
+                    root->state_flags    = params_base.cache_ram_root_device
+                            ? LLAMA_STATE_SEQ_FLAGS_ON_DEVICE
+                            : LLAMA_STATE_SEQ_FLAGS_NONE;
 
-                    // Full polymorphic host state is required here. Qwen35MoE is hybrid
+                    // Full polymorphic state is required here. Qwen35MoE is hybrid
                     // (attention + recurrent), while DSV4 exactness also requires its compressed
                     // caches; seq_cp or partial-only state is therefore not an exact RAM root.
-                    const size_t size_tgt = llama_state_seq_get_size_ext(ctx_tgt, id_slot, LLAMA_STATE_SEQ_FLAGS_NONE);
-                    const size_t size_dft = ctx_dft ? llama_state_seq_get_size_ext(ctx_dft.get(), id_slot, LLAMA_STATE_SEQ_FLAGS_NONE) : 0;
+                    // The device mode changes only the tensor carrier; host metadata and all
+                    // polymorphic state boundaries remain identical.
+                    const size_t size_tgt = llama_state_seq_get_size_ext(ctx_tgt, id_slot, root->state_flags);
+                    const size_t size_dft = ctx_dft ? llama_state_seq_get_size_ext(ctx_dft.get(), id_slot, root->state_flags) : 0;
                     root->prompt.data.main.resize(size_tgt);
                     root->prompt.data.drft.resize(size_dft);
 
                     const size_t written_tgt = llama_state_seq_get_data_ext(
-                            ctx_tgt, root->prompt.data.main.data(), size_tgt, id_slot, LLAMA_STATE_SEQ_FLAGS_NONE);
+                            ctx_tgt, root->prompt.data.main.data(), size_tgt, id_slot, root->state_flags);
                     const size_t written_dft = ctx_dft ? llama_state_seq_get_data_ext(
-                            ctx_dft.get(), root->prompt.data.drft.data(), size_dft, id_slot, LLAMA_STATE_SEQ_FLAGS_NONE) : 0;
+                            ctx_dft.get(), root->prompt.data.drft.data(), size_dft, id_slot, root->state_flags) : 0;
+                    root->n_device_bytes_tgt = llama_state_seq_get_device_data_size(ctx_tgt, id_slot);
+                    root->n_device_bytes_dft = ctx_dft ? llama_state_seq_get_device_data_size(ctx_dft.get(), id_slot) : 0;
+                    root->n_gpu_bytes_tgt = llama_state_seq_get_device_data_gpu_size(ctx_tgt, id_slot);
+                    root->n_gpu_bytes_dft = ctx_dft ? llama_state_seq_get_device_data_gpu_size(ctx_dft.get(), id_slot) : 0;
                     if (written_tgt != size_tgt || written_dft != size_dft) {
+                        clear_ram_root_device_data(*root);
                         send_error(task, "Unable to serialize the complete slot state into the RAM root", ERROR_TYPE_SERVER);
                         break;
                     }
@@ -2744,6 +2790,7 @@ private:
                     const size_t root_size = root->size();
                     if (params_base.cache_ram_mib > 0 &&
                             root_size > 1024ull * 1024ull * (size_t) params_base.cache_ram_mib) {
+                        clear_ram_root_device_data(*root);
                         send_error(task, "RAM root exceeds the configured --cache-ram limit", ERROR_TYPE_INVALID_REQUEST);
                         break;
                     }
@@ -2759,7 +2806,12 @@ private:
                     res->action           = "root-save";
                     res->root_id          = slot_ram_root->id;
                     res->n_tokens         = n_tokens;
-                    res->n_bytes          = root_size;
+                    res->n_bytes          = slot_ram_root->size();
+                    res->n_host_bytes     = slot_ram_root->host_size();
+                    res->n_device_bytes   = slot_ram_root->device_size();
+                    res->n_device_bytes_after = slot_ram_root->device_size();
+                    res->n_gpu_bytes      = slot_ram_root->gpu_size();
+                    res->n_gpu_bytes_after = slot_ram_root->gpu_size();
                     res->n_checkpoints    = n_checkpoints;
                     res->t_ms             = (ggml_time_us() - t_start) / 1000.0;
                     queue_results.send(std::move(res));
@@ -2801,9 +2853,9 @@ private:
                     const auto & data_tgt = slot_ram_root->prompt.data.main;
                     const auto & data_dft = slot_ram_root->prompt.data.drft;
                     const size_t read_tgt = llama_state_seq_set_data_ext(
-                            ctx_tgt, data_tgt.data(), data_tgt.size(), id_slot, LLAMA_STATE_SEQ_FLAGS_NONE);
+                            ctx_tgt, data_tgt.data(), data_tgt.size(), id_slot, slot_ram_root->state_flags);
                     const size_t read_dft = ctx_dft ? llama_state_seq_set_data_ext(
-                            ctx_dft.get(), data_dft.data(), data_dft.size(), id_slot, LLAMA_STATE_SEQ_FLAGS_NONE) : 0;
+                            ctx_dft.get(), data_dft.data(), data_dft.size(), id_slot, slot_ram_root->state_flags) : 0;
 
                     const bool sizes_ok = read_tgt == data_tgt.size() && read_dft == data_dft.size();
                     const bool positions_ok = sizes_ok &&
@@ -2838,6 +2890,11 @@ private:
                     res->root_id          = slot_ram_root->id;
                     res->n_tokens         = slot->prompt.tokens.size();
                     res->n_bytes          = slot_ram_root->size();
+                    res->n_host_bytes     = slot_ram_root->host_size();
+                    res->n_device_bytes   = slot_ram_root->device_size();
+                    res->n_device_bytes_after = slot_ram_root->device_size();
+                    res->n_gpu_bytes      = slot_ram_root->gpu_size();
+                    res->n_gpu_bytes_after = slot_ram_root->gpu_size();
                     res->n_checkpoints    = slot->prompt.checkpoints.size();
                     res->t_ms             = (ggml_time_us() - t_start) / 1000.0;
                     queue_results.send(std::move(res));
@@ -2857,9 +2914,24 @@ private:
                     const int id_slot_source = slot_ram_root->id_slot_source;
                     const size_t n_tokens = slot_ram_root->prompt.tokens.size();
                     const size_t n_bytes = slot_ram_root->size();
+                    const size_t n_host_bytes = slot_ram_root->host_size();
+                    const size_t n_device_bytes = slot_ram_root->device_size();
+                    const size_t n_gpu_bytes = slot_ram_root->gpu_size();
                     const size_t n_checkpoints = slot_ram_root->prompt.checkpoints.size();
                     const int64_t t_start = ggml_time_us();
+                    const size_t n_device_bytes_cleared = clear_ram_root_device_data(*slot_ram_root);
+                    const size_t n_device_bytes_after =
+                            llama_state_seq_get_device_data_size(ctx_tgt, id_slot_source) +
+                            (ctx_dft ? llama_state_seq_get_device_data_size(ctx_dft.get(), id_slot_source) : 0);
+                    const size_t n_gpu_bytes_after =
+                            llama_state_seq_get_device_data_gpu_size(ctx_tgt, id_slot_source) +
+                            (ctx_dft ? llama_state_seq_get_device_data_gpu_size(ctx_dft.get(), id_slot_source) : 0);
                     slot_ram_root.reset();
+
+                    if (n_device_bytes_cleared != n_device_bytes || n_device_bytes_after != 0 || n_gpu_bytes_after != 0) {
+                        send_error(task, "Unable to erase the complete RAM-root device state", ERROR_TYPE_SERVER);
+                        break;
+                    }
 
                     auto res = std::make_unique<server_task_result_slot_ram_root>();
                     res->id               = task.id;
@@ -2869,6 +2941,11 @@ private:
                     res->root_id          = task.slot_action.root_id;
                     res->n_tokens         = n_tokens;
                     res->n_bytes          = n_bytes;
+                    res->n_host_bytes     = n_host_bytes;
+                    res->n_device_bytes   = n_device_bytes;
+                    res->n_device_bytes_after = n_device_bytes_after;
+                    res->n_gpu_bytes      = n_gpu_bytes;
+                    res->n_gpu_bytes_after = n_gpu_bytes_after;
                     res->n_checkpoints    = n_checkpoints;
                     res->t_ms             = (ggml_time_us() - t_start) / 1000.0;
                     queue_results.send(std::move(res));

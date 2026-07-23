@@ -911,6 +911,23 @@ extern "C" {
                     llama_seq_id   dest_seq_id,
            llama_state_seq_flags   flags);
 
+    // Returns the logical tensor bytes retained in device buffers for a sequence state.
+    // Returns zero when no on-device state exists for the sequence.
+    LLAMA_API size_t llama_state_seq_get_device_data_size(
+            struct llama_context * ctx,
+                    llama_seq_id   seq_id);
+
+    // Returns the subset of retained on-device tensor bytes held by GPU backends.
+    LLAMA_API size_t llama_state_seq_get_device_data_gpu_size(
+            struct llama_context * ctx,
+                    llama_seq_id   seq_id);
+
+    // Releases the retained on-device sequence state and returns its logical tensor bytes.
+    // This does not remove the active sequence from the context memory.
+    LLAMA_API size_t llama_state_seq_clear_device_data(
+            struct llama_context * ctx,
+                    llama_seq_id   seq_id);
+
     //
     // Decoding
     //

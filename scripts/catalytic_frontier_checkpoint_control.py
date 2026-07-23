@@ -10,13 +10,14 @@ import catalytic_frontier_harness as harness
 
 FROZEN_CONTEXT_CHECKPOINTS = 8
 NGRAM_CACHE_SERVER_ARGS = ("--spec-type", "ngram-cache")
+CUDA_ROOT_SERVER_ARGS = ("--cache-ram-root-device",)
 
 
 def normalize_server_launch_args(values: Sequence[str]) -> tuple[str, ...]:
     normalized = tuple(values)
     harness.require(
-        normalized in ((), NGRAM_CACHE_SERVER_ARGS),
-        "scoped server launch arguments must be empty or exact ngram-cache",
+        normalized in ((), NGRAM_CACHE_SERVER_ARGS, CUDA_ROOT_SERVER_ARGS),
+        "scoped server launch arguments must be empty, exact ngram-cache, or exact CUDA root",
     )
     return normalized
 
@@ -81,5 +82,6 @@ class ScopedCheckpointDiscoverySidecar(harness.DiscoverySidecar):
             "global_restored_after_launch": harness.live_runtime.CTX_CHECKPOINTS == previous,
             "server_launch_args": self.server_launch_args(),
             "speculative_type": "ngram-cache" if tuple(self.server_launch_args()) == NGRAM_CACHE_SERVER_ARGS else "none",
+            "root_storage": "device" if tuple(self.server_launch_args()) == CUDA_ROOT_SERVER_ARGS else "host",
         }
         return readiness

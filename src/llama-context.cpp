@@ -2986,6 +2986,49 @@ size_t llama_context::state_seq_set_data(llama_seq_id seq_id, const uint8_t * sr
     }
 }
 
+size_t llama_context::state_seq_get_device_data_size(llama_seq_id seq_id) const {
+    const auto it = mem_storage.find(seq_id);
+    if (it == mem_storage.end()) {
+        return 0;
+    }
+
+    size_t size = 0;
+    for (const auto & [buft, mbuf] : it->second) {
+        GGML_UNUSED(buft);
+        size += mbuf.total_size;
+    }
+    return size;
+}
+
+size_t llama_context::state_seq_get_device_data_gpu_size(llama_seq_id seq_id) const {
+    const auto it = mem_storage.find(seq_id);
+    if (it == mem_storage.end()) {
+        return 0;
+    }
+
+    size_t size = 0;
+    for (const auto & [buft, mbuf] : it->second) {
+        if (ggml_backend_buft_is_host(buft)) {
+            continue;
+        }
+        ggml_backend_dev_t dev = ggml_backend_buft_get_device(buft);
+        if (dev == nullptr) {
+            continue;
+        }
+        const auto dev_type = ggml_backend_dev_type(dev);
+        if (dev_type == GGML_BACKEND_DEVICE_TYPE_GPU || dev_type == GGML_BACKEND_DEVICE_TYPE_IGPU) {
+            size += mbuf.total_size;
+        }
+    }
+    return size;
+}
+
+size_t llama_context::state_seq_clear_device_data(llama_seq_id seq_id) {
+    const size_t size = state_seq_get_device_data_size(seq_id);
+    mem_storage.erase(seq_id);
+    return size;
+}
+
 bool llama_context::state_load_file(const char * filepath, llama_token * tokens_out, size_t n_token_capacity, size_t * n_token_count_out) {
     llama_file file(filepath, "rb");
 
@@ -4018,6 +4061,20 @@ size_t llama_state_seq_set_data_ext(llama_context * ctx, const uint8_t * src, si
     ctx->synchronize();
 
     return ctx->state_seq_set_data(seq_id, src, size, flags);
+}
+
+size_t llama_state_seq_get_device_data_size(llama_context * ctx, llama_seq_id seq_id) {
+    return ctx->state_seq_get_device_data_size(seq_id);
+}
+
+size_t llama_state_seq_get_device_data_gpu_size(llama_context * ctx, llama_seq_id seq_id) {
+    return ctx->state_seq_get_device_data_gpu_size(seq_id);
+}
+
+size_t llama_state_seq_clear_device_data(llama_context * ctx, llama_seq_id seq_id) {
+    ctx->synchronize();
+
+    return ctx->state_seq_clear_device_data(seq_id);
 }
 
 size_t llama_state_seq_save_file(llama_context * ctx, const char * filepath, llama_seq_id seq_id, const llama_token * tokens, size_t n_token_count) {

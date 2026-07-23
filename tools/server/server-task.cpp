@@ -1577,6 +1577,11 @@ json server_task_result_slot_ram_root::to_json() {
         { "root_id",        root_id },
         { "n_tokens",       n_tokens },
         { "n_bytes",        n_bytes },
+        { "n_host_bytes",   n_host_bytes },
+        { "n_device_bytes", n_device_bytes },
+        { "n_device_bytes_after", n_device_bytes_after },
+        { "n_gpu_bytes",    n_gpu_bytes },
+        { "n_gpu_bytes_after", n_gpu_bytes_after },
         { "n_checkpoints",  n_checkpoints },
         { "timings", {
             { "root_ms", t_ms }
