@@ -3,6 +3,7 @@ import inspect
 from pathlib import Path
 
 import catalytic_frontier_checkpoint_control as checkpoint
+import catalytic_frontier_cuda_root_all_cpu_control as all_cpu_control
 import catalytic_frontier_cuda_root_host_control as host_control
 import catalytic_frontier_cuda_root_partial_moe_latency as partial_moe
 import catalytic_frontier_cuda_root_partial_moe_33_latency as partial_moe_33
@@ -154,6 +155,14 @@ class CudaRootLatencyTests(unittest.TestCase):
         source = inspect.getsource(partial_moe_33)
         self.assertIn("PARTIAL_MOE_33_SERVER_ARGS", source)
         self.assertIn('root_storage="device"', source)
+
+    def test_all_cpu_cuda_root_control_preserves_default_moe_profile(self):
+        source = inspect.getsource(all_cpu_control)
+        self.assertNotIn("PARTIAL_MOE_", source)
+        self.assertIn('root_storage="device"', source)
+        self.assertIn('runtime_identity="cuda-bundle"', source)
+        self.assertIn("moe_server_args=checkpoint.DEFAULT_MOE_SERVER_ARGS", source)
+        self.assertEqual(checkpoint.DEFAULT_MOE_SERVER_ARGS, ("--cpu-moe",))
 
 
 if __name__ == "__main__":
