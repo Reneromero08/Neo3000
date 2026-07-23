@@ -61,6 +61,17 @@ Bounded autonomous non-retry successor mode is active from this checkpoint.
 
 The agent may autonomously select, prepare, execute, adjudicate, record, and locally commit successive candidate-only experiments while stable remains protected and every result updates the N/T/R/B evidence map.
 
+This authority is continuous until the frontier objective is achieved or a genuine
+out-of-scope boundary is reached. A completed, rejected, inconclusive, or failed attempt
+must update the evidence cursor and feed the next lawful successor; it must not produce a
+routine handoff, permission request, or blocked-goal status. Run-local one-shot and
+no-retry laws preserve evidence identities only.
+A scientific experiment identity is not consumed by a preflight, controller, path-lock,
+readiness, or launch defect that occurs before the first model-facing request or
+outcome-bearing scientific artifact. Preserve that defect as an engineering incident,
+repair it, and continue the same preregistered experiment. Do not create a new experiment
+ID unless the scientific boundary was crossed or the hypothesis/intervention changes.
+
 Every cycle must preserve predecessor evidence, make one causal intervention, count all costs, enforce quality/restoration gates, and leave the next exact action truthful.
 
 Historical no-follow-on statements are local closures for their named operations and do not suspend this active frontier authority.

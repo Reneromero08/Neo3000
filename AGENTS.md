@@ -54,7 +54,19 @@ Within `codex/catalytic-frontier`, an agent may continue without per-cycle human
 - append one compact result, update the active control documents, and make meaningful local commits
 - continue into the next bounded successor cycle when the result and safety gates identify a lawful next action
 
+This is continuous research-loop authorization, not authorization for only one
+experiment. A terminal attempt must not cause a handoff, pause, blocked-goal report, or
+routine permission request. Preserve and adjudicate it, advance the cursor, create a
+fresh evidence-motivated successor ID when needed, and continue in the same goal run.
+"Exactly once" and "no retry" constrain only the named experiment identity.
+
 `No retry` is scoped to a consumed experiment or attempt identity and its immutable evidence. It forbids rerunning, overwriting, answer-replacing, or outcome-shopping that consumed operation.
+An experiment identity is consumed only after an outcome-bearing scientific boundary is
+crossed: the first model-facing request, protected scientific capture, or scientific result
+artifact. A controller, preflight, path-lock, readiness, or other pre-scientific engineering
+defect before that boundary does not consume the experiment ID. Record the failed launch as
+an engineering incident, repair the defect, and continue the same preregistered experiment;
+do not mint a successor experiment merely to work around a launch defect.
 
 A new successor is not a retry when it has a new ID, an evidence-motivated hypothesis, a declared causal intervention, fresh preregistration, complete accounting, and preserved predecessor evidence. Replication is also allowed when declared prospectively under a new ID.
 
@@ -194,6 +206,10 @@ Stop the affected cycle immediately on:
 - repeated crashes
 - restoration or branch-isolation failure
 
-These conditions stop the affected cycle, not the research program. Preserve the failure, restore the violated gate candidate-side when possible, create a new successor ID, and continue; request user direction only when safe repair requires stable/main mutation, substantial external resources, or another out-of-scope action.
+These conditions stop the affected cycle, not the research program. Preserve the failure and restore the violated gate candidate-side when possible. If no outcome-bearing scientific boundary was crossed, repair and continue the same experiment ID; otherwise create a fresh evidence-motivated successor ID and continue. Request user direction only when safe repair requires stable/main mutation, substantial external resources, or another out-of-scope action.
+
+Do not mark the overall goal blocked while a safe candidate-only probe, adjudication,
+causal repair, replication, or successor experiment can materially advance it. A final
+handoff is not a substitute for continuing the active autonomous loop.
 
 Automatic promotion is forbidden until a later checkpoint explicitly authorizes it.
