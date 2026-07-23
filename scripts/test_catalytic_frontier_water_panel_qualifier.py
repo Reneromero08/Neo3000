@@ -65,6 +65,27 @@ class CatalyticFrontierWaterPanelQualifierTests(unittest.TestCase):
         self.assertEqual(args.ctx_checkpoints, 0)
 
 
+    def test_pinned_binary_guard_precedes_stable_contact(self) -> None:
+        source = inspect.getsource(qualifier.main)
+        self.assertLess(
+            source.index("require_pinned_binary(binary)"),
+            source.index("require_stable()"),
+        )
+        with mock.patch.object(
+            qualifier.harness.live_runtime,
+            "sha256_file",
+            return_value=qualifier.PINNED_BINARY_SHA256,
+        ):
+            qualifier.require_pinned_binary(Path("candidate.exe"))
+        with mock.patch.object(
+            qualifier.harness.live_runtime,
+            "sha256_file",
+            return_value="0" * 64,
+        ):
+            with self.assertRaises(qualifier.harness.FrontierHarnessError):
+                qualifier.require_pinned_binary(Path("candidate.exe"))
+
+
     def test_startup_health_recovery_is_bounded_startup_only_and_deadline_deferred(self) -> None:
         policy = qualifier.startup_health_recovery_policy()
         self.assertEqual(policy.maximum_consecutive_failure_seconds, 15.0)

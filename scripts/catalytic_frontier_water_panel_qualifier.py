@@ -26,6 +26,7 @@ PANEL_ORDER = tuple(range(1, PANEL_SIZE + 1))
 STARTUP_HEALTH_RECOVERY_SECONDS = 15.0
 STARTUP_HEALTH_RECOVERY_SUCCESSES = 3
 STARTUP_READINESS_CONTROL_SHA256 = "3A7CD00D378A03325ED83F31CB4F211C50D3FF2242FF9684FD71955C97E63626"
+PINNED_BINARY_SHA256 = "E46FCE576B42AB6A4A03F21BDC60B2343F7AB1BCD04B967B92145699C243551E"
 PANEL_EXTENSION: list[dict[str, Any]] = [
     {
         "question": "Which service must retain pressure from North throughout the work?",
@@ -152,6 +153,14 @@ def panel_for(root: Mapping[str, Any]) -> list[dict[str, Any]]:
     return panel
 
 
+def require_pinned_binary(binary: Path) -> None:
+    observed = harness.live_runtime.sha256_file(binary)
+    harness.require(
+        observed == PINNED_BINARY_SHA256,
+        f"water qualifier binary identity drifted: {observed}",
+    )
+
+
 def startup_health_recovery_policy() -> Any:
     return harness.live_runtime.StableHealthRecoveryPolicy(
         maximum_consecutive_failure_seconds=STARTUP_HEALTH_RECOVERY_SECONDS,
@@ -247,6 +256,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     binary = args.binary.resolve(strict=True)
+    require_pinned_binary(binary)
     model = args.model.resolve(strict=True)
     repository = Path(__file__).resolve().parents[1]
     corpus = harness.carrier.load_public_corpus(repository)
