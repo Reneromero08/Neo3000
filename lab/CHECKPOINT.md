@@ -4,14 +4,14 @@
 
 Neo3000's north star is infinite, unbounded catalytic compute for local Agents-A1 inference: unbounded cumulative quality-accepted useful inference under bounded active local residency, enabled by restorable relational carriers that can be projected and recursively reused.
 
-This ledger does not claim that endpoint. Its strongest current frontier evidence is bounded by `neo-exp-0050` through `neo-exp-0059`:
+This ledger does not claim that endpoint. Its strongest current frontier evidence is bounded by `neo-exp-0050` through `neo-exp-0061`:
 
 | Axis | Meaning | Current evidence boundary |
 |---|---|---|
 | `N` | useful fanout or projections per carrier | equal-utility amortization accepted through N=8; N=16 positive amortization observed but strict utility rejected |
 | `T` | reuse duration across tokens, tasks, sessions, and restarts | exact checkpoint-free process-local lifecycle shown at bounded duration; no unbounded-duration or restart result |
 | `R` | recursive carrier depth and boundary expansion | no constructive carrier recurrence or recursively expanding accepted chain established |
-| `B` | useful channel, task-family, and workload breadth | two geometries accepted through N=8; at N=16 one direct panel accepted and one rejected; no unbounded breadth |
+| `B` | useful channel, task-family, and workload breadth | two geometries accepted through N=8; at N=16 two independent direct controls accepted and one rejected; no equal-utility N=16 carrier or unbounded breadth |
 
 `N = infinity` is not equivalent to infinite instantaneous compute and would not, by itself, establish the full goal.
 
@@ -39,9 +39,9 @@ not consumption of the preregistered scientific experiment. Preserve the inciden
 the bounded defect, and continue the same experiment ID. A new experiment ID is required
 only after the scientific boundary is crossed or the hypothesis/intervention changes.
 
-## Catalytic frontier: water direct panel frozen; first live identity stopped before readiness; bounded successor preparation active
+## Catalytic frontier: two exact direct controls established; fast single-request catalytic latency is the active successor
 
-**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE NATIVE RAM-ROOT LIFECYCLE EXACT AT TICK11 / CHECKPOINT-FREE N16 FIXED RESIDENCY AND POSITIVE TOKEN-WALL AMORTIZATION / COLDCHAIN DIRECT N16 QUALIFIED / DATACENTER DIRECT N16 REJECTED 15 OF 16 / WATER DIRECT N16 PANEL PREREGISTERED BUT UNMEASURED / FIRST WATER LIVE IDENTITY INCONCLUSIVE BEFORE READINESS / TWO ACCEPTED PANELS NOT ESTABLISHED / BOUNDED AUTONOMOUS NON-RETRY SUCCESSOR MODE ACTIVE / UNBOUNDED CLAIM NOT YET SUPPORTED
+**Status:** EXACT-COMMIT AGENTS-A1 SIGNAL AT N=2,4,8 / CHECKPOINT-ENABLED EXECUTION PATH CAUSAL AT TICK11 / CHECKPOINT-FREE NATIVE RAM-ROOT LIFECYCLE EXACT AT TICK11 / CHECKPOINT-FREE N16 FIXED RESIDENCY AND POSITIVE TOKEN-WALL AMORTIZATION / COLDCHAIN DIRECT N16 QUALIFIED / DATACENTER DIRECT N16 REJECTED 15 OF 16 / WATER DIRECT N16 QUALIFIED / TWO INDEPENDENT EXACT DIRECT CONTROLS ESTABLISHED / FAST SINGLE-REQUEST CATALYTIC LATENCY UNMEASURED / BOUNDED AUTONOMOUS SUCCESSOR MODE ACTIVE / UNBOUNDED CLAIM NOT YET SUPPORTED
 
 - Candidate `c0e2ff5b78c5a52132d12fc29d1ff30a7335c96c` packages the retryable live-carrier and eight-projection fanout harness plus five focused no-model tests.
 - Datacenter: catalytic/direct utility `8/8` versus `8/8`; amplification `1.5786802030`, `2.3747072600`, `3.3070996147`; average fresh tokens per useful branch `492.5`, `320.25`, `227.125` at N=`2,4,8`.
@@ -123,7 +123,12 @@ only after the scientific boundary is crossed or the hypothesis/intervention cha
 - Static source adjudication identifies one bounded infrastructure cause: `DiscoverySidecar.runtime_identities()` overrides the base controlled-readiness method, performs discovery identity verification, and returns without acquiring the two runtime identity path locks; `ScopedCheckpointDiscoverySidecar` inherits that omission before the pre-`Popen` binding assertion. Repair only that delegation/lock-binding path inside the still-active `neo-exp-0061` while preserving experimental-binary acceptance and all frozen water-panel controls. Standing frontier authorization and the research goal remain active.
 - The bounded repair is now statically closed: controlled `DiscoverySidecar` construction binds the frozen experimental binary and pinned model identities into the base verifier, and controlled launch-time identity verification delegates to `LiveSidecar.runtime_identities()`, which acquires both Windows path locks, rehashes under lock, checks path binding before `Popen`, and releases on failure. Uncontrolled discovery behavior is unchanged. Harness/test SHA-256 identities are `F3281F1CC3F6DE16F106BFF6CD15077C7DE302C5A3C5BDE28C09C9B5539C4F94` / `31C2E5CD5749B1C6568BF7725CC4515D578AAD06556E7740415A8DB0C1EB02B4`; validation passes 10/10 focused water, 66/66 full frontier, 19/19 readiness, and 3/3 Windows identity custody tests. One initial custody-test selection used the wrong Python import root and executed no test; the corrected selection passed. No endpoint, model, sidecar, carrier, or scientific path was contacted.
 
-**Next exact action:** `EXECUTE_NEO_EXP_0061_DIRECT_ONLY_WATER_N16`. Commit the validated path-lock repair, verify the exact clean repair head and pinned identities, execute the still-active preregistered water direct-only N=16 panel at checkpoint zero under standing frontier authority, adjudicate and record the terminal scientific evidence, advance the cursor, and continue the autonomous goal run.
+- Exact clean repair head `89644ea61de7a200058030e02d9f55d8f319d3a9` executed the still-active `neo-exp-0061` once on the correct isolated candidate: experimental binary SHA-256 `E46FCE576B42AB6A4A03F21BDC60B2343F7AB1BCD04B967B92145699C243551E`, PID `44656`, port `9494`, pinned Agents-A1 model, checkpoint zero. Stable PID `3860` remained health-only on port `9292`.
+- Task-A and all 16 frozen water branches completed. Expected and observed sequences both equal `BACDABCDABCDABCD`; direct utility is exact `16/16`, every branch reports zero cached prompt tokens, and carrier/root/snapshot/cache-enabled operation counts are zero. Task-A used 613 fresh model tokens and 14.469 seconds; branches used 11,505 tokens and 187.953 seconds; all 17 requests total 12,118 tokens and 202.422 seconds.
+- Peak isolated WDDM was 2,252.88 MiB. Candidate teardown, runtime removal, empty port `9494`, stable listener ownership, and stable health all passed. External result/server-log identities are 15,969 bytes / `43E5034111ED6FE22277E7C16106D80374CD407D238F6C016017891906B1B438` and 1,320,602 bytes / `A7A64F305372EC1DE3E3F84CECE156C51A502E980FA0FCEDF5E200C5C1816356`.
+- Canonical compact acceptance is `neo-exp-0061` at `lab/results.jsonl:73`, SHA-256 `AA2BF8B86A51C1C79C7A5C688C765E7D9847133C7261EB48169F5DC05EA88F28`. This establishes a second exact direct control only. Equal-utility N=16 carrier reuse, fast single-request catalytic inference, higher scaling, recursive reuse, and the unbounded endpoint remain unsupported; the claim ceiling is unchanged.
+- Per user direction, fanout is no longer the active optimization target. The next experiment must measure faster useful single-request inference from exact reusable state under repeated temporal trials, full end-to-end latency and fresh-compute accounting, identical output utility, counted restore/closure, and bounded residency before any C++ hot-path intervention.
+**Next exact action:** `DESIGN_NEO_EXP_0062_SINGLE_REQUEST_CATALYTIC_LATENCY`. Reuse the exact current water/controller identity path and preregister one N=1 branch with matched warmup plus repeated ABBA-ordered reusable-state/direct pairs. Include root restore in catalytic time; record prompt processing, first-token, total request wall, root creation/save/restore/erase, full lifecycle break-even, median and tail behavior; require exact input/seed/sampler/output identity and no new mechanism or fanout claim.
 
 ## Checkpoint 2: Multi-branch runtime-native carrier terminal evidence bound
 
