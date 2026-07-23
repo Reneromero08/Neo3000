@@ -43,6 +43,21 @@ EXPECTED_BRANCH_PROMPT_TOKENS = 690
 MIN_PAIRED_WINS = 3
 MIN_MEDIAN_SPEEDUP = 1.25
 MAX_DIRECT_CONTROL_DRIFT_FRACTION = 0.10
+SPECULATIVE_MODES = ("none", "ngram-cache")
+STRICT_PREFIX_NO_SPEC_MEDIANS = {
+    "predicted_ms": 225.1865,
+    "effective_wall_seconds_including_restore": 0.46100000001024455,
+}
+STRICT_PREFIX_NO_SPEC_DIRECT_MEDIANS = {
+    "prompt_ms": 10414.7795,
+    "ttft_seconds": 10.4845000000059,
+    "effective_wall_seconds": 10.7734999999957,
+}
+STRICT_PREFIX_NGRAM_MIN_SPEEDUP = 1.25
+MAX_NGRAM_PRIVATE_GROWTH_BYTES = 128 * 1024 * 1024
+STRICT_PREFIX_NO_SPEC_AFTER_ERASE_PRIVATE_GROWTH_BYTES = 109_101_056
+STRICT_PREFIX_NO_SPEC_DIRECT_LIFECYCLE_WALL_SECONDS = 58.123999999981606
+STRICT_PREFIX_NO_SPEC_DIRECT_LIFECYCLE_FRESH_TOKENS = 3397
 DEFAULT_BINARY = Path("build/candidate/bin/Release/llama-server.exe")
 ROOT_BOUNDARIES: dict[str, dict[str, Any]] = {
     "task-a": {
@@ -166,6 +181,8 @@ class TimingRecorder:
             "predicted_per_second": self.server_timings.get("predicted_per_second"),
             "server_prompt_n": self.server_timings.get("prompt_n"),
             "server_predicted_n": self.server_timings.get("predicted_n"),
+            "draft_n": self.server_timings.get("draft_n"),
+            "draft_n_accepted": self.server_timings.get("draft_n_accepted"),
         }
 
 
@@ -222,6 +239,35 @@ def distribution(values: Sequence[float]) -> dict[str, float]:
         "median": statistics.median(values),
         "p95": percentile(values, 0.95),
         "maximum": max(values),
+    }
+
+
+def draft_acceptance_metrics(
+    catalytic: Sequence[Mapping[str, Any]],
+    control: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    def totals(records: Sequence[Mapping[str, Any]]) -> tuple[int, int]:
+        drafted = sum(int(record["timing"].get("draft_n") or 0) for record in records)
+        accepted = sum(int(record["timing"].get("draft_n_accepted") or 0) for record in records)
+        return drafted, accepted
+
+    catalytic_drafted, catalytic_accepted = totals(catalytic)
+    control_drafted, control_accepted = totals(control)
+    every_catalytic_request_accepted = bool(catalytic) and all(
+        int(record["timing"].get("draft_n_accepted") or 0) > 0
+        for record in catalytic
+    )
+    return {
+        "catalytic_draft_tokens": catalytic_drafted,
+        "catalytic_accepted_draft_tokens": catalytic_accepted,
+        "catalytic_accepted_fraction": catalytic_accepted / catalytic_drafted if catalytic_drafted else None,
+        "control_draft_tokens": control_drafted,
+        "control_accepted_draft_tokens": control_accepted,
+        "every_catalytic_request_accepted_a_draft": every_catalytic_request_accepted,
+        "gate": catalytic_drafted > 0
+        and catalytic_accepted > 0
+        and catalytic_accepted <= catalytic_drafted
+        and every_catalytic_request_accepted,
     }
 
 
@@ -321,7 +367,9 @@ def evaluate(
     root: Mapping[str, Any],
     baseline_private: int | None,
     root_boundary: str = "task-a",
+    speculative_mode: str = "none",
 ) -> dict[str, Any]:
+    harness.require(speculative_mode in SPECULATIVE_MODES, "unsupported latency speculative mode")
     panel = water.panel_for(root)
     harness.require(water.base._panel_hash(panel) == PANEL_SHA256, "qualified water panel identity changed")
     spec = panel[BRANCH_NUMBER - 1]
@@ -413,12 +461,36 @@ def evaluate(
             restore_client_wall_seconds=restore_wall,
             effective_wall_seconds=float(record["wall_seconds"]) + restore_wall,
         )
+        record["reported_route"] = (
+            "catalytic"
+            if route == "catalytic"
+            else "ngram-only-control"
+            if speculative_mode == "ngram-cache"
+            else "direct"
+        )
         return record
 
-    warmup = [
-        execute_route(route, f"warmup-{index}", counted=False, pair=0)
-        for index, route in enumerate(WARMUP_ROUTE_ORDER, start=1)
-    ]
+    resources_before_learning = (
+        harness.process_resources(sidecar, baseline_private)
+        if speculative_mode == "ngram-cache"
+        else None
+    )
+    resources_after_learning = None
+    warmup: list[dict[str, Any]] = []
+    for index, route in enumerate(WARMUP_ROUTE_ORDER, start=1):
+        warmup.append(execute_route(route, f"warmup-{index}", counted=False, pair=0))
+        if speculative_mode == "ngram-cache" and route == "catalytic":
+            harness.require(resources_after_learning is None, "ngram learning sample was captured twice")
+            resources_after_learning = harness.process_resources(sidecar, baseline_private)
+    harness.require(
+        speculative_mode != "ngram-cache" or resources_after_learning is not None,
+        "ngram post-learning resource sample is missing",
+    )
+    resources_after_all_learning_warmups = (
+        harness.process_resources(sidecar, baseline_private)
+        if speculative_mode == "ngram-cache"
+        else None
+    )
     pairs: list[dict[str, Any]] = []
     counted_records: list[dict[str, Any]] = []
     for pair_index, route_order in enumerate(PAIR_ROUTE_ORDERS, start=1):
@@ -434,13 +506,15 @@ def evaluate(
                 "route_order": list(route_order),
                 "catalytic_effective_wall_seconds": by_route["catalytic"]["effective_wall_seconds"],
                 "direct_wall_seconds": by_route["direct"]["effective_wall_seconds"],
+                "control_type": "cache-disabled-ngram-only" if speculative_mode == "ngram-cache" else "cache-disabled-no-spec",
+                "control_effective_wall_seconds": by_route["direct"]["effective_wall_seconds"],
                 "catalytic_won": by_route["catalytic"]["effective_wall_seconds"] < by_route["direct"]["effective_wall_seconds"],
             }
         )
         counted_records.extend(records)
 
     final_restore = restore("final-root-closure")
-    resources_with_root = harness.process_resources(sidecar, baseline_private)
+    resources_after_trials_with_root = harness.process_resources(sidecar, baseline_private)
     erase_raw, erase_wall = harness.ram_root_action(action="root-erase", root_id=ROOT_ID)
     erased = validate_root_response(erase_raw, action="root-erase", expected=saved)
     erased.update(client_wall_seconds=erase_wall)
@@ -468,9 +542,23 @@ def evaluate(
     direct_ttft = [float(record["timing"]["ttft_seconds"]) for record in direct]
     catalytic_effective_wall = [float(record["effective_wall_seconds"]) for record in catalytic]
     direct_effective_wall = [float(record["effective_wall_seconds"]) for record in direct]
+    catalytic_predicted_ms = [float(record["timing"]["predicted_ms"]) for record in catalytic]
+    draft_metrics = draft_acceptance_metrics(catalytic, direct)
+    draft_acceptance_gate = (
+        speculative_mode == "none"
+        or bool(draft_metrics["gate"])
+    )
+    strict_prefix_ngram_speedups = None
+    strict_prefix_ngram_speed_gate = True
     prompt_speedup = statistics.median(direct_prompt_ms) / statistics.median(catalytic_prompt_ms)
     ttft_speedup = statistics.median(direct_ttft) / statistics.median(catalytic_ttft)
     effective_wall_speedup = statistics.median(direct_effective_wall) / statistics.median(catalytic_effective_wall)
+    if speculative_mode == "ngram-cache":
+        strict_prefix_ngram_speedups = {
+            "predicted": STRICT_PREFIX_NO_SPEC_MEDIANS["predicted_ms"] / statistics.median(catalytic_predicted_ms),
+            "effective_wall_including_restore": STRICT_PREFIX_NO_SPEC_MEDIANS["effective_wall_seconds_including_restore"] / statistics.median(catalytic_effective_wall),
+        }
+        strict_prefix_ngram_speed_gate = all(value >= STRICT_PREFIX_NGRAM_MIN_SPEEDUP for value in strict_prefix_ngram_speedups.values())
     predecessor_speedups: dict[str, float] | None = None
     predecessor_improvement_gate = True
     predecessor = boundary.get("predecessor_medians")
@@ -484,7 +572,11 @@ def evaluate(
         predecessor_improvement_gate = all(value >= MIN_MEDIAN_SPEEDUP for value in predecessor_speedups.values())
     direct_control_drift: dict[str, float] | None = None
     direct_control_drift_gate = True
-    predecessor_direct = boundary.get("predecessor_direct_medians")
+    predecessor_direct = (
+        STRICT_PREFIX_NO_SPEC_DIRECT_MEDIANS
+        if speculative_mode == "ngram-cache"
+        else boundary.get("predecessor_direct_medians")
+    )
     if isinstance(predecessor_direct, Mapping):
         observed_direct = {
             "prompt_ms": statistics.median(direct_prompt_ms),
@@ -498,7 +590,33 @@ def evaluate(
         direct_control_drift_gate = all(
             value <= MAX_DIRECT_CONTROL_DRIFT_FRACTION for value in direct_control_drift.values()
         )
+    control_metric_label = "ngram_only_control" if speculative_mode == "ngram-cache" else "direct"
+    control_drift_metric_name = "ngram_only_control_change_vs_neo_exp_0064_no_spec" if speculative_mode == "ngram-cache" else "direct_control_drift_vs_neo_exp_0062"
     paired_wins = sum(int(pair["catalytic_won"]) for pair in pairs)
+    ngram_branch_phase_private_change: dict[str, int] | None = None
+    after_erase_private_growth_delta_vs_no_spec: int | None = None
+    ngram_private_growth_gate = True
+    if speculative_mode == "ngram-cache":
+        resource_samples = (
+            resources_before_learning,
+            resources_after_learning,
+            resources_after_all_learning_warmups,
+            resources_after_trials_with_root,
+            resources_after_erase,
+        )
+        harness.require(all(isinstance(sample, Mapping) for sample in resource_samples), "ngram resource samples are incomplete")
+        before_private = int(resources_before_learning["host_private_bytes"])
+        ngram_branch_phase_private_change = {
+            "after_catalytic_warmup": int(resources_after_learning["host_private_bytes"]) - before_private,
+            "after_all_warmups": int(resources_after_all_learning_warmups["host_private_bytes"]) - before_private,
+            "after_counted_trials_with_root": int(resources_after_trials_with_root["host_private_bytes"]) - before_private,
+            "after_root_erase_with_ngram_resident": int(resources_after_erase["host_private_bytes"]) - before_private,
+        }
+        after_erase_private_growth_delta_vs_no_spec = (
+            int(resources_after_erase["host_private_growth_bytes"])
+            - STRICT_PREFIX_NO_SPEC_AFTER_ERASE_PRIVATE_GROWTH_BYTES
+        )
+        ngram_private_growth_gate = max(ngram_branch_phase_private_change.values()) <= MAX_NGRAM_PRIVATE_GROWTH_BYTES and after_erase_private_growth_delta_vs_no_spec <= MAX_NGRAM_PRIVATE_GROWTH_BYTES
 
     median_direct_wall = statistics.median(direct_effective_wall)
     median_catalytic_wall = statistics.median(catalytic_effective_wall)
@@ -513,10 +631,17 @@ def evaluate(
     fresh_break_even = math.ceil(preparation_and_closure_fresh / marginal_fresh_savings) if marginal_fresh_savings > 0 else None
     shared_task_a_wall = float(task_a["wall_seconds"])
     shared_task_a_fresh = int(task_a["fresh_model_tokens"])
+    learning_wall = sum(float(record["effective_wall_seconds"]) for record in warmup) if speculative_mode == "ngram-cache" else 0.0
+    learning_fresh = sum(int(record["fresh_model_tokens"]) for record in warmup) if speculative_mode == "ngram-cache" else 0
     counted_catalytic_lifecycle_wall = shared_task_a_wall + preparation_and_closure_wall + sum(catalytic_effective_wall)
     counted_direct_lifecycle_wall = shared_task_a_wall + sum(direct_effective_wall)
     counted_catalytic_lifecycle_fresh = shared_task_a_fresh + preparation_and_closure_fresh + sum(int(record["fresh_model_tokens"]) for record in catalytic)
     counted_direct_lifecycle_fresh = shared_task_a_fresh + sum(int(record["fresh_model_tokens"]) for record in direct)
+    if speculative_mode == "ngram-cache":
+        counted_catalytic_lifecycle_wall += learning_wall
+        counted_catalytic_lifecycle_fresh += learning_fresh
+        counted_direct_lifecycle_wall = STRICT_PREFIX_NO_SPEC_DIRECT_LIFECYCLE_WALL_SECONDS
+        counted_direct_lifecycle_fresh = STRICT_PREFIX_NO_SPEC_DIRECT_LIFECYCLE_FRESH_TOKENS
     full_lifecycle_wall_advantage = counted_catalytic_lifecycle_wall < counted_direct_lifecycle_wall
     full_lifecycle_fresh_advantage = counted_catalytic_lifecycle_fresh < counted_direct_lifecycle_fresh
     classification = classify_result(
@@ -530,12 +655,28 @@ def evaluate(
         predecessor_improvement_gate=predecessor_improvement_gate,
         direct_control_drift_gate=direct_control_drift_gate,
     )
-    accepted = classification == "fast-single-request-catalytic-latency-supported-bounded"
+    if speculative_mode == "ngram-cache":
+        classification = (
+            "strict-prefix-plus-ngram-cache-latency-supported-bounded"
+            if classification == "fast-single-request-catalytic-latency-supported-bounded"
+            and draft_acceptance_gate
+            and strict_prefix_ngram_speed_gate
+            and ngram_private_growth_gate
+            else "strict-prefix-plus-ngram-cache-without-preregistered-latency-gate"
+        )
+    accepted = classification in {
+        "fast-single-request-catalytic-latency-supported-bounded",
+        "strict-prefix-plus-ngram-cache-latency-supported-bounded",
+    }
     all_request_records = [task_a, materialization, *all_routes]
 
     return {
         "status": "complete",
-        "mechanism": f"checkpoint-free-{root_boundary}-root-single-request-latency",
+        "mechanism": (
+            f"checkpoint-free-{root_boundary}-root-single-request-latency"
+            if speculative_mode == "none"
+            else f"checkpoint-free-{root_boundary}-root-{speculative_mode}-single-request-latency"
+        ),
         "verdict": "accept" if accepted else "reject",
         "classification": classification,
         "model": "Agents-A1",
@@ -561,6 +702,12 @@ def evaluate(
             "minimum_median_speedup": MIN_MEDIAN_SPEEDUP,
             "context_checkpoints": 0,
             "root_boundary": root_boundary,
+            "speculative_mode": speculative_mode,
+            "cache_disabled_route_label": "ngram-only" if speculative_mode == "ngram-cache" else "direct",
+            "learning_warmup_charged": speculative_mode == "ngram-cache",
+            "control_type": "cache-disabled-ngram-only" if speculative_mode == "ngram-cache" else "cache-disabled-no-spec",
+            "second_carrier_closure": "process-retirement" if speculative_mode == "ngram-cache" else None,
+            "learning_warmup_requests_charged": len(warmup) if speculative_mode == "ngram-cache" else 0,
             "expected_catalytic_cached_prompt_tokens": boundary["expected_cached_prompt_tokens"],
             "expected_catalytic_fresh_prompt_tokens": boundary["expected_fresh_prompt_tokens"],
         },
@@ -569,12 +716,28 @@ def evaluate(
             "prompt_speedup": prompt_speedup,
             "ttft_speedup_including_restore": ttft_speedup,
             "effective_wall_speedup_including_restore": effective_wall_speedup,
-            "prompt_ms": {"catalytic": distribution(catalytic_prompt_ms), "direct": distribution(direct_prompt_ms)},
-            "ttft_seconds": {"catalytic": distribution(catalytic_ttft), "direct": distribution(direct_ttft)},
-            "effective_wall_seconds": {"catalytic": distribution(catalytic_effective_wall), "direct": distribution(direct_effective_wall)},
-            "fresh_model_tokens_per_request": {"catalytic_median": median_catalytic_fresh, "direct_median": median_direct_fresh},
+            "prompt_ms": {"catalytic": distribution(catalytic_prompt_ms), control_metric_label: distribution(direct_prompt_ms)},
+            "ttft_seconds": {"catalytic": distribution(catalytic_ttft), control_metric_label: distribution(direct_ttft)},
+            "effective_wall_seconds": {"catalytic": distribution(catalytic_effective_wall), control_metric_label: distribution(direct_effective_wall)},
+            "fresh_model_tokens_per_request": {"catalytic_median": median_catalytic_fresh, f"{control_metric_label}_median": median_direct_fresh},
             "speedup_vs_neo_exp_0062_543_root": predecessor_speedups,
-            "direct_control_drift_vs_neo_exp_0062": {
+            "ngram_cache": {
+                "catalytic_counted_draft_tokens": draft_metrics["catalytic_draft_tokens"],
+                "catalytic_counted_accepted_draft_tokens": draft_metrics["catalytic_accepted_draft_tokens"],
+                "catalytic_accepted_fraction": draft_metrics["catalytic_accepted_fraction"],
+                "control_counted_draft_tokens": draft_metrics["control_draft_tokens"],
+                "control_counted_accepted_draft_tokens": draft_metrics["control_accepted_draft_tokens"],
+                "every_catalytic_request_accepted_a_draft": draft_metrics["every_catalytic_request_accepted_a_draft"],
+                "draft_acceptance_gate": draft_acceptance_gate,
+                "speedup_vs_neo_exp_0064_strict_prefix_no_spec": strict_prefix_ngram_speedups,
+                "strict_prefix_speed_gate": strict_prefix_ngram_speed_gate,
+                "observed_branch_phase_host_private_change_bytes": ngram_branch_phase_private_change,
+                "canonical_no_spec_after_erase_host_private_growth_bytes": STRICT_PREFIX_NO_SPEC_AFTER_ERASE_PRIVATE_GROWTH_BYTES,
+                "after_erase_host_private_growth_delta_vs_no_spec_bytes": after_erase_private_growth_delta_vs_no_spec,
+                "maximum_allowed_host_private_growth_bytes": MAX_NGRAM_PRIVATE_GROWTH_BYTES,
+                "host_private_growth_gate": ngram_private_growth_gate,
+            },
+            control_drift_metric_name: {
                 "maximum_allowed_fraction": MAX_DIRECT_CONTROL_DRIFT_FRACTION,
                 "absolute_fraction_by_metric": direct_control_drift,
                 "gate": direct_control_drift_gate,
@@ -589,7 +752,14 @@ def evaluate(
                 "fresh_compute_requests": fresh_break_even,
             },
             "counted_full_lifecycle": {
-                "scope": "shared Task-A plus carrier preparation, four N=1 requests, every restore, final closure, and erase; warmup excluded symmetrically from decision",
+                "scope": (
+                    "shared Task-A plus root preparation, both charged launch-global ngram-mutating warmups, four N=1 requests, every restore, final root closure and erase, and process-retirement ngram closure"
+                    if speculative_mode == "ngram-cache"
+                    else "shared Task-A plus carrier preparation, four N=1 requests, every restore, final closure, and erase; warmup excluded symmetrically from decision"
+                ),
+                "direct_baseline": "canonical-neo-exp-0064-no-spec" if speculative_mode == "ngram-cache" else "contemporaneous-cache-disabled",
+                "learning_warmup_wall_seconds": learning_wall,
+                "learning_warmup_fresh_model_tokens": learning_fresh,
                 "shared_task_a_wall_seconds": shared_task_a_wall,
                 "shared_task_a_fresh_model_tokens": shared_task_a_fresh,
                 "catalytic_wall_seconds": counted_catalytic_lifecycle_wall,
@@ -614,7 +784,17 @@ def evaluate(
         "pairs": pairs,
         "root_operations": root_operations,
         "final_restore": final_restore,
-        "resources": {"with_root": resources_with_root, "after_erase": resources_after_erase},
+        "resources": (
+            {
+                "after_task_a_and_root_preparation_before_branch_warmups": resources_before_learning,
+                "immediately_after_catalytic_learning_warmup": resources_after_learning,
+                "after_all_learning_warmups_before_counted_trials": resources_after_all_learning_warmups,
+                "after_complete_trial_with_root": resources_after_trials_with_root,
+                "after_root_erase_with_ngram_resident": resources_after_erase,
+            }
+            if speculative_mode == "ngram-cache"
+            else {"with_root": resources_after_trials_with_root, "after_erase": resources_after_erase}
+        ),
         "quality_gates": {
             "qualified_panel_identity_exact": True,
             "branch_fixed_before_successor_contact": True,
@@ -626,7 +806,7 @@ def evaluate(
             "catalytic_fresh_prompt_tokens_exact": all(record["fresh_prompt_tokens"] == boundary["expected_fresh_prompt_tokens"] for record in catalytic),
             "direct_cached_prompt_tokens_zero": all(record["cached_prompt_tokens"] == 0 for record in direct),
             "predecessor_543_root_median_speedup_gate": predecessor_improvement_gate,
-            "direct_control_drift_within_10_percent": direct_control_drift_gate,
+            "cache_disabled_control_change_within_10_percent": direct_control_drift_gate,
             "checkpoint_count_zero": saved["n_checkpoints"] == 0,
             "root_metadata_invariant": all(
                 record.get("n_tokens") == saved["n_tokens"]
@@ -640,6 +820,12 @@ def evaluate(
             "prompt_speedup_gate": prompt_speedup >= MIN_MEDIAN_SPEEDUP,
             "ttft_speedup_gate": ttft_speedup >= MIN_MEDIAN_SPEEDUP,
             "effective_wall_speedup_gate": effective_wall_speedup >= MIN_MEDIAN_SPEEDUP,
+            "ngram_draft_acceptance_gate": draft_acceptance_gate,
+            "strict_prefix_ngram_speedup_gate": strict_prefix_ngram_speed_gate,
+            "learning_warmup_charged": speculative_mode != "ngram-cache" or learning_wall > 0,
+            "ngram_second_carrier_declared": speculative_mode != "ngram-cache" or resources_after_learning is not None,
+            "ngram_host_private_growth_bounded": ngram_private_growth_gate,
+            "ngram_process_retirement_closure": None if speculative_mode == "ngram-cache" else True,
             "counted_full_lifecycle_wall_advantage": full_lifecycle_wall_advantage,
             "counted_full_lifecycle_fresh_compute_advantage": full_lifecycle_fresh_advantage,
             "fast_single_request_catalytic_inference_supported": accepted,
@@ -649,6 +835,9 @@ def evaluate(
         },
         "next_boundary": (
             (
+                "PROFILE_REMAINING_STRICT_PREFIX_PLUS_NGRAM_CACHE_N1_LATENCY_WITH_THE_SAME_EXACT_CONTROL"
+                if root_boundary == "strict-prefix" and speculative_mode == "ngram-cache"
+                else
                 "PROFILE_DECODE_AND_RESTORE_OVERHEAD_AFTER_STRICT_PREFIX_ROOT_WITH_THE_SAME_N1_CONTROL"
                 if root_boundary == "strict-prefix"
                 else "PROFILE_DECODE_AND_RESTORE_OVERHEAD_AFTER_FULL_PROMPT_ROOT_WITH_THE_SAME_N1_CONTROL"
@@ -679,8 +868,58 @@ def require_unused_artifact_paths(*paths: Path | None) -> None:
             harness.require(not path.resolve(strict=False).exists(), f"latency artifact path already exists: {path}")
 
 
-def main(*, root_boundary: str = "task-a") -> int:
+def finalize_result_after_cleanup(
+    result: dict[str, Any],
+    *,
+    cleanup: Mapping[str, Any],
+    cleanup_wall_seconds: float,
+    stable_pids: set[int],
+) -> dict[str, Any]:
+    cleanup_record = dict(cleanup)
+    cleanup_record["retirement_wall_seconds"] = cleanup_wall_seconds
+    result["cleanup"] = cleanup_record
+    cleanup_gate = harness.live_runtime.cleanup_integrity(cleanup_record, stable_pids)
+    result["cleanup_gate"] = cleanup_gate
+    if result.get("trial_design", {}).get("speculative_mode") != "ngram-cache":
+        return result
+
+    result["resources"]["after_process_retirement"] = {
+        "process_stopped": cleanup_record.get("process_stopped"),
+        "runtime_removed": cleanup_record.get("runtime_removed"),
+        "port_free": cleanup_record.get("port_free"),
+        "retirement_samples": cleanup_record.get("retirement_samples"),
+        "stable_after": cleanup_record.get("stable_after"),
+    }
+    lifecycle = result["metrics"]["counted_full_lifecycle"]
+    before_retirement = float(lifecycle["catalytic_wall_seconds"])
+    after_retirement = before_retirement + cleanup_wall_seconds
+    direct_wall = float(lifecycle["direct_wall_seconds"])
+    wall_advantage = after_retirement < direct_wall
+    lifecycle.update(
+        catalytic_wall_seconds_before_process_retirement=before_retirement,
+        process_retirement_wall_seconds=cleanup_wall_seconds,
+        catalytic_wall_seconds=after_retirement,
+        wall_speedup=direct_wall / after_retirement,
+        wall_advantage=wall_advantage,
+    )
+    quality_gates = result["quality_gates"]
+    quality_gates["ngram_process_retirement_closure"] = cleanup_gate["passed"] is True
+    quality_gates["counted_full_lifecycle_wall_advantage"] = wall_advantage
+    accepted = result.get("verdict") == "accept" and cleanup_gate["passed"] is True and wall_advantage
+    quality_gates["fast_single_request_catalytic_inference_supported"] = accepted
+    if not accepted:
+        result["verdict"] = "reject"
+        result["classification"] = "strict-prefix-plus-ngram-cache-without-preregistered-latency-gate"
+        if cleanup_gate["passed"] is not True:
+            result["next_boundary"] = "ANALYZE_NEO_EXP_0065_PROCESS_RETIREMENT_CLOSURE_FAILURE_WITHOUT_RETRY"
+        elif not wall_advantage:
+            result["next_boundary"] = "ANALYZE_NEO_EXP_0065_FULL_LIFECYCLE_LATENCY_FAILURE_WITHOUT_RETRY"
+    return result
+
+
+def main(*, root_boundary: str = "task-a", speculative_mode: str = "none") -> int:
     args = parse_args()
+    harness.require(speculative_mode in SPECULATIVE_MODES, "unsupported latency speculative mode")
     repository = Path(__file__).resolve().parents[1]
     binary = args.binary.resolve(strict=True)
     expected_candidate = (repository / DEFAULT_BINARY).resolve(strict=True)
@@ -701,6 +940,7 @@ def main(*, root_boundary: str = "task-a") -> int:
     sidecar: Any | None = None
     result: dict[str, Any] | None = None
     cleanup: Mapping[str, Any] | None = None
+    cleanup_wall_seconds = 0.0
     error: BaseException | None = None
     if args.server_log_output is not None:
         os.environ["LLAMA_ARG_LOG_VERBOSITY"] = "1000"
@@ -714,8 +954,21 @@ def main(*, root_boundary: str = "task-a") -> int:
             stable_pids=set(stable_pids),
             state_root=state_root,
             context_checkpoints=args.ctx_checkpoints,
+            server_launch_args=(
+                water.checkpoint_control.NGRAM_CACHE_SERVER_ARGS
+                if speculative_mode == "ngram-cache"
+                else ()
+            ),
         )
         readiness = sidecar.launch()
+        launch_configuration = readiness.get("launch_configuration")
+        expected_launch_args = list(water.checkpoint_control.NGRAM_CACHE_SERVER_ARGS) if speculative_mode == "ngram-cache" else []
+        harness.require(
+            isinstance(launch_configuration, Mapping)
+            and launch_configuration.get("server_launch_args") == expected_launch_args
+            and launch_configuration.get("speculative_type") == speculative_mode,
+            "sidecar speculative launch identity differs from the preregistered mode",
+        )
         baseline_private = None
         process_memory = readiness.get("process_memory")
         if isinstance(process_memory, Mapping) and isinstance(process_memory.get("private_bytes"), int):
@@ -728,6 +981,7 @@ def main(*, root_boundary: str = "task-a") -> int:
             root=roots[ROOT_ID],
             baseline_private=baseline_private,
             root_boundary=root_boundary,
+            speculative_mode=speculative_mode,
         )
         result["launch_configuration"] = readiness.get("launch_configuration")
         result["readiness"] = {
@@ -741,7 +995,9 @@ def main(*, root_boundary: str = "task-a") -> int:
     except BaseException as exc:
         error = exc
     finally:
+        cleanup_started = time.monotonic()
         cleanup = dict(harness.live_runtime.safe_sidecar_cleanup(sidecar))
+        cleanup_wall_seconds = time.monotonic() - cleanup_started
         if args.server_log_output is not None:
             trace_record: dict[str, Any] = {"requested": str(args.server_log_output)}
             try:
@@ -760,7 +1016,12 @@ def main(*, root_boundary: str = "task-a") -> int:
         print(json.dumps({"status": "engineering-failure", "error_type": type(error).__name__, "error": str(error), "cleanup": cleanup}, ensure_ascii=False, indent=2))
         return 1
     harness.require(result is not None, "single-request latency result is missing")
-    result["cleanup"] = cleanup
+    result = finalize_result_after_cleanup(
+        result,
+        cleanup=dict(cleanup or {}),
+        cleanup_wall_seconds=cleanup_wall_seconds,
+        stable_pids=set(stable_pids),
+    )
     encoded = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True)
     if args.output is not None:
         args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -4639,6 +4639,10 @@ class LiveSidecar:
         self.last_exact_ownership = payload
         return payload
 
+    def server_launch_args(self) -> list[str]:
+        """Return a scoped default-empty extension for experimental server flags."""
+        return []
+
     def launch(self) -> dict[str, Any]:
         if self.readiness_control is None:
             if listener_pids(PORT):
@@ -4725,6 +4729,10 @@ class LiveSidecar:
             "--cache-ram", str(CACHE_RAM_MIB),
             "--cache-idle-slots",
         ]
+        extra_args = self.server_launch_args()
+        if not all(isinstance(item, str) and item for item in extra_args):
+            raise NeoLoopError("sidecar server launch arguments must be non-empty strings")
+        args.extend(extra_args)
         if self.slot_save_path is not None:
             self.slot_save_path.mkdir(parents=True, exist_ok=True)
             args.extend(["--slot-save-path", str(self.slot_save_path)])

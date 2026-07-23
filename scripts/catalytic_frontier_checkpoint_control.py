@@ -3,12 +3,22 @@
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import Any, Sequence
 
 import catalytic_frontier_harness as harness
 
 
 FROZEN_CONTEXT_CHECKPOINTS = 8
+NGRAM_CACHE_SERVER_ARGS = ("--spec-type", "ngram-cache")
+
+
+def normalize_server_launch_args(values: Sequence[str]) -> tuple[str, ...]:
+    normalized = tuple(values)
+    harness.require(
+        normalized in ((), NGRAM_CACHE_SERVER_ARGS),
+        "scoped server launch arguments must be empty or exact ngram-cache",
+    )
+    return normalized
 
 
 class ScopedCheckpointDiscoverySidecar(harness.DiscoverySidecar):
@@ -19,6 +29,7 @@ class ScopedCheckpointDiscoverySidecar(harness.DiscoverySidecar):
         *args: Any,
         context_checkpoints: int,
         readiness_deadline_seconds_after_identity: float | None = None,
+        server_launch_args: Sequence[str] = (),
         **kwargs: Any,
     ):
         harness.require(
@@ -33,6 +44,10 @@ class ScopedCheckpointDiscoverySidecar(harness.DiscoverySidecar):
         super().__init__(*args, **kwargs)
         self.context_checkpoints = context_checkpoints
         self.readiness_deadline_seconds_after_identity = readiness_deadline_seconds_after_identity
+        self.scoped_server_launch_args = normalize_server_launch_args(server_launch_args)
+
+    def server_launch_args(self) -> list[str]:
+        return list(getattr(self, "scoped_server_launch_args", ()))
 
     def runtime_identities(self) -> tuple[dict[str, Any], dict[str, Any]]:
         identities = super().runtime_identities()
@@ -64,5 +79,7 @@ class ScopedCheckpointDiscoverySidecar(harness.DiscoverySidecar):
             "context_checkpoints": self.context_checkpoints,
             "checkpoint_min_step": int(harness.live_runtime.CHECKPOINT_MIN_STEP),
             "global_restored_after_launch": harness.live_runtime.CTX_CHECKPOINTS == previous,
+            "server_launch_args": self.server_launch_args(),
+            "speculative_type": "ngram-cache" if tuple(self.server_launch_args()) == NGRAM_CACHE_SERVER_ARGS else "none",
         }
         return readiness

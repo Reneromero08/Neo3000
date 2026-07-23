@@ -191,6 +191,7 @@ def build_sidecar(
     stable_pids: set[int],
     state_root: Path,
     context_checkpoints: int,
+    server_launch_args: tuple[str, ...] = (),
 ) -> Any:
     readiness_control = startup_readiness_control(evaluator)
     return checkpoint_control.ScopedCheckpointDiscoverySidecar(
@@ -206,6 +207,7 @@ def build_sidecar(
         state_root=state_root,
         advisory_wddm=True,
         context_checkpoints=context_checkpoints,
+        server_launch_args=server_launch_args,
         readiness_deadline_seconds_after_identity=float(readiness_control["readiness_deadline_seconds"]),
         stable_health_recovery_policy=startup_health_recovery_policy(),
     )
