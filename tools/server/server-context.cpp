@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cinttypes>
 #include <exception>
+#include <map>
 #include <memory>
 #include <filesystem>
 #include <utility>
@@ -38,6 +39,7 @@
 using json = nlohmann::ordered_json;
 
 constexpr int HTTP_POLLING_SECONDS = 1;
+constexpr size_t SERVER_SLOT_RAM_ROOT_CAPACITY = 2;
 
 static uint32_t server_n_outputs_max(const common_params & params) {
     const uint32_t n_batch  = params.n_batch;
@@ -960,7 +962,7 @@ private:
     int n_empty_consecutive = 0;
 
     std::unique_ptr<server_prompt_cache> prompt_cache;
-    std::unique_ptr<server_slot_ram_root> slot_ram_root;
+    std::map<std::string, std::unique_ptr<server_slot_ram_root>> slot_ram_roots;
 
     server_metrics metrics;
 
@@ -992,12 +994,68 @@ private:
         return n_cleared;
     }
 
+    server_slot_ram_root * find_ram_root(const std::string & root_id) {
+        const auto it = slot_ram_roots.find(root_id);
+        return it == slot_ram_roots.end() ? nullptr : it->second.get();
+    }
+
+    size_t ram_roots_size() const {
+        size_t size = 0;
+        for (const auto & [_, root] : slot_ram_roots) {
+            size += root->size();
+        }
+        return size;
+    }
+
+    size_t ram_roots_host_size() const {
+        size_t size = 0;
+        for (const auto & [_, root] : slot_ram_roots) {
+            size += root->host_size();
+        }
+        return size;
+    }
+
+    size_t ram_roots_live_device_size() const {
+        size_t size = 0;
+        for (const auto & [_, root] : slot_ram_roots) {
+            if (root->state_flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE) {
+                size += llama_state_seq_get_device_data_size(ctx_tgt, root->id_slot_source);
+                size += ctx_dft
+                        ? llama_state_seq_get_device_data_size(ctx_dft.get(), root->id_slot_source)
+                        : 0;
+            }
+        }
+        return size;
+    }
+
+    size_t ram_roots_live_gpu_size() const {
+        size_t size = 0;
+        for (const auto & [_, root] : slot_ram_roots) {
+            if (root->state_flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE) {
+                size += llama_state_seq_get_device_data_gpu_size(ctx_tgt, root->id_slot_source);
+                size += ctx_dft
+                        ? llama_state_seq_get_device_data_gpu_size(ctx_dft.get(), root->id_slot_source)
+                        : 0;
+            }
+        }
+        return size;
+    }
+
+    void set_ram_root_bank_receipt(server_task_result_slot_ram_root & res) const {
+        const size_t n_device_bytes = ram_roots_live_device_size();
+        res.n_roots_after = slot_ram_roots.size();
+        res.n_roots_capacity = SERVER_SLOT_RAM_ROOT_CAPACITY;
+        res.n_total_bytes_after = ram_roots_host_size() + n_device_bytes;
+        res.n_total_device_bytes_after = n_device_bytes;
+        res.n_total_gpu_bytes_after = ram_roots_live_gpu_size();
+    }
+
     void destroy() {
         // RAM roots are bound to the currently loaded model, contexts, and LoRA adapter identities.
-        if (slot_ram_root) {
-            clear_ram_root_device_data(*slot_ram_root);
+        for (const auto & [_, root] : slot_ram_roots) {
+            clear_ram_root_device_data(*root);
         }
-        slot_ram_root.reset();
+        slot_ram_roots.clear();
         spec.reset();
         ctx_dft.reset();
         model_dft.reset();
@@ -2735,9 +2793,29 @@ private:
                         queue_tasks.defer(std::move(task));
                         break;
                     }
-                    if (slot_ram_root) {
-                        send_error(task, "A RAM root already exists; erase it before saving another root", ERROR_TYPE_INVALID_REQUEST);
+                    const bool root_on_device = task.slot_action.root_on_device < 0
+                            ? params_base.cache_ram_root_device
+                            : task.slot_action.root_on_device != 0;
+                    if (find_ram_root(task.slot_action.root_id) != nullptr) {
+                        send_error(task, "A RAM root with this ID already exists; erase it before saving a replacement", ERROR_TYPE_INVALID_REQUEST);
                         break;
+                    }
+                    if (slot_ram_roots.size() >= SERVER_SLOT_RAM_ROOT_CAPACITY) {
+                        send_error(task, "RAM-root bank is at its fixed capacity", ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
+                    if (root_on_device) {
+                        const bool source_in_use = std::any_of(
+                                slot_ram_roots.begin(), slot_ram_roots.end(),
+                                [id_slot](const auto & entry) {
+                                    const auto & existing = *entry.second;
+                                    return (existing.state_flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE) &&
+                                           existing.id_slot_source == id_slot;
+                                });
+                        if (source_in_use) {
+                            send_error(task, "An on-device RAM root already owns this source slot", ERROR_TYPE_INVALID_REQUEST);
+                            break;
+                        }
                     }
                     if (slot->prompt.tokens.empty()) {
                         send_error(task, "Cannot save an empty slot as a RAM root", ERROR_TYPE_INVALID_REQUEST);
@@ -2751,7 +2829,7 @@ private:
                     root->id_slot_source = id_slot;
                     root->prompt         = slot->prompt.clone();
                     root->lora           = slot->lora;
-                    root->state_flags    = params_base.cache_ram_root_device
+                    root->state_flags    = root_on_device
                             ? LLAMA_STATE_SEQ_FLAGS_ON_DEVICE
                             : LLAMA_STATE_SEQ_FLAGS_NONE;
 
@@ -2788,31 +2866,35 @@ private:
                     }
 
                     const size_t root_size = root->size();
+                    const size_t root_limit = 1024ull * 1024ull * (size_t) params_base.cache_ram_mib;
+                    const size_t current_root_size = ram_roots_size();
                     if (params_base.cache_ram_mib > 0 &&
-                            root_size > 1024ull * 1024ull * (size_t) params_base.cache_ram_mib) {
+                            (current_root_size > root_limit || root_size > root_limit - current_root_size)) {
                         clear_ram_root_device_data(*root);
-                        send_error(task, "RAM root exceeds the configured --cache-ram limit", ERROR_TYPE_INVALID_REQUEST);
+                        send_error(task, "RAM-root bank exceeds the configured --cache-ram limit", ERROR_TYPE_INVALID_REQUEST);
                         break;
                     }
 
                     const size_t n_tokens      = root->prompt.tokens.size();
                     const size_t n_checkpoints = root->prompt.checkpoints.size();
-                    slot_ram_root = std::move(root);
+                    server_slot_ram_root * saved_root = root.get();
+                    slot_ram_roots.emplace(root->id, std::move(root));
 
                     auto res = std::make_unique<server_task_result_slot_ram_root>();
                     res->id               = task.id;
                     res->id_slot          = id_slot;
                     res->id_slot_source   = id_slot;
                     res->action           = "root-save";
-                    res->root_id          = slot_ram_root->id;
+                    res->root_id          = saved_root->id;
                     res->n_tokens         = n_tokens;
-                    res->n_bytes          = slot_ram_root->size();
-                    res->n_host_bytes     = slot_ram_root->host_size();
-                    res->n_device_bytes   = slot_ram_root->device_size();
-                    res->n_device_bytes_after = slot_ram_root->device_size();
-                    res->n_gpu_bytes      = slot_ram_root->gpu_size();
-                    res->n_gpu_bytes_after = slot_ram_root->gpu_size();
+                    res->n_bytes          = saved_root->size();
+                    res->n_host_bytes     = saved_root->host_size();
+                    res->n_device_bytes   = saved_root->device_size();
+                    res->n_device_bytes_after = saved_root->device_size();
+                    res->n_gpu_bytes      = saved_root->gpu_size();
+                    res->n_gpu_bytes_after = saved_root->gpu_size();
                     res->n_checkpoints    = n_checkpoints;
+                    set_ram_root_bank_receipt(*res);
                     res->t_ms             = (ggml_time_us() - t_start) / 1000.0;
                     queue_results.send(std::move(res));
                 } break;
@@ -2833,7 +2915,8 @@ private:
                         queue_tasks.defer(std::move(task));
                         break;
                     }
-                    if (!slot_ram_root || slot_ram_root->id != task.slot_action.root_id) {
+                    server_slot_ram_root * slot_ram_root = find_ram_root(task.slot_action.root_id);
+                    if (slot_ram_root == nullptr) {
                         send_error(task, "RAM root not found", ERROR_TYPE_INVALID_REQUEST);
                         break;
                     }
@@ -2896,6 +2979,7 @@ private:
                     res->n_gpu_bytes      = slot_ram_root->gpu_size();
                     res->n_gpu_bytes_after = slot_ram_root->gpu_size();
                     res->n_checkpoints    = slot->prompt.checkpoints.size();
+                    set_ram_root_bank_receipt(*res);
                     res->t_ms             = (ggml_time_us() - t_start) / 1000.0;
                     queue_results.send(std::move(res));
                 } break;
@@ -2906,10 +2990,12 @@ private:
                         send_error(task, "Invalid slot ID", ERROR_TYPE_INVALID_REQUEST);
                         break;
                     }
-                    if (!slot_ram_root || slot_ram_root->id != task.slot_action.root_id) {
+                    const auto root_it = slot_ram_roots.find(task.slot_action.root_id);
+                    if (root_it == slot_ram_roots.end()) {
                         send_error(task, "RAM root not found", ERROR_TYPE_INVALID_REQUEST);
                         break;
                     }
+                    server_slot_ram_root * slot_ram_root = root_it->second.get();
 
                     const int id_slot_source = slot_ram_root->id_slot_source;
                     const size_t n_tokens = slot_ram_root->prompt.tokens.size();
@@ -2926,7 +3012,7 @@ private:
                     const size_t n_gpu_bytes_after =
                             llama_state_seq_get_device_data_gpu_size(ctx_tgt, id_slot_source) +
                             (ctx_dft ? llama_state_seq_get_device_data_gpu_size(ctx_dft.get(), id_slot_source) : 0);
-                    slot_ram_root.reset();
+                    slot_ram_roots.erase(root_it);
 
                     if (n_device_bytes_cleared != n_device_bytes || n_device_bytes_after != 0 || n_gpu_bytes_after != 0) {
                         send_error(task, "Unable to erase the complete RAM-root device state", ERROR_TYPE_SERVER);
@@ -2947,6 +3033,7 @@ private:
                     res->n_gpu_bytes      = n_gpu_bytes;
                     res->n_gpu_bytes_after = n_gpu_bytes_after;
                     res->n_checkpoints    = n_checkpoints;
+                    set_ram_root_bank_receipt(*res);
                     res->t_ms             = (ggml_time_us() - t_start) / 1000.0;
                     queue_results.send(std::move(res));
                 } break;
@@ -5565,6 +5652,19 @@ std::unique_ptr<server_res_generator> server_routes::handle_slots_ram_root(
         res->error(format_error_response("Invalid root_id", ERROR_TYPE_INVALID_REQUEST));
         return res;
     }
+    const std::string storage = json_value(request_data, "storage", std::string("default"));
+    if (storage != "default" && storage != "host" && storage != "device") {
+        res->error(format_error_response(
+                "Invalid RAM-root storage; expected default, host, or device",
+                ERROR_TYPE_INVALID_REQUEST));
+        return res;
+    }
+    if (type != SERVER_TASK_TYPE_SLOT_ROOT_SAVE && storage != "default") {
+        res->error(format_error_response(
+                "RAM-root storage may be selected only for root-save",
+                ERROR_TYPE_INVALID_REQUEST));
+        return res;
+    }
 
     auto & rd = res->rd;
     {
@@ -5572,6 +5672,7 @@ std::unique_ptr<server_res_generator> server_routes::handle_slots_ram_root(
         task.id = rd.get_new_id();
         task.slot_action.id_slot = id_slot;
         task.slot_action.root_id = std::move(root_id);
+        task.slot_action.root_on_device = storage == "default" ? -1 : storage == "device" ? 1 : 0;
         rd.post_task(std::move(task));
     }
 

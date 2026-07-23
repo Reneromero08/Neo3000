@@ -167,6 +167,7 @@ struct server_task {
         std::string filename;
         std::string filepath;
         std::string root_id;
+        int root_on_device = -1;
     };
     slot_action slot_action;
 
@@ -569,6 +570,11 @@ struct server_task_result_slot_ram_root : server_task_result {
     size_t n_gpu_bytes;
     size_t n_gpu_bytes_after;
     size_t n_checkpoints;
+    size_t n_roots_after;
+    size_t n_roots_capacity;
+    size_t n_total_bytes_after;
+    size_t n_total_device_bytes_after;
+    size_t n_total_gpu_bytes_after;
     double t_ms;
 
     virtual json to_json() override;

@@ -1583,6 +1583,11 @@ json server_task_result_slot_ram_root::to_json() {
         { "n_gpu_bytes",    n_gpu_bytes },
         { "n_gpu_bytes_after", n_gpu_bytes_after },
         { "n_checkpoints",  n_checkpoints },
+        { "n_roots_after",  n_roots_after },
+        { "n_roots_capacity", n_roots_capacity },
+        { "n_total_bytes_after", n_total_bytes_after },
+        { "n_total_device_bytes_after", n_total_device_bytes_after },
+        { "n_total_gpu_bytes_after", n_total_gpu_bytes_after },
         { "timings", {
             { "root_ms", t_ms }
         }},

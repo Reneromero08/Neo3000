@@ -65,8 +65,8 @@ def test_restore_is_non_consuming_and_erase_is_explicit():
     restore = _case("SERVER_TASK_TYPE_SLOT_ROOT_RESTORE")
     erase = _case("SERVER_TASK_TYPE_SLOT_ROOT_ERASE")
 
-    assert "slot_ram_root.reset()" not in restore
-    assert "slot_ram_root.reset()" in erase
+    assert "slot_ram_roots.erase" not in restore
+    assert "slot_ram_roots.erase(root_it)" in erase
     assert "clear_ram_root_device_data(*slot_ram_root)" in erase
     assert "n_device_bytes_after != 0" in erase
     assert "n_gpu_bytes_after != 0" in erase
@@ -75,11 +75,18 @@ def test_restore_is_non_consuming_and_erase_is_explicit():
     assert '"Unable to erase the complete RAM-root device state"' in erase
 
 
-def test_one_root_refuses_implicit_overwrite():
+def test_two_root_bank_refuses_overwrite_and_source_aliasing():
     save = _case("SERVER_TASK_TYPE_SLOT_ROOT_SAVE")
 
-    assert "if (slot_ram_root)" in save
-    assert "erase it before saving another root" in save
+    assert "SERVER_SLOT_RAM_ROOT_CAPACITY = 2" in CONTEXT
+    assert "find_ram_root(task.slot_action.root_id)" in save
+    assert "erase it before saving a replacement" in save
+    assert "slot_ram_roots.size() >= SERVER_SLOT_RAM_ROOT_CAPACITY" in save
+    assert "RAM-root bank is at its fixed capacity" in save
+    assert "existing.id_slot_source == id_slot" in save
+    assert "An on-device RAM root already owns this source slot" in save
+    assert "root_size > root_limit - current_root_size" in save
+    assert "RAM-root bank exceeds the configured --cache-ram limit" in save
     for task_name in (
         "SERVER_TASK_TYPE_SLOT_ROOT_SAVE",
         "SERVER_TASK_TYPE_SLOT_ROOT_RESTORE",
@@ -99,5 +106,48 @@ def test_ram_root_receipts_account_host_and_device_bytes():
         assert "n_device_bytes_after" in case
         assert "n_gpu_bytes" in case
         assert "n_gpu_bytes_after" in case
+        assert "set_ram_root_bank_receipt(*res)" in case
     assert '"n_device_bytes"' in (SERVER_DIR / "server-task.cpp").read_text(encoding="utf-8")
     assert '"n_gpu_bytes"' in (SERVER_DIR / "server-task.cpp").read_text(encoding="utf-8")
+    task_cpp = (SERVER_DIR / "server-task.cpp").read_text(encoding="utf-8")
+    for key in (
+        "n_roots_after",
+        "n_roots_capacity",
+        "n_total_bytes_after",
+        "n_total_device_bytes_after",
+        "n_total_gpu_bytes_after",
+    ):
+        assert f'"{key}"' in task_cpp
+
+
+def test_two_root_bank_clears_each_device_snapshot_at_shutdown():
+    destroy_start = CONTEXT.index("void destroy()")
+    destroy_end = CONTEXT.index("\n    void handle_sleeping_state", destroy_start)
+    destroy = CONTEXT[destroy_start:destroy_end]
+
+    assert "for (const auto & [_, root] : slot_ram_roots)" in destroy
+    assert "clear_ram_root_device_data(*root)" in destroy
+    assert "slot_ram_roots.clear()" in destroy
+
+
+def test_per_save_storage_and_live_aggregate_receipts_are_explicit():
+    save = _case("SERVER_TASK_TYPE_SLOT_ROOT_SAVE")
+
+    assert "task.slot_action.root_on_device < 0" in save
+    assert "params_base.cache_ram_root_device" in save
+    assert "LLAMA_STATE_SEQ_FLAGS_ON_DEVICE" in save
+    assert 'storage != "default" && storage != "host" && storage != "device"' in CONTEXT
+    assert "type != SERVER_TASK_TYPE_SLOT_ROOT_SAVE" in CONTEXT
+    assert 'storage == "device" ? 1 : 0' in CONTEXT
+
+    receipt_start = CONTEXT.index("void set_ram_root_bank_receipt")
+    receipt_end = CONTEXT.index("\n    void destroy()", receipt_start)
+    receipt = CONTEXT[receipt_start:receipt_end]
+    assert "ram_roots_live_device_size()" in receipt
+    assert "ram_roots_live_gpu_size()" in receipt
+    assert "ram_roots_host_size() + n_device_bytes" in receipt
+
+    live_device_start = CONTEXT.index("size_t ram_roots_live_device_size()")
+    live_device_end = CONTEXT.index("\n    size_t ram_roots_live_gpu_size()", live_device_start)
+    live_device = CONTEXT[live_device_start:live_device_end]
+    assert "llama_state_seq_get_device_data_size(ctx_tgt, root->id_slot_source)" in live_device

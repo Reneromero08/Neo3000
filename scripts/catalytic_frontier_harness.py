@@ -304,13 +304,25 @@ def snapshot_action(*, action: str, filename: str) -> tuple[dict[str, Any], floa
 
 
 
-def ram_root_action(*, action: str, root_id: str) -> tuple[dict[str, Any], float]:
+def ram_root_action(
+    *,
+    action: str,
+    root_id: str,
+    id_slot: int = 0,
+    storage: str = "default",
+) -> tuple[dict[str, Any], float]:
     require(action in {"root-save", "root-restore", "root-erase"}, "unsupported RAM-root action")
     require(bool(root_id), "RAM root ID is empty")
+    require(type(id_slot) is int and id_slot >= 0, "invalid RAM-root slot ID")
+    require(storage in {"default", "host", "device"}, "invalid RAM-root storage")
+    require(action == "root-save" or storage == "default", "storage applies only to root-save")
+    body = {"root_id": root_id}
+    if storage != "default":
+        body["storage"] = storage
     return request_json(
         "POST",
-        f"http://127.0.0.1:{live_runtime.PORT}/slots/0?action={action}",
-        {"root_id": root_id},
+        f"http://127.0.0.1:{live_runtime.PORT}/slots/{id_slot}?action={action}",
+        body,
     )
 
 def token_summary(record: Mapping[str, Any]) -> dict[str, Any]:
