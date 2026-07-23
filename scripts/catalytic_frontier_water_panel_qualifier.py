@@ -12,7 +12,6 @@ import json
 import os
 import shutil
 import tempfile
-import time
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -185,7 +184,6 @@ def build_sidecar(
     context_checkpoints: int,
 ) -> Any:
     readiness_control = startup_readiness_control(evaluator)
-    readiness_deadline_at = time.monotonic() + float(readiness_control["readiness_deadline_seconds"])
     return checkpoint_control.ScopedCheckpointDiscoverySidecar(
         binary,
         model,
@@ -195,10 +193,11 @@ def build_sidecar(
         stable_pids=stable_pids,
         readiness_control=readiness_control,
         prelaunch_evidence={"stable_pids": sorted(stable_pids)},
-        readiness_deadline_at=readiness_deadline_at,
+        readiness_deadline_at=None,
         state_root=state_root,
         advisory_wddm=True,
         context_checkpoints=context_checkpoints,
+        readiness_deadline_seconds_after_identity=float(readiness_control["readiness_deadline_seconds"]),
         stable_health_recovery_policy=startup_health_recovery_policy(),
     )
 

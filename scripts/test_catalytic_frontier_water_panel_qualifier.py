@@ -65,7 +65,7 @@ class CatalyticFrontierWaterPanelQualifierTests(unittest.TestCase):
         self.assertEqual(args.ctx_checkpoints, 0)
 
 
-    def test_startup_health_recovery_is_bounded_and_startup_only(self) -> None:
+    def test_startup_health_recovery_is_bounded_startup_only_and_deadline_deferred(self) -> None:
         policy = qualifier.startup_health_recovery_policy()
         self.assertEqual(policy.maximum_consecutive_failure_seconds, 15.0)
         self.assertEqual(policy.required_consecutive_successes, 3)
@@ -84,7 +84,6 @@ class CatalyticFrontierWaterPanelQualifierTests(unittest.TestCase):
                 qualifier.checkpoint_control,
                 "ScopedCheckpointDiscoverySidecar",
             ) as sidecar_type,
-            mock.patch.object(qualifier.time, "monotonic", return_value=100.0),
         ):
             built = qualifier.build_sidecar(
                 binary=Path("candidate.exe"),
@@ -98,9 +97,12 @@ class CatalyticFrontierWaterPanelQualifierTests(unittest.TestCase):
         self.assertIs(built, sidecar_type.return_value)
         kwargs = sidecar_type.call_args.kwargs
         self.assertEqual(kwargs["readiness_control"], control)
-        self.assertEqual(kwargs["readiness_deadline_at"], 280.0)
+        self.assertIsNone(kwargs["readiness_deadline_at"])
         self.assertEqual(kwargs["prelaunch_evidence"], {"stable_pids": [3860]})
         self.assertEqual(kwargs["context_checkpoints"], 0)
+        self.assertEqual(
+            kwargs["readiness_deadline_seconds_after_identity"], 180.0
+        )
         integrated_policy = kwargs["stable_health_recovery_policy"]
         self.assertEqual(integrated_policy.maximum_consecutive_failure_seconds, 15.0)
         self.assertEqual(integrated_policy.required_consecutive_successes, 3)
@@ -109,6 +111,32 @@ class CatalyticFrontierWaterPanelQualifierTests(unittest.TestCase):
         self.assertIn("if self.readiness_control is None", launch_source)
         self.assertIn("stable_health_recovery_policy=self.stable_health_recovery_policy", launch_source)
         self.assertNotIn("stable_health_recovery_policy", active_source)
+        self.assertLess(
+            launch_source.index("binary_identity, model_identity = self.runtime_identities()"),
+            launch_source.index("self.process = subprocess.Popen"),
+        )
+
+    def test_readiness_deadline_starts_only_after_runtime_identity_hashing(self) -> None:
+        sidecar = object.__new__(qualifier.checkpoint_control.ScopedCheckpointDiscoverySidecar)
+        sidecar.readiness_control = {"readiness_deadline_seconds": 180.0}
+        sidecar.readiness_deadline_at = None
+        sidecar.readiness_deadline_seconds_after_identity = 180.0
+        identities = (
+            {"path": "candidate.exe", "sha256": "binary", "runtime_version": "test"},
+            {"path": "model.gguf", "sha256": "model", "size_bytes": 1},
+        )
+        with (
+            mock.patch.object(
+                qualifier.harness.DiscoverySidecar,
+                "runtime_identities",
+                return_value=identities,
+            ) as runtime_identities,
+            mock.patch.object(qualifier.checkpoint_control.time, "monotonic", return_value=100.0),
+        ):
+            observed = sidecar.runtime_identities()
+        self.assertEqual(observed, identities)
+        self.assertEqual(sidecar.readiness_deadline_at, 280.0)
+        runtime_identities.assert_called_once_with()
 
 if __name__ == "__main__":
     unittest.main()
