@@ -1718,6 +1718,60 @@ class WorkerProtocolV3ContractTests(unittest.TestCase):
             blocked.guarded("blocked", operation, timeout=1)
         operation.assert_not_called()
 
+    def test_guarded_phase_observer_records_existing_checks_without_changing_them(self) -> None:
+        sidecar = object.__new__(holo.LiveSidecar)
+        sidecar.require_active = mock.Mock()
+        sidecar.exact_ownership = mock.Mock(
+            side_effect=lambda boundary: {"boundary": boundary, "passed": True}
+        )
+        observations: list[dict] = []
+
+        self.assertEqual(
+            sidecar.guarded_profiled(
+                "profile",
+                lambda: "ok",
+                timeout=1,
+                phase_observer=observations.append,
+            ),
+            "ok",
+        )
+
+        self.assertEqual(sidecar.require_active.call_count, 2)
+        self.assertEqual(
+            [call.args[0] for call in sidecar.exact_ownership.call_args_list],
+            ["pre-request:profile", "post-request:profile"],
+        )
+        self.assertEqual(len(observations), 1)
+        observation = observations[0]
+        self.assertEqual(observation["name"], "profile")
+        self.assertFalse(observation["wddm_policy_active"])
+        self.assertEqual(observation["poll_active_count"], 0)
+        self.assertGreaterEqual(observation["poll_active_seconds"], 0.0)
+        self.assertGreaterEqual(observation["total_seconds"], 0.0)
+        self.assertEqual(
+            set(observation["phase_seconds"]),
+            {
+                "pre_active",
+                "pre_ownership",
+                "call",
+                "executor_wait",
+                "post_active",
+                "post_ownership",
+            },
+        )
+        self.assertEqual(
+            observation["pre_ownership"]["boundary"],
+            "pre-request:profile",
+        )
+        self.assertEqual(
+            observation["post_ownership"]["boundary"],
+            "post-request:profile",
+        )
+        self.assertNotIn(
+            "phase_observer",
+            inspect.getsource(holo.LiveSidecar.guarded),
+        )
+
     def test_v3_stop_checks_pre_and_post_teardown_ownership(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             sidecar = object.__new__(holo.LiveSidecar)

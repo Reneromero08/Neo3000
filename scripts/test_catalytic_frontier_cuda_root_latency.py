@@ -1,9 +1,11 @@
 import unittest
 import inspect
 from pathlib import Path
+from unittest import mock
 
 import catalytic_frontier_checkpoint_control as checkpoint
 import catalytic_frontier_cuda_root_all_cpu_control as all_cpu_control
+import catalytic_frontier_cuda_root_guard_profile as guard_profile
 import catalytic_frontier_cuda_root_host_control as host_control
 import catalytic_frontier_cuda_root_partial_moe_latency as partial_moe
 import catalytic_frontier_cuda_root_partial_moe_33_latency as partial_moe_33
@@ -163,6 +165,54 @@ class CudaRootLatencyTests(unittest.TestCase):
         self.assertIn('runtime_identity="cuda-bundle"', source)
         self.assertIn("moe_server_args=checkpoint.DEFAULT_MOE_SERVER_ARGS", source)
         self.assertEqual(checkpoint.DEFAULT_MOE_SERVER_ARGS, ("--cpu-moe",))
+
+    def test_guard_profile_preserves_all_cpu_cuda_root_and_only_adds_observation(self):
+        source = inspect.getsource(guard_profile)
+        self.assertNotIn("PARTIAL_MOE_", source)
+        self.assertIn('root_boundary="strict-prefix"', source)
+        self.assertIn('root_storage="device"', source)
+        self.assertIn('runtime_identity="cuda-bundle"', source)
+        self.assertIn("moe_server_args=checkpoint.DEFAULT_MOE_SERVER_ARGS", source)
+        self.assertIn("guard_phase_profiling=True", source)
+
+    def test_guard_profile_cleanup_never_emits_a_speed_claim(self):
+        result = {
+            "verdict": "inconclusive",
+            "classification": "observation-only-guard-phase-profile-pending-cleanup",
+            "trial_design": {
+                "root_storage": "device",
+                "guard_phase_profiling": True,
+            },
+            "metrics": {"cuda_root": {}},
+            "quality_gates": {"guard_phase_profile_complete": True},
+        }
+        cleanup = {
+            "wddm": {"peak_dedicated_bytes": 2_444_107_776},
+        }
+        with mock.patch.object(
+            latency.harness.live_runtime,
+            "cleanup_integrity",
+            return_value={"passed": True},
+        ):
+            finalized = latency.finalize_result_after_cleanup(
+                result,
+                cleanup=cleanup,
+                cleanup_wall_seconds=1.0,
+                stable_pids={3860},
+            )
+
+        self.assertEqual(finalized["verdict"], "inconclusive")
+        self.assertEqual(
+            finalized["classification"],
+            "observation-only-guard-phase-profile-complete",
+        )
+        self.assertTrue(
+            finalized["quality_gates"]["observation_only_guard_profile_complete"]
+        )
+        self.assertFalse(
+            finalized["quality_gates"]["fast_single_request_catalytic_inference_supported"]
+        )
+        self.assertIn("ADJUDICATE_GUARD_PHASE_EVIDENCE", finalized["next_boundary"])
 
 
 if __name__ == "__main__":

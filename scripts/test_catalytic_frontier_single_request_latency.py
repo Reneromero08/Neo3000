@@ -211,6 +211,88 @@ class CatalyticFrontierSingleRequestLatencyTests(unittest.TestCase):
     def test_harness_recorder_hook_is_optional_and_backward_compatible(self) -> None:
         parameter = inspect.signature(latency.harness.run_completion).parameters["recorder"]
         self.assertIsNone(parameter.default)
+        observer = inspect.signature(latency.harness.run_completion).parameters["guard_phase_observer"]
+        self.assertIsNone(observer.default)
+
+    def test_timed_branch_can_capture_one_guard_phase_record(self) -> None:
+        completion = {
+            "content": json.dumps({"answer": "C"}),
+            "execution": {"generated_token_ids": [1, 2, 3]},
+            "prompt_tokens": 690,
+            "cached_prompt_tokens": 689,
+            "fresh_prompt_tokens": 1,
+            "completion_tokens": 3,
+            "fresh_model_tokens": 4,
+            "wall_seconds": 0.5,
+        }
+        guard_record = {
+            "name": "frontier:profile",
+            "wddm_policy_active": False,
+            "phase_seconds": {
+                "pre_active": 0.01,
+                "pre_ownership": 0.04,
+                "call": 0.25,
+                "executor_wait": 0.25,
+                "post_active": 0.01,
+                "post_ownership": 0.04,
+            },
+            "poll_active_count": 1,
+            "poll_active_seconds": 0.01,
+            "pre_ownership": {
+                "boundary": "pre-request:frontier:profile",
+                "passed": True,
+            },
+            "post_ownership": {
+                "boundary": "post-request:frontier:profile",
+                "passed": True,
+            },
+            "total_seconds": 0.35,
+        }
+
+        def run_completion(_sidecar, _label, _payload, **kwargs):
+            kwargs["guard_phase_observer"](guard_record)
+            return completion
+
+        with (
+            mock.patch.object(
+                latency,
+                "branch_request",
+                return_value=(list(range(690)), {"cache_prompt": True}),
+            ),
+            mock.patch.object(latency.harness, "run_completion", side_effect=run_completion),
+            mock.patch.object(latency.harness.carrier, "parse_branch_output", return_value="C"),
+            mock.patch.object(
+                latency.TimingRecorder,
+                "summary",
+                return_value={
+                    "prompt_ms": 100.0,
+                    "ttft_seconds": 0.2,
+                    "server_prompt_n": 1,
+                    "server_predicted_n": 3,
+                },
+            ),
+        ):
+            record = latency.run_timed_branch(
+                sidecar=object(),
+                codec=object(),
+                retained={},
+                spec={"answer": "C"},
+                route="catalytic",
+                label="profile",
+                profile_guard_phases=True,
+            )
+
+        self.assertEqual(record["timing"]["guard_phase"], guard_record)
+
+    def test_guard_phase_schema_fails_closed(self) -> None:
+        with self.assertRaises(latency.harness.FrontierHarnessError):
+            latency.validate_guard_phase_record(
+                {
+                    "name": "frontier:profile",
+                    "phase_seconds": {},
+                },
+                expected_name="frontier:profile",
+            )
 
     def test_timing_identity_mismatch_fails_closed(self) -> None:
         completion = {

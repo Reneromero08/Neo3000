@@ -5066,6 +5066,178 @@ class LiveSidecar:
             self.exact_ownership(f"post-request:{name}")
         return value
 
+    def guarded_profiled(
+        self,
+        name: str,
+        call: Callable[[], Any],
+        timeout: float = 1_200,
+        *,
+        request_completed: Callable[[], bool] | None = None,
+        defer_post_request_wddm: bool = False,
+        phase_observer: Callable[[dict[str, Any]], None] | None = None,
+    ) -> Any:
+        guard_started = time.monotonic()
+        phase_seconds: dict[str, float] = {}
+        poll_active_count = 0
+        poll_active_seconds = 0.0
+        pre_ownership_evidence: dict[str, Any] | None = None
+        post_ownership_evidence: dict[str, Any] | None = None
+
+        def observe_phase(label: str, operation: Callable[[], Any]) -> Any:
+            started = time.monotonic()
+            try:
+                return operation()
+            finally:
+                phase_seconds[label] = time.monotonic() - started
+
+        wddm_policy = getattr(self, "wddm_policy", None)
+        if name == "catalytic-parser-canary":
+            pre_wddm_boundary = "before-parser-canary"
+            post_wddm_boundary = "after-parser-canary"
+        elif name.startswith("cs0-w"):
+            pre_wddm_boundary = f"before-each-worker-request:{name}"
+            post_wddm_boundary = f"after-each-worker-request:{name}"
+        else:
+            pre_wddm_boundary = f"pre-request:{name}"
+            post_wddm_boundary = f"post-request:{name}"
+        if wddm_policy is not None:
+            deadline = time.monotonic() + timeout
+            observe_phase(
+                "pre_wddm",
+                lambda: self.wait_for_fresh_wddm(
+                    pre_wddm_boundary,
+                    min(wddm_policy.max_valid_sample_gap_seconds, timeout),
+                    deadline_at=deadline,
+                ),
+            )
+        else:
+            observe_phase(
+                "pre_active",
+                lambda: self.require_active(require_listener=False),
+            )
+            pre_ownership_evidence = observe_phase(
+                "pre_ownership",
+                lambda: self.exact_ownership(f"pre-request:{name}"),
+            )
+            # Preserve the historical v1-v4 request budget: legacy ownership
+            # checks occur before the model-request deadline begins.
+            deadline = time.monotonic() + timeout
+        call_started: list[float] = []
+        call_seconds: list[float] = []
+
+        def observed_call() -> Any:
+            call_started.append(time.monotonic())
+            try:
+                return call()
+            finally:
+                call_seconds.append(time.monotonic() - call_started[-1])
+
+        executor = ThreadPoolExecutor(max_workers=1)
+        executor_started = time.monotonic()
+        try:
+            future = executor.submit(observed_call)
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise NeoLoopError(f"{name} timed out")
+                try:
+                    value = future.result(timeout=min(0.25, remaining))
+                    break
+                except FutureTimeout:
+                    poll_started = time.monotonic()
+                    self.require_active(require_listener=False)
+                    poll_active_seconds += time.monotonic() - poll_started
+                    poll_active_count += 1
+                    if time.monotonic() >= deadline:
+                        raise NeoLoopError(f"{name} timed out")
+        except Exception as exc:
+            ownership_error: Exception | None = None
+            if self.process and self.process.poll() is None:
+                try:
+                    if wddm_policy is not None:
+                        remaining = max(0.001, deadline - time.monotonic())
+                        completed = request_completed is not None and request_completed()
+                        if defer_post_request_wddm and completed:
+                            error_boundary = None
+                        elif request_completed is None:
+                            error_boundary = f"{post_wddm_boundary}:error"
+                        else:
+                            error_boundary = (
+                                post_wddm_boundary
+                                if completed
+                                else f"post-request-error:{name}"
+                            )
+                        if error_boundary is not None:
+                            self.wait_for_fresh_wddm(
+                                error_boundary,
+                                min(
+                                    wddm_policy.max_valid_sample_gap_seconds,
+                                    remaining,
+                                ),
+                                deadline_at=deadline,
+                            )
+                    else:
+                        self.require_active(require_listener=False)
+                        self.exact_ownership(f"post-request-error:{name}")
+                except Exception as boundary_exc:
+                    ownership_error = boundary_exc
+            if not future.done() and self.process and self.process.poll() is None:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait(timeout=10)
+            try:
+                future.result(timeout=10)
+            except Exception:
+                pass
+            if ownership_error is not None:
+                raise NeoLoopError(
+                    f"{name} failed ({exc}); post-request ownership also failed ({ownership_error})"
+                ) from exc
+            raise
+        finally:
+            phase_seconds["executor_wait"] = time.monotonic() - executor_started
+            if call_seconds:
+                phase_seconds["call"] = call_seconds[-1]
+            executor.shutdown(wait=False, cancel_futures=True)
+        if wddm_policy is not None:
+            if not defer_post_request_wddm:
+                remaining = max(0.001, deadline - time.monotonic())
+                try:
+                    observe_phase(
+                        "post_wddm",
+                        lambda: self.wait_for_fresh_wddm(
+                            post_wddm_boundary,
+                            min(wddm_policy.max_valid_sample_gap_seconds, remaining),
+                            deadline_at=deadline,
+                        ),
+                    )
+                except Exception as exc:
+                    raise CompletedRequestBoundaryError(name, value, exc) from exc
+        else:
+            observe_phase(
+                "post_active",
+                lambda: self.require_active(require_listener=False),
+            )
+            post_ownership_evidence = observe_phase(
+                "post_ownership",
+                lambda: self.exact_ownership(f"post-request:{name}"),
+            )
+        if phase_observer is not None:
+            phase_observer({
+                "name": name,
+                "wddm_policy_active": wddm_policy is not None,
+                "phase_seconds": phase_seconds,
+                "poll_active_count": poll_active_count,
+                "poll_active_seconds": poll_active_seconds,
+                "pre_ownership": pre_ownership_evidence,
+                "post_ownership": post_ownership_evidence,
+                "total_seconds": time.monotonic() - guard_started,
+            })
+        return value
+
     def telemetry(self, *, complete: bool = False) -> dict[str, Any]:
         telemetry = self.sampler.evidence(VRAM_CEILING_MIB) if self.sampler else {}
         if getattr(self, "wddm_policy", None) is not None:

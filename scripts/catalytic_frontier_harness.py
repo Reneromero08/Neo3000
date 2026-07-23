@@ -202,18 +202,27 @@ def run_completion(
     *,
     operation_kind: str = "model-generation",
     recorder: Any | None = None,
+    guard_phase_observer: Any | None = None,
 ) -> dict[str, Any]:
     print(f"[frontier] start {label}", flush=True)
     started = time.monotonic()
     raw_recorder = recorder if recorder is not None else (lambda _line: None)
-    execution = sidecar.guarded(
+    guarded_kwargs: dict[str, Any] = {"timeout": 1_000}
+    if guard_phase_observer is not None:
+        guarded_kwargs["phase_observer"] = guard_phase_observer
+    guarded_call = (
+        sidecar.guarded
+        if guard_phase_observer is None
+        else sidecar.guarded_profiled
+    )
+    execution = guarded_call(
         f"frontier:{label}",
         lambda: carrier._stream_raw_completion(
             port=live_runtime.PORT,
             payload=payload,
             recorder=raw_recorder,
         ),
-        timeout=1_000,
+        **guarded_kwargs,
     )
     wall_seconds = time.monotonic() - started
     normalized = execution_dict(execution)

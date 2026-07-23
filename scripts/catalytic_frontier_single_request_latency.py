@@ -362,6 +362,95 @@ def branch_request(codec: Any, retained: Mapping[str, Any], spec: Mapping[str, A
     return tokens, payload
 
 
+GUARD_PHASE_SECONDS_KEYS = {
+    "pre_active",
+    "pre_ownership",
+    "call",
+    "executor_wait",
+    "post_active",
+    "post_ownership",
+}
+GUARD_PHASE_RECORD_KEYS = {
+    "name",
+    "wddm_policy_active",
+    "phase_seconds",
+    "poll_active_count",
+    "poll_active_seconds",
+    "pre_ownership",
+    "post_ownership",
+    "total_seconds",
+}
+
+
+def validate_guard_phase_record(
+    value: Mapping[str, Any],
+    *,
+    expected_name: str,
+) -> dict[str, Any]:
+    harness.require(set(value) == GUARD_PHASE_RECORD_KEYS, "guard-phase record schema changed")
+    harness.require(value["name"] == expected_name, "guard-phase operation identity changed")
+    harness.require(
+        value["wddm_policy_active"] is False,
+        "guard-phase profile unexpectedly entered the WDDM-policy path",
+    )
+    phase_seconds = value["phase_seconds"]
+    harness.require(isinstance(phase_seconds, Mapping), "guard-phase timing map is missing")
+    harness.require(set(phase_seconds) == GUARD_PHASE_SECONDS_KEYS, "guard-phase timing keys changed")
+    numeric_values = {
+        **{str(key): phase_seconds[key] for key in GUARD_PHASE_SECONDS_KEYS},
+        "poll_active_seconds": value["poll_active_seconds"],
+        "total_seconds": value["total_seconds"],
+    }
+    harness.require(
+        all(
+            not isinstance(item, bool)
+            and isinstance(item, (int, float))
+            and math.isfinite(float(item))
+            and float(item) >= 0.0
+            for item in numeric_values.values()
+        ),
+        "guard-phase timing contains a non-finite or negative value",
+    )
+    poll_count = value["poll_active_count"]
+    harness.require(
+        isinstance(poll_count, int) and not isinstance(poll_count, bool) and poll_count >= 0,
+        "guard-phase active-poll count is invalid",
+    )
+    harness.require(
+        float(phase_seconds["executor_wait"]) >= float(phase_seconds["call"]),
+        "guard-phase executor wait is shorter than the observed call",
+    )
+    harness.require(
+        float(phase_seconds["executor_wait"]) >= float(value["poll_active_seconds"]),
+        "guard-phase active polls exceed executor wait",
+    )
+    expected_serial_seconds = sum(
+        float(phase_seconds[key])
+        for key in (
+            "pre_active",
+            "pre_ownership",
+            "executor_wait",
+            "post_active",
+            "post_ownership",
+        )
+    )
+    harness.require(
+        float(value["total_seconds"]) >= expected_serial_seconds,
+        "guard-phase total is shorter than its serial phases",
+    )
+    for position in ("pre", "post"):
+        evidence = value[f"{position}_ownership"]
+        harness.require(
+            isinstance(evidence, Mapping) and evidence.get("passed") is True,
+            f"guard-phase {position} ownership evidence is missing or nonpassing",
+        )
+        harness.require(
+            evidence.get("boundary") == f"{position}-request:{expected_name}",
+            f"guard-phase {position} ownership boundary identity changed",
+        )
+    return dict(value)
+
+
 def run_timed_branch(
     *,
     sidecar: Any,
@@ -370,12 +459,23 @@ def run_timed_branch(
     spec: Mapping[str, Any],
     route: str,
     label: str,
+    profile_guard_phases: bool = False,
 ) -> dict[str, Any]:
     harness.require(route in {"catalytic", "direct"}, "unsupported latency route")
     tokens, payload = branch_request(codec, retained, spec, cache_prompt=route == "catalytic")
     recorder = TimingRecorder()
-    record = harness.run_completion(sidecar, label, payload, recorder=recorder)
+    guard_phases: list[dict[str, Any]] = []
+    completion_kwargs: dict[str, Any] = {"recorder": recorder}
+    if profile_guard_phases:
+        completion_kwargs["guard_phase_observer"] = guard_phases.append
+    record = harness.run_completion(sidecar, label, payload, **completion_kwargs)
     timing = recorder.summary(request_wall_seconds=float(record["wall_seconds"]))
+    if profile_guard_phases:
+        harness.require(len(guard_phases) == 1, "guard-phase profiling emitted the wrong record count")
+        timing["guard_phase"] = validate_guard_phase_record(
+            guard_phases[0],
+            expected_name=f"frontier:{label}",
+        )
     harness.require(record["prompt_tokens"] == len(tokens), "timed route prompt token count changed")
     harness.require(
         timing["server_prompt_n"] == record["fresh_prompt_tokens"],
@@ -436,6 +536,7 @@ def evaluate(
     root_boundary: str = "task-a",
     speculative_mode: str = "none",
     root_storage: str = "host",
+    guard_phase_profiling: bool = False,
 ) -> dict[str, Any]:
     harness.require(speculative_mode in SPECULATIVE_MODES, "unsupported latency speculative mode")
     harness.require(root_storage in ROOT_STORAGE_MODES, "unsupported latency root storage mode")
@@ -519,6 +620,7 @@ def evaluate(
             spec=spec,
             route=route,
             label=f"{ROOT_ID}:latency:{label}:{route}",
+            profile_guard_phases=guard_phase_profiling,
         )
         if route == "catalytic":
             harness.require(
@@ -609,6 +711,18 @@ def evaluate(
         and all(record["cached_prompt_tokens"] == boundary["expected_cached_prompt_tokens"] for record in catalytic)
         and all(record["fresh_prompt_tokens"] == boundary["expected_fresh_prompt_tokens"] for record in catalytic)
         and all(record["cached_prompt_tokens"] == 0 for record in direct)
+    )
+    guard_phase_profile_complete = (
+        guard_phase_profiling
+        and all(
+            bool(
+                validate_guard_phase_record(
+                    record["timing"]["guard_phase"],
+                    expected_name=f"frontier:{record['label']}",
+                )
+            )
+            for record in all_routes
+        )
     )
 
     catalytic_prompt_ms = [float(record["timing"]["prompt_ms"]) for record in catalytic]
@@ -777,11 +891,15 @@ def evaluate(
             and cuda_root_gate
             else "cuda-resident-strict-prefix-root-without-preregistered-latency-gate"
         )
+    raw_latency_classification = classification
     accepted = classification in {
         "fast-single-request-catalytic-latency-supported-bounded",
         "strict-prefix-plus-ngram-cache-latency-supported-bounded",
         "cuda-resident-strict-prefix-root-latency-supported-bounded",
     }
+    if guard_phase_profiling:
+        classification = "observation-only-guard-phase-profile-pending-cleanup"
+        accepted = False
     all_request_records = [task_a, materialization, *all_routes]
 
     return {
@@ -793,7 +911,13 @@ def evaluate(
             if speculative_mode != "none"
             else f"checkpoint-free-{root_boundary}-root-single-request-latency"
         ),
-        "verdict": "accept" if accepted else "reject",
+        "verdict": (
+            "inconclusive"
+            if guard_phase_profiling
+            else "accept"
+            if accepted
+            else "reject"
+        ),
         "classification": classification,
         "model": "Agents-A1",
         "root_id": ROOT_ID,
@@ -825,6 +949,7 @@ def evaluate(
             "control_type": "cache-disabled-ngram-only" if speculative_mode == "ngram-cache" else "cache-disabled-no-spec",
             "second_carrier_closure": "process-retirement" if speculative_mode == "ngram-cache" else None,
             "learning_warmup_requests_charged": len(warmup) if speculative_mode == "ngram-cache" else 0,
+            "guard_phase_profiling": guard_phase_profiling,
             "expected_catalytic_cached_prompt_tokens": boundary["expected_cached_prompt_tokens"],
             "expected_catalytic_fresh_prompt_tokens": boundary["expected_fresh_prompt_tokens"],
         },
@@ -839,6 +964,7 @@ def evaluate(
             "fresh_model_tokens_per_request": {"catalytic_median": median_catalytic_fresh, f"{control_metric_label}_median": median_direct_fresh},
             "speedup_vs_neo_exp_0062_543_root": predecessor_speedups,
             "cuda_root": cuda_root_metrics,
+            "raw_latency_classification": raw_latency_classification,
             "ngram_cache": {
                 "catalytic_counted_draft_tokens": draft_metrics["catalytic_draft_tokens"],
                 "catalytic_counted_accepted_draft_tokens": draft_metrics["catalytic_accepted_draft_tokens"],
@@ -920,6 +1046,9 @@ def evaluate(
             "all_warmup_and_counted_outputs_correct": all(bool(record["correct"]) for record in all_routes),
             "all_input_token_arrays_identical": len(input_hashes) == 1,
             "all_generated_token_hashes_identical": len(generated_hashes) == 1,
+            "guard_phase_profile_complete": (
+                guard_phase_profile_complete if guard_phase_profiling else True
+            ),
             "catalytic_cached_prompt_tokens_exact": all(record["cached_prompt_tokens"] == boundary["expected_cached_prompt_tokens"] for record in catalytic),
             "catalytic_fresh_prompt_tokens_exact": all(record["fresh_prompt_tokens"] == boundary["expected_fresh_prompt_tokens"] for record in catalytic),
             "direct_cached_prompt_tokens_zero": all(record["cached_prompt_tokens"] == 0 for record in direct),
@@ -956,11 +1085,17 @@ def evaluate(
             "counted_full_lifecycle_wall_advantage": full_lifecycle_wall_advantage,
             "counted_full_lifecycle_fresh_compute_advantage": full_lifecycle_fresh_advantage,
             "fast_single_request_catalytic_inference_supported": accepted,
+            "observation_only_no_speed_adjudication": (
+                not guard_phase_profiling or accepted is False
+            ),
             "fanout_claimed": False,
             "unbounded_catalytic_inference_established": False,
             "automatic_promotion": False,
         },
         "next_boundary": (
+            "FINALIZE_OBSERVATION_ONLY_GUARD_PHASE_PROFILE_AFTER_CLEANUP"
+            if guard_phase_profiling
+            else
             "PROFILE_NEXT_CUDA_CATALYTIC_HOT_PATH_AFTER_ACCEPTED_DEVICE_ROOT"
             if accepted and root_storage == "device"
             else "PRESERVE_DEVICE_ROOT_EVIDENCE_AND_LOCALIZE_FAILED_CUDA_GATE_WITHOUT_RETRY"
@@ -1044,6 +1179,27 @@ def finalize_result_after_cleanup(
         quality_gates = result["quality_gates"]
         quality_gates["cuda_wddm_at_or_below_6000_mib"] = wddm_gate
         quality_gates["candidate_process_retired"] = cleanup_gate["passed"] is True
+        if result.get("trial_design", {}).get("guard_phase_profiling") is True:
+            profile_complete = (
+                quality_gates.get("guard_phase_profile_complete") is True
+                and cleanup_gate["passed"] is True
+                and wddm_gate
+            )
+            quality_gates["observation_only_guard_profile_complete"] = profile_complete
+            quality_gates["fast_single_request_catalytic_inference_supported"] = False
+            quality_gates["observation_only_no_speed_adjudication"] = True
+            result["verdict"] = "inconclusive" if profile_complete else "reject"
+            result["classification"] = (
+                "observation-only-guard-phase-profile-complete"
+                if profile_complete
+                else "observation-only-guard-phase-profile-safety-failure"
+            )
+            result["next_boundary"] = (
+                "ADJUDICATE_GUARD_PHASE_EVIDENCE_AND_PREREGISTER_AT_MOST_ONE_FRICTION_REMOVAL"
+                if profile_complete
+                else "PRESERVE_OBSERVATION_PROFILE_FAILURE_AND_LOCALIZE_THE_FAILED_GATE"
+            )
+            return result
         accepted = result.get("verdict") == "accept" and cleanup_gate["passed"] is True and wddm_gate
         quality_gates["fast_single_request_catalytic_inference_supported"] = accepted
         if not accepted:
@@ -1096,6 +1252,7 @@ def main(
     root_storage: str = "host",
     runtime_identity: str = "canonical",
     moe_server_args: tuple[str, ...] = water.checkpoint_control.DEFAULT_MOE_SERVER_ARGS,
+    guard_phase_profiling: bool = False,
 ) -> int:
     args = parse_args()
     harness.require(speculative_mode in SPECULATIVE_MODES, "unsupported latency speculative mode")
@@ -1191,11 +1348,13 @@ def main(
             root_boundary=root_boundary,
             speculative_mode=speculative_mode,
             root_storage=root_storage,
+            guard_phase_profiling=guard_phase_profiling,
         )
         result["launch_configuration"] = readiness.get("launch_configuration")
         result["cuda_runtime_sha256"] = cuda_runtime_sha256
         result["runtime_identity"] = runtime_identity
         result["moe_server_args"] = list(moe_server_args)
+        result["guard_phase_profiling"] = guard_phase_profiling
         result["readiness"] = {
             "pid": readiness.get("pid"),
             "readiness_seconds": readiness.get("readiness_seconds"),
