@@ -201,15 +201,17 @@ def run_completion(
     payload: Mapping[str, Any],
     *,
     operation_kind: str = "model-generation",
+    recorder: Any | None = None,
 ) -> dict[str, Any]:
     print(f"[frontier] start {label}", flush=True)
     started = time.monotonic()
+    raw_recorder = recorder if recorder is not None else (lambda _line: None)
     execution = sidecar.guarded(
         f"frontier:{label}",
         lambda: carrier._stream_raw_completion(
             port=live_runtime.PORT,
             payload=payload,
-            recorder=lambda _line: None,
+            recorder=raw_recorder,
         ),
         timeout=1_000,
     )

@@ -1,0 +1,654 @@
+#!/usr/bin/env python3
+"""Checkpoint-free N=1 catalytic latency discriminator on the qualified water root.
+
+The scientific intervention is only exact prompt-root reuse versus identical
+cache-disabled prefill.  One matched warmup pair is reported but excluded from
+the decision gate.  Four counted pairs use ABBA route order; RAM-root restore
+time is charged to every catalytic request.  This controller adds no runtime
+mechanism and makes no fanout claim.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import os
+import shutil
+import statistics
+import tempfile
+import time
+from pathlib import Path
+from typing import Any, Mapping, Sequence
+
+import catalytic_frontier_fanout as shared_tasks
+import catalytic_frontier_harness as harness
+import catalytic_frontier_water_panel_qualifier as water
+
+
+ROOT_ID = water.ROOT_ID
+BRANCH_NUMBER = 7
+PAIR_ROUTE_ORDERS = (
+    ("catalytic", "direct"),
+    ("direct", "catalytic"),
+    ("direct", "catalytic"),
+    ("catalytic", "direct"),
+)
+COUNTED_PAIRS = len(PAIR_ROUTE_ORDERS)
+WARMUP_ROUTE_ORDER = ("catalytic", "direct")
+PANEL_SHA256 = "47DD356BA39422EF58019CE60B84A69FCAEC455FE11B758103935CE65DE33841"
+EXPECTED_ANSWER = "C"
+EXPECTED_PROMPT_ROOT_TOKENS = 543
+EXPECTED_RETAINED_ROOT_TOKENS = 612
+EXPECTED_BRANCH_PROMPT_TOKENS = 690
+MIN_PAIRED_WINS = 3
+MIN_MEDIAN_SPEEDUP = 1.25
+DEFAULT_BINARY = Path("build/candidate/bin/Release/llama-server.exe")
+
+
+class TimingRecorder:
+    """Capture client-observed SSE milestones and terminal server timings."""
+
+    def __init__(self, *, origin: float | None = None) -> None:
+        self.origin = time.monotonic() if origin is None else float(origin)
+        self.first_event_seconds: float | None = None
+        self.first_generated_seconds: float | None = None
+        self.terminal_event_seconds: float | None = None
+        self.server_timings: dict[str, float] = {}
+        self.event_count = 0
+
+    def __call__(self, line: bytes) -> None:
+        stripped = line.decode("utf-8", errors="replace").strip()
+        if not stripped.startswith("data:"):
+            return
+        data = stripped[5:].strip()
+        if not data or data == "[DONE]":
+            return
+        event = json.loads(data)
+        now = time.monotonic() - self.origin
+        self.event_count += 1
+        if self.first_event_seconds is None:
+            self.first_event_seconds = now
+        tokens = event.get("tokens")
+        generated = (
+            "prompt_progress" not in event
+            and (
+                (isinstance(tokens, list) and bool(tokens))
+                or (isinstance(event.get("content"), str) and bool(event["content"]))
+            )
+        )
+        if generated and self.first_generated_seconds is None:
+            self.first_generated_seconds = now
+        if event.get("stop") is True:
+            self.terminal_event_seconds = now
+            timings = event.get("timings")
+            if isinstance(timings, Mapping):
+                self.server_timings = {
+                    str(key): float(value)
+                    for key, value in timings.items()
+                    if isinstance(value, (int, float)) and not isinstance(value, bool)
+                }
+
+    def summary(self, *, request_wall_seconds: float) -> dict[str, Any]:
+        harness.require(self.event_count > 0, "timed completion emitted no SSE events")
+        harness.require(self.first_event_seconds is not None, "first SSE event timing is missing")
+        harness.require(self.first_generated_seconds is not None, "first generated token timing is missing")
+        harness.require(self.terminal_event_seconds is not None, "terminal SSE timing is missing")
+        prompt_ms = self.server_timings.get("prompt_ms")
+        harness.require(prompt_ms is not None and prompt_ms > 0, "terminal prompt_ms is missing")
+        harness.require(
+            self.first_generated_seconds <= request_wall_seconds + 0.25,
+            "first generated event occurs after measured request wall",
+        )
+        return {
+            "event_count": self.event_count,
+            "first_event_seconds": self.first_event_seconds,
+            "ttft_seconds": self.first_generated_seconds,
+            "terminal_event_seconds": self.terminal_event_seconds,
+            "prompt_ms": prompt_ms,
+            "prompt_per_second": self.server_timings.get("prompt_per_second"),
+            "predicted_ms": self.server_timings.get("predicted_ms"),
+            "predicted_per_second": self.server_timings.get("predicted_per_second"),
+            "server_prompt_n": self.server_timings.get("prompt_n"),
+            "server_predicted_n": self.server_timings.get("predicted_n"),
+        }
+
+
+def validate_root_response(
+    response: Mapping[str, Any],
+    *,
+    action: str,
+    expected: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    harness.require(response.get("action") == action, f"RAM-root action mismatch for {action}")
+    harness.require(response.get("root_id") == ROOT_ID, f"RAM-root identity mismatch for {action}")
+    harness.require(type(response.get("id_slot")) is int, f"RAM-root slot missing for {action}")
+    for key in ("n_tokens", "n_bytes", "n_checkpoints"):
+        harness.require(type(response.get(key)) is int, f"RAM-root {key} missing for {action}")
+        harness.require(int(response[key]) >= 0, f"RAM-root {key} is negative for {action}")
+    harness.require(int(response["n_tokens"]) > 0, f"RAM-root is empty for {action}")
+    harness.require(int(response["n_bytes"]) > 0, f"RAM-root has no state bytes for {action}")
+    harness.require(int(response["n_checkpoints"]) == 0, f"RAM-root checkpoint count changed for {action}")
+    if expected is not None:
+        for key in ("root_id", "n_tokens", "n_bytes", "n_checkpoints"):
+            harness.require(response.get(key) == expected.get(key), f"RAM-root {key} changed at {action}")
+    timings = response.get("timings")
+    harness.require(
+        isinstance(timings, Mapping) and isinstance(timings.get("root_ms"), (int, float)),
+        f"RAM-root timing missing for {action}",
+    )
+    return {
+        "action": action,
+        "root_id": response["root_id"],
+        "id_slot": response["id_slot"],
+        "n_tokens": response["n_tokens"],
+        "n_bytes": response["n_bytes"],
+        "n_checkpoints": response["n_checkpoints"],
+        "server_root_ms": float(timings["root_ms"]),
+    }
+
+
+def percentile(values: Sequence[float], quantile: float) -> float:
+    harness.require(bool(values), "percentile input is empty")
+    ordered = sorted(float(value) for value in values)
+    position = (len(ordered) - 1) * quantile
+    lower = math.floor(position)
+    upper = math.ceil(position)
+    if lower == upper:
+        return ordered[lower]
+    fraction = position - lower
+    return ordered[lower] * (1.0 - fraction) + ordered[upper] * fraction
+
+
+def distribution(values: Sequence[float]) -> dict[str, float]:
+    harness.require(bool(values), "latency distribution is empty")
+    return {
+        "minimum": min(values),
+        "median": statistics.median(values),
+        "p95": percentile(values, 0.95),
+        "maximum": max(values),
+    }
+
+
+def generated_token_hash(record: Mapping[str, Any]) -> str:
+    generated = record["execution"].get("generated_token_ids")
+    harness.require(
+        isinstance(generated, list) and generated and all(type(item) is int for item in generated),
+        "generated-token evidence is unavailable",
+    )
+    return harness.sha256_bytes(harness.carrier.canonical_json_bytes(generated))
+
+
+def branch_request(codec: Any, retained: Mapping[str, Any], spec: Mapping[str, Any], *, cache_prompt: bool) -> tuple[list[int], dict[str, Any]]:
+    suffix = harness.carrier.derive_continuation_suffix(
+        codec,
+        terminal_eog_id=int(retained["terminal_stop_identity"]["token_id"]),
+        user_content=shared_tasks.branch_user_content(spec),
+    )
+    tokens = [*retained["retained_root_tokens"], *suffix["suffix_tokens"]]
+    payload = harness.carrier._branch_payload(
+        tokens,
+        seed=shared_tasks.derive_seed(ROOT_ID, f"branch-{BRANCH_NUMBER}"),
+        cache_prompt=cache_prompt,
+    )
+    return tokens, payload
+
+
+def run_timed_branch(
+    *,
+    sidecar: Any,
+    codec: Any,
+    retained: Mapping[str, Any],
+    spec: Mapping[str, Any],
+    route: str,
+    label: str,
+) -> dict[str, Any]:
+    harness.require(route in {"catalytic", "direct"}, "unsupported latency route")
+    tokens, payload = branch_request(codec, retained, spec, cache_prompt=route == "catalytic")
+    recorder = TimingRecorder()
+    record = harness.run_completion(sidecar, label, payload, recorder=recorder)
+    timing = recorder.summary(request_wall_seconds=float(record["wall_seconds"]))
+    harness.require(record["prompt_tokens"] == len(tokens), "timed route prompt token count changed")
+    harness.require(
+        timing["server_prompt_n"] == record["fresh_prompt_tokens"],
+        "server prompt timing identity differs from fresh prompt tokens",
+    )
+    harness.require(
+        timing["server_predicted_n"] == record["completion_tokens"],
+        "server predicted timing identity differs from completion tokens",
+    )
+    answer = harness.carrier.parse_branch_output(record["content"])
+    record.update(
+        route=route,
+        answer=answer,
+        expected=str(spec["answer"]),
+        correct=answer == spec["answer"],
+        input_token_sha256=harness.sha256_bytes(harness.carrier.canonical_json_bytes(tokens)),
+        generated_token_sha256=generated_token_hash(record),
+        timing=timing,
+    )
+    return record
+
+
+def classify_result(
+    *,
+    utility_exact: bool,
+    paired_wins: int,
+    prompt_speedup: float,
+    ttft_speedup: float,
+    effective_wall_speedup: float,
+    full_lifecycle_wall_advantage: bool,
+    full_lifecycle_fresh_advantage: bool,
+) -> str:
+    if not utility_exact:
+        return "single-request-utility-or-identity-failure"
+    if (
+        paired_wins >= MIN_PAIRED_WINS
+        and prompt_speedup >= MIN_MEDIAN_SPEEDUP
+        and ttft_speedup >= MIN_MEDIAN_SPEEDUP
+        and effective_wall_speedup >= MIN_MEDIAN_SPEEDUP
+        and full_lifecycle_wall_advantage
+        and full_lifecycle_fresh_advantage
+    ):
+        return "fast-single-request-catalytic-latency-supported-bounded"
+    return "exact-reuse-without-preregistered-latency-gate"
+
+
+def evaluate(
+    *,
+    sidecar: Any,
+    codec: Any,
+    props: Mapping[str, Any],
+    root: Mapping[str, Any],
+    baseline_private: int | None,
+) -> dict[str, Any]:
+    panel = water.panel_for(root)
+    harness.require(water.base._panel_hash(panel) == PANEL_SHA256, "qualified water panel identity changed")
+    spec = panel[BRANCH_NUMBER - 1]
+    harness.require(spec["answer"] == EXPECTED_ANSWER, "latency branch key changed")
+
+    prompt_text = codec.render_messages(
+        harness.carrier.task_a_messages(root),
+        harness.carrier.CHAT_TEMPLATE_KWARGS,
+    )
+    prompt_tokens = codec.tokenize(prompt_text)
+    harness.require(len(prompt_tokens) == EXPECTED_PROMPT_ROOT_TOKENS, "prompt-root token count changed")
+    task_payload = harness.carrier._task_a_payload(
+        prompt_tokens,
+        seed=shared_tasks.derive_seed(ROOT_ID, "task-a"),
+    )
+    task_a = harness.run_completion(sidecar, f"{ROOT_ID}:latency:task-a", task_payload)
+    parsed = harness.carrier.parse_task_a_output(task_a["content"])
+    harness.require(parsed["answer"] == harness.EXPECTED[ROOT_ID]["task_a"], "latency Task-A answer is incorrect")
+    retained = harness.carrier.derive_retained_root(
+        harness.root_capture(task_a, task_payload),
+        prompt_tokens,
+        codec,
+        props,
+    )
+    harness.require(
+        int(retained["retained_root_token_count"]) == EXPECTED_RETAINED_ROOT_TOKENS,
+        "retained water root token count changed",
+    )
+    branch_tokens, _ = branch_request(codec, retained, spec, cache_prompt=False)
+    harness.require(len(branch_tokens) == EXPECTED_BRANCH_PROMPT_TOKENS, "latency branch prompt count changed")
+
+    materialization_payload = harness.carrier._branch_payload(
+        prompt_tokens,
+        seed=shared_tasks.derive_seed(ROOT_ID, "single-request-latency-prompt-root-materialize"),
+        cache_prompt=False,
+        n_predict=0,
+    )
+    materialization = harness.run_completion(
+        sidecar,
+        f"{ROOT_ID}:latency:prompt-root-materialize",
+        materialization_payload,
+        operation_kind="zero-output-root-readdress",
+    )
+    harness.require(materialization["prompt_tokens"] == len(prompt_tokens), "materialized prompt count changed")
+    harness.require(materialization["cached_prompt_tokens"] == 0, "prompt-root materialization reused cache")
+    harness.require(materialization["completion_tokens"] == 0, "prompt-root materialization emitted output")
+
+    save_raw, save_wall = harness.ram_root_action(action="root-save", root_id=ROOT_ID)
+    saved = validate_root_response(save_raw, action="root-save")
+    harness.require(saved["n_tokens"] == len(prompt_tokens), "saved prompt-root token count changed")
+    root_operations: list[dict[str, Any]] = [{**saved, "client_wall_seconds": save_wall}]
+
+    def restore(label: str) -> dict[str, Any]:
+        response_raw, wall = harness.ram_root_action(action="root-restore", root_id=ROOT_ID)
+        response = validate_root_response(response_raw, action="root-restore", expected=saved)
+        response.update(label=label, client_wall_seconds=wall)
+        root_operations.append(response)
+        return response
+
+    def execute_route(route: str, label: str, *, counted: bool, pair: int) -> dict[str, Any]:
+        restore_wall = 0.0
+        restore_record: dict[str, Any] | None = None
+        if route == "catalytic":
+            restore_record = restore(f"before-{label}")
+            restore_wall = float(restore_record["client_wall_seconds"])
+        record = run_timed_branch(
+            sidecar=sidecar,
+            codec=codec,
+            retained=retained,
+            spec=spec,
+            route=route,
+            label=f"{ROOT_ID}:latency:{label}:{route}",
+        )
+        if route == "catalytic":
+            harness.require(record["cached_prompt_tokens"] == len(prompt_tokens), "catalytic route missed exact prompt root")
+        else:
+            harness.require(record["cached_prompt_tokens"] == 0, "direct route reused prompt cache")
+        record.update(
+            counted=counted,
+            pair=pair,
+            restore=restore_record,
+            restore_client_wall_seconds=restore_wall,
+            effective_wall_seconds=float(record["wall_seconds"]) + restore_wall,
+        )
+        return record
+
+    warmup = [
+        execute_route(route, f"warmup-{index}", counted=False, pair=0)
+        for index, route in enumerate(WARMUP_ROUTE_ORDER, start=1)
+    ]
+    pairs: list[dict[str, Any]] = []
+    counted_records: list[dict[str, Any]] = []
+    for pair_index, route_order in enumerate(PAIR_ROUTE_ORDERS, start=1):
+        records = [
+            execute_route(route, f"pair-{pair_index}-route-{ordinal}", counted=True, pair=pair_index)
+            for ordinal, route in enumerate(route_order, start=1)
+        ]
+        by_route = {str(record["route"]): record for record in records}
+        harness.require(set(by_route) == {"catalytic", "direct"}, "counted pair lost a route")
+        pairs.append(
+            {
+                "pair": pair_index,
+                "route_order": list(route_order),
+                "catalytic_effective_wall_seconds": by_route["catalytic"]["effective_wall_seconds"],
+                "direct_wall_seconds": by_route["direct"]["effective_wall_seconds"],
+                "catalytic_won": by_route["catalytic"]["effective_wall_seconds"] < by_route["direct"]["effective_wall_seconds"],
+            }
+        )
+        counted_records.extend(records)
+
+    final_restore = restore("final-root-closure")
+    resources_with_root = harness.process_resources(sidecar, baseline_private)
+    erase_raw, erase_wall = harness.ram_root_action(action="root-erase", root_id=ROOT_ID)
+    erased = validate_root_response(erase_raw, action="root-erase", expected=saved)
+    erased.update(client_wall_seconds=erase_wall)
+    root_operations.append(erased)
+    resources_after_erase = harness.process_resources(sidecar, baseline_private)
+
+    all_routes = [*warmup, *counted_records]
+    catalytic = [record for record in counted_records if record["route"] == "catalytic"]
+    direct = [record for record in counted_records if record["route"] == "direct"]
+    harness.require(len(catalytic) == COUNTED_PAIRS and len(direct) == COUNTED_PAIRS, "counted route cardinality changed")
+    input_hashes = {record["input_token_sha256"] for record in all_routes}
+    generated_hashes = {record["generated_token_sha256"] for record in all_routes}
+    utility_exact = (
+        all(bool(record["correct"]) for record in all_routes)
+        and len(input_hashes) == 1
+        and len(generated_hashes) == 1
+        and all(record["cached_prompt_tokens"] == len(prompt_tokens) for record in catalytic)
+        and all(record["cached_prompt_tokens"] == 0 for record in direct)
+    )
+
+    catalytic_prompt_ms = [float(record["timing"]["prompt_ms"]) for record in catalytic]
+    direct_prompt_ms = [float(record["timing"]["prompt_ms"]) for record in direct]
+    catalytic_ttft = [float(record["timing"]["ttft_seconds"]) + float(record["restore_client_wall_seconds"]) for record in catalytic]
+    direct_ttft = [float(record["timing"]["ttft_seconds"]) for record in direct]
+    catalytic_effective_wall = [float(record["effective_wall_seconds"]) for record in catalytic]
+    direct_effective_wall = [float(record["effective_wall_seconds"]) for record in direct]
+    prompt_speedup = statistics.median(direct_prompt_ms) / statistics.median(catalytic_prompt_ms)
+    ttft_speedup = statistics.median(direct_ttft) / statistics.median(catalytic_ttft)
+    effective_wall_speedup = statistics.median(direct_effective_wall) / statistics.median(catalytic_effective_wall)
+    paired_wins = sum(int(pair["catalytic_won"]) for pair in pairs)
+
+    median_direct_wall = statistics.median(direct_effective_wall)
+    median_catalytic_wall = statistics.median(catalytic_effective_wall)
+    marginal_wall_savings = median_direct_wall - median_catalytic_wall
+    closure_wall = float(final_restore["client_wall_seconds"]) + float(erase_wall)
+    preparation_and_closure_wall = float(materialization["wall_seconds"]) + float(save_wall) + closure_wall
+    wall_break_even = math.ceil(preparation_and_closure_wall / marginal_wall_savings) if marginal_wall_savings > 0 else None
+    median_direct_fresh = statistics.median([int(record["fresh_model_tokens"]) for record in direct])
+    median_catalytic_fresh = statistics.median([int(record["fresh_model_tokens"]) for record in catalytic])
+    marginal_fresh_savings = median_direct_fresh - median_catalytic_fresh
+    preparation_and_closure_fresh = int(materialization["fresh_model_tokens"])
+    fresh_break_even = math.ceil(preparation_and_closure_fresh / marginal_fresh_savings) if marginal_fresh_savings > 0 else None
+    shared_task_a_wall = float(task_a["wall_seconds"])
+    shared_task_a_fresh = int(task_a["fresh_model_tokens"])
+    counted_catalytic_lifecycle_wall = shared_task_a_wall + preparation_and_closure_wall + sum(catalytic_effective_wall)
+    counted_direct_lifecycle_wall = shared_task_a_wall + sum(direct_effective_wall)
+    counted_catalytic_lifecycle_fresh = shared_task_a_fresh + preparation_and_closure_fresh + sum(int(record["fresh_model_tokens"]) for record in catalytic)
+    counted_direct_lifecycle_fresh = shared_task_a_fresh + sum(int(record["fresh_model_tokens"]) for record in direct)
+    full_lifecycle_wall_advantage = counted_catalytic_lifecycle_wall < counted_direct_lifecycle_wall
+    full_lifecycle_fresh_advantage = counted_catalytic_lifecycle_fresh < counted_direct_lifecycle_fresh
+    classification = classify_result(
+        utility_exact=utility_exact,
+        paired_wins=paired_wins,
+        prompt_speedup=prompt_speedup,
+        ttft_speedup=ttft_speedup,
+        effective_wall_speedup=effective_wall_speedup,
+        full_lifecycle_wall_advantage=full_lifecycle_wall_advantage,
+        full_lifecycle_fresh_advantage=full_lifecycle_fresh_advantage,
+    )
+    accepted = classification == "fast-single-request-catalytic-latency-supported-bounded"
+    all_request_records = [task_a, materialization, *all_routes]
+
+    return {
+        "status": "complete",
+        "mechanism": "checkpoint-free-prompt-root-single-request-latency",
+        "verdict": "accept" if accepted else "reject",
+        "classification": classification,
+        "model": "Agents-A1",
+        "root_id": ROOT_ID,
+        "branch": {
+            "number": BRANCH_NUMBER,
+            "expected": EXPECTED_ANSWER,
+            "panel_sha256": PANEL_SHA256,
+            "prompt_tokens": len(branch_tokens),
+            "prompt_root_tokens": len(prompt_tokens),
+            "retained_root_tokens": int(retained["retained_root_token_count"]),
+            "input_token_sha256": next(iter(input_hashes)),
+            "generated_token_sha256": next(iter(generated_hashes)) if len(generated_hashes) == 1 else None,
+        },
+        "trial_design": {
+            "fanout": 1,
+            "temporal_counted_pairs": COUNTED_PAIRS,
+            "warmup_route_order": list(WARMUP_ROUTE_ORDER),
+            "pair_route_orders": [list(order) for order in PAIR_ROUTE_ORDERS],
+            "minimum_paired_wins": MIN_PAIRED_WINS,
+            "minimum_median_speedup": MIN_MEDIAN_SPEEDUP,
+            "context_checkpoints": 0,
+        },
+        "metrics": {
+            "paired_wins": paired_wins,
+            "prompt_speedup": prompt_speedup,
+            "ttft_speedup_including_restore": ttft_speedup,
+            "effective_wall_speedup_including_restore": effective_wall_speedup,
+            "prompt_ms": {"catalytic": distribution(catalytic_prompt_ms), "direct": distribution(direct_prompt_ms)},
+            "ttft_seconds": {"catalytic": distribution(catalytic_ttft), "direct": distribution(direct_ttft)},
+            "effective_wall_seconds": {"catalytic": distribution(catalytic_effective_wall), "direct": distribution(direct_effective_wall)},
+            "fresh_model_tokens_per_request": {"catalytic_median": median_catalytic_fresh, "direct_median": median_direct_fresh},
+            "break_even": {
+                "preparation_and_closure_wall_seconds": preparation_and_closure_wall,
+                "closure_wall_seconds": closure_wall,
+                "marginal_wall_savings_seconds": marginal_wall_savings,
+                "wall_requests": wall_break_even,
+                "preparation_and_closure_fresh_model_tokens": preparation_and_closure_fresh,
+                "marginal_fresh_model_token_savings": marginal_fresh_savings,
+                "fresh_compute_requests": fresh_break_even,
+            },
+            "counted_full_lifecycle": {
+                "scope": "shared Task-A plus carrier preparation, four N=1 requests, every restore, final closure, and erase; warmup excluded symmetrically from decision",
+                "shared_task_a_wall_seconds": shared_task_a_wall,
+                "shared_task_a_fresh_model_tokens": shared_task_a_fresh,
+                "catalytic_wall_seconds": counted_catalytic_lifecycle_wall,
+                "direct_wall_seconds": counted_direct_lifecycle_wall,
+                "wall_speedup": counted_direct_lifecycle_wall / counted_catalytic_lifecycle_wall,
+                "catalytic_fresh_model_tokens": counted_catalytic_lifecycle_fresh,
+                "direct_fresh_model_tokens": counted_direct_lifecycle_fresh,
+                "fresh_compute_amplification": counted_direct_lifecycle_fresh / counted_catalytic_lifecycle_fresh,
+            },
+            "full_experiment": {
+                "model_requests": len(all_request_records),
+                "fresh_model_tokens": sum(int(record["fresh_model_tokens"]) for record in all_request_records),
+                "request_wall_seconds": sum(float(record["wall_seconds"]) for record in all_request_records),
+                "root_operation_client_wall_seconds": sum(float(record["client_wall_seconds"]) for record in root_operations),
+            },
+        },
+        "task_a": harness.token_summary(task_a),
+        "root_materialization": harness.token_summary(materialization),
+        "saved_root": saved,
+        "warmup": warmup,
+        "counted_records": counted_records,
+        "pairs": pairs,
+        "root_operations": root_operations,
+        "final_restore": final_restore,
+        "resources": {"with_root": resources_with_root, "after_erase": resources_after_erase},
+        "quality_gates": {
+            "qualified_panel_identity_exact": True,
+            "branch_fixed_before_successor_contact": True,
+            "task_a_correct": True,
+            "all_warmup_and_counted_outputs_correct": all(bool(record["correct"]) for record in all_routes),
+            "all_input_token_arrays_identical": len(input_hashes) == 1,
+            "all_generated_token_hashes_identical": len(generated_hashes) == 1,
+            "catalytic_cached_prompt_tokens_exact": all(record["cached_prompt_tokens"] == len(prompt_tokens) for record in catalytic),
+            "direct_cached_prompt_tokens_zero": all(record["cached_prompt_tokens"] == 0 for record in direct),
+            "checkpoint_count_zero": saved["n_checkpoints"] == 0,
+            "root_metadata_invariant": all(
+                record.get("n_tokens") == saved["n_tokens"]
+                and record.get("n_bytes") == saved["n_bytes"]
+                and record.get("n_checkpoints") == 0
+                for record in root_operations
+            ),
+            "final_restore_before_erase": final_restore["action"] == "root-restore",
+            "explicit_erase": erased["action"] == "root-erase",
+            "paired_win_gate": paired_wins >= MIN_PAIRED_WINS,
+            "prompt_speedup_gate": prompt_speedup >= MIN_MEDIAN_SPEEDUP,
+            "ttft_speedup_gate": ttft_speedup >= MIN_MEDIAN_SPEEDUP,
+            "effective_wall_speedup_gate": effective_wall_speedup >= MIN_MEDIAN_SPEEDUP,
+            "counted_full_lifecycle_wall_advantage": full_lifecycle_wall_advantage,
+            "counted_full_lifecycle_fresh_compute_advantage": full_lifecycle_fresh_advantage,
+            "fast_single_request_catalytic_inference_supported": accepted,
+            "fanout_claimed": False,
+            "unbounded_catalytic_inference_established": False,
+            "automatic_promotion": False,
+        },
+        "next_boundary": (
+            "PROFILE_AND_CAUSALLY_LOCALIZE_THE_DOMINANT_REMAINING_SINGLE_REQUEST_HOT_PATH_WITH_THE_SAME_EXACT_CONTROL"
+            if accepted
+            else "PRESERVE_EXACT_REUSE_AND_LOCALIZE_WHICH_LATENCY_COMPONENT_FAILED_BEFORE_ANY_RUNTIME_INTERVENTION"
+        ),
+    }
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
+    parser.add_argument("--model", type=Path, default=harness.DEFAULT_MODEL)
+    parser.add_argument("--ctx-checkpoints", type=int, choices=(0,), default=0)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--server-log-output", type=Path)
+    return parser.parse_args()
+
+
+def require_unused_artifact_paths(*paths: Path | None) -> None:
+    resolved = [path.resolve(strict=False) for path in paths if path is not None]
+    harness.require(len(resolved) == len(set(resolved)), "latency artifact paths must be distinct")
+    for path in paths:
+        if path is not None:
+            harness.require(not path.resolve(strict=False).exists(), f"latency artifact path already exists: {path}")
+
+
+def main() -> int:
+    args = parse_args()
+    repository = Path(__file__).resolve().parents[1]
+    binary = args.binary.resolve(strict=True)
+    expected_candidate = (repository / DEFAULT_BINARY).resolve(strict=True)
+    harness.require(
+        binary == expected_candidate,
+        "latency discriminator requires the isolated frontier candidate binary path",
+    )
+    water.require_pinned_binary(binary)
+    model = args.model.resolve(strict=True)
+    require_unused_artifact_paths(args.output, args.server_log_output)
+    corpus = harness.carrier.load_public_corpus(repository)
+    roots = {str(item["root_id"]): item for item in corpus["roots"]}
+    evaluator, live_contract = harness.load_discovery_sidecar_contract()
+    stable_pids = harness.live_runtime.require_stable()
+    harness.require(len(stable_pids) == 1, "latency discriminator requires the sole stable listener")
+    harness.require(not harness.live_runtime.listener_pids(harness.live_runtime.PORT), "frontier port is occupied")
+    state_root = Path(tempfile.mkdtemp(prefix="neo3000-single-request-latency-"))
+    sidecar: Any | None = None
+    result: dict[str, Any] | None = None
+    cleanup: Mapping[str, Any] | None = None
+    error: BaseException | None = None
+    if args.server_log_output is not None:
+        os.environ["LLAMA_ARG_LOG_VERBOSITY"] = "1000"
+        os.environ["LLAMA_SERVER_SLOTS_DEBUG"] = "1"
+    try:
+        sidecar = water.build_sidecar(
+            binary=binary,
+            model=model,
+            evaluator=evaluator,
+            live_contract=live_contract,
+            stable_pids=set(stable_pids),
+            state_root=state_root,
+            context_checkpoints=args.ctx_checkpoints,
+        )
+        readiness = sidecar.launch()
+        baseline_private = None
+        process_memory = readiness.get("process_memory")
+        if isinstance(process_memory, Mapping) and isinstance(process_memory.get("private_bytes"), int):
+            baseline_private = int(process_memory["private_bytes"])
+        codec = harness.carrier.SidecarPromptCodec(harness.live_runtime.PORT)
+        result = evaluate(
+            sidecar=sidecar,
+            codec=codec,
+            props=codec.props(),
+            root=roots[ROOT_ID],
+            baseline_private=baseline_private,
+        )
+        result["launch_configuration"] = readiness.get("launch_configuration")
+        result["readiness"] = {
+            "pid": readiness.get("pid"),
+            "readiness_seconds": readiness.get("readiness_seconds"),
+            "binary": readiness.get("binary"),
+            "model": readiness.get("model"),
+            "baseline_private_bytes": baseline_private,
+            "launch_configuration": readiness.get("launch_configuration"),
+        }
+    except BaseException as exc:
+        error = exc
+    finally:
+        cleanup = dict(harness.live_runtime.safe_sidecar_cleanup(sidecar))
+        if args.server_log_output is not None:
+            trace_record: dict[str, Any] = {"requested": str(args.server_log_output)}
+            try:
+                log_path = Path(str(sidecar.readiness.get("log_path"))) if sidecar is not None else None
+                if log_path is None or not log_path.is_file():
+                    raise FileNotFoundError("sidecar log is unavailable")
+                args.server_log_output.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(log_path, args.server_log_output)
+                trace_record.update(copied=True, bytes=args.server_log_output.stat().st_size)
+            except BaseException as exc:
+                trace_record.update(copied=False, error=f"{type(exc).__name__}: {exc}")
+            cleanup["server_log_copy"] = trace_record
+        shutil.rmtree(state_root, ignore_errors=True)
+
+    if error is not None:
+        print(json.dumps({"status": "engineering-failure", "error_type": type(error).__name__, "error": str(error), "cleanup": cleanup}, ensure_ascii=False, indent=2))
+        return 1
+    harness.require(result is not None, "single-request latency result is missing")
+    result["cleanup"] = cleanup
+    encoded = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True)
+    if args.output is not None:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(encoded + "\n", encoding="utf-8")
+    print(encoded)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
