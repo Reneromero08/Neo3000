@@ -69,6 +69,21 @@ ROOT_BOUNDARIES: dict[str, dict[str, Any]] = {
             "effective_wall_seconds": 10.57050000000163,
         },
     },
+    "strict-prefix": {
+        "expected_root_tokens": EXPECTED_BRANCH_PROMPT_TOKENS - 1,
+        "expected_cached_prompt_tokens": EXPECTED_BRANCH_PROMPT_TOKENS - 1,
+        "expected_fresh_prompt_tokens": 1,
+        "predecessor_medians": {
+            "prompt_ms": 2498.008,
+            "ttft_seconds_including_restore": 2.6165000000037253,
+            "effective_wall_seconds_including_restore": 2.9130000000077416,
+        },
+        "predecessor_direct_medians": {
+            "prompt_ms": 10185.8015,
+            "ttft_seconds": 10.25800000000163,
+            "effective_wall_seconds": 10.57050000000163,
+        },
+    },
 }
 
 
@@ -76,7 +91,12 @@ def select_root_boundary(name: str, *, prompt_tokens: Sequence[int], branch_toke
     harness.require(name in ROOT_BOUNDARIES, f"unsupported latency root boundary: {name}")
     selected = dict(ROOT_BOUNDARIES[name])
     selected["name"] = name
-    selected["tokens"] = list(branch_tokens if name == "full-prompt" else prompt_tokens)
+    if name == "full-prompt":
+        selected["tokens"] = list(branch_tokens)
+    elif name == "strict-prefix":
+        selected["tokens"] = list(branch_tokens[:-1])
+    else:
+        selected["tokens"] = list(prompt_tokens)
     harness.require(len(selected["tokens"]) == selected["expected_root_tokens"], "latency root-boundary token count changed")
     return selected
 
@@ -629,7 +649,9 @@ def evaluate(
         },
         "next_boundary": (
             (
-                "PROFILE_DECODE_AND_RESTORE_OVERHEAD_AFTER_FULL_PROMPT_ROOT_WITH_THE_SAME_N1_CONTROL"
+                "PROFILE_DECODE_AND_RESTORE_OVERHEAD_AFTER_STRICT_PREFIX_ROOT_WITH_THE_SAME_N1_CONTROL"
+                if root_boundary == "strict-prefix"
+                else "PROFILE_DECODE_AND_RESTORE_OVERHEAD_AFTER_FULL_PROMPT_ROOT_WITH_THE_SAME_N1_CONTROL"
                 if root_boundary == "full-prompt"
                 else "PROFILE_AND_CAUSALLY_LOCALIZE_THE_DOMINANT_REMAINING_SINGLE_REQUEST_HOT_PATH_WITH_THE_SAME_EXACT_CONTROL"
             )
