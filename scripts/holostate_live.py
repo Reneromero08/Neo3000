@@ -5066,6 +5066,58 @@ class LiveSidecar:
             self.exact_ownership(f"post-request:{name}")
         return value
 
+    def guarded_batch_member(
+        self,
+        name: str,
+        call: Callable[[], Any],
+        timeout: float = 1_200,
+    ) -> Any:
+        if getattr(self, "wddm_policy", None) is not None:
+            raise NeoLoopError("batch-member guard requires the legacy exact-ownership path")
+        self.require_active(require_listener=False)
+        deadline = time.monotonic() + timeout
+        executor = ThreadPoolExecutor(max_workers=1)
+        try:
+            future = executor.submit(call)
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise NeoLoopError(f"{name} timed out")
+                try:
+                    value = future.result(timeout=min(0.25, remaining))
+                    break
+                except FutureTimeout:
+                    self.require_active(require_listener=False)
+                    if time.monotonic() >= deadline:
+                        raise NeoLoopError(f"{name} timed out")
+        except Exception as exc:
+            active_error: Exception | None = None
+            if self.process and self.process.poll() is None:
+                try:
+                    self.require_active(require_listener=False)
+                except Exception as boundary_exc:
+                    active_error = boundary_exc
+            if not future.done() and self.process and self.process.poll() is None:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait(timeout=10)
+            try:
+                future.result(timeout=10)
+            except Exception:
+                pass
+            if active_error is not None:
+                raise NeoLoopError(
+                    f"{name} failed ({exc}); post-request active check also failed ({active_error})"
+                ) from exc
+            raise
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
+        self.require_active(require_listener=False)
+        return value
+
     def guarded_profiled(
         self,
         name: str,

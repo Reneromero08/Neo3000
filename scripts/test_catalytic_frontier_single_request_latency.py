@@ -213,6 +213,8 @@ class CatalyticFrontierSingleRequestLatencyTests(unittest.TestCase):
         self.assertIsNone(parameter.default)
         observer = inspect.signature(latency.harness.run_completion).parameters["guard_phase_observer"]
         self.assertIsNone(observer.default)
+        batch_owned = inspect.signature(latency.harness.run_completion).parameters["batch_owned_request"]
+        self.assertFalse(batch_owned.default)
 
     def test_timed_branch_can_capture_one_guard_phase_record(self) -> None:
         completion = {

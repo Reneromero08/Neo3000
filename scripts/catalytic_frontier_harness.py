@@ -203,17 +203,24 @@ def run_completion(
     operation_kind: str = "model-generation",
     recorder: Any | None = None,
     guard_phase_observer: Any | None = None,
+    batch_owned_request: bool = False,
 ) -> dict[str, Any]:
     print(f"[frontier] start {label}", flush=True)
     started = time.monotonic()
     raw_recorder = recorder if recorder is not None else (lambda _line: None)
+    require(
+        not (guard_phase_observer is not None and batch_owned_request),
+        "profiled and batch-owned guards cannot be combined",
+    )
     guarded_kwargs: dict[str, Any] = {"timeout": 1_000}
     if guard_phase_observer is not None:
         guarded_kwargs["phase_observer"] = guard_phase_observer
     guarded_call = (
-        sidecar.guarded
-        if guard_phase_observer is None
+        sidecar.guarded_batch_member
+        if batch_owned_request
         else sidecar.guarded_profiled
+        if guard_phase_observer is not None
+        else sidecar.guarded
     )
     execution = guarded_call(
         f"frontier:{label}",

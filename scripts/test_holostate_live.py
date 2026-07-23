@@ -1772,6 +1772,23 @@ class WorkerProtocolV3ContractTests(unittest.TestCase):
             inspect.getsource(holo.LiveSidecar.guarded),
         )
 
+    def test_batch_member_guard_preserves_active_checks_without_per_request_ownership(self) -> None:
+        sidecar = object.__new__(holo.LiveSidecar)
+        sidecar.require_active = mock.Mock()
+        sidecar.exact_ownership = mock.Mock()
+
+        self.assertEqual(
+            sidecar.guarded_batch_member("batch", lambda: "ok", timeout=1),
+            "ok",
+        )
+
+        self.assertEqual(sidecar.require_active.call_count, 2)
+        sidecar.exact_ownership.assert_not_called()
+        self.assertNotIn(
+            "exact_ownership",
+            inspect.getsource(holo.LiveSidecar.guarded_batch_member),
+        )
+
     def test_v3_stop_checks_pre_and_post_teardown_ownership(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             sidecar = object.__new__(holo.LiveSidecar)

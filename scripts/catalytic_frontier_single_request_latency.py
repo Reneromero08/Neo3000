@@ -43,6 +43,13 @@ EXPECTED_BRANCH_PROMPT_TOKENS = 690
 MIN_PAIRED_WINS = 3
 MIN_MEDIAN_SPEEDUP = 1.25
 MAX_DIRECT_CONTROL_DRIFT_FRACTION = 0.10
+NEO_EXP_0071_CATALYTIC_GUARDED_WALL_MEDIAN_SECONDS = 0.492500000007567
+NEO_EXP_0071_CATALYTIC_EFFECTIVE_WALL_MEDIAN_SECONDS = 0.5084999999962747
+NEO_EXP_0071_CATALYTIC_SERVER_COMPUTE_MEDIAN_MS = 303.347
+NEO_EXP_0071_CATALYTIC_CUSTODY_OVERHEAD_MEDIAN_SECONDS = 0.195780500007567
+MIN_BATCH_OWNERSHIP_CUSTODY_SPEEDUP = 1.50
+MIN_BATCH_OWNERSHIP_EFFECTIVE_WALL_SPEEDUP = 1.10
+MAX_BATCH_OWNERSHIP_SERVER_COMPUTE_DRIFT_FRACTION = 0.20
 SPECULATIVE_MODES = ("none", "ngram-cache")
 ROOT_STORAGE_MODES = ("host", "device")
 RUNTIME_IDENTITY_MODES = ("canonical", "cuda-bundle")
@@ -380,6 +387,31 @@ GUARD_PHASE_RECORD_KEYS = {
     "post_ownership",
     "total_seconds",
 }
+OBSERVATION_ONLY_INTEGRITY_GATE_KEYS = (
+    "qualified_panel_identity_exact",
+    "branch_fixed_before_successor_contact",
+    "task_a_correct",
+    "all_warmup_and_counted_outputs_correct",
+    "all_input_token_arrays_identical",
+    "all_generated_token_hashes_identical",
+    "guard_phase_profile_complete",
+    "catalytic_cached_prompt_tokens_exact",
+    "catalytic_fresh_prompt_tokens_exact",
+    "direct_cached_prompt_tokens_zero",
+    "checkpoint_count_zero",
+    "root_metadata_invariant",
+    "cuda_device_bytes_nonzero",
+    "cuda_gpu_bytes_nonzero",
+    "cuda_device_bytes_zero_after_erase",
+    "cuda_gpu_bytes_zero_after_erase",
+    "final_restore_before_erase",
+    "explicit_erase",
+)
+BATCH_OWNERSHIP_INTEGRITY_GATE_KEYS = tuple(
+    key
+    for key in OBSERVATION_ONLY_INTEGRITY_GATE_KEYS
+    if key != "guard_phase_profile_complete"
+) + ("batch_ownership_boundaries_exact",)
 
 
 def validate_guard_phase_record(
@@ -460,7 +492,12 @@ def run_timed_branch(
     route: str,
     label: str,
     profile_guard_phases: bool = False,
+    batch_owned_request: bool = False,
 ) -> dict[str, Any]:
+    harness.require(
+        not (profile_guard_phases and batch_owned_request),
+        "profiled and batch-owned timed branches cannot be combined",
+    )
     harness.require(route in {"catalytic", "direct"}, "unsupported latency route")
     tokens, payload = branch_request(codec, retained, spec, cache_prompt=route == "catalytic")
     recorder = TimingRecorder()
@@ -468,6 +505,8 @@ def run_timed_branch(
     completion_kwargs: dict[str, Any] = {"recorder": recorder}
     if profile_guard_phases:
         completion_kwargs["guard_phase_observer"] = guard_phases.append
+    if batch_owned_request:
+        completion_kwargs["batch_owned_request"] = True
     record = harness.run_completion(sidecar, label, payload, **completion_kwargs)
     timing = recorder.summary(request_wall_seconds=float(record["wall_seconds"]))
     if profile_guard_phases:
@@ -537,10 +576,15 @@ def evaluate(
     speculative_mode: str = "none",
     root_storage: str = "host",
     guard_phase_profiling: bool = False,
+    batch_owned_timed_requests: bool = False,
 ) -> dict[str, Any]:
     harness.require(speculative_mode in SPECULATIVE_MODES, "unsupported latency speculative mode")
     harness.require(root_storage in ROOT_STORAGE_MODES, "unsupported latency root storage mode")
     harness.require(speculative_mode == "none" or root_storage == "host", "speculation and device root cannot be combined")
+    harness.require(
+        not (guard_phase_profiling and batch_owned_timed_requests),
+        "guard profiling and batch ownership cannot be combined",
+    )
     panel = water.panel_for(root)
     harness.require(water.base._panel_hash(panel) == PANEL_SHA256, "qualified water panel identity changed")
     spec = panel[BRANCH_NUMBER - 1]
@@ -621,6 +665,7 @@ def evaluate(
             route=route,
             label=f"{ROOT_ID}:latency:{label}:{route}",
             profile_guard_phases=guard_phase_profiling,
+            batch_owned_request=batch_owned_timed_requests,
         )
         if route == "catalytic":
             harness.require(
@@ -652,6 +697,21 @@ def evaluate(
         if speculative_mode == "ngram-cache"
         else None
     )
+    batch_ownership_operations: list[dict[str, Any]] = []
+
+    def batch_ownership_boundary(boundary: str) -> None:
+        started = time.monotonic()
+        evidence = sidecar.exact_ownership(boundary)
+        batch_ownership_operations.append(
+            {
+                "boundary": boundary,
+                "client_wall_seconds": time.monotonic() - started,
+                "evidence": evidence,
+            }
+        )
+
+    if batch_owned_timed_requests:
+        batch_ownership_boundary("pre-timed-request-batch")
     resources_after_learning = None
     warmup: list[dict[str, Any]] = []
     for index, route in enumerate(WARMUP_ROUTE_ORDER, start=1):
@@ -689,6 +749,48 @@ def evaluate(
             }
         )
         counted_records.extend(records)
+
+    if batch_owned_timed_requests:
+        batch_ownership_boundary("post-timed-request-batch")
+        timed_records = [*warmup, *counted_records]
+        batch_ownership_total_seconds = sum(
+            float(item["client_wall_seconds"])
+            for item in batch_ownership_operations
+        )
+        batch_ownership_amortized_seconds = (
+            batch_ownership_total_seconds / len(timed_records)
+        )
+        for record in timed_records:
+            record["batch_ownership_amortized_seconds"] = (
+                batch_ownership_amortized_seconds
+            )
+            record["effective_wall_seconds"] = (
+                float(record["effective_wall_seconds"])
+                + batch_ownership_amortized_seconds
+            )
+        for pair in pairs:
+            records = [
+                record
+                for record in counted_records
+                if int(record["pair"]) == int(pair["pair"])
+            ]
+            by_route = {str(record["route"]): record for record in records}
+            pair["catalytic_effective_wall_seconds"] = by_route["catalytic"][
+                "effective_wall_seconds"
+            ]
+            pair["direct_wall_seconds"] = by_route["direct"][
+                "effective_wall_seconds"
+            ]
+            pair["control_effective_wall_seconds"] = by_route["direct"][
+                "effective_wall_seconds"
+            ]
+            pair["catalytic_won"] = (
+                by_route["catalytic"]["effective_wall_seconds"]
+                < by_route["direct"]["effective_wall_seconds"]
+            )
+    else:
+        batch_ownership_total_seconds = 0.0
+        batch_ownership_amortized_seconds = 0.0
 
     final_restore = restore("final-root-closure")
     resources_after_trials_with_root = harness.process_resources(sidecar, baseline_private)
@@ -732,6 +834,96 @@ def evaluate(
     catalytic_effective_wall = [float(record["effective_wall_seconds"]) for record in catalytic]
     direct_effective_wall = [float(record["effective_wall_seconds"]) for record in direct]
     catalytic_predicted_ms = [float(record["timing"]["predicted_ms"]) for record in catalytic]
+    batch_ownership_metrics: dict[str, Any] | None = None
+    batch_ownership_gate = True
+    if batch_owned_timed_requests:
+        catalytic_guarded_wall = [
+            float(record["wall_seconds"]) + batch_ownership_amortized_seconds
+            for record in catalytic
+        ]
+        catalytic_server_compute_ms = [
+            float(record["timing"]["prompt_ms"])
+            + float(record["timing"]["predicted_ms"])
+            for record in catalytic
+        ]
+        catalytic_custody_overhead = [
+            guarded_wall - server_compute_ms / 1000.0
+            for guarded_wall, server_compute_ms in zip(
+                catalytic_guarded_wall,
+                catalytic_server_compute_ms,
+            )
+        ]
+        harness.require(
+            all(value >= 0.0 for value in catalytic_custody_overhead),
+            "batch-owned custody overhead became negative",
+        )
+        median_custody_overhead = statistics.median(catalytic_custody_overhead)
+        harness.require(
+            median_custody_overhead > 0.0,
+            "batch-owned custody overhead median is not positive",
+        )
+        custody_speedup = (
+            NEO_EXP_0071_CATALYTIC_CUSTODY_OVERHEAD_MEDIAN_SECONDS
+            / median_custody_overhead
+        )
+        median_server_compute_ms = statistics.median(catalytic_server_compute_ms)
+        server_compute_drift_fraction = abs(
+            median_server_compute_ms
+            / NEO_EXP_0071_CATALYTIC_SERVER_COMPUTE_MEDIAN_MS
+            - 1.0
+        )
+        server_compute_drift_gate = (
+            server_compute_drift_fraction
+            <= MAX_BATCH_OWNERSHIP_SERVER_COMPUTE_DRIFT_FRACTION
+        )
+        effective_wall_speedup_vs_0071 = (
+            NEO_EXP_0071_CATALYTIC_EFFECTIVE_WALL_MEDIAN_SECONDS
+            / statistics.median(catalytic_effective_wall)
+        )
+        boundary_gate = (
+            len(batch_ownership_operations) == 2
+            and [
+                item["boundary"]
+                for item in batch_ownership_operations
+            ] == [
+                "pre-timed-request-batch",
+                "post-timed-request-batch",
+            ]
+            and all(
+                item["evidence"].get("passed") is True
+                for item in batch_ownership_operations
+            )
+        )
+        batch_ownership_gate = (
+            boundary_gate
+            and server_compute_drift_gate
+            and custody_speedup >= MIN_BATCH_OWNERSHIP_CUSTODY_SPEEDUP
+            and effective_wall_speedup_vs_0071
+            >= MIN_BATCH_OWNERSHIP_EFFECTIVE_WALL_SPEEDUP
+        )
+        batch_ownership_metrics = {
+            "immutable_neo_exp_0071": {
+                "catalytic_guarded_wall_median_seconds": NEO_EXP_0071_CATALYTIC_GUARDED_WALL_MEDIAN_SECONDS,
+                "catalytic_effective_wall_median_seconds": NEO_EXP_0071_CATALYTIC_EFFECTIVE_WALL_MEDIAN_SECONDS,
+                "catalytic_server_compute_median_ms": NEO_EXP_0071_CATALYTIC_SERVER_COMPUTE_MEDIAN_MS,
+                "catalytic_custody_overhead_median_seconds": NEO_EXP_0071_CATALYTIC_CUSTODY_OVERHEAD_MEDIAN_SECONDS,
+            },
+            "batch_boundaries": batch_ownership_operations,
+            "batch_boundary_total_seconds": batch_ownership_total_seconds,
+            "batch_boundary_amortized_seconds_per_timed_request": batch_ownership_amortized_seconds,
+            "catalytic_guarded_wall_seconds": distribution(catalytic_guarded_wall),
+            "catalytic_server_compute_ms": distribution(catalytic_server_compute_ms),
+            "server_compute_drift_fraction": server_compute_drift_fraction,
+            "maximum_server_compute_drift_fraction": MAX_BATCH_OWNERSHIP_SERVER_COMPUTE_DRIFT_FRACTION,
+            "server_compute_drift_gate": server_compute_drift_gate,
+            "catalytic_custody_overhead_seconds": distribution(catalytic_custody_overhead),
+            "custody_speedup_vs_neo_exp_0071": custody_speedup,
+            "minimum_custody_speedup": MIN_BATCH_OWNERSHIP_CUSTODY_SPEEDUP,
+            "effective_wall_speedup_vs_neo_exp_0071": effective_wall_speedup_vs_0071,
+            "minimum_effective_wall_speedup": MIN_BATCH_OWNERSHIP_EFFECTIVE_WALL_SPEEDUP,
+            "boundary_gate": boundary_gate,
+            "gate": batch_ownership_gate,
+        }
     draft_metrics = draft_acceptance_metrics(catalytic, direct)
     draft_acceptance_gate = (
         speculative_mode == "none"
@@ -900,6 +1092,9 @@ def evaluate(
     if guard_phase_profiling:
         classification = "observation-only-guard-phase-profile-pending-cleanup"
         accepted = False
+    elif batch_owned_timed_requests:
+        classification = "batch-boundary-exact-ownership-profile-pending-cleanup"
+        accepted = False
     all_request_records = [task_a, materialization, *all_routes]
 
     return {
@@ -913,7 +1108,7 @@ def evaluate(
         ),
         "verdict": (
             "inconclusive"
-            if guard_phase_profiling
+            if guard_phase_profiling or batch_owned_timed_requests
             else "accept"
             if accepted
             else "reject"
@@ -950,6 +1145,7 @@ def evaluate(
             "second_carrier_closure": "process-retirement" if speculative_mode == "ngram-cache" else None,
             "learning_warmup_requests_charged": len(warmup) if speculative_mode == "ngram-cache" else 0,
             "guard_phase_profiling": guard_phase_profiling,
+            "batch_owned_timed_requests": batch_owned_timed_requests,
             "expected_catalytic_cached_prompt_tokens": boundary["expected_cached_prompt_tokens"],
             "expected_catalytic_fresh_prompt_tokens": boundary["expected_fresh_prompt_tokens"],
         },
@@ -965,6 +1161,7 @@ def evaluate(
             "speedup_vs_neo_exp_0062_543_root": predecessor_speedups,
             "cuda_root": cuda_root_metrics,
             "raw_latency_classification": raw_latency_classification,
+            "batch_ownership": batch_ownership_metrics,
             "ngram_cache": {
                 "catalytic_counted_draft_tokens": draft_metrics["catalytic_draft_tokens"],
                 "catalytic_counted_accepted_draft_tokens": draft_metrics["catalytic_accepted_draft_tokens"],
@@ -1088,6 +1285,36 @@ def evaluate(
             "observation_only_no_speed_adjudication": (
                 not guard_phase_profiling or accepted is False
             ),
+            "batch_ownership_boundaries_exact": (
+                not batch_owned_timed_requests
+                or bool(batch_ownership_metrics and batch_ownership_metrics["boundary_gate"])
+            ),
+            "batch_ownership_custody_speedup_gate": (
+                not batch_owned_timed_requests
+                or bool(
+                    batch_ownership_metrics
+                    and batch_ownership_metrics["custody_speedup_vs_neo_exp_0071"]
+                    >= MIN_BATCH_OWNERSHIP_CUSTODY_SPEEDUP
+                )
+            ),
+            "batch_ownership_effective_wall_speedup_gate": (
+                not batch_owned_timed_requests
+                or bool(
+                    batch_ownership_metrics
+                    and batch_ownership_metrics["effective_wall_speedup_vs_neo_exp_0071"]
+                    >= MIN_BATCH_OWNERSHIP_EFFECTIVE_WALL_SPEEDUP
+                )
+            ),
+            "batch_ownership_server_compute_drift_gate": (
+                not batch_owned_timed_requests
+                or bool(
+                    batch_ownership_metrics
+                    and batch_ownership_metrics["server_compute_drift_gate"]
+                )
+            ),
+            "batch_ownership_mechanism_gate": (
+                not batch_owned_timed_requests or batch_ownership_gate
+            ),
             "fanout_claimed": False,
             "unbounded_catalytic_inference_established": False,
             "automatic_promotion": False,
@@ -1095,6 +1322,9 @@ def evaluate(
         "next_boundary": (
             "FINALIZE_OBSERVATION_ONLY_GUARD_PHASE_PROFILE_AFTER_CLEANUP"
             if guard_phase_profiling
+            else
+            "FINALIZE_BATCH_BOUNDARY_EXACT_OWNERSHIP_PROFILE_AFTER_CLEANUP"
+            if batch_owned_timed_requests
             else
             "PROFILE_NEXT_CUDA_CATALYTIC_HOT_PATH_AFTER_ACCEPTED_DEVICE_ROOT"
             if accepted and root_storage == "device"
@@ -1179,9 +1409,42 @@ def finalize_result_after_cleanup(
         quality_gates = result["quality_gates"]
         quality_gates["cuda_wddm_at_or_below_6000_mib"] = wddm_gate
         quality_gates["candidate_process_retired"] = cleanup_gate["passed"] is True
+        if result.get("trial_design", {}).get("batch_owned_timed_requests") is True:
+            integrity_gate = all(
+                quality_gates.get(key) is True
+                for key in BATCH_OWNERSHIP_INTEGRITY_GATE_KEYS
+            )
+            mechanism_gate = (
+                quality_gates.get("batch_ownership_mechanism_gate") is True
+            )
+            supported = (
+                integrity_gate
+                and mechanism_gate
+                and cleanup_gate["passed"] is True
+                and wddm_gate
+            )
+            quality_gates["batch_ownership_non_speed_integrity"] = integrity_gate
+            quality_gates["fast_single_request_catalytic_inference_supported"] = supported
+            result["verdict"] = "accept" if supported else "reject"
+            result["classification"] = (
+                "batch-boundary-exact-ownership-fast-catalytic-inference-supported-bounded"
+                if supported
+                else "batch-boundary-exact-ownership-without-preregistered-speed-gate"
+            )
+            result["next_boundary"] = (
+                "PROFILE_REMAINING_PER_REQUEST_ACTIVE_HEALTH_AND_EXECUTOR_OVERHEAD"
+                if supported
+                else "PRESERVE_BATCH_OWNERSHIP_EVIDENCE_AND_LOCALIZE_THE_FAILED_GATE"
+            )
+            return result
         if result.get("trial_design", {}).get("guard_phase_profiling") is True:
+            integrity_gate = all(
+                quality_gates.get(key) is True
+                for key in OBSERVATION_ONLY_INTEGRITY_GATE_KEYS
+            )
+            quality_gates["observation_only_non_speed_integrity"] = integrity_gate
             profile_complete = (
-                quality_gates.get("guard_phase_profile_complete") is True
+                integrity_gate
                 and cleanup_gate["passed"] is True
                 and wddm_gate
             )
@@ -1253,6 +1516,7 @@ def main(
     runtime_identity: str = "canonical",
     moe_server_args: tuple[str, ...] = water.checkpoint_control.DEFAULT_MOE_SERVER_ARGS,
     guard_phase_profiling: bool = False,
+    batch_owned_timed_requests: bool = False,
 ) -> int:
     args = parse_args()
     harness.require(speculative_mode in SPECULATIVE_MODES, "unsupported latency speculative mode")
@@ -1261,6 +1525,10 @@ def main(
     moe_server_args = water.checkpoint_control.normalize_moe_server_args(moe_server_args)
     harness.require(speculative_mode == "none" or root_storage == "host", "speculation and device root cannot be combined")
     harness.require(root_storage != "device" or runtime_identity == "cuda-bundle", "device root requires the CUDA runtime bundle")
+    harness.require(
+        not (guard_phase_profiling and batch_owned_timed_requests),
+        "guard profiling and batch ownership cannot be combined",
+    )
     repository = Path(__file__).resolve().parents[1]
     binary = args.binary.resolve(strict=True)
     expected_candidate = (repository / DEFAULT_BINARY).resolve(strict=True)
@@ -1349,12 +1617,14 @@ def main(
             speculative_mode=speculative_mode,
             root_storage=root_storage,
             guard_phase_profiling=guard_phase_profiling,
+            batch_owned_timed_requests=batch_owned_timed_requests,
         )
         result["launch_configuration"] = readiness.get("launch_configuration")
         result["cuda_runtime_sha256"] = cuda_runtime_sha256
         result["runtime_identity"] = runtime_identity
         result["moe_server_args"] = list(moe_server_args)
         result["guard_phase_profiling"] = guard_phase_profiling
+        result["batch_owned_timed_requests"] = batch_owned_timed_requests
         result["readiness"] = {
             "pid": readiness.get("pid"),
             "readiness_seconds": readiness.get("readiness_seconds"),

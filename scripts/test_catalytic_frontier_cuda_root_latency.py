@@ -5,6 +5,7 @@ from unittest import mock
 
 import catalytic_frontier_checkpoint_control as checkpoint
 import catalytic_frontier_cuda_root_all_cpu_control as all_cpu_control
+import catalytic_frontier_cuda_root_batch_ownership_latency as batch_ownership
 import catalytic_frontier_cuda_root_guard_profile as guard_profile
 import catalytic_frontier_cuda_root_host_control as host_control
 import catalytic_frontier_cuda_root_partial_moe_latency as partial_moe
@@ -175,7 +176,21 @@ class CudaRootLatencyTests(unittest.TestCase):
         self.assertIn("moe_server_args=checkpoint.DEFAULT_MOE_SERVER_ARGS", source)
         self.assertIn("guard_phase_profiling=True", source)
 
+    def test_batch_ownership_profile_changes_only_timed_ownership_cadence(self):
+        source = inspect.getsource(batch_ownership)
+        self.assertNotIn("PARTIAL_MOE_", source)
+        self.assertIn('root_boundary="strict-prefix"', source)
+        self.assertIn('root_storage="device"', source)
+        self.assertIn('runtime_identity="cuda-bundle"', source)
+        self.assertIn("moe_server_args=checkpoint.DEFAULT_MOE_SERVER_ARGS", source)
+        self.assertIn("batch_owned_timed_requests=True", source)
+        self.assertNotIn("guard_phase_profiling=True", source)
+
     def test_guard_profile_cleanup_never_emits_a_speed_claim(self):
+        integrity_gates = {
+            key: True
+            for key in latency.OBSERVATION_ONLY_INTEGRITY_GATE_KEYS
+        }
         result = {
             "verdict": "inconclusive",
             "classification": "observation-only-guard-phase-profile-pending-cleanup",
@@ -184,7 +199,7 @@ class CudaRootLatencyTests(unittest.TestCase):
                 "guard_phase_profiling": True,
             },
             "metrics": {"cuda_root": {}},
-            "quality_gates": {"guard_phase_profile_complete": True},
+            "quality_gates": integrity_gates,
         }
         cleanup = {
             "wddm": {"peak_dedicated_bytes": 2_444_107_776},
@@ -213,6 +228,119 @@ class CudaRootLatencyTests(unittest.TestCase):
             finalized["quality_gates"]["fast_single_request_catalytic_inference_supported"]
         )
         self.assertIn("ADJUDICATE_GUARD_PHASE_EVIDENCE", finalized["next_boundary"])
+
+    def test_guard_profile_cleanup_fails_on_non_speed_integrity_loss(self):
+        integrity_gates = {
+            key: True
+            for key in latency.OBSERVATION_ONLY_INTEGRITY_GATE_KEYS
+        }
+        integrity_gates["all_warmup_and_counted_outputs_correct"] = False
+        result = {
+            "verdict": "inconclusive",
+            "classification": "observation-only-guard-phase-profile-pending-cleanup",
+            "trial_design": {
+                "root_storage": "device",
+                "guard_phase_profiling": True,
+            },
+            "metrics": {"cuda_root": {}},
+            "quality_gates": integrity_gates,
+        }
+        cleanup = {
+            "wddm": {"peak_dedicated_bytes": 2_444_107_776},
+        }
+        with mock.patch.object(
+            latency.harness.live_runtime,
+            "cleanup_integrity",
+            return_value={"passed": True},
+        ):
+            finalized = latency.finalize_result_after_cleanup(
+                result,
+                cleanup=cleanup,
+                cleanup_wall_seconds=1.0,
+                stable_pids={3860},
+            )
+
+        self.assertEqual(finalized["verdict"], "reject")
+        self.assertEqual(
+            finalized["classification"],
+            "observation-only-guard-phase-profile-safety-failure",
+        )
+        self.assertFalse(
+            finalized["quality_gates"]["observation_only_non_speed_integrity"]
+        )
+        self.assertFalse(
+            finalized["quality_gates"]["fast_single_request_catalytic_inference_supported"]
+        )
+
+    def test_batch_ownership_cleanup_requires_integrity_and_speed_gates(self):
+        integrity_gates = {
+            key: True
+            for key in latency.BATCH_OWNERSHIP_INTEGRITY_GATE_KEYS
+        }
+        integrity_gates["batch_ownership_mechanism_gate"] = True
+        result = {
+            "verdict": "inconclusive",
+            "classification": "batch-boundary-exact-ownership-profile-pending-cleanup",
+            "trial_design": {
+                "root_storage": "device",
+                "batch_owned_timed_requests": True,
+            },
+            "metrics": {"cuda_root": {}, "batch_ownership": {"gate": True}},
+            "quality_gates": integrity_gates,
+        }
+        cleanup = {
+            "wddm": {"peak_dedicated_bytes": 2_444_107_776},
+        }
+        with mock.patch.object(
+            latency.harness.live_runtime,
+            "cleanup_integrity",
+            return_value={"passed": True},
+        ):
+            finalized = latency.finalize_result_after_cleanup(
+                result,
+                cleanup=cleanup,
+                cleanup_wall_seconds=1.0,
+                stable_pids={3860},
+            )
+
+        self.assertEqual(finalized["verdict"], "accept")
+        self.assertEqual(
+            finalized["classification"],
+            "batch-boundary-exact-ownership-fast-catalytic-inference-supported-bounded",
+        )
+        self.assertTrue(
+            finalized["quality_gates"]["batch_ownership_non_speed_integrity"]
+        )
+        self.assertTrue(
+            finalized["quality_gates"]["fast_single_request_catalytic_inference_supported"]
+        )
+
+        integrity_gates["all_generated_token_hashes_identical"] = False
+        rejected = {
+            "verdict": "inconclusive",
+            "classification": "batch-boundary-exact-ownership-profile-pending-cleanup",
+            "trial_design": {
+                "root_storage": "device",
+                "batch_owned_timed_requests": True,
+            },
+            "metrics": {"cuda_root": {}, "batch_ownership": {"gate": True}},
+            "quality_gates": integrity_gates,
+        }
+        with mock.patch.object(
+            latency.harness.live_runtime,
+            "cleanup_integrity",
+            return_value={"passed": True},
+        ):
+            rejected = latency.finalize_result_after_cleanup(
+                rejected,
+                cleanup=cleanup,
+                cleanup_wall_seconds=1.0,
+                stable_pids={3860},
+            )
+        self.assertEqual(rejected["verdict"], "reject")
+        self.assertFalse(
+            rejected["quality_gates"]["fast_single_request_catalytic_inference_supported"]
+        )
 
 
 if __name__ == "__main__":
