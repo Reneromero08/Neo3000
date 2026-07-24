@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 
@@ -11,6 +13,14 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 import catalytic_frontier_successor_terminal_pipeline as pipeline
+
+
+class InvalidStdout:
+    def write(self, _value: str) -> int:
+        raise OSError(22, "Invalid argument")
+
+    def flush(self) -> None:
+        raise OSError(22, "Invalid argument")
 
 
 def root_receipt(
@@ -59,6 +69,8 @@ def root_receipt(
 
 class SuccessorTerminalPipelineTests(unittest.TestCase):
     def test_preregistered_r2_geometry_and_controls_are_exact(self):
+        self.assertEqual(pipeline.EXPERIMENT_ID, "neo-exp-0087")
+        self.assertEqual(pipeline.ATTEMPT_ID, "frontier-attempt-0124")
         self.assertEqual(pipeline.EXPECTED_STATES, ("C", "D", "B"))
         self.assertEqual(
             pipeline.ROUTES,
@@ -190,11 +202,11 @@ class SuccessorTerminalPipelineTests(unittest.TestCase):
     def test_root_ids_depend_on_trial_route_and_edge_not_answer(self):
         self.assertEqual(
             pipeline.terminal_root_id("trial-1-terminal", 1),
-            "neo-exp-0086-trial-1-terminal-terminal-edge-1",
+            "neo-exp-0087-trial-1-terminal-terminal-edge-1",
         )
         self.assertEqual(
             pipeline.child_root_id("trial-1-root-only", "root-only", 2),
-            "neo-exp-0086-trial-1-root-only-root-only-child-2",
+            "neo-exp-0087-trial-1-root-only-root-only-child-2",
         )
         self.assertNotIn(
             "answer",
@@ -256,11 +268,65 @@ class SuccessorTerminalPipelineTests(unittest.TestCase):
         self.assertIn("cache_prompt=False", source)
         self.assertIn("neo3000_capture_terminal_logits", source)
         self.assertIn("neo3000_use_terminal_logits", source)
+        self.assertIn("with failure_proof_stdout()", source)
+        self.assertIn("acquire_launch_lock(launch_lock", source)
+        self.assertIn("preserve_failure_once(output, failure)", source)
         self.assertEqual(source.count('float(timing["ttft_seconds"])'), 3)
         self.assertNotIn('timing["first_event_seconds"]', source)
         self.assertNotIn('"observed_states": list(EXPECTED_STATES)', source)
         self.assertIn('edge_record["consumer"]["state"]["answer"]', source)
         self.assertIn('edge_record["successor"]["state"]["answer"]', source)
+
+    def test_invalid_stdout_cannot_prevent_guarded_dispatch(self):
+        class SentinelSidecar:
+            dispatched = False
+
+            def guarded(self, _label, _callback, **_kwargs):
+                self.dispatched = True
+                return SimpleNamespace(
+                    prompt_tokens=3,
+                    cached_prompt_tokens=0,
+                    completion_tokens=0,
+                    content="",
+                )
+
+        sidecar = SentinelSidecar()
+        with (
+            mock.patch.object(sys, "stdout", InvalidStdout()),
+            mock.patch.object(
+                pipeline.harness.carrier,
+                "validate_inference_terminal_evidence",
+                return_value={"terminal_evidence_passed": True},
+            ),
+        ):
+            with pipeline.failure_proof_stdout():
+                record = pipeline.harness.run_completion(
+                    sidecar,
+                    "invalid-stdout-dispatch-sentinel",
+                    {},
+                )
+            pipeline.best_effort_print("[frontier] non-causal final result")
+        self.assertTrue(sidecar.dispatched)
+        self.assertEqual(record["prompt_tokens"], 3)
+
+    def test_launch_lock_is_exclusive_and_releasable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "launch.json"
+            receipt = pipeline.acquire_launch_lock(path, "A" * 40)
+            self.assertEqual(receipt["path"], str(path))
+            with self.assertRaisesRegex(Exception, "artifact already exists"):
+                pipeline.acquire_launch_lock(path, "A" * 40)
+            pipeline.release_launch_lock(path)
+            self.assertFalse(path.exists())
+
+    def test_failure_artifact_is_preserved_at_most_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "failure.json"
+            path.write_text('{"preserved":true}\n', encoding="utf-8")
+            before = path.read_bytes()
+            receipt = pipeline.preserve_failure_once(path, {"replacement": True})
+            self.assertTrue(receipt["already_present"])
+            self.assertEqual(path.read_bytes(), before)
 
 
 if __name__ == "__main__":

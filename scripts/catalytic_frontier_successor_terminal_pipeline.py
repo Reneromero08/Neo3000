@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""neo-exp-0086: two-edge unique-descendant successor-terminal pipeline.
+"""neo-exp-0087: failure-proof successor to the two-edge terminal pipeline.
+
+The scientific contract is identical to neo-exp-0086.  Only controller
+evidence plumbing changes: progress output cannot abort inference, an exclusive
+pre-hash launch lock prevents duplicate admission, and failure evidence is
+written at most once.
 
 The experiment starts from the exact output-bearing C capsule accepted by
 neo-exp-0085 and executes C -> D -> B through three matched routes:
@@ -20,15 +25,18 @@ are therefore adjudicated separately.
 from __future__ import annotations
 
 import argparse
+import atexit
 import json
 import os
 import re
 import shutil
+import sys
 import tempfile
 import time
+from contextlib import contextmanager
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterator, Mapping, Sequence, TextIO
 
 import baseline_harness
 import catalytic_frontier_fanout as shared_tasks
@@ -41,11 +49,11 @@ import catalytic_frontier_terminal_logits_continuation as terminal
 import catalytic_frontier_water_panel_qualifier as water
 
 
-EXPERIMENT_ID = "neo-exp-0086"
-ATTEMPT_ID = "frontier-attempt-0121"
+EXPERIMENT_ID = "neo-exp-0087"
+ATTEMPT_ID = "frontier-attempt-0124"
 ROOT_ID = water.ROOT_ID
-BASE_ROOT_ID = "neo-exp-0086-base-689"
-SEED_TERMINAL_ROOT_ID = "neo-exp-0086-seed-terminal-690"
+BASE_ROOT_ID = f"{EXPERIMENT_ID}-base-689"
+SEED_TERMINAL_ROOT_ID = f"{EXPERIMENT_ID}-seed-terminal-690"
 WARMUP_TRIALS = 1
 COUNTED_TRIALS = 3
 ROUTES = ("terminal", "root-only", "materialized")
@@ -120,10 +128,84 @@ DEFAULT_MODEL = terminal.DEFAULT_MODEL
 DEFAULT_OUTPUT = ROOT / "lab" / f"{EXPERIMENT_ID}.local.json"
 DEFAULT_LOG = ROOT / "lab" / f"{EXPERIMENT_ID}.server.local.log"
 DEFAULT_MARKER = ROOT / "lab" / f"{EXPERIMENT_ID}.consumed.local.json"
+DEFAULT_LAUNCH_LOCK = ROOT / "lab" / f"{EXPERIMENT_ID}.launch.local.json"
 
 
 class ExperimentError(RuntimeError):
     pass
+
+
+class FailureProofTextIO:
+    """Delegate text output while making progress emission non-causal."""
+
+    def __init__(self, inner: TextIO):
+        self.inner = inner
+
+    def write(self, value: str) -> int:
+        try:
+            return self.inner.write(value)
+        except (OSError, ValueError):
+            return len(value)
+
+    def flush(self) -> None:
+        try:
+            self.inner.flush()
+        except (OSError, ValueError):
+            return None
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.inner, name)
+
+
+@contextmanager
+def failure_proof_stdout() -> Iterator[None]:
+    original = sys.stdout
+    sys.stdout = FailureProofTextIO(original)
+    try:
+        yield
+    finally:
+        sys.stdout = original
+
+
+def best_effort_print(value: str) -> None:
+    try:
+        print(value, flush=True)
+    except (OSError, ValueError):
+        pass
+
+
+def acquire_launch_lock(path: Path, expected_commit: str) -> dict[str, Any]:
+    return terminal.write_exclusive_json(
+        path,
+        {
+            "id": EXPERIMENT_ID,
+            "attempt_id": ATTEMPT_ID,
+            "expected_commit": expected_commit,
+            "pid": os.getpid(),
+            "created_unix_ns": time.time_ns(),
+            "meaning": "exclusive pre-hash launcher custody",
+        },
+    )
+
+
+def release_launch_lock(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
+def preserve_failure_once(path: Path, failure: Mapping[str, Any]) -> dict[str, Any]:
+    if path.exists():
+        return {
+            "path": str(path),
+            "bytes": path.stat().st_size,
+            "sha256": harness.live_runtime.sha256_file(path),
+            "already_present": True,
+        }
+    receipt = dict(terminal.write_exclusive_json(path, failure))
+    receipt["already_present"] = False
+    return receipt
 
 
 def require(condition: bool, message: str) -> None:
@@ -147,7 +229,7 @@ def create_consumed_marker(path: Path, expected_commit: str) -> dict[str, Any]:
             "attempt_id": ATTEMPT_ID,
             "expected_commit": expected_commit,
             "created_unix_ns": time.time_ns(),
-            "meaning": "Task-A is next; neo-exp-0086 is scientifically consumed",
+            "meaning": f"Task-A is next; {EXPERIMENT_ID} is scientifically consumed",
             "retry_allowed": False,
             "automatic_promotion": False,
         },
@@ -1624,7 +1706,7 @@ def static_audit(binary: Path) -> dict[str, Any]:
         "no_automatic_promotion": '"automatic_promotion": False' in source,
         "bounded_claim_present": "One bounded process-local Agents-A1 R2" in source,
     }
-    require(all(gates.values()), "0086 static audit failed")
+    require(all(gates.values()), "0087 static audit failed")
     return {
         "gates": gates,
         "binary": {
@@ -1649,6 +1731,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--server-log-output", type=Path, default=DEFAULT_LOG)
     parser.add_argument("--consumed-marker", type=Path, default=DEFAULT_MARKER)
+    parser.add_argument("--launch-lock", type=Path, default=DEFAULT_LAUNCH_LOCK)
     return parser.parse_args()
 
 
@@ -1663,9 +1746,15 @@ def main() -> int:
     output = args.output.resolve(strict=False)
     log_output = args.server_log_output.resolve(strict=False)
     marker = args.consumed_marker.resolve(strict=False)
+    launch_lock = args.launch_lock.resolve(strict=False)
     for path in (output, log_output, marker):
-        require(not path.exists(), f"0086 artifact already exists: {path}")
-    require(len({output, log_output, marker}) == 3, "0086 artifact paths collide")
+        require(not path.exists(), f"0087 artifact already exists: {path}")
+    require(
+        len({output, log_output, marker, launch_lock}) == 4,
+        "0087 artifact paths collide",
+    )
+    launch_lock_receipt = acquire_launch_lock(launch_lock, args.expected_commit)
+    atexit.register(release_launch_lock, launch_lock)
     terminal.require_clean_head(ROOT, args.expected_commit)
     before_bundle = terminal.runtime_bundle(binary)
     static = static_audit(binary)
@@ -1674,7 +1763,7 @@ def main() -> int:
     roots = {str(item["root_id"]): item for item in corpus["roots"]}
     evaluator, live_contract = harness.load_discovery_sidecar_contract()
     stable_pids = harness.live_runtime.require_stable()
-    require(len(stable_pids) == 1, "0086 requires one protected stable listener")
+    require(len(stable_pids) == 1, "0087 requires one protected stable listener")
     require(
         not harness.live_runtime.listener_pids(harness.live_runtime.PORT),
         "candidate port is occupied",
@@ -1710,7 +1799,7 @@ def main() -> int:
             == list(water.checkpoint_control.DEFAULT_MOE_SERVER_ARGS)
             and launch.get("root_storage") == "device"
             and launch.get("speculative_type") == "none",
-            "0086 launch identity changed",
+            "0087 launch identity changed",
         )
         baseline_private = None
         process_memory = readiness.get("process_memory")
@@ -1723,14 +1812,16 @@ def main() -> int:
         prepared = terminal.prepare_task_and_branch(codec, roots[ROOT_ID])
         props = codec.props()
         marker_receipt = create_consumed_marker(marker, args.expected_commit)
-        result = evaluate(
-            sidecar=sidecar,
-            codec=codec,
-            props=props,
-            prepared=prepared,
-            baseline_private=baseline_private,
-        )
+        with failure_proof_stdout():
+            result = evaluate(
+                sidecar=sidecar,
+                codec=codec,
+                props=props,
+                prepared=prepared,
+                baseline_private=baseline_private,
+            )
         result["consumption_marker"] = marker_receipt
+        result["launch_lock"] = launch_lock_receipt
         result["candidate_commit"] = args.expected_commit
         result["runtime_bundle_before"] = before_bundle
         result["runtime_bundle_after"] = terminal.runtime_bundle(binary)
@@ -1775,12 +1866,14 @@ def main() -> int:
             "automatic_promotion": False,
             "research_goal_blocked": False,
         }
-        terminal.write_exclusive_json(output, failure)
+        failure["failure_artifact"] = preserve_failure_once(output, failure)
+        release_launch_lock(launch_lock)
+        atexit.unregister(release_launch_lock)
         raise ExperimentError(
             f"{EXPERIMENT_ID} failed; evidence preserved at {output}"
         ) from caught
 
-    require(result is not None, "0086 result is missing")
+    require(result is not None, "0087 result is missing")
     result["cleanup"] = cleanup
     cleanup_gate = harness.live_runtime.cleanup_integrity(cleanup, set(stable_pids))
     result["cleanup_gate"] = cleanup_gate
@@ -1788,7 +1881,9 @@ def main() -> int:
         result["verdict"] = "reject"
         result["classification"] = "successor-terminal-pipeline-cleanup-failure"
     result["artifact"] = terminal.write_exclusive_json(output, result)
-    print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
+    best_effort_print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
+    release_launch_lock(launch_lock)
+    atexit.unregister(release_launch_lock)
     return 0
 
 
