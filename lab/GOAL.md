@@ -43,6 +43,8 @@ Here `Obj` supplies typed carrier boundaries, `Hom(X,Y)` supplies executable unr
 
 The active next architectural objective is `OPEN_RELATIONAL_CARRIER_COMPOSITION_V1`. Test two typed executable carrier morphisms `F: X -> Y` and `G: Y -> Z`. The catalytic route must realize `G o F` while keeping shared boundary `Y` uncollapsed: no intermediate JSON parse, host-side answer extraction, token-to-symbol control flow, visible-intermediate prompt reconstruction, explicit candidate enumeration, outcome-conditioned root selection, or answer-conditioned lookup. Only `Z` may be classically projected on the primary route.
 
+`neo-exp-0079` is the deliberately small finite R2 calibration for that objective. Its experiment-specific `neo-open-relational-carrier-r2-v1` schema uses four complex-f32 lanes, typed Z4 phase/permutation morphisms, and a program-derived inverse. The primary CUDA kernel holds Y only in registers across an opaque compiler boundary; the matched control writes, transfers, classically reads, and returns the same Y bytes before applying the same G. The frozen controls cover wrong order, incompatible ports before any kernel launch, forced projection, correct inverse restoration, wrong inverse order, exact Z identity, final residency closure, and nine-repetition wall speed. Static audit establishes code shape and zero spills only; it is not runtime evidence. This schema is not declared canonical `.holo`, and PR #49's bounded constraint-relational calibration is background evidence rather than imported authority.
+
 Use one matched materialized control `X -> Y_classical -> Z`. Add only the causal negative controls required by the addendum: wrong order, pre-contact boundary-type mismatch, forced intermediate projection identified as control, and lawful restoration or closure. Bind morphism, port type, carrier, composition order, final projection, control construction, resource, and closure identities before contact.
 
 The minimum schema is `OpenRelationalCarrier`: carrier ID; input/output port types; unresolved-boundary ID; executable-state, forward-morphism, and composition identities; projection, inverse-or-closure, provenance, and resource policies; and a state distinguishing open, projected, internally closed, restored, and invalid boundaries. Do not build a generic category framework before one concrete R2 experiment needs it.
@@ -73,7 +75,7 @@ The `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` operation is closed at this mixed acc
 
 Bounded autonomous non-retry successor mode is active from this checkpoint.
 
-**Current exact action:** follow the single active cursor at the top of `TASKS.md`: `DESIGN_OPEN_RELATIONAL_CARRIER_COMPOSITION_V1`. Every later next-action statement in this file is a historical boundary record and has no current authority.
+**Current exact action:** follow the single active cursor at the top of `TASKS.md`: `EXECUTE_NEO_EXP_0079_OPEN_RELATIONAL_CARRIER_R2_ONCE`. Every later next-action statement in this file is a historical boundary record and has no current authority.
 
 **Navigation authority:** after this point, words such as `active`, `current`, `authorized`, `next action`, and `next task` inside preserved experiment narratives describe their historical boundary only. They cannot override the frontier objective or the `TASKS.md` cursor.
 
