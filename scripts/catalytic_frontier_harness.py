@@ -277,7 +277,15 @@ def process_resources(sidecar: Any, baseline_private: int | None) -> dict[str, A
         if isinstance(info, Mapping) and isinstance(info.get("private_bytes"), int):
             host_private = int(info["private_bytes"])
     telemetry = sidecar.telemetry()
-    peak_wddm = int(telemetry["peak_bytes"]) if isinstance(telemetry.get("peak_bytes"), int) else None
+    peak_value = telemetry.get(
+        "peak_dedicated_bytes",
+        telemetry.get("peak_bytes"),
+    )
+    peak_wddm = (
+        int(peak_value)
+        if isinstance(peak_value, int) and not isinstance(peak_value, bool)
+        else None
+    )
     growth = (
         host_private - baseline_private
         if host_private is not None and baseline_private is not None

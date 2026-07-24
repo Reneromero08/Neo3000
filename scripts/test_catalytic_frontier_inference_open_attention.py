@@ -117,6 +117,9 @@ class InferenceOpenAttentionTests(unittest.TestCase):
         source = experiment.CUDA_MMA.read_text(encoding="utf-8")
         self.assertIn("const size_t block_linear", source)
         self.assertIn("block_linear*fattn_b_words_per_block", source)
+        marker = source.index('"neo3000_fattn_b_probe:')
+        warning = source.rfind("GGML_LOG_WARN(", 0, marker)
+        self.assertGreaterEqual(warning, 0)
         store = source.index(
             "thread_scratch[k*T_B_VKQ::ne + l] = packed.bits;"
         )
@@ -211,6 +214,25 @@ class InferenceOpenAttentionTests(unittest.TestCase):
                 }
             )
         )
+
+    def test_process_resources_accepts_live_peak_dedicated_schema(self):
+        sidecar = mock.Mock()
+        sidecar.process = None
+        sidecar.telemetry.return_value = {
+            "peak_dedicated_bytes": 2_362_318_848,
+            "sample_count": 73,
+            "failure_reason": None,
+        }
+        resources = experiment.harness.process_resources(sidecar, None)
+        self.assertEqual(resources["peak_wddm_bytes"], 2_362_318_848)
+        self.assertEqual(resources["wddm_sample_count"], 73)
+        self.assertTrue(experiment.resource_gate(resources))
+
+    def test_route_preserves_partial_result_before_resource_gate(self):
+        source = inspect.getsource(experiment.run_route)
+        result_assignment = source.index('result = {', source.index("resources ="))
+        resource_gate = source.index("resource_gate(resources)", result_assignment)
+        self.assertLess(result_assignment, resource_gate)
 
     def test_route_source_fails_cleanup_before_success_return(self):
         source = inspect.getsource(experiment.run_route)

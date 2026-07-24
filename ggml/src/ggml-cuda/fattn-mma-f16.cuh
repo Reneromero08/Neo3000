@@ -2000,7 +2000,11 @@ void ggml_cuda_flash_attn_ext_mma_f16_case(ggml_backend_cuda_context & ctx, ggml
     static const bool experiment_route_logged = [
         materialize_fattn_b, nbatch_fa
     ] {
-        GGML_LOG_INFO(
+        // Server verbosity suppresses this CUDA backend's INFO channel in the
+        // pinned runtime.  WARN is captured in the isolated server log and is
+        // therefore the fail-closed dynamic proof that the MMA case and mode
+        // were actually exercised.
+        GGML_LOG_WARN(
             "neo3000_fattn_b_probe: materialize=%d DKQ=%d DV=%d "
             "ncols1=%d ncols2=%d nbatch_fa=%d "
             "scratch_bytes_per_block=%zu reserve=1\n",

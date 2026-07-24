@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Preregister and execute neo-exp-0080 exactly once.
+"""Preregister and execute neo-exp-0081 exactly once.
 
 The experiment keeps the packed FP16 softmax operand B inside the existing
 MMA FlashAttention kernel.  A process-fixed control writes every packed B
@@ -33,8 +33,8 @@ import catalytic_frontier_single_request_latency as latency
 import catalytic_frontier_water_panel_qualifier as water
 
 
-EXPERIMENT_ID = "neo-exp-0080"
-ATTEMPT_ID = "frontier-attempt-0108"
+EXPERIMENT_ID = "neo-exp-0081"
+ATTEMPT_ID = "frontier-attempt-0110"
 ENVIRONMENT_NAME = "NEO3000_FATTN_B_MATERIALIZE"
 ROUTE_ORDER = ("register_open", "global_materialized")
 ROUTE_MODE = {"register_open": "0", "global_materialized": "1"}
@@ -241,6 +241,7 @@ def static_audit(binary: Path) -> dict[str, Any]:
         "runtime_marker_complete": (
             "neo3000_fattn_b_probe:" in mma
             and "scratch_bytes_per_block=%zu reserve=1" in mma
+            and "GGML_LOG_WARN(" in mma
         ),
         "flash_graph_path_present": (
             "ggml_flash_attn_ext" in graph
@@ -605,10 +606,6 @@ def run_route(
         tool = run_tool_canary(sidecar)
         baseline_private = readiness.get("process_memory", {}).get("private_bytes")
         resources = harness.process_resources(sidecar, baseline_private)
-        require(
-            resource_gate(resources),
-            "route resource integrity failed",
-        )
         result = {
             "route": route,
             "materialize_mode": int(mode),
@@ -622,6 +619,10 @@ def run_route(
             "tool_canary": tool,
             "resources": resources,
         }
+        require(
+            resource_gate(resources),
+            "route resource integrity failed",
+        )
     except BaseException as caught:
         error = caught
     finally:
