@@ -1589,6 +1589,13 @@ json server_task_result_slot_ram_root::to_json() {
         { "n_total_bytes_after", n_total_bytes_after },
         { "n_total_device_bytes_after", n_total_device_bytes_after },
         { "n_total_gpu_bytes_after", n_total_gpu_bytes_after },
+        { "has_terminal_logits", has_terminal_logits },
+        { "n_terminal_logits", n_terminal_logits },
+        { "n_terminal_logits_bytes", n_terminal_logits_bytes },
+        { "terminal_logits_fnv64", terminal_logits_fnv64 },
+        { "terminal_prompt_fnv64", terminal_prompt_fnv64 },
+        { "terminal_sampler_fnv64", terminal_sampler_fnv64 },
+        { "terminal_position", terminal_position },
         { "timings", {
             { "root_ms", t_ms }
         }},

@@ -318,15 +318,29 @@ def ram_root_action(
     root_id: str,
     id_slot: int = 0,
     storage: str = "default",
+    include_terminal_logits: bool = False,
+    require_terminal_logits: bool = False,
 ) -> tuple[dict[str, Any], float]:
     require(action in {"root-save", "root-restore", "root-erase"}, "unsupported RAM-root action")
     require(bool(root_id), "RAM root ID is empty")
     require(type(id_slot) is int and id_slot >= 0, "invalid RAM-root slot ID")
     require(storage in {"default", "host", "device"}, "invalid RAM-root storage")
     require(action == "root-save" or storage == "default", "storage applies only to root-save")
+    require(
+        not include_terminal_logits or action == "root-save",
+        "terminal logits may be included only for root-save",
+    )
+    require(
+        not require_terminal_logits or action == "root-restore",
+        "terminal logits may be required only for root-restore",
+    )
     body = {"root_id": root_id}
     if storage != "default":
         body["storage"] = storage
+    if include_terminal_logits:
+        body["include_terminal_logits"] = True
+    if require_terminal_logits:
+        body["require_terminal_logits"] = True
     return request_json(
         "POST",
         f"http://127.0.0.1:{live_runtime.PORT}/slots/{id_slot}?action={action}",

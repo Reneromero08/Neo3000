@@ -26,6 +26,7 @@
 #include <filesystem>
 #include <utility>
 #include <fstream>
+#include <vector>
 
 // fix problem with std::min and std::max
 #if defined(_WIN32)
@@ -40,6 +41,77 @@ using json = nlohmann::ordered_json;
 
 constexpr int HTTP_POLLING_SECONDS = 1;
 constexpr size_t SERVER_SLOT_RAM_ROOT_CAPACITY = 5;
+
+static uint64_t neo3000_fnv1a64(const void * data, size_t size) {
+    const auto * bytes = static_cast<const uint8_t *>(data);
+    uint64_t hash = 14695981039346656037ULL;
+    for (size_t i = 0; i < size; ++i) {
+        hash ^= bytes[i];
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
+static std::string neo3000_fnv1a64_hex(const void * data, size_t size) {
+    return string_format("%016" PRIx64, neo3000_fnv1a64(data, size));
+}
+
+static std::string neo3000_prompt_fnv1a64(const server_tokens & tokens) {
+    uint64_t hash = 14695981039346656037ULL;
+    for (int32_t i = 0; i < tokens.size(); ++i) {
+        const llama_token token = tokens[i];
+        const auto * bytes = reinterpret_cast<const uint8_t *>(&token);
+        for (size_t j = 0; j < sizeof(token); ++j) {
+            hash ^= bytes[j];
+            hash *= 1099511628211ULL;
+        }
+    }
+    return string_format("%016" PRIx64, hash);
+}
+
+static std::string neo3000_sampler_fnv1a64(const task_params & params) {
+    json contract = params.to_json(false);
+    contract.erase("max_tokens");
+    contract.erase("n_predict");
+    contract.erase("stream");
+    contract.erase("timings_per_token");
+    const std::string encoded = contract.dump();
+    return neo3000_fnv1a64_hex(encoded.data(), encoded.size());
+}
+
+struct server_terminal_logits_boundary {
+    std::vector<float> logits;
+    std::string root_id;
+    std::string logits_fnv64;
+    std::string prompt_fnv64;
+    std::string sampler_fnv64;
+    int64_t position = -1;
+    int32_t n_prompt_tokens = 0;
+
+    bool valid() const {
+        return !logits.empty() &&
+                !logits_fnv64.empty() &&
+                !prompt_fnv64.empty() &&
+                !sampler_fnv64.empty() &&
+                position >= 0 &&
+                n_prompt_tokens > 0;
+    }
+
+    size_t size() const {
+        return logits.size() * sizeof(float);
+    }
+
+    void clear() {
+        logits.clear();
+        logits.shrink_to_fit();
+        root_id.clear();
+        logits_fnv64.clear();
+        prompt_fnv64.clear();
+        sampler_fnv64.clear();
+        position = -1;
+        n_prompt_tokens = 0;
+    }
+};
 
 static uint32_t server_n_outputs_max(const common_params & params) {
     const uint32_t n_batch  = params.n_batch;
@@ -216,6 +288,9 @@ struct server_slot {
     slot_state state = SLOT_STATE_IDLE;
 
     server_prompt prompt;
+    server_terminal_logits_boundary terminal_logits;
+    bool terminal_logits_pending_use = false;
+    bool terminal_logits_reused = false;
 
     bool prompt_save(server_prompt_cache & prompt_cache) const {
         if (prompt.tokens.size() == 0) {
@@ -267,6 +342,9 @@ struct server_slot {
         }
 
         prompt.tokens.clear();
+        terminal_logits.clear();
+        terminal_logits_pending_use = false;
+        terminal_logits_reused = false;
     }
 
     std::vector<common_adapter_lora_info> lora;
@@ -303,6 +381,8 @@ struct server_slot {
         SLT_DBG(*this, "%s", "\n");
 
         n_prompt_tokens_cache = 0;
+        terminal_logits_pending_use = false;
+        terminal_logits_reused = false;
 
         last_nl_pos    = 0;
         generated_text = "";
@@ -856,6 +936,7 @@ struct server_slot_ram_root {
     llama_seq_id device_storage_key = 0;
 
     server_prompt prompt;
+    server_terminal_logits_boundary terminal_logits;
     std::vector<uint8_t> data_spec;
     bool has_spec_state = false;
 
@@ -873,7 +954,10 @@ struct server_slot_ram_root {
     llama_pos pos_max_dft = -1;
 
     size_t host_size() const {
-        return prompt.size() + data_spec.size() + prompt.tokens.size() * sizeof(llama_token);
+        return prompt.size() +
+                data_spec.size() +
+                prompt.tokens.size() * sizeof(llama_token) +
+                terminal_logits.size();
     }
 
     size_t device_size() const {
@@ -1077,6 +1161,19 @@ private:
         res.n_total_bytes_after = ram_roots_host_size() + n_device_bytes;
         res.n_total_device_bytes_after = n_device_bytes;
         res.n_total_gpu_bytes_after = ram_roots_live_gpu_size();
+    }
+
+    static void set_ram_root_terminal_receipt(
+            server_task_result_slot_ram_root & res,
+            const server_terminal_logits_boundary * terminal) {
+        const bool valid = terminal != nullptr && terminal->valid();
+        res.has_terminal_logits = valid;
+        res.n_terminal_logits = valid ? terminal->logits.size() : 0;
+        res.n_terminal_logits_bytes = valid ? terminal->size() : 0;
+        res.terminal_logits_fnv64 = valid ? terminal->logits_fnv64 : "";
+        res.terminal_prompt_fnv64 = valid ? terminal->prompt_fnv64 : "";
+        res.terminal_sampler_fnv64 = valid ? terminal->sampler_fnv64 : "";
+        res.terminal_position = valid ? terminal->position : -1;
     }
 
     void destroy() {
@@ -1954,6 +2051,91 @@ private:
         if (!task.tokens.validate(ctx_tgt)) {
             send_error(task, "Prompt contains invalid tokens", ERROR_TYPE_INVALID_REQUEST);
             return false;
+        }
+
+        if (task.params.neo3000_capture_terminal_logits &&
+                task.params.neo3000_use_terminal_logits) {
+            send_error(task,
+                    "Terminal logits cannot be captured and consumed in the same request",
+                    ERROR_TYPE_INVALID_REQUEST);
+            return false;
+        }
+
+        slot.terminal_logits_pending_use = false;
+        slot.terminal_logits_reused = false;
+
+        if (task.params.neo3000_capture_terminal_logits) {
+            if (task.type != SERVER_TASK_TYPE_COMPLETION ||
+                    task.params.n_cmpl != 1 ||
+                    task.params.n_predict != 0 ||
+                    task.params.sampling.backend_sampling ||
+                    task.params.sampling.n_probs != 0 ||
+                    slot.can_speculate()) {
+                send_error(task,
+                        "Terminal-logits capture requires one zero-output CPU-sampled non-speculative completion",
+                        ERROR_TYPE_INVALID_REQUEST);
+                return false;
+            }
+            slot.terminal_logits.clear();
+        } else if (task.params.neo3000_use_terminal_logits) {
+            const auto exact_prompt_matches = [&]() {
+                if (slot.prompt.tokens.size() != task.tokens.size()) {
+                    return false;
+                }
+                for (int32_t i = 0; i < task.tokens.size(); ++i) {
+                    if (slot.prompt.tokens[i] != task.tokens[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            };
+
+            const int32_t n_vocab = llama_vocab_n_tokens(vocab);
+            const std::string prompt_fnv64 = neo3000_prompt_fnv1a64(task.tokens);
+            const std::string sampler_fnv64 = neo3000_sampler_fnv1a64(task.params);
+            const llama_pos position =
+                    llama_memory_seq_pos_max(llama_get_memory(ctx_tgt), slot.id);
+            const server_slot_ram_root * terminal_root =
+                    find_ram_root(task.params.neo3000_terminal_root_id);
+            const bool terminal_exact =
+                    task.type == SERVER_TASK_TYPE_COMPLETION &&
+                    task.params.n_cmpl == 1 &&
+                    task.params.n_predict != 0 &&
+                    task.params.cache_prompt &&
+                    !task.params.sampling.backend_sampling &&
+                    task.params.sampling.n_probs == 0 &&
+                    !slot.can_speculate() &&
+                    !task.params.neo3000_terminal_root_id.empty() &&
+                    !task.params.neo3000_terminal_logits_fnv64.empty() &&
+                    terminal_root != nullptr &&
+                    terminal_root->terminal_logits.valid() &&
+                    terminal_root->terminal_logits.logits_fnv64 ==
+                            task.params.neo3000_terminal_logits_fnv64 &&
+                    slot.terminal_logits.valid() &&
+                    slot.terminal_logits.root_id == task.params.neo3000_terminal_root_id &&
+                    slot.terminal_logits.logits_fnv64 ==
+                            task.params.neo3000_terminal_logits_fnv64 &&
+                    slot.terminal_logits.logits.size() == static_cast<size_t>(n_vocab) &&
+                    slot.terminal_logits.n_prompt_tokens == task.tokens.size() &&
+                    slot.terminal_logits.prompt_fnv64 == prompt_fnv64 &&
+                    slot.terminal_logits.sampler_fnv64 == sampler_fnv64 &&
+                    slot.terminal_logits.position == position &&
+                    exact_prompt_matches();
+            if (!terminal_exact) {
+                send_error(task,
+                        "Terminal-logits continuation identity mismatch",
+                        ERROR_TYPE_INVALID_REQUEST);
+                return false;
+            }
+            slot.terminal_logits_pending_use = true;
+            SLT_WRN(slot,
+                    "neo3000 terminal-logits continuation admitted root=%s logits=%s tokens=%d position=%d\n",
+                    slot.terminal_logits.root_id.c_str(),
+                    slot.terminal_logits.logits_fnv64.c_str(),
+                    slot.terminal_logits.n_prompt_tokens,
+                    static_cast<int>(slot.terminal_logits.position));
+        } else {
+            slot.terminal_logits.clear();
         }
 
         SLT_DBG(slot, "launching slot : %s\n", safe_json_to_str(slot.to_json()).c_str());
@@ -2837,6 +3019,20 @@ private:
                         send_error(task, "Cannot save an empty slot as a RAM root", ERROR_TYPE_INVALID_REQUEST);
                         break;
                     }
+                    if (task.slot_action.include_terminal_logits) {
+                        const bool terminal_exact =
+                                slot->terminal_logits.valid() &&
+                                slot->terminal_logits.n_prompt_tokens == slot->prompt.tokens.size() &&
+                                slot->terminal_logits.prompt_fnv64 == neo3000_prompt_fnv1a64(slot->prompt.tokens) &&
+                                slot->terminal_logits.position ==
+                                        llama_memory_seq_pos_max(llama_get_memory(ctx_tgt), id_slot);
+                        if (!terminal_exact) {
+                            send_error(task,
+                                    "Exact terminal logits are unavailable for this slot prompt",
+                                    ERROR_TYPE_INVALID_REQUEST);
+                            break;
+                        }
+                    }
                     GGML_ASSERT(slot->prompt.data.size() == 0);
 
                     const int64_t t_start = ggml_time_us();
@@ -2845,6 +3041,10 @@ private:
                     root->id_slot_source = id_slot;
                     root->prompt         = slot->prompt.clone();
                     root->lora           = slot->lora;
+                    if (task.slot_action.include_terminal_logits) {
+                        root->terminal_logits = slot->terminal_logits;
+                        root->terminal_logits.root_id = root->id;
+                    }
                     root->state_flags    = root_on_device
                             ? LLAMA_STATE_SEQ_FLAGS_ON_DEVICE
                             : LLAMA_STATE_SEQ_FLAGS_NONE;
@@ -2933,6 +3133,9 @@ private:
                     res->n_gpu_bytes_after = saved_root->gpu_size();
                     res->n_checkpoints    = n_checkpoints;
                     set_ram_root_bank_receipt(*res);
+                    set_ram_root_terminal_receipt(
+                            *res,
+                            saved_root->terminal_logits.valid() ? &saved_root->terminal_logits : nullptr);
                     res->t_ms             = (ggml_time_us() - t_start) / 1000.0;
                     queue_results.send(std::move(res));
                 } break;
@@ -2960,6 +3163,10 @@ private:
                     }
                     if (!are_lora_equal(slot->lora, slot_ram_root->lora)) {
                         send_error(task, "RAM root LoRA state does not match the destination slot", ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
+                    if (task.slot_action.require_terminal_logits && !slot_ram_root->terminal_logits.valid()) {
+                        send_error(task, "RAM root has no exact terminal-logits boundary", ERROR_TYPE_INVALID_REQUEST);
                         break;
                     }
 
@@ -2998,6 +3205,9 @@ private:
                         common_speculative_set_state(spec.get(), id_slot, slot_ram_root->data_spec);
                     }
                     slot->prompt = std::move(restored_prompt);
+                    slot->terminal_logits = slot_ram_root->terminal_logits;
+                    slot->terminal_logits_pending_use = false;
+                    slot->terminal_logits_reused = false;
                     slot->spec_draft.clear();
                     slot->spec_prompt.clear();
                     slot->spec_i_batch.clear();
@@ -3019,6 +3229,9 @@ private:
                     res->n_gpu_bytes_after = slot_ram_root->gpu_size();
                     res->n_checkpoints    = slot->prompt.checkpoints.size();
                     set_ram_root_bank_receipt(*res);
+                    set_ram_root_terminal_receipt(
+                            *res,
+                            slot_ram_root->terminal_logits.valid() ? &slot_ram_root->terminal_logits : nullptr);
                     res->t_ms             = (ggml_time_us() - t_start) / 1000.0;
                     queue_results.send(std::move(res));
                 } break;
@@ -3035,6 +3248,19 @@ private:
                         break;
                     }
                     server_slot_ram_root * slot_ram_root = root_it->second.get();
+                    const bool terminal_in_use = std::any_of(
+                            slots.begin(), slots.end(),
+                            [&](const server_slot & slot) {
+                                return slot.is_processing() &&
+                                        slot.terminal_logits_pending_use &&
+                                        slot.terminal_logits.root_id == task.slot_action.root_id;
+                            });
+                    if (terminal_in_use) {
+                        send_error(task,
+                                "RAM root terminal logits are pending use by an active slot",
+                                ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
 
                     const int id_slot_source = slot_ram_root->id_slot_source;
                     const llama_seq_id device_storage_key = slot_ram_root->device_storage_key;
@@ -3044,6 +3270,13 @@ private:
                     const size_t n_device_bytes = slot_ram_root->device_size();
                     const size_t n_gpu_bytes = slot_ram_root->gpu_size();
                     const size_t n_checkpoints = slot_ram_root->prompt.checkpoints.size();
+                    const bool had_terminal_logits = slot_ram_root->terminal_logits.valid();
+                    const size_t n_terminal_logits = slot_ram_root->terminal_logits.logits.size();
+                    const size_t n_terminal_logits_bytes = slot_ram_root->terminal_logits.size();
+                    const std::string terminal_logits_fnv64 = slot_ram_root->terminal_logits.logits_fnv64;
+                    const std::string terminal_prompt_fnv64 = slot_ram_root->terminal_logits.prompt_fnv64;
+                    const std::string terminal_sampler_fnv64 = slot_ram_root->terminal_logits.sampler_fnv64;
+                    const int64_t terminal_position = slot_ram_root->terminal_logits.position;
                     const int64_t t_start = ggml_time_us();
                     const size_t n_device_bytes_cleared = clear_ram_root_device_data(*slot_ram_root);
                     const bool root_on_device =
@@ -3057,6 +3290,13 @@ private:
                               (ctx_dft ? llama_state_seq_get_device_data_gpu_size(ctx_dft.get(), device_storage_key) : 0)
                             : 0;
                     slot_ram_roots.erase(root_it);
+
+                    for (auto & slot : slots) {
+                        if (!slot.is_processing() &&
+                                slot.terminal_logits.root_id == task.slot_action.root_id) {
+                            slot.terminal_logits.clear();
+                        }
+                    }
 
                     if (n_device_bytes_cleared != n_device_bytes || n_device_bytes_after != 0 || n_gpu_bytes_after != 0) {
                         send_error(task, "Unable to erase the complete RAM-root device state", ERROR_TYPE_SERVER);
@@ -3079,6 +3319,13 @@ private:
                     res->n_gpu_bytes_after = n_gpu_bytes_after;
                     res->n_checkpoints    = n_checkpoints;
                     set_ram_root_bank_receipt(*res);
+                    res->has_terminal_logits = had_terminal_logits;
+                    res->n_terminal_logits = n_terminal_logits;
+                    res->n_terminal_logits_bytes = n_terminal_logits_bytes;
+                    res->terminal_logits_fnv64 = terminal_logits_fnv64;
+                    res->terminal_prompt_fnv64 = terminal_prompt_fnv64;
+                    res->terminal_sampler_fnv64 = terminal_sampler_fnv64;
+                    res->terminal_position = terminal_position;
                     res->t_ms             = (ggml_time_us() - t_start) / 1000.0;
                     queue_results.send(std::move(res));
                 } break;
@@ -3584,6 +3831,81 @@ private:
                                                          slot.task->n_tokens(), slot.n_ctx),
                                            ERROR_TYPE_EXCEED_CONTEXT_SIZE);
                                 slot.release();
+                                return;
+                            }
+
+                            if (slot.terminal_logits_pending_use) {
+                                GGML_ASSERT(slot.task->params.neo3000_use_terminal_logits);
+                                GGML_ASSERT(slot.terminal_logits.valid());
+                                GGML_ASSERT(slot.prompt.tokens.size() == slot.task->tokens.size());
+
+                                slot.state = SLOT_STATE_GENERATING;
+                                slot.n_prompt_tokens_cache = slot.task->n_tokens();
+                                slot.n_prompt_tokens_processed = 0;
+                                slot.n_decoded = 0;
+                                slot.init_sampler();
+
+                                if (slot.task->params.stream) {
+                                    if (slot.task->params.return_progress) {
+                                        send_partial_response(slot, {}, true);
+                                    } else {
+                                        send_partial_response(slot, {}, false, true);
+                                    }
+                                }
+
+                                llama_token id;
+                                {
+                                    scoped_timer timer(t_sampl, n_sampl);
+                                    id = common_sampler_sample_from_logits(
+                                            slot.smpl.get(),
+                                            slot.ctx_tgt,
+                                            slot.terminal_logits.logits.data(),
+                                            slot.terminal_logits.logits.size());
+                                }
+
+                                common_sampler_accept(slot.smpl.get(), id, true);
+
+                                const int64_t t_now = ggml_time_us();
+                                slot.n_decoded = 1;
+                                slot.t_start_generation = t_now;
+                                slot.t_print_last = t_now;
+                                slot.n_decoded_last = 0;
+                                slot.t_prompt_processing =
+                                        (slot.t_start_generation - slot.t_start_process_prompt) / 1e3;
+                                slot.t_token_generation = 0.001;
+                                slot.terminal_logits_pending_use = false;
+                                slot.terminal_logits_reused = true;
+
+                                metrics.on_prompt_eval(slot);
+
+                                completion_token_output result;
+                                result.tok = id;
+                                result.text_to_send = common_token_to_piece(
+                                        slot.ctx_tgt,
+                                        result.tok,
+                                        params_base.special ||
+                                                slot.task->params.sampling.preserved_tokens.find(result.tok) !=
+                                                        slot.task->params.sampling.preserved_tokens.end());
+                                result.prob = 1.0f;
+
+                                SLT_WRN(slot,
+                                        "neo3000 terminal-logits continuation sampled before decode root=%s logits=%s\n",
+                                        slot.terminal_logits.root_id.c_str(),
+                                        slot.terminal_logits.logits_fnv64.c_str());
+
+                                if (!process_token(result, slot)) {
+                                    slot.print_timings();
+                                    send_final_response(slot);
+                                    metrics.on_prediction(slot);
+                                    slot.release();
+                                    return;
+                                }
+
+                                slot.handle_last_sampled_token(batch);
+                                slot.terminal_logits.clear();
+                                if (!slot_batched) {
+                                    slot_batched = &slot;
+                                }
                                 return;
                             }
 
@@ -4179,6 +4501,43 @@ private:
                 }
 
                 GGML_ASSERT(slot.task->need_sampling());
+
+                if (slot.task->params.neo3000_capture_terminal_logits) {
+                    const int terminal_tok_idx = slot.i_batch - off;
+                    const float * logits = llama_get_logits_ith(slot.ctx_tgt, terminal_tok_idx);
+                    const int32_t n_vocab = llama_vocab_n_tokens(vocab);
+                    if (logits == nullptr || n_vocab <= 0) {
+                        send_error(slot,
+                                "Unable to capture the exact terminal-logits row",
+                                ERROR_TYPE_SERVER);
+                        slot.release();
+                        slot.i_batch = -1;
+                        return;
+                    }
+
+                    slot.terminal_logits.clear();
+                    slot.terminal_logits.logits.assign(logits, logits + n_vocab);
+                    slot.terminal_logits.logits_fnv64 = neo3000_fnv1a64_hex(
+                            slot.terminal_logits.logits.data(),
+                            slot.terminal_logits.size());
+                    slot.terminal_logits.prompt_fnv64 =
+                            neo3000_prompt_fnv1a64(slot.prompt.tokens);
+                    slot.terminal_logits.sampler_fnv64 =
+                            neo3000_sampler_fnv1a64(slot.task->params);
+                    slot.terminal_logits.position =
+                            llama_memory_seq_pos_max(llama_get_memory(ctx_tgt), slot.id);
+                    slot.terminal_logits.n_prompt_tokens =
+                            static_cast<int32_t>(slot.prompt.tokens.size());
+
+                    SLT_WRN(slot,
+                            "neo3000 terminal-logits boundary captured logits=%s prompt=%s sampler=%s tokens=%d position=%d bytes=%zu\n",
+                            slot.terminal_logits.logits_fnv64.c_str(),
+                            slot.terminal_logits.prompt_fnv64.c_str(),
+                            slot.terminal_logits.sampler_fnv64.c_str(),
+                            slot.terminal_logits.n_prompt_tokens,
+                            static_cast<int>(slot.terminal_logits.position),
+                            slot.terminal_logits.size());
+                }
 
                 // prompt evaluated for next-token prediction
                 slot.state = SLOT_STATE_GENERATING;
@@ -5710,6 +6069,22 @@ std::unique_ptr<server_res_generator> server_routes::handle_slots_ram_root(
                 ERROR_TYPE_INVALID_REQUEST));
         return res;
     }
+    const bool include_terminal_logits =
+            json_value(request_data, "include_terminal_logits", false);
+    const bool require_terminal_logits =
+            json_value(request_data, "require_terminal_logits", false);
+    if (include_terminal_logits && type != SERVER_TASK_TYPE_SLOT_ROOT_SAVE) {
+        res->error(format_error_response(
+                "Terminal logits may be included only for root-save",
+                ERROR_TYPE_INVALID_REQUEST));
+        return res;
+    }
+    if (require_terminal_logits && type != SERVER_TASK_TYPE_SLOT_ROOT_RESTORE) {
+        res->error(format_error_response(
+                "Terminal logits may be required only for root-restore",
+                ERROR_TYPE_INVALID_REQUEST));
+        return res;
+    }
 
     auto & rd = res->rd;
     {
@@ -5718,6 +6093,8 @@ std::unique_ptr<server_res_generator> server_routes::handle_slots_ram_root(
         task.slot_action.id_slot = id_slot;
         task.slot_action.root_id = std::move(root_id);
         task.slot_action.root_on_device = storage == "default" ? -1 : storage == "device" ? 1 : 0;
+        task.slot_action.include_terminal_logits = include_terminal_logits;
+        task.slot_action.require_terminal_logits = require_terminal_logits;
         rd.post_task(std::move(task));
     }
 

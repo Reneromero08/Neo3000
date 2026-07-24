@@ -55,6 +55,8 @@ Exact pushed head `fae776ad4f44a29c3a309ed8391e882f78c206cb` executed both 0081 
 
 This bridge remains deliberately narrow. The executed result establishes only that one exercised fused inference boundary is exact under both open and materialized modes; it does not establish a useful speedup, reusable catalytic state, canonical `.holo`, cross-request restoration, recursive carrier reuse, or unbounded inference.
 
+`neo-exp-0082` is now statically preregistered as the next larger temporal-state intervention. It promotes the accepted exact 689-token CUDA KV/recurrent root by evaluating only token 690 once, captures the resulting complete host-F32 terminal-logits row, then restores the exact 690-token state and samples before decode. The matched control remains the same 689-token CUDA root plus one live prompt-token evaluation. Host terminal logits are not claimed CUDA-resident. One warmup plus 16 alternating counted pairs freeze exact output, utility, root/logit/sampler identity, pre-decode negatives, symmetric lifecycle, resource, cleanup, prompt/TTFT/wall, dominance, and generation-regression gates. Release/no-op builds, static audit, 8/8 dedicated and 43/43 focused-plus-compatibility tests, diff check, and independent adversarial review pass without endpoint, model, or GPU contact. Bind `frontier-attempt-0112`; 0082 remains unconsumed.
+
 Use one matched materialized control `X -> Y_classical -> Z`. Add only the causal negative controls required by the addendum: wrong order, pre-contact boundary-type mismatch, forced intermediate projection identified as control, and lawful restoration or closure. Bind morphism, port type, carrier, composition order, final projection, control construction, resource, and closure identities before contact.
 
 The minimum schema is `OpenRelationalCarrier`: carrier ID; input/output port types; unresolved-boundary ID; executable-state, forward-morphism, and composition identities; projection, inverse-or-closure, provenance, and resource policies; and a state distinguishing open, projected, internally closed, restored, and invalid boundaries. Do not build a generic category framework before one concrete R2 experiment needs it.
@@ -85,7 +87,7 @@ The `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` operation is closed at this mixed acc
 
 Bounded autonomous non-retry successor mode is active from this checkpoint.
 
-**Current exact action:** follow the single active cursor at the top of `TASKS.md`: `DESIGN_AND_PREREGISTER_NEO_EXP_0082_CUDA_ROOT_PLUS_TERMINAL_LOGITS_CONTINUATION_T16`. Every later next-action statement in this file is a historical boundary record and has no current authority.
+**Current exact action:** follow the single active cursor at the top of `TASKS.md`: `EXECUTE_NEO_EXP_0082_CUDA_ROOT_PLUS_HOST_TERMINAL_LOGITS_CONTINUATION_T16_ONCE`. Every later next-action statement in this file is a historical boundary record and has no current authority.
 
 **Navigation authority:** after this point, words such as `active`, `current`, `authorized`, `next action`, and `next task` inside preserved experiment narratives describe their historical boundary only. They cannot override the frontier objective or the `TASKS.md` cursor.
 

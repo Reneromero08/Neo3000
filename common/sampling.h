@@ -4,6 +4,7 @@
 
 #include "common.h"
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -63,6 +64,15 @@ struct llama_sampler * common_sampler_get(const struct common_sampler * gsmpl);
 // useful in cases where all the resulting candidates (not just the sampled one) must fit the grammar
 //
 llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_context * ctx, int idx, bool grammar_first = false);
+
+// sample from a caller-provided full-vocabulary logits vector using the same CPU sampler,
+// reasoning-budget, grammar, and grammar-resampling path as common_sampler_sample
+llama_token common_sampler_sample_from_logits(
+        struct common_sampler * gsmpl,
+        struct llama_context *  ctx,
+        const float *           logits,
+        size_t                  n_vocab,
+        bool                    grammar_first = false);
 
 // generalized version of common_sampler_sample
 //

@@ -161,6 +161,19 @@ struct common_sampler {
         cur_p = { cur.data(), cur.size(), -1, false };
     }
 
+    void set_logits(const float * logits, size_t n_vocab) {
+        GGML_ASSERT(logits != nullptr);
+        GGML_ASSERT(n_vocab > 0);
+        GGML_ASSERT(n_vocab <= INT_MAX);
+
+        cur.resize(n_vocab);
+        for (llama_token token_id = 0; token_id < (llama_token) n_vocab; ++token_id) {
+            cur[token_id] = llama_token_data{token_id, logits[token_id], 0.0f};
+        }
+
+        cur_p = { cur.data(), cur.size(), -1, false };
+    }
+
     common_time_meas tm() {
         return common_time_meas(t_total_us, params.no_perf);
     }
@@ -537,42 +550,17 @@ struct llama_sampler * common_sampler_get(const struct common_sampler * gsmpl) {
     return gsmpl->chain;
 }
 
-llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_context * ctx, int idx, bool grammar_first) {
-    llama_synchronize(ctx);
-
-    // start measuring sampling time after the llama_context synchronization in order to not measure any ongoing async operations
-    const auto tm = gsmpl->tm();
-
+template<typename ResetLogits>
+static llama_token common_sampler_sample_cpu(
+        struct common_sampler * gsmpl,
+        bool                    grammar_first,
+        ResetLogits &&          reset_logits) {
     llama_token id = LLAMA_TOKEN_NULL;
 
-    auto & grmr  = gsmpl->grmr;
+    auto & grmr    = gsmpl->grmr;
     auto & rbudget = gsmpl->rbudget;
-    auto & chain = gsmpl->chain;
-    auto & cur_p = gsmpl->cur_p; // initialized by set_logits
-
-    gsmpl->set_logits(ctx, idx);
-
-    // Check if a backend sampler has already sampled a token in which case we
-    // return that token id directly.
-    {
-        id = llama_get_sampled_token_ith(ctx, idx);
-
-        if (id != LLAMA_TOKEN_NULL) {
-            LOG_DBG("%s: Backend sampler selected token: '%d'. Will not run any CPU samplers\n", __func__, id);
-
-            GGML_ASSERT(!gsmpl->grmr    && "using grammar in combination with backend sampling is not supported");
-            GGML_ASSERT(!gsmpl->rbudget && "using reasoning budget in combination with backend sampling is not supported");
-
-            for (size_t i = 0; i < cur_p.size; ++i) {
-                if (cur_p.data[i].id == id) {
-                    cur_p.selected = i;
-                    break;
-                }
-            }
-
-            return id;
-        }
-    }
+    auto & chain   = gsmpl->chain;
+    auto & cur_p   = gsmpl->cur_p;
 
     // apply reasoning budget first
     llama_sampler_apply(rbudget, &cur_p);
@@ -604,12 +592,12 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
 
     // resampling:
     // if the token is not valid, sample again, but first apply the grammar sampler and then the sampling chain
-    gsmpl->set_logits(ctx, idx);
+    reset_logits();
 
-    llama_sampler_apply(rbudget,  &cur_p);
+    llama_sampler_apply(rbudget, &cur_p);
 
     if (grammar_should_apply(gsmpl)) {
-        llama_sampler_apply(grmr,  &cur_p);
+        llama_sampler_apply(grmr, &cur_p);
     }
 
     llama_sampler_apply(chain, &cur_p);
@@ -619,6 +607,70 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
     id = cur_p.data[cur_p.selected].id;
 
     return id;
+}
+
+llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_context * ctx, int idx, bool grammar_first) {
+    llama_synchronize(ctx);
+
+    // start measuring sampling time after the llama_context synchronization in order to not measure any ongoing async operations
+    const auto tm = gsmpl->tm();
+
+    auto & cur_p = gsmpl->cur_p; // initialized by set_logits
+
+    gsmpl->set_logits(ctx, idx);
+
+    // Check if a backend sampler has already sampled a token in which case we
+    // return that token id directly.
+    {
+        llama_token id = llama_get_sampled_token_ith(ctx, idx);
+
+        if (id != LLAMA_TOKEN_NULL) {
+            LOG_DBG("%s: Backend sampler selected token: '%d'. Will not run any CPU samplers\n", __func__, id);
+
+            GGML_ASSERT(!gsmpl->grmr    && "using grammar in combination with backend sampling is not supported");
+            GGML_ASSERT(!gsmpl->rbudget && "using reasoning budget in combination with backend sampling is not supported");
+
+            for (size_t i = 0; i < cur_p.size; ++i) {
+                if (cur_p.data[i].id == id) {
+                    cur_p.selected = i;
+                    break;
+                }
+            }
+
+            return id;
+        }
+    }
+
+    return common_sampler_sample_cpu(gsmpl, grammar_first, [gsmpl, ctx, idx]() {
+        gsmpl->set_logits(ctx, idx);
+    });
+}
+
+llama_token common_sampler_sample_from_logits(
+        struct common_sampler * gsmpl,
+        struct llama_context *  ctx,
+        const float *           logits,
+        size_t                  n_vocab,
+        bool                    grammar_first) {
+    GGML_ASSERT(gsmpl != nullptr);
+    GGML_ASSERT(ctx != nullptr);
+    GGML_ASSERT(logits != nullptr);
+
+    const llama_model * model = llama_get_model(ctx);
+    const llama_vocab * vocab = llama_model_get_vocab(model);
+
+    GGML_ASSERT(n_vocab == (size_t) llama_vocab_n_tokens(vocab));
+
+    llama_synchronize(ctx);
+
+    // start measuring sampling time after the llama_context synchronization in order to not measure any ongoing async operations
+    const auto tm = gsmpl->tm();
+
+    gsmpl->set_logits(logits, n_vocab);
+
+    return common_sampler_sample_cpu(gsmpl, grammar_first, [gsmpl, logits, n_vocab]() {
+        gsmpl->set_logits(logits, n_vocab);
+    });
 }
 
 std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sampler * gsmpl, struct llama_context * ctx, const std::vector<int> & idxs, const llama_tokens & draft, bool grammar_first) {

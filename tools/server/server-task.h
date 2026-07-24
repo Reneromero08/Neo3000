@@ -56,6 +56,11 @@ struct task_params {
     bool cache_prompt    = true; // remember the prompt to avoid reprocessing all prompt
     bool return_tokens   = false;
     bool return_progress = false;
+    bool neo3000_capture_terminal_logits = false;
+    bool neo3000_use_terminal_logits     = false;
+
+    std::string neo3000_terminal_root_id;
+    std::string neo3000_terminal_logits_fnv64;
 
     int32_t n_keep    =  0; // number of tokens to keep from initial prompt
     int32_t n_discard =  0; // number of tokens after n_keep that may be discarded when shifting context, 0 defaults to half
@@ -168,6 +173,8 @@ struct server_task {
         std::string filepath;
         std::string root_id;
         int root_on_device = -1;
+        bool include_terminal_logits = false;
+        bool require_terminal_logits = false;
     };
     slot_action slot_action;
 
@@ -576,6 +583,13 @@ struct server_task_result_slot_ram_root : server_task_result {
     size_t n_total_bytes_after;
     size_t n_total_device_bytes_after;
     size_t n_total_gpu_bytes_after;
+    bool has_terminal_logits;
+    size_t n_terminal_logits;
+    size_t n_terminal_logits_bytes;
+    std::string terminal_logits_fnv64;
+    std::string terminal_prompt_fnv64;
+    std::string terminal_sampler_fnv64;
+    int64_t terminal_position;
     double t_ms;
 
     virtual json to_json() override;

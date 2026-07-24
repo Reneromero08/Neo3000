@@ -37,6 +37,26 @@ std::vector<std::unique_ptr<field>> make_llama_cmpl_schema(const common_params &
     add((new field_bool("return_progress", params.return_progress))
         ->set_desc("Include prompt processing progress events in stream mode"));
 
+    add((new field_bool("neo3000_capture_terminal_logits", params.neo3000_capture_terminal_logits))
+        ->set_desc("Experimental: retain the exact final prompt-logits row for a later RAM-root save"));
+
+    add((new field_bool("neo3000_use_terminal_logits", params.neo3000_use_terminal_logits))
+        ->set_desc("Experimental: require an exact restored RAM-root terminal-logits boundary and sample from it before decode"));
+
+    add((new field_str("neo3000_terminal_root_id"))
+        ->set_handler([&](field_eval_context & ctx, const json & data) {
+            ctx.params.neo3000_terminal_root_id =
+                    data.at("neo3000_terminal_root_id").get<std::string>();
+        })
+        ->set_desc("Exact RAM-root identity required by terminal-logits continuation"));
+
+    add((new field_str("neo3000_terminal_logits_fnv64"))
+        ->set_handler([&](field_eval_context & ctx, const json & data) {
+            ctx.params.neo3000_terminal_logits_fnv64 =
+                    data.at("neo3000_terminal_logits_fnv64").get<std::string>();
+        })
+        ->set_desc("Exact terminal-logits receipt required by continuation"));
+
     add((new field_num("n_predict", params.n_predict))
         ->set_hard_limits(-1, INT32_MAX)
         ->add_alias("max_completion_tokens")
