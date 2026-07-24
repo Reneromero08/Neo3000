@@ -3,7 +3,27 @@
 #include "mma.cuh"
 #include "fattn-common.cuh"
 
+#include <cstdlib>
+#include <cstring>
+
 using namespace ggml_cuda_mma;
+
+static bool neo3000_fattn_b_materialization_enabled() {
+    static const bool enabled = [] {
+        const char * const value =
+            getenv("NEO3000_FATTN_B_MATERIALIZE");
+        if (value == nullptr || strcmp(value, "0") == 0) {
+            return false;
+        }
+        if (strcmp(value, "1") == 0) {
+            return true;
+        }
+        GGML_ABORT(
+            "NEO3000_FATTN_B_MATERIALIZE must be exactly 0 or 1");
+        return false;
+    }();
+    return enabled;
+}
 
 // Config options for the MMA kernel.
 // Should not affect results, only speed/register pressure/shared memory use.
@@ -553,6 +573,8 @@ static __device__ __forceinline__ void flash_attn_ext_f16_iter(
         T_C_VKQ      * const __restrict__ VKQ_C,
         float        * const __restrict__ KQ_max,
         float        * const __restrict__ KQ_rowsum,
+        volatile uint32_t * const fattn_b_scratch,
+        const bool materialize_fattn_b,
         const int jt,
         const int kb0,
         const int k_VKQ_sup) {
@@ -932,6 +954,49 @@ static __device__ __forceinline__ void flash_attn_ext_f16_iter(
         }
     }
 
+    if (materialize_fattn_b) {
+        constexpr int b_tile_count =
+            nbatch_fa/(np*2*T_B_VKQ::J);
+        constexpr int words_per_thread =
+            b_tile_count*T_B_VKQ::ne;
+        static_assert(
+            nwarps*warp_size*words_per_thread ==
+                nbatch_fa*ncols/2,
+            "packed-B scratch geometry changed");
+        const size_t thread_linear =
+            size_t(threadIdx.z)*blockDim.y*blockDim.x +
+            size_t(threadIdx.y)*blockDim.x + threadIdx.x;
+        volatile uint32_t * const thread_scratch =
+            fattn_b_scratch + thread_linear*words_per_thread;
+#pragma unroll
+        for (int k = 0; k < b_tile_count; ++k) {
+#pragma unroll
+            for (int l = 0; l < T_B_VKQ::ne; ++l) {
+                union {
+                    half2 value;
+                    uint32_t bits;
+                } packed;
+                packed.value = B[k].x[l];
+                thread_scratch[k*T_B_VKQ::ne + l] = packed.bits;
+            }
+        }
+        __syncthreads();
+#pragma unroll
+        for (int k = 0; k < b_tile_count; ++k) {
+#pragma unroll
+            for (int l = 0; l < T_B_VKQ::ne; ++l) {
+                union {
+                    half2 value;
+                    uint32_t bits;
+                } packed;
+                packed.bits =
+                    thread_scratch[k*T_B_VKQ::ne + l];
+                B[k].x[l] = packed.value;
+            }
+        }
+        __syncthreads();
+    }
+
     if constexpr (nstages > 1) {
         static_assert(!V_is_K_view, "K data reuse not implemented multi-stage loading");
         // Preload K tile for next iteration:
@@ -1019,7 +1084,8 @@ static __device__ __forceinline__ void flash_attn_ext_f16_iter(
         scale, slope, logit_softcap, ne01, ne02,
         stride_K, stride_V, stride_mask,
         tile_Q, tile_K, tile_V, tile_mask,
-        Q_B, VKQ_C, KQ_max, KQ_rowsum, kb0);
+        Q_B, VKQ_C, KQ_max, KQ_rowsum, fattn_b_scratch,
+        materialize_fattn_b, kb0);
     NO_DEVICE_CODE;
 #endif // defined(VOLTA_MMA_AVAILABLE) || defined(TURING_MMA_AVAILABLE) || defined(AMD_WMMA_AVAILABLE) || defined(AMD_MFMA_AVAILABLE)
 }
@@ -1136,6 +1202,8 @@ static __device__ __forceinline__ void flash_attn_ext_f16_process_tile(
         const int stride_mask,
         const int jt,
         const int zt_gqa,
+        volatile uint32_t * const fattn_b_scratch,
+        const bool materialize_fattn_b,
         const int kb0_start,
         const int kb0_stop) {
 #if defined(VOLTA_MMA_AVAILABLE) || defined(TURING_MMA_AVAILABLE) || defined(AMD_WMMA_AVAILABLE) || defined(AMD_MFMA_AVAILABLE)
@@ -1280,7 +1348,7 @@ static __device__ __forceinline__ void flash_attn_ext_f16_process_tile(
                  T_A_KQ, T_B_KQ, T_C_KQ, T_A_VKQ, T_B_VKQ, T_C_VKQ>
                 (Q_f2, K_h2, V_h2, mask_h, dstk, dstk_fixup, scale, slope, logit_softcap,
                  ne01, ne02, stride_K, stride_V, stride_mask, tile_Q, tile_K, tile_V, tile_mask, Q_B, VKQ_C,
-                 KQ_max, KQ_rowsum, jt, kb0, k_VKQ_sup);
+                 KQ_max, KQ_rowsum, fattn_b_scratch, materialize_fattn_b, jt, kb0, k_VKQ_sup);
         }
         constexpr bool last_iter = true;
         const     int  k_VKQ_sup = ne11 - kb0*nbatch_fa;
@@ -1289,7 +1357,7 @@ static __device__ __forceinline__ void flash_attn_ext_f16_process_tile(
               T_A_KQ, T_B_KQ, T_C_KQ, T_A_VKQ, T_B_VKQ, T_C_VKQ>
             (Q_f2, K_h2, V_h2, mask_h, dstk, dstk_fixup, scale, slope, logit_softcap,
              ne01, ne02, stride_K, stride_V, stride_mask, tile_Q, tile_K, tile_V, tile_mask, Q_B, VKQ_C,
-             KQ_max, KQ_rowsum, jt, kb0, k_VKQ_sup);
+             KQ_max, KQ_rowsum, fattn_b_scratch, materialize_fattn_b, jt, kb0, k_VKQ_sup);
     } else {
         constexpr bool oob_check = false;
         for (; kb0 < kb0_stop-1; ++kb0) {
@@ -1300,7 +1368,7 @@ static __device__ __forceinline__ void flash_attn_ext_f16_process_tile(
                  T_A_KQ, T_B_KQ, T_C_KQ, T_A_VKQ, T_B_VKQ, T_C_VKQ>
                 (Q_f2, K_h2, V_h2, mask_h, dstk, dstk_fixup, scale, slope, logit_softcap,
                  ne01, ne02, stride_K, stride_V, stride_mask, tile_Q, tile_K, tile_V, tile_mask, Q_B, VKQ_C,
-                 KQ_max, KQ_rowsum, jt, kb0, k_VKQ_sup);
+                 KQ_max, KQ_rowsum, fattn_b_scratch, materialize_fattn_b, jt, kb0, k_VKQ_sup);
         }
         constexpr bool last_iter = true;
         constexpr int  k_VKQ_sup = nbatch_fa;
@@ -1309,7 +1377,7 @@ static __device__ __forceinline__ void flash_attn_ext_f16_process_tile(
              T_A_KQ, T_B_KQ, T_C_KQ, T_A_VKQ, T_B_VKQ, T_C_VKQ>
             (Q_f2, K_h2, V_h2, mask_h, dstk, dstk_fixup, scale, slope, logit_softcap,
              ne01, ne02, stride_K, stride_V, stride_mask, tile_Q, tile_K, tile_V, tile_mask, Q_B, VKQ_C,
-             KQ_max, KQ_rowsum, jt, kb0, k_VKQ_sup);
+             KQ_max, KQ_rowsum, fattn_b_scratch, materialize_fattn_b, jt, kb0, k_VKQ_sup);
     }
 
     // With multi-stage loading there is no __syncthreads at the end of the iter,
@@ -1695,7 +1763,8 @@ static __device__ __forceinline__ void flash_attn_ext_f16_process_tile(
     GGML_UNUSED_VARS(Q_f2, K_h2, V_h2, mask_h, sinks_f, dstk, dstk_fixup,
         scale, slope, logit_softcap, ne01, ne02, gqa_ratio,
         stride_Q1, stride_Q2, stride_K, stride_V, stride_mask,
-        jt, kb0_start, kb0_stop);
+        jt, fattn_b_scratch, materialize_fattn_b,
+        kb0_start, kb0_stop);
     NO_DEVICE_CODE;
 #endif // defined(VOLTA_MMA_AVAILABLE) || defined(TURING_MMA_AVAILABLE) || defined(AMD_WMMA_AVAILABLE) || defined(AMD_MFMA_AVAILABLE)
 }
@@ -1734,6 +1803,7 @@ static __global__ void flash_attn_ext_f16(
     const int  * GGML_CUDA_RESTRICT KV_max   = KV_max_ptr;
     float      * GGML_CUDA_RESTRICT dst      = dst_ptr;
     float2     * GGML_CUDA_RESTRICT dst_meta = dst_meta_ptr;
+    const bool materialize_fattn_b = ne00 < 0;
 
     // Skip unused kernel variants for faster compilation:
     if (use_logit_softcap && !(DKQ == 128 || DKQ == 256 || DKQ == 512)) {
@@ -1777,6 +1847,17 @@ static __global__ void flash_attn_ext_f16(
     constexpr int nbatch_fa = ggml_cuda_fattn_mma_get_nbatch_fa(DKQ, DV, ncols);
     constexpr int nthreads  = ggml_cuda_fattn_mma_get_nthreads(DKQ, DV, ncols);
     constexpr int nwarps    = nthreads / warp_size;
+    constexpr size_t fattn_b_words_per_block =
+        size_t(nbatch_fa)*ncols/2;
+    const size_t block_count =
+        size_t(gridDim.x)*gridDim.y*gridDim.z;
+    const size_t block_linear =
+        blockIdx.x + size_t(gridDim.x) *
+        (blockIdx.y + size_t(gridDim.y)*blockIdx.z);
+    volatile uint32_t * const fattn_b_scratch =
+        reinterpret_cast<volatile uint32_t *>(
+            dst_meta + block_count*ncols*(2 + DV/2)) +
+        block_linear*fattn_b_words_per_block;
 
     const int gqa_ratio = ne02 / ne12; // With grouped query attention there are > 1 Q matrices per K, V matrix.
 
@@ -1831,12 +1912,14 @@ static __global__ void flash_attn_ext_f16(
             constexpr bool needs_fixup = false; // CUDA block is working on an entire tile.
             flash_attn_ext_f16_process_tile<DKQ, DV, ncols1, ncols2, nwarps, use_logit_softcap, V_is_K_view, needs_fixup, is_fixup>
                 (Q_f2, K_h2, V_h2, mask_h, sinks_f, dstk, dst_meta, scale, slope, logit_softcap,
-                 ne01, ne02, gqa_ratio, ne11, stride_Q1, stride_Q2, stride_K, stride_V, stride_mask, jt, zt_gqa, kb0_start, kb0_stop);
+                 ne01, ne02, gqa_ratio, ne11, stride_Q1, stride_Q2, stride_K, stride_V, stride_mask, jt, zt_gqa,
+                 fattn_b_scratch, materialize_fattn_b, kb0_start, kb0_stop);
         } else {
             constexpr bool needs_fixup = true; // CUDA block is missing the beginning of a tile.
             flash_attn_ext_f16_process_tile<DKQ, DV, ncols1, ncols2, nwarps, use_logit_softcap, V_is_K_view, needs_fixup, is_fixup>
                 (Q_f2, K_h2, V_h2, mask_h, sinks_f, dstk, dst_meta, scale, slope, logit_softcap,
-                 ne01, ne02, gqa_ratio, ne11, stride_Q1, stride_Q2, stride_K, stride_V, stride_mask, jt, zt_gqa, kb0_start, kb0_stop);
+                 ne01, ne02, gqa_ratio, ne11, stride_Q1, stride_Q2, stride_K, stride_V, stride_mask, jt, zt_gqa,
+                 fattn_b_scratch, materialize_fattn_b, kb0_start, kb0_stop);
         }
 
         kbc += iter_k;
@@ -1877,7 +1960,8 @@ static __global__ void flash_attn_ext_f16(
     constexpr bool needs_fixup = false;
     flash_attn_ext_f16_process_tile<DKQ, DV, ncols1, ncols2, nwarps, use_logit_softcap, V_is_K_view, needs_fixup, is_fixup>
         (Q_f2, K_h2, V_h2, mask_h, sinks_f, dstk, dst_meta, scale, slope, logit_softcap,
-         ne01, ne02, gqa_ratio, ne11, stride_Q1, stride_Q2, stride_K, stride_V, stride_mask, jt, zt_gqa, kb0_start, kb0_stop);
+         ne01, ne02, gqa_ratio, ne11, stride_Q1, stride_Q2, stride_K, stride_V, stride_mask, jt, zt_gqa,
+         fattn_b_scratch, materialize_fattn_b, kb0_start, kb0_stop);
 #else
     GGML_UNUSED_VARS(Q_ptr, K_ptr, V_ptr, mask_ptr, sinks_ptr, KV_max_ptr, dst_ptr, dst_meta_ptr, scale,
         max_bias, m0, m1, n_head_log2, logit_softcap,
@@ -1911,6 +1995,21 @@ void ggml_cuda_flash_attn_ext_mma_f16_case(ggml_backend_cuda_context & ctx, ggml
     const int cols_per_warp = std::min(ncols, get_cols_per_warp(cc));
     const int warp_size_host = ggml_cuda_info().devices[ctx.device].warp_size;
     const int nwarps         = nthreads / warp_size_host;
+    const bool materialize_fattn_b =
+        neo3000_fattn_b_materialization_enabled();
+    static const bool experiment_route_logged = [
+        materialize_fattn_b, nbatch_fa
+    ] {
+        GGML_LOG_INFO(
+            "neo3000_fattn_b_probe: materialize=%d DKQ=%d DV=%d "
+            "ncols1=%d ncols2=%d nbatch_fa=%d "
+            "scratch_bytes_per_block=%zu reserve=1\n",
+            int(materialize_fattn_b), DKQ, DV, ncols1, ncols2,
+            nbatch_fa,
+            size_t(nbatch_fa)*(ncols1*ncols2)*sizeof(half));
+        return true;
+    }();
+    GGML_UNUSED(experiment_route_logged);
 
     constexpr bool V_is_K_view = DKQ == 576; // Guaranteed by the kernel selection logic in fattn.cu
 
@@ -1960,7 +2059,8 @@ void ggml_cuda_flash_attn_ext_mma_f16_case(ggml_backend_cuda_context & ctx, ggml
     }
 
     launch_fattn<DV, ncols1, ncols2>
-        (ctx, dst, fattn_kernel, nwarps, nbytes_shared_total, nbatch_fa, true, true, true, warp_size_host);
+        (ctx, dst, fattn_kernel, nwarps, nbytes_shared_total, nbatch_fa,
+         true, true, true, warp_size_host, true, materialize_fattn_b);
 }
 
 

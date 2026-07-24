@@ -47,6 +47,10 @@ The active next architectural objective is `OPEN_RELATIONAL_CARRIER_COMPOSITION_
 
 Exact pushed head `247ae2f6c41d9ae77b21909af5d6ba138e522faf` executed 0079 once and accepted. All exactness, order, type, projection, inverse, residency, isolation, and cleanup controls passed. Against the matched pinned-host Y materialization route, the register-open route reduced nine-repetition median whole-route wall from `66.0936 ms` to `31.6928 ms` (`2.0854x`) and CUDA timeline from `36.2031 ms` to `2.1049 ms` (`17.1992x`). This establishes a bounded finite CUDA open intermediate with positive measured speed, not an inference carrier. The next causal bridge must preserve the same contract inside a real inference operator.
 
+`neo-exp-0080` is now preregistered as that inference-native bridge. It targets the real Agents-A1 sm86 FP16 MMA FlashAttention packed softmax-B operand. The primary keeps B in registers; the matched control uses the same binary, kernel, math, scratch reservation, and launch geometry but performs a volatile global-address-space store/barrier/reload/barrier before the same VKQ MMA. The frozen run uses checkpoint zero, qualified water branch 7, one warmup plus nine counted direct repetitions per route, exact model outputs and Pi tool-call identity, runtime specialization markers, complete resource/custody closure, and prospective prompt/compute/wall speed gates. Derived materialization bytes are source-plus-mode evidence, not hardware traffic-counter measurements.
+
+This bridge remains deliberately narrow. Even a pass would establish only that one exercised fused inference boundary is exact and faster while left unmaterialized. It would not establish reusable catalytic state, canonical `.holo`, cross-request restoration, recursive carrier reuse, or unbounded inference.
+
 Use one matched materialized control `X -> Y_classical -> Z`. Add only the causal negative controls required by the addendum: wrong order, pre-contact boundary-type mismatch, forced intermediate projection identified as control, and lawful restoration or closure. Bind morphism, port type, carrier, composition order, final projection, control construction, resource, and closure identities before contact.
 
 The minimum schema is `OpenRelationalCarrier`: carrier ID; input/output port types; unresolved-boundary ID; executable-state, forward-morphism, and composition identities; projection, inverse-or-closure, provenance, and resource policies; and a state distinguishing open, projected, internally closed, restored, and invalid boundaries. Do not build a generic category framework before one concrete R2 experiment needs it.
@@ -77,7 +81,7 @@ The `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` operation is closed at this mixed acc
 
 Bounded autonomous non-retry successor mode is active from this checkpoint.
 
-**Current exact action:** follow the single active cursor at the top of `TASKS.md`: `DESIGN_NEO_EXP_0080_INFERENCE_NATIVE_OPEN_BOUNDARY_V1`. Every later next-action statement in this file is a historical boundary record and has no current authority.
+**Current exact action:** follow the single active cursor at the top of `TASKS.md`: `EXECUTE_NEO_EXP_0080_AGENTS_A1_MMA_OPEN_B_BOUNDARY_ONCE`. Every later next-action statement in this file is a historical boundary record and has no current authority.
 
 **Navigation authority:** after this point, words such as `active`, `current`, `authorized`, `next action`, and `next task` inside preserved experiment narratives describe their historical boundary only. They cannot override the frontier objective or the `TASKS.md` cursor.
 

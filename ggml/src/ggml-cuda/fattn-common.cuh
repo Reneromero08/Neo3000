@@ -972,9 +972,11 @@ static __global__ void flash_attn_combine_results(
 template <int DV, int ncols1, int ncols2>
 void launch_fattn(
     ggml_backend_cuda_context & ctx, ggml_tensor * dst, fattn_kernel_t fattn_kernel, const int nwarps, const size_t nbytes_shared,
-    const int nbatch_fa, const bool need_f16_K, const bool need_f16_V, const bool stream_k, const int warp_size = WARP_SIZE
+    const int nbatch_fa, const bool need_f16_K, const bool need_f16_V, const bool stream_k, const int warp_size = WARP_SIZE,
+    const bool reserve_fattn_b_probe = false, const bool materialize_fattn_b = false
 ) {
     constexpr int ncols = ncols1 * ncols2;
+    GGML_ASSERT(!materialize_fattn_b || reserve_fattn_b_probe);
 
     const ggml_tensor * Q = dst->src[0];
     const ggml_tensor * K = dst->src[1];
@@ -1117,6 +1119,7 @@ void launch_fattn(
     const int ntiles_KV = (K->ne[1] + nbatch_fa - 1) / nbatch_fa; // Max. number of parallel blocks limited by KV cache length.
 
     dim3 blocks_num;
+    size_t dst_tmp_meta_elements = 0;
     if (stream_k) {
         // For short contexts it can be faster to have the SMs work on whole tiles because this lets us skip the fixup.
         const int max_blocks = max_blocks_per_sm*nsm;
@@ -1146,7 +1149,7 @@ void launch_fattn(
         }
 
         if (ntiles_dst % blocks_num.x != 0) { // Fixup is only needed if the SMs work on fractional tiles.
-            dst_tmp_meta.alloc((size_t(blocks_num.x) * ncols * (2 + DV/2)));
+            dst_tmp_meta_elements = size_t(blocks_num.x) * ncols * (2 + DV/2);
         }
     } else {
         // parallel_blocks must not be larger than what the tensor size allows:
@@ -1180,8 +1183,31 @@ void launch_fattn(
 
         if (parallel_blocks > 1) {
             dst_tmp.alloc(parallel_blocks*ggml_nelements(KQV));
-            dst_tmp_meta.alloc(parallel_blocks*ggml_nrows(KQV));
+            dst_tmp_meta_elements = parallel_blocks*ggml_nrows(KQV);
         }
+    }
+
+    if (reserve_fattn_b_probe) {
+        // neo-exp-0080 reserves the full stream-K metadata envelope in both
+        // routes, then appends one packed-B scratch tile per CUDA block.  The
+        // primary does not touch this tail.  The control writes and reloads
+        // it through the same MMA kernel, so allocation and launch geometry
+        // remain identical while only intermediate materialization changes.
+        GGML_ASSERT(stream_k);
+        const size_t fixup_reserve =
+            size_t(blocks_num.x) * blocks_num.y * blocks_num.z *
+            ncols * (2 + DV/2);
+        const size_t block_count =
+            size_t(blocks_num.x) * blocks_num.y * blocks_num.z;
+        const size_t packed_b_scratch =
+            block_count * size_t(nbatch_fa) * ncols * sizeof(half) /
+            sizeof(float2);
+        dst_tmp_meta_elements =
+            std::max(dst_tmp_meta_elements, fixup_reserve) +
+            packed_b_scratch;
+    }
+    if (dst_tmp_meta_elements > 0) {
+        dst_tmp_meta.alloc(dst_tmp_meta_elements);
     }
 
     float scale         = 1.0f;
@@ -1217,7 +1243,8 @@ void launch_fattn(
         KV_max.ptr,
         !stream_k && parallel_blocks > 1 ? dst_tmp.ptr : (float *) KQV->data, dst_tmp_meta.ptr,
         scale, max_bias, m0, m1, n_head_log2, logit_softcap,
-        Q->ne[0], ne01,     Q->ne[2], Q->ne[3], Q->nb[1], Q->nb[2], Q->nb[3],
+        materialize_fattn_b ? -Q->ne[0] : Q->ne[0],
+                  ne01,     Q->ne[2], Q->ne[3], Q->nb[1], Q->nb[2], Q->nb[3],
         K->ne[0], K->ne[1], K->ne[2], K->ne[3], nb11, nb12, nb13,
         nb21, nb22, nb23,
         mask ? mask->ne[1] : 0, mask ? mask->ne[2] : 0, mask ? mask->ne[3] : 0,
