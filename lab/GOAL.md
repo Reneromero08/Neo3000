@@ -29,6 +29,26 @@ The unbounded endpoint requires:
 
 Current results remain bounded evidence. N=8 is the accepted fanout waypoint; N=16 positive amortization did not pass strict utility; no unbounded bridge has been established.
 
+## Holographic relational carrier realignment [ACTIVE]
+
+The current scientific boundary is `BOUNDED_FIXED_SIZE_EXECUTABLE_FINITE_STATE_RECURSION`. `neo-exp-0078` additionally supports `PROCESS_LOCAL_REUSE_OF_A_FINITE_Z4_EXECUTABLE_CARRIER_ORBIT`: four exact checksum-addressed CUDA phase roots closed the bounded R16 speed gates. Every edge still projected an explicit A/B/C/D JSON answer before the next edge. This is finite-state root selection, not open holographic computation.
+
+The algorithm is not the engine. Ordinary algorithms may compile, transport, test, control, record evidence, or render a final boundary, but they must not silently generate the primary result. The intended process-object is:
+
+```text
+H = (Obj, Hom, composition, tensor, dagger, Trace, projection, restoration)
+```
+
+Here `Obj` supplies typed carrier boundaries, `Hom(X,Y)` supplies executable unresolved processes, projection is the declared classical collapse, and restoration lawfully returns or closes borrowed carrier state. Dagger and Trace remain locked until native reverse or internal-closure laws are implemented and tested.
+
+The active next architectural objective is `OPEN_RELATIONAL_CARRIER_COMPOSITION_V1`. Test two typed executable carrier morphisms `F: X -> Y` and `G: Y -> Z`. The catalytic route must realize `G o F` while keeping shared boundary `Y` uncollapsed: no intermediate JSON parse, host-side answer extraction, token-to-symbol control flow, visible-intermediate prompt reconstruction, explicit candidate enumeration, outcome-conditioned root selection, or answer-conditioned lookup. Only `Z` may be classically projected on the primary route.
+
+Use one matched materialized control `X -> Y_classical -> Z`. Add only the causal negative controls required by the addendum: wrong order, pre-contact boundary-type mismatch, forced intermediate projection identified as control, and lawful restoration or closure. Bind morphism, port type, carrier, composition order, final projection, control construction, resource, and closure identities before contact.
+
+The minimum schema is `OpenRelationalCarrier`: carrier ID; input/output port types; unresolved-boundary ID; executable-state, forward-morphism, and composition identities; projection, inverse-or-closure, provenance, and resource policies; and a state distinguishing open, projected, internally closed, restored, and invalid boundaries. Do not build a generic category framework before one concrete R2 experiment needs it.
+
+Allowed future bounded claims are limited to open intermediate executable boundary, two-morphism catalytic composition, avoided classical intermediate materialization, preserved composed utility, lawful closure, and bounded R2 composition. General holographic inference, general relational trace, arbitrary-history compaction, arbitrary task transfer, unbounded recursive compute, restart persistence, superiority, SOTA, and automatic promotion remain locked.
+
 `neo-exp-0050` supports bounded fanout amortization through N=8 and does not establish the unbounded endpoint.
 
 `neo-exp-0051` rejects the post-save completed-generation 285-token native RAM root: post-save live, restored, and replay routes produced the same wrong tick-2 result while the identical fresh route was correct. Restore/deserialization is not required as the sole cause; that experiment did not isolate possible root-save mutation.
@@ -53,7 +73,7 @@ The `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` operation is closed at this mixed acc
 
 Bounded autonomous non-retry successor mode is active from this checkpoint.
 
-**Current exact action:** follow the single active cursor at the top of `TASKS.md`: `AUTONOMOUSLY_SELECT_PREREGISTER_AND_EXECUTE_MINIMUM_NON_RETRY_SUCCESSOR`. Every later next-action statement in this file is a historical boundary record and has no current authority.
+**Current exact action:** follow the single active cursor at the top of `TASKS.md`: `DESIGN_OPEN_RELATIONAL_CARRIER_COMPOSITION_V1`. Every later next-action statement in this file is a historical boundary record and has no current authority.
 
 **Navigation authority:** after this point, words such as `active`, `current`, `authorized`, `next action`, and `next task` inside preserved experiment narratives describe their historical boundary only. They cannot override the frontier objective or the `TASKS.md` cursor.
 

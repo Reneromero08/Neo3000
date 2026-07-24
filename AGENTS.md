@@ -102,6 +102,28 @@ Do not collapse a proposal into scalar candidate ranking, winner selection, AUC-
 
 The algorithm is a local trace through a larger process-object. Negative results map the Wall.
 
+## Holographic relational carrier boundary
+
+The current frontier establishes `BOUNDED_FIXED_SIZE_EXECUTABLE_FINITE_STATE_RECURSION`, including process-local reuse of one finite Z4 executable carrier orbit. It does not establish `OPEN_HOLOGRAPHIC_RELATIONAL_COMPOSITION`.
+
+Finite root selection, memoization, prefix reuse, and explicit output-derived state remain valuable calibrations. They are not the long-term primitive when every edge first collapses to a classical token, JSON answer, host-side symbol, answer-conditioned root, or explicit candidate list.
+
+The active architectural target after `neo-exp-0078` is `OPEN_RELATIONAL_CARRIER_COMPOSITION_V1`:
+
+- bind typed executable morphisms `F: X -> Y` and `G: Y -> Z`
+- require `cod(F) = dom(G)` before model contact
+- realize `G o F: X -> Z` while the catalytic route keeps `Y` uncollapsed
+- allow classical projection only at final boundary `Z`
+- compare with one matched control that materializes, parses, and reinserts `Y`
+- reject zero-work type mismatch before model-facing execution
+- include only the wrong-order, projection-adversary, and restoration/closure controls needed to test the causal claim
+
+The minimum carrier record is `OpenRelationalCarrier`: carrier ID, typed input/output ports, unresolved-boundary ID, executable-state identity, forward-morphism identity, composition identity, projection policy, inverse-or-closure policy, provenance policy, and resource identity. Implement only the fields one concrete experiment needs.
+
+An open-boundary claim requires zero intermediate JSON parse, answer extraction, token-to-symbol control flow, prompt reconstruction from a visible intermediate, outcome-conditioned root selection, and answer-conditioned lookup on the primary route. Absence of a visible intermediate is not success by itself; the executable boundary, final utility, resource accounting, and restoration or closure must all pass.
+
+Keep `GENERAL_HOLOGRAPHIC_INFERENCE`, `GENERAL_RELATIONAL_TRACE`, `ARBITRARY_HISTORY_COMPACTION`, `UNBOUNDED_RECURSIVE_COMPUTE`, restart persistence, superiority, and SOTA locked until their separate constructive laws and evidence exist.
+
 ## Engineering rules
 
 1. Speed and correctness come before architectural ornament.
