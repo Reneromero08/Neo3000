@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dedicated neo-exp-0083 entrypoint."""
+"""Dedicated neo-exp-0084 entrypoint."""
 
 from catalytic_frontier_terminal_logits_continuation import main
 

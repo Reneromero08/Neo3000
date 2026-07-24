@@ -61,6 +61,8 @@ This bridge remains deliberately narrow. The executed result establishes only th
 
 The accepted claim remains bounded to process-local T16 continuation. Host terminal logits are not CUDA-resident; restart persistence, cross-task transfer, canonical `.holo`, general recurrence, weight catalysis, and an unbounded bridge remain open. The minimum next step is one-variable temporal scaling to T64 with the complete 0083 mechanism, identity, utility, speed, residency, lifecycle, and closure laws unchanged.
 
+`neo-exp-0084` is statically preregistered as that exact T64 scaling step. After normalizing successor/T labels, the only scientific change is 16→64 counted pairs with balanced 32/32 route order. Capture count remains one; predecode-use expectation becomes 65; all utility, speed, generation, identity, resource, Pi, lifecycle, erase, cleanup, and claim gates remain unchanged. Static audit 7/7, dedicated tests 9/9, focused-plus-compatibility 44/44, Python compilation, diff check, and independent differential review pass with no endpoint, model, server, sidecar, or GPU contact. Bind `frontier-attempt-0116`; 0084 remains unconsumed.
+
 Use one matched materialized control `X -> Y_classical -> Z`. Add only the causal negative controls required by the addendum: wrong order, pre-contact boundary-type mismatch, forced intermediate projection identified as control, and lawful restoration or closure. Bind morphism, port type, carrier, composition order, final projection, control construction, resource, and closure identities before contact.
 
 The minimum schema is `OpenRelationalCarrier`: carrier ID; input/output port types; unresolved-boundary ID; executable-state, forward-morphism, and composition identities; projection, inverse-or-closure, provenance, and resource policies; and a state distinguishing open, projected, internally closed, restored, and invalid boundaries. Do not build a generic category framework before one concrete R2 experiment needs it.
@@ -91,7 +93,7 @@ The `QUALIFY_TWO_STRONG_DIRECT_N16_PANELS` operation is closed at this mixed acc
 
 Bounded autonomous non-retry successor mode is active from this checkpoint.
 
-**Current exact action:** follow the single active cursor at the top of `TASKS.md`: `DESIGN_AND_PREREGISTER_NEO_EXP_0084_TERMINAL_LOGITS_TEMPORAL_SCALING_T64`. Every later next-action statement in this file is a historical boundary record and has no current authority.
+**Current exact action:** follow the single active cursor at the top of `TASKS.md`: `EXECUTE_NEO_EXP_0084_TERMINAL_LOGITS_TEMPORAL_SCALING_T64_ONCE`. Every later next-action statement in this file is a historical boundary record and has no current authority.
 
 **Navigation authority:** after this point, words such as `active`, `current`, `authorized`, `next action`, and `next task` inside preserved experiment narratives describe their historical boundary only. They cannot override the frontier objective or the `TASKS.md` cursor.
 

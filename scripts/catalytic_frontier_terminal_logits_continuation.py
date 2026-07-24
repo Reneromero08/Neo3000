@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""neo-exp-0083: CUDA root plus host terminal-logits continuation at T=16.
+"""neo-exp-0084: CUDA root plus host terminal-logits continuation at T=64.
 
 The primary promotes the accepted 689-token CUDA KV/recurrent root by evaluating
 only token 690 once, captures the resulting full-vocabulary F32 logits row, and
 then restores that 690-token executable boundary for zero-fresh-prompt live
 sampling.  The matched control restores the unchanged 689-token CUDA root and
-evaluates token 690 normally.  This exact successor repairs only 0082's numeric
-pair-record lookup during postprocessing. No answer text or sampled token is
-stored.
+evaluates token 690 normally. Relative to accepted 0083, this exact successor
+changes only counted temporal reuse from 16 to 64. No answer text or sampled
+token is stored.
 """
 from __future__ import annotations
 
@@ -34,18 +34,18 @@ import catalytic_frontier_single_request_latency as latency
 import catalytic_frontier_water_panel_qualifier as water
 
 
-EXPERIMENT_ID = "neo-exp-0083"
-ATTEMPT_ID = "frontier-attempt-0115"
+EXPERIMENT_ID = "neo-exp-0084"
+ATTEMPT_ID = "frontier-attempt-0117"
 ROOT_ID = water.ROOT_ID
-BASE_ROOT_ID = "neo-exp-0083-base-689"
-TERMINAL_ROOT_ID = "neo-exp-0083-terminal-690"
+BASE_ROOT_ID = "neo-exp-0084-base-689"
+TERMINAL_ROOT_ID = "neo-exp-0084-terminal-690"
 BRANCH_NUMBER = 7
 EXPECTED_ANSWER = "C"
 EXPECTED_TASK_A_TOKENS = 543
 EXPECTED_RETAINED_TOKENS = 612
 EXPECTED_BASE_TOKENS = 689
 EXPECTED_TERMINAL_TOKENS = 690
-COUNTED_PAIRS = 16
+COUNTED_PAIRS = 64
 PAIR_ORDERS = tuple(
     ("primary", "control") if index % 2 == 0 else ("control", "primary")
     for index in range(COUNTED_PAIRS)
@@ -117,7 +117,7 @@ def distribution(values: Sequence[float]) -> dict[str, float]:
 
 def runtime_bundle(binary: Path) -> dict[str, str]:
     require(binary.name == "llama-server.exe", "runtime entrypoint changed")
-    require(bool(RUNTIME_SHA256), "0083 runtime bundle is not pinned")
+    require(bool(RUNTIME_SHA256), "0084 runtime bundle is not pinned")
     observed: dict[str, str] = {}
     for name, expected in RUNTIME_SHA256.items():
         path = (binary.parent / name).resolve(strict=True)
@@ -141,13 +141,13 @@ def require_clean_head(repository: Path, expected_commit: str) -> None:
         bool(re.fullmatch(r"[0-9a-f]{40}", expected_commit)),
         "expected commit is malformed",
     )
-    require(current_head(repository) == expected_commit, "0083 commit identity changed")
+    require(current_head(repository) == expected_commit, "0084 commit identity changed")
     status = subprocess.check_output(
         ["git", "status", "--porcelain"],
         cwd=repository,
         text=True,
     )
-    require(not status.strip(), "0083 worktree is not clean")
+    require(not status.strip(), "0084 worktree is not clean")
 
 
 def write_exclusive_json(path: Path, value: Mapping[str, Any]) -> dict[str, Any]:
@@ -175,7 +175,7 @@ def create_consumed_marker(path: Path, expected_commit: str) -> dict[str, Any]:
         "attempt_id": ATTEMPT_ID,
         "expected_commit": expected_commit,
         "created_unix_ns": time.time_ns(),
-        "meaning": "Task-A is next; neo-exp-0083 is scientifically consumed",
+        "meaning": "Task-A is next; neo-exp-0084 is scientifically consumed",
         "retry_allowed": False,
     }
     return write_exclusive_json(path, marker)
@@ -673,7 +673,7 @@ def evaluate(
     )
 
     ownership: list[dict[str, Any]] = []
-    for boundary in ("pre-t16-batch",):
+    for boundary in ("pre-t64-batch",):
         started = time.monotonic()
         evidence = sidecar.exact_ownership(boundary)
         ownership.append(
@@ -723,10 +723,10 @@ def evaluate(
         )
 
     started = time.monotonic()
-    post_evidence = sidecar.exact_ownership("post-t16-batch")
+    post_evidence = sidecar.exact_ownership("post-t64-batch")
     ownership.append(
         {
-            "boundary": "post-t16-batch",
+            "boundary": "post-t64-batch",
             "client_wall_seconds": time.monotonic() - started,
             "evidence": post_evidence,
         }
@@ -784,7 +784,7 @@ def evaluate(
 
     primary = [record for record in counted if record["route"] == "primary"]
     control = [record for record in counted if record["route"] == "control"]
-    require(len(primary) == COUNTED_PAIRS and len(control) == COUNTED_PAIRS, "T16 cardinality changed")
+    require(len(primary) == COUNTED_PAIRS and len(control) == COUNTED_PAIRS, "T64 cardinality changed")
     all_generation = [direct_pre, *warmup, *counted, direct_post]
     generated_hashes = {record["generated_token_sha256"] for record in all_generation}
     input_hashes = {record["input_token_sha256"] for record in all_generation}
@@ -872,8 +872,8 @@ def evaluate(
         "wall_speedup_at_least_1_05": wall_speedup >= MIN_WALL_SPEEDUP,
         "pair_dominance_at_least_0_70": dominance >= MIN_PAIR_DOMINANCE,
         "generation_regression_at_most_5_percent": generation_regression <= MAX_GENERATION_REGRESSION,
-        "t16_lifecycle_wall_advantage": primary_lifecycle_wall < control_lifecycle_wall,
-        "t16_lifecycle_fresh_advantage": primary_lifecycle_fresh < control_lifecycle_fresh,
+        "t64_lifecycle_wall_advantage": primary_lifecycle_wall < control_lifecycle_wall,
+        "t64_lifecycle_fresh_advantage": primary_lifecycle_fresh < control_lifecycle_fresh,
         "root_bank_closed_to_zero": base_erased["n_total_bytes_after"] == 0,
         "wddm_at_or_below_6000_mib": (
             type(resources_with_roots.get("peak_wddm_bytes")) is int
@@ -898,7 +898,7 @@ def evaluate(
         "status": "complete",
         "verdict": "accept" if accepted else "reject",
         "classification": (
-            "cuda-root-plus-host-terminal-logits-continuation-t16-supported-bounded"
+            "cuda-root-plus-host-terminal-logits-continuation-t64-supported-bounded"
             if accepted
             else "terminal-logits-continuation-without-preregistered-speed-or-integrity-gate"
         ),
@@ -986,7 +986,7 @@ def evaluate(
         "quality_gates": gates,
         "claim_ceiling": (
             "One process-local Agents-A1 CUDA KV/recurrent root plus host-F32 terminal-logits "
-            "continuation through T=16; no canonical .holo, restart persistence, general "
+            "continuation through T=64; no canonical .holo, restart persistence, general "
             "recurrence, weight catalysis, or unbounded-compute claim."
         ),
         "automatic_promotion": False,
@@ -1027,7 +1027,7 @@ def static_audit(binary: Path) -> dict[str, Any]:
         ),
         "bounded_claim_text_present": "host-F32 terminal-logits" in text["controller"],
     }
-    require(all(checks.values()), f"static 0083 audit failed: {checks}")
+    require(all(checks.values()), f"static 0084 audit failed: {checks}")
     return {
         "checks": checks,
         "source_sha256": {
@@ -1064,8 +1064,8 @@ def main() -> int:
     log_output = args.server_log_output.resolve(strict=False)
     marker = args.consumed_marker.resolve(strict=False)
     for path in (output, log_output, marker):
-        require(not path.exists(), f"0083 artifact already exists: {path}")
-    require(len({output, log_output, marker}) == 3, "0083 artifact paths collide")
+        require(not path.exists(), f"0084 artifact already exists: {path}")
+    require(len({output, log_output, marker}) == 3, "0084 artifact paths collide")
     require_clean_head(ROOT, args.expected_commit)
     before_bundle = runtime_bundle(binary)
     static = static_audit(binary)
@@ -1074,7 +1074,7 @@ def main() -> int:
     roots = {str(item["root_id"]): item for item in corpus["roots"]}
     evaluator, live_contract = harness.load_discovery_sidecar_contract()
     stable_pids = harness.live_runtime.require_stable()
-    require(len(stable_pids) == 1, "0083 requires one protected stable listener")
+    require(len(stable_pids) == 1, "0084 requires one protected stable listener")
     require(not harness.live_runtime.listener_pids(harness.live_runtime.PORT), "candidate port is occupied")
 
     state_root = Path(tempfile.mkdtemp(prefix="neo3000-terminal-logits-"))
@@ -1105,7 +1105,7 @@ def main() -> int:
             and launch.get("moe_server_args") == list(water.checkpoint_control.DEFAULT_MOE_SERVER_ARGS)
             and launch.get("root_storage") == "device"
             and launch.get("speculative_type") == "none",
-            "0083 launch identity changed",
+            "0084 launch identity changed",
         )
         baseline_private = None
         process_memory = readiness.get("process_memory")
@@ -1169,7 +1169,7 @@ def main() -> int:
         write_exclusive_json(output, failure)
         raise ExperimentError(f"{EXPERIMENT_ID} failed; evidence preserved at {output}") from caught
 
-    require(result is not None, "0083 result is missing")
+    require(result is not None, "0084 result is missing")
     result["cleanup"] = cleanup
     cleanup_gate = harness.live_runtime.cleanup_integrity(cleanup, set(stable_pids))
     result["cleanup_gate"] = cleanup_gate

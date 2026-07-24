@@ -55,9 +55,9 @@ def root_receipt(*, action: str, terminal_logits: bool) -> dict[str, object]:
 
 
 class TerminalLogitsContinuationTests(unittest.TestCase):
-    def test_preregistered_geometry_is_t16_and_order_balanced(self):
-        self.assertEqual(terminal.COUNTED_PAIRS, 16)
-        self.assertEqual(len(terminal.PAIR_ORDERS), 16)
+    def test_preregistered_geometry_is_t64_and_order_balanced(self):
+        self.assertEqual(terminal.COUNTED_PAIRS, 64)
+        self.assertEqual(len(terminal.PAIR_ORDERS), 64)
         self.assertEqual(
             terminal.PAIR_ORDERS.count(("primary", "control")),
             terminal.PAIR_ORDERS.count(("control", "primary")),
