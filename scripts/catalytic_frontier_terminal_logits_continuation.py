@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""neo-exp-0082: CUDA root plus host terminal-logits continuation at T=16.
+"""neo-exp-0083: CUDA root plus host terminal-logits continuation at T=16.
 
 The primary promotes the accepted 689-token CUDA KV/recurrent root by evaluating
 only token 690 once, captures the resulting full-vocabulary F32 logits row, and
 then restores that 690-token executable boundary for zero-fresh-prompt live
 sampling.  The matched control restores the unchanged 689-token CUDA root and
-evaluates token 690 normally.  No answer text or sampled token is stored.
+evaluates token 690 normally.  This exact successor repairs only 0082's numeric
+pair-record lookup during postprocessing. No answer text or sampled token is
+stored.
 """
 from __future__ import annotations
 
@@ -32,11 +34,11 @@ import catalytic_frontier_single_request_latency as latency
 import catalytic_frontier_water_panel_qualifier as water
 
 
-EXPERIMENT_ID = "neo-exp-0082"
-ATTEMPT_ID = "frontier-attempt-0113"
+EXPERIMENT_ID = "neo-exp-0083"
+ATTEMPT_ID = "frontier-attempt-0115"
 ROOT_ID = water.ROOT_ID
-BASE_ROOT_ID = "neo-exp-0082-base-689"
-TERMINAL_ROOT_ID = "neo-exp-0082-terminal-690"
+BASE_ROOT_ID = "neo-exp-0083-base-689"
+TERMINAL_ROOT_ID = "neo-exp-0083-terminal-690"
 BRANCH_NUMBER = 7
 EXPECTED_ANSWER = "C"
 EXPECTED_TASK_A_TOKENS = 543
@@ -115,7 +117,7 @@ def distribution(values: Sequence[float]) -> dict[str, float]:
 
 def runtime_bundle(binary: Path) -> dict[str, str]:
     require(binary.name == "llama-server.exe", "runtime entrypoint changed")
-    require(bool(RUNTIME_SHA256), "0082 runtime bundle is not pinned")
+    require(bool(RUNTIME_SHA256), "0083 runtime bundle is not pinned")
     observed: dict[str, str] = {}
     for name, expected in RUNTIME_SHA256.items():
         path = (binary.parent / name).resolve(strict=True)
@@ -139,13 +141,13 @@ def require_clean_head(repository: Path, expected_commit: str) -> None:
         bool(re.fullmatch(r"[0-9a-f]{40}", expected_commit)),
         "expected commit is malformed",
     )
-    require(current_head(repository) == expected_commit, "0082 commit identity changed")
+    require(current_head(repository) == expected_commit, "0083 commit identity changed")
     status = subprocess.check_output(
         ["git", "status", "--porcelain"],
         cwd=repository,
         text=True,
     )
-    require(not status.strip(), "0082 worktree is not clean")
+    require(not status.strip(), "0083 worktree is not clean")
 
 
 def write_exclusive_json(path: Path, value: Mapping[str, Any]) -> dict[str, Any]:
@@ -173,7 +175,7 @@ def create_consumed_marker(path: Path, expected_commit: str) -> dict[str, Any]:
         "attempt_id": ATTEMPT_ID,
         "expected_commit": expected_commit,
         "created_unix_ns": time.time_ns(),
-        "meaning": "Task-A is next; neo-exp-0082 is scientifically consumed",
+        "meaning": "Task-A is next; neo-exp-0083 is scientifically consumed",
         "retry_allowed": False,
     }
     return write_exclusive_json(path, marker)
@@ -500,6 +502,47 @@ def run_tool_canary(sidecar: Any) -> dict[str, Any]:
     }
 
 
+def apply_ownership_amortization(
+    *,
+    warmup: Sequence[dict[str, Any]],
+    counted: Sequence[dict[str, Any]],
+    pairs: Sequence[dict[str, Any]],
+    ownership_total: float,
+) -> float:
+    request_count = len(warmup) + len(counted)
+    require(request_count > 0, "batch-owned request count is zero")
+    ownership_amortized = ownership_total / request_count
+    for record in [*warmup, *counted]:
+        record["batch_ownership_amortized_seconds"] = ownership_amortized
+        record["effective_wall_seconds"] += ownership_amortized
+
+    for pair_record in pairs:
+        pair_number = int(pair_record["pair"])
+        records = [
+            record
+            for record in counted
+            if record["label"].startswith(
+                f"{EXPERIMENT_ID}:pair-{pair_number}-"
+            )
+        ]
+        by_route = {record["route"]: record for record in records}
+        require(
+            set(by_route) == {"primary", "control"},
+            f"pair {pair_number} route evidence is incomplete",
+        )
+        pair_record["primary_effective_wall_seconds"] = (
+            by_route["primary"]["effective_wall_seconds"]
+        )
+        pair_record["control_effective_wall_seconds"] = (
+            by_route["control"]["effective_wall_seconds"]
+        )
+        pair_record["primary_won"] = (
+            by_route["primary"]["effective_wall_seconds"]
+            < by_route["control"]["effective_wall_seconds"]
+        )
+    return ownership_amortized
+
+
 def evaluate(
     *,
     sidecar: Any,
@@ -689,19 +732,12 @@ def evaluate(
         }
     )
     ownership_total = sum(float(item["client_wall_seconds"]) for item in ownership)
-    ownership_amortized = ownership_total / (len(warmup) + len(counted))
-    for record in [*warmup, *counted]:
-        record["batch_ownership_amortized_seconds"] = ownership_amortized
-        record["effective_wall_seconds"] += ownership_amortized
-    for pair in pairs:
-        records = [record for record in counted if record["label"].startswith(f"{EXPERIMENT_ID}:pair-{pair}-")]
-        by_route = {record["route"]: record for record in records}
-        pair["primary_effective_wall_seconds"] = by_route["primary"]["effective_wall_seconds"]
-        pair["control_effective_wall_seconds"] = by_route["control"]["effective_wall_seconds"]
-        pair["primary_won"] = (
-            by_route["primary"]["effective_wall_seconds"]
-            < by_route["control"]["effective_wall_seconds"]
-        )
+    ownership_amortized = apply_ownership_amortization(
+        warmup=warmup,
+        counted=counted,
+        pairs=pairs,
+        ownership_total=ownership_total,
+    )
 
     direct_post = run_route(
         sidecar=sidecar,
@@ -991,7 +1027,7 @@ def static_audit(binary: Path) -> dict[str, Any]:
         ),
         "bounded_claim_text_present": "host-F32 terminal-logits" in text["controller"],
     }
-    require(all(checks.values()), f"static 0082 audit failed: {checks}")
+    require(all(checks.values()), f"static 0083 audit failed: {checks}")
     return {
         "checks": checks,
         "source_sha256": {
@@ -1028,8 +1064,8 @@ def main() -> int:
     log_output = args.server_log_output.resolve(strict=False)
     marker = args.consumed_marker.resolve(strict=False)
     for path in (output, log_output, marker):
-        require(not path.exists(), f"0082 artifact already exists: {path}")
-    require(len({output, log_output, marker}) == 3, "0082 artifact paths collide")
+        require(not path.exists(), f"0083 artifact already exists: {path}")
+    require(len({output, log_output, marker}) == 3, "0083 artifact paths collide")
     require_clean_head(ROOT, args.expected_commit)
     before_bundle = runtime_bundle(binary)
     static = static_audit(binary)
@@ -1038,7 +1074,7 @@ def main() -> int:
     roots = {str(item["root_id"]): item for item in corpus["roots"]}
     evaluator, live_contract = harness.load_discovery_sidecar_contract()
     stable_pids = harness.live_runtime.require_stable()
-    require(len(stable_pids) == 1, "0082 requires one protected stable listener")
+    require(len(stable_pids) == 1, "0083 requires one protected stable listener")
     require(not harness.live_runtime.listener_pids(harness.live_runtime.PORT), "candidate port is occupied")
 
     state_root = Path(tempfile.mkdtemp(prefix="neo3000-terminal-logits-"))
@@ -1069,7 +1105,7 @@ def main() -> int:
             and launch.get("moe_server_args") == list(water.checkpoint_control.DEFAULT_MOE_SERVER_ARGS)
             and launch.get("root_storage") == "device"
             and launch.get("speculative_type") == "none",
-            "0082 launch identity changed",
+            "0083 launch identity changed",
         )
         baseline_private = None
         process_memory = readiness.get("process_memory")
@@ -1133,7 +1169,7 @@ def main() -> int:
         write_exclusive_json(output, failure)
         raise ExperimentError(f"{EXPERIMENT_ID} failed; evidence preserved at {output}") from caught
 
-    require(result is not None, "0082 result is missing")
+    require(result is not None, "0083 result is missing")
     result["cleanup"] = cleanup
     cleanup_gate = harness.live_runtime.cleanup_integrity(cleanup, set(stable_pids))
     result["cleanup_gate"] = cleanup_gate

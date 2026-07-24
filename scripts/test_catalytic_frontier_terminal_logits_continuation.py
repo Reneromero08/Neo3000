@@ -219,6 +219,45 @@ class TerminalLogitsContinuationTests(unittest.TestCase):
         for key in ("temperature", "seed", "backend_sampling"):
             self.assertEqual(capture[key], live[key])
 
+    def test_pair_postprocessing_uses_numeric_pair_field(self):
+        warmup = [{"effective_wall_seconds": 1.0}]
+        counted = [
+            {
+                "label": f"{terminal.EXPERIMENT_ID}:pair-1-route-1:primary",
+                "route": "primary",
+                "effective_wall_seconds": 1.0,
+            },
+            {
+                "label": f"{terminal.EXPERIMENT_ID}:pair-1-route-2:control",
+                "route": "control",
+                "effective_wall_seconds": 2.0,
+            },
+            {
+                "label": f"{terminal.EXPERIMENT_ID}:pair-10-route-1:control",
+                "route": "control",
+                "effective_wall_seconds": 3.0,
+            },
+            {
+                "label": f"{terminal.EXPERIMENT_ID}:pair-10-route-2:primary",
+                "route": "primary",
+                "effective_wall_seconds": 4.0,
+            },
+        ]
+        pairs = [{"pair": 1}, {"pair": 10}]
+        amortized = terminal.apply_ownership_amortization(
+            warmup=warmup,
+            counted=counted,
+            pairs=pairs,
+            ownership_total=0.5,
+        )
+        self.assertEqual(amortized, 0.1)
+        self.assertTrue(pairs[0]["primary_won"])
+        self.assertFalse(pairs[1]["primary_won"])
+        self.assertAlmostEqual(
+            pairs[0]["primary_effective_wall_seconds"],
+            1.1,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
