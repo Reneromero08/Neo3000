@@ -35,6 +35,7 @@ import catalytic_frontier_water_panel_qualifier as water
 
 EXPERIMENT_ID = "neo-exp-0081"
 ATTEMPT_ID = "frontier-attempt-0110"
+ADJUDICATION_ATTEMPT_ID = "frontier-attempt-0111"
 ENVIRONMENT_NAME = "NEO3000_FATTN_B_MATERIALIZE"
 ROUTE_ORDER = ("register_open", "global_materialized")
 ROUTE_MODE = {"register_open": "0", "global_materialized": "1"}
@@ -76,6 +77,9 @@ DEFAULT_MODEL = harness.DEFAULT_MODEL
 DEFAULT_OUTPUT = ROOT / "lab" / f"{EXPERIMENT_ID}.local.json"
 DEFAULT_LOG_DIR = ROOT / "lab" / f"{EXPERIMENT_ID}.logs.local"
 DEFAULT_CONSUMED_MARKER = ROOT / "lab" / f"{EXPERIMENT_ID}.consumed.local.json"
+DEFAULT_ADJUDICATED_OUTPUT = (
+    ROOT / "lab" / f"{EXPERIMENT_ID}.adjudicated.local.json"
+)
 ENGINEERING_INCIDENT_ROOT = ROOT / "tmp" / f"{EXPERIMENT_ID}-engineering-incidents"
 CUDA_COMMON = ROOT / "ggml" / "src" / "ggml-cuda" / "fattn-common.cuh"
 CUDA_MMA = ROOT / "ggml" / "src" / "ggml-cuda" / "fattn-mma-f16.cuh"
@@ -770,10 +774,10 @@ def all_pairs_dominance(
     control: list[dict[str, Any]],
 ) -> float:
     primary_values = [
-        float(record["timing"]["server_prompt_ms"]) for record in primary
+        float(record["timing"]["prompt_ms"]) for record in primary
     ]
     control_values = [
-        float(record["timing"]["server_prompt_ms"]) for record in control
+        float(record["timing"]["prompt_ms"]) for record in control
     ]
     wins = sum(
         primary_value < control_value
@@ -831,16 +835,16 @@ def adjudicate(
     }
     primary_answers = {record["answer"] for record in all_primary}
     control_answers = {record["answer"] for record in all_control}
-    primary_prompt = median_metric(primary["counted"], "server_prompt_ms")
-    control_prompt = median_metric(control["counted"], "server_prompt_ms")
+    primary_prompt = median_metric(primary["counted"], "prompt_ms")
+    control_prompt = median_metric(control["counted"], "prompt_ms")
     primary_compute = statistics.median(
-        float(record["timing"]["server_prompt_ms"])
-        + float(record["timing"]["server_predicted_ms"])
+        float(record["timing"]["prompt_ms"])
+        + float(record["timing"]["predicted_ms"])
         for record in primary["counted"]
     )
     control_compute = statistics.median(
-        float(record["timing"]["server_prompt_ms"])
-        + float(record["timing"]["server_predicted_ms"])
+        float(record["timing"]["prompt_ms"])
+        + float(record["timing"]["predicted_ms"])
         for record in control["counted"]
     )
     primary_wall = statistics.median(
@@ -1197,11 +1201,118 @@ def execute(
         ) from caught
 
 
+def adjudicate_existing(
+    *,
+    existing_result: Path,
+    log_dir: Path,
+    output: Path,
+) -> dict[str, Any]:
+    require(existing_result.is_file(), "existing result is missing")
+    require(log_dir.is_dir(), "existing log directory is missing")
+    require(not output.exists(), f"result path already exists: {output}")
+    raw = json.loads(existing_result.read_text(encoding="utf-8"))
+    require(raw.get("id") == EXPERIMENT_ID, "existing experiment ID changed")
+    require(raw.get("attempt_id") == ATTEMPT_ID, "existing attempt ID changed")
+    require(
+        raw.get("status") == "failed-after-consumption",
+        "existing result is not the consumed failure",
+    )
+    require(
+        raw.get("error_type") == "KeyError"
+        and raw.get("error") == "'server_prompt_ms'",
+        "existing failure is not the frozen timing-key defect",
+    )
+    routes = raw.get("completed_routes")
+    require(
+        isinstance(routes, Mapping)
+        and set(routes) == set(ROUTE_ORDER),
+        "existing result does not contain both complete routes",
+    )
+    for route in ROUTE_ORDER:
+        require(
+            len(routes[route].get("warmups", [])) == WARMUPS_PER_ROUTE
+            and len(routes[route].get("counted", []))
+            == COUNTED_REPETITIONS,
+            f"{route} preserved request geometry changed",
+        )
+        require(
+            routes[route].get("cleanup", {})
+            .get("integrity", {})
+            .get("passed")
+            is True,
+            f"{route} preserved cleanup is not exact",
+        )
+        require(
+            resource_gate(routes[route].get("resources", {})),
+            f"{route} preserved resources do not pass",
+        )
+    marker_evidence = {
+        route: marker_geometry(
+            log_dir / f"{route}.log",
+            int(ROUTE_MODE[route]),
+        )
+        for route in ROUTE_ORDER
+    }
+    stable_before_values = {
+        int(pid)
+        for route in ROUTE_ORDER
+        for pid in routes[route]["cleanup"]["stable_after"]["listener_pids"]
+    }
+    stable_after_values = {
+        int(pid) for pid in raw.get("stable_after_failure", [])
+    }
+    adjudication = adjudicate(
+        routes=routes,
+        marker_evidence=marker_evidence,
+        before_bundle=raw["runtime_bundle_before"],
+        after_bundle=raw["runtime_bundle_after_failure"],
+        static_evidence=raw["static_evidence"],
+        stable_before=stable_before_values,
+        stable_after=stable_after_values,
+        environment_restored=(
+            raw.get("route_environment_restored_after_failure") is True
+        ),
+    )
+    result = {
+        "id": EXPERIMENT_ID,
+        "attempt_id": ADJUDICATION_ATTEMPT_ID,
+        "status": "offline-adjudicated-from-complete-preserved-routes",
+        "source_execution_attempt_id": ATTEMPT_ID,
+        "source_failure_artifact": file_artifact(existing_result),
+        "source_server_logs": {
+            route: file_artifact(log_dir / f"{route}.log")
+            for route in ROUTE_ORDER
+        },
+        "identity": raw["identity"],
+        "model": raw["model"],
+        "consumption_marker": raw["consumption_marker"],
+        "runtime_marker_evidence": marker_evidence,
+        "adjudication": adjudication,
+        "model_or_cuda_contact": False,
+        "scientific_rerun": False,
+        "claim_ceiling": (
+            "One bounded Agents-A1 MMA FlashAttention packed-B open boundary; "
+            "not reusable catalytic state, canonical .holo, restoration, "
+            "recursive composition, or unbounded compute."
+        ),
+        "automatic_promotion": False,
+        "research_goal_blocked": False,
+        "next_boundary": (
+            "If exact and fast, test a typed retained continuation reused by "
+            "two suffix computations; if exact but not fast, retire packed-B "
+            "materialization as a speed lever and return to the N/T/R/B frontier."
+        ),
+    }
+    result["artifact"] = write_exclusive_json(output, result)
+    return result
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--static-only", action="store_true")
     mode.add_argument("--execute-once", action="store_true")
+    mode.add_argument("--adjudicate-existing", action="store_true")
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--expected-commit")
@@ -1212,6 +1323,12 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=DEFAULT_CONSUMED_MARKER,
     )
+    parser.add_argument("--existing-result", type=Path)
+    parser.add_argument(
+        "--adjudicated-output",
+        type=Path,
+        default=DEFAULT_ADJUDICATED_OUTPUT,
+    )
     return parser.parse_args()
 
 
@@ -1221,6 +1338,15 @@ def main() -> int:
     if args.static_only:
         evidence = static_audit(binary)
         print(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+    if args.adjudicate_existing:
+        require(args.existing_result is not None, "--existing-result is required")
+        result = adjudicate_existing(
+            existing_result=args.existing_result.resolve(strict=True),
+            log_dir=args.log_dir.resolve(strict=True),
+            output=args.adjudicated_output.resolve(),
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
     require(bool(args.expected_commit), "--expected-commit is required")
     result = execute(

@@ -215,6 +215,32 @@ class InferenceOpenAttentionTests(unittest.TestCase):
             )
         )
 
+    def test_latency_adjudication_uses_current_timing_schema(self):
+        primary = [
+            {"timing": {"prompt_ms": float(index)}}
+            for index in range(1, experiment.COUNTED_REPETITIONS + 1)
+        ]
+        control = [
+            {"timing": {"prompt_ms": float(index + 10)}}
+            for index in range(1, experiment.COUNTED_REPETITIONS + 1)
+        ]
+        self.assertEqual(
+            experiment.median_metric(primary, "prompt_ms"),
+            5.0,
+        )
+        self.assertEqual(
+            experiment.all_pairs_dominance(primary, control),
+            1.0,
+        )
+
+    def test_offline_adjudicator_has_no_live_execution(self):
+        source = inspect.getsource(experiment.adjudicate_existing)
+        self.assertNotIn("run_route(", source)
+        self.assertNotIn("require_stable(", source)
+        self.assertNotIn("LiveSidecar", source)
+        self.assertIn("completed_routes", source)
+        self.assertIn("marker_geometry", source)
+
     def test_process_resources_accepts_live_peak_dedicated_schema(self):
         sidecar = mock.Mock()
         sidecar.process = None
