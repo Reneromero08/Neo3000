@@ -887,7 +887,8 @@ extern "C" {
 #define LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY 1
 
 // Keeps the tensor data on device buffers (i.e. not accessible in host memory, but faster save/load).
-// Getting the state for a seq_id with this flag invalidates all prior states gotten for that seq_id with this flag.
+// The legacy get-data API stores by seq_id and invalidates prior device state for that seq_id.
+// The keyed get-data API invalidates only prior device state retained under the same storage key.
 #define LLAMA_STATE_SEQ_FLAGS_ON_DEVICE 2
 
     typedef uint32_t llama_state_seq_flags;
@@ -904,6 +905,22 @@ extern "C" {
                     llama_seq_id   seq_id,
            llama_state_seq_flags   flags);
 
+    // Copy the sequence state while retaining ON_DEVICE tensor data under an
+    // independent process-local storage key. The source sequence still
+    // determines which live state is serialized. The storage key is embedded
+    // in the returned metadata so the ordinary set-data path can restore the
+    // retained tensors into any requested destination sequence.
+    //
+    // When ON_DEVICE is not set, device_storage_key is ignored. Existing
+    // get-data APIs remain equivalent to passing device_storage_key = seq_id.
+    LLAMA_API size_t llama_state_seq_get_data_ext_keyed(
+            struct llama_context * ctx,
+                         uint8_t * dst,
+                          size_t   size,
+                    llama_seq_id   seq_id,
+                    llama_seq_id   device_storage_key,
+           llama_state_seq_flags   flags);
+
     LLAMA_API size_t llama_state_seq_set_data_ext(
             struct llama_context * ctx,
                    const uint8_t * src,
@@ -912,21 +929,23 @@ extern "C" {
            llama_state_seq_flags   flags);
 
     // Returns the logical tensor bytes retained in device buffers for a sequence state.
-    // Returns zero when no on-device state exists for the sequence.
+    // The identifier is either the source sequence ID used by the legacy API
+    // or the independent storage key used by the keyed API.
+    // Returns zero when no on-device state exists for the identifier.
     LLAMA_API size_t llama_state_seq_get_device_data_size(
             struct llama_context * ctx,
-                    llama_seq_id   seq_id);
+                    llama_seq_id   device_storage_key);
 
     // Returns the subset of retained on-device tensor bytes held by GPU backends.
     LLAMA_API size_t llama_state_seq_get_device_data_gpu_size(
             struct llama_context * ctx,
-                    llama_seq_id   seq_id);
+                    llama_seq_id   device_storage_key);
 
     // Releases the retained on-device sequence state and returns its logical tensor bytes.
     // This does not remove the active sequence from the context memory.
     LLAMA_API size_t llama_state_seq_clear_device_data(
             struct llama_context * ctx,
-                    llama_seq_id   seq_id);
+                    llama_seq_id   device_storage_key);
 
     //
     // Decoding

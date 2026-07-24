@@ -154,11 +154,17 @@ struct llama_context {
     size_t state_seq_get_size(llama_seq_id seq_id, llama_state_seq_flags flags);
 
     size_t state_seq_get_data(llama_seq_id seq_id,       uint8_t * dst, size_t size, llama_state_seq_flags flags);
+    size_t state_seq_get_data_keyed(
+            llama_seq_id   seq_id,
+            llama_seq_id   device_storage_key,
+                  uint8_t * dst,
+                   size_t   size,
+          llama_state_seq_flags flags);
     size_t state_seq_set_data(llama_seq_id seq_id, const uint8_t * src, size_t size, llama_state_seq_flags flags);
 
-    size_t state_seq_get_device_data_size(llama_seq_id seq_id) const;
-    size_t state_seq_get_device_data_gpu_size(llama_seq_id seq_id) const;
-    size_t state_seq_clear_device_data(llama_seq_id seq_id);
+    size_t state_seq_get_device_data_size(llama_seq_id device_storage_key) const;
+    size_t state_seq_get_device_data_gpu_size(llama_seq_id device_storage_key) const;
+    size_t state_seq_clear_device_data(llama_seq_id device_storage_key);
 
     bool state_load_file(
             const char * filepath,
@@ -370,7 +376,7 @@ private:
     // host buffer for the model output (logits and embeddings)
     ggml_backend_buffer_ptr buf_output;
 
-    // keep copies of the per-sequence memory on the device
+    // keep copies of sequence memory under process-local device-storage keys
     std::map<llama_seq_id, llama_memory_buffers> mem_storage;
 
     bool has_evaluated_once = false;

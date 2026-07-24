@@ -2929,16 +2929,27 @@ size_t llama_context::state_seq_get_size(llama_seq_id seq_id, llama_state_seq_fl
 }
 
 size_t llama_context::state_seq_get_data(llama_seq_id seq_id, uint8_t * dst, size_t size, llama_state_seq_flags flags) {
+    return state_seq_get_data_keyed(seq_id, seq_id, dst, size, flags);
+}
+
+size_t llama_context::state_seq_get_data_keyed(
+        llama_seq_id seq_id,
+        llama_seq_id device_storage_key,
+              uint8_t * dst,
+               size_t   size,
+      llama_state_seq_flags flags) {
     std::unique_ptr<llama_io_write_i> io;
+    const llama_seq_id state_storage_key =
+            flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE ? device_storage_key : seq_id;
     if (flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE) {
-        io = std::make_unique<llama_io_write_device>(dst, size, mem_storage[seq_id]);
+        io = std::make_unique<llama_io_write_device>(dst, size, mem_storage[state_storage_key]);
     } else {
         io = std::make_unique<llama_io_write_host>(dst, size);
     }
 
     try {
         io->write(&io_magic, sizeof(io_magic));
-        io->write(&seq_id, sizeof(seq_id));
+        io->write(&state_storage_key, sizeof(state_storage_key));
 
         return state_seq_write_data(*io, seq_id, flags);
     } catch (const std::exception & err) {
@@ -2950,7 +2961,7 @@ size_t llama_context::state_seq_get_data(llama_seq_id seq_id, uint8_t * dst, siz
 size_t llama_context::state_seq_set_data(llama_seq_id seq_id, const uint8_t * src, size_t size, llama_state_seq_flags flags) {
     std::unique_ptr<llama_io_read_i> io;
     if (flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE) {
-        // create a temporary io to read the magic and the src seq_id
+        // create a temporary io to read the magic and the device-storage key
         io = std::make_unique<llama_io_read_host>(src, size);
 
         uint32_t magic_read;
@@ -2959,12 +2970,12 @@ size_t llama_context::state_seq_set_data(llama_seq_id seq_id, const uint8_t * sr
             throw std::runtime_error("wrong sequence state magic");
         }
 
-        llama_seq_id seq_id_read;
-        io->read(&seq_id_read, sizeof(seq_id_read));
+        llama_seq_id device_storage_key;
+        io->read(&device_storage_key, sizeof(device_storage_key));
 
-        GGML_ASSERT(mem_storage.find(seq_id_read) != mem_storage.end());
+        GGML_ASSERT(mem_storage.find(device_storage_key) != mem_storage.end());
 
-        io = std::make_unique<llama_io_read_device>(src, size, mem_storage[seq_id_read]);
+        io = std::make_unique<llama_io_read_device>(src, size, mem_storage[device_storage_key]);
     } else {
         io = std::make_unique<llama_io_read_host>(src, size);
     }
@@ -2986,8 +2997,8 @@ size_t llama_context::state_seq_set_data(llama_seq_id seq_id, const uint8_t * sr
     }
 }
 
-size_t llama_context::state_seq_get_device_data_size(llama_seq_id seq_id) const {
-    const auto it = mem_storage.find(seq_id);
+size_t llama_context::state_seq_get_device_data_size(llama_seq_id device_storage_key) const {
+    const auto it = mem_storage.find(device_storage_key);
     if (it == mem_storage.end()) {
         return 0;
     }
@@ -3000,8 +3011,8 @@ size_t llama_context::state_seq_get_device_data_size(llama_seq_id seq_id) const 
     return size;
 }
 
-size_t llama_context::state_seq_get_device_data_gpu_size(llama_seq_id seq_id) const {
-    const auto it = mem_storage.find(seq_id);
+size_t llama_context::state_seq_get_device_data_gpu_size(llama_seq_id device_storage_key) const {
+    const auto it = mem_storage.find(device_storage_key);
     if (it == mem_storage.end()) {
         return 0;
     }
@@ -3023,9 +3034,9 @@ size_t llama_context::state_seq_get_device_data_gpu_size(llama_seq_id seq_id) co
     return size;
 }
 
-size_t llama_context::state_seq_clear_device_data(llama_seq_id seq_id) {
-    const size_t size = state_seq_get_device_data_size(seq_id);
-    mem_storage.erase(seq_id);
+size_t llama_context::state_seq_clear_device_data(llama_seq_id device_storage_key) {
+    const size_t size = state_seq_get_device_data_size(device_storage_key);
+    mem_storage.erase(device_storage_key);
     return size;
 }
 
@@ -4057,24 +4068,35 @@ size_t llama_state_seq_get_data_ext(llama_context * ctx, uint8_t * dst, size_t s
 
     return ctx->state_seq_get_data(seq_id, dst, size, flags);
 }
+size_t llama_state_seq_get_data_ext_keyed(
+        llama_context * ctx,
+              uint8_t * dst,
+               size_t   size,
+         llama_seq_id   seq_id,
+         llama_seq_id   device_storage_key,
+        llama_state_seq_flags flags) {
+    ctx->synchronize();
+
+    return ctx->state_seq_get_data_keyed(seq_id, device_storage_key, dst, size, flags);
+}
 size_t llama_state_seq_set_data_ext(llama_context * ctx, const uint8_t * src, size_t size, llama_seq_id seq_id, llama_state_seq_flags flags) {
     ctx->synchronize();
 
     return ctx->state_seq_set_data(seq_id, src, size, flags);
 }
 
-size_t llama_state_seq_get_device_data_size(llama_context * ctx, llama_seq_id seq_id) {
-    return ctx->state_seq_get_device_data_size(seq_id);
+size_t llama_state_seq_get_device_data_size(llama_context * ctx, llama_seq_id device_storage_key) {
+    return ctx->state_seq_get_device_data_size(device_storage_key);
 }
 
-size_t llama_state_seq_get_device_data_gpu_size(llama_context * ctx, llama_seq_id seq_id) {
-    return ctx->state_seq_get_device_data_gpu_size(seq_id);
+size_t llama_state_seq_get_device_data_gpu_size(llama_context * ctx, llama_seq_id device_storage_key) {
+    return ctx->state_seq_get_device_data_gpu_size(device_storage_key);
 }
 
-size_t llama_state_seq_clear_device_data(llama_context * ctx, llama_seq_id seq_id) {
+size_t llama_state_seq_clear_device_data(llama_context * ctx, llama_seq_id device_storage_key) {
     ctx->synchronize();
 
-    return ctx->state_seq_clear_device_data(seq_id);
+    return ctx->state_seq_clear_device_data(device_storage_key);
 }
 
 size_t llama_state_seq_save_file(llama_context * ctx, const char * filepath, llama_seq_id seq_id, const llama_token * tokens, size_t n_token_count) {

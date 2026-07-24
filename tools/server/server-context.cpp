@@ -39,7 +39,7 @@
 using json = nlohmann::ordered_json;
 
 constexpr int HTTP_POLLING_SECONDS = 1;
-constexpr size_t SERVER_SLOT_RAM_ROOT_CAPACITY = 2;
+constexpr size_t SERVER_SLOT_RAM_ROOT_CAPACITY = 5;
 
 static uint32_t server_n_outputs_max(const common_params & params) {
     const uint32_t n_batch  = params.n_batch;
@@ -853,6 +853,7 @@ struct server_metrics {
 struct server_slot_ram_root {
     std::string id;
     int id_slot_source = -1;
+    llama_seq_id device_storage_key = 0;
 
     server_prompt prompt;
     std::vector<uint8_t> data_spec;
@@ -983,13 +984,14 @@ private:
         if (!(root.state_flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE)) {
             return 0;
         }
+        GGML_ASSERT(root.device_storage_key < 0);
 
         size_t n_cleared = 0;
         if (ctx_tgt != nullptr) {
-            n_cleared += llama_state_seq_clear_device_data(ctx_tgt, root.id_slot_source);
+            n_cleared += llama_state_seq_clear_device_data(ctx_tgt, root.device_storage_key);
         }
         if (ctx_dft) {
-            n_cleared += llama_state_seq_clear_device_data(ctx_dft.get(), root.id_slot_source);
+            n_cleared += llama_state_seq_clear_device_data(ctx_dft.get(), root.device_storage_key);
         }
         return n_cleared;
     }
@@ -997,6 +999,33 @@ private:
     server_slot_ram_root * find_ram_root(const std::string & root_id) {
         const auto it = slot_ram_roots.find(root_id);
         return it == slot_ram_roots.end() ? nullptr : it->second.get();
+    }
+
+    llama_seq_id find_available_ram_root_device_storage_key() const {
+        for (size_t i = 0; i < SERVER_SLOT_RAM_ROOT_CAPACITY; ++i) {
+            const llama_seq_id key = -1 - static_cast<llama_seq_id>(i);
+            const bool owned = std::any_of(
+                    slot_ram_roots.begin(), slot_ram_roots.end(),
+                    [key](const auto & entry) {
+                        const auto & root = *entry.second;
+                        return (root.state_flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE) &&
+                               root.device_storage_key == key;
+                    });
+            if (owned) {
+                continue;
+            }
+
+            const size_t n_tgt = ctx_tgt != nullptr
+                    ? llama_state_seq_get_device_data_size(ctx_tgt, key)
+                    : 0;
+            const size_t n_dft = ctx_dft
+                    ? llama_state_seq_get_device_data_size(ctx_dft.get(), key)
+                    : 0;
+            if (n_tgt == 0 && n_dft == 0) {
+                return key;
+            }
+        }
+        return 0;
     }
 
     size_t ram_roots_size() const {
@@ -1019,9 +1048,9 @@ private:
         size_t size = 0;
         for (const auto & [_, root] : slot_ram_roots) {
             if (root->state_flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE) {
-                size += llama_state_seq_get_device_data_size(ctx_tgt, root->id_slot_source);
+                size += llama_state_seq_get_device_data_size(ctx_tgt, root->device_storage_key);
                 size += ctx_dft
-                        ? llama_state_seq_get_device_data_size(ctx_dft.get(), root->id_slot_source)
+                        ? llama_state_seq_get_device_data_size(ctx_dft.get(), root->device_storage_key)
                         : 0;
             }
         }
@@ -1032,9 +1061,9 @@ private:
         size_t size = 0;
         for (const auto & [_, root] : slot_ram_roots) {
             if (root->state_flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE) {
-                size += llama_state_seq_get_device_data_gpu_size(ctx_tgt, root->id_slot_source);
+                size += llama_state_seq_get_device_data_gpu_size(ctx_tgt, root->device_storage_key);
                 size += ctx_dft
-                        ? llama_state_seq_get_device_data_gpu_size(ctx_dft.get(), root->id_slot_source)
+                        ? llama_state_seq_get_device_data_gpu_size(ctx_dft.get(), root->device_storage_key)
                         : 0;
             }
         }
@@ -2804,19 +2833,6 @@ private:
                         send_error(task, "RAM-root bank is at its fixed capacity", ERROR_TYPE_INVALID_REQUEST);
                         break;
                     }
-                    if (root_on_device) {
-                        const bool source_in_use = std::any_of(
-                                slot_ram_roots.begin(), slot_ram_roots.end(),
-                                [id_slot](const auto & entry) {
-                                    const auto & existing = *entry.second;
-                                    return (existing.state_flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE) &&
-                                           existing.id_slot_source == id_slot;
-                                });
-                        if (source_in_use) {
-                            send_error(task, "An on-device RAM root already owns this source slot", ERROR_TYPE_INVALID_REQUEST);
-                            break;
-                        }
-                    }
                     if (slot->prompt.tokens.empty()) {
                         send_error(task, "Cannot save an empty slot as a RAM root", ERROR_TYPE_INVALID_REQUEST);
                         break;
@@ -2832,6 +2848,13 @@ private:
                     root->state_flags    = root_on_device
                             ? LLAMA_STATE_SEQ_FLAGS_ON_DEVICE
                             : LLAMA_STATE_SEQ_FLAGS_NONE;
+                    if (root_on_device) {
+                        root->device_storage_key = find_available_ram_root_device_storage_key();
+                        if (root->device_storage_key == 0) {
+                            send_error(task, "No independent RAM-root device storage key is available", ERROR_TYPE_SERVER);
+                            break;
+                        }
+                    }
 
                     // Full polymorphic state is required here. Qwen35MoE is hybrid
                     // (attention + recurrent), while DSV4 exactness also requires its compressed
@@ -2843,14 +2866,28 @@ private:
                     root->prompt.data.main.resize(size_tgt);
                     root->prompt.data.drft.resize(size_dft);
 
-                    const size_t written_tgt = llama_state_seq_get_data_ext(
-                            ctx_tgt, root->prompt.data.main.data(), size_tgt, id_slot, root->state_flags);
-                    const size_t written_dft = ctx_dft ? llama_state_seq_get_data_ext(
-                            ctx_dft.get(), root->prompt.data.drft.data(), size_dft, id_slot, root->state_flags) : 0;
-                    root->n_device_bytes_tgt = llama_state_seq_get_device_data_size(ctx_tgt, id_slot);
-                    root->n_device_bytes_dft = ctx_dft ? llama_state_seq_get_device_data_size(ctx_dft.get(), id_slot) : 0;
-                    root->n_gpu_bytes_tgt = llama_state_seq_get_device_data_gpu_size(ctx_tgt, id_slot);
-                    root->n_gpu_bytes_dft = ctx_dft ? llama_state_seq_get_device_data_gpu_size(ctx_dft.get(), id_slot) : 0;
+                    size_t written_tgt = 0;
+                    size_t written_dft = 0;
+                    try {
+                        written_tgt = llama_state_seq_get_data_ext_keyed(
+                                ctx_tgt, root->prompt.data.main.data(), size_tgt, id_slot,
+                                root->device_storage_key, root->state_flags);
+                        written_dft = ctx_dft ? llama_state_seq_get_data_ext_keyed(
+                                ctx_dft.get(), root->prompt.data.drft.data(), size_dft, id_slot,
+                                root->device_storage_key, root->state_flags) : 0;
+                    } catch (...) {
+                        clear_ram_root_device_data(*root);
+                        send_error(task, "Unable to capture the complete slot state into the RAM root", ERROR_TYPE_SERVER);
+                        break;
+                    }
+                    root->n_device_bytes_tgt = llama_state_seq_get_device_data_size(
+                            ctx_tgt, root->device_storage_key);
+                    root->n_device_bytes_dft = ctx_dft ? llama_state_seq_get_device_data_size(
+                            ctx_dft.get(), root->device_storage_key) : 0;
+                    root->n_gpu_bytes_tgt = llama_state_seq_get_device_data_gpu_size(
+                            ctx_tgt, root->device_storage_key);
+                    root->n_gpu_bytes_dft = ctx_dft ? llama_state_seq_get_device_data_gpu_size(
+                            ctx_dft.get(), root->device_storage_key) : 0;
                     if (written_tgt != size_tgt || written_dft != size_dft) {
                         clear_ram_root_device_data(*root);
                         send_error(task, "Unable to serialize the complete slot state into the RAM root", ERROR_TYPE_SERVER);
@@ -2884,6 +2921,7 @@ private:
                     res->id               = task.id;
                     res->id_slot          = id_slot;
                     res->id_slot_source   = id_slot;
+                    res->device_storage_key = saved_root->device_storage_key;
                     res->action           = "root-save";
                     res->root_id          = saved_root->id;
                     res->n_tokens         = n_tokens;
@@ -2969,6 +3007,7 @@ private:
                     res->id               = task.id;
                     res->id_slot          = id_slot;
                     res->id_slot_source   = slot_ram_root->id_slot_source;
+                    res->device_storage_key = slot_ram_root->device_storage_key;
                     res->action           = "root-restore";
                     res->root_id          = slot_ram_root->id;
                     res->n_tokens         = slot->prompt.tokens.size();
@@ -2998,6 +3037,7 @@ private:
                     server_slot_ram_root * slot_ram_root = root_it->second.get();
 
                     const int id_slot_source = slot_ram_root->id_slot_source;
+                    const llama_seq_id device_storage_key = slot_ram_root->device_storage_key;
                     const size_t n_tokens = slot_ram_root->prompt.tokens.size();
                     const size_t n_bytes = slot_ram_root->size();
                     const size_t n_host_bytes = slot_ram_root->host_size();
@@ -3006,12 +3046,16 @@ private:
                     const size_t n_checkpoints = slot_ram_root->prompt.checkpoints.size();
                     const int64_t t_start = ggml_time_us();
                     const size_t n_device_bytes_cleared = clear_ram_root_device_data(*slot_ram_root);
-                    const size_t n_device_bytes_after =
-                            llama_state_seq_get_device_data_size(ctx_tgt, id_slot_source) +
-                            (ctx_dft ? llama_state_seq_get_device_data_size(ctx_dft.get(), id_slot_source) : 0);
-                    const size_t n_gpu_bytes_after =
-                            llama_state_seq_get_device_data_gpu_size(ctx_tgt, id_slot_source) +
-                            (ctx_dft ? llama_state_seq_get_device_data_gpu_size(ctx_dft.get(), id_slot_source) : 0);
+                    const bool root_on_device =
+                            slot_ram_root->state_flags & LLAMA_STATE_SEQ_FLAGS_ON_DEVICE;
+                    const size_t n_device_bytes_after = root_on_device
+                            ? llama_state_seq_get_device_data_size(ctx_tgt, device_storage_key) +
+                              (ctx_dft ? llama_state_seq_get_device_data_size(ctx_dft.get(), device_storage_key) : 0)
+                            : 0;
+                    const size_t n_gpu_bytes_after = root_on_device
+                            ? llama_state_seq_get_device_data_gpu_size(ctx_tgt, device_storage_key) +
+                              (ctx_dft ? llama_state_seq_get_device_data_gpu_size(ctx_dft.get(), device_storage_key) : 0)
+                            : 0;
                     slot_ram_roots.erase(root_it);
 
                     if (n_device_bytes_cleared != n_device_bytes || n_device_bytes_after != 0 || n_gpu_bytes_after != 0) {
@@ -3023,6 +3067,7 @@ private:
                     res->id               = task.id;
                     res->id_slot          = id_slot;
                     res->id_slot_source   = id_slot_source;
+                    res->device_storage_key = device_storage_key;
                     res->action           = "root-erase";
                     res->root_id          = task.slot_action.root_id;
                     res->n_tokens         = n_tokens;

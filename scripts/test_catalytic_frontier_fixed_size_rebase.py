@@ -132,6 +132,7 @@ class FixedSizeRebaseTests(unittest.TestCase):
             "root_id": "child",
             "id_slot": 0,
             "id_slot_source": 0,
+            "device_storage_key": -1,
             "n_tokens": fixed_size.EXPECTED_CHILD_TOKENS,
             "n_bytes": fixed_size.EXPECTED_CHILD_DEVICE_BYTES + 100,
             "n_host_bytes": 100,
@@ -176,7 +177,7 @@ class FixedSizeRebaseTests(unittest.TestCase):
         )
         self.assertEqual(
             source.count('operation_kind="zero-output-root-readdress"'),
-            2,
+            3,
         )
         self.assertNotIn('operation_kind="fixed-output-capsule-rebase"', source)
         self.assertNotIn('operation_kind="zero-output-fixed-base-materialization"', source)

@@ -1573,6 +1573,7 @@ json server_task_result_slot_ram_root::to_json() {
     return json {
         { "id_slot",        id_slot },
         { "id_slot_source", id_slot_source },
+        { "device_storage_key", device_storage_key },
         { "action",         action },
         { "root_id",        root_id },
         { "n_tokens",       n_tokens },

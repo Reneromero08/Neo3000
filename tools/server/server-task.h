@@ -561,6 +561,7 @@ struct server_task_result_slot_ram_root : server_task_result {
     std::string action;
     std::string root_id;
     int id_slot_source;
+    int device_storage_key = 0;
 
     size_t n_tokens;
     size_t n_bytes;

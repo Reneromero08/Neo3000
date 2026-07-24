@@ -78,6 +78,11 @@ class RecurrenceContract:
     expected_generated_sha256: tuple[tuple[str, str], ...] = ()
     expected_child_sha256: tuple[tuple[str, str], ...] = ()
     expected_request_sha256: tuple[tuple[str, str], ...] = ()
+    root_bank_capacity: int = 2
+    phase_root_ring: bool = False
+    maximum_root_and_rebase_wall_seconds: float | None = None
+    maximum_ring_overhead_seconds: float | None = None
+    expected_cuda_runtime_sha256: tuple[tuple[str, str], ...] = ()
 
     def transition_map(self) -> dict[str, str]:
         return dict(self.transition)
@@ -114,6 +119,7 @@ def validate_contract(contract: RecurrenceContract) -> RecurrenceContract:
     ):
         require(transition[prior] == successor, "recurrence state sequence violates transition law")
     require(contract.minimum_wall_speedup > 0.0, "recurrence speed gate must be positive")
+    require(contract.root_bank_capacity >= 2, "recurrence root-bank capacity is too small")
     if contract.maximum_catalytic_wall_seconds is not None:
         require(
             contract.maximum_catalytic_wall_seconds > 0.0,
@@ -142,7 +148,52 @@ def validate_contract(contract: RecurrenceContract) -> RecurrenceContract:
             mapping = dict(pairs)
             require(set(mapping) == set(transition), f"{label} hash domain changed")
             require(len(set(mapping.values())) == len(transition), f"{label} hashes are not distinct")
+    if contract.phase_root_ring:
+        require(contract.exact_cycle_period is not None, "phase-root ring lacks an exact cycle")
+        require(
+            contract.root_bank_capacity == len(transition) + 1,
+            "phase-root ring capacity must equal base plus one root per phase",
+        )
+        require(
+            contract.maximum_root_and_rebase_wall_seconds is not None
+            and contract.maximum_root_and_rebase_wall_seconds > 0.0,
+            "phase-root ring root/rebase wall gate is unbound",
+        )
+        require(
+            contract.maximum_ring_overhead_seconds is not None
+            and contract.maximum_ring_overhead_seconds > 0.0,
+            "phase-root ring overhead gate is unbound",
+        )
+        require(
+            set(dict(contract.expected_cuda_runtime_sha256))
+            == set(latency.CUDA_ROOT_RUNTIME_SHA256),
+            "phase-root ring CUDA runtime identity is incompletely bound",
+        )
     return contract
+
+
+def verify_cuda_runtime(
+    binary: Path,
+    contract: RecurrenceContract,
+) -> dict[str, str]:
+    expected = dict(contract.expected_cuda_runtime_sha256)
+    if not expected:
+        return latency.verify_cuda_root_runtime(binary)
+    require(binary.name == "llama-server.exe", "CUDA-root runtime entrypoint changed")
+    observed: dict[str, str] = {}
+    for name, expected_sha256 in expected.items():
+        runtime_file = (binary.parent / name).resolve(strict=True)
+        require(
+            runtime_file.parent == binary.parent,
+            f"CUDA-root runtime path escaped for {name}",
+        )
+        observed_sha256 = harness.live_runtime.sha256_file(runtime_file)
+        require(
+            observed_sha256 == expected_sha256,
+            f"phase-root runtime identity drifted for {name}: {observed_sha256}",
+        )
+        observed[name] = observed_sha256
+    return observed
 
 
 def absorbing_contract(recursive_depth: int) -> RecurrenceContract:
@@ -331,11 +382,16 @@ def validate_root(
     expected_tokens: int,
     expected_roots_after: int,
     expected_total_device_bytes_after: int,
+    expected_root_capacity: int = 2,
 ) -> dict[str, Any]:
     require(action in {"root-save", "root-restore", "root-erase"}, "unsupported root action")
     require(storage in {"host", "device"}, "unsupported root storage")
     require(response.get("action") == action, f"root action mismatch for {action}")
     require(response.get("root_id") == root_id, f"root identity mismatch for {action}")
+    require(
+        type(response.get("device_storage_key")) is int,
+        f"root device storage key is missing for {action}",
+    )
     for key in (
         "id_slot",
         "id_slot_source",
@@ -357,7 +413,10 @@ def validate_root(
         require(int(response[key]) >= 0, f"root {key} is negative for {action}")
     require(int(response["n_tokens"]) == expected_tokens, f"root token count changed for {action}")
     require(int(response["n_checkpoints"]) == 0, f"root checkpoint count changed for {action}")
-    require(int(response["n_roots_capacity"]) == 2, "root bank capacity changed")
+    require(
+        int(response["n_roots_capacity"]) == expected_root_capacity,
+        "root bank capacity changed",
+    )
     require(
         int(response["n_roots_after"]) == expected_roots_after,
         f"root bank count changed for {action}",
@@ -376,9 +435,17 @@ def validate_root(
         f"root byte accounting changed for {action}",
     )
     if storage == "host":
+        require(
+            int(response["device_storage_key"]) == 0,
+            f"host root gained a device storage key at {action}",
+        )
         require(int(response["n_device_bytes"]) == 0, f"host root gained device bytes at {action}")
         require(int(response["n_gpu_bytes"]) == 0, f"host root gained GPU bytes at {action}")
     else:
+        require(
+            int(response["device_storage_key"]) < 0,
+            f"device root storage key is not isolated at {action}",
+        )
         require(int(response["n_device_bytes"]) > 0, f"device root lost device bytes at {action}")
         require(int(response["n_gpu_bytes"]) > 0, f"device root lost GPU bytes at {action}")
         require(
@@ -399,6 +466,7 @@ def validate_root(
         for key in (
             "root_id",
             "id_slot_source",
+            "device_storage_key",
             "n_tokens",
             "n_bytes",
             "n_host_bytes",
@@ -419,6 +487,7 @@ def validate_root(
             "root_id",
             "id_slot",
             "id_slot_source",
+            "device_storage_key",
             "n_tokens",
             "n_bytes",
             "n_host_bytes",
@@ -446,6 +515,7 @@ def root_action(
     expected_total_device_bytes_after: int,
     label: str,
     expected: Mapping[str, Any] | None = None,
+    expected_root_capacity: int = 2,
 ) -> dict[str, Any]:
     raw, wall = harness.ram_root_action(
         action=action,
@@ -461,6 +531,7 @@ def root_action(
         expected_tokens=expected_tokens,
         expected_roots_after=expected_roots_after,
         expected_total_device_bytes_after=expected_total_device_bytes_after,
+        expected_root_capacity=expected_root_capacity,
     )
     record.update(label=label, storage=storage, client_wall_seconds=wall)
     return record
@@ -477,6 +548,8 @@ def run_successor_route(
     step: int,
     route: str,
     contract: RecurrenceContract,
+    expected_bank_roots: int = 2,
+    expected_bank_device_bytes: int = EXPECTED_CHILD_DEVICE_BYTES,
 ) -> dict[str, Any]:
     require(route in {"catalytic", "direct"}, "unsupported fixed-size route")
     restore: dict[str, Any] | None = None
@@ -488,8 +561,9 @@ def run_successor_route(
             storage="device",
             expected=child_root,
             expected_tokens=EXPECTED_CHILD_TOKENS,
-            expected_roots_after=2,
-            expected_total_device_bytes_after=EXPECTED_CHILD_DEVICE_BYTES,
+            expected_roots_after=expected_bank_roots,
+            expected_total_device_bytes_after=expected_bank_device_bytes,
+            expected_root_capacity=contract.root_bank_capacity,
             label=f"step-{step}:restore-child",
         )
         restore_wall = float(restore["client_wall_seconds"])
@@ -578,6 +652,7 @@ def rebase_child(
         expected_tokens=EXPECTED_CHILD_TOKENS,
         expected_roots_after=1,
         expected_total_device_bytes_after=0,
+        expected_root_capacity=contract.root_bank_capacity,
         label=f"step-{step}:erase-stale-child",
     )
     operations.append(erased)
@@ -589,6 +664,7 @@ def rebase_child(
         expected_tokens=EXPECTED_BASE_TOKENS,
         expected_roots_after=1,
         expected_total_device_bytes_after=0,
+        expected_root_capacity=contract.root_bank_capacity,
         label=f"step-{step}:restore-base",
     )
     operations.append(restored_base)
@@ -621,6 +697,7 @@ def rebase_child(
         expected_tokens=EXPECTED_CHILD_TOKENS,
         expected_roots_after=2,
         expected_total_device_bytes_after=EXPECTED_CHILD_DEVICE_BYTES,
+        expected_root_capacity=contract.root_bank_capacity,
         label=f"step-{step}:save-rebased-child",
     )
     child_hashes = contract.child_hash_map()
@@ -634,6 +711,81 @@ def rebase_child(
     return next_child, child_tokens, operations, materialized
 
 
+def cold_fill_phase_child(
+    *,
+    sidecar: Any,
+    base_root: Mapping[str, Any],
+    base_branch_tokens: Sequence[int],
+    next_state: Mapping[str, Any],
+    step: int,
+    contract: RecurrenceContract,
+    roots_before: int,
+    device_roots_before: int,
+) -> tuple[dict[str, Any], list[int], list[dict[str, Any]], dict[str, Any]]:
+    require(contract.phase_root_ring, "cold phase fill requires a phase-root ring contract")
+    require(
+        roots_before == device_roots_before + 1,
+        "phase-root ring lost its sole host base",
+    )
+    live_device_bytes = device_roots_before * EXPECTED_CHILD_DEVICE_BYTES
+    operations: list[dict[str, Any]] = []
+    restored_base = root_action(
+        action="root-restore",
+        root_id=BASE_ROOT_ID,
+        storage="host",
+        expected=base_root,
+        expected_tokens=EXPECTED_BASE_TOKENS,
+        expected_roots_after=roots_before,
+        expected_total_device_bytes_after=live_device_bytes,
+        expected_root_capacity=contract.root_bank_capacity,
+        label=f"step-{step}:restore-base-for-cold-phase-fill",
+    )
+    operations.append(restored_base)
+    child_tokens = compact_child_tokens(base_branch_tokens, next_state)
+    payload = harness.carrier._branch_payload(
+        child_tokens,
+        seed=shared_tasks.derive_seed(fixed.ROOT_ID, f"fixed-size-rebase-materialize-{step}"),
+        cache_prompt=True,
+        n_predict=0,
+    )
+    materialized = harness.run_completion(
+        sidecar,
+        f"{fixed.ROOT_ID}:phase-root-ring:materialize-{step}",
+        payload,
+        operation_kind="zero-output-root-readdress",
+        batch_owned_request=True,
+    )
+    require(materialized["prompt_tokens"] == EXPECTED_CHILD_TOKENS, "phase fill prompt changed")
+    require(materialized["cached_prompt_tokens"] == EXPECTED_BASE_TOKENS, "phase fill base cache changed")
+    require(materialized["fresh_prompt_tokens"] == EXPECTED_REBASE_FRESH_TOKENS, "phase fill fresh count changed")
+    require(materialized["completion_tokens"] == 0, "phase fill emitted output")
+    next_child = root_action(
+        action="root-save",
+        root_id=child_root_id(
+            step,
+            str(next_state["answer"]),
+            valid_states=contract.transition_map(),
+        ),
+        storage="device",
+        expected_tokens=EXPECTED_CHILD_TOKENS,
+        expected_roots_after=roots_before + 1,
+        expected_total_device_bytes_after=(
+            (device_roots_before + 1) * EXPECTED_CHILD_DEVICE_BYTES
+        ),
+        expected_root_capacity=contract.root_bank_capacity,
+        label=f"step-{step}:save-cold-phase-child",
+    )
+    child_hashes = contract.child_hash_map()
+    require(bool(child_hashes), "phase-root ring child hashes are unbound")
+    require(
+        harness.sha256_bytes(harness.carrier.canonical_json_bytes(child_tokens))
+        == child_hashes[str(next_state["answer"])],
+        "phase-root ring child token hash changed",
+    )
+    operations.append(next_child)
+    return next_child, child_tokens, operations, materialized
+
+
 def classify(
     *,
     integrity: bool,
@@ -642,6 +794,8 @@ def classify(
     speedup: float,
     recursive_depth: int = 3,
     catalytic_wall_seconds: float | None = None,
+    root_and_rebase_wall_seconds: float | None = None,
+    ring_overhead_seconds: float | None = None,
     contract: RecurrenceContract | None = None,
 ) -> str:
     active = validate_contract(contract or absorbing_contract(recursive_depth))
@@ -653,6 +807,21 @@ def classify(
         return "fixed-size-rebase-saved-work-law-failure"
     if speedup < active.minimum_wall_speedup:
         return "fixed-size-rebase-without-preregistered-wall-gate"
+    if active.maximum_catalytic_wall_seconds is not None and (
+        catalytic_wall_seconds is None
+        or catalytic_wall_seconds > active.maximum_catalytic_wall_seconds
+    ) and not active.phase_root_ring:
+        return "fixed-size-rebase-above-preregistered-catalytic-wall-ceiling"
+    if active.maximum_root_and_rebase_wall_seconds is not None and (
+        root_and_rebase_wall_seconds is None
+        or root_and_rebase_wall_seconds > active.maximum_root_and_rebase_wall_seconds
+    ):
+        return "phase-root-ring-above-preregistered-root-rebase-wall-ceiling"
+    if active.maximum_ring_overhead_seconds is not None and (
+        ring_overhead_seconds is None
+        or ring_overhead_seconds > active.maximum_ring_overhead_seconds
+    ):
+        return "phase-root-ring-above-preregistered-overhead-ceiling"
     if active.maximum_catalytic_wall_seconds is not None and (
         catalytic_wall_seconds is None
         or catalytic_wall_seconds > active.maximum_catalytic_wall_seconds
@@ -739,6 +908,7 @@ def evaluate(
         expected_tokens=EXPECTED_BASE_TOKENS,
         expected_roots_after=1,
         expected_total_device_bytes_after=0,
+        expected_root_capacity=active.root_bank_capacity,
         label="save-immutable-host-base",
     )
     require(base_saved["n_bytes"] == EXPECTED_BASE_HOST_BYTES, "host base bytes changed")
@@ -768,6 +938,7 @@ def evaluate(
         expected_tokens=EXPECTED_BASE_TOKENS,
         expected_roots_after=1,
         expected_total_device_bytes_after=0,
+        expected_root_capacity=active.root_bank_capacity,
         label="restore-base-before-seed",
     )
     root_operations.append(base_restore)
@@ -809,6 +980,7 @@ def evaluate(
         expected_tokens=EXPECTED_CHILD_TOKENS,
         expected_roots_after=2,
         expected_total_device_bytes_after=EXPECTED_CHILD_DEVICE_BYTES,
+        expected_root_capacity=active.root_bank_capacity,
         label="save-seed-cuda-child",
     )
     require(child_root["n_device_bytes"] == EXPECTED_CHILD_DEVICE_BYTES, "seed child bytes changed")
@@ -821,7 +993,25 @@ def evaluate(
     observed_sequence = [seed_state["answer"]]
     prior_state = seed_state
     cumulative_avoided = 0
+    phase_roots: dict[str, tuple[str, dict[str, Any], list[int]]] = {}
+    phase_cold_fills = 0
+    phase_ring_hits = 0
+    if active.phase_root_ring:
+        seed_child_checksum = harness.sha256_bytes(
+            harness.carrier.canonical_json_bytes(child_tokens)
+        )
+        require(
+            seed_child_checksum == seed_child_hashes[str(seed_state["answer"])],
+            "seed phase-root checksum address changed",
+        )
+        phase_roots[seed_child_checksum] = (
+            str(seed_state["answer"]),
+            child_root,
+            child_tokens,
+        )
     for step, route_order in enumerate(route_orders, start=1):
+        bank_device_roots = len(phase_roots) if active.phase_root_ring else 1
+        bank_roots = bank_device_roots + 1
         pair: dict[str, dict[str, Any]] = {}
         for route in route_order:
             record = run_successor_route(
@@ -834,6 +1024,10 @@ def evaluate(
                 step=step,
                 route=route,
                 contract=active,
+                expected_bank_roots=bank_roots,
+                expected_bank_device_bytes=(
+                    bank_device_roots * EXPECTED_CHILD_DEVICE_BYTES
+                ),
             )
             pair[route] = record
             records.append(record)
@@ -846,21 +1040,89 @@ def evaluate(
             "generated arrays differ",
         )
         agreed_state = dict(catalytic["state"])
-        next_child, next_child_tokens, rebase_ops, materialized = rebase_child(
-            sidecar=sidecar,
-            base_root=base_saved,
-            old_child=child_root,
-            base_branch_tokens=base_branch_tokens,
-            next_state=agreed_state,
-            step=step,
-            contract=active,
+        next_answer = str(agreed_state["answer"])
+        candidate_next_child_tokens = compact_child_tokens(
+            base_branch_tokens,
+            agreed_state,
         )
+        candidate_next_child_checksum = harness.sha256_bytes(
+            harness.carrier.canonical_json_bytes(candidate_next_child_tokens)
+        )
+        if active.phase_root_ring:
+            require(
+                candidate_next_child_checksum
+                == active.child_hash_map()[next_answer],
+                "phase-root checksum address changed",
+            )
+        if active.phase_root_ring and candidate_next_child_checksum in phase_roots:
+            stored_answer, next_child, next_child_tokens = phase_roots[
+                candidate_next_child_checksum
+            ]
+            require(stored_answer == next_answer, "phase-root checksum resolved the wrong state")
+            require(
+                next_child_tokens == candidate_next_child_tokens,
+                "phase-root checksum resolved different child tokens",
+            )
+            rebase_ops = []
+            materialized = None
+            phase_ring_hits += 1
+            lifecycle = "phase-ring-hit"
+            avoided = int(direct["fresh_prompt_tokens"]) - int(
+                catalytic["fresh_prompt_tokens"]
+            )
+            require(
+                avoided == EXPECTED_CHILD_TOKENS,
+                "phase-root ring hit avoided work changed",
+            )
+        elif active.phase_root_ring:
+            next_child, next_child_tokens, rebase_ops, materialized = cold_fill_phase_child(
+                sidecar=sidecar,
+                base_root=base_saved,
+                base_branch_tokens=base_branch_tokens,
+                next_state=agreed_state,
+                step=step,
+                contract=active,
+                roots_before=bank_roots,
+                device_roots_before=bank_device_roots,
+            )
+            require(
+                next_child_tokens == candidate_next_child_tokens,
+                "cold-filled phase root differs from checksum-addressed child",
+            )
+            phase_roots[candidate_next_child_checksum] = (
+                next_answer,
+                next_child,
+                next_child_tokens,
+            )
+            phase_cold_fills += 1
+            lifecycle = "phase-cold-fill"
+            avoided = int(direct["fresh_prompt_tokens"]) - (
+                int(catalytic["fresh_prompt_tokens"])
+                + int(materialized["fresh_prompt_tokens"])
+            )
+            require(
+                avoided == EXPECTED_BASE_TOKENS,
+                "phase-root cold-fill avoided work changed",
+            )
+        else:
+            next_child, next_child_tokens, rebase_ops, materialized = rebase_child(
+                sidecar=sidecar,
+                base_root=base_saved,
+                old_child=child_root,
+                base_branch_tokens=base_branch_tokens,
+                next_state=agreed_state,
+                step=step,
+                contract=active,
+            )
+            lifecycle = "replaceable-child-rebase"
+            avoided = int(direct["fresh_prompt_tokens"]) - (
+                int(catalytic["fresh_prompt_tokens"])
+                + int(materialized["fresh_prompt_tokens"])
+            )
+            require(avoided == EXPECTED_BASE_TOKENS, "charged avoided work changed")
         root_operations.extend(rebase_ops)
-        rebases.append(materialized)
-        avoided = int(direct["fresh_prompt_tokens"]) - (
-            int(catalytic["fresh_prompt_tokens"]) + int(materialized["fresh_prompt_tokens"])
-        )
-        require(avoided == EXPECTED_BASE_TOKENS, "charged avoided work changed")
+        if materialized is not None:
+            rebases.append(materialized)
         cumulative_avoided += avoided
         observed_sequence.append(str(agreed_state["answer"]))
         steps.append(
@@ -869,6 +1131,8 @@ def evaluate(
                 "route_order": list(route_order),
                 "prior_answer": prior_state["answer"],
                 "answer": agreed_state["answer"],
+                "child_lifecycle": lifecycle,
+                "next_child_checksum_address": candidate_next_child_checksum,
                 "parent_child_root_id": child_root["root_id"],
                 "next_child_root_id": next_child["root_id"],
                 "child_root_tokens": len(child_tokens),
@@ -876,7 +1140,11 @@ def evaluate(
                 "child_device_bytes": child_root["n_device_bytes"],
                 "next_child_device_bytes": next_child["n_device_bytes"],
                 "successor_fresh_tokens": catalytic["fresh_prompt_tokens"],
-                "rebase_fresh_tokens": materialized["fresh_prompt_tokens"],
+                "rebase_fresh_tokens": (
+                    materialized["fresh_prompt_tokens"]
+                    if materialized is not None
+                    else 0
+                ),
                 "direct_fresh_tokens": direct["fresh_prompt_tokens"],
                 "avoided_fresh_prompt_tokens_after_rebase_charge": avoided,
                 "cumulative_avoided_fresh_prompt_tokens": cumulative_avoided,
@@ -907,23 +1175,57 @@ def evaluate(
         storage="device",
         expected=child_root,
         expected_tokens=EXPECTED_CHILD_TOKENS,
-        expected_roots_after=2,
-        expected_total_device_bytes_after=EXPECTED_CHILD_DEVICE_BYTES,
+        expected_roots_after=(len(phase_roots) + 1 if active.phase_root_ring else 2),
+        expected_total_device_bytes_after=(
+            len(phase_roots) * EXPECTED_CHILD_DEVICE_BYTES
+            if active.phase_root_ring
+            else EXPECTED_CHILD_DEVICE_BYTES
+        ),
+        expected_root_capacity=active.root_bank_capacity,
         label="final-child-restore",
     )
     root_operations.append(final_child_restore)
     resources_before_closure = harness.process_resources(sidecar, baseline_private)
-    final_child_erase = root_action(
-        action="root-erase",
-        root_id=str(child_root["root_id"]),
-        storage="device",
-        expected=child_root,
-        expected_tokens=EXPECTED_CHILD_TOKENS,
-        expected_roots_after=1,
-        expected_total_device_bytes_after=0,
-        label="final-child-erase",
-    )
-    root_operations.append(final_child_erase)
+    if active.phase_root_ring:
+        require(
+            {
+                answer
+                for answer, _root_record, _tokens in phase_roots.values()
+            }
+            == set(active.transition_map()),
+            "phase-root ring did not fill all exact states",
+        )
+        remaining_device_roots = len(phase_roots)
+        for phase_checksum in sorted(phase_roots):
+            answer, phase_root, _phase_tokens = phase_roots[phase_checksum]
+            remaining_device_roots -= 1
+            erased_phase = root_action(
+                action="root-erase",
+                root_id=str(phase_root["root_id"]),
+                storage="device",
+                expected=phase_root,
+                expected_tokens=EXPECTED_CHILD_TOKENS,
+                expected_roots_after=remaining_device_roots + 1,
+                expected_total_device_bytes_after=(
+                    remaining_device_roots * EXPECTED_CHILD_DEVICE_BYTES
+                ),
+                expected_root_capacity=active.root_bank_capacity,
+                label=f"final-phase-{answer}-erase",
+            )
+            root_operations.append(erased_phase)
+    else:
+        final_child_erase = root_action(
+            action="root-erase",
+            root_id=str(child_root["root_id"]),
+            storage="device",
+            expected=child_root,
+            expected_tokens=EXPECTED_CHILD_TOKENS,
+            expected_roots_after=1,
+            expected_total_device_bytes_after=0,
+            expected_root_capacity=active.root_bank_capacity,
+            label="final-child-erase",
+        )
+        root_operations.append(final_child_erase)
     final_base_erase = root_action(
         action="root-erase",
         root_id=BASE_ROOT_ID,
@@ -932,6 +1234,7 @@ def evaluate(
         expected_tokens=EXPECTED_BASE_TOKENS,
         expected_roots_after=0,
         expected_total_device_bytes_after=0,
+        expected_root_capacity=active.root_bank_capacity,
         label="final-base-erase",
     )
     root_operations.append(final_base_erase)
@@ -943,6 +1246,10 @@ def evaluate(
     root_and_rebase_wall = (
         float(parent_materialization["wall_seconds"])
         + sum(float(item["wall_seconds"]) for item in rebases)
+        + sum(float(operation["client_wall_seconds"]) for operation in root_operations)
+    )
+    ring_overhead_wall = (
+        sum(float(item["wall_seconds"]) for item in rebases)
         + sum(float(operation["client_wall_seconds"]) for operation in root_operations)
     )
     catalytic_wall = root_and_rebase_wall + sum(
@@ -964,11 +1271,22 @@ def evaluate(
         and step["next_child_device_bytes"] == EXPECTED_CHILD_DEVICE_BYTES
         for step in steps
     )
-    saved_work_law = all(
-        step["avoided_fresh_prompt_tokens_after_rebase_charge"] == EXPECTED_BASE_TOKENS
-        and step["cumulative_avoided_fresh_prompt_tokens"] == EXPECTED_BASE_TOKENS * step["step"]
-        for step in steps
-    )
+    expected_cumulative_avoided = 0
+    saved_work_law = True
+    for step_record in steps:
+        expected_step_avoided = (
+            EXPECTED_CHILD_TOKENS
+            if step_record["child_lifecycle"] == "phase-ring-hit"
+            else EXPECTED_BASE_TOKENS
+        )
+        expected_cumulative_avoided += expected_step_avoided
+        saved_work_law = (
+            saved_work_law
+            and step_record["avoided_fresh_prompt_tokens_after_rebase_charge"]
+            == expected_step_avoided
+            and step_record["cumulative_avoided_fresh_prompt_tokens"]
+            == expected_cumulative_avoided
+        )
     transition = active.transition_map()
     recurrence = recurrence_evidence(active, observed_sequence, steps)
     cycle_period = recurrence["cycle_period"]
@@ -992,15 +1310,42 @@ def evaluate(
         for operation in root_operations
         if operation["root_id"] == BASE_ROOT_ID
     )
+    expected_device_totals = {
+        count * EXPECTED_CHILD_DEVICE_BYTES
+        for count in range(active.root_bank_capacity)
+    }
     bank_invariant = all(
-        operation["n_roots_after"] <= 2
-        and operation["n_total_device_bytes_after"] in {0, EXPECTED_CHILD_DEVICE_BYTES}
+        operation["n_roots_capacity"] == active.root_bank_capacity
+        and operation["n_roots_after"] <= active.root_bank_capacity
+        and operation["n_total_device_bytes_after"] in expected_device_totals
         for operation in root_operations
+    )
+    phase_ring_exact = (
+        not active.phase_root_ring
+        or (
+            phase_cold_fills == len(active.transition_map()) - 1
+            and phase_ring_hits == recursive_depth - phase_cold_fills
+            and len(phase_roots) == len(active.transition_map())
+            and len(
+                {
+                    int(root_record["device_storage_key"])
+                    for _answer, root_record, _tokens in phase_roots.values()
+                }
+            )
+            == len(active.transition_map())
+            and len(rebases) == phase_cold_fills
+            and cumulative_avoided
+            == (
+                phase_cold_fills * EXPECTED_BASE_TOKENS
+                + phase_ring_hits * EXPECTED_CHILD_TOKENS
+            )
+        )
     )
     integrity = (
         exact_sequence
         and paired_identity
         and recurrence_hash_invariant
+        and phase_ring_exact
         and base_invariant
         and bank_invariant
         and final_base_erase["n_roots_after"] == 0
@@ -1013,6 +1358,8 @@ def evaluate(
         speedup=lifecycle_speedup,
         recursive_depth=recursive_depth,
         catalytic_wall_seconds=catalytic_wall,
+        root_and_rebase_wall_seconds=root_and_rebase_wall,
+        ring_overhead_seconds=ring_overhead_wall,
         contract=active,
     )
     accepted_before_cleanup = classification == active.accepted_classification
@@ -1048,10 +1395,49 @@ def evaluate(
                 len(set(observed_sequence[:-1])) == cycle_period
             ),
         }
+    maximum_device_roots = (
+        len(active.transition_map()) if active.phase_root_ring else 1
+    )
+    maximum_roots = maximum_device_roots + 1
+    lifecycle_scope = (
+        "base materialization/save, seed base restore/child save, every child restore, "
+        "three cold phase fills, every phase-ring hit, final restore, all phase-root/base "
+        "erases, and equal batch-ownership share; Task-A and seed generation shared"
+        if active.phase_root_ring
+        else (
+            "base materialization/save, seed base restore/child save, every child restore, "
+            "every child erase/base restore/six-token rebase/child save, final restores and "
+            "erases, and equal batch-ownership share; Task-A and seed generation shared"
+        )
+    )
+    phase_ring_metrics = {
+        "enabled": active.phase_root_ring,
+        "cold_fills": phase_cold_fills,
+        "hits": phase_ring_hits,
+        "phase_count": len(phase_roots),
+        "bank_mutation_and_rebase_wall_seconds": ring_overhead_wall,
+        "maximum_root_and_rebase_wall_seconds": (
+            active.maximum_root_and_rebase_wall_seconds
+        ),
+        "maximum_ring_overhead_seconds": active.maximum_ring_overhead_seconds,
+        "post_fill_device_bytes": (
+            len(active.transition_map()) * EXPECTED_CHILD_DEVICE_BYTES
+            if active.phase_root_ring
+            else EXPECTED_CHILD_DEVICE_BYTES
+        ),
+        "device_storage_keys": sorted(
+            int(root_record["device_storage_key"])
+            for _answer, root_record, _tokens in phase_roots.values()
+        ),
+    }
     return {
         "status": "complete-pending-cleanup",
         "experiment_id": experiment_id,
-        "mechanism": "pinned-host-base-plus-fixed-output-cuda-capsule-rebase",
+        "mechanism": (
+            "pinned-host-base-plus-checksum-addressed-cuda-phase-root-ring"
+            if active.phase_root_ring
+            else "pinned-host-base-plus-fixed-output-cuda-capsule-rebase"
+        ),
         "verdict": "accept" if accepted_before_cleanup else "reject",
         "classification": classification,
         "geometry": {"N": 1, "T": recursive_depth, "R": recursive_depth, "B": 1},
@@ -1092,9 +1478,13 @@ def evaluate(
                 "n_tokens": EXPECTED_CHILD_TOKENS,
             },
             "final_child": child_root,
+            "phase_children_by_checksum": {
+                checksum: {"answer": answer, **root}
+                for checksum, (answer, root, _tokens) in sorted(phase_roots.items())
+            },
             "operations": root_operations,
-            "maximum_simultaneous_roots": 2,
-            "maximum_simultaneous_device_roots": 1,
+            "maximum_simultaneous_roots": maximum_roots,
+            "maximum_simultaneous_device_roots": maximum_device_roots,
         },
         "batch_ownership": {
             "boundaries": ownership,
@@ -1115,15 +1505,17 @@ def evaluate(
                 "rebase_fresh_tokens_each_step": [step["rebase_fresh_tokens"] for step in steps],
                 "direct_fresh_tokens_each_step": [step["direct_fresh_tokens"] for step in steps],
                 "charged_avoided_fresh_prompt_tokens": cumulative_avoided,
-                "expected_689_times_r": EXPECTED_BASE_TOKENS * len(steps),
+                "expected_charged_avoided_fresh_prompt_tokens": (
+                    phase_cold_fills * EXPECTED_BASE_TOKENS
+                    + phase_ring_hits * EXPECTED_CHILD_TOKENS
+                    if active.phase_root_ring
+                    else EXPECTED_BASE_TOKENS * len(steps)
+                ),
             },
             "counted_full_lifecycle": {
-                "scope": (
-                    "base materialization/save, seed base restore/child save, every child restore, "
-                    "every child erase/base restore/six-token rebase/child save, final restores and "
-                    "erases, and equal batch-ownership share; Task-A and seed generation shared"
-                ),
+                "scope": lifecycle_scope,
                 "root_and_rebase_wall_seconds": root_and_rebase_wall,
+                "bank_mutation_and_rebase_wall_seconds": ring_overhead_wall,
                 "catalytic_wall_seconds": catalytic_wall,
                 "direct_wall_seconds": direct_wall,
                 "wall_speedup": lifecycle_speedup,
@@ -1139,13 +1531,14 @@ def evaluate(
                 "child_hash_period_exact": child_hash_period_exact,
                 "request_hash_period_exact": request_hash_period_exact,
             },
+            "phase_root_ring": phase_ring_metrics,
             "residency": {
                 "with_base": resources_with_base,
                 "with_two_roots": resources_with_two_roots,
                 "before_closure": resources_before_closure,
                 "after_closure": resources_after_closure,
-                "maximum_simultaneous_roots": 2,
-                "maximum_simultaneous_device_roots": 1,
+                "maximum_simultaneous_roots": maximum_roots,
+                "maximum_simultaneous_device_roots": maximum_device_roots,
             },
         },
         "quality_gates": {
@@ -1159,21 +1552,42 @@ def evaluate(
             == route_orders,
             "paired_prompt_and_generated_identity_exact": paired_identity,
             "base_root_metadata_invariant": base_invariant,
-            "root_bank_capacity_two_exact": bank_invariant,
-            "only_one_device_root_resident": bank_invariant,
+            "root_bank_capacity_exact": bank_invariant,
+            "maximum_device_roots_exact": (
+                bank_invariant
+                and (
+                    not active.phase_root_ring
+                    or len(phase_roots) == maximum_device_roots
+                )
+            ),
             "child_token_count_slope_zero": fixed_size,
             "child_device_byte_slope_zero": fixed_size,
             "successor_fresh_tokens_87_each_step": all(
                 step["successor_fresh_tokens"] == EXPECTED_SUCCESSOR_FRESH_TOKENS
                 for step in steps
             ),
-            "rebase_fresh_tokens_6_each_step": all(
-                step["rebase_fresh_tokens"] == EXPECTED_REBASE_FRESH_TOKENS for step in steps
+            "rebase_geometry_exact": (
+                (
+                    phase_cold_fills == 3
+                    and phase_ring_hits == 13
+                    and [step["rebase_fresh_tokens"] for step in steps].count(
+                        EXPECTED_REBASE_FRESH_TOKENS
+                    )
+                    == 3
+                    and [step["rebase_fresh_tokens"] for step in steps].count(0)
+                    == 13
+                )
+                if active.phase_root_ring
+                else all(
+                    step["rebase_fresh_tokens"] == EXPECTED_REBASE_FRESH_TOKENS
+                    for step in steps
+                )
             ),
             "direct_fresh_tokens_782_each_step": all(
                 step["direct_fresh_tokens"] == EXPECTED_DIRECT_FRESH_TOKENS for step in steps
             ),
-            "charged_saved_work_689_times_r": saved_work_law,
+            "charged_saved_work_exact": saved_work_law,
+            "phase_root_ring_exact": phase_ring_exact,
             "checkpoint_count_zero": all(
                 operation["n_checkpoints"] == 0 for operation in root_operations
             ),
@@ -1190,6 +1604,14 @@ def evaluate(
             "catalytic_wall_at_or_below_preregistered_ceiling": (
                 active.maximum_catalytic_wall_seconds is None
                 or catalytic_wall <= active.maximum_catalytic_wall_seconds
+            ),
+            "root_and_rebase_wall_at_or_below_preregistered_ceiling": (
+                active.maximum_root_and_rebase_wall_seconds is None
+                or root_and_rebase_wall <= active.maximum_root_and_rebase_wall_seconds
+            ),
+            "bank_mutation_and_rebase_wall_at_or_below_preregistered_ceiling": (
+                active.maximum_ring_overhead_seconds is None
+                or ring_overhead_wall <= active.maximum_ring_overhead_seconds
             ),
             "fanout_claimed": False,
             "arbitrary_history_compaction_claimed": False,
@@ -1263,6 +1685,8 @@ def finalize_after_cleanup(
     )
     if active.exact_cycle_period == 4:
         result["quality_gates"]["reversible_period4_fixed_size_recurrence_supported"] = accepted
+    if active.phase_root_ring:
+        result["quality_gates"]["checksum_addressed_cuda_phase_root_ring_supported"] = accepted
     result["status"] = "complete"
     result["verdict"] = "accept" if accepted else "reject"
     if accepted:
@@ -1292,7 +1716,7 @@ def main(*, contract: RecurrenceContract | None = None) -> int:
         binary == (repository / DEFAULT_BINARY).resolve(strict=True),
         "fixed-size rebase requires the isolated candidate binary",
     )
-    cuda_runtime_sha256 = latency.verify_cuda_root_runtime(binary)
+    cuda_runtime_sha256 = verify_cuda_runtime(binary, active)
     model = args.model.resolve(strict=True)
     latency.require_unused_artifact_paths(args.output, args.server_log_output)
     corpus = harness.carrier.load_public_corpus(repository)
