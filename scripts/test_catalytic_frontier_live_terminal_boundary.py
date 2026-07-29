@@ -110,6 +110,21 @@ class LiveTerminalBoundaryTests(unittest.TestCase):
         self.assertNotIn("logits=", capture_log)
 
     def test_capture_receipt_rejects_output_bearing_wire_surface(self):
+        progress_event = {
+            "index": 0,
+            "content": "",
+            "tokens": [0],
+            "stop": False,
+            "id_slot": -1,
+            "tokens_predicted": 0,
+            "tokens_evaluated": 777,
+            "prompt_progress": {
+                "total": 777,
+                "cache": 690,
+                "processed": 777,
+                "time_ms": 1,
+            },
+        }
         final_event = {
             "content": "",
             "tokens": [],
@@ -133,6 +148,25 @@ class LiveTerminalBoundaryTests(unittest.TestCase):
         recorder = live.LiveCaptureWireRecorder()
         recorder(
             b"data: "
+            + json.dumps(
+                {
+                    **progress_event,
+                    "prompt_progress": {
+                        **progress_event["prompt_progress"],
+                        "processed": 690,
+                    },
+                },
+                separators=(",", ":"),
+            ).encode()
+            + b"\n"
+        )
+        recorder(
+            b"data: "
+            + json.dumps(progress_event, separators=(",", ":")).encode()
+            + b"\n"
+        )
+        recorder(
+            b"data: "
             + json.dumps(final_event, separators=(",", ":")).encode()
             + b"\n"
         )
@@ -153,6 +187,10 @@ class LiveTerminalBoundaryTests(unittest.TestCase):
         )
         receipt = live.validate_capture_receipt(record, recorder)
         self.assertTrue(receipt["hidden_value_fields_absent"])
+        self.assertEqual(
+            receipt["prompt_progress_sentinel_zero_events"],
+            2,
+        )
         self.assertFalse(recorder.lines)
         leaking = live.LiveCaptureWireRecorder()
         leaking_event = dict(final_event, logits_hash="secret")
@@ -184,6 +222,106 @@ class LiveTerminalBoundaryTests(unittest.TestCase):
         ):
             live.validate_capture_receipt(record, nested)
         self.assertFalse(nested.lines)
+
+    def test_capture_receipt_rejects_every_other_token_sentinel_shape(self):
+        record = {
+            "content": "",
+            "execution": {
+                name: None
+                for name in live.harness.carrier.CAPTURE_EXECUTION_FIELDS
+            },
+        }
+        record["execution"].update(
+            content="",
+            reasoning_content="",
+            tool_calls=[],
+            completion_tokens=0,
+            generated_token_ids=[],
+            generated_token_count=0,
+            nonempty_token_array_event_count=0,
+        )
+        progress = {
+            "index": 0,
+            "content": "",
+            "tokens": [0],
+            "stop": False,
+            "id_slot": -1,
+            "tokens_predicted": 0,
+            "tokens_evaluated": 777,
+            "prompt_progress": {
+                "total": 777,
+                "cache": 690,
+                "processed": 777,
+                "time_ms": 1,
+            },
+        }
+        final = {
+            "content": "",
+            "tokens": [],
+            "stop": True,
+            "tokens_predicted": 0,
+            "tokens_evaluated": 777,
+            "stop_type": "limit",
+            "tokens_cached": 777,
+            "timings": {
+                "cache_n": 690,
+                "prompt_n": 87,
+                "prompt_ms": 1.0,
+                "prompt_per_token_ms": 0.01,
+                "prompt_per_second": 100.0,
+                "predicted_n": 0,
+                "predicted_ms": 0.0,
+                "predicted_per_token_ms": 0.0,
+                "predicted_per_second": 0.0,
+            },
+        }
+        for event in (
+            {**progress, "tokens": [1]},
+            {**progress, "tokens": [0, 0]},
+            {**progress, "tokens_predicted": 1},
+            {**final, "tokens": [0]},
+            {**final, "tokens_predicted": 1},
+            {
+                **final,
+                "timings": {
+                    **final["timings"],
+                    "predicted_n": 1,
+                },
+            },
+        ):
+            recorder = live.LiveCaptureWireRecorder()
+            recorder(
+                b"data: "
+                + json.dumps(event, separators=(",", ":")).encode()
+                + b"\n"
+            )
+            with self.assertRaisesRegex(
+                live.ExperimentError,
+                "exposed (output or malformed lifecycle state|"
+                "an unapproved timings field)",
+            ):
+                live.validate_capture_receipt(record, recorder)
+            self.assertFalse(recorder.lines)
+
+    def test_prompt_progress_sentinel_stays_value_initialized_and_fixed(self):
+        self.assertEqual(
+            self.context.count(
+                "send_partial_response(slot, {}, true);"
+            ),
+            3,
+        )
+        serializer_start = self.context.index(
+            "void send_partial_response("
+        )
+        serializer = self.context[
+            serializer_start :
+            self.context.index(
+                "// populate res.probs_output",
+                serializer_start,
+            )
+        ]
+        self.assertIn("if (is_progress)", serializer)
+        self.assertIn("res->tokens  = { tkn.tok };", serializer)
 
     def test_capture_payload_requests_only_empty_public_receipt_fields(self):
         payload = live.capture_payload(

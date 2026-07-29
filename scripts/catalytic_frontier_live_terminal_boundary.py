@@ -220,6 +220,7 @@ def validate_capture_receipt(
     events: list[Mapping[str, Any]] = []
     surface_fields: set[str] = set()
     terminal_events = 0
+    progress_sentinel_events = 0
     try:
         for line in recorder.lines:
             stripped = line.decode("utf-8", errors="strict").strip()
@@ -253,10 +254,17 @@ def validate_capture_receipt(
                     set(value) == allowed_fields,
                     "capture final response surface changed",
                 )
+            progress_tokens = value.get("tokens") if is_progress else None
+            final_tokens = value.get("tokens") if not is_progress else None
             require(
-                value.get("content") in (None, "")
-                and value.get("tokens") in (None, [], ())
-                and value.get("stop") is (not is_progress),
+                value.get("content") == ""
+                and (
+                    progress_tokens == [0]
+                    if is_progress
+                    else final_tokens == []
+                )
+                and value.get("stop") is (not is_progress)
+                and value.get("tokens_predicted") == 0,
                 "capture wire exposed output or malformed lifecycle state",
             )
             integer_fields = {
@@ -288,10 +296,12 @@ def validate_capture_receipt(
                         and not isinstance(item, bool)
                         for item in timings.values()
                     )
+                    and timings.get("predicted_n") == 0
                 ),
                 "capture wire exposed an unapproved timings field",
             )
             if is_progress:
+                progress_sentinel_events += 1
                 progress = value["prompt_progress"]
                 require(
                     isinstance(progress, Mapping)
@@ -321,9 +331,12 @@ def validate_capture_receipt(
             "capture produced an invalid terminal event count",
         )
         return {
-            "receipt_type": "EMPTY_LIVE_CAPTURE_WIRE_RECEIPT_V1",
+            "receipt_type": "EMPTY_LIVE_CAPTURE_WIRE_RECEIPT_V2",
             "wire_bytes": recorder.n_bytes,
             "wire_event_count": len(events),
+            "prompt_progress_sentinel_zero_events": (
+                progress_sentinel_events
+            ),
             "wire_surface_fields": sorted(surface_fields),
             "content_empty": True,
             "generated_token_ids_empty": True,
@@ -737,6 +750,11 @@ def static_audit(binary: Path) -> dict[str, Any]:
         "one_use_live_capture": "neo3000_capture_live_terminal_boundary" in source,
         "one_use_live_consumer": "neo3000_use_live_terminal_boundary" in source,
         "wrong_owner_negative": "wrong_owner_contract" in source,
+        "exact_prompt_progress_sentinel_receipt": (
+            "progress_tokens == [0]" in source
+            and "final_tokens == []" in source
+            and "EMPTY_LIVE_CAPTURE_WIRE_RECEIPT_V2" in source
+        ),
         "declared_closure_only": RESTORATION_CLASS in source,
         "no_terminal_root_in_live_route": (
             "include_terminal_logits=True" not in route_source

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""neo-exp-0092: transitive-geometry Linux live-terminal successor.
+"""neo-exp-0093: exact progress-sentinel live-terminal successor.
 
-The experiment preserves neo-exp-0091's generic C++ one-use live CUDA
-KV/recurrent state plus exact terminal-logits mechanism.  It gives the
-consumed pre-live failure a distinct identity and additionally binds the
-nested compact-child helper to the qualified native-Linux 685/690 geometry.
+The experiment preserves neo-exp-0092's geometry and generic C++ one-use live
+CUDA KV/recurrent state plus exact terminal-logits mechanism.  It gives the
+consumed receipt mismatch a distinct identity and recognizes only the
+production prompt-progress tokens=[0] lifecycle sentinel as non-output.
 
 This route declares closure.  It does not claim inverse restoration, restored
 carrier reuse, phase advantage, or unbounded catalytic inference.
@@ -32,13 +32,13 @@ import catalytic_frontier_successor_terminal_pipeline as predecessor
 import catalytic_frontier_terminal_logits_continuation as terminal
 
 
-EXPERIMENT_ID = "neo-exp-0092"
-ATTEMPT_ID = "frontier-attempt-0135"
-PREREGISTRATION_ATTEMPT_ID = "frontier-attempt-0134"
+EXPERIMENT_ID = "neo-exp-0093"
+ATTEMPT_ID = "frontier-attempt-0137"
+PREREGISTRATION_ATTEMPT_ID = "frontier-attempt-0136"
 ROOT = Path(__file__).resolve().parents[1]
 RESTORATION_CLASS = "DECLARED_CLOSURE"
 PROJECTION_POLICY = "FINAL_TOKEN_STREAM_ONLY"
-PORT_OWNER = "neo-exp-0092-linux-successor-terminal-consumer"
+PORT_OWNER = "neo-exp-0093-linux-successor-terminal-consumer"
 PORT_TYPE = "agents-a1-live-kv-recurrent-plus-f32-terminal-logits-v1"
 MODULE_ID = "successor-terminal-sample"
 
@@ -47,7 +47,7 @@ DEFAULT_BINARY = (
 )
 DEFAULT_MODEL = runtime.DEFAULT_MODEL
 DEFAULT_COMPILER_CONTRACT = runtime.DEFAULT_COMPILER_CONTRACT
-DEFAULT_RUNTIME_MANIFEST = ROOT / "lab" / "neo-exp-0092-runtime-manifest.json"
+DEFAULT_RUNTIME_MANIFEST = ROOT / "lab" / "neo-exp-0093-runtime-manifest.json"
 DEFAULT_OUTPUT = ROOT / "lab" / f"{EXPERIMENT_ID}.local.json"
 DEFAULT_LOCK = (
     ROOT / "build" / "linux-catalytic" / f"{EXPERIMENT_ID}.active-lock.json"
@@ -481,7 +481,7 @@ class ContactJournalSidecar:
                         "created_unix_ns": time.time_ns(),
                         "first_transport_ordinal": 0,
                         "meaning": (
-                            "the first 0092 model callback is next; this exact "
+                            "the first 0093 model callback is next; this exact "
                             "experiment is conservatively consumed and cannot "
                             "be launched again"
                         ),
@@ -1546,7 +1546,7 @@ def evaluate(
             "ATTACH_A_FIXED_PUBLIC_NONCOMMUTING_RELATIONAL_FIBER_TO_THE_"
             "QUALIFIED_LIVE_TERMINAL_HYPOTHESIS_BOUNDARY"
             if accepted
-            else "PRESERVE_0092_AND_LOCALIZE_THE_FAILED_CUSTODY_OR_WALL_GATE"
+            else "PRESERVE_0093_AND_LOCALIZE_THE_FAILED_CUSTODY_OR_WALL_GATE"
         ),
     }
 
@@ -2358,6 +2358,11 @@ def static_audit() -> dict[str, Any]:
             )
             in runtime_source
             and "response_fields=[" in live_source
+        ),
+        "exact_prompt_progress_sentinel_receipt": (
+            "progress_tokens == [0]" in live_source
+            and "final_tokens == []" in live_source
+            and "EMPTY_LIVE_CAPTURE_WIRE_RECEIPT_V2" in live_source
         ),
         "unresolved_logit_hash_absent_from_live_logs": (
             "logits=" not in context[
