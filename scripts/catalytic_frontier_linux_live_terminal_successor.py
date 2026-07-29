@@ -1670,10 +1670,31 @@ def cuda_source_and_command_identity(
         and relative_object.split("ggml/src/ggml-cuda/", 1)[1] in command,
         f"0091 CUDA compile command is malformed: {relative_object}",
     )
+    git_blob_oid = subprocess.check_output(
+        [
+            "git",
+            "hash-object",
+            f"--path={source_relative}",
+            source_relative,
+        ],
+        cwd=ROOT,
+        text=True,
+    ).strip()
+    require(
+        re.fullmatch(r"[0-9a-f]{40}", git_blob_oid) is not None,
+        f"0091 CUDA source Git blob is invalid: {source_relative}",
+    )
+    git_blob = subprocess.check_output(
+        ["git", "cat-file", "blob", git_blob_oid],
+        cwd=ROOT,
+    )
     return {
         "source_relative_path": source_relative,
         "source_bytes": runtime.file_identity(source)["bytes"],
         "source_sha256": runtime.file_identity(source)["sha256"],
+        "source_git_blob_oid": git_blob_oid,
+        "source_git_bytes": len(git_blob),
+        "source_git_sha256": hashlib.sha256(git_blob).hexdigest().upper(),
         "compile_command_sha256": hashlib.sha256(
             command.encode("utf-8")
         ).hexdigest().upper(),
@@ -1718,6 +1739,18 @@ def validate_cuda_object_records(
                 and re.fullmatch(
                     r"[0-9A-F]{64}",
                     str(item.get("source_sha256") or ""),
+                )
+                is not None
+                and re.fullmatch(
+                    r"[0-9a-f]{40}",
+                    str(item.get("source_git_blob_oid") or ""),
+                )
+                is not None
+                and type(item.get("source_git_bytes")) is int
+                and int(item["source_git_bytes"]) > 0
+                and re.fullmatch(
+                    r"[0-9A-F]{64}",
+                    str(item.get("source_git_sha256") or ""),
                 )
                 is not None
                 and re.fullmatch(
@@ -1864,14 +1897,20 @@ def validate_cuda_sources_at_commit(
     )
     for item in cuda_objects:
         relative_path = str(item.get("source_relative_path") or "")
+        committed_oid = subprocess.check_output(
+            ["git", "rev-parse", f"{source_commit}:{relative_path}"],
+            cwd=ROOT,
+            text=True,
+        ).strip()
         committed = subprocess.check_output(
             ["git", "show", f"{source_commit}:{relative_path}"],
             cwd=ROOT,
         )
         require(
-            len(committed) == item.get("source_bytes")
+            committed_oid == item.get("source_git_blob_oid")
+            and len(committed) == item.get("source_git_bytes")
             and hashlib.sha256(committed).hexdigest().upper()
-            == item.get("source_sha256"),
+            == item.get("source_git_sha256"),
             "0091 CUDA object source does not match source commit: "
             + relative_path,
         )

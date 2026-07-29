@@ -235,6 +235,9 @@ class LinuxLiveTerminalSuccessorTests(unittest.TestCase):
                 ),
                 "source_bytes": ordinal + 1,
                 "source_sha256": f"{ordinal:064X}",
+                "source_git_blob_oid": f"{ordinal:040x}",
+                "source_git_bytes": ordinal + 1,
+                "source_git_sha256": f"{ordinal:064X}",
                 "compile_command_sha256": f"{ordinal:064X}",
             }
             for ordinal in range(139)
