@@ -195,6 +195,54 @@ def validate_minimal_closure_terminal(execution: Mapping[str, Any]) -> dict[str,
     }
 
 
+def validate_one_token_control_terminal(
+        execution: Mapping[str, Any],
+) -> dict[str, Any]:
+    generated = execution.get("generated_token_ids")
+    stop = execution.get("terminal_stop_evidence")
+    require(
+        type(execution.get("http_status")) is int
+        and execution.get("http_status") == 200,
+        "one-token control HTTP status is invalid",
+    )
+    require(
+        isinstance(stop, Mapping)
+        and stop.get("observed") is True
+        and stop.get("stop") is True,
+        "one-token control terminal stop evidence is invalid",
+    )
+    require(
+        execution.get("finish_reason") == "limit",
+        "one-token control finish reason is invalid",
+    )
+    require(
+        type(execution.get("completion_tokens")) is int
+        and execution.get("completion_tokens") == 1
+        and type(execution.get("generated_token_count")) is int
+        and execution.get("generated_token_count") == 1
+        and isinstance(generated, list)
+        and len(generated) == 1
+        and type(generated[0]) is int
+        and execution.get("completion_token_count_match") is True,
+        "one-token control must emit exactly one counted integer token",
+    )
+    expected_hash = carrier.sha256_bytes(carrier.canonical_json_bytes(generated))
+    require(
+        execution.get("generated_token_sha256") == expected_hash,
+        "one-token control token hash is invalid",
+    )
+    return {
+        "terminal_http_status": 200,
+        "terminal_stop_evidence": dict(stop),
+        "terminal_finish_reason": "limit",
+        "terminal_evidence_passed": True,
+        "generated_token_count": 1,
+        "generated_token_sha256": expected_hash,
+        "completion_tokens": 1,
+        "operation_kind": "one-token-control-projection",
+    }
+
+
 def run_completion(
     sidecar: Any,
     label: str,
@@ -236,6 +284,8 @@ def run_completion(
     try:
         if label.endswith(":closure-readdress"):
             terminal = validate_minimal_closure_terminal(normalized)
+        elif operation_kind == "one-token-control-projection":
+            terminal = validate_one_token_control_terminal(normalized)
         else:
             terminal = carrier.validate_inference_terminal_evidence(
                 normalized,

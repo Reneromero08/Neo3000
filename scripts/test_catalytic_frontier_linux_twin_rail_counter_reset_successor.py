@@ -56,11 +56,18 @@ class TwinRailCounterResetSuccessorTests(unittest.TestCase):
         self.assertIn('value.get("tokens_predicted") == 0', source)
 
     def test_static_audit_adds_counter_gate_without_contact(self) -> None:
+        original = candidate.DEFAULT_RUNTIME_MANIFEST
+        candidate.DEFAULT_RUNTIME_MANIFEST = (
+            candidate.ROOT
+            / "lab"
+            / "neo-exp-0095-consumed-manifest-not-current-for-static-test.json"
+        )
         candidate.install_identity()
         try:
             value = candidate.static_audit()
         finally:
             candidate.restore_identity()
+            candidate.DEFAULT_RUNTIME_MANIFEST = original
         self.assertTrue(all(value["gates"].values()))
         self.assertTrue(
             value["gates"]["capture_progress_current_request_counter_reset"]

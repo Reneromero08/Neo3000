@@ -585,6 +585,11 @@ def run_live_or_special_success(
         sidecar,
         f"{EXPERIMENT_ID}:{trial}:consumer",
         consumer_payload(payload, contract),
+        operation_kind=(
+            "one-token-control-projection"
+            if one_token
+            else "model-generation"
+        ),
         batch_owned_request=True,
     )
     require(
