@@ -1,5 +1,62 @@
 # Checkpoint Ledger
 
+## July 29 scientific realignment [CURRENT CLAIM AUTHORITY]
+
+### SUPPORTED RUNTIME MECHANISMS
+
+- Native Linux/CUDA builds have a complete 139 configured-translation-unit
+  closure. The other 45 repository CUDA files are optional mixed-quant
+  `fattn-vec` instantiations excluded by
+  `GGML_CUDA_FA_ALL_QUANTS=OFF`; they are not missing configured units.
+- Exact live CUDA KV/recurrent state plus one host terminal-logit row supports
+  one-use continuation with zero fresh consumer prompt tokens.
+- The split-decode seam can force an exact first logits row, retain server
+  state while suffix decode continues, capture a second row, withhold the final
+  response, and close or poison staged state before release.
+- Earlier root, terminal-continuation, output-bearing capsule, and finite CUDA
+  open-intermediate results retain their original bounded claims.
+
+### SUPPORTED NUMERICAL CALIBRATIONS
+
+- `neo-exp-0094` through `neo-exp-0101` demonstrate bounded reversible
+  scalar-score encoding, numerical inverse execution, restoration of eight
+  `complex<double>` cells (128 bytes), final-response withholding, and repeated
+  use of the same restored cell-array backing.
+- Their strongest compact classical recurrence produces the same useful
+  projection. The complete object, metadata, strings, counters, allocator,
+  host logits, CUDA/KV state, and model state are not restored.
+- Their public tuple checks are structurally contract-bound. They are not
+  authenticated owner authority.
+
+### REJECTED OR UNSUPPORTED SCIENTIFIC INTERPRETATIONS
+
+- The independent twin-rail lanes do not establish relational inference,
+  phase-native advantage, an inference-bearing carrier, Small Wall crossing,
+  or catalytic inference.
+- Resident backing reuse is numerical workspace reuse, not reuse of inference
+  knowledge.
+- Two closely related four-choice prompts do not establish broad task-family
+  transfer.
+- Historical equal-score routes are forced-equal-score shams, not dephasing.
+- Source-shape checks are not lifecycle, cancellation, custody, restoration, or
+  causal proofs.
+- The unexecuted `0102` carrier does not drive suffix model computation and
+  retains a duplicate 16-byte classical first-evidence row.
+
+### CURRENT PRECONTACT REPAIR BOUNDARY
+
+`neo-exp-0102` has zero completion requests, prompt evaluations, model
+callbacks, or scientific contact. It is frozen as
+`PRECONTACT_TWO_ROW_REVERSIBLE_SCORE_COMPOSITION_CALIBRATION`; no model-facing
+execution is authorized during realignment.
+
+Active work is limited to lifecycle/custody repairs, replay and metadata
+atomicity, a real state-level decoherence control, a valid integrated exact
+oracle, enforced sidecar timeout, native test binding, and replacement of the
+pelletized controller stack with one declarative runner. The append-only
+incident is
+`lab/incidents/2026-07-29-audio-catvm-inference-drift.md`.
+
 ## Goal/evidence boundary [ALIGNED]
 
 Neo3000's north star is infinite, unbounded catalytic compute for local Agents-A1 inference: unbounded cumulative quality-accepted useful inference under bounded active local residency, enabled by restorable relational carriers that can be projected and recursively reused.
@@ -25,8 +82,10 @@ The unbounded claim gate requires:
 - exact restoration or explicitly declared closure
 - a constructive recurrence, inductive invariant, or formal bridge plus finite scaling evidence
 
-The aligned north-star contract plus current user direction authorizes bounded autonomous non-retry successor cycles. This changes no existing verdict, metric, artifact identity, or claim ceiling.
-Standing frontier authorization covers bounded read-only stable health checks and one isolated candidate sidecar launch per experiment. Safety failures retire only the affected attempt identity and do not block the research goal. Separate authorization is reserved for stable/main mutation, promotion/merge/push, destructive action, substantial external resources, or material expansion outside the frontier objective.
+The north-star remains a research target, not current execution authority.
+Scientific successor cycles are paused until a new user-authorized long-term
+catalytic goal begins after realignment. This changes no historical verdict,
+metric, artifact identity, or raw evidence.
 
 The autonomous goal is continuous across terminal experiment identities. `Exactly once`
 and `no retry` preserve a named attempt; they do not require stopping after it. Preserve

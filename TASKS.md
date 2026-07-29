@@ -1,5 +1,72 @@
 # Neo3000 Task Board
 
+## Scientific realignment dashboard [CURRENT]
+
+**Mode:** foundation repair with zero model-facing scientific contact.
+
+**SUPPORTED**
+
+- Linux CUDA qualification and the complete 139 configured-unit build closure.
+- Exact live CUDA KV/recurrent plus terminal-logit capture and one-use
+  continuation.
+- The exact split-decode seam, final-response withholding, numerical inverse,
+  seed zeroing, and fail-closed staged cleanup where behaviorally exercised.
+
+**RECLASSIFIED**
+
+- Consumed `neo-exp-0094` through `neo-exp-0101` remain immutable evidence, but
+  their active interpretation is reversible scalar-score encoding calibration
+  and numerical eight-cell workspace reuse.
+- The two later prompt boundaries are two closely related frozen four-choice
+  task instances, not demonstrated task-family breadth.
+- Public owner/lease/type strings are structurally contract-bound, not
+  authenticated owner-bound.
+- Historical `dephased` routes are forced-equal-score shams.
+- `neo-exp-0102` is
+  `PRECONTACT_TWO_ROW_REVERSIBLE_SCORE_COMPOSITION_CALIBRATION`. Its maximum
+  current statement is: two model logit rows can be captured at an exact split,
+  kept off the external wire, composed through a reversible numerical encoding,
+  and withheld from output until numerical cell restoration.
+
+**RETIRED FROM THE ACTIVE PATH**
+
+- The `0094 -> 0101` nested predecessor-import, `.parent`, and global
+  monkey-patching controller chain.
+- Twin-rail parity with the compact recurrence as a proof of phase-relational
+  or catalytic inference.
+- Source-text checks as lifecycle, cancellation, custody, restoration, or
+  causal proof.
+
+**BLOCKED**
+
+- `neo-exp-0102` model-facing execution is frozen. It has zero completion
+  requests, zero prompt evaluations, zero model callbacks, and zero scientific
+  contact.
+- Its current design duplicates the first evidence in a 16-byte classical
+  seed, reconstructs `p*q` classically, does not make suffix inference depend
+  on carrier state, lacks live F/G necessity ablations, and used an invalid
+  detached four-lane exact-oracle fixture.
+
+**CURRENT REALIGNMENT QUEUE**
+
+- [x] Reconstruct exact branch/head/history, raw evidence, implementation, and
+  `0102` contact status at clean head
+  `ffcb9719d97cf6ec7280026097bfae32fbed7857`.
+- [x] Record the append-only drift incident and interpretation supersession.
+- [ ] Repair live cancellation, sleep/shutdown custody, replay/ABA, metadata
+  atomicity, state-level decoherence, exact oracle validity, native-test
+  binding, and sidecar timeout behavior with executed behavioral tests.
+- [ ] Install one immutable declarative runner/specification path for accepted
+  `0101` calibration and precontact `0102` calibration; prove it imports no
+  legacy wrapper.
+- [ ] Build and audit the server/CUDA closure, append final realignment
+  evidence, update this dashboard to a paused ready state, commit, push, and
+  stop without executing a frontier experiment.
+
+The incident authority is
+`lab/incidents/2026-07-29-audio-catvm-inference-drift.md`. This section
+supersedes every historical “current” or “next action” statement below.
+
 **Active checkpoint:** Checkpoint 2, First catalytic compute intervention
 **Current RSI level:** Level 1, supervised bounded RSI available
 **Baseline evidence through:** CatalyticSwarm-0 v2 integration commit `cf61f90ff5544f2f8bc546e5d661ea72cdda8666`; bound `reviewable-accept` result `AF491153D98877CAACAF5ED89F3446A80AD8ED12D3FAD2CDE22C2AF77CE5BEC7`
@@ -216,7 +283,7 @@ The user-authorized discovery branch `codex/catalytic-frontier` supersedes the d
 - [x] `DESIGN_AND_PREREGISTER_NEO_EXP_0102_TWO_LIVE_EVIDENCE_UNRESOLVED_COMPOSITION_SUCCESSOR`. `frontier-attempt-0154` freezes two real logits rows in one cache-disabled split request; public noncommuting `Ry` then `Rx`; exact score law `(1+p_h*q_h)/2`; two separately typed and owner-bound ports; no resident-stage output; reverse `G,F,H` execution; numerical cell restoration; identical compact/materialized, dephased/order/inverse/disconnect controls; 16 callbacks and 28 direct actions; full physical accounting; and immediate unrelated B reuse. The four-F32 first-row seed is declared as 16 bytes of depth-two evidence history, with generalized cost `16*(depth-1)`, so no tape-free arbitrary-depth claim is allowed. Bind line 157 SHA-256 `E47F02C2DFC5A79409ACA59D57CF6AAAC17F167BF9D71EDAB710F71D1253A457`.
 - [x] `DERIVE_AND_BIND_NEO_EXP_0102_EXACT_TWO_VIEW_TOKENIZER_BOUNDARY_WITH_ZERO_MODEL_CALLBACKS`. The manifest-bound sidecar made exactly `/apply-template`, `/tokenize`, and `/detokenize` calls. The first 91 tokens remained exact, full boundary is 142 tokens / SHA-256 `EAC7A5A55C77210330BF4906D781F59D9CCB33482521B1EC392B89E500BACE2F` / FNV `007c44f04d25fd72`, and byte round trip passed. Preserve the pre-science correction: the space-prefixed final JSON token is 5046, not prospectively assumed standalone 4754. Zero completion, prompt evaluation, model callback, or scientific contact occurred; PID stopped and port freed. Bind artifact SHA-256 `CB027744ACE0542F94EBEF71CA7A1EDF2D74395733E6B95E0C53FCA6CCEBBDDD` and attempt line 158 SHA-256 `1B8CCC664949906AFC5D79CB24441E753DB8C6314F71EE24E6D3A7325A121F53`.
 - [x] `IMPLEMENT_AND_STATICALLY_QUALIFY_NEO_EXP_0102_SPLIT_DECODE_AND_STAGED_CARRIER_SEAMS`. Pushed implementation `ebc0f9e7ef3faf351165160310f43bcc0ab90e32` admits only the exact 142-token/FNV boundary, forces the first output row at 91 tokens, keeps the owner-bound fiber and 16-byte raw first-row seed resident during suffix decode, rematerializes and executes the inverse, restores and zeroes before final projection, and poisons on every error/cancel/shutdown path. A no-acknowledgement hold makes physical resident disconnect/shutdown testable without exposing the first stage. The exact oracle, 399-line native lifecycle/fault suite, legacy 1,024-restoration sentinel, Python compilation, full CUDA server link, diff check, and 139/139 unique configured-object audit pass. Static sizes are eight cells / 128 cell bytes / 16 retained evidence bytes / 336 carrier-object bytes / 280 contract bytes / 128 receipt bytes. No model-facing contact occurred.
-- [ ] `IMPLEMENT_AND_STATICALLY_BIND_NEO_EXP_0102_CONTROLLER_AND_RUNTIME_MANIFEST`. Build a thin exact nonstream controller around the existing Linux custody lifecycle; preserve callback order 1–16 and direct actions 1–28 exactly; bind the two-view artifact, new carrier/oracle/selftest/controller sources, all transient string capacities and task/contract material, host/device traffic and operation counts, 139 unchanged CUDA objects, resident disconnect/shutdown post-factum poison proofs, and the zero-contact runtime manifest before execution.
+- [ ] **FROZEN HISTORICAL CURSOR — NOT CURRENT:** `IMPLEMENT_AND_STATICALLY_BIND_NEO_EXP_0102_CONTROLLER_AND_RUNTIME_MANIFEST`. Do not execute or continue this controller under its former claim framing. Represent the precontact calibration declaratively during realignment; a future scientific successor requires a new user-authorized catalytic goal and carrier-causality/necessity gates.
 
 ---
 

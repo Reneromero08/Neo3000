@@ -39,13 +39,22 @@ An agent must not rely on chat history when the repository task board says somet
 
 ## Current mode
 
-Checkpoint 0 is closed. Checkpoint 2 remains the active architectural checkpoint, and bounded autonomous successor execution resumes from the clean `neo-exp-0059` qualifier boundary.
+Checkpoint 0 is closed. Checkpoint 2 remains the active architectural checkpoint.
+
+Scientific contact is paused at the July 29 realignment boundary. `neo-exp-0102`
+is unconsumed and must not be executed until a new user-authorized catalytic
+inference goal selects a repaired scientific successor. Foundation repair,
+behavioral verification, builds, and audits may proceed without model-facing
+contact.
 
 Current evidence supports only `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`. The checkpoint-free N=16 run showed fixed-residency positive token and wall amortization but failed its strict utility gate; the direct-only qualifier then accepted cold-chain at `16/16`, rejected datacenter at `15/16`, and created no carrier authority.
 
-Bounded autonomous catalytic-frontier successor mode is active.
+Bounded autonomous catalytic-frontier successor mode is not active during this
+realignment pause.
 
-Within `codex/catalytic-frontier`, an agent may continue without per-cycle human authorization to:
+When a later user goal explicitly reactivates frontier research within
+`codex/catalytic-frontier`, an agent may continue without per-cycle human
+authorization to:
 
 - choose the smallest evidence-driven causal hypothesis
 - create a new experiment or attempt ID and preregister its gates
@@ -101,6 +110,64 @@ Distinguish actual mathematical, physical, informational, and evidentiary blocke
 Do not collapse a proposal into scalar candidate ranking, winner selection, AUC-first scoring, backpropagation, conventional search, or a forward verifier loop unless that reduction is the declared object under test.
 
 The algorithm is a local trace through a larger process-object. Negative results map the Wall.
+
+## CATALYTIC FRONTIER ANTI-DRIFT LAW
+
+These rules apply before any frontier promotion, successor selection, or
+claim-bearing execution.
+
+1. **Actual-code audit.** Inspect the implementation, executed runtime path,
+   controls, and raw evidence. Task-board prose, compact result summaries, and
+   prior-agent reports are navigation aids, not sufficient evidence.
+2. **Carrier causality.** Residency, restoration, backing reuse, wire
+   withholding, or parity with a classical answer does not make a carrier
+   inference-bearing. At least one useful downstream inference operation must
+   causally depend on carrier state, and a matched carrier disablement or
+   mutation must change that useful boundary.
+3. **No duplicate classical copy.** A claim of unresolved carrier custody is
+   invalid when the complete relevant intermediate is simultaneously retained
+   as ordinary classical state outside the declared carrier. Count and justify
+   retained evidence as reversible ancilla, or classify the intermediate as
+   materially classical.
+4. **Strongest compact baseline.** Compare with the strongest compact
+   classical equivalent. Exact parity with a compact recurrence establishes
+   calibration, not a distinct catalytic or phase resource.
+5. **Necessity ablations.** Multi-evidence composition requires prospectively
+   frozen live gates: F alone and G alone are insufficient or different; F then
+   G produces the declared boundary; a true relation mutation changes it; a
+   presentation or label mutation does not.
+6. **Terminology.** `owner-bound` requires authenticated, server-issued or
+   otherwise unforgeable authority, not public string equality. `dephased`
+   requires a state-level coherence-destroying operation measured through the
+   same observable, not assigned equal scores. `relational` requires interacting
+   hypotheses or shared geometry, not independent scalar lanes. `open
+   intermediate` requires more than withholding a wire response. `restored
+   inference state` must name inference-bearing state actually restored.
+   `catalytic inference` requires carrier-causal useful inference plus lawful
+   restoration or closure and actual substrate reuse.
+7. **Behavioral evidence.** Source-only tests may be labeled only
+   `SOURCE_SHAPE_CHECK`, `PROVENANCE_CHECK`, or `STATIC_BINDING_CHECK`. They
+   cannot satisfy lifecycle, custody, restoration, cancellation, or causal
+   proof; those require executed behavior, fault injection, runtime evidence,
+   or formal proof.
+8. **Precontact identity.** Repair a defect found before model-facing
+   scientific contact under the same experiment identity unless the hypothesis
+   or causal intervention changes.
+9. **No pellet controllers.** Do not create scientific successors through
+   nested controller inheritance, global monkey-patching, or `.parent.parent`
+   chains. Express experiment variation declaratively.
+10. **Restoration scope.** Every result separately names cells, metadata,
+    allocator state, model state, host evidence, CUDA/KV state, and state merely
+    closed or discarded. Never use unqualified `carrier restored`.
+11. **Evidence versus interface.** Preserve useful runtime seams even when the
+    attached scientific fixture is reclassified or retired.
+12. **Drift trigger.** Stop successor execution and run a realignment audit if:
+    three successors only repair harness defects; candidate and strongest
+    compact baseline are identical; task count rises without falling fresh
+    inference work; carrier state never affects downstream model computation;
+    terminology exceeds authority/restoration; central source-shape tests
+    outnumber behavioral tests; the next successor only adds a trivial prompt;
+    or the mechanism has no plausible path to the north-star recurrence.
 
 ## Holographic relational carrier boundary
 

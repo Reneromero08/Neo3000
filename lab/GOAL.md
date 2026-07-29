@@ -1,6 +1,17 @@
 # Active Goal
 
-## Catalytic frontier override [ACTIVE]
+## Scientific realignment override [ACTIVE]
+
+This repository is not currently executing the long-term catalytic-inference
+goal. The active bounded mission is to remove scientific drift, preserve
+historical evidence, repair lifecycle and controller foundations, validate the
+native Linux/CUDA build without model-facing contact, push the audited
+foundation, and stop at the renewed-goal readiness boundary.
+
+`neo-exp-0102` remains unconsumed and frozen. Do not select or execute a
+scientific successor from this document until a new user-authorized goal begins.
+
+## Catalytic frontier north star [PAUSED]
 
 The actual frontier objective is infinite, unbounded catalytic compute for local Agents-A1 inference: a holographic runtime in which quality-accepted useful inference can grow without a fixed cumulative ceiling because restorable relational carriers are retained, projected, and recursively reused under bounded active local residency.
 
