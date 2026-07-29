@@ -1,5 +1,5 @@
 #ifndef NEO3000_TWIN_RAIL_TESTING
-#error "neo-exp-0098 native reuse controls require the test-only carrier seam"
+#error "neo-exp-0100 native reuse controls require the test-only carrier seam"
 #endif
 
 #include "../tools/server/neo3000-twin-rail-fiber.h"
@@ -239,30 +239,91 @@ int main() {
         assert(unrelated_fresh.projected_token == 33);
         assert(carrier.take_final_projection() == 33);
 
+        auto second_unrelated_contract =
+                contract(
+                        "warmed-unrelated-largest-even",
+                        84,
+                        1,
+                        twin_rail_variant::PRIMARY);
+        second_unrelated_contract.input_boundary_id =
+                "fnv1a64:4c0d82dcecacca31";
+        const auto second_unrelated = carrier.transform_and_restore(
+                logits(0.0, 1.0, 2.0, 5.0),
+                second_unrelated_contract);
+        assert(
+                second_unrelated.accepted &&
+                second_unrelated.restored &&
+                second_unrelated.classical_parity);
+        assert(second_unrelated.primary_margin_guard_passed);
+        assert(second_unrelated.same_backing_as_prior_transaction);
+        assert(second_unrelated.completed_transactions == 4);
+        assert(second_unrelated.backing_reuses == 3);
+        assert(second_unrelated.recovery_initializations == 0);
+        const auto second_unrelated_fresh =
+                neo3000::run_fresh_twin_rail_parity(
+                        logits(0.0, 1.0, 2.0, 5.0),
+                        second_unrelated_contract);
+        assert(second_unrelated_fresh.receipt.accepted);
+        assert(second_unrelated_fresh.receipt.restored);
+        assert(second_unrelated_fresh.receipt.classical_parity);
+        assert(
+                second_unrelated_fresh.receipt.recovery_initializations
+                == 0);
+        assert(second_unrelated_fresh.projected_token == 35);
+        assert(carrier.take_final_projection() == 35);
+
         const auto dephased = carrier.transform_and_restore(
                 logits(0.0, 1.0, 4.0, 2.0),
-                contract("warmed-dephased", 84, 1, twin_rail_variant::DEPHASED_SHAM));
+                contract("warmed-dephased", 85, 1, twin_rail_variant::DEPHASED_SHAM));
         assert(dephased.accepted && dephased.restored);
         assert(dephased.same_backing_as_prior_transaction);
         assert(!dephased.canonical_tie_quotient_applied);
-        assert(dephased.completed_transactions == 4);
-        assert(dephased.backing_reuses == 3);
+        assert(dephased.completed_transactions == 5);
+        assert(dephased.backing_reuses == 4);
         assert(dephased.recovery_initializations == 0);
         assert(carrier.take_final_projection() == 32);
 
         const auto reordered = carrier.transform_and_restore(
                 logits(0.0, 1.0, 4.0, 2.0),
-                contract("warmed-reordered", 85, 1, twin_rail_variant::REORDERED_FORWARD));
+                contract("warmed-reordered", 86, 1, twin_rail_variant::REORDERED_FORWARD));
         assert(reordered.accepted && reordered.restored);
         assert(reordered.same_backing_as_prior_transaction);
         assert(reordered.canonical_tie_quotient_applied);
-        assert(reordered.completed_transactions == 5);
-        assert(reordered.backing_reuses == 4);
+        assert(reordered.completed_transactions == 6);
+        assert(reordered.backing_reuses == 5);
         assert(reordered.recovery_initializations == 0);
         assert(
                 reordered.maximum_restoration_error
                 <= twin_rail_carrier::restoration_tolerance);
         assert(carrier.take_final_projection() == 32);
+
+        uint64_t expected_fault_recoveries = 0;
+        for (const auto variant : {
+                twin_rail_variant::MISSING_INVERSE,
+                twin_rail_variant::WRONG_INVERSE,
+                twin_rail_variant::REORDERED_INVERSE}) {
+            const auto failed = carrier.transform_and_restore(
+                    logits(0.0, 1.0, 4.0, 2.0),
+                    contract(
+                            "warmed-inverse-fault-" +
+                                    std::to_string(expected_fault_recoveries),
+                            87 + expected_fault_recoveries,
+                            1,
+                            variant));
+            assert(!failed.accepted && !failed.restored);
+            assert(!failed.error.empty());
+            assert(failed.completed_transactions == 6);
+            assert(failed.backing_reuses == 5);
+            assert(
+                    failed.recovery_initializations
+                    == expected_fault_recoveries);
+            assert(carrier.state() == twin_rail_state::INVALID);
+            assert(!carrier.has_buffered_projection());
+            assert(carrier.take_final_projection() == -1);
+            expected_fault_recoveries += 1;
+        }
+        assert(expected_fault_recoveries == 3);
+        assert(carrier.recovery_initializations() == 2);
     }
 
     for (const auto variant : {
@@ -345,11 +406,12 @@ int main() {
     }
 
     std::cout
-            << "neo-exp-0098 twin-rail runtime selftest pass: "
+            << "neo-exp-0100 twin-rail runtime selftest pass: "
             << twin_rail_carrier::cell_count << " cells, "
             << twin_rail_carrier::carrier_bytes << " bytes, "
             << sizeof(twin_rail_carrier) << " object bytes, "
-            << "warmed primary-primary-unrelated-dephased-reordered quotient, "
+            << "warmed primary-primary-B-D-dephased-reordered quotient, "
+            << "two post-success inverse-fault recoveries, "
             << "1024 sequential restorations, maximum error "
             << maximum_long_run_error << "\n";
     return 0;

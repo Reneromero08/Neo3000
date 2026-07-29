@@ -152,7 +152,8 @@ static bool neo3000_twin_rail_hypothesis_boundary_exact(
     };
     if (tokens.size() != 780 &&
             !(tokens.size() == 91 &&
-              neo3000_prompt_fnv1a64(tokens) == "1fd89d3051f37e58")) {
+              (neo3000_prompt_fnv1a64(tokens) == "1fd89d3051f37e58" ||
+               neo3000_prompt_fnv1a64(tokens) == "4c0d82dcecacca31"))) {
         return false;
     }
     const size_t offset = tokens.size() - public_schema_prefix.size();
@@ -4416,14 +4417,17 @@ private:
                                             "Twin-rail transaction rejected before final projection",
                                             ERROR_TYPE_INVALID_REQUEST);
                                     SLT_WRN(slot,
-                                            "neo3000 twin-rail transaction rejected and live source poisoned boundary=%s carrier=%s generation=%u ordinal=%u pre_borrow=%s\n",
+                                            "neo3000 twin-rail transaction rejected and live source poisoned boundary=%s carrier=%s generation=%u ordinal=%u pre_borrow=%s transactions=%" PRIu64 " reuses=%" PRIu64 " recoveries=%" PRIu64 "\n",
                                             boundary_id.c_str(),
                                             slot.task->params.neo3000_live_terminal.carrier_id.c_str(),
                                             slot.task->params.neo3000_live_terminal.generation,
                                             slot.task->params.neo3000_live_terminal.module_ordinal,
                                             twin_rail_receipt.failure_was_pre_borrow
                                                     ? "true"
-                                                    : "false");
+                                                    : "false",
+                                            twin_rail_receipt.completed_transactions,
+                                            twin_rail_receipt.backing_reuses,
+                                            twin_rail_receipt.recovery_initializations);
                                     slot.release();
                                     return;
                                 }

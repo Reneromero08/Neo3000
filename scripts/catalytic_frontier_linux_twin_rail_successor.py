@@ -1288,10 +1288,24 @@ def evaluate(
         "unrelated_restored_fiber_same_backing_without_recovery": (
             post_primary is None
             or (
-                log_evidence["unrelated_primary_count"] == 1
+                log_evidence["unrelated_primary_count"]
+                        == int(post_primary.get(
+                            "expected_unrelated_primary_count",
+                            1,
+                        ))
                 and log_evidence["maximum_recovery_initializations"] == 0
                 and log_evidence["unrelated_numerical_metrics"] is not None
             )
+        ),
+        "post_success_fault_recovery_accounting": (
+            post_primary is None
+            or "expected_post_success_fault_recovery_initializations"
+                    not in post_primary
+            or log_evidence.get(
+                "post_success_fault_recovery_initializations"
+            ) == int(post_primary[
+                "expected_post_success_fault_recovery_initializations"
+            ])
         ),
         "fresh_carrier_parity": log_evidence["fresh_parity_both_edges"],
         "ordinary_live_boundary_D": ordinary_live["boundary"]["answer"] == "D",

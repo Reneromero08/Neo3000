@@ -266,14 +266,24 @@ def runtime_manifest_template(runtime_source_commit: str) -> dict[str, Any]:
 def validate_runtime_manifest() -> dict[str, Any]:
     receipt = _BASE_VALIDATE_RUNTIME_MANIFEST()
     manifest = json.loads(DEFAULT_RUNTIME_MANIFEST.read_text(encoding="utf-8"))
+    expected_predecessor = (
+        "neo-exp-0099"
+        if EXPERIMENT_ID == "neo-exp-0100"
+        else "neo-exp-0098"
+    )
+    expected_predecessor_result = (
+        "7A53E171B79B6D726DBA9B6A1E78DB67F869B454C4C9BB9B975EE02C7992B6F9"
+        if EXPERIMENT_ID == "neo-exp-0100"
+        else "9889F39DF8A1EDB339B7A5A12DA27FFE813741ADE7259F7803E2E491D46BEFF3"
+    )
     repair = manifest.get("independent_consumer_admission_repair")
     boundary = manifest.get("unrelated_boundary")
     schedule = manifest.get("unrelated_reuse_schedule")
     resources = manifest.get("unrelated_resource_preregistration")
     require(
-        manifest.get("predecessor_experiment") == "neo-exp-0098"
+        manifest.get("predecessor_experiment") == expected_predecessor
         and manifest.get("predecessor_result_sha256")
-                == "9889F39DF8A1EDB339B7A5A12DA27FFE813741ADE7259F7803E2E491D46BEFF3"
+                == expected_predecessor_result
         and manifest.get("capture_progress_counter_reset_before_first_progress")
                 is True
         and manifest.get(
@@ -351,7 +361,7 @@ def validate_runtime_manifest() -> dict[str, Any]:
     )
     return {
         **receipt,
-        "predecessor_experiment": "neo-exp-0098",
+        "predecessor_experiment": expected_predecessor,
         "unrelated_boundary": dict(boundary),
         "unrelated_reuse_schedule": dict(schedule),
         "unrelated_resource_preregistration": dict(resources),

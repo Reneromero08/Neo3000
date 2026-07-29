@@ -163,6 +163,12 @@ def numerical_quotient_source_gate() -> bool:
                 and "reordered.backing_reuses == 4" in selftest
                 and "warmed-unrelated-smallest-prime" in selftest
             )
+            or (
+                "reordered.completed_transactions == 6" in selftest
+                and "reordered.backing_reuses == 5" in selftest
+                and "warmed-unrelated-smallest-prime" in selftest
+                and "warmed-unrelated-largest-even" in selftest
+            )
         )
         and "outside_quotient" in selftest
         and "primary-margin-reject" in selftest

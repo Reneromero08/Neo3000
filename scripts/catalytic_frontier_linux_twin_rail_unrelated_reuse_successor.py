@@ -529,8 +529,17 @@ def unrelated_reuse_source_gate() -> bool:
         and "unrelated.completed_transactions == 3" in selftest
         and "unrelated.backing_reuses == 2" in selftest
         and "unrelated.recovery_initializations == 0" in selftest
-        and "reordered.completed_transactions == 5" in selftest
-        and "reordered.backing_reuses == 4" in selftest
+        and (
+            (
+                "reordered.completed_transactions == 5" in selftest
+                and "reordered.backing_reuses == 4" in selftest
+            )
+            or (
+                "reordered.completed_transactions == 6" in selftest
+                and "reordered.backing_reuses == 5" in selftest
+                and "warmed-unrelated-largest-even" in selftest
+            )
+        )
         and all(
             term not in BASE.capture_payload({}, {})
             for term in (
