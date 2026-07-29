@@ -266,15 +266,24 @@ def runtime_manifest_template(runtime_source_commit: str) -> dict[str, Any]:
 def validate_runtime_manifest() -> dict[str, Any]:
     receipt = _BASE_VALIDATE_RUNTIME_MANIFEST()
     manifest = json.loads(DEFAULT_RUNTIME_MANIFEST.read_text(encoding="utf-8"))
-    expected_predecessor = (
-        "neo-exp-0099"
-        if EXPERIMENT_ID == "neo-exp-0100"
-        else "neo-exp-0098"
-    )
-    expected_predecessor_result = (
-        "7A53E171B79B6D726DBA9B6A1E78DB67F869B454C4C9BB9B975EE02C7992B6F9"
-        if EXPERIMENT_ID == "neo-exp-0100"
-        else "9889F39DF8A1EDB339B7A5A12DA27FFE813741ADE7259F7803E2E491D46BEFF3"
+    predecessor_bindings = {
+        "neo-exp-0100": (
+            "neo-exp-0099",
+            "7A53E171B79B6D726DBA9B6A1E78DB67F869B454C4C9BB9B975EE02C7992B6F9",
+        ),
+        "neo-exp-0101": (
+            "neo-exp-0100",
+            "F90FF5AA9E832AC036052B91EB811E12C02422E1903A44D1E9754D2EF3E62208",
+        ),
+    }
+    expected_predecessor, expected_predecessor_result = (
+        predecessor_bindings.get(
+            EXPERIMENT_ID,
+            (
+                "neo-exp-0098",
+                "9889F39DF8A1EDB339B7A5A12DA27FFE813741ADE7259F7803E2E491D46BEFF3",
+            ),
+        )
     )
     repair = manifest.get("independent_consumer_admission_repair")
     boundary = manifest.get("unrelated_boundary")

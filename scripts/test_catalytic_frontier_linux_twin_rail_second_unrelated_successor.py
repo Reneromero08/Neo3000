@@ -145,6 +145,8 @@ class TwinRailSecondUnrelatedSuccessorTests(unittest.TestCase):
                     "cached_prompt_tokens": 0,
                     "fresh_prompt_tokens": 91,
                     "completion_tokens": 0,
+                    "fresh_model_tokens": 91,
+                    "wall_seconds": 0.25,
                 },
             },
             "consumer": {
@@ -343,6 +345,58 @@ class TwinRailSecondUnrelatedSuccessorTests(unittest.TestCase):
             2,
         )
 
+    def test_shutdown_audit_matches_public_capture_lifecycle(self) -> None:
+        sidecar = mock.Mock()
+        sidecar.run_root = Path("/synthetic/run")
+        cleanup = {"candidate_started": True, "pid": 42}
+        base_receipt = {
+            "candidate_started": True,
+            "poisoned_boundaries": 0,
+            "unresolved_boundaries": 0,
+            "passed": True,
+        }
+        no_shutdown_capture = (
+            "neo3000 twin-rail shutdown custody poisoned=0 unresolved=0\n"
+            "neo3000 one-use live terminal shutdown custody "
+            "poisoned=0 unresolved=0\n"
+        )
+        original = candidate.BASE._BASE_AUDIT_SHUTDOWN
+        candidate.BASE._BASE_AUDIT_SHUTDOWN = lambda _sidecar, _cleanup: dict(
+            base_receipt
+        )
+        try:
+            with mock.patch.object(
+                Path,
+                "read_text",
+                return_value=no_shutdown_capture,
+            ):
+                receipt = candidate.BASE.audit_shutdown(sidecar, cleanup)
+            self.assertFalse(
+                receipt["shutdown_resident_capture_scheduled"]
+            )
+            self.assertEqual(receipt["expected_live_poisoned"], 0)
+
+            scheduled = (
+                "neo3000 one-use live terminal boundary captured "
+                "boundary=neo-exp-0101/nonce-shutdown/edge-1/"
+                "variant-0/terminal carrier=c\n"
+                "neo3000 twin-rail shutdown custody poisoned=0 unresolved=0\n"
+            )
+            candidate.BASE._BASE_AUDIT_SHUTDOWN = (
+                lambda _sidecar, _cleanup: {
+                    **base_receipt,
+                    "poisoned_boundaries": 1,
+                }
+            )
+            with mock.patch.object(Path, "read_text", return_value=scheduled):
+                receipt = candidate.BASE.audit_shutdown(sidecar, cleanup)
+            self.assertTrue(
+                receipt["shutdown_resident_capture_scheduled"]
+            )
+            self.assertEqual(receipt["expected_live_poisoned"], 1)
+        finally:
+            candidate.BASE._BASE_AUDIT_SHUTDOWN = original
+
     def test_manifest_freezes_second_task_and_physical_accounting(self) -> None:
         original = candidate._BASE_RUNTIME_MANIFEST_TEMPLATE
         candidate._BASE_RUNTIME_MANIFEST_TEMPLATE = lambda _commit: {}
@@ -370,9 +424,14 @@ class TwinRailSecondUnrelatedSuccessorTests(unittest.TestCase):
 
     def test_static_audit_has_no_scientific_contact(self) -> None:
         candidate.install_identity()
+        original_manifest = candidate.BASE.DEFAULT_RUNTIME_MANIFEST
+        candidate.BASE.DEFAULT_RUNTIME_MANIFEST = (
+            candidate.ROOT / "lab" / "neo-exp-0100-unit-pending.json"
+        )
         try:
             value = candidate.static_audit()
         finally:
+            candidate.BASE.DEFAULT_RUNTIME_MANIFEST = original_manifest
             candidate.restore_identity()
         self.assertTrue(all(value["gates"].values()))
         self.assertEqual(value["id"], "neo-exp-0100")

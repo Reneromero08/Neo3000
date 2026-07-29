@@ -183,8 +183,7 @@ def second_boundary() -> dict[str, Any]:
         and value.get("expected_answer_basis")
                 == "6 is the largest even number among 1, 2, 4, and 6"
         and value.get("chat_template_kwargs") == {"enable_thinking": False}
-        and value.get("preregistration_attempt_id")
-                == PREREGISTRATION_ATTEMPT_ID
+        and value.get("preregistration_attempt_id") == "frontier-attempt-0150"
         and value.get("contact", {}).get("scientific_contact") is False
         and value.get("contact", {}).get("completion_requests") == 0
         and value.get("contact", {}).get("prompt_evaluations") == 0
@@ -387,13 +386,10 @@ def run_post_primary_successor(
             ] is False
         ),
         "restored_capture_91_0_91_0": (
-            restored["capture"]["summary"]
-            == {
-                "prompt_tokens": 91,
-                "cached_prompt_tokens": 0,
-                "fresh_prompt_tokens": 91,
-                "completion_tokens": 0,
-            }
+            restored["capture"]["summary"]["prompt_tokens"] == 91
+            and restored["capture"]["summary"]["cached_prompt_tokens"] == 0
+            and restored["capture"]["summary"]["fresh_prompt_tokens"] == 91
+            and restored["capture"]["summary"]["completion_tokens"] == 0
         ),
         "restored_consumer_91_91_0_D": (
             restored["consumer"]["prompt_tokens"] == 91
@@ -404,13 +400,10 @@ def run_post_primary_successor(
                     == SECOND_EXPECTED_SUFFIX
         ),
         "compact_capture_91_0_91_0": (
-            compact["capture"]["summary"]
-            == {
-                "prompt_tokens": 91,
-                "cached_prompt_tokens": 0,
-                "fresh_prompt_tokens": 91,
-                "completion_tokens": 0,
-            }
+            compact["capture"]["summary"]["prompt_tokens"] == 91
+            and compact["capture"]["summary"]["cached_prompt_tokens"] == 0
+            and compact["capture"]["summary"]["fresh_prompt_tokens"] == 91
+            and compact["capture"]["summary"]["completion_tokens"] == 0
         ),
         "compact_consumer_91_91_0_D": (
             compact["consumer"]["prompt_tokens"] == 91
@@ -798,14 +791,24 @@ def runtime_manifest_template(runtime_source_commit: str) -> dict[str, Any]:
 def validate_runtime_manifest() -> dict[str, Any]:
     receipt = _BASE_VALIDATE_RUNTIME_MANIFEST()
     manifest = json.loads(DEFAULT_RUNTIME_MANIFEST.read_text(encoding="utf-8"))
+    expected_predecessor = (
+        "neo-exp-0100"
+        if EXPERIMENT_ID == "neo-exp-0101"
+        else "neo-exp-0099"
+    )
+    expected_predecessor_result = (
+        "F90FF5AA9E832AC036052B91EB811E12C02422E1903A44D1E9754D2EF3E62208"
+        if EXPERIMENT_ID == "neo-exp-0101"
+        else "7A53E171B79B6D726DBA9B6A1E78DB67F869B454C4C9BB9B975EE02C7992B6F9"
+    )
     boundary = manifest.get("second_unrelated_boundary")
     schedule = manifest.get("second_unrelated_reuse_schedule")
     resources = manifest.get("second_unrelated_resource_preregistration")
     combined = manifest.get("combined_unrelated_resource_preregistration")
     require(
-        manifest.get("predecessor_experiment") == "neo-exp-0099"
+        manifest.get("predecessor_experiment") == expected_predecessor
         and manifest.get("predecessor_result_sha256")
-                == "7A53E171B79B6D726DBA9B6A1E78DB67F869B454C4C9BB9B975EE02C7992B6F9"
+                == expected_predecessor_result
         and boundary == {
             "relative_path":
                     "lab/neo-exp-0100-second-unrelated-boundary.json",
@@ -866,7 +869,7 @@ def validate_runtime_manifest() -> dict[str, Any]:
     )
     return {
         **receipt,
-        "predecessor_experiment": "neo-exp-0099",
+        "predecessor_experiment": expected_predecessor,
         "second_unrelated_boundary": dict(boundary),
         "second_unrelated_reuse_schedule": dict(schedule),
         "second_unrelated_resource_preregistration": dict(resources),

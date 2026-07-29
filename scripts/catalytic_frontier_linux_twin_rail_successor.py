@@ -1632,9 +1632,17 @@ def audit_shutdown(
         poisoned == 0 and unresolved == 0,
         "0094 shutdown unexpectedly found a resident twin-rail carrier",
     )
+    shutdown_resident_capture_scheduled = re.search(
+        r"neo3000 one-use live terminal boundary captured "
+        r"boundary=neo-exp-\d+/[^ ]+-shutdown/edge-1/variant-0/terminal ",
+        text,
+    ) is not None
+    expected_live_poisoned = int(shutdown_resident_capture_scheduled)
     require(
-        receipt["poisoned_boundaries"] == 1,
-        "0094 intentional resident live source was not poisoned at shutdown",
+        receipt["poisoned_boundaries"] == expected_live_poisoned
+        and receipt["unresolved_boundaries"] == 0,
+        "0094 shutdown live-source poison did not match the public "
+        "shutdown-resident capture lifecycle",
     )
     receipt["twin_rail"] = {
         "summary_count": 1,
@@ -1642,6 +1650,10 @@ def audit_shutdown(
         "unresolved": unresolved,
         "passed": True,
     }
+    receipt["shutdown_resident_capture_scheduled"] = (
+        shutdown_resident_capture_scheduled
+    )
+    receipt["expected_live_poisoned"] = expected_live_poisoned
     return receipt
 
 
