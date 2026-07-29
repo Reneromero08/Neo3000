@@ -3,12 +3,12 @@
     "binary": {
       "bytes": 17904,
       "relative_path": "build/linux-cuda-0091-custody/bin/llama-server",
-      "sha256": "979CEBD3E5A7DAB15261D557F784B1F99275A97DCDBF9251B7264DD34E985CD7"
+      "sha256": "16ED09E4D5EAD52CD1D14FDAD9601F443C76C08377338D8B9A8241D24B99DE74"
     },
     "build_log": {
-      "bytes": 4315937,
+      "bytes": 4318129,
       "relative_path": "build/linux-cuda-0091-custody-build.log",
-      "sha256": "FDBE9A8EFD8E2858F1240BAC09264C527D820215143329FB58C9B2836374A812"
+      "sha256": "D18D8B7BBE2FF68A4B4238EF45286A6D3D31D120B2A83A3BC82D30A15AC8CE91"
     },
     "cmake_cache": {
       "bytes": 49111,
@@ -18,7 +18,7 @@
     "compile_commands": {
       "bytes": 487447,
       "relative_path": "build/linux-cuda-0091-custody/compile_commands.json",
-      "sha256": "929D9C2205C3434B073915B339C7E9EACDAA6A8686897A65B5304D2454D9A785"
+      "sha256": "F074BF743B8C14418D3766A47A3E3E4A30746A8EA99D85340BE5CAC6EC4E7908"
     },
     "compiler_contract": {
       "bytes": 1974,
@@ -31,12 +31,12 @@
       "sha256": "412BBE8C60571A1EB06F48FDE89635033621CAEB01A9B4EE76D46711BAE8E932"
     },
     "controller": {
-      "bytes": 95844,
-      "git_blob_oid": "87dd90d8456dd4dff13843dd7e7d107563e7922d",
-      "git_bytes": 95844,
-      "git_sha256": "99BDD18294D925EA878A3CF98AF9C3A868A6FDF89D5FC4CFA37A80A9A4993132",
+      "bytes": 98595,
+      "git_blob_oid": "b5a4bde2fae47d6247ba702818d47858404a7053",
+      "git_bytes": 98595,
+      "git_sha256": "CC7FAB7F3DF9033E702182AFF8B5EAFCE2DFC829E92F1EA9FF5989976550396A",
       "relative_path": "scripts/catalytic_frontier_linux_live_terminal_successor.py",
-      "sha256": "99BDD18294D925EA878A3CF98AF9C3A868A6FDF89D5FC4CFA37A80A9A4993132"
+      "sha256": "CC7FAB7F3DF9033E702182AFF8B5EAFCE2DFC829E92F1EA9FF5989976550396A"
     },
     "controller_test": {
       "bytes": 18392,
@@ -130,7 +130,7 @@
     "server_link_command": {
       "bytes": 725,
       "relative_path": "build/linux-cuda-0091-custody/tools/server/CMakeFiles/llama-server.dir/link.txt",
-      "sha256": "C46489DFC473C8ABD0B14C2B36B139B53D90CFAD9AFC275630B8DBBF52469781"
+      "sha256": "947BE41BDE243BFA726DCEC93C493C00000CF08414BD07B177AFECA3E7D912DC"
     },
     "server_schema_source": {
       "bytes": 36156,
@@ -166,8 +166,8 @@
     }
   },
   "binary_version_identity": {
-    "stderr": "version: 277 (f042642)\nbuilt with GNU 15.2.0 for Linux x86_64\n",
-    "stderr_sha256": "BA751357F58224DA9F6A9AA6CB0975ADE719FBF85833B828E23DDEC4EA24800E",
+    "stderr": "version: 280 (a437bc1)\nbuilt with GNU 15.2.0 for Linux x86_64\n",
+    "stderr_sha256": "C7F6C3E4FB7229F3F00AEF097B8AAE5EF5142F078BD87A9E8E6DC827D5A8FCE0",
     "stdout": "",
     "stdout_sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
   },
@@ -1946,7 +1946,7 @@
     {
       "bytes": 930832,
       "kind": "file",
-      "sha256": "8331B634B11F1D16E3B72A0A55116F50883BE6D94B18B2A8F3F87475F5F11FF7",
+      "sha256": "7ABC9EB01FF89C974763706491FF0F201640202D4B074B341775E72C17A7CBA1",
       "soname": "libggml-base.so.0"
     },
     {
@@ -1976,7 +1976,7 @@
     {
       "bytes": 5926624,
       "kind": "file",
-      "sha256": "BC0F301DF886FA109A9F17EEA423989EFBC076529C7F601DC1D8736E55B61F3B",
+      "sha256": "8591F8BF85D6CC7CD9193F2FB648633C61FA71E72D5EE98FD3FD43F59CEDDD3A",
       "soname": "libllama-common.so.0"
     },
     {
@@ -2033,7 +2033,7 @@
     "shutdown_poison_marker_present": true
   },
   "restoration_class": "DECLARED_CLOSURE",
-  "runtime_source_commit": "f042642b94d55137647dab4cfb85cbdfda0224f6",
+  "runtime_source_commit": "a437bc1ff86659fc898d2dafef4a233c6919d81a",
   "schema": "neo3000-linux-live-terminal-runtime-manifest-v1",
   "scientific_contact": false
 }
