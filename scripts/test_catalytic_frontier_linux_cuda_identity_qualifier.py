@@ -108,7 +108,7 @@ class LinuxCudaIdentityQualifierTests(unittest.TestCase):
         source = Path(qualifier.__file__).read_text(encoding="utf-8")
         self.assertLess(
             source.index("props = codec.props()"),
-            source.index('run_root / "scientific-contact.json"'),
+            source.index('run_root / "request-intent.json"'),
         )
         self.assertLess(
             source.index("task = harness.run_completion("),
@@ -123,7 +123,135 @@ class LinuxCudaIdentityQualifierTests(unittest.TestCase):
             'f"{EXPERIMENT_ID}-precontact-{time.time_ns()}.json"',
             source,
         )
-        self.assertIn('if progress["scientific_contact"]', source)
+        self.assertIn('if contact_adjudication["observed"]', source)
+
+    def test_runtime_identity_comparison_rejects_one_byte_mutation(self):
+        with self.assertRaisesRegex(
+            qualifier.ExperimentError,
+            "test artifact identity changed",
+        ):
+            qualifier.require_exact_identity(
+                {"bytes": 7, "sha256": "a" * 64},
+                {"bytes": 7, "sha256": "b" * 64},
+                "test artifact",
+            )
+
+    def test_manifest_gate_precedes_all_scientific_contact(self):
+        source = Path(qualifier.__file__).read_text(encoding="utf-8")
+        main = source[source.rindex("def main() -> int:") :]
+        self.assertLess(
+            main.index("static = static_audit("),
+            main.index("lock = acquire_lock("),
+        )
+        self.assertIn("linked_library_identities(binary)", source)
+        self.assertIn("compiler_semantics_probe(compiler_contract", source)
+        self.assertIn("binary_version_identity(binary)", source)
+        self.assertIn("gpu_identity()", source)
+        self.assertLess(
+            main.index("require_pushed_frontier_head(args.expected_commit)"),
+            main.index("readiness = sidecar.launch()"),
+        )
+
+    def test_request_intent_alone_is_not_scientific_contact(self):
+        source = Path(qualifier.__file__).read_text(encoding="utf-8")
+        self.assertNotIn('or "request_intent" in progress', source)
+        self.assertFalse(
+            qualifier.scientific_contact_from_evidence(
+                response_bytes=0,
+                server_prompt_evaluations=0,
+                transport_attempted=False,
+            )
+        )
+        self.assertTrue(
+            qualifier.scientific_contact_from_evidence(
+                response_bytes=1,
+                server_prompt_evaluations=0,
+                transport_attempted=False,
+            )
+        )
+        self.assertTrue(
+            qualifier.scientific_contact_from_evidence(
+                response_bytes=0,
+                server_prompt_evaluations=1,
+                transport_attempted=False,
+            )
+        )
+        self.assertTrue(
+            qualifier.scientific_contact_from_evidence(
+                response_bytes=0,
+                server_prompt_evaluations=0,
+                transport_attempted=True,
+            )
+        )
+
+    def test_closure_requires_process_port_lock_and_no_errors(self):
+        good_cleanup = {"candidate_stopped": True, "port_free": True}
+        good_lock = {"released": True}
+        self.assertTrue(
+            qualifier.closure_evidence_passed(
+                cleanup=good_cleanup,
+                lock_release=good_lock,
+                cleanup_errors=[],
+            )
+        )
+        self.assertFalse(
+            qualifier.closure_evidence_passed(
+                cleanup=good_cleanup,
+                lock_release=good_lock,
+                cleanup_errors=[{"operation": "stop"}],
+            )
+        )
+
+    def test_prompt_and_manifest_path_are_exactly_bound(self):
+        self.assertEqual(
+            qualifier.EXPECTED_PROMPT_TOKEN_SHA256,
+            "17CC9100104C5C2C91E2BB3AA14143515F465B584427B91C4B757F5CB35336D2",
+        )
+        self.assertEqual(
+            qualifier.EXPECTED_PAYLOAD_SHA256,
+            "6D24B032682CEF73CA257694CB93EF73E24981B50D15F220B1F777DAC0E674B6",
+        )
+        self.assertEqual(
+            qualifier.EXPECTED_TASK_A_CONTRACT["payload_sha256"],
+            qualifier.EXPECTED_PAYLOAD_SHA256,
+        )
+        source = Path(qualifier.__file__).read_text(encoding="utf-8")
+        self.assertIn(
+            "manifest_file == DEFAULT_RUNTIME_MANIFEST.resolve(strict=True)",
+            source,
+        )
+        self.assertIn(
+            '["git", "show", f"HEAD:{relative_manifest}"]',
+            source,
+        )
+        for name in (
+            "carrier_source",
+            "fanout_source",
+            "harness_source",
+            "inherited_source",
+            "kernel_source",
+            "terminal_source",
+            "water_source",
+            "warm_source",
+        ):
+            self.assertIn(f'"{name}"', source)
+
+    def test_transport_raw_file_and_lock_order_fail_closed(self):
+        source = Path(qualifier.__file__).read_text(encoding="utf-8")
+        main = source[source.rindex("def main() -> int:") :]
+        self.assertIn('progress["transport_attempted"] = True', source)
+        self.assertIn(
+            'self.sidecar.run_root / "request-transport-attempt.json"',
+            source,
+        )
+        self.assertIn(
+            "persisted_raw_bytes = raw_path.stat().st_size",
+            source,
+        )
+        self.assertLess(
+            main.index("sidecar = linux_sidecar.LinuxSidecar("),
+            main.index("lock = acquire_lock("),
+        )
 
 
 if __name__ == "__main__":

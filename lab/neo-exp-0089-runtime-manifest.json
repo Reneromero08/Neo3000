@@ -1,0 +1,418 @@
+{
+  "artifacts": {
+    "binary": {
+      "bytes": 17904,
+      "relative_path": "build/linux-cuda-0089-gpufast/bin/llama-server",
+      "sha256": "44E4578C403CBB23B3BAF25A0008A448D4062586AC616D61F5D09E3491D6757A"
+    },
+    "build_control_repair_log": {
+      "bytes": 4370,
+      "relative_path": "build/linux-cuda-0089-gpufast-build-control-repair.log",
+      "sha256": "EFFA26CAAFFE08F4C5AF2A80F85BD5D75FF938F345C97CA1EB20F0D4911FA4B7"
+    },
+    "build_log": {
+      "bytes": 4330805,
+      "relative_path": "build/linux-cuda-0089-gpufast-build.log",
+      "sha256": "1C462F19521ABD766ED1C87D484A7D62FADD7B5E89C0E600EDBFD3B5B715E840"
+    },
+    "build_ui_repair_log": {
+      "bytes": 12146,
+      "relative_path": "build/linux-cuda-0089-gpufast-build-ui-repair.log",
+      "sha256": "E87D0C267AD630133E21A9D07C074565EA68A3891476B016A88EA28604691FAC"
+    },
+    "carrier_source": {
+      "bytes": 130706,
+      "relative_path": "scripts/holostate_v1_multi_branch_runtime_native_carrier_evaluation.py",
+      "sha256": "ABE5955ADACEDEDF71F6BEDFF35475A3F1E60D1A8FBC768F76113BB8CECAED68"
+    },
+    "cmake_cache": {
+      "bytes": 53750,
+      "relative_path": "build/linux-cuda-0089-gpufast/CMakeCache.txt",
+      "sha256": "11CE46D83C48F42E4AD652EAE75AA8492E25D25FD858C66C3A58BA4D2A75790B"
+    },
+    "compile_commands": {
+      "bytes": 487447,
+      "relative_path": "build/linux-cuda-0089-gpufast/compile_commands.json",
+      "sha256": "284C3A4CD9AE0C87A1BED4F6F3DD5538FD0CA24D8F40EB1739C19C2C166CE16B"
+    },
+    "compiler_contract": {
+      "bytes": 1974,
+      "relative_path": "build/linux-toolchain-0088/cuda-clang-gpufast++",
+      "sha256": "B4D5B799D52C64D7942699B4BCE34C67A13F23C6A673804C54596BBFB9A82CB5"
+    },
+    "compiler_driver_proof": {
+      "bytes": 8247,
+      "relative_path": "build/linux-toolchain-0088/cuda-clang-gpufast-driver-proof.txt",
+      "sha256": "FC852C1341F2AC3AAE4E0D7F00962AC9E4C8A1FDE287F2074CB367AF14471648"
+    },
+    "compiler_executable": {
+      "bytes": 137584,
+      "relative_path": "build/linux-toolchain-0088/clang-root/usr/lib/llvm-21/bin/clang",
+      "sha256": "412BBE8C60571A1EB06F48FDE89635033621CAEB01A9B4EE76D46711BAE8E932"
+    },
+    "compiler_probe_executable": {
+      "bytes": 21248,
+      "relative_path": "build/linux-toolchain-0088/cuda-smoke-gpufast",
+      "sha256": "9CA0F87997DD87C86298F188AE1CCD436616CD1088FA47B0303E18CC9EC71A3D"
+    },
+    "compiler_probe_source": {
+      "bytes": 398,
+      "relative_path": "build/linux-toolchain-0088/cuda-smoke.cu",
+      "sha256": "1AEC56113C0E22485322EBBE7AE38ABAFDC22789ECE9E2EFA68FC74CC462D2CD"
+    },
+    "configure_control_repair_log": {
+      "bytes": 834,
+      "relative_path": "build/linux-cuda-0089-gpufast-configure-control-repair.log",
+      "sha256": "8DB79A4BB5CAEB357F23312C0A17217330EF660E683C56DFB6C4ED67D9D47E7D"
+    },
+    "configure_incident_log": {
+      "bytes": 2846,
+      "relative_path": "build/linux-cuda-0089-gpufast-configure.log",
+      "sha256": "94E72A31DD594B51819267150B648F4683C918A8C16B8B53D500F5690EA82A42"
+    },
+    "configure_repair_log": {
+      "bytes": 858,
+      "relative_path": "build/linux-cuda-0089-gpufast-configure-repair.log",
+      "sha256": "E230B73B2E5177A2F0F3B806DF87BAAA3AF66A49FCE161EE69F856D74E6AE54C"
+    },
+    "configure_ui_repair_log": {
+      "bytes": 858,
+      "relative_path": "build/linux-cuda-0089-gpufast-configure-ui-repair.log",
+      "sha256": "E230B73B2E5177A2F0F3B806DF87BAAA3AF66A49FCE161EE69F856D74E6AE54C"
+    },
+    "controller": {
+      "bytes": 64706,
+      "relative_path": "scripts/catalytic_frontier_linux_cuda_identity_qualifier.py",
+      "sha256": "E8FC3FF460EDE9CA433844AFAED809F8229E4C471082A45C9CF3BE5E89D8384C"
+    },
+    "controller_test": {
+      "bytes": 9652,
+      "relative_path": "scripts/test_catalytic_frontier_linux_cuda_identity_qualifier.py",
+      "sha256": "FC372897541E7AE0A174C3FFBDC6FCBE00A44C022EB4D06C9B9654AFE23E8CC9"
+    },
+    "cuda_fatbinary": {
+      "bytes": 1213,
+      "relative_path": "build/linux-toolchain-0088/cuda13-compat2-toolkit/bin/fatbinary",
+      "sha256": "ECF14BFA4865F8A773EBE8672BDC8F6DB428A40133959F562CFCFBED24EF7524"
+    },
+    "cuda_fatbinary_real": {
+      "bytes": 1309648,
+      "relative_path": "build/linux-toolchain-0088/cuda13-nvcc-root/usr/local/cuda-13.1/bin/fatbinary",
+      "sha256": "54AD3CDA647855AC018EB6829513D80D65DFDC320B526F6817BA8DF606951C10"
+    },
+    "cuda_libdevice": {
+      "bytes": 483796,
+      "relative_path": "build/linux-toolchain-0088/cuda-wheel-root/cuda12/nvidia/cuda_nvcc/nvvm/libdevice/libdevice.10.bc",
+      "sha256": "8C593E48547F85458B6BFBED93A2E6B05484644CCC6B429BB0D8424E06A68B6C"
+    },
+    "cuda_ptxas": {
+      "bytes": 41357392,
+      "relative_path": "build/linux-toolchain-0088/cuda13-nvcc-root/usr/local/cuda-13.1/bin/ptxas",
+      "sha256": "85836303AECA1A2AC9387A6D364B276A3603907C95C3B06C9E3AADF46195B0D8"
+    },
+    "fanout_source": {
+      "bytes": 21048,
+      "relative_path": "scripts/catalytic_frontier_fanout.py",
+      "sha256": "263CBB12F748F9DBA0FBDAFA96FC1285F8AB0DDC98C7C9BFFB6E578F3DC33227"
+    },
+    "harness_source": {
+      "bytes": 26643,
+      "relative_path": "scripts/catalytic_frontier_harness.py",
+      "sha256": "88E987F243680026D3C740939FC8834166DFEDE66081DA85971DF05764FBD84B"
+    },
+    "inherited_source": {
+      "bytes": 82549,
+      "relative_path": "scripts/holostate_v1_inherited_task_a_carrier_evaluation.py",
+      "sha256": "BF0CFEA28B02364616504AA2BDF8F8B67072EB97A8DD3B9C38B31F9F554DF7DC"
+    },
+    "kernel_source": {
+      "bytes": 114210,
+      "relative_path": "scripts/catalytic_kernel_0.py",
+      "sha256": "2C1C14180F090F60B46C5E54AD58BDD041B2698724A8B48C9ADF595E124164D2"
+    },
+    "latency_source": {
+      "bytes": 84300,
+      "relative_path": "scripts/catalytic_frontier_single_request_latency.py",
+      "sha256": "5954CB5AF1AEC950E26242C0FC6317918534FC7ECA45A64A2795880BCF7E2BBC"
+    },
+    "live_pipeline_source": {
+      "bytes": 29519,
+      "relative_path": "scripts/catalytic_frontier_live_terminal_pipeline.py",
+      "sha256": "8264B012C9653944879F275023787B2775AA248DFD38CB4D1C611C7CB8EE028F"
+    },
+    "reference_0088_compiler_contract": {
+      "bytes": 1951,
+      "relative_path": "build/linux-toolchain-0088/cuda-clang++",
+      "sha256": "238D220F4C60F18DD8AC121A35E21C0988AAAF61FDE0B5948396600F9180A8CF"
+    },
+    "sidecar_source": {
+      "bytes": 16513,
+      "relative_path": "scripts/catalytic_frontier_linux_sidecar.py",
+      "sha256": "5BDD26BCD18907590999676093982B89D684F44DED9DE1B7186F99E5F94E1AC1"
+    },
+    "terminal_source": {
+      "bytes": 46917,
+      "relative_path": "scripts/catalytic_frontier_terminal_logits_continuation.py",
+      "sha256": "6925E27170C7532CC8308A9F4C2A77CBCF3587B6831BB7C15168EF1CC2B17ADB"
+    },
+    "warm_source": {
+      "bytes": 111254,
+      "relative_path": "scripts/holostate_v1_warm_trajectory_related_task_evaluation.py",
+      "sha256": "CE5933ED6917EB99D4A73CAA2FF2B419EBB902255FABC3A35A485D94364A67E6"
+    },
+    "water_source": {
+      "bytes": 13734,
+      "relative_path": "scripts/catalytic_frontier_water_panel_qualifier.py",
+      "sha256": "1EEB631628D2CD4F49A589C988508E4F3005B6F7F765384202058C9C6ACCF6C8"
+    }
+  },
+  "attempt_id": "frontier-attempt-0129",
+  "binary_version_identity": {
+    "stderr": "version: 269 (abb85fb)\nbuilt with GNU 15.2.0 for Linux x86_64\n",
+    "stderr_sha256": "F1E4FA612A294A459065C5E1672EB20A7FD19C7F66D2FDA26E2E7CEEBCD1B209",
+    "stdout": "",
+    "stdout_sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  "build_descriptor": {
+    "build_type": "Release",
+    "cmake_build_rpath": "build/linux-toolchain-0088/cuda13-compat2-toolkit/lib64",
+    "cmake_install_rpath": "build/linux-toolchain-0088/cuda13-compat2-toolkit/lib64",
+    "cuda_architectures": "86-real",
+    "cuda_translation_units": 139,
+    "generator": "Unix Makefiles",
+    "ggml_backend_dl": false,
+    "ggml_cuda": true,
+    "ggml_cuda_no_vmm": true,
+    "ggml_native": true,
+    "llama_build_app": false,
+    "llama_build_examples": false,
+    "llama_build_server": true,
+    "llama_build_tests": false,
+    "llama_build_tools": true,
+    "llama_build_ui": false,
+    "llama_openssl": false,
+    "llama_tools_install": false,
+    "llama_use_prebuilt_ui": false,
+    "shared_libraries": true,
+    "target": "llama-server"
+  },
+  "causal_intervention": "Map upstream -use_fast_math to -Xarch_device -ffast-math so device semantics remain unchanged from 0088 and host .cu semantics return to strict Clang defaults",
+  "compiler_probe_source": "build/linux-toolchain-0088/cuda-smoke.cu",
+  "compiler_reference_relation": {
+    "current_device_cc1_canonical_sha256": "D9BA33D173AAB86A6B21C76F4D61D2BBA81CB8E7F037B1847B75ADA18FFE32E9",
+    "current_host_cc1_canonical_sha256": "B96957278D45CF7D19EDE252CD2E33F5695158E555A678CD53BB4DC922E35BFD",
+    "device_cc1_exactly_matches_0088": true,
+    "host_cc1_differs_from_0088": true,
+    "reference_0088_host_has_fast_math": true,
+    "reference_device_cc1_canonical_sha256": "D9BA33D173AAB86A6B21C76F4D61D2BBA81CB8E7F037B1847B75ADA18FFE32E9",
+    "reference_host_cc1_canonical_sha256": "5EDE0EA0DE62CF4F3419E9EE39100E4A034870D1A5069E3EE10DA1FF3102F68E"
+  },
+  "compiler_semantics_gates": {
+    "device_cc1_canonical_sha256": "D9BA33D173AAB86A6B21C76F4D61D2BBA81CB8E7F037B1847B75ADA18FFE32E9",
+    "device_fast_math_exact": true,
+    "host_cc1_canonical_sha256": "B96957278D45CF7D19EDE252CD2E33F5695158E555A678CD53BB4DC922E35BFD",
+    "host_fast_math_absent": true,
+    "host_fp_contract_strict": true,
+    "host_math_errno_strict": true,
+    "one_device_cc1": true,
+    "one_host_cc1": true
+  },
+  "cuda_driver_libraries": [
+    {
+      "bytes": 91505672,
+      "kind": "file",
+      "sha256": "C147185C80A0270D635DB626537FC9223B2AD1764F86CB12FD116D26E08B175D",
+      "soname": "libcuda.so.1"
+    },
+    {
+      "bytes": 32826968,
+      "kind": "file",
+      "sha256": "3852C0CB43A6F411BF10BC0F8DAA9D492E8B784E72FDA04CA3411B77D3D7D28B",
+      "soname": "libnvidia-ptxjitcompiler.so.1"
+    }
+  ],
+  "declared_build_invocation": {
+    "cpu_nice": 10,
+    "io_class": "best-effort",
+    "io_priority": 7,
+    "parallel_jobs": 1,
+    "status": "operator-declared; output binary and compile closure are exact"
+  },
+  "experiment_id": "neo-exp-0089",
+  "gpu_identity": [
+    {
+      "compute_capability": "8.6",
+      "driver_version": "595.84",
+      "name": "NVIDIA GeForce RTX 3060",
+      "uuid": "GPU-11b51e63-e9b5-8e60-ef99-cd9d2d9e7f08"
+    }
+  ],
+  "linked_libraries": [
+    {
+      "bytes": 254864,
+      "kind": "file",
+      "sha256": "C5E80A563850D6AB5C2F2482E4202D9C1B71FBF44854B8C399E63527202C64E1",
+      "soname": "ld-linux-x86-64.so.2"
+    },
+    {
+      "bytes": 2186512,
+      "kind": "file",
+      "sha256": "A3947513A02831EC692EBF13053C07614882AB54A2101FB91A1B15724062ED0C",
+      "soname": "libc.so.6"
+    },
+    {
+      "bytes": 54177976,
+      "kind": "file",
+      "sha256": "25CDE432108543626DF85D887C730BF2CAB96803CA16F9654E4ABC8D2B45833E",
+      "soname": "libcublas.so.13"
+    },
+    {
+      "bytes": 541607888,
+      "kind": "file",
+      "sha256": "1489AEB75D55EE55782798343AC66F57771D561CC1FE1E0491568DEEFA0E6515",
+      "soname": "libcublasLt.so.13"
+    },
+    {
+      "bytes": 704288,
+      "kind": "file",
+      "sha256": "96C42E418CEC19054186B9429C321603CC190BF26A18104E19408117A2A817B0",
+      "soname": "libcudart.so.13"
+    },
+    {
+      "bytes": 14408,
+      "kind": "file",
+      "sha256": "7D293F8361FCEAD4F9691561ADC0413F724F3607B959ABE0D4FB243072956079",
+      "soname": "libdl.so.2"
+    },
+    {
+      "bytes": 187120,
+      "kind": "file",
+      "sha256": "9D339ECB409578D6A5D587E6C537A8F9589B8A13FEFBA30D167433A4B5758BEE",
+      "soname": "libgcc_s.so.1"
+    },
+    {
+      "bytes": 930832,
+      "kind": "file",
+      "sha256": "ECEC81424566DB44EB472934E6998F3DA5CC7E2B21F95F9D8B3F146ADB624FB0",
+      "soname": "libggml-base.so.0"
+    },
+    {
+      "bytes": 1147744,
+      "kind": "file",
+      "sha256": "E3E2DDCE58ECDC359493C4BBD4C467EE435F6CBE124A00043E8F3FA8A372E6FF",
+      "soname": "libggml-cpu.so.0"
+    },
+    {
+      "bytes": 154274432,
+      "kind": "file",
+      "sha256": "0CF93CE596130A2109F7A3DEEB8865B9900D93BCB2AB9991F61F01DFAA5B74DF",
+      "soname": "libggml-cuda.so.0"
+    },
+    {
+      "bytes": 59440,
+      "kind": "file",
+      "sha256": "4FD7FE2898CA5E0673B58EB9BC01A2F96F44133F530777384BEBDE21821E4A05",
+      "soname": "libggml.so.0"
+    },
+    {
+      "bytes": 385208,
+      "kind": "file",
+      "sha256": "645478CBE100D1465B9D45F7047BCA3965358F4D399937E544F55AC7A924D5A3",
+      "soname": "libgomp.so.1"
+    },
+    {
+      "bytes": 5926624,
+      "kind": "file",
+      "sha256": "1EDBE50DAEC35E6A76A8BEA42AED0992C9A3CF5270A585AAC7063CD92D92A197",
+      "soname": "libllama-common.so.0"
+    },
+    {
+      "bytes": 4310760,
+      "kind": "file",
+      "sha256": "98AC2C11041219B5936358BE779F2FA61FA9F5EFF14A63CB4918D999687B054D",
+      "soname": "libllama-server-impl.so"
+    },
+    {
+      "bytes": 4101024,
+      "kind": "file",
+      "sha256": "7D10A828A49D20141E912CDA4B803BFD19AAD6D4C04FD93770682E9CF5F59B2C",
+      "soname": "libllama.so.0"
+    },
+    {
+      "bytes": 1198376,
+      "kind": "file",
+      "sha256": "BEEA4EEACFCFA2CD96011B959A826C97CF4A774017E214F6A34D7EEA3D49CD88",
+      "soname": "libm.so.6"
+    },
+    {
+      "bytes": 1460912,
+      "kind": "file",
+      "sha256": "245F953306396077B87A0C2A49B0552A0B723BF7DFAE9D38524B45E10A40DE7A",
+      "soname": "libmtmd.so.0"
+    },
+    {
+      "bytes": 14408,
+      "kind": "file",
+      "sha256": "F93ACB6E78DCF0213C8A85F922D21916249148E24DE426079C40B6304C42085D",
+      "soname": "libpthread.so.0"
+    },
+    {
+      "bytes": 14624,
+      "kind": "file",
+      "sha256": "5DF2508A1EF33BD8024D77271E2A4A2607CB63E59DD753DD46F8E7A2ED44962D",
+      "soname": "librt.so.1"
+    },
+    {
+      "bytes": 2735712,
+      "kind": "file",
+      "sha256": "5BB0D21308F123B6AD46C6F35B42CEDFCB8D6D439A53AA3DAE04D880AAFFDDE3",
+      "soname": "libstdc++.so.6"
+    },
+    {
+      "kind": "virtual",
+      "soname": "linux-vdso.so.1"
+    }
+  ],
+  "meaning": "Prospective ignored-artifact and host runtime binding for the single neo-exp-0089 Task-A scientific contact",
+  "restoration_class": "NO_RESTORATION_CLAIM",
+  "runtime_source_commit": "abb85fbd827eabebf1d977a7068dfc062d486e00",
+  "runtime_source_relation": {
+    "build_source_commit": "abb85fbd827eabebf1d977a7068dfc062d486e00",
+    "compared_paths": [
+      "CMakeLists.txt",
+      "ggml",
+      "src",
+      "common",
+      "tools",
+      "vendor",
+      "scripts/catalytic_frontier_fanout.py",
+      "scripts/catalytic_frontier_harness.py",
+      "scripts/catalytic_frontier_linux_sidecar.py",
+      "scripts/catalytic_frontier_live_terminal_pipeline.py",
+      "scripts/catalytic_frontier_single_request_latency.py",
+      "scripts/catalytic_frontier_terminal_logits_continuation.py",
+      "scripts/catalytic_frontier_water_panel_qualifier.py",
+      "scripts/catalytic_kernel_0.py",
+      "scripts/holostate_v1_inherited_task_a_carrier_evaluation.py",
+      "scripts/holostate_v1_multi_branch_runtime_native_carrier_evaluation.py",
+      "scripts/holostate_v1_warm_trajectory_related_task_evaluation.py"
+    ],
+    "current_runtime_matches_build_source": true,
+    "reference_0088_runtime_commit": "e0a21cdd978a735010c8c0bcf896827a375a542c",
+    "runtime_source_exactly_unchanged": true
+  },
+  "schema": "neo3000-linux-cuda-runtime-manifest-v1",
+  "scientific_contact": false,
+  "task_a_contract": {
+    "expected_answer": "C",
+    "live_boundary_actions": 0,
+    "model_bytes": 21166757632,
+    "model_requests": 1,
+    "model_sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+    "payload_sha256": "6D24B032682CEF73CA257694CB93EF73E24981B50D15F220B1F777DAC0E674B6",
+    "prompt_token_count": 543,
+    "prompt_token_sha256": "17CC9100104C5C2C91E2BB3AA14143515F465B584427B91C4B757F5CB35336D2",
+    "restoration_class": "NO_RESTORATION_CLAIM",
+    "root_actions": 0
+  }
+}
