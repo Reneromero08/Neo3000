@@ -2015,6 +2015,72 @@ def runtime_manifest_template(runtime_source_commit: str) -> dict[str, Any]:
     }
 
 
+def refresh_runtime_manifest(
+    path: Path,
+    value: Mapping[str, Any],
+) -> dict[str, Any]:
+    resolved = path.resolve(strict=True)
+    require(
+        resolved == DEFAULT_RUNTIME_MANIFEST.resolve(strict=True)
+        and resolved.is_file()
+        and not resolved.is_symlink(),
+        "0091 runtime manifest refresh target changed",
+    )
+    relative = resolved.relative_to(ROOT).as_posix()
+    tracked = subprocess.check_output(
+        ["git", "ls-files", "--error-unmatch", relative],
+        cwd=ROOT,
+        text=True,
+        stderr=subprocess.STDOUT,
+    ).strip()
+    committed = subprocess.check_output(
+        ["git", "show", f"HEAD:{relative}"],
+        cwd=ROOT,
+    )
+    current = resolved.read_bytes()
+    require(
+        tracked == relative and current == committed,
+        "0091 runtime manifest refresh requires the exact tracked HEAD file",
+    )
+    prior = json.loads(current)
+    require(
+        prior.get("schema")
+        == "neo3000-linux-live-terminal-runtime-manifest-v1"
+        and prior.get("experiment_id") == EXPERIMENT_ID
+        and prior.get("execution_attempt_id") == ATTEMPT_ID
+        and prior.get("scientific_contact") is False
+        and not DEFAULT_OUTPUT.exists()
+        and not DEFAULT_CONSUMED_MARKER.exists()
+        and not DEFAULT_LOCK.exists(),
+        "0091 runtime manifest refresh is forbidden after contact or custody",
+    )
+    temporary = resolved.with_name(
+        f".{resolved.name}.refresh-{os.getpid()}.tmp"
+    )
+    require(
+        not temporary.exists(),
+        "0091 runtime manifest refresh temporary path already exists",
+    )
+    receipt = terminal.write_exclusive_json(temporary, value)
+    os.replace(temporary, resolved)
+    directory_fd = os.open(resolved.parent, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+    identity = runtime.file_identity(resolved)
+    require(
+        identity["bytes"] == receipt["bytes"]
+        and identity["sha256"] == receipt["sha256"],
+        "0091 refreshed runtime manifest identity changed",
+    )
+    return {
+        "path": str(resolved),
+        **identity,
+        "refreshed_precontact": True,
+    }
+
+
 def validate_runtime_manifest() -> dict[str, Any]:
     manifest_file = DEFAULT_RUNTIME_MANIFEST.resolve(strict=True)
     relative = manifest_file.relative_to(ROOT).as_posix()
@@ -2364,6 +2430,7 @@ def parse_args() -> argparse.Namespace:
     mode.add_argument("--static-only", action="store_true")
     mode.add_argument("--execute-once", action="store_true")
     mode.add_argument("--write-runtime-manifest", action="store_true")
+    mode.add_argument("--refresh-runtime-manifest", action="store_true")
     parser.add_argument("--expected-commit")
     parser.add_argument("--runtime-source-commit")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
@@ -2379,21 +2446,23 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    if args.write_runtime_manifest:
+    if args.write_runtime_manifest or args.refresh_runtime_manifest:
         require(
             args.runtime_source_commit is not None,
             "--runtime-source-commit is required",
         )
         terminal.require_clean_head(ROOT, args.runtime_source_commit)
         runtime.require_pushed_frontier_head(args.runtime_source_commit)
-        require(
-            not DEFAULT_RUNTIME_MANIFEST.exists(),
-            "0091 runtime manifest already exists",
-        )
+        if args.write_runtime_manifest:
+            require(
+                not DEFAULT_RUNTIME_MANIFEST.exists(),
+                "0091 runtime manifest already exists",
+            )
         manifest = runtime_manifest_template(args.runtime_source_commit)
-        artifact = terminal.write_exclusive_json(
-            DEFAULT_RUNTIME_MANIFEST,
-            manifest,
+        artifact = (
+            terminal.write_exclusive_json(DEFAULT_RUNTIME_MANIFEST, manifest)
+            if args.write_runtime_manifest
+            else refresh_runtime_manifest(DEFAULT_RUNTIME_MANIFEST, manifest)
         )
         print(json.dumps(artifact, indent=2, sort_keys=True))
         return 0
