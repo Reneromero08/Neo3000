@@ -1547,10 +1547,40 @@ def manifest_artifacts() -> dict[str, Any]:
             resolved.is_relative_to(ROOT),
             f"runtime artifact escapes repository: {name}",
         )
-        artifacts[name] = {
-            "relative_path": resolved.relative_to(ROOT).as_posix(),
+        relative_path = resolved.relative_to(ROOT).as_posix()
+        record = {
+            "relative_path": relative_path,
             **runtime.file_identity(resolved),
         }
+        if name in SOURCE_ARTIFACT_NAMES:
+            git_blob_oid = subprocess.check_output(
+                [
+                    "git",
+                    "hash-object",
+                    f"--path={relative_path}",
+                    relative_path,
+                ],
+                cwd=ROOT,
+                text=True,
+            ).strip()
+            require(
+                re.fullmatch(r"[0-9a-f]{40}", git_blob_oid) is not None,
+                f"0091 source artifact Git blob is invalid: {name}",
+            )
+            git_blob = subprocess.check_output(
+                ["git", "cat-file", "blob", git_blob_oid],
+                cwd=ROOT,
+            )
+            record.update(
+                {
+                    "git_blob_oid": git_blob_oid,
+                    "git_bytes": len(git_blob),
+                    "git_sha256": (
+                        hashlib.sha256(git_blob).hexdigest().upper()
+                    ),
+                }
+            )
+        artifacts[name] = record
     return artifacts
 
 
@@ -1885,14 +1915,20 @@ def validate_source_artifacts_at_commit(
             f"0091 committed source artifact is absent: {name}",
         )
         relative_path = str(expected.get("relative_path") or "")
+        committed_oid = subprocess.check_output(
+            ["git", "rev-parse", f"{source_commit}:{relative_path}"],
+            cwd=ROOT,
+            text=True,
+        ).strip()
         committed = subprocess.check_output(
             ["git", "show", f"{source_commit}:{relative_path}"],
             cwd=ROOT,
         )
         require(
-            len(committed) == expected.get("bytes")
+            committed_oid == expected.get("git_blob_oid")
+            and len(committed) == expected.get("git_bytes")
             and hashlib.sha256(committed).hexdigest().upper()
-            == expected.get("sha256"),
+            == expected.get("git_sha256"),
             f"0091 source artifact does not match source commit: {name}",
         )
 

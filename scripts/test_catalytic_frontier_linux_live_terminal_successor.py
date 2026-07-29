@@ -266,6 +266,53 @@ class LinuxLiveTerminalSuccessorTests(unittest.TestCase):
         ):
             candidate.validate_cuda_object_records(expected, expected[:-1])
 
+    def test_source_artifact_binds_worktree_and_git_filtered_blob(self):
+        name = "server_entrypoint_source"
+        path = candidate.RUNTIME_ARTIFACT_PATHS[name].resolve(strict=True)
+        relative_path = path.relative_to(candidate.ROOT).as_posix()
+        git_blob_oid = candidate.subprocess.check_output(
+            [
+                "git",
+                "hash-object",
+                f"--path={relative_path}",
+                relative_path,
+            ],
+            cwd=candidate.ROOT,
+            text=True,
+        ).strip()
+        git_blob = candidate.subprocess.check_output(
+            ["git", "cat-file", "blob", git_blob_oid],
+            cwd=candidate.ROOT,
+        )
+        artifact = {
+            "relative_path": relative_path,
+            **candidate.runtime.file_identity(path),
+            "git_blob_oid": git_blob_oid,
+            "git_bytes": len(git_blob),
+            "git_sha256": candidate.hashlib.sha256(
+                git_blob
+            ).hexdigest().upper(),
+        }
+        with mock.patch.object(
+            candidate,
+            "SOURCE_ARTIFACT_NAMES",
+            {name},
+        ):
+            candidate.validate_source_artifacts_at_commit(
+                candidate.current_head(),
+                {name: artifact},
+            )
+            changed = dict(artifact)
+            changed["git_sha256"] = "F" * 64
+            with self.assertRaisesRegex(
+                candidate.ExperimentError,
+                "does not match source commit",
+            ):
+                candidate.validate_source_artifacts_at_commit(
+                    candidate.current_head(),
+                    {name: changed},
+                )
+
     def test_shutdown_custody_is_required_before_projection(self):
         source = Path(candidate.__file__).read_text(encoding="utf-8")
         main = source[source.rindex("def main() -> int:") :]
