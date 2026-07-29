@@ -205,6 +205,9 @@ _INHERITED_TERMINAL_RETAINED = terminal.EXPECTED_RETAINED_TOKENS
 
 RUNTIME_ARTIFACT_PATHS = {
     "binary": DEFAULT_BINARY,
+    "server_impl_library": (
+        DEFAULT_BINARY.parent / "libllama-server-impl.so"
+    ),
     "cmake_cache": DEFAULT_BINARY.parent.parent / "CMakeCache.txt",
     "compile_commands": DEFAULT_BINARY.parent.parent / "compile_commands.json",
     "build_log": ROOT / "build" / "linux-cuda-0091-custody-build.log",
@@ -1827,10 +1830,17 @@ def validate_cuda_build_log(
 
 
 def scan_live_log_surface(binary: Path) -> dict[str, bool]:
-    binary_strings = subprocess.check_output(
-        ["strings", str(binary)],
-        text=True,
-        errors="replace",
+    surfaces = (
+        binary,
+        binary.parent / "libllama-server-impl.so",
+    )
+    binary_strings = "\n".join(
+        subprocess.check_output(
+            ["strings", str(surface.resolve(strict=True))],
+            text=True,
+            errors="replace",
+        )
+        for surface in surfaces
     )
     return {
         "capture_logit_fingerprint_absent": (
