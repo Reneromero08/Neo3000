@@ -4472,7 +4472,7 @@ private:
                                         return;
                                     }
                                     SLT_WRN(slot,
-                                            "neo3000 twin-rail carrier restored and live source declared-closed before response boundary=%s carrier=%s lease=%" PRIu64 " generation=%u ordinal=%u cells=%zu bytes=%zu object_bytes=%zu dynamic_capacity_bytes=%zu receipt_bytes=%zu contract_bytes=%zu fresh_result_bytes=%zu fresh_object_bytes=%zu fresh_dynamic_capacity_bytes=%zu score_error=%.17g restoration_error=%.17g classical_parity=%s backing_reused=%s fresh_parity=%s fresh_restoration_error=%.17g transactions=%" PRIu64 " reuses=%" PRIu64 "\n",
+                                            "neo3000 twin-rail carrier restored and live source declared-closed before response boundary=%s carrier=%s lease=%" PRIu64 " generation=%u ordinal=%u cells=%zu bytes=%zu object_bytes=%zu dynamic_capacity_bytes=%zu receipt_bytes=%zu contract_bytes=%zu fresh_result_bytes=%zu fresh_object_bytes=%zu fresh_dynamic_capacity_bytes=%zu score_error=%.17g restoration_error=%.17g classical_parity=%s canonical_tie_quotient=%s primary_margin_guard=%s backing_reused=%s fresh_parity=%s fresh_restoration_error=%.17g transactions=%" PRIu64 " reuses=%" PRIu64 "\n",
                                             source_id.c_str(),
                                             slot.task->params.neo3000_live_terminal.carrier_id.c_str(),
                                             slot.task->params.neo3000_live_terminal.outer_lease,
@@ -4494,6 +4494,12 @@ private:
                                             twin_rail_receipt.maximum_score_error,
                                             twin_rail_receipt.maximum_restoration_error,
                                             twin_rail_receipt.classical_parity
+                                                    ? "true"
+                                                    : "false",
+                                            twin_rail_receipt.canonical_tie_quotient_applied
+                                                    ? "true"
+                                                    : "false",
+                                            twin_rail_receipt.primary_margin_guard_passed
                                                     ? "true"
                                                     : "false",
                                             twin_rail_receipt.same_backing_as_prior_transaction

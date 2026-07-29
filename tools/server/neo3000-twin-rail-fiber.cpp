@@ -80,6 +80,41 @@ size_t twin_rail_carrier::lowest_argmax(const scalar_array & values) {
     return best;
 }
 
+double twin_rail_carrier::top_two_margin(const scalar_array & values) {
+    const size_t best = lowest_argmax(values);
+    double runner_up = -std::numeric_limits<double>::infinity();
+    for (size_t i = 0; i < values.size(); ++i) {
+        if (i != best && values[i] > runner_up) {
+            runner_up = values[i];
+        }
+    }
+    return values[best] - runner_up;
+}
+
+int32_t twin_rail_carrier::strict_score_projection(
+        const score_array & scores) {
+    if (!std::all_of(scores.begin(), scores.end(), [](double value) {
+            return std::isfinite(value);
+        })) {
+        return -1;
+    }
+    return candidate_token_ids[lowest_argmax(scores)];
+}
+
+int32_t twin_rail_carrier::canonical_reordered_score_projection(
+        const score_array & scores) {
+    if (!std::all_of(scores.begin(), scores.end(), [](double value) {
+            return std::isfinite(value);
+        })) {
+        return -1;
+    }
+    const auto bounds = std::minmax_element(scores.begin(), scores.end());
+    if (*bounds.second - *bounds.first > reordered_score_spread_tolerance) {
+        return -1;
+    }
+    return candidate_token_ids.front();
+}
+
 void twin_rail_carrier::initialize() {
     for (size_t i = 0; i < cells_.size(); ++i) {
         cells_[i] = expected_cell(i);
@@ -159,6 +194,28 @@ void twin_rail_carrier::apply_hadamard() {
 twin_rail_receipt twin_rail_carrier::transform_and_restore(
         const std::vector<float> & terminal_logits,
         const twin_rail_contract & contract) {
+    return transform_and_restore_impl(
+            terminal_logits,
+            contract,
+            nullptr);
+}
+
+#ifdef NEO3000_TWIN_RAIL_TESTING
+twin_rail_receipt twin_rail_carrier::transform_and_restore_with_test_scores(
+        const std::vector<float> & terminal_logits,
+        const twin_rail_contract & contract,
+        const score_array & forced_scores) {
+    return transform_and_restore_impl(
+            terminal_logits,
+            contract,
+            &forced_scores);
+}
+#endif
+
+twin_rail_receipt twin_rail_carrier::transform_and_restore_impl(
+        const std::vector<float> & terminal_logits,
+        const twin_rail_contract & contract,
+        const score_array * forced_scores) {
     twin_rail_receipt receipt;
     receipt.state = state_;
     receipt.persistent_object_bytes = sizeof(*this);
@@ -205,6 +262,23 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore(
         return receipt;
     }
 
+    const scalar_array forward_probabilities =
+            probabilities_from_logits(terminal_logits);
+    const scalar_array forward_angles =
+            angles_from_probabilities(forward_probabilities);
+    if (variant == twin_rail_variant::PRIMARY) {
+        receipt.primary_margin_guard_passed =
+                top_two_margin(forward_probabilities) >
+                primary_minimum_top_two_margin;
+        if (!receipt.primary_margin_guard_passed) {
+            receipt.failure_was_pre_borrow = true;
+            receipt.error =
+                    "primary twin-rail probability margin is not strictly separated";
+            receipt.state = state_;
+            return receipt;
+        }
+    }
+
     const uintptr_t backing_address =
             reinterpret_cast<uintptr_t>(cells_.data());
     const bool same_backing =
@@ -231,10 +305,6 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore(
             persistent_dynamic_capacity_bytes();
     state_ = twin_rail_state::BORROWED;
 
-    const scalar_array forward_probabilities =
-            probabilities_from_logits(terminal_logits);
-    const scalar_array forward_angles =
-            angles_from_probabilities(forward_probabilities);
     scalar_array scores = {};
 
     if (variant == twin_rail_variant::REORDERED_FORWARD) {
@@ -253,6 +323,9 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore(
                 ? 0.5
                 : std::norm(cells_[2 * i]);
     }
+    if (forced_scores != nullptr) {
+        scores = *forced_scores;
+    }
     double maximum_score_error = 0.0;
     if (variant == twin_rail_variant::PRIMARY ||
             variant == twin_rail_variant::MISSING_INVERSE ||
@@ -264,9 +337,20 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore(
                     std::abs(scores[i] - forward_probabilities[i]));
         }
     }
-    const size_t projected_hypothesis = lowest_argmax(scores);
     const size_t classical_hypothesis =
             lowest_argmax(forward_probabilities);
+    size_t projected_hypothesis = 0;
+    bool reordered_quotient_admitted = true;
+    if (variant == twin_rail_variant::REORDERED_FORWARD) {
+        const int32_t canonical_token =
+                canonical_reordered_score_projection(scores);
+        reordered_quotient_admitted = canonical_token >= 0;
+        receipt.canonical_tie_quotient_applied =
+                reordered_quotient_admitted;
+        projected_hypothesis = 0;
+    } else {
+        projected_hypothesis = lowest_argmax(scores);
+    }
 
     state_ = twin_rail_state::RESTORING;
     const scalar_array inverse_probabilities =
@@ -311,6 +395,34 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore(
     }
 
     state_ = twin_rail_state::RESTORED;
+    receipt.restored = true;
+    if (variant == twin_rail_variant::REORDERED_FORWARD &&
+            !reordered_quotient_admitted) {
+        state_ = twin_rail_state::INVALID;
+        receipt.error =
+                "reordered-forward scores exceeded the canonical numerical quotient";
+        receipt.state = state_;
+        receipt.completed_transactions = completed_transactions_;
+        receipt.backing_reuses = backing_reuses_;
+        receipt.recovery_initializations = recovery_initializations_;
+        receipt.persistent_dynamic_capacity_bytes =
+                persistent_dynamic_capacity_bytes();
+        return receipt;
+    }
+    if (variant == twin_rail_variant::PRIMARY &&
+            !receipt.classical_parity) {
+        state_ = twin_rail_state::INVALID;
+        receipt.error =
+                "primary twin-rail score error or strict classical parity failed";
+        receipt.state = state_;
+        receipt.completed_transactions = completed_transactions_;
+        receipt.backing_reuses = backing_reuses_;
+        receipt.recovery_initializations = recovery_initializations_;
+        receipt.persistent_dynamic_capacity_bytes =
+                persistent_dynamic_capacity_bytes();
+        return receipt;
+    }
+
     buffered_token_ = candidate_token_ids[projected_hypothesis];
     completed_transactions_ += 1;
     if (same_backing) {
@@ -319,7 +431,6 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore(
     prior_backing_address_ = backing_address;
 
     receipt.accepted = true;
-    receipt.restored = true;
     receipt.completed_transactions = completed_transactions_;
     receipt.backing_reuses = backing_reuses_;
     receipt.recovery_initializations = recovery_initializations_;

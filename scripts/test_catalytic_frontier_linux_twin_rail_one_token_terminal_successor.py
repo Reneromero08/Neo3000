@@ -138,11 +138,18 @@ class TwinRailOneTokenTerminalSuccessorTests(unittest.TestCase):
         )
 
     def test_static_audit_adds_route_scope_without_contact(self) -> None:
+        original = candidate.DEFAULT_RUNTIME_MANIFEST
+        candidate.DEFAULT_RUNTIME_MANIFEST = (
+            candidate.ROOT
+            / "lab"
+            / "neo-exp-0096-consumed-manifest-not-current-for-static-test.json"
+        )
         candidate.install_identity()
         try:
             value = candidate.static_audit()
         finally:
             candidate.restore_identity()
+            candidate.DEFAULT_RUNTIME_MANIFEST = original
         self.assertTrue(all(value["gates"].values()))
         self.assertTrue(
             value["gates"]["route_scoped_one_token_terminal_class"]

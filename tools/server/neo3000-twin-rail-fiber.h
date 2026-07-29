@@ -52,6 +52,8 @@ struct twin_rail_receipt {
     bool accepted = false;
     bool restored = false;
     bool classical_parity = false;
+    bool canonical_tie_quotient_applied = false;
+    bool primary_margin_guard_passed = false;
     bool same_backing_as_prior_transaction = false;
     bool failure_was_pre_borrow = false;
     uint64_t completed_transactions = 0;
@@ -74,9 +76,12 @@ class twin_rail_carrier {
 public:
     static constexpr std::array<int32_t, 4> candidate_token_ids = {32, 33, 34, 35};
     static constexpr size_t hypothesis_count = candidate_token_ids.size();
+    using score_array = std::array<double, hypothesis_count>;
     static constexpr size_t cell_count = hypothesis_count * 2;
     static constexpr size_t carrier_bytes = cell_count * sizeof(std::complex<double>);
     static constexpr double restoration_tolerance = 1.0e-12;
+    static constexpr double primary_minimum_top_two_margin = 2.0e-12;
+    static constexpr double reordered_score_spread_tolerance = 6.0e-12;
 
     static constexpr const char * required_port_owner =
             "neo-exp-0094-four-choice-phase-consumer";
@@ -92,9 +97,18 @@ public:
     twin_rail_receipt transform_and_restore(
             const std::vector<float> & terminal_logits,
             const twin_rail_contract & contract);
+#ifdef NEO3000_TWIN_RAIL_TESTING
+    twin_rail_receipt transform_and_restore_with_test_scores(
+            const std::vector<float> & terminal_logits,
+            const twin_rail_contract & contract,
+            const score_array & forced_scores);
+#endif
 
     static int32_t compact_classical_projection(
             const std::vector<float> & terminal_logits);
+    static int32_t strict_score_projection(const score_array & scores);
+    static int32_t canonical_reordered_score_projection(
+            const score_array & scores);
 
     int32_t take_final_projection();
     void poison();
@@ -110,12 +124,17 @@ public:
 
 private:
     using cell_array = std::array<std::complex<double>, cell_count>;
-    using scalar_array = std::array<double, hypothesis_count>;
+    using scalar_array = score_array;
 
     static std::complex<double> expected_cell(size_t index);
     static scalar_array probabilities_from_logits(const std::vector<float> & terminal_logits);
     static scalar_array angles_from_probabilities(const scalar_array & probabilities);
     static size_t lowest_argmax(const scalar_array & values);
+    static double top_two_margin(const scalar_array & values);
+    twin_rail_receipt transform_and_restore_impl(
+            const std::vector<float> & terminal_logits,
+            const twin_rail_contract & contract,
+            const score_array * forced_scores);
 
     void initialize();
     double restoration_error() const;

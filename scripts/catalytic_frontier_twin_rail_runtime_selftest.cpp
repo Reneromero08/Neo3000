@@ -1,3 +1,7 @@
+#ifndef NEO3000_TWIN_RAIL_TESTING
+#error "neo-exp-0097 native negative controls require the test-only carrier seam"
+#endif
+
 #include "../tools/server/neo3000-twin-rail-fiber.h"
 
 #include <algorithm>
@@ -50,6 +54,8 @@ int main() {
                 logits(0.0, 1.0, 4.0, 2.0),
                 contract("primary-r2", 11, 1, twin_rail_variant::PRIMARY));
         assert(first.accepted && first.restored && first.classical_parity);
+        assert(first.primary_margin_guard_passed);
+        assert(!first.canonical_tie_quotient_applied);
         assert(!first.same_backing_as_prior_transaction);
         assert(first.maximum_score_error <= twin_rail_carrier::restoration_tolerance);
         assert(first.maximum_restoration_error <= twin_rail_carrier::restoration_tolerance);
@@ -61,6 +67,8 @@ int main() {
                 logits(0.0, 5.0, 1.0, 2.0),
                 contract("primary-r2", 12, 2, twin_rail_variant::PRIMARY));
         assert(second.accepted && second.restored && second.classical_parity);
+        assert(second.primary_margin_guard_passed);
+        assert(!second.canonical_tie_quotient_applied);
         assert(second.same_backing_as_prior_transaction);
         assert(second.completed_transactions == 2);
         assert(second.backing_reuses == 1);
@@ -73,6 +81,8 @@ int main() {
                 logits(0.0, 1.0, 4.0, 2.0),
                 contract("dephased", 21, 1, twin_rail_variant::DEPHASED_SHAM));
         assert(sham.accepted && sham.restored && !sham.classical_parity);
+        assert(!sham.primary_margin_guard_passed);
+        assert(!sham.canonical_tie_quotient_applied);
         assert(carrier.take_final_projection() == 32);
     }
 
@@ -82,6 +92,137 @@ int main() {
                 logits(0.0, 1.0, 4.0, 2.0),
                 contract("reordered-forward", 31, 1, twin_rail_variant::REORDERED_FORWARD));
         assert(reordered.accepted && reordered.restored);
+        assert(reordered.canonical_tie_quotient_applied);
+        assert(!reordered.primary_margin_guard_passed);
+        assert(carrier.take_final_projection() == 32);
+    }
+
+    {
+        const twin_rail_carrier::score_array within_quotient = {
+            1.0, 1.0, 1.0, 1.0 + 3.0e-12,
+        };
+        assert(
+                twin_rail_carrier::strict_score_projection(within_quotient)
+                == 35);
+        assert(
+                twin_rail_carrier::canonical_reordered_score_projection(
+                        within_quotient)
+                == 32);
+
+        const twin_rail_carrier::score_array outside_quotient = {
+            1.0, 1.0, 1.0, 1.0 + 7.0e-12,
+        };
+        assert(
+                twin_rail_carrier::strict_score_projection(outside_quotient)
+                == 35);
+        assert(
+                twin_rail_carrier::canonical_reordered_score_projection(
+                        outside_quotient)
+                == -1);
+    }
+
+    {
+        twin_rail_carrier carrier;
+        const auto rejected = carrier.transform_and_restore(
+                logits(1.0, 1.0, 1.0, 1.0),
+                contract("primary-margin-reject", 35, 1, twin_rail_variant::PRIMARY));
+        assert(!rejected.accepted && !rejected.restored);
+        assert(rejected.failure_was_pre_borrow);
+        assert(!rejected.primary_margin_guard_passed);
+        assert(!rejected.canonical_tie_quotient_applied);
+        assert(carrier.state() == twin_rail_state::EMPTY);
+        assert(!carrier.has_buffered_projection());
+        assert(carrier.take_final_projection() == -1);
+    }
+
+    {
+        twin_rail_carrier carrier;
+        const twin_rail_carrier::score_array outside_quotient = {
+            1.0, 1.0, 1.0, 1.0 + 7.0e-12,
+        };
+        const auto rejected =
+                carrier.transform_and_restore_with_test_scores(
+                        logits(0.0, 1.0, 4.0, 2.0),
+                        contract(
+                                "reordered-post-transform-reject",
+                                36,
+                                1,
+                                twin_rail_variant::REORDERED_FORWARD),
+                        outside_quotient);
+        assert(!rejected.accepted && rejected.restored);
+        assert(!rejected.failure_was_pre_borrow);
+        assert(!rejected.canonical_tie_quotient_applied);
+        assert(
+                rejected.maximum_restoration_error
+                <= twin_rail_carrier::restoration_tolerance);
+        assert(carrier.state() == twin_rail_state::INVALID);
+        assert(!carrier.has_buffered_projection());
+        assert(carrier.take_final_projection() == -1);
+    }
+
+    {
+        twin_rail_carrier carrier;
+        const twin_rail_carrier::score_array primary_scores = {
+            0.1, 0.1, 0.1, 0.7,
+        };
+        const auto rejected =
+                carrier.transform_and_restore_with_test_scores(
+                        logits(0.0, 1.0, 4.0, 2.0),
+                        contract(
+                                "primary-post-transform-reject",
+                                37,
+                                1,
+                                twin_rail_variant::PRIMARY),
+                        primary_scores);
+        assert(!rejected.accepted && rejected.restored);
+        assert(!rejected.failure_was_pre_borrow);
+        assert(rejected.primary_margin_guard_passed);
+        assert(!rejected.classical_parity);
+        assert(
+                rejected.maximum_restoration_error
+                <= twin_rail_carrier::restoration_tolerance);
+        assert(carrier.state() == twin_rail_state::INVALID);
+        assert(!carrier.has_buffered_projection());
+        assert(carrier.take_final_projection() == -1);
+    }
+
+    {
+        twin_rail_carrier carrier;
+        const auto first = carrier.transform_and_restore(
+                logits(0.0, 1.0, 4.0, 2.0),
+                contract("warmed-primary", 81, 1, twin_rail_variant::PRIMARY));
+        assert(first.accepted && first.restored && first.classical_parity);
+        assert(first.primary_margin_guard_passed);
+        assert(!first.same_backing_as_prior_transaction);
+        assert(carrier.take_final_projection() == 34);
+
+        const auto second = carrier.transform_and_restore(
+                logits(0.0, 5.0, 1.0, 2.0),
+                contract("warmed-primary", 82, 2, twin_rail_variant::PRIMARY));
+        assert(second.accepted && second.restored && second.classical_parity);
+        assert(second.primary_margin_guard_passed);
+        assert(second.same_backing_as_prior_transaction);
+        assert(carrier.take_final_projection() == 33);
+
+        const auto dephased = carrier.transform_and_restore(
+                logits(0.0, 1.0, 4.0, 2.0),
+                contract("warmed-dephased", 83, 1, twin_rail_variant::DEPHASED_SHAM));
+        assert(dephased.accepted && dephased.restored);
+        assert(dephased.same_backing_as_prior_transaction);
+        assert(!dephased.canonical_tie_quotient_applied);
+        assert(carrier.take_final_projection() == 32);
+
+        const auto reordered = carrier.transform_and_restore(
+                logits(0.0, 1.0, 4.0, 2.0),
+                contract("warmed-reordered", 84, 1, twin_rail_variant::REORDERED_FORWARD));
+        assert(reordered.accepted && reordered.restored);
+        assert(reordered.same_backing_as_prior_transaction);
+        assert(reordered.canonical_tie_quotient_applied);
+        assert(reordered.completed_transactions == 4);
+        assert(reordered.backing_reuses == 3);
+        assert(
+                reordered.maximum_restoration_error
+                <= twin_rail_carrier::restoration_tolerance);
         assert(carrier.take_final_projection() == 32);
     }
 
@@ -165,10 +306,11 @@ int main() {
     }
 
     std::cout
-            << "neo-exp-0094 twin-rail runtime selftest pass: "
+            << "neo-exp-0097 twin-rail runtime selftest pass: "
             << twin_rail_carrier::cell_count << " cells, "
             << twin_rail_carrier::carrier_bytes << " bytes, "
             << sizeof(twin_rail_carrier) << " object bytes, "
+            << "warmed primary-primary-dephased-reordered quotient, "
             << "1024 sequential restorations, maximum error "
             << maximum_long_run_error << "\n";
     return 0;

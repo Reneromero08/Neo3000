@@ -48,6 +48,9 @@ SUFFIX_GRAMMAR = (
 )
 
 FIBER_RESTORATION_CLASS = "NUMERICAL_PHYSICAL_STATE_RESTORATION"
+REORDERED_PROJECTION_RESTORATION_CLASS = (
+    "INVERSE_PLUS_CANONICAL_NUMERICAL_QUOTIENT"
+)
 SOURCE_RESTORATION_CLASS = "DECLARED_CLOSURE"
 PROJECTION_POLICY = "FINAL_SINGLE_HYPOTHESIS_TOKEN_AFTER_RESTORATION"
 PORT_OWNER = "neo-exp-0094-four-choice-phase-consumer"
@@ -833,6 +836,10 @@ def phase_log_evidence(
         and "generation=2 ordinal=2" in primary[1]
         and "classical_parity=true" in primary[0]
         and "classical_parity=true" in primary[1]
+        and "canonical_tie_quotient=false" in primary[0]
+        and "canonical_tie_quotient=false" in primary[1]
+        and "primary_margin_guard=true" in primary[0]
+        and "primary_margin_guard=true" in primary[1]
         and "backing_reused=false" in primary[0]
         and "backing_reused=true" in primary[1]
         and "fresh_parity=true" in primary[0]
@@ -842,9 +849,23 @@ def phase_log_evidence(
     )
     for line in success_lines:
         require(
-            all(term not in line for term in ("logits=[", "probabilities=", "angles=", "scores=", "phase_cells=")),
+            "canonical_tie_quotient=" in line
+            and "primary_margin_guard=" in line
+            and all(term not in line for term in ("logits=[", "probabilities=", "angles=", "scores=", "phase_cells=")),
             "phase log leaked an unresolved intermediate",
         )
+    quotient_count = sum(
+        "canonical_tie_quotient=true" in line
+        for line in success_lines
+    )
+    primary_margin_count = sum(
+        "primary_margin_guard=true" in line
+        for line in success_lines
+    )
+    require(
+        quotient_count == 1 and primary_margin_count == 2,
+        "numerical quotient or primary margin evidence changed",
+    )
     object_bytes = [
         int(value)
         for value in re.findall(r" object_bytes=(\d+)", "\n".join(success_lines))
@@ -908,6 +929,8 @@ def phase_log_evidence(
         "primary_generation_1": True,
         "primary_generation_2_same_backing": True,
         "fresh_parity_both_edges": True,
+        "canonical_tie_quotient_count": quotient_count,
+        "primary_margin_guard_count": primary_margin_count,
         "persistent_object_bytes": max(object_bytes),
         "persistent_dynamic_capacity_bytes": max(dynamic_capacity_bytes),
         "fresh_object_bytes": max(fresh_object_bytes),
@@ -1185,6 +1208,9 @@ def evaluate(
             "NUMERICAL_RESTORATION_AND_DEPENDENT_SAME_BACKING_R2_REUSE"
         ),
         "restoration_class": FIBER_RESTORATION_CLASS,
+        "reordered_projection_restoration_class": (
+            REORDERED_PROJECTION_RESTORATION_CLASS
+        ),
         "supporting_live_source_restoration_class": SOURCE_RESTORATION_CLASS,
         "setup": setup,
         "primary": primary,
@@ -1273,8 +1299,14 @@ def evaluate(
                 "acos_evaluations": 72,
                 "complex_phase_multiplications": 68,
                 "hadamard_pair_transforms": 72,
-                "magnitude_squares": 32,
-                "argmax_comparisons": 57,
+                "magnitude_squares": 36,
+                "strict_argmax_comparisons": 54,
+                "reordered_finite_score_checks": 4,
+                "reordered_minmax_comparisons_upper_bound": 6,
+                "reordered_spread_subtractions": 1,
+                "reordered_spread_tolerance_comparisons": 1,
+                "primary_margin_scan_and_threshold_comparisons": 28,
+                "primary_post_transform_acceptance_boolean_checks": 4,
                 "restoration_cell_comparisons": 144,
             },
             "maximum_gpu_bytes": parent.MAX_GPU_BYTES,
