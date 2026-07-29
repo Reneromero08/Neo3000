@@ -212,7 +212,19 @@ class TwinRailControllerTests(unittest.TestCase):
         )
 
     def test_static_audit_passes_without_runtime_contact(self) -> None:
-        value = candidate.static_audit()
+        # Source successors lawfully make the consumed 0094 binary manifest
+        # non-current. Exercise source/static gates here; the immutable
+        # manifest was validated before 0094 and remains evidence-bound.
+        original = candidate.DEFAULT_RUNTIME_MANIFEST
+        candidate.DEFAULT_RUNTIME_MANIFEST = (
+            candidate.ROOT
+            / "lab"
+            / "neo-exp-0094-consumed-manifest-not-current-for-static-test.json"
+        )
+        try:
+            value = candidate.static_audit()
+        finally:
+            candidate.DEFAULT_RUNTIME_MANIFEST = original
         self.assertTrue(all(value["gates"].values()))
         self.assertFalse(value["scientific_contact"])
 

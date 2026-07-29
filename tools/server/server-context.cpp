@@ -6,6 +6,7 @@
 #include "server-queue.h"
 #include "server-schema.h"
 #include "server-stream.h"
+#include "neo3000-request-lifecycle.h"
 #include "neo3000-twin-rail-fiber.h"
 
 #include "build-info.h"
@@ -4763,6 +4764,9 @@ private:
 
                         slot.n_prompt_tokens_cache = n_past;
                         slot.n_prompt_tokens_processed = 0;
+                        // Clear the completed prior request before the initial
+                        // current prompt-progress event is serialized.
+                        neo3000::begin_current_request_progress(slot.n_decoded);
 
                         slot.prompt.tokens.keep_first(n_past);
 
