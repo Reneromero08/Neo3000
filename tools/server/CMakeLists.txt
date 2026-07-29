@@ -15,6 +15,8 @@ add_library(${TARGET} STATIC
     server-common.h
     server-context.cpp
     server-context.h
+    neo3000-twin-rail-fiber.cpp
+    neo3000-twin-rail-fiber.h
     server-stream.cpp
     server-stream.h
     server-tools.cpp

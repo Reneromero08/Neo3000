@@ -6,6 +6,7 @@
 #include "server-queue.h"
 #include "server-schema.h"
 #include "server-stream.h"
+#include "neo3000-twin-rail-fiber.h"
 
 #include "build-info.h"
 #include "common.h"
@@ -113,6 +114,68 @@ static bool neo3000_live_terminal_contract_equal(
             lhs.input_boundary_id == rhs.input_boundary_id &&
             lhs.projection_policy == rhs.projection_policy &&
             lhs.restoration_policy == rhs.restoration_policy;
+}
+
+static bool neo3000_twin_rail_contract_family(
+        const task_params::neo3000_live_terminal_contract & contract) {
+    return
+            contract.port_owner == neo3000::twin_rail_carrier::required_port_owner ||
+            contract.port_type == neo3000::twin_rail_carrier::required_port_type ||
+            contract.module_id == neo3000::twin_rail_carrier::required_module_id ||
+            contract.projection_policy ==
+                    neo3000::twin_rail_carrier::required_projection_policy;
+}
+
+static bool neo3000_twin_rail_contract_exact(
+        const task_params::neo3000_live_terminal_contract & contract) {
+    return
+            contract.complete() &&
+            contract.port_owner == neo3000::twin_rail_carrier::required_port_owner &&
+            contract.port_type == neo3000::twin_rail_carrier::required_port_type &&
+            contract.module_id == neo3000::twin_rail_carrier::required_module_id &&
+            contract.module_variant <= static_cast<uint32_t>(
+                    neo3000::twin_rail_variant::COMPACT_CLASSICAL) &&
+            contract.module_ordinal == contract.generation &&
+            contract.projection_policy ==
+                    neo3000::twin_rail_carrier::required_projection_policy &&
+            contract.restoration_policy ==
+                    neo3000::twin_rail_carrier::required_source_restoration_policy;
+}
+
+static bool neo3000_twin_rail_hypothesis_boundary_exact(
+        const server_tokens & tokens) {
+    static constexpr std::array<llama_token, 3> public_schema_prefix = {
+        4754,
+        8944,
+        3147,
+    };
+    if (tokens.size() != 780) {
+        return false;
+    }
+    const size_t offset = tokens.size() - public_schema_prefix.size();
+    for (size_t i = 0; i < public_schema_prefix.size(); ++i) {
+        if (tokens[offset + i] != public_schema_prefix[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static neo3000::twin_rail_contract neo3000_twin_rail_contract_from_task(
+        const task_params::neo3000_live_terminal_contract & contract) {
+    neo3000::twin_rail_contract result;
+    result.carrier_id = contract.carrier_id;
+    result.outer_lease = contract.outer_lease;
+    result.generation = contract.generation;
+    result.port_owner = contract.port_owner;
+    result.port_type = contract.port_type;
+    result.module_id = contract.module_id;
+    result.module_variant = contract.module_variant;
+    result.module_ordinal = contract.module_ordinal;
+    result.input_boundary_id = contract.input_boundary_id;
+    result.projection_policy = contract.projection_policy;
+    result.restoration_policy = contract.restoration_policy;
+    return result;
 }
 
 struct server_terminal_logits_boundary {
@@ -348,6 +411,7 @@ struct server_slot {
 
     server_prompt prompt;
     server_terminal_logits_boundary terminal_logits;
+    neo3000::twin_rail_carrier twin_rail;
     bool terminal_logits_pending_use = false;
     bool terminal_logits_reused = false;
 
@@ -629,6 +693,7 @@ struct server_slot {
 
             const bool poison_live_terminal =
                     terminal_logits_pending_use && terminal_logits.live.valid();
+            const bool poison_twin_rail = twin_rail.unresolved();
             std::string poisoned_boundary_id;
             if (poison_live_terminal) {
                 poisoned_boundary_id =
@@ -636,6 +701,12 @@ struct server_slot {
                 SLT_WRN(*this,
                         "neo3000 one-use live terminal boundary poisoned on release boundary=%s\n",
                         poisoned_boundary_id.c_str());
+            }
+            if (poison_twin_rail) {
+                twin_rail.poison();
+                SLT_WRN(*this,
+                        "%s",
+                        "neo3000 twin-rail carrier poisoned on release\n");
             }
 
             t_last_used        =  ggml_time_us();
@@ -1270,6 +1341,7 @@ private:
 
     void poison_live_terminal_boundaries_for_shutdown() {
         size_t poisoned = 0;
+        size_t twin_rail_poisoned = 0;
         for (auto & slot : slots) {
             if (!slot.terminal_logits.live.valid()) {
                 continue;
@@ -1290,6 +1362,13 @@ private:
             }
             poisoned += 1;
         }
+        for (auto & slot : slots) {
+            if (!slot.twin_rail.unresolved()) {
+                continue;
+            }
+            slot.twin_rail.poison();
+            twin_rail_poisoned += 1;
+        }
         const size_t unresolved = std::count_if(
                 slots.begin(),
                 slots.end(),
@@ -1300,6 +1379,16 @@ private:
                 "neo3000 one-use live terminal shutdown custody poisoned=%zu unresolved=%zu\n",
                 poisoned,
                 unresolved);
+        const size_t twin_rail_unresolved = std::count_if(
+                slots.begin(),
+                slots.end(),
+                [](const server_slot & slot) {
+                    return slot.twin_rail.unresolved();
+                });
+        SRV_WRN(
+                "neo3000 twin-rail shutdown custody poisoned=%zu unresolved=%zu\n",
+                twin_rail_poisoned,
+                twin_rail_unresolved);
     }
 
     void handle_sleeping_state(bool new_state) {
@@ -2309,6 +2398,27 @@ private:
                              "DECLARED_CLOSURE")) {
                 send_error(task,
                         "Live terminal capture requires one slot and a complete declared-closure contract",
+                        ERROR_TYPE_INVALID_REQUEST);
+                return false;
+            }
+            if (task.params.neo3000_capture_live_terminal_boundary &&
+                    neo3000_twin_rail_contract_family(
+                            task.params.neo3000_live_terminal) &&
+                    (!neo3000_twin_rail_contract_exact(
+                             task.params.neo3000_live_terminal) ||
+                     !neo3000_twin_rail_hypothesis_boundary_exact(
+                             task.tokens) ||
+                     task.params.neo3000_live_terminal.input_boundary_id !=
+                             "fnv1a64:" +
+                                     neo3000_prompt_fnv1a64(task.tokens) ||
+                     task.params.neo3000_live_terminal.module_variant ==
+                             static_cast<uint32_t>(
+                                     neo3000::twin_rail_variant::NULL_CARRIER) ||
+                     task.params.neo3000_live_terminal.module_variant ==
+                             static_cast<uint32_t>(
+                                     neo3000::twin_rail_variant::PREMATURE_PROJECT))) {
+                send_error(task,
+                        "Twin-rail capture requires the exact fixed 780-token public hypothesis boundary and a borrowable public program",
                         ERROR_TYPE_INVALID_REQUEST);
                 return false;
             }
@@ -4205,7 +4315,19 @@ private:
                                 slot.n_decoded = 0;
                                 slot.init_sampler();
 
-                                if (slot.task->params.stream) {
+                                const bool live_source =
+                                        slot.task->params.neo3000_use_live_terminal_boundary;
+                                const bool twin_rail_source =
+                                        live_source &&
+                                        neo3000_twin_rail_contract_exact(
+                                                slot.task->params.neo3000_live_terminal);
+                                const bool compact_classical =
+                                        twin_rail_source &&
+                                        slot.task->params.neo3000_live_terminal.module_variant ==
+                                                static_cast<uint32_t>(
+                                                        neo3000::twin_rail_variant::COMPACT_CLASSICAL);
+
+                                if (slot.task->params.stream && !twin_rail_source) {
                                     if (slot.task->params.return_progress) {
                                         send_partial_response(slot, {}, true);
                                     } else {
@@ -4214,16 +4336,104 @@ private:
                                 }
 
                                 llama_token id;
+                                neo3000::twin_rail_receipt twin_rail_receipt;
+                                llama_token fresh_twin_rail_id =
+                                        LLAMA_TOKEN_NULL;
+                                size_t fresh_twin_rail_object_bytes = 0;
+                                size_t fresh_twin_rail_dynamic_capacity_bytes = 0;
+                                double fresh_twin_rail_restoration_error = 0.0;
+                                bool fresh_twin_rail_accepted = false;
+                                bool fresh_twin_rail_required = false;
                                 {
                                     scoped_timer timer(t_sampl, n_sampl);
-                                    id = common_sampler_sample_from_logits(
-                                            slot.smpl.get(),
-                                            slot.ctx_tgt,
-                                            slot.terminal_logits.logits.data(),
-                                            slot.terminal_logits.logits.size());
+                                    if (compact_classical) {
+                                        id = neo3000::twin_rail_carrier::
+                                                compact_classical_projection(
+                                                        slot.terminal_logits.logits);
+                                    } else if (twin_rail_source) {
+                                        twin_rail_receipt =
+                                                slot.twin_rail.transform_and_restore(
+                                                        slot.terminal_logits.logits,
+                                                        neo3000_twin_rail_contract_from_task(
+                                                                slot.task->params.neo3000_live_terminal));
+                                        fresh_twin_rail_required =
+                                                slot.task->params.neo3000_live_terminal.module_variant ==
+                                                static_cast<uint32_t>(
+                                                        neo3000::twin_rail_variant::PRIMARY);
+                                        if (fresh_twin_rail_required &&
+                                                twin_rail_receipt.accepted) {
+                                            auto fresh_contract =
+                                                    neo3000_twin_rail_contract_from_task(
+                                                            slot.task->params.neo3000_live_terminal);
+                                            fresh_contract.carrier_id +=
+                                                    "/fresh-parity";
+                                            fresh_contract.outer_lease ^=
+                                                    UINT64_C(0x9e3779b97f4a7c15);
+                                            if (fresh_contract.outer_lease == 0) {
+                                                fresh_contract.outer_lease = 1;
+                                            }
+                                            fresh_contract.generation = 1;
+                                            fresh_contract.module_ordinal = 1;
+                                            auto fresh_result =
+                                                    neo3000::run_fresh_twin_rail_parity(
+                                                            slot.terminal_logits.logits,
+                                                            fresh_contract);
+                                            fresh_twin_rail_object_bytes =
+                                                    fresh_result.receipt.persistent_object_bytes;
+                                            fresh_twin_rail_dynamic_capacity_bytes =
+                                                    fresh_result.receipt.persistent_dynamic_capacity_bytes;
+                                            fresh_twin_rail_restoration_error =
+                                                    fresh_result.receipt.maximum_restoration_error;
+                                            fresh_twin_rail_accepted =
+                                                    fresh_result.receipt.accepted;
+                                            fresh_twin_rail_id =
+                                                    fresh_result.projected_token;
+                                        }
+                                        id = LLAMA_TOKEN_NULL;
+                                    } else {
+                                        id = common_sampler_sample_from_logits(
+                                                slot.smpl.get(),
+                                                slot.ctx_tgt,
+                                                slot.terminal_logits.logits.data(),
+                                                slot.terminal_logits.logits.size());
+                                    }
                                 }
 
-                                common_sampler_accept(slot.smpl.get(), id, true);
+                                if (twin_rail_source &&
+                                        !compact_classical &&
+                                        (!twin_rail_receipt.accepted ||
+                                         (fresh_twin_rail_required &&
+                                          !fresh_twin_rail_accepted))) {
+                                    const std::string boundary_id =
+                                            slot.terminal_logits.live.identity.boundary_id;
+                                    slot.terminal_logits_pending_use = false;
+                                    slot.prompt_clear(true);
+                                    send_error(
+                                            slot,
+                                            "Twin-rail transaction rejected before final projection",
+                                            ERROR_TYPE_INVALID_REQUEST);
+                                    SLT_WRN(slot,
+                                            "neo3000 twin-rail transaction rejected and live source poisoned boundary=%s carrier=%s generation=%u ordinal=%u pre_borrow=%s\n",
+                                            boundary_id.c_str(),
+                                            slot.task->params.neo3000_live_terminal.carrier_id.c_str(),
+                                            slot.task->params.neo3000_live_terminal.generation,
+                                            slot.task->params.neo3000_live_terminal.module_ordinal,
+                                            twin_rail_receipt.failure_was_pre_borrow
+                                                    ? "true"
+                                                    : "false");
+                                    slot.release();
+                                    return;
+                                }
+                                if (compact_classical && id == LLAMA_TOKEN_NULL) {
+                                    slot.terminal_logits_pending_use = false;
+                                    slot.prompt_clear(true);
+                                    send_error(
+                                            slot,
+                                            "Compact four-hypothesis control could not project",
+                                            ERROR_TYPE_INVALID_REQUEST);
+                                    slot.release();
+                                    return;
+                                }
 
                                 const int64_t t_now = ggml_time_us();
                                 slot.n_decoded = 1;
@@ -4233,8 +4443,6 @@ private:
                                 slot.t_prompt_processing =
                                         (slot.t_start_generation - slot.t_start_process_prompt) / 1e3;
                                 slot.t_token_generation = 0.001;
-                                const bool live_source =
-                                        slot.task->params.neo3000_use_live_terminal_boundary;
                                 const std::string source_id = live_source
                                         ? slot.terminal_logits.live.identity.boundary_id
                                         : slot.terminal_logits.root_id;
@@ -4244,7 +4452,81 @@ private:
                                 slot.terminal_logits_reused = true;
                                 slot.terminal_logits.clear();
 
+                                if (twin_rail_source && !compact_classical) {
+                                    id = slot.twin_rail.take_final_projection();
+                                    const llama_token fresh_id =
+                                            fresh_twin_rail_required
+                                            ? fresh_twin_rail_id
+                                            : id;
+                                    if (id == LLAMA_TOKEN_NULL ||
+                                            fresh_id == LLAMA_TOKEN_NULL ||
+                                            fresh_id != id) {
+                                        slot.twin_rail.poison();
+                                        slot.prompt_clear(true);
+                                        send_error(
+                                                slot,
+                                                "Twin-rail carrier restored without an admissible final projection",
+                                                ERROR_TYPE_SERVER);
+                                        slot.release();
+                                        return;
+                                    }
+                                    SLT_WRN(slot,
+                                            "neo3000 twin-rail carrier restored and live source declared-closed before response boundary=%s carrier=%s lease=%" PRIu64 " generation=%u ordinal=%u cells=%zu bytes=%zu object_bytes=%zu dynamic_capacity_bytes=%zu receipt_bytes=%zu contract_bytes=%zu fresh_result_bytes=%zu fresh_object_bytes=%zu fresh_dynamic_capacity_bytes=%zu score_error=%.17g restoration_error=%.17g classical_parity=%s backing_reused=%s fresh_parity=%s fresh_restoration_error=%.17g transactions=%" PRIu64 " reuses=%" PRIu64 "\n",
+                                            source_id.c_str(),
+                                            slot.task->params.neo3000_live_terminal.carrier_id.c_str(),
+                                            slot.task->params.neo3000_live_terminal.outer_lease,
+                                            slot.task->params.neo3000_live_terminal.generation,
+                                            slot.task->params.neo3000_live_terminal.module_ordinal,
+                                            neo3000::twin_rail_carrier::cell_count,
+                                            neo3000::twin_rail_carrier::carrier_bytes,
+                                            twin_rail_receipt.persistent_object_bytes,
+                                            twin_rail_receipt.persistent_dynamic_capacity_bytes,
+                                            sizeof(neo3000::twin_rail_receipt),
+                                            sizeof(neo3000::twin_rail_contract),
+                                            sizeof(neo3000::twin_rail_fresh_parity_result),
+                                            fresh_twin_rail_required
+                                                    ? fresh_twin_rail_object_bytes
+                                                    : 0,
+                                            fresh_twin_rail_required
+                                                    ? fresh_twin_rail_dynamic_capacity_bytes
+                                                    : 0,
+                                            twin_rail_receipt.maximum_score_error,
+                                            twin_rail_receipt.maximum_restoration_error,
+                                            twin_rail_receipt.classical_parity
+                                                    ? "true"
+                                                    : "false",
+                                            twin_rail_receipt.same_backing_as_prior_transaction
+                                                    ? "true"
+                                                    : "false",
+                                            fresh_twin_rail_required &&
+                                                    fresh_twin_rail_accepted
+                                                    ? "true"
+                                                    : "false",
+                                            fresh_twin_rail_required
+                                                    ? fresh_twin_rail_restoration_error
+                                                    : 0.0,
+                                            twin_rail_receipt.completed_transactions,
+                                            twin_rail_receipt.backing_reuses);
+                                } else if (compact_classical) {
+                                    SLT_WRN(slot,
+                                            "neo3000 compact four-hypothesis recurrence projected after live source declared-closure boundary=%s\n",
+                                            source_id.c_str());
+                                }
+
+                                common_sampler_accept(slot.smpl.get(), id, true);
                                 metrics.on_prompt_eval(slot);
+
+                                if (slot.task->params.stream && twin_rail_source) {
+                                    if (slot.task->params.return_progress) {
+                                        const completion_token_output empty_progress = {};
+                                        send_partial_response(
+                                                slot,
+                                                empty_progress,
+                                                true);
+                                    } else {
+                                        send_partial_response(slot, {}, false, true);
+                                    }
+                                }
 
                                 completion_token_output result;
                                 result.tok = id;
@@ -4256,11 +4538,11 @@ private:
                                                         slot.task->params.sampling.preserved_tokens.end());
                                 result.prob = 1.0f;
 
-                                if (live_source) {
+                                if (live_source && !twin_rail_source) {
                                     SLT_WRN(slot,
                                             "neo3000 one-use live terminal boundary sampled and declared-closed boundary=%s\n",
                                             source_id.c_str());
-                                } else {
+                                } else if (!live_source) {
                                     SLT_WRN(slot,
                                             "neo3000 terminal-logits continuation sampled before decode root=%s logits=%s\n",
                                             source_id.c_str(),

@@ -481,7 +481,8 @@ class ContactJournalSidecar:
                         "created_unix_ns": time.time_ns(),
                         "first_transport_ordinal": 0,
                         "meaning": (
-                            "the first 0093 model callback is next; this exact "
+                            f"the first {EXPERIMENT_ID} model callback is next; "
+                            "this exact "
                             "experiment is conservatively consumed and cannot "
                             "be launched again"
                         ),
