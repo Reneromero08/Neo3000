@@ -547,6 +547,21 @@ def run_primary_sequence(
     }
 
 
+def run_post_primary_successor(
+        *,
+        sidecar: Any,
+        codec: Any,
+        props: Mapping[str, Any],
+        setup: Mapping[str, Any],
+        primary: Mapping[str, Any],
+        transaction_nonce: str,
+        progress: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Optional successor hook, deliberately inert for consumed neo-exp-0094..0097."""
+    del sidecar, codec, props, setup, primary, transaction_nonce, progress
+    return None
+
+
 def run_live_or_special_success(
         *,
         sidecar: Any,
@@ -696,7 +711,7 @@ def run_fault_controls(
         denial = terminal.expect_http_error(
             endpoint,
             capture_payload(payload, contract),
-            "Twin-rail capture requires the exact fixed 780-token",
+            "Twin-rail capture requires an exact admitted fixed public hypothesis boundary",
         )
         pre_borrow.append({"variant": variant, "denial": denial})
     return {"inverse": inverse, "pre_borrow": pre_borrow}
@@ -818,6 +833,7 @@ def phase_log_evidence(
         *,
         sidecar: Any,
         primary_carrier_id: str,
+        unrelated_carrier_id: str | None = None,
 ) -> dict[str, Any]:
     log_path = Path(str(sidecar.readiness["log_path"]))
     text = log_path.read_text(encoding="utf-8", errors="replace")
@@ -827,11 +843,24 @@ def phase_log_evidence(
         in line
     ]
     primary = [line for line in success_lines if f"carrier={primary_carrier_id} " in line]
+    unrelated = (
+        [
+            line
+            for line in success_lines
+            if f"carrier={unrelated_carrier_id} " in line
+        ]
+        if unrelated_carrier_id is not None
+        else []
+    )
     rejected = text.count(
         "neo3000 twin-rail transaction rejected and live source poisoned"
     )
     require(
         len(primary) == 2
+        and primary[0] == success_lines[0]
+        and primary[1] == success_lines[1]
+        and "variant=0" in primary[0]
+        and "variant=0" in primary[1]
         and "generation=1 ordinal=1" in primary[0]
         and "generation=2 ordinal=2" in primary[1]
         and "classical_parity=true" in primary[0]
@@ -844,8 +873,94 @@ def phase_log_evidence(
         and "backing_reused=true" in primary[1]
         and "fresh_parity=true" in primary[0]
         and "fresh_parity=true" in primary[1]
+        and "transactions=1 reuses=0 recoveries=0" in primary[0]
+        and "transactions=2 reuses=1 recoveries=0" in primary[1]
         and rejected == len(INVERSE_FAULT_VARIANTS),
         "phase lifecycle log evidence changed",
+    )
+    unrelated_metrics: dict[str, float] | None = None
+    if unrelated_carrier_id is not None:
+        metrics_match = re.search(
+            r"score_error=([0-9eE+.-]+) "
+            r"restoration_error=([0-9eE+.-]+).* "
+            r"fresh_restoration_error=([0-9eE+.-]+)",
+            unrelated[0] if unrelated else "",
+        )
+        if metrics_match is not None:
+            unrelated_metrics = {
+                "maximum_score_error": float(metrics_match.group(1)),
+                "maximum_restoration_error": float(metrics_match.group(2)),
+                "fresh_maximum_restoration_error": float(
+                    metrics_match.group(3)
+                ),
+            }
+        require(
+            len(unrelated) == 1
+            and unrelated[0] == success_lines[2]
+            and "variant=0" in unrelated[0]
+            and "generation=1 ordinal=1" in unrelated[0]
+            and "classical_parity=true" in unrelated[0]
+            and "canonical_tie_quotient=false" in unrelated[0]
+            and "primary_margin_guard=true" in unrelated[0]
+            and "backing_reused=true" in unrelated[0]
+            and "fresh_parity=true" in unrelated[0]
+            and "transactions=3 reuses=2 recoveries=0" in unrelated[0],
+            "unrelated restored-fiber lifecycle evidence changed",
+        )
+        require(
+            unrelated_metrics is not None
+            and all(
+                0.0 <= value <= 1.0e-12
+                for value in unrelated_metrics.values()
+            ),
+            "unrelated restored-fiber numerical restoration evidence changed",
+        )
+    expected_sequence = (
+        (
+            (0, 1, 0, True, False, True),
+            (0, 2, 1, True, False, True),
+            (0, 3, 2, True, False, True),
+            (1, 4, 3, False, False, False),
+            (2, 5, 4, False, True, False),
+        )
+        if unrelated_carrier_id is not None
+        else (
+            (0, 1, 0, True, False, True),
+            (0, 2, 1, True, False, True),
+            (1, 3, 2, False, False, False),
+            (2, 4, 3, False, True, False),
+        )
+    )
+    require(
+        len(success_lines) == len(expected_sequence)
+        and all(
+            f"variant={variant}" in line
+            and (
+                f"generation={2 if transactions == 2 else 1} "
+                f"ordinal={2 if transactions == 2 else 1}"
+            ) in line
+            and f"transactions={transactions} reuses={reuses} recoveries=0"
+                    in line
+            and f"primary_margin_guard={'true' if margin else 'false'}"
+                    in line
+            and f"canonical_tie_quotient={'true' if quotient else 'false'}"
+                    in line
+            and f"fresh_parity={'true' if fresh else 'false'}" in line
+            and (
+                "backing_reused=true" in line
+                if transactions > 1
+                else "backing_reused=false" in line
+            )
+            for line, (
+                variant,
+                transactions,
+                reuses,
+                margin,
+                quotient,
+                fresh,
+            ) in zip(success_lines, expected_sequence, strict=True)
+        ),
+        "complete twin-rail success order or lifetime counters changed",
     )
     for line in success_lines:
         require(
@@ -863,9 +978,14 @@ def phase_log_evidence(
         for line in success_lines
     )
     require(
-        quotient_count == 1 and primary_margin_count == 2,
+        quotient_count == 1
+        and primary_margin_count == 2 + len(unrelated),
         "numerical quotient or primary margin evidence changed",
     )
+    recovery_initializations = [
+        int(value)
+        for value in re.findall(r" recoveries=(\d+)", "\n".join(success_lines))
+    ]
     object_bytes = [
         int(value)
         for value in re.findall(r" object_bytes=(\d+)", "\n".join(success_lines))
@@ -922,9 +1042,14 @@ def phase_log_evidence(
         and len(fresh_result_bytes) == len(success_lines),
         "phase control-object material accounting is absent",
     )
+    require(
+        len(recovery_initializations) == len(success_lines),
+        "phase recovery-initialization accounting is absent",
+    )
     return {
         "success_count": len(success_lines),
         "primary_count": len(primary),
+        "unrelated_primary_count": len(unrelated),
         "inverse_rejection_count": rejected,
         "primary_generation_1": True,
         "primary_generation_2_same_backing": True,
@@ -938,6 +1063,8 @@ def phase_log_evidence(
         "receipt_bytes": max(receipt_bytes),
         "contract_bytes": max(contract_bytes),
         "fresh_result_bytes": max(fresh_result_bytes),
+        "maximum_recovery_initializations": max(recovery_initializations),
+        "unrelated_numerical_metrics": unrelated_metrics,
         "server_log_sha256_so_far": harness.live_runtime.sha256_file(log_path),
     }
 
@@ -1005,6 +1132,15 @@ def evaluate(
         props=props,
         setup=setup,
         trial=primary_trial,
+    )
+    post_primary = run_post_primary_successor(
+        sidecar=sidecar,
+        codec=codec,
+        props=props,
+        setup=setup,
+        primary=primary,
+        transaction_nonce=transaction_nonce,
+        progress=progress,
     )
 
     control_child, control_tokens, control_reset = live.materialize_child(
@@ -1095,6 +1231,11 @@ def evaluate(
     log_evidence = phase_log_evidence(
         sidecar=sidecar,
         primary_carrier_id=primary["carrier_id"],
+        unrelated_carrier_id=(
+            str(post_primary["carrier_id"])
+            if isinstance(post_primary, Mapping)
+            else None
+        ),
     )
     resources_resident = harness.process_resources(sidecar, None)
 
@@ -1139,6 +1280,18 @@ def evaluate(
         "primary_two_restored_transactions": (
             log_evidence["primary_count"] == 2
             and log_evidence["primary_generation_2_same_backing"]
+        ),
+        "post_primary_successor": (
+            post_primary is None
+            or post_primary.get("passed") is True
+        ),
+        "unrelated_restored_fiber_same_backing_without_recovery": (
+            post_primary is None
+            or (
+                log_evidence["unrelated_primary_count"] == 1
+                and log_evidence["maximum_recovery_initializations"] == 0
+                and log_evidence["unrelated_numerical_metrics"] is not None
+            )
         ),
         "fresh_carrier_parity": log_evidence["fresh_parity_both_edges"],
         "ordinary_live_boundary_D": ordinary_live["boundary"]["answer"] == "D",
@@ -1204,8 +1357,13 @@ def evaluate(
         "preregistration_attempt_id": PREREGISTRATION_ATTEMPT_ID,
         "status": "complete-before-process-closure",
         "classification_candidate": (
-            "BOUNDED_LINUX_INFERENCE_ATTACHED_OWNER_BOUND_TWIN_RAIL_"
-            "NUMERICAL_RESTORATION_AND_DEPENDENT_SAME_BACKING_R2_REUSE"
+            str(post_primary["classification_candidate"])
+            if isinstance(post_primary, Mapping)
+            and post_primary.get("classification_candidate")
+            else (
+                "BOUNDED_LINUX_INFERENCE_ATTACHED_OWNER_BOUND_TWIN_RAIL_"
+                "NUMERICAL_RESTORATION_AND_DEPENDENT_SAME_BACKING_R2_REUSE"
+            )
         ),
         "restoration_class": FIBER_RESTORATION_CLASS,
         "reordered_projection_restoration_class": (
@@ -1214,6 +1372,7 @@ def evaluate(
         "supporting_live_source_restoration_class": SOURCE_RESTORATION_CLASS,
         "setup": setup,
         "primary": primary,
+        "post_primary_successor": post_primary,
         "controls": {
             "ordinary_live": ordinary_live,
             "compact_classical": compact,
@@ -1308,6 +1467,31 @@ def evaluate(
                 "primary_margin_scan_and_threshold_comparisons": 28,
                 "primary_post_transform_acceptance_boolean_checks": 4,
                 "restoration_cell_comparisons": 144,
+            } if post_primary is None else {
+                key: value + int(
+                    post_primary.get("fixed_operation_count_deltas", {}).get(
+                        key,
+                        0,
+                    )
+                )
+                for key, value in {
+                    "phase_transactions_including_fresh_and_fault_controls": 9,
+                    "softmax_exponentials": 76,
+                    "softmax_reductions": 19,
+                    "softmax_divisions": 76,
+                    "acos_evaluations": 72,
+                    "complex_phase_multiplications": 68,
+                    "hadamard_pair_transforms": 72,
+                    "magnitude_squares": 36,
+                    "strict_argmax_comparisons": 54,
+                    "reordered_finite_score_checks": 4,
+                    "reordered_minmax_comparisons_upper_bound": 6,
+                    "reordered_spread_subtractions": 1,
+                    "reordered_spread_tolerance_comparisons": 1,
+                    "primary_margin_scan_and_threshold_comparisons": 28,
+                    "primary_post_transform_acceptance_boolean_checks": 4,
+                    "restoration_cell_comparisons": 144,
+                }.items()
             },
             "maximum_gpu_bytes": parent.MAX_GPU_BYTES,
             "maximum_host_growth_bytes": parent.MAX_HOST_GROWTH_BYTES,
@@ -1330,16 +1514,21 @@ def evaluate(
         "verdict": "accept-pending-exact-process-closure",
         "automatic_promotion": False,
         "claim_ceiling": (
-            "One bounded inference-attached eight-complex-cell twin-rail "
-            "cell array with numerical physical restoration, dependent "
-            "same-backing R2 reuse, exact C-to-D-to-B utility, fixed shams, "
-            "and separately declared closure of the live CUDA/logit source. "
-            "The advancing owner metadata, counters, allocator state, and "
-            "full 312-byte object are not restored. The identical compact "
-            "recurrence remains cheaper; no unrelated restored-carrier "
-            "reuse, distinct phase resource, speed advantage, full model-"
-            "carrier restoration, Small Wall, general catalytic inference, "
-            "or unbounded claim."
+            str(post_primary["claim_ceiling"])
+            if isinstance(post_primary, Mapping)
+            and post_primary.get("claim_ceiling")
+            else (
+                "One bounded inference-attached eight-complex-cell twin-rail "
+                "cell array with numerical physical restoration, dependent "
+                "same-backing R2 reuse, exact C-to-D-to-B utility, fixed shams, "
+                "and separately declared closure of the live CUDA/logit source. "
+                "The advancing owner metadata, counters, allocator state, and "
+                "full 312-byte object are not restored. The identical compact "
+                "recurrence remains cheaper; no unrelated restored-carrier "
+                "reuse, distinct phase resource, speed advantage, full model-"
+                "carrier restoration, Small Wall, general catalytic inference, "
+                "or unbounded claim."
+            )
         ),
     }
 

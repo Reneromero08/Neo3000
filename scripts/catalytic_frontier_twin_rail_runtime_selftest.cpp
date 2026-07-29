@@ -1,5 +1,5 @@
 #ifndef NEO3000_TWIN_RAIL_TESTING
-#error "neo-exp-0097 native negative controls require the test-only carrier seam"
+#error "neo-exp-0098 native reuse controls require the test-only carrier seam"
 #endif
 
 #include "../tools/server/neo3000-twin-rail-fiber.h"
@@ -72,6 +72,7 @@ int main() {
         assert(second.same_backing_as_prior_transaction);
         assert(second.completed_transactions == 2);
         assert(second.backing_reuses == 1);
+        assert(second.recovery_initializations == 0);
         assert(carrier.take_final_projection() == 33);
     }
 
@@ -202,24 +203,62 @@ int main() {
         assert(second.accepted && second.restored && second.classical_parity);
         assert(second.primary_margin_guard_passed);
         assert(second.same_backing_as_prior_transaction);
+        assert(second.completed_transactions == 2);
+        assert(second.backing_reuses == 1);
+        assert(second.recovery_initializations == 0);
+        assert(carrier.take_final_projection() == 33);
+
+        auto unrelated_contract =
+                contract(
+                        "warmed-unrelated-smallest-prime",
+                        83,
+                        1,
+                        twin_rail_variant::PRIMARY);
+        unrelated_contract.input_boundary_id =
+                "fnv1a64:1fd89d3051f37e58";
+        const auto unrelated = carrier.transform_and_restore(
+                logits(0.0, 5.0, 1.0, 2.0),
+                unrelated_contract);
+        assert(
+                unrelated.accepted &&
+                unrelated.restored &&
+                unrelated.classical_parity);
+        assert(unrelated.primary_margin_guard_passed);
+        assert(unrelated.same_backing_as_prior_transaction);
+        assert(unrelated.completed_transactions == 3);
+        assert(unrelated.backing_reuses == 2);
+        assert(unrelated.recovery_initializations == 0);
+        const auto unrelated_fresh =
+                neo3000::run_fresh_twin_rail_parity(
+                        logits(0.0, 5.0, 1.0, 2.0),
+                        unrelated_contract);
+        assert(unrelated_fresh.receipt.accepted);
+        assert(unrelated_fresh.receipt.restored);
+        assert(unrelated_fresh.receipt.classical_parity);
+        assert(unrelated_fresh.receipt.recovery_initializations == 0);
+        assert(unrelated_fresh.projected_token == 33);
         assert(carrier.take_final_projection() == 33);
 
         const auto dephased = carrier.transform_and_restore(
                 logits(0.0, 1.0, 4.0, 2.0),
-                contract("warmed-dephased", 83, 1, twin_rail_variant::DEPHASED_SHAM));
+                contract("warmed-dephased", 84, 1, twin_rail_variant::DEPHASED_SHAM));
         assert(dephased.accepted && dephased.restored);
         assert(dephased.same_backing_as_prior_transaction);
         assert(!dephased.canonical_tie_quotient_applied);
+        assert(dephased.completed_transactions == 4);
+        assert(dephased.backing_reuses == 3);
+        assert(dephased.recovery_initializations == 0);
         assert(carrier.take_final_projection() == 32);
 
         const auto reordered = carrier.transform_and_restore(
                 logits(0.0, 1.0, 4.0, 2.0),
-                contract("warmed-reordered", 84, 1, twin_rail_variant::REORDERED_FORWARD));
+                contract("warmed-reordered", 85, 1, twin_rail_variant::REORDERED_FORWARD));
         assert(reordered.accepted && reordered.restored);
         assert(reordered.same_backing_as_prior_transaction);
         assert(reordered.canonical_tie_quotient_applied);
-        assert(reordered.completed_transactions == 4);
-        assert(reordered.backing_reuses == 3);
+        assert(reordered.completed_transactions == 5);
+        assert(reordered.backing_reuses == 4);
+        assert(reordered.recovery_initializations == 0);
         assert(
                 reordered.maximum_restoration_error
                 <= twin_rail_carrier::restoration_tolerance);
@@ -306,11 +345,11 @@ int main() {
     }
 
     std::cout
-            << "neo-exp-0097 twin-rail runtime selftest pass: "
+            << "neo-exp-0098 twin-rail runtime selftest pass: "
             << twin_rail_carrier::cell_count << " cells, "
             << twin_rail_carrier::carrier_bytes << " bytes, "
             << sizeof(twin_rail_carrier) << " object bytes, "
-            << "warmed primary-primary-dephased-reordered quotient, "
+            << "warmed primary-primary-unrelated-dephased-reordered quotient, "
             << "1024 sequential restorations, maximum error "
             << maximum_long_run_error << "\n";
     return 0;

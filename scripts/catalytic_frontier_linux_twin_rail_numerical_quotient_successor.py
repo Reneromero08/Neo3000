@@ -153,8 +153,17 @@ def numerical_quotient_source_gate() -> bool:
         and "primary_margin_guard=%s" in context
         and "score_spread=" not in context
         and "warmed-reordered" in selftest
-        and "reordered.completed_transactions == 4" in selftest
-        and "reordered.backing_reuses == 3" in selftest
+        and (
+            (
+                "reordered.completed_transactions == 4" in selftest
+                and "reordered.backing_reuses == 3" in selftest
+            )
+            or (
+                "reordered.completed_transactions == 5" in selftest
+                and "reordered.backing_reuses == 4" in selftest
+                and "warmed-unrelated-smallest-prime" in selftest
+            )
+        )
         and "outside_quotient" in selftest
         and "primary-margin-reject" in selftest
         and "transform_and_restore_with_test_scores" in selftest

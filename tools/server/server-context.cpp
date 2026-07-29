@@ -150,7 +150,9 @@ static bool neo3000_twin_rail_hypothesis_boundary_exact(
         8944,
         3147,
     };
-    if (tokens.size() != 780) {
+    if (tokens.size() != 780 &&
+            !(tokens.size() == 91 &&
+              neo3000_prompt_fnv1a64(tokens) == "1fd89d3051f37e58")) {
         return false;
     }
     const size_t offset = tokens.size() - public_schema_prefix.size();
@@ -2419,7 +2421,7 @@ private:
                              static_cast<uint32_t>(
                                      neo3000::twin_rail_variant::PREMATURE_PROJECT))) {
                 send_error(task,
-                        "Twin-rail capture requires the exact fixed 780-token public hypothesis boundary and a borrowable public program",
+                        "Twin-rail capture requires an exact admitted fixed public hypothesis boundary and a borrowable public program",
                         ERROR_TYPE_INVALID_REQUEST);
                 return false;
             }
@@ -4472,12 +4474,13 @@ private:
                                         return;
                                     }
                                     SLT_WRN(slot,
-                                            "neo3000 twin-rail carrier restored and live source declared-closed before response boundary=%s carrier=%s lease=%" PRIu64 " generation=%u ordinal=%u cells=%zu bytes=%zu object_bytes=%zu dynamic_capacity_bytes=%zu receipt_bytes=%zu contract_bytes=%zu fresh_result_bytes=%zu fresh_object_bytes=%zu fresh_dynamic_capacity_bytes=%zu score_error=%.17g restoration_error=%.17g classical_parity=%s canonical_tie_quotient=%s primary_margin_guard=%s backing_reused=%s fresh_parity=%s fresh_restoration_error=%.17g transactions=%" PRIu64 " reuses=%" PRIu64 "\n",
+                                            "neo3000 twin-rail carrier restored and live source declared-closed before response boundary=%s carrier=%s lease=%" PRIu64 " generation=%u ordinal=%u variant=%u cells=%zu bytes=%zu object_bytes=%zu dynamic_capacity_bytes=%zu receipt_bytes=%zu contract_bytes=%zu fresh_result_bytes=%zu fresh_object_bytes=%zu fresh_dynamic_capacity_bytes=%zu score_error=%.17g restoration_error=%.17g classical_parity=%s canonical_tie_quotient=%s primary_margin_guard=%s backing_reused=%s fresh_parity=%s fresh_restoration_error=%.17g transactions=%" PRIu64 " reuses=%" PRIu64 " recoveries=%" PRIu64 "\n",
                                             source_id.c_str(),
                                             slot.task->params.neo3000_live_terminal.carrier_id.c_str(),
                                             slot.task->params.neo3000_live_terminal.outer_lease,
                                             slot.task->params.neo3000_live_terminal.generation,
                                             slot.task->params.neo3000_live_terminal.module_ordinal,
+                                            slot.task->params.neo3000_live_terminal.module_variant,
                                             neo3000::twin_rail_carrier::cell_count,
                                             neo3000::twin_rail_carrier::carrier_bytes,
                                             twin_rail_receipt.persistent_object_bytes,
@@ -4513,7 +4516,8 @@ private:
                                                     ? fresh_twin_rail_restoration_error
                                                     : 0.0,
                                             twin_rail_receipt.completed_transactions,
-                                            twin_rail_receipt.backing_reuses);
+                                            twin_rail_receipt.backing_reuses,
+                                            twin_rail_receipt.recovery_initializations);
                                 } else if (compact_classical) {
                                     SLT_WRN(slot,
                                             "neo3000 compact four-hypothesis recurrence projected after live source declared-closure boundary=%s\n",
