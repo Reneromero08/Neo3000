@@ -58,7 +58,34 @@ class LinuxLiveTerminalSuccessorTests(unittest.TestCase):
             candidate.predecessor.erase_child,
             candidate.dynamic_erase_child,
         )
+        self.assertEqual(
+            (
+                candidate.predecessor.rebase.EXPECTED_COMPLETE_BRANCH_TOKENS,
+                candidate.predecessor.rebase.EXPECTED_VISIBLE_OUTPUT_TOKENS,
+                candidate.predecessor.rebase.EXPECTED_CHILD_TOKENS,
+            ),
+            (685, 5, 690),
+        )
         self.assertEqual(values["EXPECTED_SUCCESSOR_TOKENS"], 777)
+
+    def test_compact_child_accepts_all_linux_c_d_b_output_states(self):
+        candidate.configure_linux_geometry()
+        branch = list(range(candidate.EXPECTED_BRANCH_TOKENS))
+        for ordinal, answer in enumerate(("C", "D", "B"), start=1):
+            visible = [ordinal * 10 + index for index in range(5)]
+            state = {
+                "answer": answer,
+                "visible_token_ids": visible,
+                "generated_token_ids": [*visible, 248046],
+                "terminal_eog_id": 248046,
+            }
+            child = candidate.predecessor.rebase.compact_child_tokens(
+                branch,
+                state,
+            )
+            self.assertEqual(len(child), candidate.EXPECTED_CHILD_TOKENS)
+            self.assertEqual(child[: len(branch)], branch)
+            self.assertEqual(child[-len(visible) :], visible)
 
     def test_payload_and_output_identities_are_prospectively_pinned(self):
         self.assertRegex(

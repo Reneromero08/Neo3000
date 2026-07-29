@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""neo-exp-0091: Linux-qualified owner-bound live-terminal successor.
+"""neo-exp-0092: transitive-geometry Linux live-terminal successor.
 
-The experiment keeps the existing generic C++ one-use live CUDA KV/recurrent
-state plus exact terminal-logits mechanism fixed.  It replaces only the stale
-Windows-era controller geometry with the prospectively qualified native-Linux
-607-bound C -> D -> B identities from neo-exp-0090.
+The experiment preserves neo-exp-0091's generic C++ one-use live CUDA
+KV/recurrent state plus exact terminal-logits mechanism.  It gives the
+consumed pre-live failure a distinct identity and additionally binds the
+nested compact-child helper to the qualified native-Linux 685/690 geometry.
 
 This route declares closure.  It does not claim inverse restoration, restored
 carrier reuse, phase advantage, or unbounded catalytic inference.
@@ -32,13 +32,13 @@ import catalytic_frontier_successor_terminal_pipeline as predecessor
 import catalytic_frontier_terminal_logits_continuation as terminal
 
 
-EXPERIMENT_ID = "neo-exp-0091"
-ATTEMPT_ID = "frontier-attempt-0133"
-PREREGISTRATION_ATTEMPT_ID = "frontier-attempt-0132"
+EXPERIMENT_ID = "neo-exp-0092"
+ATTEMPT_ID = "frontier-attempt-0135"
+PREREGISTRATION_ATTEMPT_ID = "frontier-attempt-0134"
 ROOT = Path(__file__).resolve().parents[1]
 RESTORATION_CLASS = "DECLARED_CLOSURE"
 PROJECTION_POLICY = "FINAL_TOKEN_STREAM_ONLY"
-PORT_OWNER = "neo-exp-0091-linux-successor-terminal-consumer"
+PORT_OWNER = "neo-exp-0092-linux-successor-terminal-consumer"
 PORT_TYPE = "agents-a1-live-kv-recurrent-plus-f32-terminal-logits-v1"
 MODULE_ID = "successor-terminal-sample"
 
@@ -47,7 +47,7 @@ DEFAULT_BINARY = (
 )
 DEFAULT_MODEL = runtime.DEFAULT_MODEL
 DEFAULT_COMPILER_CONTRACT = runtime.DEFAULT_COMPILER_CONTRACT
-DEFAULT_RUNTIME_MANIFEST = ROOT / "lab" / "neo-exp-0091-runtime-manifest.json"
+DEFAULT_RUNTIME_MANIFEST = ROOT / "lab" / "neo-exp-0092-runtime-manifest.json"
 DEFAULT_OUTPUT = ROOT / "lab" / f"{EXPERIMENT_ID}.local.json"
 DEFAULT_LOCK = (
     ROOT / "build" / "linux-catalytic" / f"{EXPERIMENT_ID}.active-lock.json"
@@ -201,6 +201,14 @@ _INHERITED_LIVE = {
         "MODULE_ID",
     )
 }
+_INHERITED_REBASE = {
+    name: getattr(predecessor.rebase, name)
+    for name in (
+        "EXPECTED_COMPLETE_BRANCH_TOKENS",
+        "EXPECTED_VISIBLE_OUTPUT_TOKENS",
+        "EXPECTED_CHILD_TOKENS",
+    )
+}
 _INHERITED_TERMINAL_RETAINED = terminal.EXPECTED_RETAINED_TOKENS
 
 RUNTIME_ARTIFACT_PATHS = {
@@ -344,7 +352,7 @@ def dynamic_erase_child(
 
 
 def configure_linux_geometry() -> dict[str, Any]:
-    """Bind inherited route helpers to the exact public 0091 geometry."""
+    """Bind every reached route helper to the exact public Linux geometry."""
     values = {
         "EXPERIMENT_ID": EXPERIMENT_ID,
         "ATTEMPT_ID": ATTEMPT_ID,
@@ -384,6 +392,15 @@ def configure_linux_geometry() -> dict[str, Any]:
     }
     for name, value in values.items():
         setattr(predecessor, name, value)
+    transitive_rebase = {
+        "EXPECTED_COMPLETE_BRANCH_TOKENS": EXPECTED_BRANCH_TOKENS,
+        "EXPECTED_VISIBLE_OUTPUT_TOKENS": (
+            EXPECTED_CHILD_TOKENS - EXPECTED_BRANCH_TOKENS
+        ),
+        "EXPECTED_CHILD_TOKENS": EXPECTED_CHILD_TOKENS,
+    }
+    for name, value in transitive_rebase.items():
+        setattr(predecessor.rebase, name, value)
     predecessor.erase_child = dynamic_erase_child
     predecessor.derive_successor = derive_successor
     terminal.EXPECTED_RETAINED_TOKENS = EXPECTED_RETAINED_TOKENS
@@ -403,6 +420,8 @@ def restore_inherited_geometry() -> None:
         setattr(predecessor, name, value)
     for name, value in _INHERITED_LIVE.items():
         setattr(live, name, value)
+    for name, value in _INHERITED_REBASE.items():
+        setattr(predecessor.rebase, name, value)
     terminal.EXPECTED_RETAINED_TOKENS = _INHERITED_TERMINAL_RETAINED
 
 
@@ -462,7 +481,7 @@ class ContactJournalSidecar:
                         "created_unix_ns": time.time_ns(),
                         "first_transport_ordinal": 0,
                         "meaning": (
-                            "the first 0091 model callback is next; this exact "
+                            "the first 0092 model callback is next; this exact "
                             "experiment is conservatively consumed and cannot "
                             "be launched again"
                         ),
@@ -587,7 +606,7 @@ def audit_shutdown_live_terminal_custody(
     log_path = sidecar.run_root / "server.log"
     require(
         log_path.is_file() and not log_path.is_symlink(),
-        "0091 shutdown log is absent or unsafe",
+        f"{EXPERIMENT_ID} shutdown log is absent or unsafe",
     )
     log_text = log_path.read_text(encoding="utf-8")
     matches = re.findall(
@@ -597,12 +616,13 @@ def audit_shutdown_live_terminal_custody(
     )
     require(
         len(matches) == 1,
-        "0091 shutdown did not emit exactly one live-boundary custody summary",
+        f"{EXPERIMENT_ID} shutdown did not emit exactly one "
+        "live-boundary custody summary",
     )
     poisoned, unresolved = (int(item) for item in matches[0])
     require(
         unresolved == 0,
-        "0091 shutdown left an unresolved live terminal boundary",
+        f"{EXPERIMENT_ID} shutdown left an unresolved live terminal boundary",
     )
     return {
         "candidate_started": True,
@@ -1526,7 +1546,7 @@ def evaluate(
             "ATTACH_A_FIXED_PUBLIC_NONCOMMUTING_RELATIONAL_FIBER_TO_THE_"
             "QUALIFIED_LIVE_TERMINAL_HYPOTHESIS_BOUNDARY"
             if accepted
-            else "PRESERVE_0091_AND_LOCALIZE_THE_FAILED_CUSTODY_OR_WALL_GATE"
+            else "PRESERVE_0092_AND_LOCALIZE_THE_FAILED_CUSTODY_OR_WALL_GATE"
         ),
     }
 
@@ -2295,6 +2315,14 @@ def static_audit() -> dict[str, Any]:
             - EXPECTED_CHILD_DEVICE_BYTES
             == 87 * DEVICE_BYTES_PER_TOKEN
         ),
+        "transitive_rebase_geometry_exact": (
+            predecessor.rebase.EXPECTED_COMPLETE_BRANCH_TOKENS
+            == EXPECTED_BRANCH_TOKENS
+            and predecessor.rebase.EXPECTED_VISIBLE_OUTPUT_TOKENS
+            == EXPECTED_CHILD_TOKENS - EXPECTED_BRANCH_TOKENS
+            and predecessor.rebase.EXPECTED_CHILD_TOKENS
+            == EXPECTED_CHILD_TOKENS
+        ),
         "payload_hashes_prospectively_pinned": (
             len(EXPECTED_SEED_PAYLOAD_SHA256) == 64
             and all(
@@ -2411,7 +2439,7 @@ def static_audit() -> dict[str, Any]:
     }
     require(
         all(gates.values()),
-        "0091 static audit failed: "
+        f"{EXPERIMENT_ID} static audit failed: "
         + ", ".join(key for key, value in gates.items() if not value),
     )
     return {
@@ -2456,7 +2484,7 @@ def main() -> int:
         if args.write_runtime_manifest:
             require(
                 not DEFAULT_RUNTIME_MANIFEST.exists(),
-                "0091 runtime manifest already exists",
+                f"{EXPERIMENT_ID} runtime manifest already exists",
             )
         manifest = runtime_manifest_template(args.runtime_source_commit)
         artifact = (
@@ -2510,27 +2538,24 @@ def main() -> int:
         runtime.require_pushed_frontier_head(expected_commit)
         require(
             args.output.resolve(strict=False) == output,
-            "0091 output path is identity-canonical and cannot be overridden",
+            f"{EXPERIMENT_ID} output path is identity-canonical",
         )
         require(
             args.active_lock.resolve(strict=False) == lock_path,
-            "0091 active-lock path is identity-canonical and cannot be "
-            "overridden",
+            f"{EXPERIMENT_ID} active-lock path is identity-canonical",
         )
         require(
             args.consumed_marker.resolve(strict=False) == consumed_marker,
-            "0091 durable consumption path is identity-canonical and cannot "
-            "be overridden",
+            f"{EXPERIMENT_ID} durable consumption path is identity-canonical",
         )
         require(
             args.run_parent.resolve(strict=False) == run_parent,
-            "0091 run-parent path is identity-canonical and cannot be "
-            "overridden",
+            f"{EXPERIMENT_ID} run-parent path is identity-canonical",
         )
-        require(not output.exists(), "0091 result already exists")
+        require(not output.exists(), f"{EXPERIMENT_ID} result already exists")
         require(
             not consumed_marker.exists(),
-            "0091 durable consumption marker already exists",
+            f"{EXPERIMENT_ID} durable consumption marker already exists",
         )
         raw_sidecar = linux_sidecar.LinuxSidecar(
             binary=DEFAULT_BINARY,
@@ -2550,7 +2575,7 @@ def main() -> int:
         prelaunch_static = static_audit()
         require(
             canonical_sha256(prelaunch_static) == canonical_sha256(static),
-            "0091 runtime identity changed before launch",
+            f"{EXPERIMENT_ID} runtime identity changed before launch",
         )
         readiness = raw_sidecar.launch()
         codec = harness.carrier.SidecarPromptCodec(linux_sidecar.PORT)
@@ -2687,7 +2712,7 @@ def main() -> int:
     )
     if caught is None and not closure:
         caught = ExperimentError(
-            "0091 process, port, or launch-lock closure failed"
+            f"{EXPERIMENT_ID} process, port, or launch-lock closure failed"
         )
     if caught is not None and not consumed_marker.is_file():
         precontact_failure = {
@@ -2708,7 +2733,7 @@ def main() -> int:
             precontact_failure,
         )
         raise ExperimentError(
-            "0091 failed before model contact; canonical identity remains "
+            f"{EXPERIMENT_ID} failed before model contact; identity remains "
             f"unconsumed and evidence is preserved at {receipt['path']}"
         ) from caught
     if caught is not None:
@@ -2748,11 +2773,11 @@ def main() -> int:
         failure = full_failure if closure else custody_failure
         terminal.write_exclusive_json(output, failure)
         raise ExperimentError(
-            f"0091 failed; evidence preserved at {output}"
+            f"{EXPERIMENT_ID} failed; evidence preserved at {output}"
         ) from caught
 
-    require(result is not None, "0091 result is missing")
-    require(closure, "0091 process/port/lock closure failed")
+    require(result is not None, f"{EXPERIMENT_ID} result is missing")
+    require(closure, f"{EXPERIMENT_ID} process/port/lock closure failed")
     result["cleanup"] = cleanup
     result["launch_lock_release"] = lock_release
     result["artifact"] = terminal.write_exclusive_json(output, result)
