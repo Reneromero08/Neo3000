@@ -96,6 +96,10 @@ struct server_context {
     // terminate main loop (will unblock start_loop)
     void terminate();
 
+    // poison any unresolved one-use live boundary after request admission is
+    // stopped and before model/backend destruction
+    void poison_live_terminal_boundaries_for_shutdown();
+
     // get the underlaying llama_context, can return nullptr if sleeping
     // not thread-safe, should only be used from the main thread
     llama_context * get_llama_context() const;

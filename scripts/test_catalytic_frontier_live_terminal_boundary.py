@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 from pathlib import Path
 import sys
@@ -14,6 +15,8 @@ import catalytic_frontier_live_terminal_boundary as live
 
 
 CONTEXT = ROOT / "tools" / "server" / "server-context.cpp"
+CONTEXT_HEADER = ROOT / "tools" / "server" / "server-context.h"
+SERVER_ENTRYPOINT = ROOT / "tools" / "server" / "server.cpp"
 SCHEMA = ROOT / "tools" / "server" / "server-schema.cpp"
 TASK = ROOT / "tools" / "server" / "server-task.h"
 
@@ -22,6 +25,8 @@ class LiveTerminalBoundaryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.context = CONTEXT.read_text(encoding="utf-8")
+        cls.context_header = CONTEXT_HEADER.read_text(encoding="utf-8")
+        cls.server_entrypoint = SERVER_ENTRYPOINT.read_text(encoding="utf-8")
         cls.schema = SCHEMA.read_text(encoding="utf-8")
         cls.task = TASK.read_text(encoding="utf-8")
 
@@ -91,6 +96,154 @@ class LiveTerminalBoundaryTests(unittest.TestCase):
             sample.index("process_token(result, slot)"),
         )
         self.assertIn("sampled and declared-closed", sample)
+        live_log = sample[
+            sample.index("sampled and declared-closed") :
+            sample.index(");", sample.index("sampled and declared-closed"))
+        ]
+        self.assertNotIn("logits=", live_log)
+
+    def test_live_capture_log_does_not_expose_logit_fingerprint(self):
+        start = self.context.index(
+            '"neo3000 one-use live terminal boundary captured'
+        )
+        capture_log = self.context[start : self.context.index(");", start)]
+        self.assertNotIn("logits=", capture_log)
+
+    def test_capture_receipt_rejects_output_bearing_wire_surface(self):
+        final_event = {
+            "content": "",
+            "tokens": [],
+            "stop": True,
+            "tokens_predicted": 0,
+            "tokens_evaluated": 777,
+            "stop_type": "limit",
+            "tokens_cached": 690,
+            "timings": {
+                "cache_n": 690,
+                "prompt_n": 87,
+                "prompt_ms": 1.0,
+                "prompt_per_token_ms": 0.01,
+                "prompt_per_second": 100.0,
+                "predicted_n": 0,
+                "predicted_ms": 0.0,
+                "predicted_per_token_ms": 0.0,
+                "predicted_per_second": 0.0,
+            },
+        }
+        recorder = live.LiveCaptureWireRecorder()
+        recorder(
+            b"data: "
+            + json.dumps(final_event, separators=(",", ":")).encode()
+            + b"\n"
+        )
+        record = {
+            "content": "",
+            "execution": {
+                name: None for name in live.harness.carrier.CAPTURE_EXECUTION_FIELDS
+            },
+        }
+        record["execution"].update(
+            content="",
+            reasoning_content="",
+            tool_calls=[],
+            completion_tokens=0,
+            generated_token_ids=[],
+            generated_token_count=0,
+            nonempty_token_array_event_count=0,
+        )
+        receipt = live.validate_capture_receipt(record, recorder)
+        self.assertTrue(receipt["hidden_value_fields_absent"])
+        self.assertFalse(recorder.lines)
+        leaking = live.LiveCaptureWireRecorder()
+        leaking_event = dict(final_event, logits_hash="secret")
+        leaking(
+            b"data: "
+            + json.dumps(leaking_event, separators=(",", ":")).encode()
+            + b"\n"
+        )
+        with self.assertRaisesRegex(
+            live.ExperimentError,
+            "final response surface changed",
+        ):
+            live.validate_capture_receipt(record, leaking)
+        self.assertFalse(leaking.lines)
+        nested = live.LiveCaptureWireRecorder()
+        nested_event = dict(final_event)
+        nested_event["timings"] = {
+            **final_event["timings"],
+            "hidden_scores": [1.0],
+        }
+        nested(
+            b"data: "
+            + json.dumps(nested_event, separators=(",", ":")).encode()
+            + b"\n"
+        )
+        with self.assertRaisesRegex(
+            live.ExperimentError,
+            "unapproved timings field",
+        ):
+            live.validate_capture_receipt(record, nested)
+        self.assertFalse(nested.lines)
+
+    def test_capture_payload_requests_only_empty_public_receipt_fields(self):
+        payload = live.capture_payload(
+            {"prompt": [1, 2, 3], "stream": True},
+            {
+                "boundary_id": "b",
+                "carrier_id": "c",
+                "outer_lease": 1,
+                "generation": 1,
+                "port_owner": "o",
+                "port_type": "t",
+                "module_id": "m",
+                "module_variant": 0,
+                "module_ordinal": 1,
+                "input_boundary_id": "i",
+                "projection_policy": "p",
+                "restoration_policy": "r",
+            },
+        )
+        self.assertEqual(
+            payload["response_fields"],
+            [
+                "content",
+                "tokens",
+                "stop",
+                "tokens_predicted",
+                "tokens_evaluated",
+                "stop_type",
+                "tokens_cached",
+                "timings",
+            ],
+        )
+        self.assertNotIn("generation_settings", payload["response_fields"])
+        self.assertNotIn("prompt", payload["response_fields"])
+
+    def test_capture_receipt_rejects_non_data_wire_line_and_clears_it(self):
+        recorder = live.LiveCaptureWireRecorder()
+        recorder(b"event: message\n")
+        record = {
+            "content": "",
+            "execution": {
+                name: None
+                for name in live.harness.carrier.CAPTURE_EXECUTION_FIELDS
+            },
+        }
+        record["execution"].update(
+            content="",
+            reasoning_content="",
+            tool_calls=[],
+            completion_tokens=0,
+            generated_token_ids=[],
+            generated_token_count=0,
+            nonempty_token_array_event_count=0,
+        )
+        with self.assertRaisesRegex(
+            live.ExperimentError,
+            "non-SSE data line",
+        ):
+            live.validate_capture_receipt(record, recorder)
+        self.assertFalse(recorder.lines)
 
     def test_intervening_stateful_actions_are_denied(self):
         for action in (
@@ -150,6 +303,47 @@ class LiveTerminalBoundaryTests(unittest.TestCase):
         )
         self.assertIn("prompt_clear(false);", release)
         self.assertIn("poisoned on release", release)
+
+    def test_shutdown_poisons_idle_live_boundary_before_backend_free(self):
+        start = self.context.index(
+            "void poison_live_terminal_boundaries_for_shutdown()"
+        )
+        method = self.context[
+            start : self.context.index("void handle_sleeping_state", start)
+        ]
+        self.assertIn("slot.terminal_logits_pending_use", method)
+        self.assertIn("slot.terminal_logits.live.valid()", method)
+        self.assertNotIn(
+            "if (!slot.terminal_logits_pending_use",
+            method,
+        )
+        self.assertIn("slot.prompt_clear(false);", method)
+        self.assertIn("slot.release();", method)
+        self.assertIn("std::count_if(", method)
+        self.assertIn(
+            "shutdown custody poisoned=%zu unresolved=%zu",
+            method,
+        )
+        self.assertIn(
+            "void poison_live_terminal_boundaries_for_shutdown();",
+            self.context_header,
+        )
+        cleanup_start = self.server_entrypoint.index(
+            "clean_up = [&ctx_http, &ctx_server]()"
+        )
+        cleanup = self.server_entrypoint[
+            cleanup_start :
+            self.server_entrypoint.index(
+                "llama_backend_free();",
+                cleanup_start,
+            )
+        ]
+        self.assertLess(
+            cleanup.index("ctx_http.stop();"),
+            cleanup.index(
+                "ctx_server.poison_live_terminal_boundaries_for_shutdown();"
+            ),
+        )
 
     def test_live_boundary_cannot_enter_ram_root_terminal_receipt(self):
         root_save = self.context[

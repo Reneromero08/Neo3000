@@ -103,6 +103,16 @@ def capture_payload(
     result = dict(payload)
     result.update(
         n_predict=0,
+        response_fields=[
+            "content",
+            "tokens",
+            "stop",
+            "tokens_predicted",
+            "tokens_evaluated",
+            "stop_type",
+            "tokens_cached",
+            "timings",
+        ],
         neo3000_capture_live_terminal_boundary=True,
         neo3000_live_terminal=dict(contract),
     )
@@ -125,6 +135,203 @@ def wrong_owner_contract(contract: Mapping[str, Any]) -> dict[str, Any]:
     result = dict(contract)
     result["port_owner"] = f"{PORT_OWNER}-wrong"
     return result
+
+
+class LiveCaptureWireRecorder:
+    """Retain a bounded capture response only until its no-leak audit."""
+
+    MAX_BYTES = 256 * 1024
+
+    def __init__(self) -> None:
+        self.lines: list[bytes] = []
+        self.n_bytes = 0
+
+    def __call__(self, line: bytes) -> None:
+        require(isinstance(line, bytes), "live capture wire line is not bytes")
+        self.n_bytes += len(line)
+        require(
+            self.n_bytes <= self.MAX_BYTES,
+            "live capture response exceeded the receipt byte ceiling",
+        )
+        self.lines.append(bytes(line))
+
+
+def validate_capture_receipt(
+    record: Mapping[str, Any],
+    recorder: LiveCaptureWireRecorder,
+) -> dict[str, Any]:
+    """Prove that capture returned metadata plus an empty output surface."""
+    execution = record.get("execution")
+    require(isinstance(execution, Mapping), "capture execution is absent")
+    require(
+        set(execution) == set(harness.carrier.CAPTURE_EXECUTION_FIELDS),
+        "capture execution surface changed",
+    )
+    require(
+        record.get("content") == ""
+        and execution.get("content") in (None, "")
+        and execution.get("reasoning_content") in (None, "")
+        and execution.get("tool_calls") in (None, [], ()),
+        "capture released content, reasoning, or tool output",
+    )
+    require(
+        execution.get("generated_token_ids") == []
+        and execution.get("generated_token_count") == 0
+        and execution.get("completion_tokens") == 0
+        and execution.get("nonempty_token_array_event_count") == 0,
+        "capture released generated token state",
+    )
+
+    progress_fields = {
+        "index",
+        "content",
+        "tokens",
+        "stop",
+        "id_slot",
+        "tokens_predicted",
+        "tokens_evaluated",
+        "timings",
+        "prompt_progress",
+    }
+    final_fields = {
+        "content",
+        "tokens",
+        "stop",
+        "tokens_predicted",
+        "tokens_evaluated",
+        "stop_type",
+        "tokens_cached",
+        "timings",
+    }
+    timing_fields = {
+        "cache_n",
+        "prompt_n",
+        "prompt_ms",
+        "prompt_per_token_ms",
+        "prompt_per_second",
+        "predicted_n",
+        "predicted_ms",
+        "predicted_per_token_ms",
+        "predicted_per_second",
+        "draft_n",
+        "draft_n_accepted",
+    }
+    prompt_progress_fields = {"total", "cache", "processed", "time_ms"}
+    events: list[Mapping[str, Any]] = []
+    surface_fields: set[str] = set()
+    terminal_events = 0
+    try:
+        for line in recorder.lines:
+            stripped = line.decode("utf-8", errors="strict").strip()
+            if not stripped:
+                continue
+            require(
+                stripped.startswith("data:"),
+                "capture wire contained a non-SSE data line",
+            )
+            data = stripped[5:].strip()
+            if not data or data == "[DONE]":
+                continue
+            value = json.loads(data)
+            require(
+                isinstance(value, Mapping),
+                "capture SSE event is not an object",
+            )
+            is_progress = "prompt_progress" in value
+            allowed_fields = progress_fields if is_progress else final_fields
+            if is_progress:
+                require(
+                    set(value)
+                    in (
+                        progress_fields,
+                        progress_fields - {"timings"},
+                    ),
+                    "capture prompt-progress response surface changed",
+                )
+            else:
+                require(
+                    set(value) == allowed_fields,
+                    "capture final response surface changed",
+                )
+            require(
+                value.get("content") in (None, "")
+                and value.get("tokens") in (None, [], ())
+                and value.get("stop") is (not is_progress),
+                "capture wire exposed output or malformed lifecycle state",
+            )
+            integer_fields = {
+                "index",
+                "id_slot",
+                "tokens_predicted",
+                "tokens_evaluated",
+                "tokens_cached",
+            }
+            require(
+                all(
+                    key not in value or type(value[key]) is int
+                    for key in integer_fields
+                ),
+                "capture wire exposed malformed public counters",
+            )
+            timings = value.get("timings")
+            require(
+                timings is None
+                or (
+                    isinstance(timings, Mapping)
+                    and set(timings)
+                    in (
+                        timing_fields - {"draft_n", "draft_n_accepted"},
+                        timing_fields,
+                    )
+                    and all(
+                        isinstance(item, (int, float))
+                        and not isinstance(item, bool)
+                        for item in timings.values()
+                    )
+                ),
+                "capture wire exposed an unapproved timings field",
+            )
+            if is_progress:
+                progress = value["prompt_progress"]
+                require(
+                    isinstance(progress, Mapping)
+                    and set(progress) == prompt_progress_fields,
+                    "capture prompt-progress surface changed",
+                )
+                require(
+                    all(
+                        isinstance(item, (int, float))
+                        and not isinstance(item, bool)
+                        for item in progress.values()
+                    ),
+                    "capture prompt-progress counters are malformed",
+                )
+            else:
+                terminal_events += 1
+                require(
+                    value.get("stop_type")
+                    in {"none", "limit", "eos", "word"},
+                    "capture final stop type is malformed",
+                )
+            events.append(value)
+            surface_fields.update(str(key) for key in value)
+        require(events, "capture produced no auditable SSE receipt event")
+        require(
+            terminal_events == 1,
+            "capture produced an invalid terminal event count",
+        )
+        return {
+            "receipt_type": "EMPTY_LIVE_CAPTURE_WIRE_RECEIPT_V1",
+            "wire_bytes": recorder.n_bytes,
+            "wire_event_count": len(events),
+            "wire_surface_fields": sorted(surface_fields),
+            "content_empty": True,
+            "generated_token_ids_empty": True,
+            "hidden_value_fields_absent": True,
+            "raw_wire_retained": False,
+        }
+    finally:
+        recorder.lines.clear()
 
 
 def child_root_id(trial_label: str, generation: int) -> str:
@@ -228,11 +435,13 @@ def run_wrong_owner_negative(
     trial_label: str,
     edge: int,
 ) -> dict[str, Any]:
+    wire = LiveCaptureWireRecorder()
     capture = harness.run_completion(
         sidecar,
         f"{EXPERIMENT_ID}:{trial_label}:live:edge-{edge}:wrong-owner-capture",
         capture_payload(payload, contract),
         operation_kind="zero-output-root-readdress",
+        recorder=wire,
         batch_owned_request=True,
     )
     require(
@@ -243,6 +452,7 @@ def run_wrong_owner_negative(
         and capture["completion_tokens"] == 0,
         "wrong-owner capture geometry changed",
     )
+    receipt = validate_capture_receipt(capture, wire)
     denied = terminal.expect_http_error(
         f"http://127.0.0.1:{harness.live_runtime.PORT}/completion",
         consumer_payload(payload, wrong_owner_contract(contract)),
@@ -250,6 +460,7 @@ def run_wrong_owner_negative(
     )
     return {
         "capture": harness.token_summary(capture),
+        "capture_receipt": receipt,
         "contract_sha256": canonical_sha256(contract),
         "wrong_owner_contract_sha256": canonical_sha256(
             wrong_owner_contract(contract)
@@ -321,11 +532,13 @@ def run_live_successor(
             expected=child_root,
         )
 
+    wire = LiveCaptureWireRecorder()
     capture = harness.run_completion(
         sidecar,
         f"{EXPERIMENT_ID}:{trial_label}:live:edge-{edge}:capture",
         capture_payload(payload, contract),
         operation_kind="zero-output-root-readdress",
+        recorder=wire,
         batch_owned_request=True,
     )
     require(
@@ -336,6 +549,7 @@ def run_live_successor(
         and capture["completion_tokens"] == 0,
         f"live edge {edge} capture geometry changed",
     )
+    capture_receipt = validate_capture_receipt(capture, wire)
     resources_resident = harness.process_resources(sidecar, baseline_private)
 
     recorder = latency.TimingRecorder()
@@ -375,6 +589,7 @@ def run_live_successor(
     return {
         "restore": restored,
         "capture": harness.token_summary(capture),
+        "capture_receipt": capture_receipt,
         "capture_wall_seconds": float(capture["wall_seconds"]),
         "contract": contract,
         "contract_sha256": canonical_sha256(contract),

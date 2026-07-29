@@ -1268,6 +1268,40 @@ private:
         mctx = nullptr;
     }
 
+    void poison_live_terminal_boundaries_for_shutdown() {
+        size_t poisoned = 0;
+        for (auto & slot : slots) {
+            if (!slot.terminal_logits.live.valid()) {
+                continue;
+            }
+            if (slot.is_processing()) {
+                // A capture can become resident before its zero-output task
+                // releases.  Force release() down its poison-and-clear path.
+                slot.terminal_logits_pending_use =
+                        slot.terminal_logits.live.valid();
+                slot.release();
+            } else {
+                const std::string boundary_id =
+                        slot.terminal_logits.live.identity.boundary_id;
+                SLT_WRN(slot,
+                        "neo3000 one-use live terminal boundary poisoned on shutdown boundary=%s\n",
+                        boundary_id.c_str());
+                slot.prompt_clear(false);
+            }
+            poisoned += 1;
+        }
+        const size_t unresolved = std::count_if(
+                slots.begin(),
+                slots.end(),
+                [](const server_slot & slot) {
+                    return slot.terminal_logits.live.valid();
+                });
+        SRV_WRN(
+                "neo3000 one-use live terminal shutdown custody poisoned=%zu unresolved=%zu\n",
+                poisoned,
+                unresolved);
+    }
+
     void handle_sleeping_state(bool new_state) {
         GGML_ASSERT(sleeping != new_state);
         if (new_state) {
@@ -4224,9 +4258,8 @@ private:
 
                                 if (live_source) {
                                     SLT_WRN(slot,
-                                            "neo3000 one-use live terminal boundary sampled and declared-closed boundary=%s logits=%s\n",
-                                            source_id.c_str(),
-                                            logits_fnv64.c_str());
+                                            "neo3000 one-use live terminal boundary sampled and declared-closed boundary=%s\n",
+                                            source_id.c_str());
                                 } else {
                                     SLT_WRN(slot,
                                             "neo3000 terminal-logits continuation sampled before decode root=%s logits=%s\n",
@@ -4882,7 +4915,7 @@ private:
 
                     if (slot.task->params.neo3000_capture_live_terminal_boundary) {
                         SLT_WRN(slot,
-                                "neo3000 one-use live terminal boundary captured boundary=%s carrier=%s lease=%" PRIu64 " generation=%u owner=%s type=%s module=%s variant=%u ordinal=%u contract=%s logits=%s prompt=%s sampler=%s tokens=%d position=%d bytes=%zu\n",
+                                "neo3000 one-use live terminal boundary captured boundary=%s carrier=%s lease=%" PRIu64 " generation=%u owner=%s type=%s module=%s variant=%u ordinal=%u contract=%s prompt=%s sampler=%s tokens=%d position=%d bytes=%zu\n",
                                 slot.terminal_logits.live.identity.boundary_id.c_str(),
                                 slot.terminal_logits.live.identity.carrier_id.c_str(),
                                 slot.terminal_logits.live.identity.outer_lease,
@@ -4893,7 +4926,6 @@ private:
                                 slot.terminal_logits.live.identity.module_variant,
                                 slot.terminal_logits.live.identity.module_ordinal,
                                 slot.terminal_logits.live.contract_fnv64.c_str(),
-                                slot.terminal_logits.logits_fnv64.c_str(),
                                 slot.terminal_logits.prompt_fnv64.c_str(),
                                 slot.terminal_logits.sampler_fnv64.c_str(),
                                 slot.terminal_logits.n_prompt_tokens,
@@ -5151,6 +5183,10 @@ void server_context::start_loop() {
 
 void server_context::terminate() {
     impl->queue_tasks.terminate();
+}
+
+void server_context::poison_live_terminal_boundaries_for_shutdown() {
+    impl->poison_live_terminal_boundaries_for_shutdown();
 }
 
 llama_context * server_context::get_llama_context() const {

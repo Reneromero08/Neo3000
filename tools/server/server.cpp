@@ -374,6 +374,7 @@ int llama_server(int argc, char ** argv) {
             g_stream_sessions.stop_gc();
             ctx_http.stop();
             ctx_server.terminate();
+            ctx_server.poison_live_terminal_boundaries_for_shutdown();
             llama_backend_free();
         };
 

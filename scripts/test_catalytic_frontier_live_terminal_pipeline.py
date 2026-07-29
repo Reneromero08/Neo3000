@@ -13,8 +13,19 @@ if str(SCRIPTS) not in sys.path:
 
 import catalytic_frontier_live_terminal_pipeline as pipeline
 
+_INHERITED_PREDECESSOR_IDENTITY = {
+    "EXPERIMENT_ID": pipeline.predecessor.EXPERIMENT_ID,
+    "ATTEMPT_ID": pipeline.predecessor.ATTEMPT_ID,
+    "BASE_ROOT_ID": pipeline.predecessor.BASE_ROOT_ID,
+    "SEED_TERMINAL_ROOT_ID": pipeline.predecessor.SEED_TERMINAL_ROOT_ID,
+}
+
 
 class LiveTerminalPipelineTests(unittest.TestCase):
+    def tearDown(self) -> None:
+        for name, value in _INHERITED_PREDECESSOR_IDENTITY.items():
+            setattr(pipeline.predecessor, name, value)
+
     def test_frozen_r2_routes_and_orders(self):
         self.assertEqual(pipeline.EXPERIMENT_ID, "neo-exp-0088")
         self.assertEqual(pipeline.ATTEMPT_ID, "frontier-attempt-0125")
