@@ -2172,6 +2172,7 @@ def static_audit() -> dict[str, Any]:
     source = Path(__file__).read_text(encoding="utf-8")
     runtime_source = source[: source.index("def static_audit()")]
     main_source = source[source.rindex("def main() -> int:") :]
+    live_source = Path(live.__file__).read_text(encoding="utf-8")
     context = (ROOT / "tools" / "server" / "server-context.cpp").read_text(
         encoding="utf-8"
     )
@@ -2257,11 +2258,12 @@ def static_audit() -> dict[str, Any]:
             < preflight_source.index("slot.prompt_clear(false);")
         ),
         "capture_surface_empty_and_receipt_checked": (
-            "live.validate_capture_receipt(capture, wire)" in runtime_source
-            and "capture_receipt" in runtime_source
-            and '"response_fields"' in Path(
-                live.__file__
-            ).read_text(encoding="utf-8")
+            (
+                'capture["capture_receipt"] = '
+                "live.validate_capture_receipt(capture, wire)"
+            )
+            in runtime_source
+            and "response_fields=[" in live_source
         ),
         "unresolved_logit_hash_absent_from_live_logs": (
             "logits=" not in context[
@@ -2307,10 +2309,16 @@ def static_audit() -> dict[str, Any]:
             < runtime_source.index("return callback()")
         ),
         "canonical_identity_paths": (
-            "output == DEFAULT_OUTPUT.resolve(strict=False)" in main_source
+            "output = DEFAULT_OUTPUT.resolve(strict=False)" in main_source
             and (
-                "consumed_marker "
-                "== DEFAULT_CONSUMED_MARKER.resolve(strict=False)"
+                "consumed_marker = "
+                "DEFAULT_CONSUMED_MARKER.resolve(strict=False)"
+            )
+            in main_source
+            and "args.output.resolve(strict=False) == output" in main_source
+            and (
+                "args.consumed_marker.resolve(strict=False) "
+                "== consumed_marker"
             )
             in main_source
         ),
