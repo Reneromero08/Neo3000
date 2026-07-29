@@ -20,6 +20,7 @@
 #include "mtmd-helper.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cinttypes>
 #include <exception>
@@ -95,7 +96,8 @@ static std::string neo3000_live_terminal_contract_fnv1a64(
             std::to_string(contract.module_ordinal) + "\n" +
             contract.input_boundary_id + "\n" +
             contract.projection_policy + "\n" +
-            contract.restoration_policy;
+            contract.restoration_policy + "\n" +
+            contract.causal_position;
     return neo3000_fnv1a64_hex(encoded.data(), encoded.size());
 }
 
@@ -114,7 +116,8 @@ static bool neo3000_live_terminal_contract_equal(
             lhs.module_ordinal == rhs.module_ordinal &&
             lhs.input_boundary_id == rhs.input_boundary_id &&
             lhs.projection_policy == rhs.projection_policy &&
-            lhs.restoration_policy == rhs.restoration_policy;
+            lhs.restoration_policy == rhs.restoration_policy &&
+            lhs.causal_position == rhs.causal_position;
 }
 
 static bool neo3000_twin_rail_contract_family(
@@ -165,6 +168,100 @@ static bool neo3000_twin_rail_hypothesis_boundary_exact(
     return true;
 }
 
+static bool neo3000_two_evidence_boundary_exact(
+        const server_tokens & tokens) {
+    static constexpr std::array<llama_token, 142> exact_tokens = {
+        248045, 8678, 198, 50, 3815, 279, 9209, 5081, 60514, 3274,
+        13, 3301, 1132, 279, 2483, 4566, 1576, 321, 874, 54917,
+        13, 248046, 198, 248045, 846, 198, 22365, 2904, 369, 279,
+        7526, 1442, 1324, 30, 198, 32, 13, 220, 16, 198,
+        33, 13, 220, 17, 198, 34, 13, 220, 19, 198,
+        35, 13, 220, 21, 271, 5423, 6681, 5046, 8944, 3147,
+        32, 13933, 5046, 8944, 3147, 33, 13933, 5046, 8944, 3147,
+        34, 13933, 466, 5046, 8944, 3147, 35, 1, 7563, 248046,
+        198, 248045, 74455, 198, 248068, 271, 248069, 271, 4754, 8944,
+        3147, 7285, 92, 271, 60239, 1593, 25, 997, 5478, 19042,
+        279, 1788, 2943, 28853, 2519, 27222, 13, 357, 5576, 77154,
+        1132, 948, 1141, 9711, 1324, 369, 1442, 321, 874, 9711,
+        2904, 682, 264, 7875, 1324, 13, 37681, 279, 569, 77397,
+        5696, 3294, 13, 3301, 279, 1534, 1576, 6681, 25, 5046,
+        8944, 3147,
+    };
+    if (tokens.size() != exact_tokens.size() ||
+            neo3000_prompt_fnv1a64(tokens) != "007c44f04d25fd72") {
+        return false;
+    }
+    for (size_t i = 0; i < exact_tokens.size(); ++i) {
+        if (tokens[i] != exact_tokens[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool neo3000_two_evidence_stage_contract_exact(
+        const task_params::neo3000_live_terminal_contract & contract) {
+    return
+            contract.complete() &&
+            contract.boundary_id == "neo-exp-0102/two-evidence/stage" &&
+            contract.port_owner ==
+                    neo3000::twin_rail_carrier::two_evidence_stage_owner &&
+            contract.port_type ==
+                    neo3000::twin_rail_carrier::two_evidence_stage_type &&
+            contract.module_id ==
+                    neo3000::twin_rail_carrier::two_evidence_stage_module &&
+            contract.module_variant <= static_cast<uint32_t>(
+                    neo3000::twin_rail_variant::COMPACT_CLASSICAL) &&
+            contract.module_ordinal == 1 &&
+            contract.input_boundary_id ==
+                    neo3000::twin_rail_carrier::two_evidence_stage_boundary &&
+            contract.projection_policy ==
+                    neo3000::twin_rail_carrier::two_evidence_stage_projection &&
+            contract.restoration_policy ==
+                    neo3000::twin_rail_carrier::two_evidence_stage_restoration &&
+            contract.causal_position ==
+                    neo3000::twin_rail_carrier::
+                            two_evidence_stage_causal_position;
+}
+
+static bool neo3000_two_evidence_final_contract_exact(
+        const task_params::neo3000_live_terminal_contract & contract) {
+    return
+            contract.complete() &&
+            contract.boundary_id == "neo-exp-0102/two-evidence/final" &&
+            contract.port_owner ==
+                    neo3000::twin_rail_carrier::two_evidence_final_owner &&
+            contract.port_type ==
+                    neo3000::twin_rail_carrier::two_evidence_final_type &&
+            contract.module_id ==
+                    neo3000::twin_rail_carrier::two_evidence_final_module &&
+            contract.module_variant <= static_cast<uint32_t>(
+                    neo3000::twin_rail_variant::COMPACT_CLASSICAL) &&
+            contract.module_ordinal == 2 &&
+            contract.input_boundary_id ==
+                    neo3000::twin_rail_carrier::two_evidence_final_boundary &&
+            contract.projection_policy ==
+                    neo3000::twin_rail_carrier::two_evidence_final_projection &&
+            contract.restoration_policy ==
+                    neo3000::twin_rail_carrier::two_evidence_final_restoration &&
+            contract.causal_position ==
+                    neo3000::twin_rail_carrier::
+                            two_evidence_final_causal_position;
+}
+
+static bool neo3000_two_evidence_contracts_exact(
+        const task_params & params) {
+    const auto & stage = params.neo3000_twin_rail_stage;
+    const auto & final = params.neo3000_twin_rail_final;
+    return
+            neo3000_two_evidence_stage_contract_exact(stage) &&
+            neo3000_two_evidence_final_contract_exact(final) &&
+            stage.carrier_id == final.carrier_id &&
+            stage.outer_lease == final.outer_lease &&
+            stage.generation == final.generation &&
+            stage.module_variant == final.module_variant;
+}
+
 static neo3000::twin_rail_contract neo3000_twin_rail_contract_from_task(
         const task_params::neo3000_live_terminal_contract & contract) {
     neo3000::twin_rail_contract result;
@@ -179,7 +276,32 @@ static neo3000::twin_rail_contract neo3000_twin_rail_contract_from_task(
     result.input_boundary_id = contract.input_boundary_id;
     result.projection_policy = contract.projection_policy;
     result.restoration_policy = contract.restoration_policy;
+    result.causal_position = contract.causal_position;
     return result;
+}
+
+static bool neo3000_candidate_evidence_from_row(
+        const float * logits,
+        int32_t n_vocab,
+        neo3000::twin_rail_carrier::evidence_array & evidence) {
+    if (logits == nullptr ||
+            n_vocab <=
+                    neo3000::twin_rail_carrier::candidate_token_ids.back()) {
+        return false;
+    }
+    for (size_t i = 0;
+            i < neo3000::twin_rail_carrier::hypothesis_count;
+            ++i) {
+        const float value = logits[
+                static_cast<size_t>(
+                        neo3000::twin_rail_carrier::
+                                candidate_token_ids[i])];
+        if (!std::isfinite(static_cast<double>(value))) {
+            return false;
+        }
+        evidence[i] = value;
+    }
+    return true;
 }
 
 struct server_terminal_logits_boundary {
@@ -416,8 +538,24 @@ struct server_slot {
     server_prompt prompt;
     server_terminal_logits_boundary terminal_logits;
     neo3000::twin_rail_carrier twin_rail;
+    neo3000::twin_rail_carrier::evidence_array
+            two_evidence_compact_seed = {};
+    neo3000::twin_rail_receipt two_evidence_final_receipt;
+    llama_token two_evidence_projected_token = LLAMA_TOKEN_NULL;
+    bool two_evidence_compact_seed_valid = false;
+    bool two_evidence_stage_complete = false;
+    bool two_evidence_suffix_decoded_while_resident = false;
     bool terminal_logits_pending_use = false;
     bool terminal_logits_reused = false;
+
+    void clear_two_evidence_transient() {
+        two_evidence_compact_seed.fill(0.0f);
+        two_evidence_final_receipt = {};
+        two_evidence_projected_token = LLAMA_TOKEN_NULL;
+        two_evidence_compact_seed_valid = false;
+        two_evidence_stage_complete = false;
+        two_evidence_suffix_decoded_while_resident = false;
+    }
 
     bool prompt_save(server_prompt_cache & prompt_cache) const {
         if (prompt.tokens.size() == 0) {
@@ -510,6 +648,7 @@ struct server_slot {
         n_prompt_tokens_cache = 0;
         terminal_logits_pending_use = false;
         terminal_logits_reused = false;
+        clear_two_evidence_transient();
 
         last_nl_pos    = 0;
         generated_text = "";
@@ -698,6 +837,8 @@ struct server_slot {
             const bool poison_live_terminal =
                     terminal_logits_pending_use && terminal_logits.live.valid();
             const bool poison_twin_rail = twin_rail.unresolved();
+            const bool close_compact_seed =
+                    two_evidence_compact_seed_valid;
             std::string poisoned_boundary_id;
             if (poison_live_terminal) {
                 poisoned_boundary_id =
@@ -711,6 +852,13 @@ struct server_slot {
                 SLT_WRN(*this,
                         "%s",
                         "neo3000 twin-rail carrier poisoned on release\n");
+            }
+            if (close_compact_seed) {
+                two_evidence_compact_seed.fill(0.0f);
+                two_evidence_compact_seed_valid = false;
+                SLT_WRN(*this,
+                        "%s",
+                        "neo3000 compact two-evidence seed closed on release\n");
             }
 
             t_last_used        =  ggml_time_us();
@@ -1367,11 +1515,20 @@ private:
             poisoned += 1;
         }
         for (auto & slot : slots) {
-            if (!slot.twin_rail.unresolved()) {
-                continue;
+            bool poisoned_slot = false;
+            if (slot.twin_rail.unresolved()) {
+                slot.twin_rail.poison();
+                poisoned_slot = true;
             }
-            slot.twin_rail.poison();
-            twin_rail_poisoned += 1;
+            if (slot.two_evidence_compact_seed_valid) {
+                slot.two_evidence_compact_seed.fill(0.0f);
+                slot.two_evidence_compact_seed_valid = false;
+                poisoned_slot = true;
+            }
+            slot.two_evidence_projected_token = LLAMA_TOKEN_NULL;
+            if (poisoned_slot) {
+                twin_rail_poisoned += 1;
+            }
         }
         const size_t unresolved = std::count_if(
                 slots.begin(),
@@ -1387,7 +1544,9 @@ private:
                 slots.begin(),
                 slots.end(),
                 [](const server_slot & slot) {
-                    return slot.twin_rail.unresolved();
+                    return
+                            slot.twin_rail.unresolved() ||
+                            slot.two_evidence_compact_seed_valid;
                 });
         SRV_WRN(
                 "neo3000 twin-rail shutdown custody poisoned=%zu unresolved=%zu\n",
@@ -2183,7 +2342,8 @@ private:
                     static_cast<int>(task.params.neo3000_capture_terminal_logits) +
                     static_cast<int>(task.params.neo3000_use_terminal_logits) +
                     static_cast<int>(task.params.neo3000_capture_live_terminal_boundary) +
-                    static_cast<int>(task.params.neo3000_use_live_terminal_boundary);
+                    static_cast<int>(task.params.neo3000_use_live_terminal_boundary) +
+                    static_cast<int>(task.params.neo3000_two_evidence_twin_rail);
             const auto exact_prompt_matches = [&]() {
                 if (slot.prompt.tokens.size() != task.tokens.size()) {
                     return false;
@@ -2274,7 +2434,8 @@ private:
                 static_cast<int>(task.params.neo3000_capture_terminal_logits) +
                 static_cast<int>(task.params.neo3000_use_terminal_logits) +
                 static_cast<int>(task.params.neo3000_capture_live_terminal_boundary) +
-                static_cast<int>(task.params.neo3000_use_live_terminal_boundary);
+                static_cast<int>(task.params.neo3000_use_live_terminal_boundary) +
+                static_cast<int>(task.params.neo3000_two_evidence_twin_rail);
         if (terminal_modes > 1) {
             if (slot.terminal_logits.live.valid()) {
                 slot.prompt_clear(false);
@@ -2292,6 +2453,8 @@ private:
                 task.params.neo3000_use_terminal_logits;
         const bool use_live_terminal =
                 task.params.neo3000_use_live_terminal_boundary;
+        const bool two_evidence =
+                task.params.neo3000_two_evidence_twin_rail;
 
         if (slot.terminal_logits.live.valid() &&
                 (!use_live_terminal ||
@@ -2306,6 +2469,49 @@ private:
             SLT_WRN(slot,
                     "neo3000 one-use live terminal boundary and carrier poisoned by pre-admission inference boundary=%s\n",
                     boundary_id.c_str());
+            return false;
+        }
+
+        if (two_evidence) {
+            const auto variant = static_cast<neo3000::twin_rail_variant>(
+                    task.params.neo3000_twin_rail_stage.module_variant);
+            const bool exact =
+                    task.type == SERVER_TASK_TYPE_COMPLETION &&
+                    task.params.n_cmpl == 1 &&
+                    task.params.n_predict == 3 &&
+                    !task.params.cache_prompt &&
+                    !task.params.stream &&
+                    !task.params.return_progress &&
+                    task.params.lora.empty() &&
+                    !task.params.sampling.backend_sampling &&
+                    task.params.sampling.n_probs == 0 &&
+                    !slot.can_speculate() &&
+                    slots.size() == 1 &&
+                    slot.id == 0 &&
+                    task.tokens.validate(ctx_tgt) &&
+                    neo3000_two_evidence_boundary_exact(task.tokens) &&
+                    neo3000_two_evidence_contracts_exact(task.params) &&
+                    variant != neo3000::twin_rail_variant::NULL_CARRIER &&
+                    variant != neo3000::twin_rail_variant::PREMATURE_PROJECT &&
+                    !slot.twin_rail.unresolved() &&
+                    !slot.two_evidence_compact_seed_valid;
+            if (!exact) {
+                if (slot.twin_rail.unresolved()) {
+                    slot.twin_rail.poison();
+                }
+                slot.two_evidence_compact_seed.fill(0.0f);
+                slot.two_evidence_compact_seed_valid = false;
+                send_error(
+                        task,
+                        "Two-evidence twin-rail request requires the exact bound prompt, two typed ports, one nonstreaming cache-disabled slot, and the fixed three-token completion geometry",
+                        ERROR_TYPE_INVALID_REQUEST);
+                return false;
+            }
+        } else if (task.params.neo3000_two_evidence_hold_after_stage) {
+            send_error(
+                    task,
+                    "The resident-stage hold control is valid only for an exact two-evidence request",
+                    ERROR_TYPE_INVALID_REQUEST);
             return false;
         }
 
@@ -2819,9 +3025,34 @@ private:
         return true;
     }
 
+    void poison_two_evidence_before_error(server_slot & slot) {
+        if (slot.twin_rail.unresolved()) {
+            slot.twin_rail.poison();
+        }
+        slot.two_evidence_compact_seed.fill(0.0f);
+        slot.two_evidence_compact_seed_valid = false;
+        slot.two_evidence_projected_token = LLAMA_TOKEN_NULL;
+    }
+
     bool reject_intervening_slot_action(
             const server_task & task,
             const char * action) {
+        for (auto & slot : slots) {
+            if (!slot.twin_rail.unresolved() &&
+                    !slot.two_evidence_compact_seed_valid) {
+                continue;
+            }
+            poison_two_evidence_before_error(slot);
+            SLT_WRN(slot,
+                    "neo3000 two-evidence carrier poisoned before rejecting intervening action=%s\n",
+                    action);
+            send_error(
+                    task,
+                    std::string("Intervening ") + action +
+                            " rejected while a two-evidence carrier is resident",
+                    ERROR_TYPE_INVALID_REQUEST);
+            return true;
+        }
         for (auto & slot : slots) {
             if (!slot.terminal_logits.live.valid()) {
                 continue;
@@ -3849,6 +4080,7 @@ private:
                 callback(slot);
             } catch (const std::exception & e) {
                 SLT_ERR(slot, "got exception: %s\n", e.what());
+                poison_two_evidence_before_error(slot);
                 send_error(slot, std::string("got exception: ") + e.what(), ERROR_TYPE_SERVER);
                 slot.release();
             }
@@ -3861,6 +4093,7 @@ private:
                 callback(*slot);
             } catch (const std::exception & e) {
                 SLT_ERR(*slot, "got exception: %s\n", e.what());
+                poison_two_evidence_before_error(*slot);
                 send_error(*slot, std::string("got exception: ") + e.what(), ERROR_TYPE_SERVER);
                 slot->release();
             }
@@ -3870,6 +4103,7 @@ private:
     void abort_all_slots(const std::string & reason) {
         for (auto & slot : slots) {
             if (slot.is_processing()) {
+                poison_two_evidence_before_error(slot);
                 send_error(slot, reason, ERROR_TYPE_SERVER);
                 slot.release();
             }
@@ -4208,6 +4442,17 @@ private:
                 }
 
                 if (!slot.is_processing()) {
+                    return;
+                }
+
+                // A custody control may deliberately stop after the exact
+                // first live row has entered STAGE_RESIDENT.  It emits no
+                // acknowledgement and cannot advance to the second row; only
+                // request cancellation or process shutdown may release it.
+                if (slot.task != nullptr &&
+                        slot.task->params.neo3000_two_evidence_twin_rail &&
+                        slot.task->params.neo3000_two_evidence_hold_after_stage &&
+                        slot.two_evidence_stage_complete) {
                     return;
                 }
 
@@ -4805,7 +5050,10 @@ private:
 
                     const int64_t t_now = ggml_time_us();
                     slot.t_prompt_processing = (t_now - slot.t_start_process_prompt) / 1e3;
-                    slot.print_timings_pp();
+                    if (!slot.task->params.neo3000_two_evidence_twin_rail ||
+                            !slot.two_evidence_stage_complete) {
+                        slot.print_timings_pp();
+                    }
 
                     // truncate any tokens that are beyond n_past for this slot
                     const llama_pos p0 = slot.prompt.tokens.pos_next();
@@ -4908,6 +5156,14 @@ private:
                         slot.prompt.tokens.push_back(cur_tok);
 
                         slot.n_prompt_tokens_processed++;
+
+                        if (slot.task->params.neo3000_two_evidence_twin_rail &&
+                                slot.prompt.n_tokens() == 91) {
+                            GGML_ASSERT(batch.size() > 0);
+                            batch.set_output(batch.size() - 1, true);
+                            slot.i_batch = batch.size() - 1;
+                            break;
+                        }
 
                         // stop the prompt batch exactly before a user message
                         if (spans.is_user_start(slot.prompt.n_tokens())) {
@@ -5063,6 +5319,7 @@ private:
 
                     for (auto & slot : slots) {
                         if (slot.is_processing()) {
+                            poison_two_evidence_before_error(slot);
                             send_error(slot, err);
                             slot.release();
 
@@ -5145,6 +5402,77 @@ private:
         };
 
         iterate(slots, [&](server_slot & slot) {
+            const bool two_evidence =
+                    slot.task != nullptr &&
+                    slot.task->params.neo3000_two_evidence_twin_rail;
+            if (two_evidence &&
+                    slot.state == SLOT_STATE_PROCESSING_PROMPT &&
+                    is_inside_view(slot.i_batch)) {
+                const int row_index = slot.i_batch - off;
+                const float * logits =
+                        llama_get_logits_ith(slot.ctx_tgt, row_index);
+                const int32_t n_vocab = llama_vocab_n_tokens(vocab);
+                neo3000::twin_rail_carrier::evidence_array evidence = {};
+                if (slot.prompt.tokens.size() != 91 ||
+                        slot.two_evidence_stage_complete ||
+                        !neo3000_candidate_evidence_from_row(
+                                logits,
+                                n_vocab,
+                                evidence)) {
+                    if (slot.twin_rail.unresolved()) {
+                        slot.twin_rail.poison();
+                    }
+                    slot.two_evidence_compact_seed.fill(0.0f);
+                    slot.two_evidence_compact_seed_valid = false;
+                    send_error(
+                            slot,
+                            "Two-evidence first row could not enter the exact resident stage",
+                            ERROR_TYPE_SERVER);
+                    slot.release();
+                    slot.i_batch = -1;
+                    return;
+                }
+
+                const auto variant =
+                        static_cast<neo3000::twin_rail_variant>(
+                                slot.task->params.
+                                        neo3000_twin_rail_stage.
+                                                module_variant);
+                if (variant ==
+                        neo3000::twin_rail_variant::COMPACT_CLASSICAL) {
+                    slot.two_evidence_compact_seed = evidence;
+                    slot.two_evidence_compact_seed_valid = true;
+                } else {
+                    const auto stage_receipt =
+                            slot.twin_rail.begin_two_evidence(
+                                    evidence,
+                                    neo3000_twin_rail_contract_from_task(
+                                            slot.task->params.
+                                                    neo3000_twin_rail_stage));
+                    if (!stage_receipt.accepted ||
+                            slot.twin_rail.state() !=
+                                    neo3000::twin_rail_state::
+                                            STAGE_RESIDENT ||
+                            stage_receipt.retained_evidence_bytes !=
+                                    neo3000::twin_rail_carrier::
+                                            retained_evidence_bytes) {
+                        slot.twin_rail.poison();
+                        send_error(
+                                slot,
+                                "Two-evidence carrier rejected the first resident stage",
+                                ERROR_TYPE_INVALID_REQUEST);
+                        slot.release();
+                        slot.i_batch = -1;
+                        return;
+                    }
+                }
+
+                evidence.fill(0.0f);
+                slot.two_evidence_stage_complete = true;
+                slot.i_batch = -1;
+                return;
+            }
+
             // optionally send prompt processing progress
             if (slot.state == SLOT_STATE_PROCESSING_PROMPT || slot.state == SLOT_STATE_DONE_PROMPT) {
                 if (slot.task->params.stream && slot.task->params.return_progress) {
@@ -5158,6 +5486,181 @@ private:
             }
 
             if (slot.state == SLOT_STATE_DONE_PROMPT) {
+                if (two_evidence) {
+                    const int row_index = slot.i_batch - off;
+                    const float * logits =
+                            llama_get_logits_ith(slot.ctx_tgt, row_index);
+                    const int32_t n_vocab = llama_vocab_n_tokens(vocab);
+                    neo3000::twin_rail_carrier::evidence_array evidence = {};
+                    const auto variant =
+                            static_cast<neo3000::twin_rail_variant>(
+                                    slot.task->params.
+                                            neo3000_twin_rail_final.
+                                                    module_variant);
+                    const bool carrier_resident =
+                            variant ==
+                                    neo3000::twin_rail_variant::
+                                            COMPACT_CLASSICAL
+                            ? slot.two_evidence_compact_seed_valid
+                            : slot.twin_rail.state() ==
+                                    neo3000::twin_rail_state::
+                                            STAGE_RESIDENT;
+                    if (slot.prompt.tokens.size() != 142 ||
+                            !slot.two_evidence_stage_complete ||
+                            !carrier_resident ||
+                            !neo3000_candidate_evidence_from_row(
+                                    logits,
+                                    n_vocab,
+                                    evidence)) {
+                        if (slot.twin_rail.unresolved()) {
+                            slot.twin_rail.poison();
+                        }
+                        slot.two_evidence_compact_seed.fill(0.0f);
+                        slot.two_evidence_compact_seed_valid = false;
+                        send_error(
+                                slot,
+                                "Two-evidence final row arrived without the exact resident stage",
+                                ERROR_TYPE_SERVER);
+                        slot.release();
+                        slot.i_batch = -1;
+                        return;
+                    }
+
+                    slot.two_evidence_suffix_decoded_while_resident = true;
+                    if (variant ==
+                            neo3000::twin_rail_variant::
+                                    COMPACT_CLASSICAL) {
+                        slot.two_evidence_projected_token =
+                                neo3000::twin_rail_carrier::
+                                        compact_two_evidence_projection(
+                                                slot.two_evidence_compact_seed,
+                                                evidence);
+                        slot.two_evidence_compact_seed.fill(0.0f);
+                        slot.two_evidence_compact_seed_valid = false;
+                        slot.two_evidence_final_receipt = {};
+                        slot.two_evidence_final_receipt.accepted =
+                                slot.two_evidence_projected_token !=
+                                LLAMA_TOKEN_NULL;
+                        slot.two_evidence_final_receipt.
+                                two_evidence_composition = true;
+                        slot.two_evidence_final_receipt.
+                                first_evidence_seed_zeroed = true;
+                        slot.two_evidence_final_receipt.
+                                retained_evidence_bytes =
+                                neo3000::twin_rail_carrier::
+                                        retained_evidence_bytes;
+                        slot.two_evidence_final_receipt.
+                                retained_evidence_bytes_after_call = 0;
+                        slot.two_evidence_final_receipt.
+                                persistent_object_bytes = 0;
+                    } else {
+                        slot.two_evidence_final_receipt =
+                                slot.twin_rail.finish_two_evidence(
+                                        evidence,
+                                        neo3000_twin_rail_contract_from_task(
+                                                slot.task->params.
+                                                        neo3000_twin_rail_final));
+                        if (slot.two_evidence_final_receipt.accepted &&
+                                slot.two_evidence_final_receipt.restored &&
+                                slot.two_evidence_final_receipt.
+                                        first_evidence_seed_zeroed) {
+                            slot.two_evidence_projected_token =
+                                    slot.twin_rail.take_final_projection();
+                        }
+                    }
+                    evidence.fill(0.0f);
+
+                    if (!slot.two_evidence_final_receipt.accepted ||
+                            slot.two_evidence_projected_token ==
+                                    LLAMA_TOKEN_NULL ||
+                            (variant !=
+                                     neo3000::twin_rail_variant::
+                                             COMPACT_CLASSICAL &&
+                             slot.twin_rail.state() !=
+                                     neo3000::twin_rail_state::CLOSED)) {
+                        if (slot.twin_rail.unresolved()) {
+                            slot.twin_rail.poison();
+                        }
+                        slot.two_evidence_compact_seed.fill(0.0f);
+                        slot.two_evidence_compact_seed_valid = false;
+                        send_error(
+                                slot,
+                                "Two-evidence composition rejected before final projection",
+                                ERROR_TYPE_INVALID_REQUEST);
+                        slot.release();
+                        slot.i_batch = -1;
+                        return;
+                    }
+
+                    if (variant ==
+                            neo3000::twin_rail_variant::
+                                    COMPACT_CLASSICAL) {
+                        SLT_WRN(slot,
+                                "neo3000 compact two-evidence recurrence closed before response carrier=%s lease=%" PRIu64 " generation=%u variant=%u retained_peak_bytes=%zu retained_after_close_bytes=%zu rows=2 split=91 total=142 suffix_while_resident=true\n",
+                                slot.task->params.
+                                        neo3000_twin_rail_stage.
+                                                carrier_id.c_str(),
+                                slot.task->params.
+                                        neo3000_twin_rail_stage.outer_lease,
+                                slot.task->params.
+                                        neo3000_twin_rail_stage.generation,
+                                slot.task->params.
+                                        neo3000_twin_rail_stage.
+                                                module_variant,
+                                slot.two_evidence_final_receipt.
+                                        retained_evidence_bytes,
+                                slot.two_evidence_final_receipt.
+                                        retained_evidence_bytes_after_call);
+                    } else {
+                        SLT_WRN(slot,
+                                "neo3000 two-evidence carrier restored and both live sources declared-closed before response carrier=%s lease=%" PRIu64 " generation=%u variant=%u cells=%zu bytes=%zu object_bytes=%zu dynamic_capacity_bytes=%zu receipt_bytes=%zu contract_bytes=%zu retained_peak_bytes=%zu retained_after_close_bytes=%zu score_error=%.17g restoration_error=%.17g classical_parity=%s primary_margin_guard=%s backing_reused=%s transactions=%" PRIu64 " reuses=%" PRIu64 " recoveries=%" PRIu64 " rows=2 split=91 total=142 suffix_while_resident=true\n",
+                                slot.task->params.
+                                        neo3000_twin_rail_stage.
+                                                carrier_id.c_str(),
+                                slot.task->params.
+                                        neo3000_twin_rail_stage.outer_lease,
+                                slot.task->params.
+                                        neo3000_twin_rail_stage.generation,
+                                slot.task->params.
+                                        neo3000_twin_rail_stage.
+                                                module_variant,
+                                neo3000::twin_rail_carrier::cell_count,
+                                neo3000::twin_rail_carrier::carrier_bytes,
+                                slot.two_evidence_final_receipt.
+                                        persistent_object_bytes,
+                                slot.two_evidence_final_receipt.
+                                        persistent_dynamic_capacity_bytes,
+                                sizeof(neo3000::twin_rail_receipt),
+                                sizeof(neo3000::twin_rail_contract),
+                                slot.two_evidence_final_receipt.
+                                        retained_evidence_bytes,
+                                slot.two_evidence_final_receipt.
+                                        retained_evidence_bytes_after_call,
+                                slot.two_evidence_final_receipt.
+                                        maximum_score_error,
+                                slot.two_evidence_final_receipt.
+                                        maximum_restoration_error,
+                                slot.two_evidence_final_receipt.
+                                        classical_parity
+                                        ? "true"
+                                        : "false",
+                                slot.two_evidence_final_receipt.
+                                        primary_margin_guard_passed
+                                        ? "true"
+                                        : "false",
+                                slot.two_evidence_final_receipt.
+                                        same_backing_as_prior_transaction
+                                        ? "true"
+                                        : "false",
+                                slot.two_evidence_final_receipt.
+                                        completed_transactions,
+                                slot.two_evidence_final_receipt.
+                                        backing_reuses,
+                                slot.two_evidence_final_receipt.
+                                        recovery_initializations);
+                    }
+                }
+
                 if (slot.task->type == SERVER_TASK_TYPE_EMBEDDING) {
                     // prompt evaluated for embedding
                     send_embedding(slot, batch_view);
@@ -5286,7 +5789,18 @@ private:
             llama_token id;
             {
                 scoped_timer timer(t_sampl, n_sampl);
-                id = common_sampler_sample(slot.smpl.get(), slot.ctx_tgt, tok_idx);
+                if (slot.task->params.neo3000_two_evidence_twin_rail &&
+                        slot.two_evidence_projected_token !=
+                                LLAMA_TOKEN_NULL) {
+                    id = slot.two_evidence_projected_token;
+                    slot.two_evidence_projected_token =
+                            LLAMA_TOKEN_NULL;
+                } else {
+                    id = common_sampler_sample(
+                            slot.smpl.get(),
+                            slot.ctx_tgt,
+                            tok_idx);
+                }
             }
 
             slot.i_batch = -1;

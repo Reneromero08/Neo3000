@@ -49,6 +49,12 @@ std::vector<std::unique_ptr<field>> make_llama_cmpl_schema(const common_params &
     add((new field_bool("neo3000_use_live_terminal_boundary", params.neo3000_use_live_terminal_boundary))
         ->set_desc("Experimental: consume the exact owner-bound live terminal boundary once before decode"));
 
+    add((new field_bool("neo3000_two_evidence_twin_rail", params.neo3000_two_evidence_twin_rail))
+        ->set_desc("Experimental: compose two exact live candidate-logits rows on one unresolved owner-bound twin-rail carrier"));
+
+    add((new field_bool("neo3000_two_evidence_hold_after_stage", params.neo3000_two_evidence_hold_after_stage))
+        ->set_desc("Experimental control: hold the exact first two-evidence stage resident until disconnect or server shutdown"));
+
     add((new field_str("neo3000_terminal_root_id"))
         ->set_handler([&](field_eval_context & ctx, const json & data) {
             ctx.params.neo3000_terminal_root_id =
@@ -112,7 +118,124 @@ std::vector<std::unique_ptr<field>> make_llama_cmpl_schema(const common_params &
                 ctx.params.neo3000_live_terminal.restoration_policy =
                         data.at("restoration_policy").get<std::string>();
             }))
+        ->add_subfield((new field_str("causal_position"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_live_terminal.causal_position =
+                        data.at("causal_position").get<std::string>();
+            }))
         ->set_desc("Typed owner/lease/generation contract for one-use live terminal custody"));
+
+    add((new field_nested("neo3000_twin_rail_stage"))
+        ->add_subfield((new field_str("boundary_id"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_stage.boundary_id =
+                        data.at("boundary_id").get<std::string>();
+            }))
+        ->add_subfield((new field_str("carrier_id"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_stage.carrier_id =
+                        data.at("carrier_id").get<std::string>();
+            }))
+        ->add_subfield(new field_num<uint64_t>(
+            "outer_lease", params.neo3000_twin_rail_stage.outer_lease))
+        ->add_subfield(new field_num<uint32_t>(
+            "generation", params.neo3000_twin_rail_stage.generation))
+        ->add_subfield((new field_str("port_owner"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_stage.port_owner =
+                        data.at("port_owner").get<std::string>();
+            }))
+        ->add_subfield((new field_str("port_type"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_stage.port_type =
+                        data.at("port_type").get<std::string>();
+            }))
+        ->add_subfield((new field_str("module_id"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_stage.module_id =
+                        data.at("module_id").get<std::string>();
+            }))
+        ->add_subfield(new field_num<uint32_t>(
+            "module_variant", params.neo3000_twin_rail_stage.module_variant))
+        ->add_subfield(new field_num<uint32_t>(
+            "module_ordinal", params.neo3000_twin_rail_stage.module_ordinal))
+        ->add_subfield((new field_str("input_boundary_id"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_stage.input_boundary_id =
+                        data.at("input_boundary_id").get<std::string>();
+            }))
+        ->add_subfield((new field_str("projection_policy"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_stage.projection_policy =
+                        data.at("projection_policy").get<std::string>();
+            }))
+        ->add_subfield((new field_str("restoration_policy"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_stage.restoration_policy =
+                        data.at("restoration_policy").get<std::string>();
+            }))
+        ->add_subfield((new field_str("causal_position"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_stage.causal_position =
+                        data.at("causal_position").get<std::string>();
+            }))
+        ->set_desc("Exact first owner-bound port for two-evidence twin-rail composition"));
+
+    add((new field_nested("neo3000_twin_rail_final"))
+        ->add_subfield((new field_str("boundary_id"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_final.boundary_id =
+                        data.at("boundary_id").get<std::string>();
+            }))
+        ->add_subfield((new field_str("carrier_id"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_final.carrier_id =
+                        data.at("carrier_id").get<std::string>();
+            }))
+        ->add_subfield(new field_num<uint64_t>(
+            "outer_lease", params.neo3000_twin_rail_final.outer_lease))
+        ->add_subfield(new field_num<uint32_t>(
+            "generation", params.neo3000_twin_rail_final.generation))
+        ->add_subfield((new field_str("port_owner"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_final.port_owner =
+                        data.at("port_owner").get<std::string>();
+            }))
+        ->add_subfield((new field_str("port_type"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_final.port_type =
+                        data.at("port_type").get<std::string>();
+            }))
+        ->add_subfield((new field_str("module_id"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_final.module_id =
+                        data.at("module_id").get<std::string>();
+            }))
+        ->add_subfield(new field_num<uint32_t>(
+            "module_variant", params.neo3000_twin_rail_final.module_variant))
+        ->add_subfield(new field_num<uint32_t>(
+            "module_ordinal", params.neo3000_twin_rail_final.module_ordinal))
+        ->add_subfield((new field_str("input_boundary_id"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_final.input_boundary_id =
+                        data.at("input_boundary_id").get<std::string>();
+            }))
+        ->add_subfield((new field_str("projection_policy"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_final.projection_policy =
+                        data.at("projection_policy").get<std::string>();
+            }))
+        ->add_subfield((new field_str("restoration_policy"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_final.restoration_policy =
+                        data.at("restoration_policy").get<std::string>();
+            }))
+        ->add_subfield((new field_str("causal_position"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_twin_rail_final.causal_position =
+                        data.at("causal_position").get<std::string>();
+            }))
+        ->set_desc("Exact second owner-bound port for two-evidence twin-rail composition"));
 
     add((new field_num("n_predict", params.n_predict))
         ->set_hard_limits(-1, INT32_MAX)

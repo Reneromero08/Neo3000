@@ -64,6 +64,7 @@ struct task_params {
         std::string input_boundary_id;
         std::string projection_policy;
         std::string restoration_policy;
+        std::string causal_position;
 
         bool complete() const {
             return
@@ -89,10 +90,14 @@ struct task_params {
     bool neo3000_use_terminal_logits     = false;
     bool neo3000_capture_live_terminal_boundary = false;
     bool neo3000_use_live_terminal_boundary     = false;
+    bool neo3000_two_evidence_twin_rail         = false;
+    bool neo3000_two_evidence_hold_after_stage  = false;
 
     std::string neo3000_terminal_root_id;
     std::string neo3000_terminal_logits_fnv64;
     neo3000_live_terminal_contract neo3000_live_terminal;
+    neo3000_live_terminal_contract neo3000_twin_rail_stage;
+    neo3000_live_terminal_contract neo3000_twin_rail_final;
 
     int32_t n_keep    =  0; // number of tokens to keep from initial prompt
     int32_t n_discard =  0; // number of tokens after n_keep that may be discarded when shifting context, 0 defaults to half

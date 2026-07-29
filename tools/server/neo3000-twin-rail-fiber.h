@@ -46,6 +46,7 @@ struct twin_rail_contract {
     std::string input_boundary_id;
     std::string projection_policy;
     std::string restoration_policy;
+    std::string causal_position;
 };
 
 struct twin_rail_receipt {
@@ -56,11 +57,15 @@ struct twin_rail_receipt {
     bool primary_margin_guard_passed = false;
     bool same_backing_as_prior_transaction = false;
     bool failure_was_pre_borrow = false;
+    bool two_evidence_composition = false;
+    bool first_evidence_seed_zeroed = true;
     uint64_t completed_transactions = 0;
     uint64_t backing_reuses = 0;
     uint64_t recovery_initializations = 0;
     size_t persistent_object_bytes = 0;
     size_t persistent_dynamic_capacity_bytes = 0;
+    size_t retained_evidence_bytes = 0;
+    size_t retained_evidence_bytes_after_call = 0;
     double maximum_score_error = 0.0;
     double maximum_restoration_error = 0.0;
     twin_rail_state state = twin_rail_state::EMPTY;
@@ -77,6 +82,7 @@ public:
     static constexpr std::array<int32_t, 4> candidate_token_ids = {32, 33, 34, 35};
     static constexpr size_t hypothesis_count = candidate_token_ids.size();
     using score_array = std::array<double, hypothesis_count>;
+    using evidence_array = std::array<float, hypothesis_count>;
     static constexpr size_t cell_count = hypothesis_count * 2;
     static constexpr size_t carrier_bytes = cell_count * sizeof(std::complex<double>);
     static constexpr double restoration_tolerance = 1.0e-12;
@@ -93,10 +99,46 @@ public:
             "FINAL_SINGLE_HYPOTHESIS_TOKEN_AFTER_RESTORATION";
     static constexpr const char * required_source_restoration_policy =
             "DECLARED_CLOSURE";
+    static constexpr const char * two_evidence_stage_owner =
+            "dual-evidence-stage-owner-v1";
+    static constexpr const char * two_evidence_stage_type =
+            "live-candidate-logits-row";
+    static constexpr const char * two_evidence_stage_module =
+            "Ry";
+    static constexpr const char * two_evidence_stage_boundary =
+            "fnv1a64:4c0d82dcecacca31";
+    static constexpr const char * two_evidence_stage_projection =
+            "forbidden";
+    static constexpr const char * two_evidence_stage_restoration =
+            "deferred to final port";
+    static constexpr const char * two_evidence_stage_causal_position =
+            "FIRST_OF_TWO";
+    static constexpr const char * two_evidence_final_owner =
+            "dual-evidence-final-owner-v1";
+    static constexpr const char * two_evidence_final_type =
+            "live-candidate-logits-row";
+    static constexpr const char * two_evidence_final_module =
+            "Rx";
+    static constexpr const char * two_evidence_final_boundary =
+            "fnv1a64:007c44f04d25fd72";
+    static constexpr const char * two_evidence_final_projection =
+            "final-only-after-restoration";
+    static constexpr const char * two_evidence_final_restoration =
+            "reverse public descriptors G,F,H";
+    static constexpr const char * two_evidence_final_causal_position =
+            "SECOND_OF_TWO";
+    static constexpr size_t retained_evidence_bytes =
+            hypothesis_count * sizeof(float);
 
     twin_rail_receipt transform_and_restore(
             const std::vector<float> & terminal_logits,
             const twin_rail_contract & contract);
+    twin_rail_receipt begin_two_evidence(
+            const evidence_array & first_logits,
+            const twin_rail_contract & stage_contract);
+    twin_rail_receipt finish_two_evidence(
+            const evidence_array & second_logits,
+            const twin_rail_contract & final_contract);
 #ifdef NEO3000_TWIN_RAIL_TESTING
     twin_rail_receipt transform_and_restore_with_test_scores(
             const std::vector<float> & terminal_logits,
@@ -106,6 +148,9 @@ public:
 
     static int32_t compact_classical_projection(
             const std::vector<float> & terminal_logits);
+    static int32_t compact_two_evidence_projection(
+            const evidence_array & first_logits,
+            const evidence_array & second_logits);
     static int32_t strict_score_projection(const score_array & scores);
     static int32_t canonical_reordered_score_projection(
             const score_array & scores);
@@ -116,6 +161,7 @@ public:
     twin_rail_state state() const;
     bool unresolved() const;
     bool has_buffered_projection() const;
+    bool evidence_seed_is_zero() const;
     uint64_t completed_transactions() const;
     uint64_t backing_reuses() const;
     uint64_t recovery_initializations() const;
@@ -128,6 +174,7 @@ private:
 
     static std::complex<double> expected_cell(size_t index);
     static scalar_array probabilities_from_logits(const std::vector<float> & terminal_logits);
+    static scalar_array probabilities_from_evidence(const evidence_array & logits);
     static scalar_array angles_from_probabilities(const scalar_array & probabilities);
     static size_t lowest_argmax(const scalar_array & values);
     static double top_two_margin(const scalar_array & values);
@@ -140,9 +187,18 @@ private:
     double restoration_error() const;
     bool contract_is_structurally_valid(const twin_rail_contract & contract) const;
     bool ownership_transition_is_valid(const twin_rail_contract & contract) const;
+    bool two_evidence_ownership_transition_is_valid(
+            const twin_rail_contract & contract) const;
+    bool two_evidence_stage_contract_is_valid(
+            const twin_rail_contract & contract) const;
+    bool two_evidence_final_contract_is_valid(
+            const twin_rail_contract & contract) const;
     void bind_ownership(const twin_rail_contract & contract);
     void apply_phase(const scalar_array & angles, bool inverse);
     void apply_hadamard();
+    void apply_ry(const scalar_array & angles, bool inverse);
+    void apply_rx(const scalar_array & angles, bool inverse);
+    void clear_evidence_seed();
 
     cell_array cells_ = {};
     twin_rail_state state_ = twin_rail_state::EMPTY;
@@ -155,6 +211,11 @@ private:
     uint64_t last_outer_lease_ = 0;
     uint32_t last_generation_ = 0;
     uint32_t last_module_ordinal_ = 0;
+    uint32_t bound_module_variant_ = 0;
+
+    evidence_array first_evidence_seed_ = {};
+    bool first_evidence_seed_valid_ = false;
+    bool pending_same_backing_ = false;
 
     uintptr_t prior_backing_address_ = 0;
     uint64_t completed_transactions_ = 0;
