@@ -168,7 +168,7 @@ class TerminalLogitsContinuationTests(unittest.TestCase):
             '"Terminal-logits continuation identity mismatch"'
         )
         capture_contract = source[
-            source.index("if (task.params.neo3000_capture_terminal_logits) {") :
+            source.index("if (capture_terminal) {") :
             admission
         ]
         self.assertIn("task.params.n_cmpl != 1", capture_contract)

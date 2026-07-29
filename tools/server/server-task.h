@@ -51,6 +51,35 @@ enum stop_type {
 };
 
 struct task_params {
+    struct neo3000_live_terminal_contract {
+        std::string boundary_id;
+        std::string carrier_id;
+        uint64_t outer_lease = 0;
+        uint32_t generation = 0;
+        std::string port_owner;
+        std::string port_type;
+        std::string module_id;
+        uint32_t module_variant = 0;
+        uint32_t module_ordinal = 0;
+        std::string input_boundary_id;
+        std::string projection_policy;
+        std::string restoration_policy;
+
+        bool complete() const {
+            return
+                !boundary_id.empty() &&
+                !carrier_id.empty() &&
+                outer_lease != 0 &&
+                generation != 0 &&
+                !port_owner.empty() &&
+                !port_type.empty() &&
+                !module_id.empty() &&
+                !input_boundary_id.empty() &&
+                !projection_policy.empty() &&
+                !restoration_policy.empty();
+        }
+    };
+
     bool stream          = false;
     bool include_usage   = false;
     bool cache_prompt    = true; // remember the prompt to avoid reprocessing all prompt
@@ -58,9 +87,12 @@ struct task_params {
     bool return_progress = false;
     bool neo3000_capture_terminal_logits = false;
     bool neo3000_use_terminal_logits     = false;
+    bool neo3000_capture_live_terminal_boundary = false;
+    bool neo3000_use_live_terminal_boundary     = false;
 
     std::string neo3000_terminal_root_id;
     std::string neo3000_terminal_logits_fnv64;
+    neo3000_live_terminal_contract neo3000_live_terminal;
 
     int32_t n_keep    =  0; // number of tokens to keep from initial prompt
     int32_t n_discard =  0; // number of tokens after n_keep that may be discarded when shifting context, 0 defaults to half
@@ -140,6 +172,7 @@ struct task_result_state {
 
 struct server_task {
     int id = -1; // to be filled by server_queue
+    uint64_t neo3000_request_epoch = 0; // assigned at admitted inference launch
 
     // TODO @ngxson : remove this field and implement a mapping task_id -> idx in the response_reader
     size_t index = 0; // used when there are multiple prompts (batch request)

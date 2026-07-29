@@ -58,7 +58,7 @@ static std::string neo3000_fnv1a64_hex(const void * data, size_t size) {
 
 static std::string neo3000_prompt_fnv1a64(const server_tokens & tokens) {
     uint64_t hash = 14695981039346656037ULL;
-    for (int32_t i = 0; i < tokens.size(); ++i) {
+    for (size_t i = 0; i < tokens.size(); ++i) {
         const llama_token token = tokens[i];
         const auto * bytes = reinterpret_cast<const uint8_t *>(&token);
         for (size_t j = 0; j < sizeof(token); ++j) {
@@ -79,7 +79,64 @@ static std::string neo3000_sampler_fnv1a64(const task_params & params) {
     return neo3000_fnv1a64_hex(encoded.data(), encoded.size());
 }
 
+static std::string neo3000_live_terminal_contract_fnv1a64(
+        const task_params::neo3000_live_terminal_contract & contract) {
+    const std::string encoded =
+            contract.boundary_id + "\n" +
+            contract.carrier_id + "\n" +
+            std::to_string(contract.outer_lease) + "\n" +
+            std::to_string(contract.generation) + "\n" +
+            contract.port_owner + "\n" +
+            contract.port_type + "\n" +
+            contract.module_id + "\n" +
+            std::to_string(contract.module_variant) + "\n" +
+            std::to_string(contract.module_ordinal) + "\n" +
+            contract.input_boundary_id + "\n" +
+            contract.projection_policy + "\n" +
+            contract.restoration_policy;
+    return neo3000_fnv1a64_hex(encoded.data(), encoded.size());
+}
+
+static bool neo3000_live_terminal_contract_equal(
+        const task_params::neo3000_live_terminal_contract & lhs,
+        const task_params::neo3000_live_terminal_contract & rhs) {
+    return
+            lhs.boundary_id == rhs.boundary_id &&
+            lhs.carrier_id == rhs.carrier_id &&
+            lhs.outer_lease == rhs.outer_lease &&
+            lhs.generation == rhs.generation &&
+            lhs.port_owner == rhs.port_owner &&
+            lhs.port_type == rhs.port_type &&
+            lhs.module_id == rhs.module_id &&
+            lhs.module_variant == rhs.module_variant &&
+            lhs.module_ordinal == rhs.module_ordinal &&
+            lhs.input_boundary_id == rhs.input_boundary_id &&
+            lhs.projection_policy == rhs.projection_policy &&
+            lhs.restoration_policy == rhs.restoration_policy;
+}
+
 struct server_terminal_logits_boundary {
+    struct live_contract {
+        task_params::neo3000_live_terminal_contract identity;
+        uint64_t capture_request_epoch = 0;
+        int32_t n_vocab = 0;
+        std::string contract_fnv64;
+
+        bool valid() const {
+            return identity.complete() &&
+                    capture_request_epoch != 0 &&
+                    n_vocab > 0 &&
+                    !contract_fnv64.empty();
+        }
+
+        void clear() {
+            identity = {};
+            capture_request_epoch = 0;
+            n_vocab = 0;
+            contract_fnv64.clear();
+        }
+    };
+
     std::vector<float> logits;
     std::string root_id;
     std::string logits_fnv64;
@@ -87,6 +144,7 @@ struct server_terminal_logits_boundary {
     std::string sampler_fnv64;
     int64_t position = -1;
     int32_t n_prompt_tokens = 0;
+    live_contract live;
 
     bool valid() const {
         return !logits.empty() &&
@@ -110,6 +168,7 @@ struct server_terminal_logits_boundary {
         sampler_fnv64.clear();
         position = -1;
         n_prompt_tokens = 0;
+        live.clear();
     }
 };
 
@@ -568,13 +627,26 @@ struct server_slot {
 
             SLT_INF(*this, "stop processing: n_tokens = %d, truncated = %d\n", prompt.n_tokens(), truncated);
 
+            const bool poison_live_terminal =
+                    terminal_logits_pending_use && terminal_logits.live.valid();
+            std::string poisoned_boundary_id;
+            if (poison_live_terminal) {
+                poisoned_boundary_id =
+                        terminal_logits.live.identity.boundary_id;
+                SLT_WRN(*this,
+                        "neo3000 one-use live terminal boundary poisoned on release boundary=%s\n",
+                        poisoned_boundary_id.c_str());
+            }
+
             t_last_used        =  ggml_time_us();
             t_token_generation = (ggml_time_us() - t_start_generation) / 1e3;
 
             state = SLOT_STATE_IDLE;
 
-            // do not keep context of the child slots - the parent's context is enough
-            if (task->is_child()) {
+            if (poison_live_terminal) {
+                prompt_clear(false);
+            } else if (task->is_child()) {
+                // do not keep context of the child slots - the parent's context is enough
                 prompt_clear(false);
             }
 
@@ -1041,6 +1113,7 @@ private:
 
     // slots / clients
     std::vector<server_slot> slots;
+    uint64_t neo3000_request_epoch = 0;
 
     int trace = 0;
     int slots_debug = 0;
@@ -1969,6 +2042,93 @@ private:
         return res;
     }
 
+    server_slot * preflight_live_terminal_before_slot_selection(
+            const server_task & task,
+            bool & rejected) {
+        rejected = false;
+        for (auto & slot : slots) {
+            if (!slot.terminal_logits.live.valid() || slot.is_processing()) {
+                continue;
+            }
+
+            const auto & live = slot.terminal_logits.live;
+            const int terminal_modes =
+                    static_cast<int>(task.params.neo3000_capture_terminal_logits) +
+                    static_cast<int>(task.params.neo3000_use_terminal_logits) +
+                    static_cast<int>(task.params.neo3000_capture_live_terminal_boundary) +
+                    static_cast<int>(task.params.neo3000_use_live_terminal_boundary);
+            const auto exact_prompt_matches = [&]() {
+                if (slot.prompt.tokens.size() != task.tokens.size()) {
+                    return false;
+                }
+                for (size_t i = 0; i < task.tokens.size(); ++i) {
+                    if (slot.prompt.tokens[i] != task.tokens[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            };
+            const int32_t n_vocab = llama_vocab_n_tokens(vocab);
+            const llama_pos position =
+                    llama_memory_seq_pos_max(llama_get_memory(ctx_tgt), slot.id);
+            const bool exact =
+                    terminal_modes == 1 &&
+                    task.params.neo3000_use_live_terminal_boundary &&
+                    task.type == SERVER_TASK_TYPE_COMPLETION &&
+                    task.params.n_cmpl == 1 &&
+                    task.params.n_predict != 0 &&
+                    task.params.cache_prompt &&
+                    task.params.lora.empty() &&
+                    !task.params.sampling.backend_sampling &&
+                    task.params.sampling.n_probs == 0 &&
+                    !slot.can_speculate() &&
+                    slots.size() == 1 &&
+                    slot.id == 0 &&
+                    task.tokens.validate(ctx_tgt) &&
+                    task.params.neo3000_live_terminal.complete() &&
+                    live.capture_request_epoch == neo3000_request_epoch &&
+                    live.n_vocab == n_vocab &&
+                    neo3000_live_terminal_contract_equal(
+                            live.identity,
+                            task.params.neo3000_live_terminal) &&
+                    live.contract_fnv64 ==
+                            neo3000_live_terminal_contract_fnv1a64(
+                                    task.params.neo3000_live_terminal) &&
+                    slot.terminal_logits.root_id.empty() &&
+                    slot.terminal_logits.logits.size() ==
+                            static_cast<size_t>(n_vocab) &&
+                    static_cast<size_t>(slot.terminal_logits.n_prompt_tokens) ==
+                            task.tokens.size() &&
+                    slot.terminal_logits.prompt_fnv64 ==
+                            neo3000_prompt_fnv1a64(task.tokens) &&
+                    slot.terminal_logits.sampler_fnv64 ==
+                            neo3000_sampler_fnv1a64(task.params) &&
+                    slot.terminal_logits.position == position &&
+                    exact_prompt_matches();
+            if (exact) {
+                // Bypass ordinary LCP/LRU prompt-cache selection: even a valid
+                // live consumer must not serialize or reload the resident carrier.
+                return &slot;
+            }
+
+            const std::string boundary_id = live.identity.boundary_id;
+            const bool requested_live =
+                    task.params.neo3000_use_live_terminal_boundary;
+            slot.prompt_clear(false);
+            send_error(task,
+                    requested_live
+                        ? "Live terminal boundary identity or causal-order mismatch"
+                        : "Intervening inference rejected while a one-use live terminal boundary is resident",
+                    ERROR_TYPE_INVALID_REQUEST);
+            SLT_WRN(slot,
+                    "neo3000 one-use live terminal boundary and carrier poisoned before slot selection boundary=%s\n",
+                    boundary_id.c_str());
+            rejected = true;
+            return nullptr;
+        }
+        return nullptr;
+    }
+
     std::vector<common_adapter_lora_info> construct_lora_list(const std::map<int, float> & config) const {
         std::vector<common_adapter_lora_info> output = params_base.lora_adapters; // copy
         for (size_t i = 0; i < output.size(); ++i) {
@@ -1983,6 +2143,45 @@ private:
     }
 
     bool launch_slot_with_task(server_slot & slot, server_task && task) {
+        const int terminal_modes =
+                static_cast<int>(task.params.neo3000_capture_terminal_logits) +
+                static_cast<int>(task.params.neo3000_use_terminal_logits) +
+                static_cast<int>(task.params.neo3000_capture_live_terminal_boundary) +
+                static_cast<int>(task.params.neo3000_use_live_terminal_boundary);
+        if (terminal_modes > 1) {
+            if (slot.terminal_logits.live.valid()) {
+                slot.prompt_clear(false);
+            }
+            send_error(task,
+                    "Exactly one terminal-boundary mode may be used by a request",
+                    ERROR_TYPE_INVALID_REQUEST);
+            return false;
+        }
+
+        const bool capture_terminal =
+                task.params.neo3000_capture_terminal_logits ||
+                task.params.neo3000_capture_live_terminal_boundary;
+        const bool use_root_terminal =
+                task.params.neo3000_use_terminal_logits;
+        const bool use_live_terminal =
+                task.params.neo3000_use_live_terminal_boundary;
+
+        if (slot.terminal_logits.live.valid() &&
+                (!use_live_terminal ||
+                 !task.params.lora.empty() ||
+                 !task.tokens.validate(ctx_tgt))) {
+            const std::string boundary_id =
+                    slot.terminal_logits.live.identity.boundary_id;
+            slot.prompt_clear(false);
+            send_error(task,
+                    "Intervening or malformed inference rejected while a one-use live terminal boundary is resident",
+                    ERROR_TYPE_INVALID_REQUEST);
+            SLT_WRN(slot,
+                    "neo3000 one-use live terminal boundary and carrier poisoned by pre-admission inference boundary=%s\n",
+                    boundary_id.c_str());
+            return false;
+        }
+
         // process per-request lora adapters
         if (!task.params.lora.empty()) {
             auto task_loras = construct_lora_list(task.params.lora);
@@ -2053,18 +2252,10 @@ private:
             return false;
         }
 
-        if (task.params.neo3000_capture_terminal_logits &&
-                task.params.neo3000_use_terminal_logits) {
-            send_error(task,
-                    "Terminal logits cannot be captured and consumed in the same request",
-                    ERROR_TYPE_INVALID_REQUEST);
-            return false;
-        }
-
         slot.terminal_logits_pending_use = false;
         slot.terminal_logits_reused = false;
 
-        if (task.params.neo3000_capture_terminal_logits) {
+        if (capture_terminal) {
             if (task.type != SERVER_TASK_TYPE_COMPLETION ||
                     task.params.n_cmpl != 1 ||
                     task.params.n_predict != 0 ||
@@ -2076,13 +2267,24 @@ private:
                         ERROR_TYPE_INVALID_REQUEST);
                 return false;
             }
+            if (task.params.neo3000_capture_live_terminal_boundary &&
+                    (slots.size() != 1 ||
+                     slot.id != 0 ||
+                     !task.params.neo3000_live_terminal.complete() ||
+                     task.params.neo3000_live_terminal.restoration_policy !=
+                             "DECLARED_CLOSURE")) {
+                send_error(task,
+                        "Live terminal capture requires one slot and a complete declared-closure contract",
+                        ERROR_TYPE_INVALID_REQUEST);
+                return false;
+            }
             slot.terminal_logits.clear();
-        } else if (task.params.neo3000_use_terminal_logits) {
+        } else if (use_root_terminal || use_live_terminal) {
             const auto exact_prompt_matches = [&]() {
                 if (slot.prompt.tokens.size() != task.tokens.size()) {
                     return false;
                 }
-                for (int32_t i = 0; i < task.tokens.size(); ++i) {
+                for (size_t i = 0; i < task.tokens.size(); ++i) {
                     if (slot.prompt.tokens[i] != task.tokens[i]) {
                         return false;
                     }
@@ -2095,9 +2297,11 @@ private:
             const std::string sampler_fnv64 = neo3000_sampler_fnv1a64(task.params);
             const llama_pos position =
                     llama_memory_seq_pos_max(llama_get_memory(ctx_tgt), slot.id);
-            const server_slot_ram_root * terminal_root =
-                    find_ram_root(task.params.neo3000_terminal_root_id);
-            const bool terminal_exact =
+            bool terminal_exact = false;
+            if (use_root_terminal) {
+                const server_slot_ram_root * terminal_root =
+                        find_ram_root(task.params.neo3000_terminal_root_id);
+                terminal_exact =
                     task.type == SERVER_TASK_TYPE_COMPLETION &&
                     task.params.n_cmpl == 1 &&
                     task.params.n_predict != 0 &&
@@ -2116,24 +2320,81 @@ private:
                     slot.terminal_logits.logits_fnv64 ==
                             task.params.neo3000_terminal_logits_fnv64 &&
                     slot.terminal_logits.logits.size() == static_cast<size_t>(n_vocab) &&
-                    slot.terminal_logits.n_prompt_tokens == task.tokens.size() &&
+                    static_cast<size_t>(slot.terminal_logits.n_prompt_tokens) ==
+                            task.tokens.size() &&
+                    slot.terminal_logits.prompt_fnv64 == prompt_fnv64 &&
+                    slot.terminal_logits.sampler_fnv64 == sampler_fnv64 &&
+                    slot.terminal_logits.position == position &&
+                    !slot.terminal_logits.live.valid() &&
+                    exact_prompt_matches();
+            } else {
+                const auto & live = slot.terminal_logits.live;
+                terminal_exact =
+                    task.type == SERVER_TASK_TYPE_COMPLETION &&
+                    task.params.n_cmpl == 1 &&
+                    task.params.n_predict != 0 &&
+                    task.params.cache_prompt &&
+                    !task.params.sampling.backend_sampling &&
+                    task.params.sampling.n_probs == 0 &&
+                    !slot.can_speculate() &&
+                    slots.size() == 1 &&
+                    slot.id == 0 &&
+                    task.params.neo3000_live_terminal.complete() &&
+                    live.valid() &&
+                    live.capture_request_epoch + 1 == task.neo3000_request_epoch &&
+                    live.n_vocab == n_vocab &&
+                    neo3000_live_terminal_contract_equal(
+                            live.identity,
+                            task.params.neo3000_live_terminal) &&
+                    live.contract_fnv64 ==
+                            neo3000_live_terminal_contract_fnv1a64(
+                                    task.params.neo3000_live_terminal) &&
+                    slot.terminal_logits.root_id.empty() &&
+                    slot.terminal_logits.logits.size() == static_cast<size_t>(n_vocab) &&
+                    static_cast<size_t>(slot.terminal_logits.n_prompt_tokens) ==
+                            task.tokens.size() &&
                     slot.terminal_logits.prompt_fnv64 == prompt_fnv64 &&
                     slot.terminal_logits.sampler_fnv64 == sampler_fnv64 &&
                     slot.terminal_logits.position == position &&
                     exact_prompt_matches();
+            }
             if (!terminal_exact) {
+                if (use_live_terminal && slot.terminal_logits.live.valid()) {
+                    slot.prompt_clear(false);
+                } else {
+                    slot.terminal_logits.clear();
+                }
                 send_error(task,
-                        "Terminal-logits continuation identity mismatch",
+                        use_live_terminal
+                            ? "Live terminal boundary identity or causal-order mismatch"
+                            : "Terminal-logits continuation identity mismatch",
                         ERROR_TYPE_INVALID_REQUEST);
                 return false;
             }
             slot.terminal_logits_pending_use = true;
-            SLT_WRN(slot,
-                    "neo3000 terminal-logits continuation admitted root=%s logits=%s tokens=%d position=%d\n",
-                    slot.terminal_logits.root_id.c_str(),
-                    slot.terminal_logits.logits_fnv64.c_str(),
-                    slot.terminal_logits.n_prompt_tokens,
-                    static_cast<int>(slot.terminal_logits.position));
+            if (use_live_terminal) {
+                SLT_WRN(slot,
+                        "neo3000 one-use live terminal boundary admitted boundary=%s carrier=%s lease=%" PRIu64 " generation=%u owner=%s type=%s module=%s variant=%u ordinal=%u contract=%s tokens=%d position=%d\n",
+                        slot.terminal_logits.live.identity.boundary_id.c_str(),
+                        slot.terminal_logits.live.identity.carrier_id.c_str(),
+                        slot.terminal_logits.live.identity.outer_lease,
+                        slot.terminal_logits.live.identity.generation,
+                        slot.terminal_logits.live.identity.port_owner.c_str(),
+                        slot.terminal_logits.live.identity.port_type.c_str(),
+                        slot.terminal_logits.live.identity.module_id.c_str(),
+                        slot.terminal_logits.live.identity.module_variant,
+                        slot.terminal_logits.live.identity.module_ordinal,
+                        slot.terminal_logits.live.contract_fnv64.c_str(),
+                        slot.terminal_logits.n_prompt_tokens,
+                        static_cast<int>(slot.terminal_logits.position));
+            } else {
+                SLT_WRN(slot,
+                        "neo3000 terminal-logits continuation admitted root=%s logits=%s tokens=%d position=%d\n",
+                        slot.terminal_logits.root_id.c_str(),
+                        slot.terminal_logits.logits_fnv64.c_str(),
+                        slot.terminal_logits.n_prompt_tokens,
+                        static_cast<int>(slot.terminal_logits.position));
+            }
         } else {
             slot.terminal_logits.clear();
         }
@@ -2408,6 +2669,35 @@ private:
             return false;
         }
         return true;
+    }
+
+    bool reject_intervening_slot_action(
+            const server_task & task,
+            const char * action) {
+        for (auto & slot : slots) {
+            if (!slot.terminal_logits.live.valid()) {
+                continue;
+            }
+
+            const std::string boundary_id =
+                    slot.terminal_logits.live.identity.boundary_id;
+            bool poisoned = false;
+            if (!slot.is_processing() && !slot.terminal_logits_pending_use) {
+                slot.prompt_clear(false);
+                poisoned = true;
+            }
+            SLT_WRN(slot,
+                    "neo3000 one-use live terminal boundary rejected intervening action=%s boundary=%s poisoned=%s\n",
+                    action,
+                    boundary_id.c_str(),
+                    poisoned ? "true" : "false");
+            send_error(task,
+                    std::string("Intervening ") + action +
+                            " rejected while a one-use live terminal boundary is resident",
+                    ERROR_TYPE_INVALID_REQUEST);
+            return true;
+        }
+        return false;
     }
 
     void send_partial_response(server_slot & slot, const completion_token_output & tkn, bool is_progress, bool is_begin = false) {
@@ -2719,7 +3009,17 @@ private:
 
                     const int id_task = task.id;
 
-                    server_slot * slot = get_available_slot(task);
+                    bool live_terminal_rejected = false;
+                    server_slot * slot =
+                            preflight_live_terminal_before_slot_selection(
+                                    task,
+                                    live_terminal_rejected);
+                    if (live_terminal_rejected) {
+                        break;
+                    }
+                    if (slot == nullptr) {
+                        slot = get_available_slot(task);
+                    }
 
                     //
                     // slot scheduling logic
@@ -2738,6 +3038,8 @@ private:
                         queue_tasks.defer(std::move(task));
                         break;
                     }
+
+                    task.neo3000_request_epoch = ++neo3000_request_epoch;
 
                     if (task.is_parent()) {
                         // try getting free slots for all child tasks
@@ -2888,6 +3190,9 @@ private:
                         queue_tasks.defer(std::move(task));
                         break;
                     }
+                    if (reject_intervening_slot_action(task, "slot-save")) {
+                        break;
+                    }
 
                     const size_t token_count = slot->prompt.tokens.size();
                     const int64_t t_start = ggml_time_us();
@@ -2924,6 +3229,9 @@ private:
                         // if requested slot is unavailable, we defer this task for processing later
                         SRV_DBG("requested slot is unavailable, defer task, id_task = %d\n", task.id);
                         queue_tasks.defer(std::move(task));
+                        break;
+                    }
+                    if (reject_intervening_slot_action(task, "slot-restore")) {
                         break;
                     }
 
@@ -2975,6 +3283,9 @@ private:
                         queue_tasks.defer(std::move(task));
                         break;
                     }
+                    if (reject_intervening_slot_action(task, "slot-erase")) {
+                        break;
+                    }
 
                     // Erase token cache
                     const size_t n_erased = slot->prompt.tokens.size();
@@ -3004,6 +3315,9 @@ private:
                         queue_tasks.defer(std::move(task));
                         break;
                     }
+                    if (reject_intervening_slot_action(task, "root-save")) {
+                        break;
+                    }
                     const bool root_on_device = task.slot_action.root_on_device < 0
                             ? params_base.cache_ram_root_device
                             : task.slot_action.root_on_device != 0;
@@ -3022,7 +3336,8 @@ private:
                     if (task.slot_action.include_terminal_logits) {
                         const bool terminal_exact =
                                 slot->terminal_logits.valid() &&
-                                slot->terminal_logits.n_prompt_tokens == slot->prompt.tokens.size() &&
+                                static_cast<size_t>(slot->terminal_logits.n_prompt_tokens) ==
+                                        slot->prompt.tokens.size() &&
                                 slot->terminal_logits.prompt_fnv64 == neo3000_prompt_fnv1a64(slot->prompt.tokens) &&
                                 slot->terminal_logits.position ==
                                         llama_memory_seq_pos_max(llama_get_memory(ctx_tgt), id_slot);
@@ -3156,6 +3471,9 @@ private:
                         queue_tasks.defer(std::move(task));
                         break;
                     }
+                    if (reject_intervening_slot_action(task, "root-restore")) {
+                        break;
+                    }
                     server_slot_ram_root * slot_ram_root = find_ram_root(task.slot_action.root_id);
                     if (slot_ram_root == nullptr) {
                         send_error(task, "RAM root not found", ERROR_TYPE_INVALID_REQUEST);
@@ -3240,6 +3558,9 @@ private:
                     const int id_slot = task.slot_action.id_slot;
                     if (get_slot_by_id(id_slot) == nullptr) {
                         send_error(task, "Invalid slot ID", ERROR_TYPE_INVALID_REQUEST);
+                        break;
+                    }
+                    if (reject_intervening_slot_action(task, "root-erase")) {
                         break;
                     }
                     const auto root_it = slot_ram_roots.find(task.slot_action.root_id);
@@ -3357,6 +3678,9 @@ private:
                 } break;
             case SERVER_TASK_TYPE_SET_LORA:
                 {
+                    if (reject_intervening_slot_action(task, "set-lora")) {
+                        break;
+                    }
                     auto new_loras = construct_lora_list(task.set_lora);
                     // logging
                     for (size_t i = 0; i < new_loras.size(); ++i) {
@@ -3835,7 +4159,9 @@ private:
                             }
 
                             if (slot.terminal_logits_pending_use) {
-                                GGML_ASSERT(slot.task->params.neo3000_use_terminal_logits);
+                                GGML_ASSERT(
+                                        slot.task->params.neo3000_use_terminal_logits ||
+                                        slot.task->params.neo3000_use_live_terminal_boundary);
                                 GGML_ASSERT(slot.terminal_logits.valid());
                                 GGML_ASSERT(slot.prompt.tokens.size() == slot.task->tokens.size());
 
@@ -3873,8 +4199,16 @@ private:
                                 slot.t_prompt_processing =
                                         (slot.t_start_generation - slot.t_start_process_prompt) / 1e3;
                                 slot.t_token_generation = 0.001;
+                                const bool live_source =
+                                        slot.task->params.neo3000_use_live_terminal_boundary;
+                                const std::string source_id = live_source
+                                        ? slot.terminal_logits.live.identity.boundary_id
+                                        : slot.terminal_logits.root_id;
+                                const std::string logits_fnv64 =
+                                        slot.terminal_logits.logits_fnv64;
                                 slot.terminal_logits_pending_use = false;
                                 slot.terminal_logits_reused = true;
+                                slot.terminal_logits.clear();
 
                                 metrics.on_prompt_eval(slot);
 
@@ -3888,10 +4222,17 @@ private:
                                                         slot.task->params.sampling.preserved_tokens.end());
                                 result.prob = 1.0f;
 
-                                SLT_WRN(slot,
-                                        "neo3000 terminal-logits continuation sampled before decode root=%s logits=%s\n",
-                                        slot.terminal_logits.root_id.c_str(),
-                                        slot.terminal_logits.logits_fnv64.c_str());
+                                if (live_source) {
+                                    SLT_WRN(slot,
+                                            "neo3000 one-use live terminal boundary sampled and declared-closed boundary=%s logits=%s\n",
+                                            source_id.c_str(),
+                                            logits_fnv64.c_str());
+                                } else {
+                                    SLT_WRN(slot,
+                                            "neo3000 terminal-logits continuation sampled before decode root=%s logits=%s\n",
+                                            source_id.c_str(),
+                                            logits_fnv64.c_str());
+                                }
 
                                 if (!process_token(result, slot)) {
                                     slot.print_timings();
@@ -3902,7 +4243,6 @@ private:
                                 }
 
                                 slot.handle_last_sampled_token(batch);
-                                slot.terminal_logits.clear();
                                 if (!slot_batched) {
                                     slot_batched = &slot;
                                 }
@@ -4502,7 +4842,8 @@ private:
 
                 GGML_ASSERT(slot.task->need_sampling());
 
-                if (slot.task->params.neo3000_capture_terminal_logits) {
+                if (slot.task->params.neo3000_capture_terminal_logits ||
+                        slot.task->params.neo3000_capture_live_terminal_boundary) {
                     const int terminal_tok_idx = slot.i_batch - off;
                     const float * logits = llama_get_logits_ith(slot.ctx_tgt, terminal_tok_idx);
                     const int32_t n_vocab = llama_vocab_n_tokens(vocab);
@@ -4528,15 +4869,46 @@ private:
                             llama_memory_seq_pos_max(llama_get_memory(ctx_tgt), slot.id);
                     slot.terminal_logits.n_prompt_tokens =
                             static_cast<int32_t>(slot.prompt.tokens.size());
+                    if (slot.task->params.neo3000_capture_live_terminal_boundary) {
+                        slot.terminal_logits.live.identity =
+                                slot.task->params.neo3000_live_terminal;
+                        slot.terminal_logits.live.capture_request_epoch =
+                                slot.task->neo3000_request_epoch;
+                        slot.terminal_logits.live.n_vocab = n_vocab;
+                        slot.terminal_logits.live.contract_fnv64 =
+                                neo3000_live_terminal_contract_fnv1a64(
+                                        slot.task->params.neo3000_live_terminal);
+                    }
 
-                    SLT_WRN(slot,
-                            "neo3000 terminal-logits boundary captured logits=%s prompt=%s sampler=%s tokens=%d position=%d bytes=%zu\n",
-                            slot.terminal_logits.logits_fnv64.c_str(),
-                            slot.terminal_logits.prompt_fnv64.c_str(),
-                            slot.terminal_logits.sampler_fnv64.c_str(),
-                            slot.terminal_logits.n_prompt_tokens,
-                            static_cast<int>(slot.terminal_logits.position),
-                            slot.terminal_logits.size());
+                    if (slot.task->params.neo3000_capture_live_terminal_boundary) {
+                        SLT_WRN(slot,
+                                "neo3000 one-use live terminal boundary captured boundary=%s carrier=%s lease=%" PRIu64 " generation=%u owner=%s type=%s module=%s variant=%u ordinal=%u contract=%s logits=%s prompt=%s sampler=%s tokens=%d position=%d bytes=%zu\n",
+                                slot.terminal_logits.live.identity.boundary_id.c_str(),
+                                slot.terminal_logits.live.identity.carrier_id.c_str(),
+                                slot.terminal_logits.live.identity.outer_lease,
+                                slot.terminal_logits.live.identity.generation,
+                                slot.terminal_logits.live.identity.port_owner.c_str(),
+                                slot.terminal_logits.live.identity.port_type.c_str(),
+                                slot.terminal_logits.live.identity.module_id.c_str(),
+                                slot.terminal_logits.live.identity.module_variant,
+                                slot.terminal_logits.live.identity.module_ordinal,
+                                slot.terminal_logits.live.contract_fnv64.c_str(),
+                                slot.terminal_logits.logits_fnv64.c_str(),
+                                slot.terminal_logits.prompt_fnv64.c_str(),
+                                slot.terminal_logits.sampler_fnv64.c_str(),
+                                slot.terminal_logits.n_prompt_tokens,
+                                static_cast<int>(slot.terminal_logits.position),
+                                slot.terminal_logits.size());
+                    } else {
+                        SLT_WRN(slot,
+                                "neo3000 terminal-logits boundary captured logits=%s prompt=%s sampler=%s tokens=%d position=%d bytes=%zu\n",
+                                slot.terminal_logits.logits_fnv64.c_str(),
+                                slot.terminal_logits.prompt_fnv64.c_str(),
+                                slot.terminal_logits.sampler_fnv64.c_str(),
+                                slot.terminal_logits.n_prompt_tokens,
+                                static_cast<int>(slot.terminal_logits.position),
+                                slot.terminal_logits.size());
+                    }
                 }
 
                 // prompt evaluated for next-token prediction

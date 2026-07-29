@@ -43,6 +43,12 @@ std::vector<std::unique_ptr<field>> make_llama_cmpl_schema(const common_params &
     add((new field_bool("neo3000_use_terminal_logits", params.neo3000_use_terminal_logits))
         ->set_desc("Experimental: require an exact restored RAM-root terminal-logits boundary and sample from it before decode"));
 
+    add((new field_bool("neo3000_capture_live_terminal_boundary", params.neo3000_capture_live_terminal_boundary))
+        ->set_desc("Experimental: retain one owner-bound live terminal boundary for the immediately next request"));
+
+    add((new field_bool("neo3000_use_live_terminal_boundary", params.neo3000_use_live_terminal_boundary))
+        ->set_desc("Experimental: consume the exact owner-bound live terminal boundary once before decode"));
+
     add((new field_str("neo3000_terminal_root_id"))
         ->set_handler([&](field_eval_context & ctx, const json & data) {
             ctx.params.neo3000_terminal_root_id =
@@ -56,6 +62,57 @@ std::vector<std::unique_ptr<field>> make_llama_cmpl_schema(const common_params &
                     data.at("neo3000_terminal_logits_fnv64").get<std::string>();
         })
         ->set_desc("Exact terminal-logits receipt required by continuation"));
+
+    add((new field_nested("neo3000_live_terminal"))
+        ->add_subfield((new field_str("boundary_id"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_live_terminal.boundary_id =
+                        data.at("boundary_id").get<std::string>();
+            }))
+        ->add_subfield((new field_str("carrier_id"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_live_terminal.carrier_id =
+                        data.at("carrier_id").get<std::string>();
+            }))
+        ->add_subfield(new field_num<uint64_t>(
+            "outer_lease", params.neo3000_live_terminal.outer_lease))
+        ->add_subfield(new field_num<uint32_t>(
+            "generation", params.neo3000_live_terminal.generation))
+        ->add_subfield((new field_str("port_owner"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_live_terminal.port_owner =
+                        data.at("port_owner").get<std::string>();
+            }))
+        ->add_subfield((new field_str("port_type"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_live_terminal.port_type =
+                        data.at("port_type").get<std::string>();
+            }))
+        ->add_subfield((new field_str("module_id"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_live_terminal.module_id =
+                        data.at("module_id").get<std::string>();
+            }))
+        ->add_subfield(new field_num<uint32_t>(
+            "module_variant", params.neo3000_live_terminal.module_variant))
+        ->add_subfield(new field_num<uint32_t>(
+            "module_ordinal", params.neo3000_live_terminal.module_ordinal))
+        ->add_subfield((new field_str("input_boundary_id"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_live_terminal.input_boundary_id =
+                        data.at("input_boundary_id").get<std::string>();
+            }))
+        ->add_subfield((new field_str("projection_policy"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_live_terminal.projection_policy =
+                        data.at("projection_policy").get<std::string>();
+            }))
+        ->add_subfield((new field_str("restoration_policy"))
+            ->set_handler([&](field_eval_context & ctx, const json & data) {
+                ctx.params.neo3000_live_terminal.restoration_policy =
+                        data.at("restoration_policy").get<std::string>();
+            }))
+        ->set_desc("Typed owner/lease/generation contract for one-use live terminal custody"));
 
     add((new field_num("n_predict", params.n_predict))
         ->set_hard_limits(-1, INT32_MAX)

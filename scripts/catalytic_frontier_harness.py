@@ -271,6 +271,10 @@ def run_completion(
 
 
 def process_resources(sidecar: Any, baseline_private: int | None) -> dict[str, Any]:
+    native_snapshot = getattr(sidecar, "resource_snapshot", None)
+    if callable(native_snapshot):
+        return dict(native_snapshot(baseline_private))
+
     host_private: int | None = None
     if sidecar.process is not None:
         info = live_runtime.process_info(sidecar.process.pid)
