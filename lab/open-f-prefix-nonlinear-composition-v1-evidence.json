@@ -1,0 +1,1617 @@
+{
+  "schema_version": 1,
+  "mechanism": "OPEN_F_PREFIX_MODEL_NATIVE_NONLINEAR_G_COMPOSITION",
+  "spec_id": "open-f-prefix-nonlinear-composition-v1",
+  "model_arch": "qwen35moe",
+  "configuration": {
+    "context_size": 512,
+    "source_tokens": 130,
+    "prefix_tokens": 48,
+    "F_tokens": 31,
+    "G_tokens": 27,
+    "closure_tokens": 24,
+    "F_boundary_tokens": 79,
+    "G_variant_count": 4,
+    "queries_per_variant": 4,
+    "prebuilt_joint_root_available_to_candidate": false,
+    "isolated_full_replay_control": true,
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "summary": {
+    "variant_passes": 4,
+    "variant_count": 4,
+    "F_only_correct": 1,
+    "full_logit_hash_matches": 16,
+    "boundary_matches": 16,
+    "comparisons": 16,
+    "maximum_candidate_logit_absolute_difference": 0.0,
+    "F_recurrent_tensor_digest_match": true,
+    "accepted": true
+  },
+  "variant_summary": {
+    "G-rotation-0": {
+      "candidate": {
+        "answers": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "correct": 4
+      },
+      "isolated_full_replay": {
+        "answers": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "correct": 4
+      },
+      "G_only": {
+        "answers": [
+          "D",
+          "D",
+          "D",
+          "D"
+        ],
+        "correct": 1
+      },
+      "full_logit_hash_matches": 4,
+      "boundary_matches": 4,
+      "maximum_candidate_logit_absolute_difference": 0.0,
+      "passed": true
+    },
+    "G-rotation-1": {
+      "candidate": {
+        "answers": [
+          "B",
+          "C",
+          "D",
+          "A"
+        ],
+        "correct": 4
+      },
+      "isolated_full_replay": {
+        "answers": [
+          "B",
+          "C",
+          "D",
+          "A"
+        ],
+        "correct": 4
+      },
+      "G_only": {
+        "answers": [
+          "D",
+          "D",
+          "D",
+          "D"
+        ],
+        "correct": 1
+      },
+      "full_logit_hash_matches": 4,
+      "boundary_matches": 4,
+      "maximum_candidate_logit_absolute_difference": 0.0,
+      "passed": true
+    },
+    "G-rotation-2": {
+      "candidate": {
+        "answers": [
+          "C",
+          "D",
+          "A",
+          "B"
+        ],
+        "correct": 4
+      },
+      "isolated_full_replay": {
+        "answers": [
+          "C",
+          "D",
+          "A",
+          "B"
+        ],
+        "correct": 4
+      },
+      "G_only": {
+        "answers": [
+          "D",
+          "D",
+          "D",
+          "D"
+        ],
+        "correct": 1
+      },
+      "full_logit_hash_matches": 4,
+      "boundary_matches": 4,
+      "maximum_candidate_logit_absolute_difference": 0.0,
+      "passed": true
+    },
+    "G-rotation-3": {
+      "candidate": {
+        "answers": [
+          "D",
+          "A",
+          "B",
+          "C"
+        ],
+        "correct": 4
+      },
+      "isolated_full_replay": {
+        "answers": [
+          "D",
+          "A",
+          "B",
+          "C"
+        ],
+        "correct": 4
+      },
+      "G_only": {
+        "answers": [
+          "D",
+          "D",
+          "D",
+          "D"
+        ],
+        "correct": 1
+      },
+      "full_logit_hash_matches": 4,
+      "boundary_matches": 4,
+      "maximum_candidate_logit_absolute_difference": 0.0,
+      "passed": true
+    }
+  },
+  "construction": {
+    "candidate_source_tokens": 283,
+    "full_replay_candidate_source_tokens": 520,
+    "prefix_DAG_candidate_source_tokens": 376,
+    "avoided_vs_full_replay": 237,
+    "avoided_vs_prefix_DAG": 93,
+    "asymptotic_fresh_source_ratio": 0.3923076923076923,
+    "open_F_root_logical_bytes": 67481600,
+    "open_F_root_backend_allocation_bytes": 67481600,
+    "open_F_root_backing_id": "659aac10a80329c9",
+    "open_F_restore_count": 7,
+    "neutral_F_restore_count": 4,
+    "constructed_final_root_restore_count": 52
+  },
+  "carrier": {
+    "active_cache_backend_allocation_bytes": 76349440,
+    "maximum_retained_root_backend_allocation_bytes": 203489280,
+    "active_plus_retained_backend_allocation_bytes": 279838720,
+    "F_recurrent_tensor_digest_before": "95598b2c8df6e80d",
+    "F_recurrent_tensor_digest_after": "95598b2c8df6e80d",
+    "complete_host_state_copy_retained": false,
+    "all_retained_roots_closed": true,
+    "active_recurrent_backing_stable": true,
+    "active_attention_backing_stable": true
+  },
+  "resource_accounting": {
+    "all_route_source_decode_tokens": 1089,
+    "candidate_suffix_decode_tokens": 204,
+    "reference_full_decode_tokens": 520,
+    "G_only_suffix_decode_tokens": 204,
+    "F_only_suffix_decode_tokens": 51,
+    "query_decode_tokens": 1716,
+    "all_route_input_tokens": 2805,
+    "root_save_device_copy_bytes": 1092648960,
+    "F_root_restore_device_copy_bytes": 472371200,
+    "neutral_F_root_restore_device_copy_bytes": 269926400,
+    "final_root_restore_device_copy_bytes": 3563356160,
+    "F_digest_d2h_bytes": 131727360,
+    "F_digest_peak_host_work_bytes": 1048576,
+    "cleared_prefix_root_bytes": 66846720,
+    "cleared_final_root_bytes": 890839040,
+    "cleared_F_root_bytes": 67481600,
+    "cleared_neutral_F_root_bytes": 67481600
+  },
+  "records": [
+    {
+      "query_id": "G0-E",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-0:candidate",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.848020553588867,
+        8.940746307373047,
+        10.988641738891602,
+        11.766109466552734
+      ],
+      "candidate_softmax": [
+        0.9348658499706772,
+        0.00254245156042457,
+        0.019707991794553313,
+        0.042883706674344955
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "038435a5430254c5",
+      "root_backing_id": "4c99d62fac2efb7d",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 1140.796481
+    },
+    {
+      "query_id": "G0-F",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-0:candidate",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.046701431274414,
+        14.342896461486816,
+        10.574947357177734,
+        11.701545715332031
+      ],
+      "candidate_softmax": [
+        0.004557701559432002,
+        0.9096077682402868,
+        0.021011383838034997,
+        0.06482314636224622
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "0a8229ac9ab3deea",
+      "root_backing_id": "4c99d62fac2efb7d",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 627.063228
+    },
+    {
+      "query_id": "G0-G",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-0:candidate",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        12.702832221984863,
+        11.885611534118652,
+        15.55735969543457,
+        13.677330017089844
+      ],
+      "candidate_softmax": [
+        0.04660326763069806,
+        0.02058268053910019,
+        0.8093230301340623,
+        0.12349102169613949
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "812c1694aa940ce1",
+      "root_backing_id": "4c99d62fac2efb7d",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 675.006416
+    },
+    {
+      "query_id": "G0-H",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-0:candidate",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.018132209777832,
+        7.760578155517578,
+        10.959818840026855,
+        14.723221778869629
+      ],
+      "candidate_softmax": [
+        0.0032399448276523514,
+        0.0009212740287015399,
+        0.022584028014446905,
+        0.9732547531291993
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "0551f219ccf69863",
+      "root_backing_id": "4c99d62fac2efb7d",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 631.217135
+    },
+    {
+      "query_id": "G0-E",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-0:reference",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.848020553588867,
+        8.940746307373047,
+        10.988641738891602,
+        11.766109466552734
+      ],
+      "candidate_softmax": [
+        0.9348658499706772,
+        0.00254245156042457,
+        0.019707991794553313,
+        0.042883706674344955
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "038435a5430254c5",
+      "root_backing_id": "fbe622316fe25e32",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 582.49252
+    },
+    {
+      "query_id": "G0-F",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-0:reference",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.046701431274414,
+        14.342896461486816,
+        10.574947357177734,
+        11.701545715332031
+      ],
+      "candidate_softmax": [
+        0.004557701559432002,
+        0.9096077682402868,
+        0.021011383838034997,
+        0.06482314636224622
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "0a8229ac9ab3deea",
+      "root_backing_id": "fbe622316fe25e32",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 580.030895
+    },
+    {
+      "query_id": "G0-G",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-0:reference",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        12.702832221984863,
+        11.885611534118652,
+        15.55735969543457,
+        13.677330017089844
+      ],
+      "candidate_softmax": [
+        0.04660326763069806,
+        0.02058268053910019,
+        0.8093230301340623,
+        0.12349102169613949
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "812c1694aa940ce1",
+      "root_backing_id": "fbe622316fe25e32",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 580.023772
+    },
+    {
+      "query_id": "G0-H",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-0:reference",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.018132209777832,
+        7.760578155517578,
+        10.959818840026855,
+        14.723221778869629
+      ],
+      "candidate_softmax": [
+        0.0032399448276523514,
+        0.0009212740287015399,
+        0.022584028014446905,
+        0.9732547531291993
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "0551f219ccf69863",
+      "root_backing_id": "fbe622316fe25e32",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 585.005844
+    },
+    {
+      "query_id": "G0-E",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-0:G_only",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.912493705749512,
+        5.331319332122803,
+        7.643111705780029,
+        10.259540557861328
+      ],
+      "candidate_softmax": [
+        0.031544963374829586,
+        0.006489850942209742,
+        0.06549880752874265,
+        0.896466378154218
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "c23010efedea7cbc",
+      "root_backing_id": "27e017e0e60b3351",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 669.684332
+    },
+    {
+      "query_id": "G0-F",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-0:G_only",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.246028900146484,
+        8.415019035339355,
+        9.52017879486084,
+        12.267977714538574
+      ],
+      "candidate_softmax": [
+        0.24903006435663355,
+        0.01468114129062107,
+        0.044332743026737134,
+        0.6919560513260082
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "85554903c47981f2",
+      "root_backing_id": "27e017e0e60b3351",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 612.901754
+    },
+    {
+      "query_id": "G0-G",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-0:G_only",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.266606330871582,
+        5.428783893585205,
+        7.053328514099121,
+        9.40310287475586
+      ],
+      "candidate_softmax": [
+        0.03752077340641221,
+        0.016233423564880174,
+        0.08240259427423295,
+        0.8638432087544747
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "08074a90fc3c4ad9",
+      "root_backing_id": "27e017e0e60b3351",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 591.872206
+    },
+    {
+      "query_id": "G0-H",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-0:G_only",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.528445243835449,
+        4.829355239868164,
+        6.748624801635742,
+        9.497736930847168
+      ],
+      "candidate_softmax": [
+        0.04564695058983001,
+        0.008346537657360553,
+        0.05688981704562937,
+        0.88911669470718
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "509b38ef741b39ce",
+      "root_backing_id": "27e017e0e60b3351",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 591.392957
+    },
+    {
+      "query_id": "G1-E",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-1:candidate",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.882139205932617,
+        13.539640426635742,
+        10.983209609985352,
+        11.217752456665039
+      ],
+      "candidate_softmax": [
+        0.05628804156716589,
+        0.8027018322398354,
+        0.06227452982131041,
+        0.07873559637168852
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "6ee3ef9959389332",
+      "root_backing_id": "4603205400d5d3d1",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 647.692756
+    },
+    {
+      "query_id": "G1-F",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-1:candidate",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.83289909362793,
+        9.428468704223633,
+        15.153730392456055,
+        12.211394309997559
+      ],
+      "candidate_softmax": [
+        0.004608085345793249,
+        0.003075237257031524,
+        0.9426016295523231,
+        0.049715047844852096
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "5f06943cc80e840d",
+      "root_backing_id": "4603205400d5d3d1",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 589.304677
+    },
+    {
+      "query_id": "G1-G",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-1:candidate",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.27188491821289,
+        9.811142921447754,
+        13.358760833740234,
+        15.634486198425293
+      ],
+      "candidate_softmax": [
+        0.011395657020670498,
+        0.002644521979661258,
+        0.09184553836443729,
+        0.894114282635231
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "40afdc16097e0b08",
+      "root_backing_id": "4603205400d5d3d1",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 601.959643
+    },
+    {
+      "query_id": "G1-H",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-1:candidate",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.711227416992188,
+        7.725852966308594,
+        9.356481552124023,
+        12.373824119567871
+      ],
+      "candidate_softmax": [
+        0.9072524160511414,
+        0.0008394958536521692,
+        0.0042873758005485645,
+        0.08762071229465793
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "eceece0b9d5a5b08",
+      "root_backing_id": "4603205400d5d3d1",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 594.740407
+    },
+    {
+      "query_id": "G1-E",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-1:reference",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.882139205932617,
+        13.539640426635742,
+        10.983209609985352,
+        11.217752456665039
+      ],
+      "candidate_softmax": [
+        0.05628804156716589,
+        0.8027018322398354,
+        0.06227452982131041,
+        0.07873559637168852
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "6ee3ef9959389332",
+      "root_backing_id": "d6c74208754569fd",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 640.014161
+    },
+    {
+      "query_id": "G1-F",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-1:reference",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.83289909362793,
+        9.428468704223633,
+        15.153730392456055,
+        12.211394309997559
+      ],
+      "candidate_softmax": [
+        0.004608085345793249,
+        0.003075237257031524,
+        0.9426016295523231,
+        0.049715047844852096
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "5f06943cc80e840d",
+      "root_backing_id": "d6c74208754569fd",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 581.493589
+    },
+    {
+      "query_id": "G1-G",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-1:reference",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.27188491821289,
+        9.811142921447754,
+        13.358760833740234,
+        15.634486198425293
+      ],
+      "candidate_softmax": [
+        0.011395657020670498,
+        0.002644521979661258,
+        0.09184553836443729,
+        0.894114282635231
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "40afdc16097e0b08",
+      "root_backing_id": "d6c74208754569fd",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 612.916767
+    },
+    {
+      "query_id": "G1-H",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-1:reference",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.711227416992188,
+        7.725852966308594,
+        9.356481552124023,
+        12.373824119567871
+      ],
+      "candidate_softmax": [
+        0.9072524160511414,
+        0.0008394958536521692,
+        0.0042873758005485645,
+        0.08762071229465793
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "eceece0b9d5a5b08",
+      "root_backing_id": "d6c74208754569fd",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 607.926129
+    },
+    {
+      "query_id": "G1-E",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-1:G_only",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        5.990488052368164,
+        4.314652442932129,
+        6.182232856750488,
+        8.800804138183594
+      ],
+      "candidate_softmax": [
+        0.052593705168528924,
+        0.009843002823927438,
+        0.06370998134788233,
+        0.8738533106596614
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "3ab40558b4a7ebaf",
+      "root_backing_id": "d545d9bcb0704400",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 597.387928
+    },
+    {
+      "query_id": "G1-F",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-1:G_only",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.480186462402344,
+        10.439096450805664,
+        9.035405158996582,
+        11.541254997253418
+      ],
+      "candidate_softmax": [
+        0.19665694200474854,
+        0.18874007198275872,
+        0.046371242629081336,
+        0.5682317433834114
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "3e9153eef12b5eea",
+      "root_backing_id": "d545d9bcb0704400",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 612.551448
+    },
+    {
+      "query_id": "G1-G",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-1:G_only",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        7.922370433807373,
+        5.584796905517578,
+        7.941719055175781,
+        10.132120132446289
+      ],
+      "candidate_softmax": [
+        0.0890508928081834,
+        0.008598901884997552,
+        0.09079068179825762,
+        0.8115595235085614
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "881f97e63f85c39d",
+      "root_backing_id": "d545d9bcb0704400",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 593.314076
+    },
+    {
+      "query_id": "G1-H",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-1:G_only",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.497261047363281,
+        5.030066967010498,
+        6.69926118850708,
+        9.54076862335205
+      ],
+      "candidate_softmax": [
+        0.042674644546897234,
+        0.0098395586654656,
+        0.05222728609713745,
+        0.8952585106904998
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "2d18c04cab8a3ec8",
+      "root_backing_id": "d545d9bcb0704400",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 574.2273729999999
+    },
+    {
+      "query_id": "G2-E",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-2:candidate",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.036266326904297,
+        8.437948226928711,
+        14.71275520324707,
+        10.987696647644043
+      ],
+      "candidate_softmax": [
+        0.024076414104434816,
+        0.0017912516001009197,
+        0.9511973598424401,
+        0.022934974453024292
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "99fabf055e9f0407",
+      "root_backing_id": "637a8e5c9aec560f",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 595.906099
+    },
+    {
+      "query_id": "G2-F",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-2:candidate",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.411333084106445,
+        10.009679794311523,
+        9.462066650390625,
+        15.638115882873535
+      ],
+      "candidate_softmax": [
+        0.0019608008144417835,
+        0.003566910014364302,
+        0.0020628459012827505,
+        0.9924094432699112
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "4a4bfbaf798c97fa",
+      "root_backing_id": "637a8e5c9aec560f",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 579.977585
+    },
+    {
+      "query_id": "G2-G",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-2:candidate",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.900744438171387,
+        8.811480522155762,
+        9.886690139770508,
+        11.576263427734375
+      ],
+      "candidate_softmax": [
+        0.9570273820755072,
+        0.0021696548236059474,
+        0.006358405923974528,
+        0.034444557176912236
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "946559af660cec51",
+      "root_backing_id": "637a8e5c9aec560f",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 599.078045
+    },
+    {
+      "query_id": "G2-H",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-2:candidate",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.15585994720459,
+        11.890176773071289,
+        7.121673583984375,
+        10.715441703796387
+      ],
+      "candidate_softmax": [
+        0.017810916477441395,
+        0.7455546070620233,
+        0.006332057300591693,
+        0.2303024191599437
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "7d6feb56c38d2e1f",
+      "root_backing_id": "637a8e5c9aec560f",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 579.935945
+    },
+    {
+      "query_id": "G2-E",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-2:reference",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.036266326904297,
+        8.437948226928711,
+        14.71275520324707,
+        10.987696647644043
+      ],
+      "candidate_softmax": [
+        0.024076414104434816,
+        0.0017912516001009197,
+        0.9511973598424401,
+        0.022934974453024292
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "99fabf055e9f0407",
+      "root_backing_id": "d545d9bcb0704400",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 580.2619
+    },
+    {
+      "query_id": "G2-F",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-2:reference",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.411333084106445,
+        10.009679794311523,
+        9.462066650390625,
+        15.638115882873535
+      ],
+      "candidate_softmax": [
+        0.0019608008144417835,
+        0.003566910014364302,
+        0.0020628459012827505,
+        0.9924094432699112
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "4a4bfbaf798c97fa",
+      "root_backing_id": "d545d9bcb0704400",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 591.453813
+    },
+    {
+      "query_id": "G2-G",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-2:reference",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.900744438171387,
+        8.811480522155762,
+        9.886690139770508,
+        11.576263427734375
+      ],
+      "candidate_softmax": [
+        0.9570273820755072,
+        0.0021696548236059474,
+        0.006358405923974528,
+        0.034444557176912236
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "946559af660cec51",
+      "root_backing_id": "d545d9bcb0704400",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 588.806524
+    },
+    {
+      "query_id": "G2-H",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-2:reference",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.15585994720459,
+        11.890176773071289,
+        7.121673583984375,
+        10.715441703796387
+      ],
+      "candidate_softmax": [
+        0.017810916477441395,
+        0.7455546070620233,
+        0.006332057300591693,
+        0.2303024191599437
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "7d6feb56c38d2e1f",
+      "root_backing_id": "d545d9bcb0704400",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 586.008224
+    },
+    {
+      "query_id": "G2-E",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-2:G_only",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.14307975769043,
+        4.629091739654541,
+        6.2208662033081055,
+        9.026275634765625
+      ],
+      "candidate_softmax": [
+        0.04957312821639272,
+        0.01090761205374051,
+        0.05358318802934651,
+        0.8859360717005202
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "1125d12419995fc4",
+      "root_backing_id": "844b556de6261bb2",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 584.481541
+    },
+    {
+      "query_id": "G2-F",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-2:G_only",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.855113983154297,
+        7.365923881530762,
+        10.284666061401367,
+        11.03227710723877
+      ],
+      "candidate_softmax": [
+        0.17051166843752413,
+        0.014148570996489723,
+        0.26200296204505963,
+        0.5533367985209265
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "e978746abe23295d",
+      "root_backing_id": "844b556de6261bb2",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 620.819301
+    },
+    {
+      "query_id": "G2-G",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-2:G_only",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.995201110839844,
+        5.017754077911377,
+        6.021355152130127,
+        9.355012893676758
+      ],
+      "candidate_softmax": [
+        0.08261043478394063,
+        0.011435115965761977,
+        0.03119600503732809,
+        0.8747584442129693
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "cf2ec2158bcc3933",
+      "root_backing_id": "844b556de6261bb2",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 582.214058
+    },
+    {
+      "query_id": "G2-H",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-2:G_only",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.196516990661621,
+        4.480968952178955,
+        6.144793510437012,
+        8.749150276184082
+      ],
+      "candidate_softmax": [
+        0.06679879683265783,
+        0.012014773654215993,
+        0.06343156376051297,
+        0.8577548657526133
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "4a6c430fe2134446",
+      "root_backing_id": "844b556de6261bb2",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 573.930424
+    },
+    {
+      "query_id": "G3-E",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-3:candidate",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.301803588867188,
+        6.284857749938965,
+        8.558484077453613,
+        14.461877822875977
+      ],
+      "candidate_softmax": [
+        0.0021013307324776022,
+        0.00027960566359695835,
+        0.002716247452614342,
+        0.9949028161513112
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "decfc73903ae5285",
+      "root_backing_id": "3e15a88fcb84dbd6",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 597.530971
+    },
+    {
+      "query_id": "G3-F",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-3:candidate",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.972925186157227,
+        10.359381675720215,
+        10.052607536315918,
+        11.349326133728027
+      ],
+      "candidate_softmax": [
+        0.9579462676008922,
+        0.009499585611961283,
+        0.006989954440807272,
+        0.0255641923463393
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "9c19dbacd180118d",
+      "root_backing_id": "3e15a88fcb84dbd6",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 584.973923
+    },
+    {
+      "query_id": "G3-G",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-3:candidate",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.160209655761719,
+        13.938875198364258,
+        10.841011047363281,
+        11.762605667114258
+      ],
+      "candidate_softmax": [
+        0.050888652769570324,
+        0.8191813676596308,
+        0.03698237169628933,
+        0.0929476078745096
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "7735f3a6038d3690",
+      "root_backing_id": "3e15a88fcb84dbd6",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 582.723333
+    },
+    {
+      "query_id": "G3-H",
+      "route": "open-F-causal-G-forward",
+      "source_variant": "G-rotation-3:candidate",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.663509368896484,
+        9.413960456848145,
+        13.91942024230957,
+        11.63036060333252
+      ],
+      "candidate_softmax": [
+        0.01258680029656096,
+        0.009807032764027284,
+        0.8876340416122268,
+        0.08997212532718492
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "f5290b6089e5b8dc",
+      "root_backing_id": "3e15a88fcb84dbd6",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 595.889047
+    },
+    {
+      "query_id": "G3-E",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-3:reference",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.301803588867188,
+        6.284857749938965,
+        8.558484077453613,
+        14.461877822875977
+      ],
+      "candidate_softmax": [
+        0.0021013307324776022,
+        0.00027960566359695835,
+        0.002716247452614342,
+        0.9949028161513112
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "decfc73903ae5285",
+      "root_backing_id": "0d18f6b64f508587",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 588.32448
+    },
+    {
+      "query_id": "G3-F",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-3:reference",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.972925186157227,
+        10.359381675720215,
+        10.052607536315918,
+        11.349326133728027
+      ],
+      "candidate_softmax": [
+        0.9579462676008922,
+        0.009499585611961283,
+        0.006989954440807272,
+        0.0255641923463393
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "9c19dbacd180118d",
+      "root_backing_id": "0d18f6b64f508587",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 580.866076
+    },
+    {
+      "query_id": "G3-G",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-3:reference",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.160209655761719,
+        13.938875198364258,
+        10.841011047363281,
+        11.762605667114258
+      ],
+      "candidate_softmax": [
+        0.050888652769570324,
+        0.8191813676596308,
+        0.03698237169628933,
+        0.0929476078745096
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "7735f3a6038d3690",
+      "root_backing_id": "0d18f6b64f508587",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 576.448577
+    },
+    {
+      "query_id": "G3-H",
+      "route": "isolated-full-replay-control",
+      "source_variant": "G-rotation-3:reference",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.663509368896484,
+        9.413960456848145,
+        13.91942024230957,
+        11.63036060333252
+      ],
+      "candidate_softmax": [
+        0.01258680029656096,
+        0.009807032764027284,
+        0.8876340416122268,
+        0.08997212532718492
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "f5290b6089e5b8dc",
+      "root_backing_id": "0d18f6b64f508587",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 585.626423
+    },
+    {
+      "query_id": "G3-E",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-3:G_only",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.427520751953125,
+        5.707646369934082,
+        7.887846946716309,
+        10.853415489196777
+      ],
+      "candidate_softmax": [
+        0.07715354123900857,
+        0.005083109072041917,
+        0.04497575978629101,
+        0.8727875899026585
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "feff57c533fab9ed",
+      "root_backing_id": "e301c7ba45046408",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 594.636047
+    },
+    {
+      "query_id": "G3-F",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-3:G_only",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.173320770263672,
+        6.575129985809326,
+        8.195631980895996,
+        11.550119400024414
+      ],
+      "candidate_softmax": [
+        0.03174429957803724,
+        0.006420669423991634,
+        0.03246051342115279,
+        0.9293745175768182
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "cb13fe228e4ea3dc",
+      "root_backing_id": "e301c7ba45046408",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 586.976548
+    },
+    {
+      "query_id": "G3-G",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-3:G_only",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.450996398925781,
+        7.32017707824707,
+        8.680323600769043,
+        10.434500694274902
+      ],
+      "candidate_softmax": [
+        0.23500374761554044,
+        0.02790433744265382,
+        0.10873662383228783,
+        0.6283552911095179
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "d562d4be832c4bb8",
+      "root_backing_id": "e301c7ba45046408",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 607.954043
+    },
+    {
+      "query_id": "G3-H",
+      "route": "G-only-causal-forward-control",
+      "source_variant": "G-rotation-3:G_only",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.2083353996276855,
+        4.349661827087402,
+        6.232478141784668,
+        8.492049217224121
+      ],
+      "candidate_softmax": [
+        0.08337938295694797,
+        0.01299711616657593,
+        0.08541688639494589,
+        0.8182066144815303
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "c20a2a16c1d70869",
+      "root_backing_id": "e301c7ba45046408",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 579.630991
+    },
+    {
+      "query_id": "F-only-E",
+      "route": "F-only-causal-forward-control",
+      "source_variant": "F_only",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        7.585421562194824,
+        4.7248053550720215,
+        6.77755069732666,
+        10.920207977294922
+      ],
+      "candidate_softmax": [
+        0.03381185394463709,
+        0.0019351701245934286,
+        0.015073535413469492,
+        0.9491794405173
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "18be712d77c93b8a",
+      "root_backing_id": "0cff279fd2e14403",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 591.334845
+    },
+    {
+      "query_id": "F-only-F",
+      "route": "F-only-causal-forward-control",
+      "source_variant": "F_only",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        7.361612796783447,
+        5.938748836517334,
+        7.950296401977539,
+        11.324108123779297
+      ],
+      "candidate_softmax": [
+        0.017975580894761742,
+        0.00433252390258485,
+        0.032385080070710226,
+        0.9453068151319433
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "0607b4d66486d178",
+      "root_backing_id": "0cff279fd2e14403",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 593.367077
+    },
+    {
+      "query_id": "F-only-G",
+      "route": "F-only-causal-forward-control",
+      "source_variant": "F_only",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        7.107547760009766,
+        5.510552406311035,
+        8.542291641235352,
+        11.113764762878418
+      ],
+      "candidate_softmax": [
+        0.016572831896012337,
+        0.0033560657095861673,
+        0.06958218716669114,
+        0.9104889152277104
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "d5539d4c918dc736",
+      "root_backing_id": "0cff279fd2e14403",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 594.904201
+    },
+    {
+      "query_id": "F-only-H",
+      "route": "F-only-causal-forward-control",
+      "source_variant": "F_only",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.7951483726501465,
+        4.765594005584717,
+        7.038265228271484,
+        11.520153999328613
+      ],
+      "candidate_softmax": [
+        0.008685249181259866,
+        0.0011411901661510194,
+        0.011075582892178635,
+        0.9790979777604104
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "d44c056fedc316bc",
+      "root_backing_id": "0cff279fd2e14403",
+      "root_gpu_bytes": 68526080,
+      "active_recurrent_backing_id": "22167031bff740a3",
+      "wall_ms": 594.175396
+    }
+  ],
+  "verdict": "accept",
+  "claim_ceiling": "Passing establishes exact bounded nonlinear composition of four public G modules on one reused open prefix-plus-F model-state snapshot, with both evidence marginals insufficient and no prebuilt joint state available to the candidate. This is ordinary causal transformer forward computation and SNAPSHOT_RELOAD branching. It identifies a genuine model-native G(F) carrier transformation and reduces candidate construction source tokens from 520 full-replay or 376 prefix-DAG tokens to 283, but its asymptotic fresh-source ratio remains 51/130, full-state root copies and query work remain charged, and it does not establish native in-place restoration, a compact learned/operator factorization, catalytic recurrence, Small Wall crossing, or unbounded inference."
+}

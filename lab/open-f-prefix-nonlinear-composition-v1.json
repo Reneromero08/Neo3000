@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "id": "open-f-prefix-nonlinear-composition-v1",
+  "description": "Retain prefix-plus-F full model state before any G module exists, then branch four public G-plus-closure transformations from that same open F carrier. The candidate uses the model causal forward as the exact nonlinear G(F) operator. Full replay is an isolated comparison only and is never an input to candidate construction.",
+  "open_f_prefix_nonlinear_composition": true,
+  "expected_context_size": 512,
+  "expected_source_tokens": 130,
+  "expected_prefix_tokens": 48,
+  "expected_f_tokens": 31,
+  "expected_g_tokens": 27,
+  "expected_closure_tokens": 24,
+  "queries_per_variant": 4,
+  "predecessor_evidence": {
+    "position_splice_result": {
+      "path": "lab/causal-position-attention-splice-v1-result.json",
+      "sha256": "F57709CA0EDBCD9D996CD1C6B8D86DC63C220B6D465FEB105EC6678A924A1216"
+    },
+    "position_splice_evidence": {
+      "path": "lab/causal-position-attention-splice-v1-evidence.json",
+      "sha256": "E9B4E805512575FEABD40DC08F5A40BB890DA45509A47557277D3F376FC095A6"
+    },
+    "exact_prefix_baseline": {
+      "path": "lab/common-prefix-dag-attention-construction-gate-repair-v1-result.json",
+      "sha256": "B5899D318F14E5A8D5D8F1CD0431E6E8561AECEB8174A2377CC278C2D0027CA7"
+    }
+  },
+  "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+  "module_f": "F: Item E maps to vault J. Item F maps to vault K. Item G maps to vault L. Item H maps to vault M.\n",
+  "neutral_module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+  "neutral_module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+  "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n",
+  "g_variants": [
+    {
+      "id": "G-rotation-0",
+      "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+      "queries": [
+        {"id": "G0-E", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "G0-F", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "G0-G", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "G0-H", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-1",
+      "module_g": "G: Vault J has code B. Vault K has code C. Vault L has code D. Vault M has code A.\n",
+      "queries": [
+        {"id": "G1-E", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "G1-F", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "G1-G", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "G1-H", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-2",
+      "module_g": "G: Vault J has code C. Vault K has code D. Vault L has code A. Vault M has code B.\n",
+      "queries": [
+        {"id": "G2-E", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "G2-F", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "G2-G", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "G2-H", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-3",
+      "module_g": "G: Vault J has code D. Vault K has code A. Vault L has code B. Vault M has code C.\n",
+      "queries": [
+        {"id": "G3-E", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "G3-F", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "G3-G", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "G3-H", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    }
+  ],
+  "f_only_queries": [
+    {"id": "F-only-E", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+    {"id": "F-only-F", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+    {"id": "F-only-G", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+    {"id": "F-only-H", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+  ],
+  "acceptance_law": {
+    "variant_passes_minimum": 4,
+    "f_only_correct_maximum": 1,
+    "comparisons": 16,
+    "full_logit_hash_matches": 16,
+    "boundary_matches": 16,
+    "maximum_candidate_logit_absolute_difference": 0.0
+  },
+  "claim_ceiling": "Passing establishes exact bounded nonlinear composition of four public G modules on one reused open prefix-plus-F model-state snapshot, with both evidence marginals insufficient and no prebuilt joint state available to the candidate. This is ordinary causal transformer forward computation and SNAPSHOT_RELOAD branching. It identifies a genuine model-native G(F) carrier transformation and reduces candidate construction source tokens from 520 full-replay or 376 prefix-DAG tokens to 283, but its asymptotic fresh-source ratio remains 51/130, full-state root copies and query work remain charged, and it does not establish native in-place restoration, a compact learned/operator factorization, catalytic recurrence, Small Wall crossing, or unbounded inference."
+}

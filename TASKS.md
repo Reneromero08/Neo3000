@@ -130,12 +130,23 @@ constructively unbounded local Agents-A1 inference.
   host tensor payload. It moves `9,502,720` bytes across eight composites but
   reaches only `3/4` and `1/4`; both task gates reject. Simple token topology is
   insufficient.
-- [ ] Use the model causal forward itself as the first nonlinear `G(F)`
+- [x] Use the model causal forward itself as the first nonlinear `G(F)`
   operator. Retain an open prefix-plus-F carrier before G exists, apply the
   public G-plus-closure suffix directly to that state, and project only later
   queries. No prebuilt joint state is allowed. Compare exactness and all work
-  against both full replay and the 82-token prefix-DAG suffix; then isolate the
-  minimum context-conditioned update that must replace fresh G decoding.
+  against both full replay and the 82-token prefix-DAG suffix. `neo-exp-0121`
+  passes all four G variants and all `16/16` paired full-logit hashes with zero
+  error; F-only is `1/4` and every G-only arm is `1/4`. One 79-token
+  prefix-plus-F boundary plus four 51-token suffixes uses 283 candidate source
+  tokens, versus 520 full replays and 376 prefix-DAG tokens. This is the first
+  exact nonlinear model-native `G(F)` composition boundary, but it reloads the
+  open-F snapshot seven times and constructed roots 52 times.
+- [ ] Keep that F boundary active on one sequence while a bounded working
+  sequence branches each G-plus-closure/query transaction and closes. Require
+  the same 16 exact full-logit rows, unchanged F tensor state and backing,
+  zero F-root reloads between branches, bounded active residency, and explicit
+  working-sequence closure. This attacks the measured multi-gigabyte snapshot
+  wall; it is not another evidence-harness revision.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

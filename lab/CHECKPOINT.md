@@ -120,6 +120,14 @@ The active recurrence and acceptance boundary are
   backend subviews into neutral active attention, moving `9,502,720` bytes
   over eight composites with zero host tensor payload. Active backings remain
   stable, the recurrent tensor digest matches, and every root closes.
+- `neo-exp-0121` retains one 79-token prefix-plus-F snapshot before any G
+  module exists, then applies four later 51-token G-plus-closure modules
+  through the model causal forward. All four semantic variants pass and all
+  `16/16` candidate full-logit rows are bit-identical to isolated 130-token
+  replay; F-only and every G-only variant remain `1/4`.
+- Candidate source work is 283 tokens, versus 520 for full replay and 376 for
+  the exact prefix-DAG baseline. This localizes the required nonlinear
+  operation to causal G-plus-closure forward on F-conditioned state.
 
 ### REJECTED
 
@@ -152,6 +160,11 @@ The active recurrence and acceptance boundary are
 - No multi-evidence necessity, unresolved composition, phase-native resource,
   fresh-compute reduction, catalytic inference, or constructive unbounded
   recurrence is supported.
+- The accepted 0121 boundary is still `SNAPSHOT_RELOAD`: F is restored seven
+  times and final roots 52 times. Root restores alone move more than 4.3 GB,
+  the fresh suffix ratio remains `51/130`, and the same active F state does
+  not survive each branch transaction. Exact nonlinear composition is
+  supported; active-carrier restoration and catalytic recurrence are not.
 - The 0108 screen is not a physically reduced carrier. Every root still
   serializes `68,526,080` device-tensor bytes; the matched reference occupies
   `76,349,440` host bytes, and omitted layers require `399,769,600`

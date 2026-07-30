@@ -1076,3 +1076,16 @@ prefix-plus-F state itself; the next lawful module is the model's causal
 G-plus-closure forward pass. This supplies an exact nonlinear `G(F)` reference
 without prebuilding the joint state and exposes the actual computation that a
 future compact operator must replace.
+
+That reference is now executed as `neo-exp-0121`. One retained 79-token
+prefix-plus-F snapshot accepts four later 51-token G-plus-closure modules.
+Candidate inference is bit-identical to isolated full replay on all `16/16`
+logit rows, while F-only and each G-only control remain `1/4`. Candidate source
+work falls from 520 full-replay or 376 prefix-DAG tokens to 283.
+
+The next wall is physical, not evidentiary: F is reloaded seven times and
+constructed final roots are reloaded 52 times, producing more than 4.3 GB of
+restore traffic. The immediate successor therefore keeps F live on one active
+sequence and uses one bounded working sequence for branch, projection, and
+closure. Evidence remains one compact record attached to that mechanism; it is
+not a versioned research lane.

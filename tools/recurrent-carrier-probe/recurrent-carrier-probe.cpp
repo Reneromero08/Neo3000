@@ -2630,6 +2630,513 @@ static json run_attention_operator_composition(
     };
 }
 
+static json run_open_f_prefix_nonlinear_composition(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const std::vector<llama_token> & candidates,
+        const json & spec,
+        uint64_t active_recurrent_backing_initial,
+        uint64_t active_attention_backing_initial) {
+    const uint32_t actual_context_size = llama_n_ctx(ctx);
+    if (actual_context_size != spec.at("expected_context_size").get<uint32_t>()) {
+        throw std::runtime_error(
+            "open-F composition context mismatch: " +
+            std::to_string(actual_context_size));
+    }
+    const size_t expected_source_tokens =
+        spec.at("expected_source_tokens").get<size_t>();
+    const std::string prefix = spec.at("prefix");
+    const std::string module_f = spec.at("module_f");
+    const std::string neutral_module_f = spec.at("neutral_module_f");
+    const std::string neutral_module_g = spec.at("neutral_module_g");
+    const std::string closure = spec.at("closure");
+    const auto prefix_tokens =
+        tokenize_piece(vocab, prefix, true, true);
+    const auto f_tokens =
+        tokenize_piece(vocab, module_f, false, true);
+    const auto neutral_f_tokens =
+        tokenize_piece(vocab, neutral_module_f, false, true);
+    const auto neutral_g_tokens =
+        tokenize_piece(vocab, neutral_module_g, false, true);
+    const auto closure_tokens =
+        tokenize_piece(vocab, closure, false, true);
+    if (prefix_tokens.size() != spec.at("expected_prefix_tokens").get<size_t>() ||
+        f_tokens.size() != spec.at("expected_f_tokens").get<size_t>() ||
+        neutral_f_tokens.size() != f_tokens.size() ||
+        neutral_g_tokens.size() != spec.at("expected_g_tokens").get<size_t>() ||
+        closure_tokens.size() !=
+            spec.at("expected_closure_tokens").get<size_t>() ||
+        prefix_tokens.size() + f_tokens.size() +
+            neutral_g_tokens.size() + closure_tokens.size() !=
+            expected_source_tokens) {
+        throw std::runtime_error("open-F public token geometry mismatch");
+    }
+    const size_t f_boundary_tokens =
+        prefix_tokens.size() + f_tokens.size();
+    const auto & variants = spec.at("g_variants");
+    if (!variants.is_array() || variants.empty()) {
+        throw std::runtime_error("open-F composition has no G variants");
+    }
+    std::set<std::string> variant_ids;
+    for (const auto & variant : variants) {
+        const std::string id = variant.at("id");
+        if (!variant_ids.insert(id).second) {
+            throw std::runtime_error("duplicate open-F G variant " + id);
+        }
+        const auto g_tokens = tokenize_piece(
+            vocab, variant.at("module_g").get<std::string>(), false, true);
+        if (g_tokens.size() != neutral_g_tokens.size() ||
+            variant.at("queries").size() !=
+                spec.at("queries_per_variant").get<size_t>()) {
+            throw std::runtime_error(
+                "open-F G variant geometry mismatch for " + id);
+        }
+    }
+
+    llama_memory_clear(llama_get_memory(ctx), true);
+    decode_tokens(ctx, prefix_tokens, 0, false);
+    llama_synchronize(ctx);
+    auto prefix_root = save_root(
+        ctx, "open-F:common-prefix", 10000, FULL_DEVICE_FLAGS,
+        prefix_tokens.size());
+
+    restore_root(ctx, prefix_root);
+    decode_tokens(
+        ctx, f_tokens, static_cast<llama_pos>(prefix_tokens.size()), false);
+    llama_synchronize(ctx);
+    auto f_root = save_root(
+        ctx, "open-F:F-carrier", 10001, FULL_DEVICE_FLAGS,
+        f_boundary_tokens);
+
+    restore_root(ctx, prefix_root);
+    decode_tokens(
+        ctx, neutral_f_tokens,
+        static_cast<llama_pos>(prefix_tokens.size()), false);
+    llama_synchronize(ctx);
+    auto neutral_f_root = save_root(
+        ctx, "open-F:neutral-F-control", 10002, FULL_DEVICE_FLAGS,
+        f_boundary_tokens);
+
+    const size_t cleared_prefix_root_bytes =
+        llama_state_seq_clear_device_data(ctx, prefix_root.key);
+    if (llama_state_seq_get_device_root_count(ctx) != 2) {
+        throw std::runtime_error(
+            "open-F prefix closure damaged branch roots");
+    }
+
+    restore_root(ctx, f_root);
+    const auto f_recurrent_digest_before =
+        hash_recurrent_state_streamed(ctx);
+    const size_t active_cache_backend_allocation_bytes =
+        active_hybrid_backend_allocation_bytes(ctx);
+
+    llama_seq_id final_key = 10003;
+    size_t source_decode_tokens_all =
+        prefix_tokens.size() + f_tokens.size() + neutral_f_tokens.size();
+    size_t query_decode_tokens = 0;
+    size_t candidate_suffix_decode_tokens = 0;
+    size_t reference_full_decode_tokens = 0;
+    size_t g_only_suffix_decode_tokens = 0;
+    size_t f_only_suffix_decode_tokens = 0;
+    size_t f_root_restore_count = 1;
+    size_t neutral_f_root_restore_count = 0;
+    size_t final_root_restore_count = 0;
+    size_t root_save_device_copy_bytes =
+        prefix_root.gpu_bytes + f_root.gpu_bytes + neutral_f_root.gpu_bytes;
+    size_t f_root_restore_device_copy_bytes = f_root.gpu_bytes;
+    size_t neutral_f_root_restore_device_copy_bytes = 0;
+    size_t final_root_restore_device_copy_bytes = 0;
+    size_t cleared_final_root_bytes = 0;
+    size_t maximum_retained_root_backend_allocation_bytes = std::max(
+        prefix_root.allocation_bytes +
+            f_root.allocation_bytes +
+            neutral_f_root.allocation_bytes,
+        f_root.allocation_bytes + neutral_f_root.allocation_bytes);
+    json records = json::array();
+    json variant_summary = json::object();
+    size_t variant_passes = 0;
+    size_t full_logit_hash_matches = 0;
+    size_t boundary_matches = 0;
+    size_t comparisons = 0;
+    double maximum_candidate_logit_absolute_difference = 0.0;
+
+    const auto decode_tail =
+            [&](const std::vector<llama_token> & g_tokens) {
+        decode_tokens(
+            ctx, g_tokens, static_cast<llama_pos>(f_boundary_tokens), false);
+        decode_tokens(
+            ctx, closure_tokens,
+            static_cast<llama_pos>(
+                f_boundary_tokens + g_tokens.size()), false);
+        llama_synchronize(ctx);
+        return g_tokens.size() + closure_tokens.size();
+    };
+    const auto query_final_root =
+            [&](const std::string & route,
+                const std::string & variant_id,
+                const device_root & root,
+                const json & queries,
+                std::vector<boundary_result> & outputs) {
+        for (const auto & query : queries) {
+            restore_root(ctx, root);
+            ++final_root_restore_count;
+            final_root_restore_device_copy_bytes += root.gpu_bytes;
+            auto boundary = decode_query(
+                ctx, vocab, candidates, route, variant_id, query,
+                expected_source_tokens, root.backing_id, root.gpu_bytes);
+            query_decode_tokens +=
+                boundary.record.at("query_tokens").get<size_t>();
+            records.push_back(boundary.record);
+            outputs.push_back(std::move(boundary));
+        }
+    };
+    const auto close_final_root =
+            [&](const device_root & root) {
+        llama_memory_clear(llama_get_memory(ctx), true);
+        cleared_final_root_bytes +=
+            llama_state_seq_clear_device_data(ctx, root.key);
+        if (llama_state_seq_get_device_root_count(ctx) != 2) {
+            throw std::runtime_error(
+                "open-F final-root closure damaged branch roots");
+        }
+    };
+
+    for (const auto & variant : variants) {
+        const std::string id = variant.at("id");
+        const auto g_tokens = tokenize_piece(
+            vocab, variant.at("module_g").get<std::string>(), false, true);
+        const auto & queries = variant.at("queries");
+
+        restore_root(ctx, f_root);
+        ++f_root_restore_count;
+        f_root_restore_device_copy_bytes += f_root.gpu_bytes;
+        const size_t candidate_tail_tokens = decode_tail(g_tokens);
+        candidate_suffix_decode_tokens += candidate_tail_tokens;
+        source_decode_tokens_all += candidate_tail_tokens;
+        auto candidate_root = save_root(
+            ctx, id + ":open-F-G-result", final_key++,
+            FULL_DEVICE_FLAGS, expected_source_tokens);
+        root_save_device_copy_bytes += candidate_root.gpu_bytes;
+        maximum_retained_root_backend_allocation_bytes = std::max(
+            maximum_retained_root_backend_allocation_bytes,
+            f_root.allocation_bytes +
+                neutral_f_root.allocation_bytes +
+                candidate_root.allocation_bytes);
+        std::vector<boundary_result> candidate_results;
+        query_final_root(
+            "open-F-causal-G-forward", id + ":candidate",
+            candidate_root, queries, candidate_results);
+        close_final_root(candidate_root);
+
+        llama_memory_clear(llama_get_memory(ctx), true);
+        decode_tokens(ctx, prefix_tokens, 0, false);
+        decode_tokens(
+            ctx, f_tokens,
+            static_cast<llama_pos>(prefix_tokens.size()), false);
+        decode_tokens(
+            ctx, g_tokens,
+            static_cast<llama_pos>(f_boundary_tokens), false);
+        decode_tokens(
+            ctx, closure_tokens,
+            static_cast<llama_pos>(
+                f_boundary_tokens + g_tokens.size()), false);
+        llama_synchronize(ctx);
+        reference_full_decode_tokens += expected_source_tokens;
+        source_decode_tokens_all += expected_source_tokens;
+        auto reference_root = save_root(
+            ctx, id + ":isolated-full-replay-control", final_key++,
+            FULL_DEVICE_FLAGS, expected_source_tokens);
+        root_save_device_copy_bytes += reference_root.gpu_bytes;
+        maximum_retained_root_backend_allocation_bytes = std::max(
+            maximum_retained_root_backend_allocation_bytes,
+            f_root.allocation_bytes +
+                neutral_f_root.allocation_bytes +
+                reference_root.allocation_bytes);
+        std::vector<boundary_result> reference_results;
+        query_final_root(
+            "isolated-full-replay-control", id + ":reference",
+            reference_root, queries, reference_results);
+        close_final_root(reference_root);
+
+        restore_root(ctx, neutral_f_root);
+        ++neutral_f_root_restore_count;
+        neutral_f_root_restore_device_copy_bytes += neutral_f_root.gpu_bytes;
+        const size_t g_only_tail_tokens = decode_tail(g_tokens);
+        g_only_suffix_decode_tokens += g_only_tail_tokens;
+        source_decode_tokens_all += g_only_tail_tokens;
+        auto g_only_root = save_root(
+            ctx, id + ":G-only-control", final_key++,
+            FULL_DEVICE_FLAGS, expected_source_tokens);
+        root_save_device_copy_bytes += g_only_root.gpu_bytes;
+        maximum_retained_root_backend_allocation_bytes = std::max(
+            maximum_retained_root_backend_allocation_bytes,
+            f_root.allocation_bytes +
+                neutral_f_root.allocation_bytes +
+                g_only_root.allocation_bytes);
+        std::vector<boundary_result> g_only_results;
+        query_final_root(
+            "G-only-causal-forward-control", id + ":G_only",
+            g_only_root, queries, g_only_results);
+        close_final_root(g_only_root);
+
+        const size_t candidate_correct =
+            semantic_correct_count(candidate_results, queries, false);
+        const size_t reference_correct =
+            semantic_correct_count(reference_results, queries, false);
+        const size_t g_only_correct =
+            semantic_correct_count(g_only_results, queries, false);
+        size_t variant_hash_matches = 0;
+        size_t variant_boundary_matches = 0;
+        double variant_maximum_difference = 0.0;
+        std::vector<std::string> candidate_answers;
+        std::vector<std::string> reference_answers;
+        std::vector<std::string> g_only_answers;
+        for (size_t i = 0; i < queries.size(); ++i) {
+            const auto & candidate = candidate_results.at(i);
+            const auto & reference = reference_results.at(i);
+            candidate_answers.push_back(candidate.argmax);
+            reference_answers.push_back(reference.argmax);
+            g_only_answers.push_back(g_only_results.at(i).argmax);
+            variant_hash_matches +=
+                candidate.full_logits_fnv1a64 ==
+                reference.full_logits_fnv1a64;
+            variant_boundary_matches +=
+                candidate.argmax == reference.argmax;
+            for (size_t c = 0; c < candidate.candidate_logits.size(); ++c) {
+                variant_maximum_difference = std::max(
+                    variant_maximum_difference,
+                    std::abs(
+                        static_cast<double>(
+                            candidate.candidate_logits.at(c)) -
+                        static_cast<double>(
+                            reference.candidate_logits.at(c))));
+            }
+        }
+        full_logit_hash_matches += variant_hash_matches;
+        boundary_matches += variant_boundary_matches;
+        comparisons += queries.size();
+        maximum_candidate_logit_absolute_difference = std::max(
+            maximum_candidate_logit_absolute_difference,
+            variant_maximum_difference);
+        const bool passed =
+            candidate_correct >=
+                variant.at("joint_correct_minimum").get<size_t>() &&
+            reference_correct >=
+                variant.at("joint_correct_minimum").get<size_t>() &&
+            g_only_correct <=
+                variant.at("g_only_correct_maximum").get<size_t>() &&
+            variant_hash_matches == queries.size() &&
+            variant_maximum_difference == 0.0;
+        variant_passes += passed;
+        variant_summary[id] = {
+            {"candidate", {
+                {"answers", candidate_answers},
+                {"correct", candidate_correct},
+            }},
+            {"isolated_full_replay", {
+                {"answers", reference_answers},
+                {"correct", reference_correct},
+            }},
+            {"G_only", {
+                {"answers", g_only_answers},
+                {"correct", g_only_correct},
+            }},
+            {"full_logit_hash_matches", variant_hash_matches},
+            {"boundary_matches", variant_boundary_matches},
+            {"maximum_candidate_logit_absolute_difference",
+                variant_maximum_difference},
+            {"passed", passed},
+        };
+    }
+
+    restore_root(ctx, f_root);
+    ++f_root_restore_count;
+    f_root_restore_device_copy_bytes += f_root.gpu_bytes;
+    const size_t f_only_tail_tokens = decode_tail(neutral_g_tokens);
+    f_only_suffix_decode_tokens += f_only_tail_tokens;
+    source_decode_tokens_all += f_only_tail_tokens;
+    auto f_only_root = save_root(
+        ctx, "open-F:F-only-control", final_key++,
+        FULL_DEVICE_FLAGS, expected_source_tokens);
+    root_save_device_copy_bytes += f_only_root.gpu_bytes;
+    maximum_retained_root_backend_allocation_bytes = std::max(
+        maximum_retained_root_backend_allocation_bytes,
+        f_root.allocation_bytes +
+            neutral_f_root.allocation_bytes +
+            f_only_root.allocation_bytes);
+    std::vector<boundary_result> f_only_results;
+    query_final_root(
+        "F-only-causal-forward-control", "F_only",
+        f_only_root, spec.at("f_only_queries"), f_only_results);
+    close_final_root(f_only_root);
+    const size_t f_only_correct = semantic_correct_count(
+        f_only_results, spec.at("f_only_queries"), false);
+
+    restore_root(ctx, f_root);
+    ++f_root_restore_count;
+    f_root_restore_device_copy_bytes += f_root.gpu_bytes;
+    const auto f_recurrent_digest_after =
+        hash_recurrent_state_streamed(ctx);
+    const bool f_recurrent_tensor_digest_match =
+        f_recurrent_digest_before.value == f_recurrent_digest_after.value &&
+        f_recurrent_digest_before.transferred_bytes ==
+            f_recurrent_digest_after.transferred_bytes;
+    const auto & acceptance = spec.at("acceptance_law");
+    const bool accepted =
+        variant_passes >=
+            acceptance.at("variant_passes_minimum").get<size_t>() &&
+        f_only_correct <=
+            acceptance.at("f_only_correct_maximum").get<size_t>() &&
+        comparisons ==
+            acceptance.at("comparisons").get<size_t>() &&
+        full_logit_hash_matches ==
+            acceptance.at("full_logit_hash_matches").get<size_t>() &&
+        boundary_matches ==
+            acceptance.at("boundary_matches").get<size_t>() &&
+        maximum_candidate_logit_absolute_difference <=
+            acceptance.at(
+                "maximum_candidate_logit_absolute_difference").get<double>() &&
+        f_recurrent_tensor_digest_match;
+
+    llama_memory_clear(llama_get_memory(ctx), true);
+    const size_t cleared_f_root_bytes =
+        llama_state_seq_clear_device_data(ctx, f_root.key);
+    const size_t cleared_neutral_f_root_bytes =
+        llama_state_seq_clear_device_data(ctx, neutral_f_root.key);
+    llama_synchronize(ctx);
+    if (llama_state_seq_get_device_root_count(ctx) != 0 ||
+        active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
+        active_attention_backing_id(ctx) != active_attention_backing_initial) {
+        throw std::runtime_error(
+            "open-F composition close invariant failed");
+    }
+
+    const size_t candidate_construction_tokens =
+        prefix_tokens.size() + f_tokens.size() +
+        candidate_suffix_decode_tokens;
+    const size_t full_replay_candidate_tokens =
+        variants.size() * expected_source_tokens;
+    const size_t prefix_dag_candidate_tokens =
+        prefix_tokens.size() +
+        variants.size() * (expected_source_tokens - prefix_tokens.size());
+    return {
+        {"schema_version", 1},
+        {"mechanism", "OPEN_F_PREFIX_MODEL_NATIVE_NONLINEAR_G_COMPOSITION"},
+        {"spec_id", spec.at("id")},
+        {"model_arch", "qwen35moe"},
+        {"configuration", {
+            {"context_size", actual_context_size},
+            {"source_tokens", expected_source_tokens},
+            {"prefix_tokens", prefix_tokens.size()},
+            {"F_tokens", f_tokens.size()},
+            {"G_tokens", neutral_g_tokens.size()},
+            {"closure_tokens", closure_tokens.size()},
+            {"F_boundary_tokens", f_boundary_tokens},
+            {"G_variant_count", variants.size()},
+            {"queries_per_variant", spec.at("queries_per_variant")},
+            {"prebuilt_joint_root_available_to_candidate", false},
+            {"isolated_full_replay_control", true},
+            {"restoration_class", "SNAPSHOT_RELOAD"},
+        }},
+        {"summary", {
+            {"variant_passes", variant_passes},
+            {"variant_count", variants.size()},
+            {"F_only_correct", f_only_correct},
+            {"full_logit_hash_matches", full_logit_hash_matches},
+            {"boundary_matches", boundary_matches},
+            {"comparisons", comparisons},
+            {"maximum_candidate_logit_absolute_difference",
+                maximum_candidate_logit_absolute_difference},
+            {"F_recurrent_tensor_digest_match",
+                f_recurrent_tensor_digest_match},
+            {"accepted", accepted},
+        }},
+        {"variant_summary", variant_summary},
+        {"construction", {
+            {"candidate_source_tokens", candidate_construction_tokens},
+            {"full_replay_candidate_source_tokens",
+                full_replay_candidate_tokens},
+            {"prefix_DAG_candidate_source_tokens",
+                prefix_dag_candidate_tokens},
+            {"avoided_vs_full_replay",
+                full_replay_candidate_tokens -
+                candidate_construction_tokens},
+            {"avoided_vs_prefix_DAG",
+                prefix_dag_candidate_tokens -
+                candidate_construction_tokens},
+            {"asymptotic_fresh_source_ratio",
+                static_cast<double>(
+                    neutral_g_tokens.size() + closure_tokens.size()) /
+                static_cast<double>(expected_source_tokens)},
+            {"open_F_root_logical_bytes", f_root.resident_bytes},
+            {"open_F_root_backend_allocation_bytes",
+                f_root.allocation_bytes},
+            {"open_F_root_backing_id", hex64(f_root.backing_id)},
+            {"open_F_restore_count", f_root_restore_count},
+            {"neutral_F_restore_count", neutral_f_root_restore_count},
+            {"constructed_final_root_restore_count",
+                final_root_restore_count},
+        }},
+        {"carrier", {
+            {"active_cache_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes},
+            {"maximum_retained_root_backend_allocation_bytes",
+                maximum_retained_root_backend_allocation_bytes},
+            {"active_plus_retained_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes +
+                maximum_retained_root_backend_allocation_bytes},
+            {"F_recurrent_tensor_digest_before",
+                hex64(f_recurrent_digest_before.value)},
+            {"F_recurrent_tensor_digest_after",
+                hex64(f_recurrent_digest_after.value)},
+            {"complete_host_state_copy_retained", false},
+            {"all_retained_roots_closed",
+                llama_state_seq_get_device_root_count(ctx) == 0},
+            {"active_recurrent_backing_stable",
+                active_recurrent_backing_id(ctx) ==
+                active_recurrent_backing_initial},
+            {"active_attention_backing_stable",
+                active_attention_backing_id(ctx) ==
+                active_attention_backing_initial},
+        }},
+        {"resource_accounting", {
+            {"all_route_source_decode_tokens", source_decode_tokens_all},
+            {"candidate_suffix_decode_tokens",
+                candidate_suffix_decode_tokens},
+            {"reference_full_decode_tokens",
+                reference_full_decode_tokens},
+            {"G_only_suffix_decode_tokens",
+                g_only_suffix_decode_tokens},
+            {"F_only_suffix_decode_tokens",
+                f_only_suffix_decode_tokens},
+            {"query_decode_tokens", query_decode_tokens},
+            {"all_route_input_tokens",
+                source_decode_tokens_all + query_decode_tokens},
+            {"root_save_device_copy_bytes", root_save_device_copy_bytes},
+            {"F_root_restore_device_copy_bytes",
+                f_root_restore_device_copy_bytes},
+            {"neutral_F_root_restore_device_copy_bytes",
+                neutral_f_root_restore_device_copy_bytes},
+            {"final_root_restore_device_copy_bytes",
+                final_root_restore_device_copy_bytes},
+            {"F_digest_d2h_bytes",
+                f_recurrent_digest_before.transferred_bytes +
+                f_recurrent_digest_after.transferred_bytes},
+            {"F_digest_peak_host_work_bytes", std::max(
+                f_recurrent_digest_before.peak_host_work_bytes,
+                f_recurrent_digest_after.peak_host_work_bytes)},
+            {"cleared_prefix_root_bytes", cleared_prefix_root_bytes},
+            {"cleared_final_root_bytes", cleared_final_root_bytes},
+            {"cleared_F_root_bytes", cleared_f_root_bytes},
+            {"cleared_neutral_F_root_bytes",
+                cleared_neutral_f_root_bytes},
+        }},
+        {"records", records},
+        {"verdict", accepted ? "accept" : "reject"},
+        {"claim_ceiling", spec.at("claim_ceiling")},
+    };
+}
+
 static json run_prefix_dag_attention_construction(
         llama_context * ctx,
         const llama_vocab * vocab,
@@ -3084,6 +3591,22 @@ int main(int argc, char ** argv) {
         if (spec.value("affine_attention_composition", false) ||
             spec.value("position_splice_attention_composition", false)) {
             const json result = run_attention_operator_composition(
+                ctx,
+                vocab,
+                candidates,
+                spec,
+                active_backing_initial,
+                active_attention_backing_initial);
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
+        }
+
+        if (spec.value("open_f_prefix_nonlinear_composition", false)) {
+            const json result = run_open_f_prefix_nonlinear_composition(
                 ctx,
                 vocab,
                 candidates,
