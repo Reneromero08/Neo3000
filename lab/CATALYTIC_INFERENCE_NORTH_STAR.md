@@ -119,6 +119,12 @@ into the original destination cells without metadata relinking, binds those
 cell identities across the cycle, and executes the unchanged recurrence once.
 That is a carrier-law change, not `carrier-evaluation-v2`.
 
+That carrier-law implementation is now frozen as `neo-exp-0146`. It adds no
+new semantic fixture: it changes only physical state advance from cell
+replacement to complete K/V overwrite of the same four destination cells.
+The precontact build binds their IDs across every update and accounts for all
+backend-copy traffic. Its one frozen run is the next discriminator.
+
 ### Executed bridge update — model-native residual carrier
 
 The first Linux contact after this synthesis moved the carrier before logits.

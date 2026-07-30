@@ -1247,6 +1247,37 @@ ggml_tensor * llama_kv_cache::get_v_storage(int32_t il) const {
     return layers[ikv].v;
 }
 
+bool llama_kv_cache::seq_attention_cell_identity(
+        llama_seq_id seq_id,
+        llama_pos position,
+        uint32_t * cell_id) const {
+    if (!cell_id ||
+        other ||
+        n_stream != 1 ||
+        seq_id < 0 ||
+        static_cast<size_t>(seq_id) >= seq_to_stream.size() ||
+        position < 0) {
+        return false;
+    }
+
+    const auto & cells = v_cells[seq_to_stream[seq_id]];
+    uint32_t found = cells.size();
+    for (uint32_t i = 0; i < cells.size(); ++i) {
+        if (cells.pos_in(i, position, position + 1) &&
+            cells.seq_has(i, seq_id)) {
+            if (found != cells.size()) {
+                return false;
+            }
+            found = i;
+        }
+    }
+    if (found == cells.size()) {
+        return false;
+    }
+    *cell_id = found;
+    return true;
+}
+
 bool llama_kv_cache::seq_rotate_attention_positions(
         llama_seq_id seq_id,
         const std::vector<llama_pos> & positions,
@@ -1394,6 +1425,41 @@ bool llama_kv_cache::seq_copy_attention_value_row(
         llama_pos destination_position,
         const std::set<uint32_t> & layer_ids,
         value_orbit_metrics * metrics) {
+    return seq_copy_attention_row(
+        source_seq_id,
+        source_position,
+        destination_seq_id,
+        destination_position,
+        layer_ids,
+        false,
+        metrics);
+}
+
+bool llama_kv_cache::seq_copy_attention_key_value_row(
+        llama_seq_id source_seq_id,
+        llama_pos source_position,
+        llama_seq_id destination_seq_id,
+        llama_pos destination_position,
+        const std::set<uint32_t> & layer_ids,
+        value_orbit_metrics * metrics) {
+    return seq_copy_attention_row(
+        source_seq_id,
+        source_position,
+        destination_seq_id,
+        destination_position,
+        layer_ids,
+        true,
+        metrics);
+}
+
+bool llama_kv_cache::seq_copy_attention_row(
+        llama_seq_id source_seq_id,
+        llama_pos source_position,
+        llama_seq_id destination_seq_id,
+        llama_pos destination_position,
+        const std::set<uint32_t> & layer_ids,
+        bool include_keys,
+        value_orbit_metrics * metrics) {
     if (metrics) {
         *metrics = {};
     }
@@ -1443,7 +1509,8 @@ bool llama_kv_cache::seq_copy_attention_value_row(
     }
 
     const size_t metadata_bytes =
-        2 * layer_ids.size() * ggml_tensor_overhead();
+        2 * layer_ids.size() * (include_keys ? 2 : 1) *
+        ggml_tensor_overhead();
     ggml_init_params params = {
         /*.mem_size   =*/ metadata_bytes,
         /*.mem_buffer =*/ nullptr,
@@ -1460,34 +1527,40 @@ bool llama_kv_cache::seq_copy_attention_value_row(
         if (layer_ids.find(layer.il) == layer_ids.end()) {
             continue;
         }
-        ggml_tensor * tensor = layer.v;
-        if (!tensor ||
-            !tensor->buffer ||
-            ggml_blck_size(tensor->type) != 1 ||
-            tensor->ne[1] != static_cast<int64_t>(get_size()) ||
-            tensor->ne[2] != static_cast<int64_t>(n_stream)) {
-            return false;
+        std::vector<ggml_tensor *> tensors;
+        if (include_keys) {
+            tensors.push_back(layer.k);
         }
-        const size_t row_bytes =
-            ggml_row_size(tensor->type, tensor->ne[0]);
-        if (tensor->nb[1] != row_bytes) {
-            return false;
+        tensors.push_back(layer.v);
+        for (ggml_tensor * tensor : tensors) {
+            if (!tensor ||
+                !tensor->buffer ||
+                ggml_blck_size(tensor->type) != 1 ||
+                tensor->ne[1] != static_cast<int64_t>(get_size()) ||
+                tensor->ne[2] != static_cast<int64_t>(n_stream)) {
+                return false;
+            }
+            const size_t row_bytes =
+                ggml_row_size(tensor->type, tensor->ne[0]);
+            if (tensor->nb[1] != row_bytes) {
+                return false;
+            }
+            ggml_tensor * source = ggml_view_1d(
+                copy_ctx.get(),
+                tensor,
+                tensor->ne[0],
+                static_cast<size_t>(source_cell) * tensor->nb[1]);
+            ggml_tensor * destination = ggml_view_1d(
+                copy_ctx.get(),
+                tensor,
+                tensor->ne[0],
+                static_cast<size_t>(destination_cell) * tensor->nb[1]);
+            ggml_backend_view_init(source);
+            ggml_backend_view_init(destination);
+            ggml_backend_tensor_copy(source, destination);
+            backend_copy_bytes += row_bytes;
+            ++tensor_count;
         }
-        ggml_tensor * source = ggml_view_1d(
-            copy_ctx.get(),
-            tensor,
-            tensor->ne[0],
-            static_cast<size_t>(source_cell) * tensor->nb[1]);
-        ggml_tensor * destination = ggml_view_1d(
-            copy_ctx.get(),
-            tensor,
-            tensor->ne[0],
-            static_cast<size_t>(destination_cell) * tensor->nb[1]);
-        ggml_backend_view_init(source);
-        ggml_backend_view_init(destination);
-        ggml_backend_tensor_copy(source, destination);
-        backend_copy_bytes += row_bytes;
-        ++tensor_count;
     }
 
     if (metrics) {
@@ -1495,7 +1568,8 @@ bool llama_kv_cache::seq_copy_attention_value_row(
         metrics->tensor_count = tensor_count;
         metrics->position_count = 2;
     }
-    return tensor_count == layer_ids.size();
+    return tensor_count ==
+        layer_ids.size() * (include_keys ? 2 : 1);
 }
 
 bool llama_kv_cache::seq_collect_attention_role_pair(

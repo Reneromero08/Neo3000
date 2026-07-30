@@ -405,6 +405,18 @@ The active recurrence and acceptance boundary are
   It measures fixed cell identities and copied bytes, then executes the same
   recurrence once. This attacks the observed physical advance law; it is not
   an evaluator, fixture, or evidence-packet successor.
+- `neo-exp-0146` is now frozen at the source-only boundary. The KV runtime
+  resolves unique physical cell IDs and copies complete selected K/V rows
+  between existing cells without changing sequence ownership or position
+  metadata. The probe binds the four initial destination IDs, checks them
+  before and after every advance and at final return, charges backend bytes,
+  tensor visits, all token forwards, and closure, and rejects if any ID moves.
+- The probe and complete Release CUDA server build. The seventeen focused
+  runner/oracle tests pass; the exact oracle passes ten main gates and three
+  valid fixtures; configured CUDA closure remains `139/139` entries and
+  objects. No `neo-exp-0146` model contact has occurred. The next action is one
+  execution of `lab/actual-output-fixed-cell-kv-advance-v1.json`, not a K/V
+  subset, prompt, position, layer, evaluator, or evidence-packet variant.
 
 ### REJECTED
 

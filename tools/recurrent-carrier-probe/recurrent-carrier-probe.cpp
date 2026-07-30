@@ -5047,10 +5047,17 @@ static json run_sparse_g_label_refresh(
         spec.value("output_role_transport_action", false);
     const bool output_role_generator_mode =
         spec.value("output_role_generator_action", false);
-    const bool output_source_rematerialization_mode =
+    const bool output_source_relink_rematerialization_mode =
         spec.value(
             "output_source_position_rematerialization_action",
             false);
+    const bool output_source_fixed_cell_rematerialization_mode =
+        spec.value(
+            "output_source_position_fixed_cell_rematerialization_action",
+            false);
+    const bool output_source_rematerialization_mode =
+        output_source_relink_rematerialization_mode ||
+        output_source_fixed_cell_rematerialization_mode;
     const bool output_driven_carrier_mode =
         output_promoted_value_carrier_mode ||
         output_role_transport_mode ||
@@ -5105,7 +5112,9 @@ static json run_sparse_g_label_refresh(
             static_cast<int>(output_role_transport_mode) +
             static_cast<int>(output_role_generator_mode) +
             static_cast<int>(
-                output_source_rematerialization_mode) +
+                output_source_relink_rematerialization_mode) +
+            static_cast<int>(
+                output_source_fixed_cell_rematerialization_mode) +
             static_cast<int>(trained_semantic_carrier_mode) > 1) {
         throw std::runtime_error(
             "label orbit action modes are mutually exclusive");
@@ -6212,10 +6221,16 @@ static json run_sparse_g_label_refresh(
     json variant_timings = json::array();
     json output_promotion_records = json::array();
     json source_role_rematerialization_records = json::array();
+    json fixed_cell_identity_records = json::array();
+    std::vector<uint32_t> initial_destination_cell_ids;
+    std::vector<uint32_t> final_destination_cell_ids;
+    bool all_destination_cell_identities_stable = true;
     const std::string candidate_route =
         output_driven_carrier_mode
-            ? output_source_rematerialization_mode
-                ? "output_source_position_rematerialization_carrier"
+            ? output_source_fixed_cell_rematerialization_mode
+                ? "output_source_position_fixed_cell_carrier"
+                : output_source_relink_rematerialization_mode
+                    ? "output_source_position_rematerialization_carrier"
                 : output_role_generator_mode
                 ? "shared_nonlinear_role_generator_carrier"
                 : output_role_transport_mode
@@ -6226,8 +6241,10 @@ static json run_sparse_g_label_refresh(
                 : "sparse_label_refresh_candidate";
     const std::string return_route =
         output_driven_carrier_mode
-            ? output_source_rematerialization_mode
-                ? "output_source_position_rematerialization_carrier_return_G0"
+            ? output_source_fixed_cell_rematerialization_mode
+                ? "output_source_position_fixed_cell_carrier_return_G0"
+                : output_source_relink_rematerialization_mode
+                    ? "output_source_position_rematerialization_carrier_return_G0"
                 : output_role_generator_mode
                 ? "shared_nonlinear_role_generator_carrier_return_G0"
                 : output_role_transport_mode
@@ -6983,6 +7000,35 @@ static json run_sparse_g_label_refresh(
                 : refresh_candidate_labels(
                     variant_g_tokens.at(0),
                     canonical_id + ":orbit-initialization");
+        if (output_source_fixed_cell_rematerialization_mode) {
+            initial_destination_cell_ids.reserve(
+                label_offsets.size());
+            for (size_t label_index = 0;
+                 label_index < label_offsets.size();
+                 ++label_index) {
+                const llama_pos label_position =
+                    static_cast<llama_pos>(
+                        f_boundary_tokens +
+                        label_offsets.at(label_index));
+                uint32_t cell_id = 0;
+                if (!attention->seq_attention_cell_identity(
+                        candidate_seq,
+                        label_position,
+                        &cell_id)) {
+                    throw std::runtime_error(
+                        canonical_id +
+                        ": initial destination cell identity is absent");
+                }
+                initial_destination_cell_ids.push_back(cell_id);
+                fixed_cell_identity_records.push_back({
+                    {"stage", "initial"},
+                    {"variant", canonical_id},
+                    {"destination_label_index", label_index},
+                    {"destination_label_position", label_position},
+                    {"destination_cell_id", cell_id},
+                });
+            }
+        }
         carrier_recurrent_hash_before =
             hash_recurrent_sequence_streamed(ctx, candidate_seq);
         variant_timings.push_back({
@@ -7203,22 +7249,87 @@ static json run_sparse_g_label_refresh(
                         label_position,
                         id + ":source-role-token-" +
                             std::to_string(label_index));
-                    if (!attention->seq_rm(
+                    uint32_t source_cell_id = 0;
+                    uint32_t destination_cell_id_before = 0;
+                    if (!attention->seq_attention_cell_identity(
+                            scaffold_seq,
+                            label_position,
+                            &source_cell_id) ||
+                        !attention->seq_attention_cell_identity(
                             candidate_seq,
                             label_position,
-                            label_position + 1)) {
+                            &destination_cell_id_before)) {
                         throw std::runtime_error(
                             id +
-                            ": prior source-role label removal failed");
+                            ": rematerialized cell identity is absent");
                     }
-                    ++attention_label_remove_count;
-                    attention->seq_cp(
-                        scaffold_seq,
-                        candidate_seq,
-                        label_position,
-                        label_position + 1);
-                    llama_synchronize(ctx);
-                    ++attention_label_alias_count;
+                    llama_kv_cache::value_orbit_metrics
+                        fixed_cell_copy_metrics = {};
+                    if (output_source_fixed_cell_rematerialization_mode) {
+                        if (!attention
+                                ->seq_copy_attention_key_value_row(
+                                    scaffold_seq,
+                                    label_position,
+                                    candidate_seq,
+                                    label_position,
+                                    orbit_attention_layers,
+                                    &fixed_cell_copy_metrics)) {
+                            throw std::runtime_error(
+                                id +
+                                ": fixed-cell source-role K/V copy failed");
+                        }
+                        llama_synchronize(ctx);
+                        orbit_backend_copy_bytes +=
+                            fixed_cell_copy_metrics.backend_copy_bytes;
+                        orbit_host_read_bytes +=
+                            fixed_cell_copy_metrics.host_read_bytes;
+                        orbit_host_write_bytes +=
+                            fixed_cell_copy_metrics.host_write_bytes;
+                        orbit_peak_host_work_bytes = std::max(
+                            orbit_peak_host_work_bytes,
+                            fixed_cell_copy_metrics
+                                .peak_host_work_bytes);
+                        orbit_tensor_visits +=
+                            fixed_cell_copy_metrics.tensor_count;
+                        orbit_position_visits +=
+                            fixed_cell_copy_metrics.position_count;
+                    } else {
+                        if (!attention->seq_rm(
+                                candidate_seq,
+                                label_position,
+                                label_position + 1)) {
+                            throw std::runtime_error(
+                                id +
+                                ": prior source-role label removal failed");
+                        }
+                        ++attention_label_remove_count;
+                        attention->seq_cp(
+                            scaffold_seq,
+                            candidate_seq,
+                            label_position,
+                            label_position + 1);
+                        llama_synchronize(ctx);
+                        ++attention_label_alias_count;
+                    }
+                    uint32_t destination_cell_id_after = 0;
+                    if (!attention->seq_attention_cell_identity(
+                            candidate_seq,
+                            label_position,
+                            &destination_cell_id_after)) {
+                        throw std::runtime_error(
+                            id +
+                            ": updated destination cell identity is absent");
+                    }
+                    const bool destination_cell_identity_stable =
+                        destination_cell_id_before ==
+                            destination_cell_id_after &&
+                        (!output_source_fixed_cell_rematerialization_mode ||
+                         destination_cell_id_after ==
+                            initial_destination_cell_ids.at(
+                                label_index));
+                    all_destination_cell_identities_stable =
+                        all_destination_cell_identities_stable &&
+                        destination_cell_identity_stable;
                     ++output_promotion_row_count;
                     source_role_rematerialization_records.push_back({
                         {"variant", id},
@@ -7227,9 +7338,39 @@ static json run_sparse_g_label_refresh(
                         {"actual_projected_token", actual_output},
                         {"model_forward_tokens", 1},
                         {"wall_ms", role_wall_ms},
+                        {"source_cell_id", source_cell_id},
+                        {"destination_cell_id_before",
+                            destination_cell_id_before},
+                        {"destination_cell_id_after",
+                            destination_cell_id_after},
+                        {"destination_cell_identity_stable",
+                            destination_cell_identity_stable},
+                        {"fixed_cell_key_value_copy",
+                            output_source_fixed_cell_rematerialization_mode},
+                        {"backend_copy_bytes",
+                            fixed_cell_copy_metrics.backend_copy_bytes},
+                        {"host_tensor_read_bytes",
+                            fixed_cell_copy_metrics.host_read_bytes},
+                        {"host_tensor_write_bytes",
+                            fixed_cell_copy_metrics.host_write_bytes},
                         {"expected_answer_consulted", false},
                         {"public_phase_table_consulted", false},
                     });
+                    if (output_source_fixed_cell_rematerialization_mode) {
+                        fixed_cell_identity_records.push_back({
+                            {"stage", "advance"},
+                            {"variant", id},
+                            {"destination_label_index", label_index},
+                            {"destination_label_position", label_position},
+                            {"source_cell_id", source_cell_id},
+                            {"destination_cell_id_before",
+                                destination_cell_id_before},
+                            {"destination_cell_id_after",
+                                destination_cell_id_after},
+                            {"stable",
+                                destination_cell_identity_stable},
+                        });
+                    }
                     require_component_positions(
                         candidate_seq,
                         source_boundary_pos,
@@ -7502,6 +7643,40 @@ static json run_sparse_g_label_refresh(
         }
     }
 
+    if (output_source_fixed_cell_rematerialization_mode) {
+        final_destination_cell_ids.reserve(label_offsets.size());
+        for (size_t label_index = 0;
+             label_index < label_offsets.size();
+             ++label_index) {
+            const llama_pos label_position =
+                static_cast<llama_pos>(
+                    f_boundary_tokens +
+                    label_offsets.at(label_index));
+            uint32_t cell_id = 0;
+            if (!attention->seq_attention_cell_identity(
+                    candidate_seq,
+                    label_position,
+                    &cell_id)) {
+                throw std::runtime_error(
+                    "final destination cell identity is absent");
+            }
+            final_destination_cell_ids.push_back(cell_id);
+            const bool stable =
+                cell_id ==
+                    initial_destination_cell_ids.at(label_index);
+            all_destination_cell_identities_stable =
+                all_destination_cell_identities_stable && stable;
+            fixed_cell_identity_records.push_back({
+                {"stage", "final"},
+                {"variant", variants.at(0).at("id")},
+                {"destination_label_index", label_index},
+                {"destination_label_position", label_position},
+                {"destination_cell_id", cell_id},
+                {"stable", stable},
+            });
+        }
+    }
+
     const auto f_hash_after =
         hash_recurrent_sequence_streamed(ctx, f_seq);
     const auto carrier_recurrent_hash_after =
@@ -7653,6 +7828,10 @@ static json run_sparse_g_label_refresh(
                  spec.at("role_generator_training_contexts").size() *
                  variants.size() *
                  spec.at("queries_per_variant").get<size_t>())) &&
+        (!output_source_fixed_cell_rematerialization_mode ||
+            (all_destination_cell_identities_stable &&
+             initial_destination_cell_ids ==
+                final_destination_cell_ids)) &&
         f_exact &&
         scaffold_exact;
 
@@ -7751,8 +7930,10 @@ static json run_sparse_g_label_refresh(
         role_transport_training_source_tokens;
     return {
         {"schema_version", 1},
-        {"mechanism", output_source_rematerialization_mode
-            ? "ACTUAL_OUTPUT_TOKEN_SOURCE_POSITION_REMATERIALIZATION"
+        {"mechanism", output_source_fixed_cell_rematerialization_mode
+            ? "ACTUAL_OUTPUT_SOURCE_ROLE_FIXED_CELL_KV_ADVANCE"
+            : output_source_relink_rematerialization_mode
+                ? "ACTUAL_OUTPUT_TOKEN_SOURCE_POSITION_REMATERIALIZATION"
             : subspace_value_orbit_mode
             ? subspace_include_keys
                 ? build_subspace_operator
@@ -7829,7 +8010,9 @@ static json run_sparse_g_label_refresh(
             {"output_role_generator_action",
                 output_role_generator_mode},
             {"output_source_position_rematerialization_action",
-                output_source_rematerialization_mode},
+                output_source_relink_rematerialization_mode},
+            {"output_source_position_fixed_cell_rematerialization_action",
+                output_source_fixed_cell_rematerialization_mode},
             {"output_promotion_label_indices",
                 output_promotion_label_indices},
             {"role_transport_training_contexts",
@@ -7980,6 +8163,12 @@ static json run_sparse_g_label_refresh(
                 semantic_carrier_restored},
             {"semantic_carrier_closed",
                 semantic_carrier_closed},
+            {"initial_destination_cell_ids",
+                initial_destination_cell_ids},
+            {"final_destination_cell_ids",
+                final_destination_cell_ids},
+            {"all_destination_cell_identities_stable",
+                all_destination_cell_identities_stable},
             {"all_sequences_closed", all_sequences_closed},
             {"all_retained_roots_closed", all_roots_closed},
             {"active_backings_stable", active_backings_stable},
@@ -8063,6 +8252,8 @@ static json run_sparse_g_label_refresh(
                 false},
             {"source_role_rematerialization_phase_table_consulted",
                 false},
+            {"fixed_cell_complete_key_value_copy",
+                output_source_fixed_cell_rematerialization_mode},
             {"role_transport_training_source_tokens",
                 role_transport_training_source_tokens},
             {"role_transport_training_query_tokens",
@@ -8237,6 +8428,8 @@ static json run_sparse_g_label_refresh(
             output_promotion_records},
         {"source_role_rematerialization_records",
             source_role_rematerialization_records},
+        {"fixed_cell_identity_records",
+            fixed_cell_identity_records},
         {"records", records},
         {"verdict", accepted ? "accept" : "reject"},
         {"claim_ceiling", spec.at("claim_ceiling")},

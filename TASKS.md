@@ -337,6 +337,11 @@ constructively unbounded local Agents-A1 inference.
   during, and after the cycle, charge every copied byte, and run the unchanged
   recurrence once. This changes the physical carrier advance law; it is not
   role-rematerialization-v2, a fixture change, or an evidence-harness revision.
+  **Precontact implementation frozen:** `neo-exp-0146` resolves the four
+  initial physical cell IDs, performs complete ten-layer K/V backend copies
+  into those cells without metadata mutation, checks the same IDs after every
+  update and at final return, and records exact copy traffic. The fixed
+  recurrence remains unexecuted at this source checkpoint.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

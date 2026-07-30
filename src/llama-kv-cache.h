@@ -167,6 +167,13 @@ public:
     ggml_tensor * get_k_storage(int32_t il) const;
     ggml_tensor * get_v_storage(int32_t il) const;
 
+    // Resolves one uniquely owned logical sequence position to its current
+    // physical cell in the unified attention stream.
+    bool seq_attention_cell_identity(
+            llama_seq_id seq_id,
+            llama_pos position,
+            uint32_t * cell_id) const;
+
     struct value_orbit_metrics {
         uint64_t backend_copy_bytes = 0;
         uint64_t host_read_bytes = 0;
@@ -195,6 +202,18 @@ public:
     // host. This is used to promote an output-produced value row into a
     // still-resident source carrier.
     bool seq_copy_attention_value_row(
+            llama_seq_id source_seq_id,
+            llama_pos source_position,
+            llama_seq_id destination_seq_id,
+            llama_pos destination_position,
+            const std::set<uint32_t> & layer_ids,
+            value_orbit_metrics * metrics);
+
+    // Copies the selected complete K/V row into an already existing
+    // destination cell. Sequence ownership, position metadata, and both source
+    // and destination cell identities remain unchanged. No tensor payload
+    // crosses the host.
+    bool seq_copy_attention_key_value_row(
             llama_seq_id source_seq_id,
             llama_pos source_position,
             llama_seq_id destination_seq_id,
@@ -548,6 +567,15 @@ public:
     void set_input_v_rot(ggml_tensor * dst) const;
 
 private:
+    bool seq_copy_attention_row(
+            llama_seq_id source_seq_id,
+            llama_pos source_position,
+            llama_seq_id destination_seq_id,
+            llama_pos destination_position,
+            const std::set<uint32_t> & layer_ids,
+            bool include_keys,
+            value_orbit_metrics * metrics);
+
     const llama_model & model;
     const llama_hparams & hparams;
 
