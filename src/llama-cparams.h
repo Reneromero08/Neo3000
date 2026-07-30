@@ -9,6 +9,8 @@
 
 #define LLAMA_MAX_SEQ 256
 
+struct ggml_tensor;
+
 // Experimental fixed-capacity semantic carrier used only by the Neo3000
 // frontier probe. The query/output maps are immutable after installation.
 // The 4x4 carrier action is updated in place on the same host backing and
@@ -28,9 +30,15 @@ struct llama_neo3000_semantic_carrier {
     // phase mode continues to materialize its 4x4 action here.
     std::array<float, 16> port = {};
     std::array<float, 16> action = {};
+    // Hidden-slot mode retains four complete actual-output layer states in
+    // one dedicated backend allocation. The graph reads this tensor
+    // device-to-device; no retained host mirror of the slot payload exists.
+    std::shared_ptr<void> hidden_slot_backing;
+    ggml_tensor * hidden_slots = nullptr; // [n_embd, 4]
     uint32_t phase = 0;
     bool enabled = false;
     bool output_written = false;
+    bool output_hidden_slots = false;
     bool output_map_trainable = false;
     bool moe_router_bias = false;
     bool recurrent_transition_input = false;
@@ -38,6 +46,8 @@ struct llama_neo3000_semantic_carrier {
     uint64_t action_backing_id = 0;
     uint64_t graph_input_sets = 0;
     uint64_t host_to_backend_bytes = 0;
+    uint64_t backend_to_graph_bytes = 0;
+    uint64_t hidden_slot_backend_bytes = 0;
     uint64_t writer_host_input_bytes = 0;
     uint64_t port_writes = 0;
     uint64_t router_bias_token_applications = 0;

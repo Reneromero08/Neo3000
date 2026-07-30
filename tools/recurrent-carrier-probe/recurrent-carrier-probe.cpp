@@ -5570,6 +5570,13 @@ static json run_sparse_g_label_refresh(
         spec.value(
             "output_written_semantic_port_action",
             false);
+    const bool output_written_hidden_slot_mode =
+        spec.value(
+            "output_written_hidden_slot_action",
+            false);
+    const bool output_written_carrier_mode =
+        output_written_semantic_port_mode ||
+        output_written_hidden_slot_mode;
     const bool end_to_end_semantic_carrier_training =
         spec.value(
             "end_to_end_semantic_carrier_training",
@@ -5583,13 +5590,13 @@ static json run_sparse_g_label_refresh(
         output_role_transport_mode ||
         output_role_generator_mode ||
         output_source_rematerialization_mode ||
-        output_written_semantic_port_mode ||
+        output_written_carrier_mode ||
         output_recurrent_delta_advance_mode;
     const bool legacy_trained_semantic_carrier_mode =
         spec.value("trained_semantic_carrier_action", false);
     const bool trained_semantic_carrier_mode =
         legacy_trained_semantic_carrier_mode ||
-        output_written_semantic_port_mode;
+        output_written_carrier_mode;
     const bool semantic_carrier_layer_delta_mode =
         trained_semantic_carrier_mode &&
         spec.value(
@@ -5654,6 +5661,8 @@ static json run_sparse_g_label_refresh(
                 legacy_trained_semantic_carrier_mode) +
             static_cast<int>(
                 output_written_semantic_port_mode) +
+            static_cast<int>(
+                output_written_hidden_slot_mode) +
             static_cast<int>(
                 output_recurrent_delta_advance_mode) > 1) {
         throw std::runtime_error(
@@ -6055,13 +6064,13 @@ static json run_sparse_g_label_refresh(
     if (trained_semantic_carrier_mode) {
         const auto & training_contexts =
             spec.at(
-                output_written_semantic_port_mode
+                output_written_carrier_mode
                     ? "output_written_port_training_contexts"
                     : "carrier_adapter_training_contexts");
         const double ridge_fraction =
             spec.at("carrier_adapter_ridge_fraction").get<double>();
         const double output_gain =
-            output_written_semantic_port_mode
+            output_written_carrier_mode
                 ? 1.0
                 : spec.at("carrier_adapter_output_gain").get<double>();
         if (!training_contexts.is_array() ||
@@ -6099,10 +6108,10 @@ static json run_sparse_g_label_refresh(
                 training_f_tokens.end());
             training_source.insert(
                 training_source.end(),
-                output_written_semantic_port_mode
+                output_written_carrier_mode
                     ? variant_g_tokens.at(0).begin()
                     : structural_g_tokens.begin(),
-                output_written_semantic_port_mode
+                output_written_carrier_mode
                     ? variant_g_tokens.at(0).end()
                     : structural_g_tokens.end());
             training_source.insert(
@@ -6165,7 +6174,7 @@ static json run_sparse_g_label_refresh(
                         : boundary.embedding;
                 sample.vault_ordinal = vault_ordinal;
                 sample.output_code_ordinal = vault_ordinal;
-                if (output_written_semantic_port_mode) {
+                if (output_written_carrier_mode) {
                     const auto destinations =
                         training_context.at(
                             "output_promotion_label_indices")
@@ -6252,7 +6261,7 @@ static json run_sparse_g_label_refresh(
                     training_id + ":training-query-close");
                 ++query_index;
             }
-            if (output_written_semantic_port_mode &&
+            if (output_written_carrier_mode &&
                 semantic_carrier_layer_delta_mode) {
                 std::array<uint32_t, 4> output_by_destination = {};
                 std::array<bool, 4> destination_present = {};
@@ -6299,7 +6308,8 @@ static json run_sparse_g_label_refresh(
                 f_seq,
                 training_id + ":training-source-close");
             if (semantic_carrier_layer_delta_mode &&
-                end_to_end_semantic_carrier_training) {
+                (end_to_end_semantic_carrier_training ||
+                 output_written_hidden_slot_mode)) {
                 for (size_t i = 0; i < 4; ++i) {
                     auto & sample =
                         training_samples.at(
@@ -6322,13 +6332,13 @@ static json run_sparse_g_label_refresh(
                 target_source.insert(
                     target_source.end(),
                     variant_g_tokens.at(
-                        output_written_semantic_port_mode
+                            output_written_carrier_mode
                             ? spec.at(
                                 "output_written_port_target_variant_index")
                                 .get<size_t>()
                             : 0).begin(),
                     variant_g_tokens.at(
-                        output_written_semantic_port_mode
+                        output_written_carrier_mode
                             ? spec.at(
                                 "output_written_port_target_variant_index")
                                 .get<size_t>()
@@ -6467,8 +6477,37 @@ static json run_sparse_g_label_refresh(
                         .get<double>(),
                 &semantic_adapter_build);
         }
+        if (output_written_hidden_slot_mode) {
+            semantic_adapter_build.writer_map.clear();
+            semantic_adapter_build.writer_map.shrink_to_fit();
+            semantic_adapter_build.writer_bias.fill(0.0f);
+            semantic_adapter_build.output_map.clear();
+            semantic_adapter_build.output_map.shrink_to_fit();
+            semantic_adapter_build.logical_bytes =
+                (semantic_adapter_build.query_map.size() +
+                 semantic_adapter_build.query_bias.size()) *
+                sizeof(float);
+            uint64_t hidden_slot_hash =
+                UINT64_C(1469598103934665603);
+            fnv1a64_update(
+                hidden_slot_hash,
+                semantic_adapter_build.query_map.data(),
+                semantic_adapter_build.query_map.size() *
+                    sizeof(float));
+            fnv1a64_update(
+                hidden_slot_hash,
+                semantic_adapter_build.query_bias.data(),
+                semantic_adapter_build.query_bias.size() *
+                    sizeof(float));
+            semantic_adapter_build.hash = hidden_slot_hash;
+        }
         const bool installed =
-            output_written_semantic_port_mode
+            output_written_hidden_slot_mode
+                ? ctx->install_neo3000_output_written_hidden_slots(
+                    std::move(semantic_adapter_build.query_map),
+                    semantic_adapter_build.query_bias,
+                    semantic_carrier_read_layer)
+            : output_written_semantic_port_mode
                 ? ctx->install_neo3000_output_written_semantic_port(
                     std::move(semantic_adapter_build.query_map),
                     semantic_adapter_build.query_bias,
@@ -6484,7 +6523,7 @@ static json run_sparse_g_label_refresh(
                     std::move(semantic_adapter_build.output_map),
                     semantic_carrier_read_layer);
         if (!installed ||
-            (!output_written_semantic_port_mode &&
+            (!output_written_carrier_mode &&
              !ctx->set_neo3000_semantic_carrier_phase(0)) ||
             !ctx->set_neo3000_semantic_carrier_enabled(false)) {
             throw std::runtime_error(
@@ -6496,7 +6535,9 @@ static json run_sparse_g_label_refresh(
             carrier->phase != 0 ||
             carrier->enabled ||
             carrier->output_written !=
-                output_written_semantic_port_mode ||
+                output_written_carrier_mode ||
+            carrier->output_hidden_slots !=
+                output_written_hidden_slot_mode ||
             carrier->moe_router_bias !=
                 semantic_carrier_moe_router_bias_mode ||
             carrier->recurrent_transition_input !=
@@ -6508,10 +6549,12 @@ static json run_sparse_g_label_refresh(
         }
         semantic_carrier_backing_initial =
             carrier->action_backing_id;
-        semantic_optimizer_output_map_initial_hash =
-            fnv1a64(
-                carrier->output_map.data(),
-                carrier->output_map.size() * sizeof(float));
+        if (end_to_end_semantic_carrier_training) {
+            semantic_optimizer_output_map_initial_hash =
+                fnv1a64(
+                    carrier->output_map.data(),
+                    carrier->output_map.size() * sizeof(float));
+        }
         if (end_to_end_semantic_carrier_training) {
             const uint32_t epochs =
                 spec.at("semantic_carrier_optimizer_epochs")
@@ -7376,6 +7419,8 @@ static json run_sparse_g_label_refresh(
         output_driven_carrier_mode
             ? output_recurrent_delta_advance_mode
                 ? "actual_output_recurrent_delta_carrier"
+            : output_written_hidden_slot_mode
+                ? "output_written_hidden_slot_carrier"
             : output_written_semantic_port_mode
                 ? "output_written_semantic_port_carrier"
                 : output_source_fixed_cell_rematerialization_mode
@@ -7394,6 +7439,8 @@ static json run_sparse_g_label_refresh(
         output_driven_carrier_mode
             ? output_recurrent_delta_advance_mode
                 ? "actual_output_recurrent_delta_carrier_return_G0"
+            : output_written_hidden_slot_mode
+                ? "output_written_hidden_slot_carrier_return_G0"
             : output_written_semantic_port_mode
                 ? "output_written_semantic_port_carrier_return_G0"
                 : output_source_fixed_cell_rematerialization_mode
@@ -8295,7 +8342,7 @@ static json run_sparse_g_label_refresh(
                 refresh_candidate_labels(target_g_tokens, id);
         }
 
-        if (output_written_semantic_port_mode &&
+        if (output_written_carrier_mode &&
             variant_index == 1) {
             for (const auto & query : variant.at("queries")) {
                 project_from_source(
@@ -8355,7 +8402,7 @@ static json run_sparse_g_label_refresh(
                     ++sequence_copy_count;
                 }
                 const double output_wall_ms =
-                    output_written_semantic_port_mode
+                    output_written_carrier_mode
                         ? timed_decode_terminal(
                             std::vector<llama_token>{
                                 candidates.at(candidate_index)},
@@ -8469,7 +8516,7 @@ static json run_sparse_g_label_refresh(
                         ? query_index
                         : output_promotion_label_indices.at(
                             query_index);
-                if (output_written_semantic_port_mode) {
+                if (output_written_carrier_mode) {
                     const float * output_state =
                         semantic_carrier_layer_delta_mode
                             ? llama_get_embeddings_layer_inp(
@@ -8530,6 +8577,8 @@ static json run_sparse_g_label_refresh(
                         {"output_decode_wall_ms", output_wall_ms},
                         {"output_written_semantic_port",
                             output_written_semantic_port_mode},
+                        {"output_written_hidden_slot",
+                            output_written_hidden_slot_mode},
                         {"source_role_model_forward_tokens", 0},
                     });
                 }
@@ -8848,7 +8897,7 @@ static json run_sparse_g_label_refresh(
             for (size_t i = 0;
                  !output_role_generator_mode &&
                     !output_source_rematerialization_mode &&
-                    !output_written_semantic_port_mode &&
+                    !output_written_carrier_mode &&
                     !output_recurrent_delta_advance_mode &&
                     i < stage_seqs.size();
                  ++i) {
@@ -9164,7 +9213,7 @@ static json run_sparse_g_label_refresh(
     if (trained_semantic_carrier_mode ||
         output_recurrent_delta_advance_mode) {
         const size_t disabled_variant_index =
-            output_written_semantic_port_mode ||
+            output_written_carrier_mode ||
                 output_recurrent_delta_advance_mode
                 ? 1
                 : 0;
@@ -9187,6 +9236,8 @@ static json run_sparse_g_label_refresh(
     }
     uint64_t semantic_carrier_graph_input_sets = 0;
     uint64_t semantic_carrier_host_to_backend_bytes = 0;
+    uint64_t semantic_carrier_backend_to_graph_bytes = 0;
+    uint64_t semantic_carrier_hidden_slot_backend_bytes = 0;
     uint64_t semantic_carrier_writer_host_input_bytes = 0;
     uint64_t semantic_carrier_port_writes = 0;
     uint64_t semantic_carrier_router_bias_token_applications = 0;
@@ -9216,12 +9267,16 @@ static json run_sparse_g_label_refresh(
                 [](float value) { return value == 0.0f; });
         semantic_carrier_restored =
             semantic_carrier_quiescent &&
-            !output_written_semantic_port_mode;
+            !output_written_carrier_mode;
         if (carrier) {
             semantic_carrier_graph_input_sets =
                 carrier->graph_input_sets;
             semantic_carrier_host_to_backend_bytes =
                 carrier->host_to_backend_bytes;
+            semantic_carrier_backend_to_graph_bytes =
+                carrier->backend_to_graph_bytes;
+            semantic_carrier_hidden_slot_backend_bytes =
+                carrier->hidden_slot_backend_bytes;
             semantic_carrier_writer_host_input_bytes =
                 carrier->writer_host_input_bytes;
             semantic_carrier_port_writes =
@@ -9277,6 +9332,8 @@ static json run_sparse_g_label_refresh(
                          (end_to_end_semantic_carrier_training
                              ? semantic_optimizer_steps
                              : 0))) &&
+             (!output_written_hidden_slot_mode ||
+                 semantic_carrier_port_writes == comparisons) &&
              carrier_disabled_boundary_matches <=
                  acceptance.at(
                      "carrier_disabled_boundary_matches_maximum")
@@ -9294,7 +9351,7 @@ static json run_sparse_g_label_refresh(
                              .get<size_t>() &&
                  semantic_optimizer_output_map_hash !=
                      semantic_optimizer_output_map_initial_hash)) &&
-             (output_written_semantic_port_mode
+             (output_written_carrier_mode
                 ? semantic_carrier_quiescent
                 : semantic_carrier_restored))) &&
         (!output_recurrent_delta_advance_mode ||
@@ -9432,6 +9489,8 @@ static json run_sparse_g_label_refresh(
         {"schema_version", 1},
         {"mechanism", output_recurrent_delta_advance_mode
             ? "ACTUAL_OUTPUT_RECURRENT_DELTA_COMPOSITION"
+            : output_written_hidden_slot_mode
+            ? "ACTUAL_OUTPUT_WRITTEN_RESIDENT_HIDDEN_SLOT_CARRIER"
             : output_written_semantic_port_mode
             ? end_to_end_semantic_carrier_training
                 ? "END_TO_END_LEARNED_OUTPUT_WRITTEN_MODEL_NATIVE_CARRIER_READER"
@@ -9527,6 +9586,8 @@ static json run_sparse_g_label_refresh(
                 output_source_fixed_cell_rematerialization_mode},
             {"output_written_semantic_port_action",
                 output_written_semantic_port_mode},
+            {"output_written_hidden_slot_action",
+                output_written_hidden_slot_mode},
             {"end_to_end_semantic_carrier_training",
                 end_to_end_semantic_carrier_training},
             {"semantic_carrier_optimizer_epochs",
@@ -9597,7 +9658,7 @@ static json run_sparse_g_label_refresh(
                         "carrier_adapter_training_contexts").size()
                     : 0},
             {"output_written_port_training_contexts",
-                output_written_semantic_port_mode
+                output_written_carrier_mode
                     ? spec.at(
                         "output_written_port_training_contexts").size()
                     : 0},
@@ -10048,7 +10109,8 @@ static json run_sparse_g_label_refresh(
                 semantic_adapter_build
                     .source_tensor_read_bytes},
             {"semantic_carrier_logical_bytes",
-                semantic_adapter_build.logical_bytes},
+                semantic_adapter_build.logical_bytes +
+                    semantic_carrier_hidden_slot_backend_bytes},
             {"semantic_carrier_hash",
                 trained_semantic_carrier_mode
                     ? hex64(semantic_adapter_build.hash)
@@ -10090,6 +10152,10 @@ static json run_sparse_g_label_refresh(
                 semantic_carrier_graph_input_sets},
             {"semantic_carrier_host_to_backend_bytes",
                 semantic_carrier_host_to_backend_bytes},
+            {"semantic_carrier_backend_to_graph_bytes",
+                semantic_carrier_backend_to_graph_bytes},
+            {"semantic_carrier_hidden_slot_backend_bytes",
+                semantic_carrier_hidden_slot_backend_bytes},
             {"semantic_carrier_writer_host_input_bytes",
                 semantic_carrier_writer_host_input_bytes},
             {"semantic_carrier_port_writes",

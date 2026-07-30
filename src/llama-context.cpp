@@ -1223,6 +1223,12 @@ static void neo3000_set_semantic_carrier_action(
         return;
     }
     if (carrier.output_written) {
+        if (carrier.output_hidden_slots) {
+            for (uint32_t index = 0; index < 4; ++index) {
+                carrier.action[
+                    static_cast<size_t>(index) * 4 + index] = 1.0f;
+            }
+        }
         return;
     }
     for (uint32_t source = 0; source < 4; ++source) {
@@ -1232,6 +1238,12 @@ static void neo3000_set_semantic_carrier_action(
             static_cast<size_t>(destination) * 4 + source] = 1.0f;
     }
 }
+
+struct neo3000_hidden_slot_backing {
+    ggml_context_ptr ctx;
+    ggml_backend_buffer_ptr buffer;
+    ggml_tensor * slots = nullptr;
+};
 
 bool llama_context::install_neo3000_semantic_carrier(
         std::vector<float> query_map,
@@ -1379,6 +1391,94 @@ bool llama_context::install_neo3000_output_written_semantic_port(
     return true;
 }
 
+bool llama_context::install_neo3000_output_written_hidden_slots(
+        std::vector<float> query_map,
+        const std::array<float, 4> & query_bias,
+        int32_t read_layer) {
+    const size_t expected =
+        static_cast<size_t>(model.hparams.n_embd) * 4;
+    if (model.arch != LLM_ARCH_QWEN35MOE ||
+        read_layer < 0 ||
+        read_layer >= static_cast<int32_t>(model.hparams.n_layer()) ||
+        query_map.size() != expected ||
+        !std::all_of(
+            query_map.begin(),
+            query_map.end(),
+            [](float value) { return std::isfinite(value); }) ||
+        !std::all_of(
+            query_bias.begin(),
+            query_bias.end(),
+            [](float value) { return std::isfinite(value); })) {
+        return false;
+    }
+
+    ggml_init_params params = {
+        /*.mem_size   =*/ ggml_tensor_overhead(),
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    auto backing = std::make_shared<neo3000_hidden_slot_backing>();
+    backing->ctx.reset(ggml_init(params));
+    if (!backing->ctx) {
+        return false;
+    }
+    backing->slots = ggml_new_tensor_2d(
+        backing->ctx.get(),
+        GGML_TYPE_F32,
+        model.hparams.n_embd,
+        4);
+    ggml_set_name(
+        backing->slots,
+        "neo3000_output_hidden_slots_resident");
+    const auto buft = model.select_buft(read_layer);
+    backing->buffer.reset(
+        ggml_backend_alloc_ctx_tensors_from_buft(
+            backing->ctx.get(),
+            buft));
+    if (!backing->buffer) {
+        return false;
+    }
+    ggml_backend_buffer_clear(backing->buffer.get(), 0);
+
+    auto carrier =
+        std::make_shared<llama_neo3000_semantic_carrier>();
+    carrier->n_embd = model.hparams.n_embd;
+    carrier->n_expert = model.hparams.n_expert;
+    carrier->read_layer = read_layer;
+    carrier->query_map = std::move(query_map);
+    carrier->query_bias = query_bias;
+    carrier->output_written = true;
+    carrier->output_hidden_slots = true;
+    carrier->hidden_slots = backing->slots;
+    carrier->hidden_slot_backend_bytes =
+        ggml_backend_buffer_get_size(backing->buffer.get());
+    carrier->hidden_slot_backing = std::move(backing);
+    carrier->enabled = false;
+    carrier->phase = 0;
+    carrier->port.fill(0.0f);
+    neo3000_set_semantic_carrier_action(*carrier);
+
+    uint64_t backing_id = 1469598103934665603ULL;
+    const auto mix_pointer = [&](const void * pointer) {
+        uintptr_t value = reinterpret_cast<uintptr_t>(pointer);
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            backing_id ^=
+                static_cast<uint8_t>((value >> (8 * i)) & 0xffu);
+            backing_id *= 1099511628211ULL;
+        }
+    };
+    mix_pointer(carrier.get());
+    mix_pointer(carrier->query_map.data());
+    mix_pointer(carrier->hidden_slots);
+    mix_pointer(carrier->hidden_slots->data);
+    mix_pointer(carrier->hidden_slot_backing.get());
+    carrier->action_backing_id = backing_id == 0 ? 1 : backing_id;
+
+    cparams.neo3000_semantic_carrier = std::move(carrier);
+    sched_need_reserve = true;
+    return true;
+}
+
 bool llama_context::write_neo3000_semantic_port(
         const float * output_state,
         size_t output_state_count,
@@ -1388,8 +1488,32 @@ bool llama_context::write_neo3000_semantic_port(
         !carrier->output_written ||
         !output_state ||
         output_state_count != carrier->n_embd ||
-        public_destination >= 4 ||
-        carrier->writer_map.size() !=
+        public_destination >= 4) {
+        return false;
+    }
+
+    if (carrier->output_hidden_slots) {
+        if (!carrier->hidden_slots ||
+            !carrier->hidden_slot_backing ||
+            ggml_nbytes(carrier->hidden_slots) !=
+                static_cast<size_t>(carrier->n_embd) * 4 *
+                    sizeof(float)) {
+            return false;
+        }
+        ggml_backend_tensor_set(
+            carrier->hidden_slots,
+            output_state,
+            static_cast<size_t>(public_destination) *
+                carrier->n_embd * sizeof(float),
+            output_state_count * sizeof(float));
+        carrier->writer_host_input_bytes +=
+            output_state_count * sizeof(float);
+        ++carrier->port_writes;
+        ++carrier->generation;
+        return true;
+    }
+
+    if (carrier->writer_map.size() !=
             static_cast<size_t>(carrier->n_embd) * 4) {
         return false;
     }
@@ -1428,6 +1552,19 @@ bool llama_context::reset_neo3000_semantic_port() {
     auto & carrier = cparams.neo3000_semantic_carrier;
     if (!carrier || !carrier->output_written) {
         return false;
+    }
+    if (carrier->output_hidden_slots) {
+        if (!carrier->hidden_slots) {
+            return false;
+        }
+        std::vector<float> zero(
+            static_cast<size_t>(carrier->n_embd) * 4,
+            0.0f);
+        ggml_backend_tensor_set(
+            carrier->hidden_slots,
+            zero.data(),
+            0,
+            zero.size() * sizeof(float));
     }
     carrier->port.fill(0.0f);
     neo3000_set_semantic_carrier_action(*carrier);

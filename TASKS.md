@@ -534,6 +534,21 @@ constructively unbounded local Agents-A1 inference.
   they establish no learned reader or carrier result. Do not build further
   optimizer variants. The active physical successor is a learned attention-
   state writer or weight adapter.
+  `neo-exp-0153` is now frozen precontact as that changed writer/reader
+  substrate. Two public construction contexts fit only a query-side
+  four-way vault decoder. Each actual projected output writes its complete
+  layer-39 input state directly into one of four public destinations in a
+  dedicated `32,768`-byte backend tensor; no retained host mirror, writer
+  decoder, target-context hidden delta, output map, answer table, or model
+  backward graph exists. A later terminal query content-addresses the same
+  resident slots inside the graph before layer 39, so frozen attention, MoE,
+  and the LM head must consume the selected actual-output vector. The
+  unchanged disjoint IOUV recurrence must pass `16/16`, change every matched
+  disabled G1 boundary, return `4/4` G0, preserve the backend identity, and
+  close completely. Failure closes complete layer-39 hidden slots and moves
+  to an attention-KV writer or dynamic weight adapter; it does not authorize
+  slot, layer, scale, context, prompt, fixture, optimizer, evaluator,
+  carrier-evaluation, or evidence-harness variants.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

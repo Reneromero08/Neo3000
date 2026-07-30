@@ -141,6 +141,10 @@ struct llama_context {
         int32_t read_layer = -1,
         bool moe_router_bias = false,
         bool recurrent_transition_input = false);
+    bool install_neo3000_output_written_hidden_slots(
+        std::vector<float> query_map,
+        const std::array<float, 4> & query_bias,
+        int32_t read_layer);
     bool write_neo3000_semantic_port(
         const float * output_state,
         size_t output_state_count,

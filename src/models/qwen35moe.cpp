@@ -15,9 +15,7 @@ public:
         GGML_ASSERT(carrier);
         GGML_ASSERT(
             query_map &&
-            query_bias &&
-            output_map &&
-            action);
+            query_bias);
         ggml_backend_tensor_set(
             query_map,
             carrier->query_map.data(),
@@ -28,26 +26,47 @@ public:
             carrier->query_bias.data(),
             0,
             carrier->query_bias.size() * sizeof(float));
-        ggml_backend_tensor_set(
-            output_map,
-            carrier->output_map.data(),
-            0,
-            carrier->output_map.size() * sizeof(float));
-        const float * action_data =
-            carrier->output_written && carrier->enabled
-                ? carrier->port.data()
-                : carrier->action.data();
-        ggml_backend_tensor_set(
-            action,
-            action_data,
-            0,
-            carrier->action.size() * sizeof(float));
+        if (carrier->output_hidden_slots) {
+            GGML_ASSERT(
+                hidden_slots &&
+                action &&
+                carrier->hidden_slots &&
+                carrier->hidden_slot_backing);
+            ggml_backend_tensor_copy(
+                carrier->hidden_slots,
+                hidden_slots);
+            carrier->backend_to_graph_bytes +=
+                ggml_nbytes(carrier->hidden_slots);
+            ggml_backend_tensor_set(
+                action,
+                carrier->action.data(),
+                0,
+                carrier->action.size() * sizeof(float));
+        } else {
+            GGML_ASSERT(output_map && action);
+            ggml_backend_tensor_set(
+                output_map,
+                carrier->output_map.data(),
+                0,
+                carrier->output_map.size() * sizeof(float));
+            const float * action_data =
+                carrier->output_written && carrier->enabled
+                    ? carrier->port.data()
+                    : carrier->action.data();
+            ggml_backend_tensor_set(
+                action,
+                action_data,
+                0,
+                carrier->action.size() * sizeof(float));
+        }
         ++carrier->graph_input_sets;
         carrier->host_to_backend_bytes +=
             (carrier->query_map.size() +
              carrier->query_bias.size() +
-             carrier->output_map.size() +
-             carrier->action.size()) *
+             (carrier->output_hidden_slots
+                ? carrier->action.size()
+                : carrier->output_map.size() +
+                    carrier->action.size())) *
             sizeof(float);
         if (carrier->moe_router_bias) {
             GGML_ASSERT(ubatch);
@@ -83,12 +102,21 @@ public:
         return candidate.get() == carrier.get() &&
             candidate->output_map_trainable ==
                 output_map_trainable &&
+            candidate->output_hidden_slots ==
+                carrier->output_hidden_slots &&
             query_map &&
             query_map->ne[0] == carrier->n_embd &&
             query_map->ne[1] == 4 &&
-            output_map &&
-            output_map->ne[0] == 4 &&
-            output_map->ne[1] == carrier->n_embd;
+            (carrier->output_hidden_slots
+                ? hidden_slots &&
+                    action &&
+                    hidden_slots->ne[0] == carrier->n_embd &&
+                    hidden_slots->ne[1] == 4 &&
+                    action->ne[0] == 4 &&
+                    action->ne[1] == 4
+                : output_map &&
+                    output_map->ne[0] == 4 &&
+                    output_map->ne[1] == carrier->n_embd);
     }
 
     std::shared_ptr<llama_neo3000_semantic_carrier> carrier;
@@ -97,6 +125,7 @@ public:
     ggml_tensor * query_bias = nullptr;
     ggml_tensor * output_map = nullptr;
     ggml_tensor * action = nullptr;
+    ggml_tensor * hidden_slots = nullptr;
 };
 
 void llama_model_qwen35moe::load_arch_hparams(llama_model_loader & ml) {
@@ -297,39 +326,61 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
                 ctx0,
                 GGML_TYPE_F32,
                 4);
-        carrier_input->output_map =
-            ggml_new_tensor_2d(
-                ctx0,
-                GGML_TYPE_F32,
-                4,
-                n_embd);
-        carrier_input->action =
-            ggml_new_tensor_2d(
-                ctx0,
-                GGML_TYPE_F32,
-                4,
-                4);
         ggml_set_input(carrier_input->query_map);
         ggml_set_input(carrier_input->query_bias);
-        if (state->output_map_trainable) {
-            ggml_set_param(carrier_input->output_map);
+        if (state->output_hidden_slots) {
+            carrier_input->hidden_slots =
+                ggml_new_tensor_2d(
+                    ctx0,
+                    GGML_TYPE_F32,
+                    n_embd,
+                    4);
+            carrier_input->action =
+                ggml_new_tensor_2d(
+                    ctx0,
+                    GGML_TYPE_F32,
+                    4,
+                    4);
+            ggml_set_input(carrier_input->hidden_slots);
+            ggml_set_input(carrier_input->action);
+            ggml_set_name(
+                carrier_input->hidden_slots,
+                "neo3000_carrier_hidden_slots");
+            ggml_set_name(
+                carrier_input->action,
+                "neo3000_carrier_hidden_slot_gate");
         } else {
-            ggml_set_input(carrier_input->output_map);
+            carrier_input->output_map =
+                ggml_new_tensor_2d(
+                    ctx0,
+                    GGML_TYPE_F32,
+                    4,
+                    n_embd);
+            carrier_input->action =
+                ggml_new_tensor_2d(
+                    ctx0,
+                    GGML_TYPE_F32,
+                    4,
+                    4);
+            if (state->output_map_trainable) {
+                ggml_set_param(carrier_input->output_map);
+            } else {
+                ggml_set_input(carrier_input->output_map);
+            }
+            ggml_set_input(carrier_input->action);
+            ggml_set_name(
+                carrier_input->output_map,
+                "neo3000_carrier_output_map");
+            ggml_set_name(
+                carrier_input->action,
+                "neo3000_carrier_action");
         }
-        ggml_set_input(carrier_input->action);
         ggml_set_name(
             carrier_input->query_map,
             "neo3000_carrier_query_map");
         ggml_set_name(
             carrier_input->query_bias,
             "neo3000_carrier_query_bias");
-        ggml_set_name(
-            carrier_input->output_map,
-            "neo3000_carrier_output_map");
-        ggml_set_name(
-            carrier_input->action,
-            "neo3000_carrier_action");
-
         auto * carrier = static_cast<
             llm_graph_input_neo3000_semantic_carrier *>(
                 res->add_input(std::move(carrier_input)));
@@ -340,16 +391,30 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
                 ctx0,
                 carrier_code,
                 carrier->query_bias);
-        carrier_code =
-            ggml_mul_mat(
-                ctx0,
-                carrier->action,
-                carrier_code);
-        ggml_tensor * carrier_delta =
-            ggml_mul_mat(
-                ctx0,
-                carrier->output_map,
-                carrier_code);
+        ggml_tensor * carrier_delta = nullptr;
+        if (state->output_hidden_slots) {
+            carrier_code =
+                ggml_mul_mat(
+                    ctx0,
+                    carrier->action,
+                    carrier_code);
+            carrier_delta =
+                ggml_mul_mat(
+                    ctx0,
+                    carrier->hidden_slots,
+                    carrier_code);
+        } else {
+            carrier_code =
+                ggml_mul_mat(
+                    ctx0,
+                    carrier->action,
+                    carrier_code);
+            carrier_delta =
+                ggml_mul_mat(
+                    ctx0,
+                    carrier->output_map,
+                    carrier_code);
+        }
         if (state->moe_router_bias ||
             state->recurrent_transition_input) {
             cb(
