@@ -250,6 +250,10 @@ public:
         uint32_t layer_id = 0;
         bool key = false;
         std::vector<float> center;
+        // Empty for a single-context centered operator. Multi-context
+        // aggregation converts the action to the explicit affine form
+        // x' = x + bias + sum_i <basis_i, x> delta_i.
+        std::vector<float> bias;
         std::vector<std::vector<float>> basis;
         std::vector<std::vector<float>> delta;
         double calibration_max_abs_error = 0.0;
@@ -263,6 +267,8 @@ public:
         uint64_t vector_backing_bytes = 0;
         uint64_t total_rank = 0;
         uint64_t maximum_layer_rank = 0;
+        uint64_t training_contexts = 1;
+        bool explicit_affine = false;
         double calibration_max_abs_error = 0.0;
         double subspace_closure_max_abs_error = 0.0;
     };

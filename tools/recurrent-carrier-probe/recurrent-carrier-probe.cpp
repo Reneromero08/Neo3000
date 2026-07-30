@@ -87,6 +87,14 @@ static uint64_t hash_value_subspace_operator(
         hash,
         &value_operator.calibration_samples,
         sizeof(value_operator.calibration_samples));
+    fnv1a64_update(
+        hash,
+        &value_operator.training_contexts,
+        sizeof(value_operator.training_contexts));
+    fnv1a64_update(
+        hash,
+        &value_operator.explicit_affine,
+        sizeof(value_operator.explicit_affine));
     for (const auto & layer : value_operator.layers) {
         fnv1a64_update(
             hash, &layer.layer_id, sizeof(layer.layer_id));
@@ -104,6 +112,7 @@ static uint64_t hash_value_subspace_operator(
             }
         };
         update_vector(layer.center);
+        update_vector(layer.bias);
         for (const auto & basis : layer.basis) {
             update_vector(basis);
         }
@@ -112,6 +121,205 @@ static uint64_t hash_value_subspace_operator(
         }
     }
     return hash;
+}
+
+static uint64_t refresh_value_subspace_operator_backing(
+        llama_kv_cache::value_subspace_operator & value_operator) {
+    value_operator.logical_bytes = 0;
+    value_operator.vector_backing_bytes =
+        sizeof(value_operator) +
+        value_operator.layers.capacity() *
+            sizeof(llama_kv_cache::value_subspace_layer);
+    value_operator.total_rank = 0;
+    value_operator.maximum_layer_rank = 0;
+    for (const auto & layer : value_operator.layers) {
+        const size_t elements = layer.center.size();
+        value_operator.logical_bytes +=
+            (layer.center.size() +
+             layer.bias.size() +
+             2 * layer.basis.size() * elements) *
+            sizeof(float);
+        value_operator.vector_backing_bytes +=
+            (layer.center.capacity() +
+             layer.bias.capacity()) * sizeof(float) +
+            (layer.basis.capacity() +
+             layer.delta.capacity()) *
+                sizeof(std::vector<float>);
+        for (const auto & vector : layer.basis) {
+            value_operator.vector_backing_bytes +=
+                vector.capacity() * sizeof(float);
+        }
+        for (const auto & vector : layer.delta) {
+            value_operator.vector_backing_bytes +=
+                vector.capacity() * sizeof(float);
+        }
+        value_operator.total_rank += layer.basis.size();
+        value_operator.maximum_layer_rank = std::max<uint64_t>(
+            value_operator.maximum_layer_rank,
+            layer.basis.size());
+    }
+    return value_operator.vector_backing_bytes;
+}
+
+static uint64_t make_value_subspace_operator_explicit_affine(
+        llama_kv_cache::value_subspace_operator & value_operator) {
+    if (value_operator.explicit_affine) {
+        return 0;
+    }
+    uint64_t peak_scratch_bytes = 0;
+    for (auto & layer : value_operator.layers) {
+        const size_t elements = layer.center.size();
+        if (elements == 0 ||
+            layer.basis.size() != layer.delta.size()) {
+            throw std::runtime_error(
+                "invalid centered operator during affine conversion");
+        }
+        layer.bias.assign(elements, 0.0f);
+        for (size_t basis_index = 0;
+             basis_index < layer.basis.size();
+             ++basis_index) {
+            if (layer.basis[basis_index].size() != elements ||
+                layer.delta[basis_index].size() != elements) {
+                throw std::runtime_error(
+                    "invalid centered operator vector geometry");
+            }
+            double coefficient = 0.0;
+            for (size_t j = 0; j < elements; ++j) {
+                coefficient -=
+                    static_cast<double>(
+                        layer.basis[basis_index][j]) *
+                    static_cast<double>(layer.center[j]);
+            }
+            for (size_t j = 0; j < elements; ++j) {
+                layer.bias[j] += static_cast<float>(
+                    coefficient *
+                    layer.delta[basis_index][j]);
+            }
+        }
+        peak_scratch_bytes = std::max<uint64_t>(
+            peak_scratch_bytes,
+            layer.bias.size() * sizeof(float));
+    }
+    value_operator.explicit_affine = true;
+    refresh_value_subspace_operator_backing(value_operator);
+    return peak_scratch_bytes;
+}
+
+static uint64_t merge_value_subspace_context_action(
+        llama_kv_cache::value_subspace_operator & aggregate,
+        const llama_kv_cache::value_subspace_operator & context_operator) {
+    if (!aggregate.explicit_affine ||
+        context_operator.explicit_affine ||
+        aggregate.layers.size() != context_operator.layers.size() ||
+        aggregate.training_contexts == 0 ||
+        context_operator.training_contexts != 1) {
+        throw std::runtime_error(
+            "invalid multi-context operator merge state");
+    }
+    const double old_weight =
+        static_cast<double>(aggregate.training_contexts);
+    const double new_weight = old_weight + 1.0;
+    uint64_t peak_scratch_bytes = 0;
+    for (size_t layer_index = 0;
+         layer_index < aggregate.layers.size();
+         ++layer_index) {
+        auto & target = aggregate.layers[layer_index];
+        const auto & source = context_operator.layers[layer_index];
+        const size_t elements = target.center.size();
+        if (target.layer_id != source.layer_id ||
+            target.key != source.key ||
+            elements == 0 ||
+            source.center.size() != elements ||
+            target.bias.size() != elements ||
+            target.basis.size() != target.delta.size() ||
+            source.basis.size() != source.delta.size()) {
+            throw std::runtime_error(
+                "multi-context operator layer mismatch");
+        }
+        std::vector<float> source_bias(elements, 0.0f);
+        for (size_t source_index = 0;
+             source_index < source.basis.size();
+             ++source_index) {
+            if (source.basis[source_index].size() != elements ||
+                source.delta[source_index].size() != elements) {
+                throw std::runtime_error(
+                    "multi-context source vector mismatch");
+            }
+            double coefficient = 0.0;
+            for (size_t j = 0; j < elements; ++j) {
+                coefficient -=
+                    static_cast<double>(
+                        source.basis[source_index][j]) *
+                    static_cast<double>(source.center[j]);
+            }
+            for (size_t j = 0; j < elements; ++j) {
+                source_bias[j] += static_cast<float>(
+                    coefficient *
+                    source.delta[source_index][j]);
+            }
+        }
+        for (size_t j = 0; j < elements; ++j) {
+            target.bias[j] = static_cast<float>(
+                (old_weight * target.bias[j] +
+                 source_bias[j]) /
+                new_weight);
+        }
+
+        std::vector<float> projected_delta(elements);
+        for (size_t target_index = 0;
+             target_index < target.basis.size();
+             ++target_index) {
+            if (target.basis[target_index].size() != elements ||
+                target.delta[target_index].size() != elements) {
+                throw std::runtime_error(
+                    "multi-context target vector mismatch");
+            }
+            std::fill(
+                projected_delta.begin(),
+                projected_delta.end(),
+                0.0f);
+            for (size_t source_index = 0;
+                 source_index < source.basis.size();
+                 ++source_index) {
+                double coefficient = 0.0;
+                for (size_t j = 0; j < elements; ++j) {
+                    coefficient +=
+                        static_cast<double>(
+                            source.basis[source_index][j]) *
+                        static_cast<double>(
+                            target.basis[target_index][j]);
+                }
+                for (size_t j = 0; j < elements; ++j) {
+                    projected_delta[j] += static_cast<float>(
+                        coefficient *
+                        source.delta[source_index][j]);
+                }
+            }
+            for (size_t j = 0; j < elements; ++j) {
+                target.delta[target_index][j] = static_cast<float>(
+                    (old_weight *
+                        target.delta[target_index][j] +
+                     projected_delta[j]) /
+                    new_weight);
+            }
+        }
+        peak_scratch_bytes = std::max<uint64_t>(
+            peak_scratch_bytes,
+            (source_bias.size() +
+             projected_delta.size()) *
+                sizeof(float));
+    }
+    aggregate.training_contexts += 1;
+    aggregate.calibration_samples +=
+        context_operator.calibration_samples;
+    aggregate.calibration_max_abs_error = std::max(
+        aggregate.calibration_max_abs_error,
+        context_operator.calibration_max_abs_error);
+    aggregate.subspace_closure_max_abs_error = std::max(
+        aggregate.subspace_closure_max_abs_error,
+        context_operator.subspace_closure_max_abs_error);
+    refresh_value_subspace_operator_backing(aggregate);
+    return peak_scratch_bytes;
 }
 
 static void fnv_mix_u64(uint64_t & hash, uint64_t value) {
@@ -5044,8 +5252,9 @@ static json run_sparse_g_label_refresh(
                 subspace_operator->layers.size() !=
                     orbit_attention_layers.size() *
                         (subspace_include_keys ? 2 : 1) ||
-                subspace_operator->calibration_samples !=
-                    label_offsets.size() * 4) {
+                subspace_operator->calibration_samples <
+                    label_offsets.size() * 4 ||
+                subspace_operator->training_contexts == 0) {
                 throw std::runtime_error(
                     canonical_id +
                     ": imported subspace operator mismatch");
@@ -5094,6 +5303,14 @@ static json run_sparse_g_label_refresh(
                 subspace_operator_vector_backing_bytes},
             {"subspace_operator_total_rank",
                 subspace_operator_total_rank},
+            {"subspace_operator_training_contexts",
+                subspace_operator
+                    ? subspace_operator->training_contexts
+                    : 0},
+            {"subspace_operator_explicit_affine",
+                subspace_operator
+                    ? subspace_operator->explicit_affine
+                    : false},
             {"subspace_operator_calibration_max_abs_error",
                 subspace_operator_calibration_max_abs_error},
             {"subspace_operator_closure_max_abs_error",
@@ -5587,6 +5804,14 @@ static json run_sparse_g_label_refresh(
                 subspace_operator_total_rank},
             {"subspace_operator_maximum_layer_rank",
                 subspace_operator_maximum_layer_rank},
+            {"subspace_operator_training_contexts",
+                subspace_operator
+                    ? subspace_operator->training_contexts
+                    : 0},
+            {"subspace_operator_explicit_affine",
+                subspace_operator
+                    ? subspace_operator->explicit_affine
+                    : false},
             {"subspace_operator_calibration_max_abs_error",
                 subspace_operator_calibration_max_abs_error},
             {"subspace_operator_closure_max_abs_error",
@@ -6621,6 +6846,260 @@ int main(int argc, char ** argv) {
             result_stream << result.dump(2) << '\n';
             result_stream.close();
             LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
+        }
+
+        if (spec.value(
+                "multi_context_subspace_operator_transfer",
+                false)) {
+            const auto load_panel =
+                    [](const std::string & path) {
+                std::ifstream stream(path);
+                if (!stream) {
+                    throw std::runtime_error(
+                        "failed to open multi-context panel: " +
+                        path);
+                }
+                json panel;
+                stream >> panel;
+                return panel;
+            };
+            const auto calibration_paths =
+                spec.at("calibration_panel_paths")
+                    .get<std::vector<std::string>>();
+            if (calibration_paths.size() < 2) {
+                throw std::runtime_error(
+                    "multi-context action requires at least two "
+                    "calibration contexts");
+            }
+            const size_t maximum_rank =
+                spec.at("maximum_rank_per_tensor")
+                    .get<size_t>();
+            if (maximum_rank == 0) {
+                throw std::runtime_error(
+                    "multi-context action rank must be nonzero");
+            }
+            json construction_results = json::array();
+            json replay_results = json::array();
+            llama_kv_cache::value_subspace_operator
+                aggregate_operator;
+            uint64_t fixed_operator_bytes = 0;
+            uint64_t maximum_merge_scratch_bytes = 0;
+            bool construction_capability_passed = true;
+            size_t all_route_input_tokens = 0;
+            for (size_t context_index = 0;
+                 context_index < calibration_paths.size();
+                 ++context_index) {
+                const json panel =
+                    load_panel(calibration_paths[context_index]);
+                llama_kv_cache::value_subspace_operator
+                    context_operator;
+                const json construction =
+                    run_sparse_g_label_refresh(
+                        ctx,
+                        vocab,
+                        candidates,
+                        panel,
+                        active_backing_initial,
+                        active_attention_backing_initial,
+                        &context_operator,
+                        true);
+                construction_capability_passed =
+                    construction_capability_passed &&
+                    construction.at("summary")
+                        .at("route_summary")
+                        .at("exact_full_state")
+                        .at("correct").get<size_t>() ==
+                        panel.at("acceptance_law")
+                            .at("primary_correct")
+                            .get<size_t>();
+                all_route_input_tokens +=
+                    construction.at("resource_accounting")
+                        .at("all_route_input_tokens")
+                        .get<size_t>();
+                construction_results.push_back(construction);
+                if (context_index == 0) {
+                    aggregate_operator =
+                        std::move(context_operator);
+                    maximum_merge_scratch_bytes = std::max(
+                        maximum_merge_scratch_bytes,
+                        make_value_subspace_operator_explicit_affine(
+                            aggregate_operator));
+                    fixed_operator_bytes =
+                        aggregate_operator.vector_backing_bytes;
+                    if (aggregate_operator.maximum_layer_rank >
+                        maximum_rank) {
+                        throw std::runtime_error(
+                            "anchor operator exceeds fixed rank");
+                    }
+                } else {
+                    if (context_operator.maximum_layer_rank >
+                        maximum_rank) {
+                        throw std::runtime_error(
+                            "context operator exceeds fixed rank");
+                    }
+                    maximum_merge_scratch_bytes = std::max(
+                        maximum_merge_scratch_bytes,
+                        merge_value_subspace_context_action(
+                            aggregate_operator,
+                            context_operator));
+                    if (aggregate_operator.vector_backing_bytes !=
+                        fixed_operator_bytes ||
+                        aggregate_operator.maximum_layer_rank >
+                            maximum_rank) {
+                        throw std::runtime_error(
+                            "multi-context operator capacity grew");
+                    }
+                }
+            }
+            if (aggregate_operator.training_contexts !=
+                    calibration_paths.size() ||
+                aggregate_operator.maximum_layer_rank >
+                    maximum_rank ||
+                aggregate_operator.vector_backing_bytes !=
+                    fixed_operator_bytes ||
+                !aggregate_operator.explicit_affine) {
+                throw std::runtime_error(
+                    "multi-context operator final invariant failed");
+            }
+            const uint64_t operator_hash_after_training =
+                hash_value_subspace_operator(
+                    aggregate_operator);
+            bool replay_accepted = true;
+            for (const auto & path : calibration_paths) {
+                const json panel = load_panel(path);
+                const json replay =
+                    run_sparse_g_label_refresh(
+                        ctx,
+                        vocab,
+                        candidates,
+                        panel,
+                        active_backing_initial,
+                        active_attention_backing_initial,
+                        &aggregate_operator,
+                        false);
+                replay_accepted =
+                    replay_accepted &&
+                    replay.at("summary")
+                        .at("accepted").get<bool>();
+                all_route_input_tokens +=
+                    replay.at("resource_accounting")
+                        .at("all_route_input_tokens")
+                        .get<size_t>();
+                replay_results.push_back(replay);
+            }
+            const std::string transfer_path =
+                spec.at("transfer_panel_path");
+            const json transfer_spec =
+                load_panel(transfer_path);
+            const json transfer_result =
+                run_sparse_g_label_refresh(
+                    ctx,
+                    vocab,
+                    candidates,
+                    transfer_spec,
+                    active_backing_initial,
+                    active_attention_backing_initial,
+                    &aggregate_operator,
+                    false);
+            all_route_input_tokens +=
+                transfer_result.at("resource_accounting")
+                    .at("all_route_input_tokens")
+                    .get<size_t>();
+            const uint64_t operator_hash_after_evaluation =
+                hash_value_subspace_operator(
+                    aggregate_operator);
+            const bool transfer_accepted =
+                transfer_result.at("summary")
+                    .at("accepted").get<bool>();
+            const bool fixed_capacity =
+                aggregate_operator.vector_backing_bytes ==
+                    fixed_operator_bytes &&
+                aggregate_operator.maximum_layer_rank <=
+                    maximum_rank;
+            const bool operator_unchanged =
+                operator_hash_after_training ==
+                operator_hash_after_evaluation;
+            const bool accepted =
+                construction_capability_passed &&
+                replay_accepted &&
+                transfer_accepted &&
+                fixed_capacity &&
+                operator_unchanged;
+            const json result = {
+                {"schema_version", 1},
+                {"mechanism",
+                    "FIXED_CAPACITY_MULTI_CONTEXT_COMPLETE_ATTENTION_ACTION"},
+                {"spec_id", spec.at("id")},
+                {"experiment_id", spec.at("experiment_id")},
+                {"calibration_panel_paths",
+                    calibration_paths},
+                {"transfer_panel_path", transfer_path},
+                {"operator", {
+                    {"training_contexts",
+                        aggregate_operator.training_contexts},
+                    {"calibration_samples",
+                        aggregate_operator.calibration_samples},
+                    {"layers",
+                        aggregate_operator.layers.size()},
+                    {"logical_bytes",
+                        aggregate_operator.logical_bytes},
+                    {"vector_backing_bytes",
+                        aggregate_operator.vector_backing_bytes},
+                    {"fixed_operator_bytes",
+                        fixed_operator_bytes},
+                    {"total_rank",
+                        aggregate_operator.total_rank},
+                    {"maximum_layer_rank",
+                        aggregate_operator.maximum_layer_rank},
+                    {"maximum_rank_gate", maximum_rank},
+                    {"explicit_affine",
+                        aggregate_operator.explicit_affine},
+                    {"maximum_merge_scratch_bytes",
+                        maximum_merge_scratch_bytes},
+                    {"hash_after_training",
+                        hex64(operator_hash_after_training)},
+                    {"hash_after_evaluation",
+                        hex64(operator_hash_after_evaluation)},
+                    {"unchanged_during_evaluation",
+                        operator_unchanged},
+                    {"fixed_capacity", fixed_capacity},
+                }},
+                {"construction_capability_passed",
+                    construction_capability_passed},
+                {"training_replay_accepted",
+                    replay_accepted},
+                {"transfer_accepted",
+                    transfer_accepted},
+                {"all_route_input_tokens",
+                    all_route_input_tokens},
+                {"construction_results",
+                    construction_results},
+                {"training_replay_results",
+                    replay_results},
+                {"transfer_result", transfer_result},
+                {"summary", {
+                    {"accepted", accepted},
+                    {"fixed_capacity", fixed_capacity},
+                    {"operator_unchanged",
+                        operator_unchanged},
+                    {"construction_capability_passed",
+                        construction_capability_passed},
+                    {"training_replay_accepted",
+                        replay_accepted},
+                    {"transfer_accepted",
+                        transfer_accepted},
+                }},
+                {"verdict", accepted ? "accept" : "reject"},
+                {"claim_ceiling", spec.at("claim_ceiling")},
+            };
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF(
+                "wrote %s\n",
+                params.out_file.c_str());
             llama_backend_free();
             return 0;
         }

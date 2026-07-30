@@ -215,15 +215,21 @@ constructively unbounded local Agents-A1 inference.
   `1.04e-6` off-subspace image residue; the same transfer miss and larger
   return drift remain. Every raw result is committed and recomputable.
   Stop one-context operator and evidence-harness versions here.
-- [ ] Train or derive one fixed complete-attention action across multiple
-  source contexts, then test one prospectively frozen unseen context. The
-  successor must change the generator, not the evidence harness: use a fixed
-  public context set, erase complete calibration rows after construction,
-  apply the operator directly to active same-position K/V state without an
-  ordinal or target material, count training/operator/workspace costs, and
-  compare against the compact classical relation generator. Reject finite
-  memorization and stop if operator material grows with the query/task
-  horizon.
+- [x] Train one fixed-capacity complete-attention action across multiple
+  source contexts and test one prospectively frozen unseen context.
+  `neo-exp-0136` compresses independently exact E/F/G/H and I/O/U/V actions
+  into one explicit affine operator on the first fixed rank-15 basis. Backing
+  remains exactly `1,329,536` bytes with zero growth, the operator hash stays
+  unchanged, both training orbits replay at `32/32`, and all state closes.
+  Frozen N/T/U/V remains `15/16`, while the four-step G0 functional return
+  falls to `3/4`. Fixed-capacity context averaging therefore preserves
+  training but is not the model's context-independent relation law.
+- [ ] Derive the next active-state update from layer-local model computation
+  or change the carrier geometry. Do not tune the 0136 evaluator and do not
+  create carrier-evaluation v2/v3/v4. The successor must expose or execute a
+  weight-derived/context-conditioned nonlinear update on live state, retain
+  no per-context action table, and state how it can reduce the remaining four
+  label-token forwards rather than merely fit more frozen instances.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

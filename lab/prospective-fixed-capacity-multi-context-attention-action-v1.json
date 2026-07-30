@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "id": "prospective-fixed-capacity-multi-context-attention-action-v1",
+  "experiment_id": "neo-exp-0136",
+  "description": "Construct one rank-15-per-tensor complete-attention action from two already frozen full-state-qualified contexts, retain the first context's fixed input basis, average the context actions into one explicit affine operator without increasing its capacity, replay both training contexts, then apply it unchanged to the prospectively held-out NTUV context.",
+  "require_unified_kv": true,
+  "multi_context_subspace_operator_transfer": true,
+  "calibration_panel_paths": [
+    "lab/complete-attention-subspace-calibration-panel-v1.json",
+    "lab/multi-context-complete-attention-iouv-calibration-v1.json"
+  ],
+  "transfer_panel_path": "lab/complete-attention-subspace-disjoint-transfer-panel-v1.json",
+  "maximum_rank_per_tensor": 15,
+  "predecessor": {
+    "experiment_id": "neo-exp-0135",
+    "result_sha256": "1BBEB3A92298A2062418365F1FC725EA3104DD269B1B283FE11FCDA083F51612",
+    "boundary": "One-context complete K/V action preserved 15/16 unseen boundaries; closing its 1.04e-6 off-span residue did not repair the miss."
+  },
+  "acceptance_law": {
+    "construction_full_state_capability": "16/16 in both calibration contexts",
+    "fixed_rank_per_tensor_maximum": 15,
+    "operator_backing_growth_after_first_context_bytes": 0,
+    "training_replay": "16/16 in both contexts with G0 functional return",
+    "held_out_transfer": "16/16 with G0 functional return",
+    "operator_hash_unchanged_during_replay_and_transfer": true,
+    "noncanonical_target_branch_forwards": 0,
+    "all_state_closed": true
+  },
+  "matched_compact_baseline": {
+    "kind": "four-link Z4 relation generator",
+    "material": "four item-to-vault links plus the public one-step label rotation",
+    "candidate_advantage_required": false,
+    "interpretation": "Parity establishes a model-state construction result only; the compact classical generator remains materially stronger on this finite family."
+  },
+  "claim_ceiling": "Passing supports only a bounded fixed-capacity complete-attention action trained across two public F contexts and transferred unchanged to one held-out context. The retained operator must remain rank-15 per tensor with zero backing growth after the first context, receive only active same-position K/V state, use no ordinal or target rows, preserve useful four-step boundaries, remain hash-stable, and close all state. Calibration builders, local context operators, merge scratch, active cache, traffic, references, and queries are fully charged. This does not establish compact-baseline advantage, exact physical restoration, task-family breadth, phase-native resource, Small Wall crossing, catalytic recurrence, or unbounded inference."
+}

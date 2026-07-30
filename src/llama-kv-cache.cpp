@@ -2053,6 +2053,7 @@ bool llama_kv_cache::finalize_value_subspace_operator(
     for (const auto & item : value_operator->layers) {
         value_operator->vector_backing_bytes +=
             item.center.capacity() * sizeof(float) +
+            item.bias.capacity() * sizeof(float) +
             item.basis.capacity() *
                 sizeof(std::vector<float>) +
             item.delta.capacity() *
@@ -2159,8 +2160,14 @@ bool llama_kv_cache::seq_apply_value_subspace_step(
             ggml_row_size(tensor->type, tensor->ne[0]);
         if (tensor->nb[1] != row_bytes ||
             component.center.size() != elements ||
+            (!component.bias.empty() &&
+             component.bias.size() != elements) ||
             component.basis.size() !=
                 component.delta.size()) {
+            return false;
+        }
+        if (value_operator.explicit_affine !=
+            !component.bias.empty()) {
             return false;
         }
         for (size_t basis_index = 0;
@@ -2193,8 +2200,9 @@ bool llama_kv_cache::seq_apply_value_subspace_step(
             traits->to_float(
                 raw.data(), values.data(), elements);
             for (size_t j = 0; j < elements; ++j) {
-                centered[j] =
-                    values[j] - component.center[j];
+                centered[j] = value_operator.explicit_affine
+                    ? values[j]
+                    : values[j] - component.center[j];
             }
             for (size_t basis_index = 0;
                  basis_index < component.basis.size();
@@ -2209,7 +2217,10 @@ bool llama_kv_cache::seq_apply_value_subspace_step(
                 coefficients[basis_index] = coefficient;
             }
             for (size_t j = 0; j < elements; ++j) {
-                double value = values[j];
+                double value = values[j] +
+                    (value_operator.explicit_affine
+                        ? component.bias[j]
+                        : 0.0f);
                 for (size_t basis_index = 0;
                      basis_index < component.basis.size();
                      ++basis_index) {

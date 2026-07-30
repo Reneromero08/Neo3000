@@ -1186,3 +1186,16 @@ If its rank or bytes grow with contexts, tasks, queries, or horizon, it is a
 finite table in latent coordinates and fails the north star. Evidence remains
 one raw recomputable packet per mechanism; the research loop returns to the
 generator, active recurrence, and fresh-work law.
+
+`neo-exp-0136` executes that discriminator and rejects the affine branch. Two
+context actions fit their own orbits exactly; their fixed-rank aggregate stays
+at `1,329,536` bytes, grows by zero bytes, and replays both contexts at
+`32/32`. It still preserves only `15/16` unseen boundaries and returns G0 at
+only `3/4`. The missing law is therefore not more affine calibration data.
+
+The next mechanism must be derived from the layer-local computation that
+creates the K/V cells, or it must replace those cells with a carrier geometry
+whose public action is native. A valid successor attacks the remaining four
+label-token forwards and retains no per-context action table. There will be no
+`carrier evaluation v2/v3/v4`: evidence is still one packet protecting one
+changed generator.

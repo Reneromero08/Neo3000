@@ -202,6 +202,13 @@ The active recurrence and acceptance boundary are
   `1.0357e-6`; calibration remains `16/16`, but transfer remains `15/16` and
   the functional-return candidate drift grows from `1.1482` to `1.2311`.
   This rules out off-subspace bookkeeping as the remaining wall.
+- `neo-exp-0136` closes the fixed-capacity affine multi-context branch. Two
+  independently exact 16-state actions are compressed into one
+  `1,329,536`-byte explicit affine operator on a fixed rank-15-per-tensor
+  basis. It grows by zero bytes, stays hash-identical during evaluation, and
+  replays both training contexts at `32/32`. The frozen unseen N/T/U/V route
+  remains `15/16`, and the four-step functional return degrades to `3/4`.
+  Every sequence/root closes and active backing stays stable.
 - The complete Release server rebuild passes after the KV action change.
   Configured CUDA closure remains `139/139` compile entries and `139/139`
   unique objects. Seventeen focused declarative-runner/oracle tests and all 19
@@ -220,6 +227,12 @@ The active recurrence and acceptance boundary are
   1.29 MB versus a tiny four-link classical table, and has no exact transferred
   return. No further one-context operator or evidence-harness versions are
   authorized by this result.
+- Fixed-capacity averaging across two context-fitted affine actions is also
+  rejected. It preserves both training orbits but reproduces the same G3-U
+  unseen miss and introduces a G0-U return miss. More contexts or
+  carrier-evaluation versions do not address this mechanism. The next
+  intervention must use layer-local model computation, actual weights, or a
+  different carrier geometry.
 
 - The balanced held-out adapter produced joint/F-only/G-only accuracy
   `1/4`, `1/4`, and `2/4`; eligibility mutation failed. It is a conventional
