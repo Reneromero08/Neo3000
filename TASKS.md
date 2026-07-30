@@ -255,13 +255,24 @@ constructively unbounded local Agents-A1 inference.
   `7,606,784` bytes of weight reads are strictly worse than the compact Z4
   relation. Raw lexical model-weight coordinates are rejected; no layer,
   prompt, fixture, or evidence-packet variant follows.
-- [ ] Train the smallest carrier-aware semantic action, rather than evaluate
-  another hand-chosen coordinate system. The intervention must teach one
-  bounded public update law to act on live model-native state, use a
-  prospectively disjoint context to test transfer, retain no target cache rows
-  or per-context operator table, and expose its full training plus runtime
-  material cost against the compact Z4 recurrence. This is a generator change,
-  not an evidence-harness version.
+- [x] Train the smallest carrier-aware semantic action, rather than evaluate
+  another hand-chosen coordinate system. `neo-exp-0140` fits one four-channel
+  terminal-embedding decoder on eight public queries from two F contexts,
+  applies one 64-byte live Z4 action inside the model graph, and maps the
+  transformed code through a frozen output-head dual before the ordinary LM
+  head. The 65,616-byte adapter fits all eight training codes, the carrier
+  disablement changes the boundary, four turns return all four G0 candidate
+  logits bit-exactly, and all state closes. The prospectively disjoint I/O/U/V
+  context reaches only `8/16` versus exact full state's `16/16`: I and U
+  transfer through all rotations, while O and V do not. Reject the terminal
+  pre-logit adapter as a context-independent semantic carrier. Do not tune
+  gain, ridge, contexts, prompts, layers, fixtures, or evidence packets.
+- [ ] Move the learned carrier interaction earlier into one prospectively
+  frozen model-native computation boundary so later nonlinear layers, rather
+  than only the LM head, must consume it. Reuse the same bounded Z4 action and
+  disjoint transfer law; change the carrier read site and learned interaction,
+  not the evidence harness. Charge training, active backing, graph traffic,
+  and every fresh model forward against the compact Z4 baseline.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

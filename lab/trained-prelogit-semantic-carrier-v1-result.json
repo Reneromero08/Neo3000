@@ -1,0 +1,1595 @@
+{
+  "schema_version": 1,
+  "mechanism": "TRAINED_FIXED_CAPACITY_PRELOGIT_SEMANTIC_CARRIER",
+  "spec_id": "trained-prelogit-semantic-carrier-v1",
+  "model_arch": "qwen35moe",
+  "configuration": {
+    "context_size": 4096,
+    "context_per_sequence": 512,
+    "n_seq_max": 8,
+    "source_tokens": 130,
+    "F_boundary_tokens": 79,
+    "G_tokens": 27,
+    "closure_tokens": 24,
+    "label_token_offsets": [
+      6,
+      12,
+      18,
+      24
+    ],
+    "label_refresh_tokens_per_variant": 0,
+    "fixed_label_initialization_tokens": 0,
+    "label_orbit_action": true,
+    "value_only_orbit_action": false,
+    "key_value_orbit_action": false,
+    "complex_phase_quarter_turn_action": false,
+    "complex_phase_include_keys": true,
+    "paired_complex_attention_read": false,
+    "paired_complex_attention_layer": -1,
+    "paired_complex_attention_mix": 0.0,
+    "fourier_value_orbit_action": false,
+    "subspace_value_orbit_action": false,
+    "model_weight_value_orbit_action": false,
+    "trained_semantic_carrier_action": true,
+    "carrier_adapter_training_contexts": 2,
+    "carrier_adapter_ridge_fraction": 0.001,
+    "carrier_adapter_output_gain": 32.0,
+    "subspace_include_keys": false,
+    "subspace_operator_built_in_this_panel": false,
+    "model_weight_semantic_tokens": [],
+    "model_weight_code_norms": [],
+    "model_weight_operator_hash": "",
+    "fourier_label_ordinals": [],
+    "orbit_attention_layers": [
+      3,
+      7,
+      11,
+      15,
+      19,
+      23,
+      27,
+      31,
+      35,
+      39
+    ],
+    "stage_sequence_count": 4,
+    "retained_device_roots_used": false,
+    "attention_stream_count": 1,
+    "partial_attention_sequence_copy_metadata_only": true,
+    "restoration_class": "DECLARED_CLOSURE"
+  },
+  "summary": {
+    "route_summary": {
+      "exact_full_state": {
+        "correct": 16,
+        "comparisons": 16,
+        "full_logit_hash_matches": 16,
+        "boundary_matches": 16,
+        "maximum_candidate_logit_absolute_difference": 0.0
+      },
+      "label_orbit_candidate": {
+        "correct": 8,
+        "comparisons": 16,
+        "full_logit_hash_matches": 0,
+        "boundary_matches": 8,
+        "maximum_candidate_logit_absolute_difference": 16.29192066192627
+      }
+    },
+    "F_recurrent_content_and_row_exact": true,
+    "scaffold_recurrent_content_and_row_exact": true,
+    "orbit_return_boundary_matches": 4,
+    "orbit_return_full_logit_hash_matches": 4,
+    "orbit_return_maximum_candidate_logit_absolute_difference": 0.0,
+    "semantic_training_samples": 8,
+    "semantic_training_correct": 8,
+    "semantic_training_max_abs_error": 0.0015639264039819523,
+    "carrier_disabled_correct": 1,
+    "carrier_disabled_boundary_matches": 3,
+    "semantic_carrier_restored": true,
+    "semantic_carrier_closed": true,
+    "accepted": false
+  },
+  "carrier": {
+    "active_cache_backend_allocation_bytes": 610795520,
+    "maximum_retained_root_backend_allocation_bytes": 0,
+    "active_plus_retained_backend_allocation_bytes": 610795520,
+    "F_recurrent_hash_before": "86eed7f051cfaf50",
+    "F_recurrent_hash_after": "86eed7f051cfaf50",
+    "F_recurrent_physical_row": 0,
+    "scaffold_recurrent_hash_before": "7b3e135925cb55f3",
+    "scaffold_recurrent_hash_after": "7b3e135925cb55f3",
+    "scaffold_recurrent_physical_row": 5,
+    "scaffold_attention_logical_bytes": 2662400,
+    "refreshed_attention_logical_bytes": 81920,
+    "complete_host_state_copy_retained": false,
+    "semantic_carrier_action_backing_id": "9a8b6b697bb0b3b0",
+    "semantic_carrier_same_backing_restored": true,
+    "semantic_carrier_closed": true,
+    "all_sequences_closed": true,
+    "all_retained_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "variant_timings": [
+    {
+      "variant": "G-rotation-0",
+      "role": "fixed_orbit_initialization",
+      "label_refresh_count": 0,
+      "label_refresh_wall_ms": 0.0,
+      "fourier_operator_logical_bytes": 0,
+      "fourier_operator_vector_backing_bytes": 0,
+      "subspace_operator_vector_backing_bytes": 0,
+      "subspace_operator_total_rank": 0,
+      "subspace_operator_training_contexts": 1,
+      "subspace_operator_explicit_affine": false,
+      "subspace_operator_calibration_max_abs_error": 0.0,
+      "subspace_operator_closure_max_abs_error": 0.0
+    },
+    {
+      "variant": "G-rotation-0",
+      "label_refresh_count": 0,
+      "label_refresh_wall_ms": 0.0,
+      "orbit_action_count_before_projection": 0,
+      "reference_G_tokens": 27,
+      "reference_G_wall_ms": 274.920857,
+      "reference_closure_tokens": 24,
+      "reference_closure_wall_ms": 254.226506
+    },
+    {
+      "variant": "G-rotation-1",
+      "label_refresh_count": 0,
+      "label_refresh_wall_ms": 0.0,
+      "orbit_action_count_before_projection": 1,
+      "reference_G_tokens": 27,
+      "reference_G_wall_ms": 239.744602,
+      "reference_closure_tokens": 24,
+      "reference_closure_wall_ms": 249.55895
+    },
+    {
+      "variant": "G-rotation-2",
+      "label_refresh_count": 0,
+      "label_refresh_wall_ms": 0.0,
+      "orbit_action_count_before_projection": 2,
+      "reference_G_tokens": 27,
+      "reference_G_wall_ms": 283.691473,
+      "reference_closure_tokens": 24,
+      "reference_closure_wall_ms": 247.298296
+    },
+    {
+      "variant": "G-rotation-3",
+      "label_refresh_count": 0,
+      "label_refresh_wall_ms": 0.0,
+      "orbit_action_count_before_projection": 3,
+      "reference_G_tokens": 27,
+      "reference_G_wall_ms": 215.895552,
+      "reference_closure_tokens": 24,
+      "reference_closure_wall_ms": 220.535977
+    }
+  ],
+  "resource_accounting": {
+    "F_prefix_wall_ms": 920.057064,
+    "F_module_wall_ms": 423.620232,
+    "scaffold_G_wall_ms": 684.656332,
+    "scaffold_closure_wall_ms": 300.814478,
+    "label_refresh_wall_ms_total": 0.0,
+    "fourier_calibration_wall_ms_total": 0.0,
+    "subspace_calibration_wall_ms_total": 0.0,
+    "reference_G_wall_ms_total": 1014.2524840000001,
+    "reference_closure_wall_ms_total": 971.619729,
+    "fixed_carrier_preparation_tokens": 130,
+    "candidate_initialization_source_tokens": 0,
+    "fourier_calibration_source_tokens": 0,
+    "subspace_calibration_source_tokens": 0,
+    "candidate_variable_source_tokens": 0,
+    "candidate_source_tokens": 130,
+    "predecessor_closure_scaffold_candidate_source_tokens": 317,
+    "predecessor_active_F_candidate_source_tokens": 283,
+    "reference_source_tokens": 204,
+    "source_decode_tokens": 594,
+    "query_decode_tokens": 1320,
+    "semantic_training_source_tokens": 260,
+    "semantic_training_query_tokens": 264,
+    "all_route_input_tokens": 2178,
+    "sequence_copy_count": 50,
+    "sequence_close_count": 51,
+    "label_refresh_count": 0,
+    "attention_label_remove_count": 0,
+    "attention_label_alias_count": 0,
+    "orbit_action_count": 4,
+    "orbit_position_shift_count": 0,
+    "orbit_backend_copy_bytes": 0,
+    "orbit_host_read_bytes": 0,
+    "orbit_host_write_bytes": 0,
+    "orbit_peak_host_work_bytes": 0,
+    "orbit_tensor_visits": 0,
+    "orbit_position_visits": 0,
+    "fourier_calibration_sample_count": 0,
+    "fourier_operator_logical_bytes": 0,
+    "fourier_operator_vector_backing_bytes": 0,
+    "subspace_calibration_sample_count": 0,
+    "subspace_builder_peak_bytes": 0,
+    "subspace_operator_logical_bytes": 0,
+    "subspace_operator_vector_backing_bytes": 0,
+    "subspace_operator_total_rank": 0,
+    "subspace_operator_maximum_layer_rank": 0,
+    "subspace_operator_training_contexts": 1,
+    "subspace_operator_explicit_affine": false,
+    "subspace_operator_calibration_max_abs_error": 0.0,
+    "subspace_operator_closure_max_abs_error": 0.0,
+    "model_weight_source_tensor_read_bytes": 0,
+    "model_weight_builder_bytes": 0,
+    "model_weight_operator_logical_bytes": 0,
+    "model_weight_operator_vector_backing_bytes": 0,
+    "model_weight_operator_total_rank": 0,
+    "model_weight_operator_maximum_layer_rank": 0,
+    "model_weight_operator_calibration_max_abs_error": 0.0,
+    "model_weight_operator_closure_max_abs_error": 0.0,
+    "model_weight_operator_construction_peak_host_work_bytes": 0,
+    "semantic_carrier_training_samples": 8,
+    "semantic_carrier_ridge_lambda": 0.3568633345356507,
+    "semantic_carrier_training_max_abs_error": 0.0015639264039819523,
+    "semantic_carrier_output_dual_max_abs_error": 3.330725634187459e-08,
+    "semantic_carrier_model_tensor_read_bytes": 6720,
+    "semantic_carrier_logical_bytes": 65616,
+    "semantic_carrier_hash": "bbf38936d9b48a26",
+    "semantic_carrier_training_feature_peak_bytes": 65792,
+    "semantic_carrier_training_peak_host_work_bytes": 279040,
+    "semantic_carrier_graph_input_sets": 56,
+    "semantic_carrier_host_to_backend_bytes": 3674496,
+    "semantic_carrier_generation": 44,
+    "snapshot_root_save_device_copy_bytes": 0,
+    "snapshot_root_restore_device_copy_bytes": 0,
+    "carrier_hash_d2h_bytes": 263454720,
+    "carrier_hash_peak_host_work_bytes": 1048576,
+    "asymptotic_candidate_source_ratio": 0.0
+  },
+  "training_records": [
+    {
+      "query_id": "train-EFGH-E",
+      "route": "semantic-carrier-training-base",
+      "source_variant": "train-EFGH",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.890472412109375,
+        6.685573101043701,
+        8.676687240600586,
+        10.417287826538086
+      ],
+      "candidate_softmax": [
+        0.32990624636533794,
+        0.013381982345760128,
+        0.09800547462825869,
+        0.5587062966606433
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "a2955ab5eb6b6426",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 6,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 5577.631319
+    },
+    {
+      "query_id": "train-EFGH-F",
+      "route": "semantic-carrier-training-base",
+      "source_variant": "train-EFGH",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.341992378234863,
+        7.989530563354492,
+        9.874149322509766,
+        11.63795280456543
+      ],
+      "candidate_softmax": [
+        0.07754837999022364,
+        0.020054231615965742,
+        0.1320339311611388,
+        0.7703634572326719
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "70bd730eb1bebcfe",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 6,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 954.316801
+    },
+    {
+      "query_id": "train-EFGH-G",
+      "route": "semantic-carrier-training-base",
+      "source_variant": "train-EFGH",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.618511199951172,
+        8.706929206848145,
+        11.246478080749512,
+        12.168209075927734
+      ],
+      "candidate_softmax": [
+        0.1293378239296238,
+        0.019122119965904356,
+        0.2423528330795028,
+        0.6091872230249691
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "c9ca95e4cd2042ca",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 6,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 802.583636
+    },
+    {
+      "query_id": "train-EFGH-H",
+      "route": "semantic-carrier-training-base",
+      "source_variant": "train-EFGH",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.485427856445313,
+        6.223178386688232,
+        9.222984313964844,
+        10.783905982971191
+      ],
+      "candidate_softmax": [
+        0.07602278683363464,
+        0.007915189637879964,
+        0.15894998287605375,
+        0.7571120406524317
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "3b68c77d3ad15511",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 6,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 781.587851
+    },
+    {
+      "query_id": "train-ABCD-A",
+      "route": "semantic-carrier-training-base",
+      "source_variant": "train-ABCD",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.619386672973633,
+        9.079386711120605,
+        10.5523099899292,
+        12.417035102844238
+      ],
+      "candidate_softmax": [
+        0.12217556651143179,
+        0.02619213351533633,
+        0.11424924220645867,
+        0.7373830577667732
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "5d1490ef60af4852",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 6,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 1024.565573
+    },
+    {
+      "query_id": "train-ABCD-B",
+      "route": "semantic-carrier-training-base",
+      "source_variant": "train-ABCD",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.960412979125977,
+        11.499537467956543,
+        10.724678993225098,
+        13.088385581970215
+      ],
+      "candidate_softmax": [
+        0.08401723539474495,
+        0.14404798163839333,
+        0.06637284255577204,
+        0.7055619404110897
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "a5cb702ad87d397b",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 6,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 738.290248
+    },
+    {
+      "query_id": "train-ABCD-C",
+      "route": "semantic-carrier-training-base",
+      "source_variant": "train-ABCD",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.841644287109375,
+        10.168078422546387,
+        12.168457984924316,
+        13.885677337646484
+      ],
+      "candidate_softmax": [
+        0.03806822409869651,
+        0.01941049805240722,
+        0.1434797081825625,
+        0.7990415696663339
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "6c93d74d98710235",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 6,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 665.079585
+    },
+    {
+      "query_id": "train-ABCD-D",
+      "route": "semantic-carrier-training-base",
+      "source_variant": "train-ABCD",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.463006973266602,
+        9.290298461914063,
+        10.20250415802002,
+        13.165092468261719
+      ],
+      "candidate_softmax": [
+        0.022488076373912286,
+        0.01892108140027945,
+        0.0471098644104235,
+        0.9114809778153847
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "ceee5ffdaeb0f4a2",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 6,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 681.853023
+    }
+  ],
+  "records": [
+    {
+      "query_id": "IOUV-G0-I",
+      "route": "sparse-G-label-refresh:carrier_disabled",
+      "source_variant": "G-rotation-0",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.89360237121582,
+        7.349394798278809,
+        9.348057746887207,
+        11.223267555236816
+      ],
+      "candidate_softmax": [
+        0.18389658165593706,
+        0.014442365999758153,
+        0.10657286387458423,
+        0.6950881884697204
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "90e21a5e65836b79",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 710.86235
+    },
+    {
+      "query_id": "IOUV-G0-O",
+      "route": "sparse-G-label-refresh:carrier_disabled",
+      "source_variant": "G-rotation-0",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.43107795715332,
+        7.652503967285156,
+        9.33112621307373,
+        10.906417846679688
+      ],
+      "candidate_softmax": [
+        0.15512819106584225,
+        0.026197862523779734,
+        0.1403725655125193,
+        0.6783013808978589
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "eefad64e7bc88545",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 667.332955
+    },
+    {
+      "query_id": "IOUV-G0-U",
+      "route": "sparse-G-label-refresh:carrier_disabled",
+      "source_variant": "G-rotation-0",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.427682876586914,
+        6.883679389953613,
+        9.275046348571777,
+        10.5718412399292
+      ],
+      "candidate_softmax": [
+        0.1969748348527182,
+        0.015472627454458418,
+        0.16909140905794273,
+        0.6184611286348807
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "d7c76e3c4c2bced0",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 649.213398
+    },
+    {
+      "query_id": "IOUV-G0-V",
+      "route": "sparse-G-label-refresh:carrier_disabled",
+      "source_variant": "G-rotation-0",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.338851928710938,
+        7.492046356201172,
+        9.623835563659668,
+        10.925910949707031
+      ],
+      "candidate_softmax": [
+        0.13555960503321804,
+        0.02138320627902176,
+        0.18025906534733357,
+        0.6627981233404266
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "50e6f1a23360c558",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 645.144655
+    },
+    {
+      "query_id": "IOUV-G0-I",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-0",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        3.199126720428467,
+        20.154817581176758,
+        6.631460666656494,
+        7.896467685699463
+      ],
+      "candidate_softmax": [
+        4.3274750047886824e-08,
+        0.9999938721281496,
+        1.3392999321045726e-06,
+        4.745297168238794e-06
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "e9d104c30a956a4c",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 630.645296
+    },
+    {
+      "query_id": "IOUV-G0-O",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-0",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        -3.1794865131378174,
+        3.771390914916992,
+        13.572142601013184,
+        23.202295303344727
+      ],
+      "candidate_softmax": [
+        3.4874571686835238e-12,
+        3.6411360333090178e-09,
+        6.571269523133218e-05,
+        0.9999342836601451
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "cc21d144b33398e7",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 630.204825
+    },
+    {
+      "query_id": "IOUV-G0-U",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-0",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        -0.2506459653377533,
+        1.490060567855835,
+        3.5254647731781006,
+        31.425689697265625
+      ],
+      "candidate_softmax": [
+        1.7504186947535674e-14,
+        9.979793621733621e-14,
+        7.639877150355653e-13,
+        0.9999999999991187
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "426da4df686c9cfa",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 629.065572
+    },
+    {
+      "query_id": "IOUV-G0-V",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-0",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.659550666809082,
+        -0.6421951651573181,
+        4.758223533630371,
+        24.62348747253418
+      ],
+      "candidate_softmax": [
+        1.1666760541352406e-07,
+        1.0647645377886192e-11,
+        2.3584410419855445e-09,
+        0.9999998809633059
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "7a483b9c042ea058",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 632.736587
+    },
+    {
+      "query_id": "IOUV-G0-I",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-0",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        12.51175594329834,
+        15.09900951385498,
+        11.56199836730957,
+        12.246251106262207
+      ],
+      "candidate_softmax": [
+        0.06473805075166118,
+        0.8605766688697801,
+        0.0250429302759378,
+        0.04964235010262082
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "f199022e1ac150d3",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 803.4658
+    },
+    {
+      "query_id": "IOUV-G0-O",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-0",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.463285446166992,
+        8.884712219238281,
+        14.109234809875488,
+        12.080985069274902
+      ],
+      "candidate_softmax": [
+        0.008373311217732127,
+        0.004694897049849759,
+        0.8721825736475862,
+        0.11474921808483182
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "6cfdf84fb012c135",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 729.641235
+    },
+    {
+      "query_id": "IOUV-G0-U",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-0",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.919234275817871,
+        7.9958062171936035,
+        11.816990852355957,
+        15.388102531433105
+      ],
+      "candidate_softmax": [
+        0.0015053797947234208,
+        0.0005978694637150661,
+        0.027297682219461227,
+        0.9705990685221002
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "4f95f1e686121e5f",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 667.98004
+    },
+    {
+      "query_id": "IOUV-G0-V",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-0",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.219146728515625,
+        9.246167182922363,
+        11.010507583618164,
+        13.321695327758789
+      ],
+      "candidate_softmax": [
+        0.6873129870539598,
+        0.004757918240335574,
+        0.027775396998776278,
+        0.28015369770692844
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "477dbe5418d3b209",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 683.749431
+    },
+    {
+      "query_id": "IOUV-G1-I",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-1",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.5708208084106445,
+        0.6095029711723328,
+        22.151321411132813,
+        8.5272216796875
+      ],
+      "candidate_softmax": [
+        1.711882540167763e-07,
+        4.4106890683556335e-10,
+        0.9999986174155084,
+        1.2109551688379033e-06
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "ef64a4c7a73814c0",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 656.627878
+    },
+    {
+      "query_id": "IOUV-G1-O",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-1",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        21.721820831298828,
+        -4.946201801300049,
+        5.4487223625183105,
+        15.152283668518066
+      ],
+      "candidate_softmax": [
+        0.9985994323307305,
+        2.6158717594749505e-12,
+        8.552137080297188e-08,
+        0.0014004821452827797
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "5a53e2c32681e156",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 642.357085
+    },
+    {
+      "query_id": "IOUV-G1-U",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-1",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        30.276220321655273,
+        -2.825253486633301,
+        3.822100877761841,
+        4.792531967163086
+      ],
+      "candidate_softmax": [
+        0.9999999999881894,
+        4.2093221824383114e-15,
+        3.244309009044422e-12,
+        8.561991041599462e-12
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "2f0c256400d356c0",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 640.180992
+    },
+    {
+      "query_id": "IOUV-G1-V",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-1",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        23.043453216552734,
+        6.832915306091309,
+        1.447393536567688,
+        6.061083793640137
+      ],
+      "candidate_softmax": [
+        0.9999998662761788,
+        9.117025991133113e-08,
+        4.177825922610305e-10,
+        4.213577886256041e-08
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "016943324c7d6987",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 633.129717
+    },
+    {
+      "query_id": "IOUV-G1-I",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-1",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.011763572692871,
+        10.5628023147583,
+        14.905681610107422,
+        12.274462699890137
+      ],
+      "candidate_softmax": [
+        0.018424302829009514,
+        0.011760063488148077,
+        0.904686646206697,
+        0.06512898747614541
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "f23c60094418afa7",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 705.384978
+    },
+    {
+      "query_id": "IOUV-G1-O",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-1",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.381800651550293,
+        9.023677825927734,
+        10.815140724182129,
+        15.706231117248535
+      ],
+      "candidate_softmax": [
+        0.004805591008691811,
+        0.0012357242159970227,
+        0.007412146742408352,
+        0.9865465380329028
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "b4ba0dfad9517a57",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 681.478088
+    },
+    {
+      "query_id": "IOUV-G1-U",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-1",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        13.984299659729004,
+        7.206021785736084,
+        8.735973358154297,
+        11.313146591186523
+      ],
+      "candidate_softmax": [
+        0.9297422071903512,
+        0.0010582636268977345,
+        0.004887011881723746,
+        0.06431251730102742
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "86b2d13935cf8713",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 652.624337
+    },
+    {
+      "query_id": "IOUV-G1-V",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-1",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.105892181396484,
+        13.603289604187012,
+        9.84682559967041,
+        11.659867286682129
+      ],
+      "candidate_softmax": [
+        0.009457233583913918,
+        0.8491003099997244,
+        0.01984026236041982,
+        0.12160219405594173
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "8472005e4fb65087",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 667.35153
+    },
+    {
+      "query_id": "IOUV-G2-I",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-2",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        7.2128801345825195,
+        4.019060134887695,
+        2.6304738521575928,
+        24.04500389099121
+      ],
+      "candidate_softmax": [
+        4.896682278362624e-08,
+        2.0083671512565135e-09,
+        5.00942469942562e-10,
+        0.9999999485238675
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "2ae44494c74705ff",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 640.764266
+    },
+    {
+      "query_id": "IOUV-G2-O",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-2",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        13.685474395751953,
+        19.945894241333008,
+        -3.2922918796539307,
+        7.02686071395874
+      ],
+      "candidate_softmax": [
+        0.0019067960371651183,
+        0.998090757607167,
+        8.071497856463474e-11,
+        2.446274952806197e-06
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "c8ac13813c357c3e",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 632.111393
+    },
+    {
+      "query_id": "IOUV-G2-U",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-2",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        3.6870803833007813,
+        27.77264976501465,
+        -0.4143631160259247,
+        5.139104843139648
+      ],
+      "candidate_softmax": [
+        3.4655336801849695e-11,
+        0.9999999998167319,
+        5.735027711927377e-13,
+        1.4803906533054878e-10
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "651c16b60ca98c46",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 647.509678
+    },
+    {
+      "query_id": "IOUV-G2-V",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-2",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        4.4511566162109375,
+        21.18792724609375,
+        8.958761215209961,
+        2.7434608936309814
+      ],
+      "candidate_softmax": [
+        5.386550316839537e-08,
+        0.99999505053764,
+        4.885831947797935e-06,
+        9.764909048589864e-09
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "56d988e4f327c73d",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 627.982625
+    },
+    {
+      "query_id": "IOUV-G2-I",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-2",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.509397506713867,
+        9.7456693649292,
+        11.326252937316895,
+        15.41196060180664
+      ],
+      "candidate_softmax": [
+        0.007227328292515043,
+        0.003367401219263875,
+        0.016358127484854268,
+        0.9730471430033669
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "49dd854ca6e656dd",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 678.690077
+    },
+    {
+      "query_id": "IOUV-G2-O",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-2",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        15.203485488891602,
+        10.170287132263184,
+        9.45285701751709,
+        11.622692108154297
+      ],
+      "candidate_softmax": [
+        0.9638068340675311,
+        0.0062820259898750735,
+        0.003065658598783507,
+        0.026845481343810405
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "4a9a4bad98a4adda",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 653.734105
+    },
+    {
+      "query_id": "IOUV-G2-U",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-2",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.438444137573242,
+        13.376764297485352,
+        8.064619064331055,
+        10.214408874511719
+      ],
+      "candidate_softmax": [
+        0.018262130780663674,
+        0.9374371535981253,
+        0.00462281804819577,
+        0.03967789757301506
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "d79f667951ea89ff",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 636.226386
+    },
+    {
+      "query_id": "IOUV-G2-V",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-2",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.36800479888916,
+        7.309322357177734,
+        13.20776653289795,
+        10.69092082977295
+      ],
+      "candidate_softmax": [
+        0.00724682187395506,
+        0.0025140137231217776,
+        0.9162825195289095,
+        0.07395664487401371
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "6958dba7bceaf0d9",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 664.968543
+    },
+    {
+      "query_id": "IOUV-G3-I",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-3",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        22.735963821411133,
+        4.656607151031494,
+        5.993504524230957,
+        4.5210394859313965
+      ],
+      "candidate_softmax": [
+        0.9999999200871108,
+        1.4068082933988197e-08,
+        5.356026205390414e-08,
+        1.22845441418106e-08
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "83764dfdef86b92a",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 631.970905
+    },
+    {
+      "query_id": "IOUV-G3-O",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-3",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        5.5519328117370605,
+        11.880690574645996,
+        21.62082862854004,
+        -1.7374603748321533
+      ],
+      "candidate_softmax": [
+        1.0503687943438563e-07,
+        5.8868934771567287e-05,
+        0.9999410259566359,
+        7.17130272028521e-11
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "ee96db420e5436a8",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 638.693835
+    },
+    {
+      "query_id": "IOUV-G3-U",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-3",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        3.983600616455078,
+        1.1381157636642456,
+        30.128313064575195,
+        0.8606231808662415
+      ],
+      "candidate_softmax": [
+        4.420746918077905e-12,
+        2.5687209072197965e-13,
+        0.9999999999951277,
+        1.9462716155273623e-13
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "a440a2992531ec1e",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 627.207356
+    },
+    {
+      "query_id": "IOUV-G3-V",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-3",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        1.1631505489349365,
+        2.6145503520965576,
+        23.325103759765625,
+        10.260187149047852
+      ],
+      "candidate_softmax": [
+        2.372385141801056e-10,
+        1.0127907046739112e-09,
+        0.9999978804966839,
+        2.1182532867735163e-06
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "03e7dec8a96af2b9",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 630.98763
+    },
+    {
+      "query_id": "IOUV-G3-I",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-3",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        13.908125877380371,
+        7.81504487991333,
+        8.531466484069824,
+        11.232731819152832
+      ],
+      "candidate_softmax": [
+        0.92957419394554,
+        0.0020993874839186004,
+        0.004297645145104266,
+        0.06402877342543714
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "03205a06bfb2f8d9",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 661.384573
+    },
+    {
+      "query_id": "IOUV-G3-O",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-3",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.812618255615234,
+        14.600311279296875,
+        10.190695762634277,
+        11.340760231018066
+      ],
+      "candidate_softmax": [
+        0.007868239326603084,
+        0.9443787854748706,
+        0.011483506916820072,
+        0.0362694682817061
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "208a428206ff2a52",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 654.099152
+    },
+    {
+      "query_id": "IOUV-G3-U",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-3",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.687116622924805,
+        8.815787315368652,
+        14.408272743225098,
+        11.33311653137207
+      ],
+      "candidate_softmax": [
+        0.008410245328885315,
+        0.0035188046261660356,
+        0.9444537943109814,
+        0.04361715573396724
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "d8d0a8ff926c5291",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 649.185496
+    },
+    {
+      "query_id": "IOUV-G3-V",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-3",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        7.759790420532227,
+        6.205007076263428,
+        8.526965141296387,
+        14.244110107421875
+      ],
+      "candidate_softmax": [
+        0.0015193914083135739,
+        0.0003209490144302828,
+        0.003272272135170996,
+        0.9948873874420852
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "746f9496516c6d87",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 656.115299
+    },
+    {
+      "query_id": "IOUV-G0-I",
+      "route": "sparse-G-label-refresh:label_orbit_return_G0",
+      "source_variant": "G-rotation-0",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        3.199126720428467,
+        20.154817581176758,
+        6.631460666656494,
+        7.896467685699463
+      ],
+      "candidate_softmax": [
+        4.3274750047886824e-08,
+        0.9999938721281496,
+        1.3392999321045726e-06,
+        4.745297168238794e-06
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "e9d104c30a956a4c",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 641.316169
+    },
+    {
+      "query_id": "IOUV-G0-O",
+      "route": "sparse-G-label-refresh:label_orbit_return_G0",
+      "source_variant": "G-rotation-0",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        -3.1794865131378174,
+        3.771390914916992,
+        13.572142601013184,
+        23.202295303344727
+      ],
+      "candidate_softmax": [
+        3.4874571686835238e-12,
+        3.6411360333090178e-09,
+        6.571269523133218e-05,
+        0.9999342836601451
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "cc21d144b33398e7",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 639.666922
+    },
+    {
+      "query_id": "IOUV-G0-U",
+      "route": "sparse-G-label-refresh:label_orbit_return_G0",
+      "source_variant": "G-rotation-0",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        -0.2506459653377533,
+        1.490060567855835,
+        3.5254647731781006,
+        31.425689697265625
+      ],
+      "candidate_softmax": [
+        1.7504186947535674e-14,
+        9.979793621733621e-14,
+        7.639877150355653e-13,
+        0.9999999999991187
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "426da4df686c9cfa",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 626.666002
+    },
+    {
+      "query_id": "IOUV-G0-V",
+      "route": "sparse-G-label-refresh:label_orbit_return_G0",
+      "source_variant": "G-rotation-0",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.659550666809082,
+        -0.6421951651573181,
+        4.758223533630371,
+        24.62348747253418
+      ],
+      "candidate_softmax": [
+        1.1666760541352406e-07,
+        1.0647645377886192e-11,
+        2.3584410419855445e-09,
+        0.9999998809633059
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "7a483b9c042ea058",
+      "root_backing_id": "57cf1b7f65608d30",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "57cf1b7f65608d30",
+      "wall_ms": 628.161587
+    }
+  ],
+  "verdict": "reject",
+  "claim_ceiling": "Passing establishes only one bounded carrier-aware pre-logit training result: eight public examples from two F contexts train one fixed 163,920-byte four-channel adapter; one 64-byte live action backing advances the unresolved vault code; the ordinary frozen LM head reads it; and one prospectively disjoint F context preserves all sixteen declared boundaries with zero target-G token forwards, a causal disablement, four-step phase return, explicit closure, and all training/runtime costs charged. The carrier is not KV/recurrent model state, the learned query decoder plus output dual is materially classical, the compact four-link/Z4 recurrence is smaller and exact, and no fresh-compute advantage, task-family breadth, phase-native resource, recursive catalytic fabric, Small Wall crossing, or unbounded inference follows. Failure rejects this terminal pre-logit adapter as a transferable carrier read and moves the learned interaction earlier into model state; it does not authorize gain, ridge, context, prompt, layer, fixture, or evidence-harness variants."
+}

@@ -2,10 +2,30 @@
 
 #include "llama.h"
 
+#include <array>
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 #define LLAMA_MAX_SEQ 256
+
+// Experimental fixed-capacity semantic carrier used only by the Neo3000
+// frontier probe. The query/output maps are immutable after installation.
+// The 4x4 carrier action is updated in place on the same host backing and
+// supplied to the model graph as a live input.
+struct llama_neo3000_semantic_carrier {
+    uint32_t n_embd = 0;
+    std::vector<float> query_map;   // [4, n_embd] GGML layout [n_embd, 4]
+    std::array<float, 4> query_bias = {};
+    std::vector<float> output_map;  // [n_embd, 4] GGML layout [4, n_embd]
+    std::array<float, 16> action = {};
+    uint32_t phase = 0;
+    bool enabled = false;
+    uint64_t generation = 0;
+    uint64_t action_backing_id = 0;
+    uint64_t graph_input_sets = 0;
+    uint64_t host_to_backend_bytes = 0;
+};
 
 struct llama_cparams {
     uint32_t n_ctx;           // context size used during inference
@@ -35,6 +55,8 @@ struct llama_cparams {
     // layer disables the branch. Kept internal to the Neo3000 probe.
     float   neo3000_paired_complex_attention_mix   = 0.0f;
     int32_t neo3000_paired_complex_attention_layer = -1;
+    std::shared_ptr<llama_neo3000_semantic_carrier>
+        neo3000_semantic_carrier;
 
     bool embeddings;
     bool embeddings_nextn;        // also extract the hidden state before the final output norm

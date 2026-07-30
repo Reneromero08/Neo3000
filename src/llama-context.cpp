@@ -1208,6 +1208,129 @@ bool llama_context::set_neo3000_paired_complex_attention(float mix, int32_t laye
     return true;
 }
 
+static void neo3000_set_semantic_carrier_action(
+        llama_neo3000_semantic_carrier & carrier) {
+    carrier.action.fill(0.0f);
+    if (!carrier.enabled) {
+        return;
+    }
+    for (uint32_t source = 0; source < 4; ++source) {
+        const uint32_t destination =
+            (source + carrier.phase) % 4;
+        carrier.action[
+            static_cast<size_t>(destination) * 4 + source] = 1.0f;
+    }
+}
+
+bool llama_context::install_neo3000_semantic_carrier(
+        std::vector<float> query_map,
+        const std::array<float, 4> & query_bias,
+        std::vector<float> output_map) {
+    const size_t expected =
+        static_cast<size_t>(model.hparams.n_embd) * 4;
+    if (model.arch != LLM_ARCH_QWEN35MOE ||
+        query_map.size() != expected ||
+        output_map.size() != expected ||
+        !std::all_of(
+            query_map.begin(),
+            query_map.end(),
+            [](float value) { return std::isfinite(value); }) ||
+        !std::all_of(
+            query_bias.begin(),
+            query_bias.end(),
+            [](float value) { return std::isfinite(value); }) ||
+        !std::all_of(
+            output_map.begin(),
+            output_map.end(),
+            [](float value) { return std::isfinite(value); })) {
+        return false;
+    }
+
+    auto carrier =
+        std::make_shared<llama_neo3000_semantic_carrier>();
+    carrier->n_embd = model.hparams.n_embd;
+    carrier->query_map = std::move(query_map);
+    carrier->query_bias = query_bias;
+    carrier->output_map = std::move(output_map);
+    carrier->phase = 0;
+    carrier->enabled = false;
+    neo3000_set_semantic_carrier_action(*carrier);
+
+    uint64_t backing_id = 1469598103934665603ULL;
+    const auto mix_pointer = [&](const void * pointer) {
+        uintptr_t value = reinterpret_cast<uintptr_t>(pointer);
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            backing_id ^=
+                static_cast<uint8_t>((value >> (8 * i)) & 0xffu);
+            backing_id *= 1099511628211ULL;
+        }
+    };
+    mix_pointer(carrier.get());
+    mix_pointer(carrier->query_map.data());
+    mix_pointer(carrier->output_map.data());
+    mix_pointer(carrier->action.data());
+    carrier->action_backing_id = backing_id == 0 ? 1 : backing_id;
+
+    cparams.neo3000_semantic_carrier = std::move(carrier);
+    sched_need_reserve = true;
+    return true;
+}
+
+bool llama_context::set_neo3000_semantic_carrier_enabled(bool enabled) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier) {
+        return false;
+    }
+    if (carrier->enabled == enabled) {
+        return true;
+    }
+    carrier->enabled = enabled;
+    neo3000_set_semantic_carrier_action(*carrier);
+    ++carrier->generation;
+    return true;
+}
+
+bool llama_context::set_neo3000_semantic_carrier_phase(uint32_t phase) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier || phase >= 4) {
+        return false;
+    }
+    if (carrier->phase == phase) {
+        return true;
+    }
+    carrier->phase = phase;
+    neo3000_set_semantic_carrier_action(*carrier);
+    ++carrier->generation;
+    return true;
+}
+
+bool llama_context::advance_neo3000_semantic_carrier() {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier) {
+        return false;
+    }
+    carrier->phase = (carrier->phase + 1) % 4;
+    neo3000_set_semantic_carrier_action(*carrier);
+    ++carrier->generation;
+    return true;
+}
+
+void llama_context::clear_neo3000_semantic_carrier() {
+    if (!cparams.neo3000_semantic_carrier) {
+        return;
+    }
+    cparams.neo3000_semantic_carrier->enabled = false;
+    cparams.neo3000_semantic_carrier->action.fill(0.0f);
+    ++cparams.neo3000_semantic_carrier->generation;
+    cparams.neo3000_semantic_carrier.reset();
+    sched_need_reserve = true;
+}
+
+const llama_neo3000_semantic_carrier *
+llama_context::get_neo3000_semantic_carrier() const {
+    return cparams.neo3000_semantic_carrier.get();
+}
+
 bool llama_context::set_sampler(llama_seq_id seq_id, llama_sampler * sampler) {
     if (!sampler && sampling.samplers.count(seq_id) == 0) {
         return true;

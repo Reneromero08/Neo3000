@@ -120,6 +120,16 @@ struct llama_context {
     void set_warmup(bool value);
 
     bool set_neo3000_paired_complex_attention(float mix, int32_t layer);
+    bool install_neo3000_semantic_carrier(
+        std::vector<float> query_map,
+        const std::array<float, 4> & query_bias,
+        std::vector<float> output_map);
+    bool set_neo3000_semantic_carrier_enabled(bool enabled);
+    bool set_neo3000_semantic_carrier_phase(uint32_t phase);
+    bool advance_neo3000_semantic_carrier();
+    void clear_neo3000_semantic_carrier();
+    const llama_neo3000_semantic_carrier *
+        get_neo3000_semantic_carrier() const;
 
     void set_adapters_lora(llama_adapter_lora ** adapters, size_t n_adapters, float * scales);
 

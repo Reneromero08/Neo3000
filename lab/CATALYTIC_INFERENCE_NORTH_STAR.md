@@ -24,6 +24,32 @@ unadjudicable. After a frozen panel is auditable, work returns immediately to
 source replay, active-state advance/restoration, fresh-compute reduction, and
 recurrence.
 
+### Executed bridge update — trained terminal semantic carrier
+
+`neo-exp-0140` replaces guessed coordinates with one bounded trained carrier
+read. Eight public query embeddings from two source contexts train a
+four-channel decoder. A 64-byte live Z4 action advances that code in place, and
+a frozen output-head dual injects it immediately before the ordinary Agents-A1
+LM head. The intervention is inside the model graph, uses zero noncanonical
+target-token forwards, retains no target cache row or per-context operator, and
+has one prospectively disjoint I/O/U/V transfer context.
+
+The machine boundary works. The fixed adapter fits all eight training codes,
+carrier disablement changes the useful boundary, the same action backing
+advances four times, and the complete G0 logits return bit-exactly. All state
+closes. Actual adapter size is `65,616` bytes; the frozen pre-run claim ceiling
+overestimated it as `163,920`, and the measured count supersedes that estimate.
+
+The semantic boundary fails. Exact full state is `16/16`, while the trained
+route transfers only I and U and reaches `8/16`; O and V collapse onto the
+wrong latent code. This rejects a terminal linear embedding decoder plus
+LM-head dual as a context-independent relation generator. It does not
+authorize gain, ridge, context, prompt, layer, fixture, or evidence-packet
+versions. The next causal mechanism moves the learned interaction earlier
+into one frozen model-native computation boundary, where later nonlinear
+layers must read it. Evidence remains one compact result attached to that
+mechanism.
+
 ### Executed bridge update — model-native residual carrier
 
 The first Linux contact after this synthesis moved the carrier before logits.

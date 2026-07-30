@@ -771,6 +771,8 @@ struct llm_graph_params {
                 other.cparams.neo3000_paired_complex_attention_mix &&
             cparams.neo3000_paired_complex_attention_layer ==
                 other.cparams.neo3000_paired_complex_attention_layer &&
+            cparams.neo3000_semantic_carrier.get() ==
+                other.cparams.neo3000_semantic_carrier.get() &&
             arch  == other.arch  &&
             gtype == other.gtype &&
             cvec  == other.cvec  &&

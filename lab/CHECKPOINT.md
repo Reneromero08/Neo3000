@@ -239,6 +239,28 @@ The active recurrence and acceptance boundary are
   Construction reads `7,606,784` bytes of model tensors and retains
   `147,056` operator bytes, so the tiny exact classical Z4 recurrence is still
   strictly stronger.
+- `neo-exp-0140` executes one minimal trained carrier read immediately before
+  the ordinary LM head. Eight public terminal embeddings from two source
+  contexts train one four-channel decoder at `8/8`; one 64-byte live Z4 action
+  advances the code on the same backing; and a frozen output-head dual makes
+  the downstream logits causally depend on that action. Disabling the carrier
+  leaves the structural scaffold at `1/4` and matches only three of four G0
+  enabled boundaries. Four actions return all four G0 candidate logits and
+  full-logit hashes exactly, the recurrent scaffold hashes remain unchanged,
+  and every sequence, root, and adapter closes.
+- The fixed adapter occupies `65,616` logical bytes, not the conservative
+  `163,920` bytes written in the frozen pre-run claim ceiling; the measured
+  Agents-A1 output width is 2,048 and only the measured count is claim-bearing.
+  The graph uploads `3,674,496` bounded adapter/action bytes over 56 input
+  sets, training uses 524 input tokens, and the complete matched panel uses
+  2,178 input tokens. No retained snapshot root is used.
+- The disjoint semantic gate rejects: exact full state is `16/16`, while the
+  trained carrier route is `8/16` with zero full-logit hash matches and maximum
+  candidate-logit error `16.2919`. The adapter transfers I and U through all
+  four rotations but collapses O and V onto the wrong code. A terminal linear
+  decoder plus LM-head dual is therefore causal and reversible at the bounded
+  action boundary, but it is not a context-independent semantic generator,
+  useful recurrence, fresh-compute reduction, or catalytic inference.
 - The complete Release server rebuild passes after the KV action change.
   Configured CUDA closure remains `139/139` compile entries and `139/139`
   unique objects. Seventeen focused declarative-runner/oracle tests and all 19
@@ -285,6 +307,13 @@ The active recurrence and acceptance boundary are
   closes untrained coordinate interpretation as the active path. The next
   mechanism is the smallest carrier-aware training intervention, not another
   layer choice, prompt panel, operator evaluator, or evidence-harness version.
+- The minimal terminal carrier-aware training intervention is also rejected
+  as the semantic generator. `neo-exp-0140` fits its training codes and proves
+  an actual pre-logit carrier read, disablement, same-backing four-step return,
+  and closure, but preserves only half of the frozen disjoint boundaries.
+  Gain, ridge, context, prompt, layer, fixture, or evidence-packet variants
+  are not authorized. The next mechanism moves the interaction earlier so
+  later nonlinear model computation must consume the carrier.
 
 - The balanced held-out adapter produced joint/F-only/G-only accuracy
   `1/4`, `1/4`, and `2/4`; eligibility mutation failed. It is a conventional
