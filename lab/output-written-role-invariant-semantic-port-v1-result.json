@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "experiment_id": "neo-exp-0147",
+  "record_type": "scientific_result",
+  "date": "2026-07-30",
+  "baseline_commit": "e4aca60c6ad011978cf5148ef8245efb70f37ebc",
+  "mechanism": "ACTUAL_OUTPUT_WRITTEN_ROLE_INVARIANT_SEMANTIC_PORT",
+  "spec_id": "output-written-role-invariant-semantic-port-v1",
+  "hypothesis": "A fixed four-slot latent port jointly decoded from query state and written by actual output-token hidden state can eliminate source-role forwards while preserving a useful four-phase recurrence.",
+  "intervention": "Prospectively freeze EFGH, WXYZ, and ABCD as construction contexts, require every construction query to produce its useful G0 boundary before fitting, then apply the unchanged fitted writer, reader, and bounded utility gain once to disjoint IOUV.",
+  "terminal_event": {
+    "stage": "construction_capability_before_carrier_install",
+    "process_exit_code": 1,
+    "error": "semantic port construction capability failed",
+    "raw_result_bytes": 0,
+    "raw_result_sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "carrier_installed": false,
+    "disjoint_transfer_started": false,
+    "runtime_port_writes": 0,
+    "server_launched": false
+  },
+  "metrics_after": {
+    "construction_capability_gate_passed": false,
+    "writer_fit_executed": false,
+    "query_reader_fit_completed": false,
+    "coupled_gain_derived": false,
+    "disjoint_IOUV_queries_executed": 0,
+    "carrier_disablement_executed": false,
+    "four_step_return_executed": false
+  },
+  "quality_gates": {
+    "one_frozen_mechanism_one_contact": true,
+    "prospective_construction_contexts": true,
+    "construction_outputs_all_useful": false,
+    "no_context_prompt_gain_ridge_or_evaluator_retry": true,
+    "carrier_causality_established": false,
+    "useful_recurrence_established": false,
+    "fresh_compute_advantage": false,
+    "catalytic_recurrence": false
+  },
+  "resource_accounting": {
+    "model_loads": 1,
+    "model_facing_construction_contact": true,
+    "exact_input_token_count_available": false,
+    "retained_port_bytes": 0,
+    "runtime_source_role_forwards": 0,
+    "runtime_output_writes": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/output-written-role-invariant-semantic-port-v1.json",
+      "sha256": "055A8D4909B2758F15E1FBD818DF4B8EF5E4B850FBDDE352CD27E90CE1BC5FD3"
+    },
+    "runtime_binding": {
+      "probe_binary_sha256": "A6480E85DF1F9C7FBC828F5C8A57E54101C0646682C333C97BBC552D242D998A",
+      "server_binary_sha256": "E9DBB13116585043CE121E0E8156BBC754E06A0E838FD9607EDCF85DCE24619C",
+      "probe_source_sha256": "7065E030061A4DCE8E6E0283EE646632B08BDD0F91A21E06AA68AD8E46909089",
+      "context_source_sha256": "2AED0AFA0503C2377BF895E44427F7B268855B54C06C17077EAF5676E6D4F1AB",
+      "context_header_sha256": "6D40A0B5FC51A3A08CF744F35155C9ABB5AF54EA36E6435EEAD442BF007DD6F1",
+      "cparams_header_sha256": "7EA6FB9CD5F8EC2D1D9D843B228749611B7D3DC26C3657AF64C8B2063C7CF511",
+      "qwen35moe_source_sha256": "9328D1365D30CE950DEEF1E7D876F6AFF774799EDF376627A182EC872F8BB2DC"
+    }
+  },
+  "verification": {
+    "probe_build": true,
+    "release_server_build": true,
+    "declarative_runner_tests": "7/7",
+    "exact_oracle": "pass",
+    "configured_cuda_compile_entries": "139/139",
+    "configured_cuda_objects": "139/139"
+  },
+  "contact": {
+    "outcome_bearing_model_loads": 1,
+    "construction_capability_contact": true,
+    "disjoint_transfer_contact": false,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "reject",
+  "classification": "TERMINAL_ROLE_INVARIANT_PORT_BLOCKED_BY_FROZEN_CONSTRUCTION_CAPABILITY",
+  "strongest_supported_claim": "The output-written port implementation and its no-duplicate host read path build and reached the prospectively frozen model-capability gate under one clean model load.",
+  "strongest_rejected_interpretation": "The terminal writer/reader law has no carrier-causal or recurrence evidence: a frozen construction context failed before carrier installation, and no context, prompt, gain, ridge, fixture, evaluator, or evidence-packet retry is authorized.",
+  "next_boundary": "MOVE_THE_OUTPUT_WRITTEN_PORT_READ_INTO_ONE_PREDECLARED_EARLIER_NONLINEAR_MODEL_LAYER_AND_TRAIN_THE_LAYER_LOCAL_UPDATE_LAW; DO_NOT_REPAIR_THE_TERMINAL_FIXTURE_OR_VERSION_THE_EVALUATOR",
+  "checkpoint": "output-written-role-invariant-semantic-port-screen"
+}

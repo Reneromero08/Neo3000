@@ -1397,3 +1397,17 @@ recurrence and causal disablement. Passing moves the port earlier and onto
 persistent backend state before scaling recurrence. Failure moves the read
 into earlier nonlinear model computation. Neither outcome authorizes
 carrier-evaluation, gain, ridge, context, prompt, or evidence-packet versions.
+
+The single frozen `neo-exp-0147` contact stopped at its prospective
+construction-capability gate before carrier installation. This is the result:
+the terminal writer/reader law cannot be qualified on its fixed construction
+panel, and no easier context, prompt, gain, ridge, or evaluator retry will be
+created. No disjoint transfer or carrier-causality claim exists.
+
+The successor changes the physical read site. One output-written bounded port
+will enter a predeclared earlier nonlinear Agents-A1 layer, and the remaining
+frozen layers must turn that state into the useful boundary. The intervention
+must learn a layer-local update law from actual output-side and query-side
+layer state, retain no target rows or runtime answer table, and face one
+disjoint execution against the compact recurrence. This is a new model
+mechanism, not carrier-evaluation v2.

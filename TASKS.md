@@ -341,7 +341,7 @@ constructively unbounded local Agents-A1 inference.
   degrades to `11/16` (`4/4`, `3/4`, `2/4`, `2/4`) and returns `2/4` G0.
   Same-cell identity is therefore not the missing law. Stop cell-placement,
   allocator, K/V-subset, fixture, evaluator, and evidence-harness variants.
-- [ ] Eliminate the output-role/source-role conversion rather than repeatedly
+- [x] Eliminate the output-role/source-role conversion rather than repeatedly
   repairing cache coordinates. Introduce one fixed-capacity role-invariant
   latent port that actual useful output state writes directly and later model
   computation reads before the answer exists. Train the writer and reader
@@ -350,7 +350,7 @@ constructively unbounded local Agents-A1 inference.
   model forward at runtime. Freeze multiple construction contexts and one
   disjoint transfer context prospectively, charge training and runtime against
   the compact recurrence, and test one mechanism once.
-  `neo-exp-0147` is now frozen precontact as that one mechanism. Three fixed
+  `neo-exp-0147` was frozen precontact as that one mechanism. Three fixed
   EFGH/WXYZ/ABCD construction contexts fit a query-side vault decoder and an
   actual-output-hidden-state writer; their composed next-step utility margins
   derive one bounded gain before disjoint IOUV. Runtime retains one 64-byte
@@ -358,9 +358,19 @@ constructively unbounded local Agents-A1 inference.
   zero gate and transient backend graph input are charged. It performs zero
   source-role forwards, consults no expected answer or phase table, and
   exposes a causal G1 disablement. The probe and Release server build;
-  configured CUDA closure is `139/139`. No model-facing `0147` contact has
-  occurred. Execute this frozen mechanism once; do not create gain, ridge,
-  context, prompt, fixture, evaluator, or evidence-packet variants.
+  configured CUDA closure is `139/139`. The one frozen model load stopped at
+  the prospective construction-capability gate before carrier installation:
+  at least one fixed context did not produce its required useful G0 output.
+  No disjoint IOUV query, port write, disablement, or return ran. Reject this
+  terminal law without a context, prompt, gain, ridge, fixture, evaluator, or
+  evidence-packet retry.
+- [ ] Move the output-written carrier read into one predeclared earlier
+  nonlinear Agents-A1 layer. Train the bounded layer-local update law from
+  actual output-side layer state and query-side layer state, retain no target
+  rows or answer table at runtime, and let the remaining frozen layers—not a
+  terminal output-head dual—turn the port read into the useful boundary. Use
+  the same compact baseline and one disjoint execution. This is one new
+  physical mechanism, not `carrier evaluation v2`.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

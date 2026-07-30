@@ -440,7 +440,7 @@ The active recurrence and acceptance boundary are
   zero source-position rematerialization forwards and no target-row or
   context-indexed table. Evidence remains one packet for that changed
   mechanism.
-- `neo-exp-0147` is frozen at the precontact source boundary. The new port
+- `neo-exp-0147` was frozen at the precontact source boundary. The new port
   retains four role-invariant topology slots in one 64-byte matrix. It is read
   directly rather than duplicated into the host action array; the separate
   64-byte zero gate and transient backend graph input remain charged. A linear
@@ -462,13 +462,23 @@ The active recurrence and acceptance boundary are
   Declarative-runner tests pass `7/7`; the exact bounded oracle passes. One
   unrelated inherited harness test still fails its pre-existing generic-Mock
   `resource_snapshot` assumption (`22/23` in the combined focused selection);
-  this mechanism does not repair or version that harness. No model-facing
-  `0147` contact, server launch, source prompt evaluation, or CUDA scientific
-  kernel run has occurred. The next action is one execution of the frozen
-  port, not another evaluator.
+  this mechanism does not repair or version that harness. No server was
+  launched.
 - Reader disablement is only same-backing quiescence before declared closure;
   it is not restoration of the nonzero port. The result schema records these
   separately.
+- The single frozen `0147` model load reached the prospective construction
+  panel and terminated with `semantic port construction capability failed`
+  before fitting completed or the carrier was installed. The result file was
+  therefore correctly empty (`0` bytes, SHA-256
+  `E3B0C442...B855`); the canonical terminal-event record binds that absence
+  rather than inventing per-query metrics. Disjoint IOUV, carrier disablement,
+  port writes, return, and server execution did not occur.
+- This closes the terminal writer/reader law without context or evaluator
+  variants. The next physical intervention moves the read into one
+  predeclared earlier nonlinear model layer, where remaining Agents-A1
+  computation can consume and transform the output-written latent before the
+  answer. Evidence remains one packet for that changed model seam.
 
 ### REJECTED
 
