@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0104",
+  "artifact_id": "recurrent-carrier-query-separated-v1",
+  "date": "2026-07-29",
+  "starting_head": "8a6984ce71ca2881ac453377144bcca02fa5a298",
+  "classification": "QUERY_SEPARATED_GDN_RECURRENT_ONLY_CARRIER_REJECTED_AS_USEFUL_TASK_STATE",
+  "hypothesis": "Agents-A1's native GDN recurrent state can retain two source modules decoded before query selection, make both modules necessary for a later useful boundary, and remain sufficient after all attention KV is removed.",
+  "intervention": "Capture six equal-token source variants as recurrent-only on-device roots, restore each before four delayed queries, and compare them with full-hybrid roots, untouched live hybrid state, an explicit null carrier, relation mutation, presentation mutation, and inclusion-exclusion controls.",
+  "model": {
+    "name": "Agents-A1-Q4_K_M.gguf",
+    "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+    "architecture": "qwen35moe",
+    "hybrid_layers": {
+      "gdn_recurrent": 30,
+      "full_attention": 10
+    }
+  },
+  "carrier": {
+    "state": "Qwen3.5 GDN recurrent S and R tensors for sequence zero",
+    "source_tokens": 130,
+    "query_tokens_each": 33,
+    "state_flags": [
+      "PARTIAL_ONLY",
+      "ON_DEVICE"
+    ],
+    "logical_bytes_per_root": 65863680,
+    "gpu_bytes_per_root": 65863680,
+    "host_metadata_bytes_per_root": 748,
+    "active_recurrent_backing_stable": true,
+    "retained_root_backing_stable_during_each_restore": true,
+    "maximum_simultaneously_retained_root_gpu_bytes": 134389760,
+    "cumulative_retained_root_bytes_cleared": 463708160,
+    "retained_root_count_at_close": 0,
+    "restoration_class": "SNAPSHOT_RELOAD",
+    "restoration_scope": {
+      "gdn_recurrent_tensor_values": "reloaded from the retained on-device root",
+      "attention_kv": "absent from the recurrent-only route",
+      "active_recurrent_allocation": "same process-local backing across the complete run",
+      "root_allocation": "retained only until its variant finished, then explicitly cleared",
+      "model_weights": "unchanged",
+      "allocator_state": "not restored",
+      "complete_model_or_cuda_state": "NO_RESTORATION_CLAIM"
+    }
+  },
+  "causal_geometry": {
+    "source_closed_before_query_selection": true,
+    "query_family": [
+      "W",
+      "X",
+      "Y",
+      "Z"
+    ],
+    "expected_joint_boundary": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "expected_relation_mutation_boundary": [
+      "B",
+      "C",
+      "D",
+      "A"
+    ],
+    "matched_source_variants": [
+      "F0_G0",
+      "F1_G0",
+      "F0_G1",
+      "F1_G1",
+      "F1_G_MUT",
+      "F1_G_PRESENTATION"
+    ],
+    "all_source_variants_equal_token_count": true,
+    "inclusion_exclusion_l2_norms": [
+      2.747878307717737,
+      0.8364660559114666,
+      0.6867558521761116,
+      0.6805918315119283
+    ],
+    "interpretation": "The isolated recurrent state is causally read by later logits and contains non-additive source interaction, but it is not sufficient for the declared useful task boundary."
+  },
+  "metrics": {
+    "query_count": 4,
+    "recurrent_joint_correct": 1,
+    "recurrent_f_only_correct": 1,
+    "recurrent_g_only_correct": 1,
+    "recurrent_null_source_correct": 1,
+    "explicit_null_correct": 1,
+    "recurrent_mutated_correct": 1,
+    "recurrent_presentation_correct": 1,
+    "full_hybrid_root_joint_correct": 4,
+    "untouched_live_hybrid_joint_correct": 4,
+    "recurrent_joint_changes_from_null": 0,
+    "recurrent_relation_mutation_changes": 0,
+    "recurrent_matches_full_hybrid": 1,
+    "full_hybrid_matches_live_argmax": 4,
+    "full_hybrid_matches_live_full_logits_bit_exact": 4,
+    "recurrent_joint_answers": [
+      "A",
+      "A",
+      "A",
+      "A"
+    ],
+    "explicit_null_answers": [
+      "A",
+      "A",
+      "A",
+      "A"
+    ],
+    "full_hybrid_answers": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "untouched_live_hybrid_answers": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "recorded_query_decode_wall_ms": 46414.61026899999
+  },
+  "quality_gates": {
+    "pre_answer_source_boundary": true,
+    "source_closure_before_query_selection": true,
+    "dynamic_model_native_state": true,
+    "same_active_recurrent_backing": true,
+    "root_registry_closed": true,
+    "full_hybrid_control_useful": true,
+    "full_hybrid_snapshot_exact_to_untouched_live": true,
+    "recurrent_joint_useful": false,
+    "both_evidence_sources_necessary": false,
+    "relation_mutation_changes_boundary": false,
+    "presentation_invariance_useful": false,
+    "no_complete_duplicate_intermediate": false,
+    "native_inverse_restoration": false,
+    "fresh_compute_reduction": false,
+    "constructively_unbounded_recurrence": false
+  },
+  "resource_accounting": {
+    "model_loads": 1,
+    "source_preparations": 10,
+    "source_fragment_decode_calls": 40,
+    "query_boundary_decode_calls": 36,
+    "total_llama_decode_calls": 76,
+    "source_input_tokens": 1300,
+    "query_input_tokens": 1188,
+    "total_input_tokens": 2488,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0
+  },
+  "build_and_test": {
+    "build_type": "Release",
+    "ggml_cuda": true,
+    "cuda_architectures": "86-real",
+    "ggml_cuda_fa_all_quants": false,
+    "configured_cuda_objects": 139,
+    "unique_configured_cuda_objects": 139,
+    "configured_cuda_objects_changed": 0,
+    "cuda_object_identity_aggregate_sha256": "066F235A4442C4545B9E31205D4627257E3B41B2984176AB9629B9BCA0614356",
+    "server_build": "passed",
+    "focused_python": "57 passed",
+    "json_validation": "passed",
+    "full_hybrid_vs_live_full_logit_comparison": "4/4 bit-exact"
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/recurrent-carrier-query-separated-v1.json",
+      "bytes": 5917,
+      "sha256": "77D38E39FEB5A8D1079D9BFB8051F315CA0F1244AF29EBDF8925C24DC862DE5F"
+    },
+    "raw_result": {
+      "committed": false,
+      "local_path": "build/recurrent-carrier-query-separated-v1-result.json",
+      "bytes": 32103,
+      "sha256": "A77195EC115F6FA70743F5DE6CC83D94299A3A6A382F47857952DFA1C54FEE7D"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 25998,
+      "sha256": "37561B8AB984E3A21A02AB273C0554F8818BCF2F7A3EBBA24A74272B73BDD08A"
+    },
+    "probe_binary": {
+      "committed": false,
+      "local_path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 321208,
+      "sha256": "0F5B647E90B3D77B67DDE940598850543F53DA3B5E0C80A09622A39A96837C6F"
+    },
+    "server_binary": {
+      "committed": false,
+      "local_path": "build/linux-cuda-0091-custody/bin/llama-server",
+      "bytes": 17904,
+      "sha256": "095FCEBFFBFED35E955376DF9F94839CC6C72FD91EAA746522ED2920674EF9F9"
+    }
+  },
+  "contact": {
+    "scientific_contact": true,
+    "server_contact": false,
+    "model_facing_probe": true,
+    "completion_generation": false,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "reject",
+  "strongest_supported_claim": "Source evidence decoded before query selection leaves a causally readable, non-additive signature in the 65,863,680-byte Agents-A1 GDN recurrent state, and the same active recurrent backing plus all retained on-device roots close cleanly. A complete full-hybrid root reproduces untouched live inference bit-exactly on all four delayed queries.",
+  "strongest_rejected_interpretation": "GDN recurrent state alone does not retain the useful two-link task boundary: its joint, marginal, mutation, and explicit-null routes all produce the same A,A,A,A boundary. It is not a useful inference-bearing carrier for this task, does not make both evidence modules necessary, and establishes no native restoration, fresh-compute reduction, catalysis, or unbounded recurrence.",
+  "next_boundary": "ISOLATE_THE_ATTENTION_KV_COMPLEMENT_WITH_THE_SAME_QUERY_SEPARATED_CONTROLS_BEFORE_DESIGNING_ANY_NEW_OPERATOR_OR_PROMPT_FIXTURE"
+}

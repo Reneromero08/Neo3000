@@ -3059,6 +3059,32 @@ size_t llama_context::state_seq_get_device_data_gpu_size(llama_seq_id device_sto
     return size;
 }
 
+uint64_t llama_context::state_seq_get_device_backing_id(llama_seq_id device_storage_key) const {
+    const auto it = mem_storage.find(device_storage_key);
+    if (it == mem_storage.end()) {
+        return 0;
+    }
+
+    uint64_t hash = UINT64_C(1469598103934665603);
+    const auto mix = [&](uint64_t value) {
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            hash ^= (value >> (i * 8)) & UINT64_C(0xff);
+            hash *= UINT64_C(1099511628211);
+        }
+    };
+    for (const auto & [buft, memory] : it->second) {
+        mix(reinterpret_cast<uintptr_t>(buft));
+        mix(reinterpret_cast<uintptr_t>(memory.buf.get()));
+        mix(memory.total_size);
+        mix(memory.n_tensors);
+    }
+    return hash;
+}
+
+size_t llama_context::state_seq_get_device_root_count() const {
+    return mem_storage.size();
+}
+
 size_t llama_context::state_seq_clear_device_data(llama_seq_id device_storage_key) {
     const size_t size = state_seq_get_device_data_size(device_storage_key);
     mem_storage.erase(device_storage_key);
@@ -4136,6 +4162,14 @@ size_t llama_state_seq_get_device_data_size(llama_context * ctx, llama_seq_id de
 
 size_t llama_state_seq_get_device_data_gpu_size(llama_context * ctx, llama_seq_id device_storage_key) {
     return ctx->state_seq_get_device_data_gpu_size(device_storage_key);
+}
+
+uint64_t llama_state_seq_get_device_backing_id(llama_context * ctx, llama_seq_id device_storage_key) {
+    return ctx->state_seq_get_device_backing_id(device_storage_key);
+}
+
+size_t llama_state_seq_get_device_root_count(llama_context * ctx) {
+    return ctx->state_seq_get_device_root_count();
 }
 
 size_t llama_state_seq_clear_device_data(llama_context * ctx, llama_seq_id device_storage_key) {

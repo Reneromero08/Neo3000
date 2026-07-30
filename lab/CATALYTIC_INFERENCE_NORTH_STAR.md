@@ -40,6 +40,30 @@ recurrent, KV, attention, MoE, or weight-factor state), use balanced held-out
 necessity gates, and prevent a static token-bias direction from masquerading
 as relational composition.
 
+### Executed bridge update — query-separated GDN state
+
+The next contact wrote both evidence modules through ordinary Agents-A1
+inference before the delayed query was selected, then separated the hybrid
+cache into GDN-recurrent and complete-hybrid roots. Each recurrent-only root
+held `65,863,680` GPU bytes plus 748 host metadata bytes. The primary route
+restored only those 30 recurrent layers; attention KV was absent.
+
+This state is genuinely dynamic and causally read: the four
+Family-10h-style inclusion-exclusion interaction norms at the candidate logits
+were `2.748`, `0.836`, `0.687`, and `0.681`. It is nevertheless not a useful
+carrier for the tested two-link relation. Joint, F-only, G-only, F0G0,
+relation-mutation, presentation, and explicit-null routes all collapsed to
+`1/4`, with joint and null both yielding `A,A,A,A`; the relation mutation
+changed zero boundaries.
+
+The control is decisive. A `68,526,080`-byte full hybrid root returned
+`A,B,C,D` and matched untouched live hybrid inference bit-exactly across all
+four complete logit rows. Thus source/query separation is viable, while the
+missing useful state lies in the ten full-attention layers or in their
+interaction with GDN. The retained roots are conventional `SNAPSHOT_RELOAD`
+objects, not native inverse restoration. The evidence selects an attention-KV
+complement test before any new operator, prompt fixture, or phase construction.
+
 The refreshed AGS frontier adds three useful constraints without closing the
 Neo recurrence. First, source closure before query selection tightens the
 no-smuggle test, although a finite query family remains cache-equivalent.

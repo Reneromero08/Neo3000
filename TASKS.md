@@ -16,13 +16,26 @@ constructively unbounded local Agents-A1 inference.
   balanced held-out joint accuracy was `1/4`, versus `1/4` for F-only and
   `2/4` for G-only; eligibility mutation also failed. This is a conventional
   static token-bias adapter, not relational composition or catalysis.
-- [ ] Replace the static direction with dynamic shared model-native state whose
+- [x] Replace the static direction with dynamic shared model-native state whose
   evidence is written before query selection and read by later inference.
-  Require balanced F-only/G-only/joint/relation-mutation controls, the
-  inclusion-exclusion interaction observable, no complete duplicate
-  intermediate, and the strongest compact recurrent/cache baseline.
+  `neo-exp-0104` isolated the 30-layer Qwen3.5 GDN state in a
+  `65,863,680`-byte on-device root. All four inclusion-exclusion norms were
+  nonzero, so later logits causally read joint source structure, but the useful
+  joint/mutation boundary was `A,A,A,A`, identical to the explicit null
+  carrier. Reject recurrent-only state as sufficient for this task.
+- [x] Validate the discriminator against the strongest ordinary model-state
+  control. The `68,526,080`-byte full hybrid root returned `A,B,C,D` and
+  matched untouched live hybrid inference bit-exactly across all four complete
+  logit rows. This localizes the missing useful state to the ten full-attention
+  layers or their interaction with GDN, rather than to query separation.
+- [ ] Isolate the attention-KV complement under the same equal-token
+  F0G0/F1G0/F0G1/F1G1, relation-mutation, presentation, explicit-null, full
+  hybrid, and untouched-live controls. Do not tune the prompt fixture; measure
+  whether attention alone carries the useful delayed boundary and count its
+  exact physical footprint.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
-  dynamic state, then test a bounded recurrence before any unbounded claim.
+  first dynamic state that passes carrier necessity, then test a bounded
+  recurrence before any unbounded claim.
 
 `neo-exp-0102` remains unconsumed and frozen as a precontact two-row reversible
 score-composition calibration. It is not the active successor.

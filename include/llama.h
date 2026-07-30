@@ -952,6 +952,17 @@ extern "C" {
             struct llama_context * ctx,
                     llama_seq_id   device_storage_key);
 
+    // Returns a process-local identity for the exact retained device-buffer
+    // backing associated with a storage key. This is evidence identity, not an
+    // address or authority token. Returns zero when the key is absent.
+    LLAMA_API uint64_t llama_state_seq_get_device_backing_id(
+            struct llama_context * ctx,
+                    llama_seq_id   device_storage_key);
+
+    // Returns the number of process-local retained device-state roots.
+    LLAMA_API size_t llama_state_seq_get_device_root_count(
+            struct llama_context * ctx);
+
     // Releases the retained on-device sequence state and returns its logical tensor bytes.
     // This does not remove the active sequence from the context memory.
     LLAMA_API size_t llama_state_seq_clear_device_data(

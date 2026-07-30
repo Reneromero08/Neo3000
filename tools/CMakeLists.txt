@@ -37,6 +37,7 @@ else()
         # these tools use backends directly (no dynamic loading) and depend on CPU backend symbols
         add_subdirectory(cvector-generator)
         add_subdirectory(catalytic-carrier-probe)
+        add_subdirectory(recurrent-carrier-probe)
         add_subdirectory(export-lora)
     endif()
     add_subdirectory(fit-params)

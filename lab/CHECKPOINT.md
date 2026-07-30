@@ -1,6 +1,6 @@
 # Checkpoint Ledger
 
-## Renewed model-native carrier checkpoint [CURRENT CLAIM AUTHORITY]
+## Query-separated hybrid-state discriminator [CURRENT CLAIM AUTHORITY]
 
 The active recurrence and acceptance boundary are
 `lab/CATALYTIC_INFERENCE_NORTH_STAR.md`.
@@ -13,26 +13,47 @@ The active recurrence and acceptance boundary are
   Agents-A1 logits, and reproduced all four tested carrier-disabled full-logit
   rows exactly after enable/disable reuse.
 - The full Release server and the new carrier probe build with the configured
-  139/139 CUDA object closure. The focused Python suite passes 51 tests and 12
-  subtests.
+  139/139 CUDA object closure.
+- `neo-exp-0104` decodes two source modules before the delayed query exists,
+  then isolates the 30-layer Qwen3.5 GDN state as a `65,863,680`-byte
+  on-device root with 748 bytes of host metadata. Its four
+  inclusion-exclusion interaction norms are nonzero, establishing a causal
+  recurrent-state read at later logits.
+- The complete `68,526,080`-byte hybrid root returns the useful `A,B,C,D`
+  boundary and matches untouched live hybrid inference bit-exactly across all
+  four tested full-logit rows. The active recurrent allocation stayed on one
+  process-local backing; every retained root was explicitly cleared.
+- The Release server rebuild succeeds, all 139 configured CUDA objects remain
+  present with zero CUDA source changes, and the focused no-model Python suite
+  passes 57 tests.
 
 ### REJECTED
 
 - The balanced held-out adapter produced joint/F-only/G-only accuracy
   `1/4`, `1/4`, and `2/4`; eligibility mutation failed. It is a conventional
   static token-bias direction, not a useful relational carrier.
+- Recurrent-only joint, F-only, G-only, F0G0, mutation, presentation, and
+  explicit-null routes each score only `1/4`; joint and null both return
+  `A,A,A,A`, and relation mutation changes `0/4` boundaries. GDN recurrent
+  state alone is therefore rejected as a useful carrier for this delayed
+  two-link task.
+- The retained roots use `SNAPSHOT_RELOAD`. Root backing identity and closure
+  do not establish inverse restoration, complete object restoration, or
+  catalytic reuse. The test also retains a full-hybrid control root alongside
+  the joint recurrent root, so it is a discriminator rather than a
+  no-duplicate-custody demonstration.
 - No multi-evidence necessity, unresolved composition, phase-native resource,
   fresh-compute reduction, catalytic inference, or constructive unbounded
   recurrence is supported.
 
 ### ACTIVE BOUNDARY
 
-Replace the static direction with dynamic shared residual, recurrent, KV,
-attention, MoE, or weight-factor state written before query selection and read
-by later inference. Use balanced necessity and relation-mutation controls,
-Family-10h inclusion-exclusion against branch-local marginals, no duplicate
-classical intermediate, and the strongest compact recurrent/cache baseline.
-`neo-exp-0102` remains frozen and unconsumed.
+Isolate attention KV with the unchanged query-separated geometry and controls.
+The accepted conventional full-hybrid route and rejected recurrent-only route
+make this a state-partition discriminator, not another prompt experiment. If
+attention alone is useful, measure its exact footprint before selecting a
+bounded model-native subspace. If it is not, test the attention-GDN interaction
+rather than tuning labels. `neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 
