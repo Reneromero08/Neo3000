@@ -364,7 +364,7 @@ constructively unbounded local Agents-A1 inference.
   No disjoint IOUV query, port write, disablement, or return ran. Reject this
   terminal law without a context, prompt, gain, ridge, fixture, evaluator, or
   evidence-packet retry.
-- [ ] Move the output-written carrier read into one predeclared earlier
+- [x] Move the output-written carrier read into one predeclared earlier
   nonlinear Agents-A1 layer. Train the bounded layer-local update law from
   actual output-side layer state and query-side layer state, retain no target
   rows or answer table at runtime, and let the remaining frozen layers—not a
@@ -379,8 +379,22 @@ constructively unbounded local Agents-A1 inference.
   removed or used to select easier fixtures. Runtime has zero source-role
   forwards and no expected-answer input. The probe and Release server build,
   runner tests pass `7/7`, the exact oracle passes, and CUDA closure remains
-  `139/139`. Execute this changed model seam once; do not create layer, gain,
-  context, prompt, evaluator, or evidence-packet variants.
+  `139/139`. The one frozen execution preserves exact full state at `16/16`
+  but the port route is only `4/16`: every nonzero phase keeps the original
+  G0 argmaxes even though logits change, full hashes are `0/16`, and the
+  matched G1 disablement has the same four argmaxes. The writer/query topology
+  fits `12/12`, the port writes sixteen times, recurrent digests remain exact,
+  and all state closes. Reject the layer-3 mean residual delta as a useful
+  carrier law. Do not create layer, gain, context, prompt, evaluator, or
+  evidence-packet variants.
+- [ ] Make the same output-written unresolved port affect an actual dynamic
+  model operation rather than adding another fixed residual delta. Choose one
+  predeclared recurrent-state transition, attention computation, or MoE router
+  update whose later frozen computation must read the port; retain zero
+  source-role forwards and no answer/phase/context table. This next step is a
+  changed inference mechanism, not carrier-evaluation or evidence-harness
+  versioning. Execute one bounded discriminator, then advance from its
+  physical result.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

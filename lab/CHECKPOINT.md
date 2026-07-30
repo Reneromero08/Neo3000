@@ -493,8 +493,22 @@ The active recurrence and acceptance boundary are
   computation in layers 3–39 must create the final boundary.
 - The probe and full Release server build after the change; declarative-runner
   tests pass `7/7`, the exact bounded oracle passes, and CUDA object closure
-  remains `139/139`. No `0148` model contact or server launch has occurred.
-  One execution and one evidence packet follow; no carrier-evaluation series.
+  remains `139/139`. The one frozen `0148` model load completed without a
+  server launch. Exact full state is `16/16`; the port route is `4/16`, with
+  every nonzero phase retaining the original G0 argmaxes, zero matching full
+  hashes, and `7.3228` maximum candidate-logit error.
+- The query decoder, actual-output writer, and coupled public topology fit
+  `12/12`; the port writes sixteen times and changes logits, but enabled and
+  disabled G1 routes have the same four argmaxes. Recurrent content digests
+  remain exact, the reader becomes quiescent on the same backing, and all
+  port, sequence, and root state closes. This rejects the layer-3 mean
+  residual-delta law: later frozen computation does not turn it into the
+  useful relational boundary.
+- Evidence custody is closed by one compact recomputable packet for this
+  mechanism. It will not become a carrier-evaluation series. The active
+  successor must change inference dynamics through a predeclared recurrent,
+  attention, or MoE operation—not a layer, gain, prompt, fixture, evaluator,
+  or evidence-harness version.
 
 ### REJECTED
 

@@ -165,6 +165,11 @@ claim-bearing execution.
 9. **No pellet controllers.** Do not create scientific successors through
    nested controller inheritance, global monkey-patching, or `.parent.parent`
    chains. Express experiment variation declaratively.
+   Evidence custody protects changed physical mechanisms; it is not a
+   research axis. Use one compact recomputable packet per mechanism. Do not
+   create evaluator, carrier-evaluation, or evidence-harness version series
+   unless a concrete defect in the existing packet would invalidate the
+   scientific conclusion.
 10. **Restoration scope.** Every result separately names cells, metadata,
     allocator state, model state, host evidence, CUDA/KV state, and state merely
     closed or discarded. Never use unqualified `carrier restored`.
