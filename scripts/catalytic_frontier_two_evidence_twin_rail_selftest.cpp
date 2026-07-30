@@ -1,6 +1,9 @@
 #ifndef NEO3000_TWIN_RAIL_TESTING
 #error "neo-exp-0102 native two-evidence controls require the test-only carrier seam"
 #endif
+#ifdef NDEBUG
+#error "native two-row calibration selftest requires C++ assertions enabled"
+#endif
 
 #include "../tools/server/neo3000-twin-rail-fiber.h"
 
@@ -23,7 +26,8 @@ static twin_rail_contract stage_contract(
     value.carrier_id = carrier;
     value.outer_lease = lease;
     value.generation = generation;
-    value.port_owner = twin_rail_carrier::two_evidence_stage_owner;
+    value.port_owner =
+            twin_rail_carrier::two_evidence_stage_principal;
     value.port_type = twin_rail_carrier::two_evidence_stage_type;
     value.module_id = twin_rail_carrier::two_evidence_stage_module;
     value.module_variant = static_cast<uint32_t>(variant);
@@ -42,7 +46,8 @@ static twin_rail_contract stage_contract(
 static twin_rail_contract final_contract(
         const twin_rail_contract & stage) {
     twin_rail_contract value = stage;
-    value.port_owner = twin_rail_carrier::two_evidence_final_owner;
+    value.port_owner =
+            twin_rail_carrier::two_evidence_final_principal;
     value.port_type = twin_rail_carrier::two_evidence_final_type;
     value.module_id = twin_rail_carrier::two_evidence_final_module;
     value.module_ordinal = 2;
@@ -65,7 +70,8 @@ static twin_rail_contract legacy_contract(
     value.carrier_id = carrier;
     value.outer_lease = lease;
     value.generation = generation;
-    value.port_owner = twin_rail_carrier::required_port_owner;
+    value.port_owner =
+            twin_rail_carrier::required_contract_principal;
     value.port_type = twin_rail_carrier::required_port_type;
     value.module_id = twin_rail_carrier::required_module_id;
     value.module_variant =
@@ -113,6 +119,9 @@ int main() {
         assert(begun.two_evidence_composition);
         assert(!begun.first_evidence_seed_zeroed);
         assert(begun.retained_evidence_bytes == 16);
+        assert(!begun.metadata_committed);
+        assert(begun.server_epoch == 0);
+        assert(carrier.metadata_transaction_pending());
         assert(carrier.state() == twin_rail_state::STAGE_RESIDENT);
         assert(carrier.unresolved());
 
@@ -128,6 +137,9 @@ int main() {
         assert(finished.first_evidence_seed_zeroed);
         assert(finished.retained_evidence_bytes == 16);
         assert(finished.retained_evidence_bytes_after_call == 0);
+        assert(finished.metadata_committed);
+        assert(finished.server_epoch == 1);
+        assert(!carrier.metadata_transaction_pending());
         assert(carrier.evidence_seed_is_zero());
         assert(carrier.state() == twin_rail_state::RESTORED);
         assert(carrier.take_final_projection() == 35);
@@ -154,14 +166,15 @@ int main() {
     {
         twin_rail_carrier carrier;
         const auto stage = stage_contract(
-                "two-evidence-dephased",
+                "two-evidence-numerical-decoherence",
                 301,
                 1,
-                twin_rail_variant::DEPHASED_SHAM);
+                twin_rail_variant::NUMERICAL_DECOHERENCE);
         assert(carrier.begin_two_evidence(first, stage).accepted);
-        const auto dephased =
+        const auto decohered =
                 carrier.finish_two_evidence(second, final_contract(stage));
-        assert(dephased.accepted && dephased.restored);
+        assert(decohered.accepted && decohered.restored);
+        assert(decohered.numerical_decoherence_applied);
         assert(carrier.evidence_seed_is_zero());
         assert(carrier.take_final_projection() == 32);
     }
@@ -271,9 +284,55 @@ int main() {
                         second,
                         final_contract(second_stage));
         assert(second_finished.accepted);
+        assert(second_finished.metadata_committed);
+        assert(second_finished.server_epoch == 2);
         assert(second_finished.same_backing_as_prior_transaction);
         assert(second_finished.completed_transactions == 2);
         assert(second_finished.backing_reuses == 1);
+        assert(carrier.take_final_projection() == 35);
+    }
+
+    {
+        twin_rail_carrier carrier;
+        const auto first_stage = stage_contract(
+                "two-evidence-metadata-rollback",
+                1301,
+                1,
+                twin_rail_variant::PRIMARY);
+        assert(carrier.begin_two_evidence(first, first_stage).accepted);
+        const auto first_finished = carrier.finish_two_evidence(
+                second,
+                final_contract(first_stage));
+        assert(first_finished.accepted);
+        assert(first_finished.server_epoch == 1);
+        assert(carrier.take_final_projection() == 35);
+
+        const auto failing_stage = stage_contract(
+                "two-evidence-metadata-rollback",
+                1302,
+                2,
+                twin_rail_variant::PRIMARY);
+        assert(carrier.begin_two_evidence(first, failing_stage).accepted);
+        auto wrong_final = final_contract(failing_stage);
+        wrong_final.port_type += "-wrong";
+        const auto failed =
+                carrier.finish_two_evidence(second, wrong_final);
+        assert(!failed.accepted);
+        assert(failed.metadata_rolled_back);
+        assert(failed.server_epoch == 1);
+        assert(!carrier.metadata_transaction_pending());
+
+        const auto retry_stage = stage_contract(
+                "two-evidence-metadata-rollback",
+                1303,
+                2,
+                twin_rail_variant::PRIMARY);
+        assert(carrier.begin_two_evidence(first, retry_stage).accepted);
+        const auto retried = carrier.finish_two_evidence(
+                second,
+                final_contract(retry_stage));
+        assert(retried.accepted);
+        assert(retried.server_epoch == 2);
         assert(carrier.take_final_projection() == 35);
     }
 

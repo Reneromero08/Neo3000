@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -86,6 +87,30 @@ class LinuxSidecarTests(unittest.TestCase):
         sidecar = Native()
         self.assertEqual(harness.process_resources(sidecar, 17), expected)
         self.assertEqual(sidecar.baseline_private, 17)
+
+    def test_guarded_enforces_requested_timeout(self):
+        sidecar = object.__new__(linux.LinuxSidecar)
+        sidecar.exact_ownership = mock.Mock(return_value={})
+        sidecar._sample = mock.Mock(return_value={})
+
+        with self.assertRaisesRegex(
+            linux.LinuxSidecarError,
+            "guarded callback exceeded",
+        ):
+            sidecar.guarded(
+                "timeout-behavior",
+                lambda: time.sleep(0.2),
+                timeout=0.01,
+            )
+
+        self.assertEqual(
+            [call.args[0] for call in sidecar.exact_ownership.call_args_list],
+            ["pre:timeout-behavior", "timeout:timeout-behavior"],
+        )
+        self.assertEqual(
+            [call.args[0] for call in sidecar._sample.call_args_list],
+            ["pre:timeout-behavior", "timeout:timeout-behavior"],
+        )
 
 
 if __name__ == "__main__":

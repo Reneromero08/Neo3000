@@ -135,6 +135,7 @@ void twin_rail_carrier::initialize() {
         cells_[i] = expected_cell(i);
     }
     clear_evidence_seed();
+    rollback_staged_metadata();
     pending_same_backing_ = false;
     buffered_token_ = -1;
     state_ = twin_rail_state::INITIALIZED;
@@ -165,34 +166,53 @@ bool twin_rail_carrier::contract_is_structurally_valid(
             contract.restoration_policy == required_source_restoration_policy;
 }
 
-bool twin_rail_carrier::ownership_transition_is_valid(
+bool twin_rail_carrier::structural_transition_is_valid(
         const twin_rail_contract & contract) const {
-    if (bound_carrier_id_.empty()) {
+    if (carrier_identity_is_retired(contract.carrier_id)) {
+        return false;
+    }
+    if (committed_metadata_.empty()) {
         return contract.generation == 1 && contract.module_ordinal == 1;
     }
-    if (contract.carrier_id == bound_carrier_id_) {
+    if (contract.carrier_id == committed_metadata_.carrier_id) {
         return
-                contract.port_owner == bound_port_owner_ &&
-                contract.port_type == bound_port_type_ &&
-                contract.module_id == bound_module_id_ &&
-                contract.generation == last_generation_ + 1 &&
-                contract.module_ordinal == last_module_ordinal_ + 1 &&
-                contract.outer_lease != last_outer_lease_;
+                contract.port_owner ==
+                        committed_metadata_.port_principal &&
+                contract.port_type == committed_metadata_.port_type &&
+                contract.module_id == committed_metadata_.module_id &&
+                contract.generation ==
+                        committed_metadata_.generation + 1 &&
+                contract.module_ordinal ==
+                        committed_metadata_.module_ordinal + 1 &&
+                contract.outer_lease !=
+                        committed_metadata_.outer_lease;
     }
-    return contract.generation == 1 && contract.module_ordinal == 1;
+    return
+            retired_carrier_identity_count_ <
+                    retired_identity_capacity &&
+            contract.generation == 1 &&
+            contract.module_ordinal == 1;
 }
 
-bool twin_rail_carrier::two_evidence_ownership_transition_is_valid(
+bool twin_rail_carrier::two_evidence_structural_transition_is_valid(
         const twin_rail_contract & contract) const {
-    if (bound_carrier_id_.empty()) {
+    if (carrier_identity_is_retired(contract.carrier_id)) {
+        return false;
+    }
+    if (committed_metadata_.empty()) {
         return contract.generation == 1;
     }
-    if (contract.carrier_id == bound_carrier_id_) {
+    if (contract.carrier_id == committed_metadata_.carrier_id) {
         return
-                contract.generation == last_generation_ + 1 &&
-                contract.outer_lease != last_outer_lease_;
+                contract.generation ==
+                        committed_metadata_.generation + 1 &&
+                contract.outer_lease !=
+                        committed_metadata_.outer_lease;
     }
-    return contract.generation == 1;
+    return
+            retired_carrier_identity_count_ <
+                    retired_identity_capacity &&
+            contract.generation == 1;
 }
 
 bool twin_rail_carrier::two_evidence_stage_contract_is_valid(
@@ -223,13 +243,15 @@ bool twin_rail_carrier::two_evidence_final_contract_is_valid(
     return
             state_ == twin_rail_state::STAGE_RESIDENT &&
             first_evidence_seed_valid_ &&
-            contract.carrier_id == bound_carrier_id_ &&
-            contract.outer_lease == last_outer_lease_ &&
-            contract.generation == last_generation_ &&
+            pending_metadata_valid_ &&
+            contract.carrier_id == pending_metadata_.carrier_id &&
+            contract.outer_lease == pending_metadata_.outer_lease &&
+            contract.generation == pending_metadata_.generation &&
             contract.port_owner == two_evidence_final_owner &&
             contract.port_type == two_evidence_final_type &&
             contract.module_id == two_evidence_final_module &&
-            contract.module_variant == bound_module_variant_ &&
+            contract.module_variant ==
+                    pending_metadata_.module_variant &&
             contract.module_ordinal == 2 &&
             contract.input_boundary_id == two_evidence_final_boundary &&
             contract.projection_policy == two_evidence_final_projection &&
@@ -237,15 +259,91 @@ bool twin_rail_carrier::two_evidence_final_contract_is_valid(
             contract.causal_position == two_evidence_final_causal_position;
 }
 
-void twin_rail_carrier::bind_ownership(const twin_rail_contract & contract) {
-    bound_carrier_id_ = contract.carrier_id;
-    bound_port_owner_ = contract.port_owner;
-    bound_port_type_ = contract.port_type;
-    bound_module_id_ = contract.module_id;
-    last_outer_lease_ = contract.outer_lease;
-    last_generation_ = contract.generation;
-    last_module_ordinal_ = contract.module_ordinal;
-    bound_module_variant_ = contract.module_variant;
+twin_rail_carrier::contract_metadata
+twin_rail_carrier::metadata_from_contract(
+        const twin_rail_contract & contract) {
+    return {
+        contract.carrier_id,
+        contract.port_owner,
+        contract.port_type,
+        contract.module_id,
+        contract.outer_lease,
+        contract.generation,
+        contract.module_ordinal,
+        contract.module_variant,
+    };
+}
+
+uint64_t twin_rail_carrier::carrier_identity_hash(
+        const std::string & identity) {
+    uint64_t hash = UINT64_C(14695981039346656037);
+    for (const unsigned char byte : identity) {
+        hash ^= byte;
+        hash *= UINT64_C(1099511628211);
+    }
+    return hash;
+}
+
+bool twin_rail_carrier::carrier_identity_is_retired(
+        const std::string & identity) const {
+    const uint64_t hash = carrier_identity_hash(identity);
+    return std::find(
+            retired_carrier_identity_hashes_.begin(),
+            retired_carrier_identity_hashes_.begin() +
+                    retired_carrier_identity_count_,
+            hash) !=
+            retired_carrier_identity_hashes_.begin() +
+                    retired_carrier_identity_count_;
+}
+
+void twin_rail_carrier::stage_contract_metadata(
+        const twin_rail_contract & contract) {
+    pending_metadata_ = metadata_from_contract(contract);
+    pending_metadata_valid_ = true;
+}
+
+void twin_rail_carrier::commit_staged_metadata() {
+    if (!pending_metadata_valid_) {
+        throw std::runtime_error(
+                "no structurally contract-bound metadata is staged");
+    }
+    if (!committed_metadata_.empty() &&
+            committed_metadata_.carrier_id !=
+                    pending_metadata_.carrier_id) {
+        if (retired_carrier_identity_count_ >=
+                retired_identity_capacity) {
+            throw std::runtime_error(
+                    "retired calibration identity registry is full");
+        }
+        retired_carrier_identity_hashes_[
+                retired_carrier_identity_count_++] =
+                carrier_identity_hash(
+                        committed_metadata_.carrier_id);
+    }
+    committed_metadata_.carrier_id.swap(
+            pending_metadata_.carrier_id);
+    committed_metadata_.port_principal.swap(
+            pending_metadata_.port_principal);
+    committed_metadata_.port_type.swap(
+            pending_metadata_.port_type);
+    committed_metadata_.module_id.swap(
+            pending_metadata_.module_id);
+    committed_metadata_.outer_lease =
+            pending_metadata_.outer_lease;
+    committed_metadata_.generation =
+            pending_metadata_.generation;
+    committed_metadata_.module_ordinal =
+            pending_metadata_.module_ordinal;
+    committed_metadata_.module_variant =
+            pending_metadata_.module_variant;
+    pending_metadata_.clear();
+    pending_metadata_valid_ = false;
+    server_epoch_ += 1;
+}
+
+void twin_rail_carrier::rollback_staged_metadata() {
+    pending_metadata_.clear();
+    pending_metadata_valid_ = false;
 }
 
 void twin_rail_carrier::apply_phase(const scalar_array & angles, bool inverse) {
@@ -294,6 +392,66 @@ void twin_rail_carrier::apply_rx(
     }
 }
 
+twin_rail_carrier::density_array
+twin_rail_carrier::density_from_cells() const {
+    density_array density = {};
+    for (size_t i = 0; i < hypothesis_count; ++i) {
+        const std::complex<double> first = cells_[2 * i];
+        const std::complex<double> second = cells_[2 * i + 1];
+        density[i] = {
+            first * std::conj(first),
+            first * std::conj(second),
+            second * std::conj(first),
+            second * std::conj(second),
+        };
+    }
+    return density;
+}
+
+void twin_rail_carrier::apply_complete_decoherence(
+        density_array & density) {
+    for (auto & lane : density) {
+        lane[1] = {};
+        lane[2] = {};
+    }
+}
+
+void twin_rail_carrier::apply_hadamard(
+        density_array & density) {
+    for (auto & lane : density) {
+        const auto rho00 = lane[0];
+        const auto rho01 = lane[1];
+        const auto rho10 = lane[2];
+        const auto rho11 = lane[3];
+        lane[0] = 0.5 * (rho00 + rho01 + rho10 + rho11);
+        lane[1] = 0.5 * (rho00 - rho01 + rho10 - rho11);
+        lane[2] = 0.5 * (rho00 + rho01 - rho10 - rho11);
+        lane[3] = 0.5 * (rho00 - rho01 - rho10 + rho11);
+    }
+}
+
+twin_rail_carrier::scalar_array
+twin_rail_carrier::measure_rail_zero(
+        const density_array & density) {
+    scalar_array scores = {};
+    for (size_t i = 0; i < hypothesis_count; ++i) {
+        scores[i] = density[i][0].real();
+    }
+    return scores;
+}
+
+twin_rail_carrier::scalar_array
+twin_rail_carrier::measure_negative_y(
+        const density_array & density) {
+    scalar_array scores = {};
+    for (size_t i = 0; i < hypothesis_count; ++i) {
+        scores[i] =
+                0.5 -
+                std::imag(density[i][2]);
+    }
+    return scores;
+}
+
 void twin_rail_carrier::clear_evidence_seed() {
     first_evidence_seed_.fill(0.0f);
     first_evidence_seed_valid_ = false;
@@ -318,10 +476,14 @@ twin_rail_receipt twin_rail_carrier::begin_two_evidence(
     receipt.persistent_object_bytes = sizeof(*this);
     receipt.persistent_dynamic_capacity_bytes =
             persistent_dynamic_capacity_bytes();
+    receipt.server_epoch = server_epoch_;
+    receipt.retired_carrier_identity_count =
+            retired_carrier_identity_count_;
     buffered_token_ = -1;
 
     if (unresolved()) {
         poison();
+        receipt.metadata_rolled_back = true;
         receipt.error =
                 "duplicate two-evidence stage poisoned the unresolved carrier";
         receipt.state = state_;
@@ -331,7 +493,7 @@ twin_rail_receipt twin_rail_carrier::begin_two_evidence(
     if (!two_evidence_stage_contract_is_valid(stage_contract)) {
         receipt.failure_was_pre_borrow = true;
         receipt.error =
-                "two-evidence stage contract has the wrong owner, lease, generation, type, module, variant, ordinal, boundary, projection, restoration, or causal position";
+                "two-evidence stage contract has the wrong structural principal, lease, generation, type, module, variant, ordinal, boundary, projection, restoration, or causal position";
         return receipt;
     }
     if (!finite_evidence(first_logits)) {
@@ -340,10 +502,10 @@ twin_rail_receipt twin_rail_carrier::begin_two_evidence(
                 "two-evidence first candidate logits are absent or non-finite";
         return receipt;
     }
-    if (!two_evidence_ownership_transition_is_valid(stage_contract)) {
+    if (!two_evidence_structural_transition_is_valid(stage_contract)) {
         receipt.failure_was_pre_borrow = true;
         receipt.error =
-                "two-evidence stage ownership, lease, generation, or causal order mismatch";
+                "two-evidence stage structural contract, lease, generation, epoch, retired identity, or causal order mismatch";
         return receipt;
     }
 
@@ -373,7 +535,7 @@ twin_rail_receipt twin_rail_carrier::begin_two_evidence(
         return receipt;
     }
 
-    bind_ownership(stage_contract);
+    stage_contract_metadata(stage_contract);
     first_evidence_seed_ = first_logits;
     first_evidence_seed_valid_ = true;
     receipt.retained_evidence_bytes = retained_evidence_bytes;
@@ -404,6 +566,9 @@ twin_rail_receipt twin_rail_carrier::begin_two_evidence(
     receipt.completed_transactions = completed_transactions_;
     receipt.backing_reuses = backing_reuses_;
     receipt.recovery_initializations = recovery_initializations_;
+    receipt.server_epoch = server_epoch_;
+    receipt.retired_carrier_identity_count =
+            retired_carrier_identity_count_;
     receipt.state = state_;
     return receipt;
 }
@@ -418,6 +583,9 @@ twin_rail_receipt twin_rail_carrier::finish_two_evidence(
     receipt.persistent_object_bytes = sizeof(*this);
     receipt.persistent_dynamic_capacity_bytes =
             persistent_dynamic_capacity_bytes();
+    receipt.server_epoch = server_epoch_;
+    receipt.retired_carrier_identity_count =
+            retired_carrier_identity_count_;
     receipt.retained_evidence_bytes =
             first_evidence_seed_valid_ ? retained_evidence_bytes : 0;
     receipt.retained_evidence_bytes_after_call =
@@ -427,9 +595,10 @@ twin_rail_receipt twin_rail_carrier::finish_two_evidence(
         receipt.failure_was_pre_borrow =
                 state_ != twin_rail_state::STAGE_RESIDENT;
         receipt.error =
-                "two-evidence final contract has the wrong stage, owner, lease, generation, type, module, variant, ordinal, boundary, projection, restoration, or causal position";
+                "two-evidence final contract has the wrong stage, structural principal, lease, generation, type, module, variant, ordinal, boundary, projection, restoration, or causal position";
         if (state_ == twin_rail_state::STAGE_RESIDENT) {
             poison();
+            receipt.metadata_rolled_back = true;
             receipt.state = state_;
             receipt.first_evidence_seed_zeroed =
                     evidence_seed_is_zero();
@@ -441,6 +610,7 @@ twin_rail_receipt twin_rail_carrier::finish_two_evidence(
         receipt.error =
                 "two-evidence second candidate logits are absent or non-finite";
         poison();
+        receipt.metadata_rolled_back = true;
         receipt.state = state_;
         receipt.first_evidence_seed_zeroed = evidence_seed_is_zero();
         receipt.retained_evidence_bytes_after_call = 0;
@@ -477,27 +647,24 @@ twin_rail_receipt twin_rail_carrier::finish_two_evidence(
         } else {
             apply_rx(second_angles, false);
         }
+        density_array measurement_state = density_from_cells();
+        if (variant ==
+                twin_rail_variant::NUMERICAL_DECOHERENCE) {
+            apply_complete_decoherence(measurement_state);
+            receipt.numerical_decoherence_applied = true;
+        }
+        scores = measure_negative_y(measurement_state);
         for (size_t i = 0; i < hypothesis_count; ++i) {
-            if (variant == twin_rail_variant::DEPHASED_SHAM) {
-                scores[i] = 0.5;
-                expected_scores[i] = 0.5;
-            } else if (variant == twin_rail_variant::REORDERED_FORWARD) {
-                scores[i] =
-                        0.5 -
-                        std::imag(
-                                std::conj(cells_[2 * i]) *
-                                cells_[2 * i + 1]);
-                expected_scores[i] =
-                        0.5 * (1.0 + second_probabilities[i]);
-            } else {
-                scores[i] =
-                        0.5 -
-                        std::imag(
-                                std::conj(cells_[2 * i]) *
-                                cells_[2 * i + 1]);
-                expected_scores[i] =
-                        0.5 * (1.0 + compact_products[i]);
-            }
+            expected_scores[i] =
+                    variant ==
+                            twin_rail_variant::
+                                    NUMERICAL_DECOHERENCE
+                    ? 0.5
+                    : variant ==
+                            twin_rail_variant::
+                                    REORDERED_FORWARD
+                    ? 0.5 * (1.0 + second_probabilities[i])
+                    : 0.5 * (1.0 + compact_products[i]);
         }
     }
 
@@ -570,6 +737,8 @@ twin_rail_receipt twin_rail_carrier::finish_two_evidence(
 
     if (maximum_restoration_error > restoration_tolerance) {
         state_ = twin_rail_state::INVALID;
+        rollback_staged_metadata();
+        receipt.metadata_rolled_back = true;
         receipt.error =
                 "two-evidence inverse did not restore the physical carrier";
         receipt.state = state_;
@@ -587,6 +756,8 @@ twin_rail_receipt twin_rail_carrier::finish_two_evidence(
             (!receipt.primary_margin_guard_passed ||
              !receipt.classical_parity)) {
         state_ = twin_rail_state::INVALID;
+        rollback_staged_metadata();
+        receipt.metadata_rolled_back = true;
         receipt.error =
                 "primary two-evidence score, strict margin, or compact parity failed";
         receipt.state = state_;
@@ -596,6 +767,8 @@ twin_rail_receipt twin_rail_carrier::finish_two_evidence(
     }
 
     buffered_token_ = candidate_token_ids[projected_hypothesis];
+    stage_contract_metadata(final_contract);
+    commit_staged_metadata();
     completed_transactions_ += 1;
     if (pending_same_backing_) {
         backing_reuses_ += 1;
@@ -608,6 +781,10 @@ twin_rail_receipt twin_rail_carrier::finish_two_evidence(
     receipt.completed_transactions = completed_transactions_;
     receipt.backing_reuses = backing_reuses_;
     receipt.recovery_initializations = recovery_initializations_;
+    receipt.metadata_committed = true;
+    receipt.server_epoch = server_epoch_;
+    receipt.retired_carrier_identity_count =
+            retired_carrier_identity_count_;
     receipt.persistent_dynamic_capacity_bytes =
             persistent_dynamic_capacity_bytes();
     receipt.state = state_;
@@ -635,11 +812,14 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore_impl(
     receipt.persistent_object_bytes = sizeof(*this);
     receipt.persistent_dynamic_capacity_bytes =
             persistent_dynamic_capacity_bytes();
+    receipt.server_epoch = server_epoch_;
+    receipt.retired_carrier_identity_count =
+            retired_carrier_identity_count_;
     buffered_token_ = -1;
 
     if (!contract_is_structurally_valid(contract)) {
         receipt.failure_was_pre_borrow = true;
-        receipt.error = "twin-rail contract is incomplete or has the wrong owner, type, module, order, projection, or source-closure policy";
+        receipt.error = "twin-rail calibration contract is incomplete or has the wrong structural principal, type, module, order, projection, or source-closure policy";
         return receipt;
     }
 
@@ -670,9 +850,9 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore_impl(
         receipt.error = "twin-rail carrier is unresolved or not closed";
         return receipt;
     }
-    if (!ownership_transition_is_valid(contract)) {
+    if (!structural_transition_is_valid(contract)) {
         receipt.failure_was_pre_borrow = true;
-        receipt.error = "twin-rail ownership, lease, generation, or causal order mismatch";
+        receipt.error = "twin-rail structural contract, lease, generation, server epoch, retired identity, or causal order mismatch";
         return receipt;
     }
 
@@ -714,13 +894,14 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore_impl(
         return receipt;
     }
 
-    bind_ownership(contract);
+    stage_contract_metadata(contract);
     receipt.persistent_dynamic_capacity_bytes =
             persistent_dynamic_capacity_bytes();
     state_ = twin_rail_state::BORROWED;
 
     scalar_array scores = {};
 
+    density_array decohered_measurement_state = {};
     if (variant == twin_rail_variant::REORDERED_FORWARD) {
         apply_hadamard();
         state_ = twin_rail_state::STAGE_RESIDENT;
@@ -728,15 +909,23 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore_impl(
     } else {
         apply_phase(forward_angles, false);
         state_ = twin_rail_state::STAGE_RESIDENT;
+        if (variant ==
+                twin_rail_variant::NUMERICAL_DECOHERENCE) {
+            decohered_measurement_state = density_from_cells();
+            apply_complete_decoherence(
+                    decohered_measurement_state);
+            apply_hadamard(decohered_measurement_state);
+            receipt.numerical_decoherence_applied = true;
+        }
         apply_hadamard();
     }
     state_ = twin_rail_state::COMPOSING;
 
-    for (size_t i = 0; i < hypothesis_count; ++i) {
-        scores[i] = variant == twin_rail_variant::DEPHASED_SHAM
-                ? 0.5
-                : std::norm(cells_[2 * i]);
-    }
+    scores =
+            variant ==
+                    twin_rail_variant::NUMERICAL_DECOHERENCE
+            ? measure_rail_zero(decohered_measurement_state)
+            : measure_rail_zero(density_from_cells());
     if (forced_scores != nullptr) {
         scores = *forced_scores;
     }
@@ -798,6 +987,8 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore_impl(
 
     if (maximum_restoration_error > restoration_tolerance) {
         state_ = twin_rail_state::INVALID;
+        rollback_staged_metadata();
+        receipt.metadata_rolled_back = true;
         receipt.error = "twin-rail inverse did not restore the physical carrier";
         receipt.state = state_;
         receipt.completed_transactions = completed_transactions_;
@@ -813,6 +1004,8 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore_impl(
     if (variant == twin_rail_variant::REORDERED_FORWARD &&
             !reordered_quotient_admitted) {
         state_ = twin_rail_state::INVALID;
+        rollback_staged_metadata();
+        receipt.metadata_rolled_back = true;
         receipt.error =
                 "reordered-forward scores exceeded the canonical numerical quotient";
         receipt.state = state_;
@@ -826,6 +1019,8 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore_impl(
     if (variant == twin_rail_variant::PRIMARY &&
             !receipt.classical_parity) {
         state_ = twin_rail_state::INVALID;
+        rollback_staged_metadata();
+        receipt.metadata_rolled_back = true;
         receipt.error =
                 "primary twin-rail score error or strict classical parity failed";
         receipt.state = state_;
@@ -838,6 +1033,7 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore_impl(
     }
 
     buffered_token_ = candidate_token_ids[projected_hypothesis];
+    commit_staged_metadata();
     completed_transactions_ += 1;
     if (same_backing) {
         backing_reuses_ += 1;
@@ -848,6 +1044,10 @@ twin_rail_receipt twin_rail_carrier::transform_and_restore_impl(
     receipt.completed_transactions = completed_transactions_;
     receipt.backing_reuses = backing_reuses_;
     receipt.recovery_initializations = recovery_initializations_;
+    receipt.metadata_committed = true;
+    receipt.server_epoch = server_epoch_;
+    receipt.retired_carrier_identity_count =
+            retired_carrier_identity_count_;
     receipt.persistent_dynamic_capacity_bytes =
             persistent_dynamic_capacity_bytes();
     receipt.state = state_;
@@ -899,6 +1099,7 @@ int32_t twin_rail_carrier::take_final_projection() {
 void twin_rail_carrier::poison() {
     buffered_token_ = -1;
     clear_evidence_seed();
+    rollback_staged_metadata();
     pending_same_backing_ = false;
     if (unresolved()) {
         state_ = twin_rail_state::INVALID;
@@ -946,16 +1147,34 @@ uint64_t twin_rail_carrier::recovery_initializations() const {
     return recovery_initializations_;
 }
 
+uint64_t twin_rail_carrier::server_epoch() const {
+    return server_epoch_;
+}
+
+size_t twin_rail_carrier::retired_carrier_identity_count() const {
+    return retired_carrier_identity_count_;
+}
+
+bool twin_rail_carrier::metadata_transaction_pending() const {
+    return pending_metadata_valid_;
+}
+
 size_t twin_rail_carrier::persistent_object_bytes() const {
     return sizeof(*this);
 }
 
 size_t twin_rail_carrier::persistent_dynamic_capacity_bytes() const {
+    const auto metadata_capacity =
+            [](const contract_metadata & metadata) {
+                return
+                        metadata.carrier_id.capacity() +
+                        metadata.port_principal.capacity() +
+                        metadata.port_type.capacity() +
+                        metadata.module_id.capacity();
+            };
     return
-            bound_carrier_id_.capacity() +
-            bound_port_owner_.capacity() +
-            bound_port_type_.capacity() +
-            bound_module_id_.capacity();
+            metadata_capacity(committed_metadata_) +
+            metadata_capacity(pending_metadata_);
 }
 
 twin_rail_fresh_parity_result run_fresh_twin_rail_parity(

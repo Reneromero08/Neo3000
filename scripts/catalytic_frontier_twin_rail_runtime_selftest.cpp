@@ -1,6 +1,9 @@
 #ifndef NEO3000_TWIN_RAIL_TESTING
 #error "neo-exp-0100 native reuse controls require the test-only carrier seam"
 #endif
+#ifdef NDEBUG
+#error "native calibration selftest requires C++ assertions enabled"
+#endif
 
 #include "../tools/server/neo3000-twin-rail-fiber.h"
 
@@ -25,7 +28,8 @@ static twin_rail_contract contract(
     value.carrier_id = carrier;
     value.outer_lease = lease;
     value.generation = generation;
-    value.port_owner = twin_rail_carrier::required_port_owner;
+    value.port_owner =
+            twin_rail_carrier::required_contract_principal;
     value.port_type = twin_rail_carrier::required_port_type;
     value.module_id = twin_rail_carrier::required_module_id;
     value.module_variant = static_cast<uint32_t>(variant);
@@ -54,6 +58,8 @@ int main() {
                 logits(0.0, 1.0, 4.0, 2.0),
                 contract("primary-r2", 11, 1, twin_rail_variant::PRIMARY));
         assert(first.accepted && first.restored && first.classical_parity);
+        assert(first.metadata_committed);
+        assert(first.server_epoch == 1);
         assert(first.primary_margin_guard_passed);
         assert(!first.canonical_tie_quotient_applied);
         assert(!first.same_backing_as_prior_transaction);
@@ -67,6 +73,8 @@ int main() {
                 logits(0.0, 5.0, 1.0, 2.0),
                 contract("primary-r2", 12, 2, twin_rail_variant::PRIMARY));
         assert(second.accepted && second.restored && second.classical_parity);
+        assert(second.metadata_committed);
+        assert(second.server_epoch == 2);
         assert(second.primary_margin_guard_passed);
         assert(!second.canonical_tie_quotient_applied);
         assert(second.same_backing_as_prior_transaction);
@@ -78,12 +86,20 @@ int main() {
 
     {
         twin_rail_carrier carrier;
-        const auto sham = carrier.transform_and_restore(
+        const auto decohered = carrier.transform_and_restore(
                 logits(0.0, 1.0, 4.0, 2.0),
-                contract("dephased", 21, 1, twin_rail_variant::DEPHASED_SHAM));
-        assert(sham.accepted && sham.restored && !sham.classical_parity);
-        assert(!sham.primary_margin_guard_passed);
-        assert(!sham.canonical_tie_quotient_applied);
+                contract(
+                        "numerical-decoherence",
+                        21,
+                        1,
+                        twin_rail_variant::NUMERICAL_DECOHERENCE));
+        assert(
+                decohered.accepted &&
+                decohered.restored &&
+                !decohered.classical_parity);
+        assert(decohered.numerical_decoherence_applied);
+        assert(!decohered.primary_margin_guard_passed);
+        assert(!decohered.canonical_tie_quotient_applied);
         assert(carrier.take_final_projection() == 32);
     }
 
@@ -272,15 +288,20 @@ int main() {
         assert(second_unrelated_fresh.projected_token == 35);
         assert(carrier.take_final_projection() == 35);
 
-        const auto dephased = carrier.transform_and_restore(
+        const auto decohered = carrier.transform_and_restore(
                 logits(0.0, 1.0, 4.0, 2.0),
-                contract("warmed-dephased", 85, 1, twin_rail_variant::DEPHASED_SHAM));
-        assert(dephased.accepted && dephased.restored);
-        assert(dephased.same_backing_as_prior_transaction);
-        assert(!dephased.canonical_tie_quotient_applied);
-        assert(dephased.completed_transactions == 5);
-        assert(dephased.backing_reuses == 4);
-        assert(dephased.recovery_initializations == 0);
+                contract(
+                        "warmed-numerical-decoherence",
+                        85,
+                        1,
+                        twin_rail_variant::NUMERICAL_DECOHERENCE));
+        assert(decohered.accepted && decohered.restored);
+        assert(decohered.numerical_decoherence_applied);
+        assert(decohered.same_backing_as_prior_transaction);
+        assert(!decohered.canonical_tie_quotient_applied);
+        assert(decohered.completed_transactions == 5);
+        assert(decohered.backing_reuses == 4);
+        assert(decohered.recovery_initializations == 0);
         assert(carrier.take_final_projection() == 32);
 
         const auto reordered = carrier.transform_and_restore(
@@ -379,6 +400,109 @@ int main() {
 
     {
         twin_rail_carrier carrier;
+        const auto a1 = carrier.transform_and_restore(
+                logits(0.0, 1.0, 4.0, 2.0),
+                contract(
+                        "anti-replay-A",
+                        201,
+                        1,
+                        twin_rail_variant::PRIMARY));
+        assert(a1.accepted && a1.metadata_committed);
+        assert(a1.server_epoch == 1);
+        assert(carrier.take_final_projection() == 34);
+
+        const auto b1 = carrier.transform_and_restore(
+                logits(0.0, 5.0, 1.0, 2.0),
+                contract(
+                        "anti-replay-B",
+                        202,
+                        1,
+                        twin_rail_variant::PRIMARY));
+        assert(b1.accepted && b1.metadata_committed);
+        assert(b1.server_epoch == 2);
+        assert(b1.retired_carrier_identity_count == 1);
+        assert(carrier.take_final_projection() == 33);
+
+        for (const auto replay : {
+                contract(
+                        "anti-replay-A",
+                        203,
+                        1,
+                        twin_rail_variant::PRIMARY),
+                contract(
+                        "anti-replay-A",
+                        204,
+                        2,
+                        twin_rail_variant::PRIMARY),
+                contract(
+                        "anti-replay-B",
+                        202,
+                        2,
+                        twin_rail_variant::PRIMARY),
+                contract(
+                        "anti-replay-B",
+                        205,
+                        1,
+                        twin_rail_variant::PRIMARY)}) {
+            const auto rejected = carrier.transform_and_restore(
+                    logits(0.0, 5.0, 1.0, 2.0),
+                    replay);
+            assert(!rejected.accepted);
+            assert(rejected.failure_was_pre_borrow);
+            assert(rejected.server_epoch == 2);
+            assert(!carrier.metadata_transaction_pending());
+        }
+
+        const auto c1 = carrier.transform_and_restore(
+                logits(0.0, 1.0, 2.0, 5.0),
+                contract(
+                        "anti-replay-C",
+                        206,
+                        1,
+                        twin_rail_variant::PRIMARY));
+        assert(c1.accepted && c1.server_epoch == 3);
+        assert(c1.retired_carrier_identity_count == 2);
+        assert(carrier.take_final_projection() == 35);
+    }
+
+    {
+        twin_rail_carrier carrier;
+        const auto committed = carrier.transform_and_restore(
+                logits(0.0, 1.0, 4.0, 2.0),
+                contract(
+                        "metadata-rollback",
+                        301,
+                        1,
+                        twin_rail_variant::PRIMARY));
+        assert(committed.accepted && committed.server_epoch == 1);
+        assert(carrier.take_final_projection() == 34);
+
+        const auto failed = carrier.transform_and_restore(
+                logits(0.0, 1.0, 4.0, 2.0),
+                contract(
+                        "metadata-rollback",
+                        302,
+                        2,
+                        twin_rail_variant::MISSING_INVERSE));
+        assert(!failed.accepted);
+        assert(failed.metadata_rolled_back);
+        assert(failed.server_epoch == 1);
+        assert(!carrier.metadata_transaction_pending());
+
+        const auto retry_same_generation = carrier.transform_and_restore(
+                logits(0.0, 5.0, 1.0, 2.0),
+                contract(
+                        "metadata-rollback",
+                        303,
+                        2,
+                        twin_rail_variant::PRIMARY));
+        assert(retry_same_generation.accepted);
+        assert(retry_same_generation.server_epoch == 2);
+        assert(carrier.take_final_projection() == 33);
+    }
+
+    {
+        twin_rail_carrier carrier;
         for (uint32_t generation = 1; generation <= 1024; ++generation) {
             const double phase = static_cast<double>(generation) * 0.017;
             const std::vector<float> values = logits(
@@ -410,7 +534,7 @@ int main() {
             << twin_rail_carrier::cell_count << " cells, "
             << twin_rail_carrier::carrier_bytes << " bytes, "
             << sizeof(twin_rail_carrier) << " object bytes, "
-            << "warmed primary-primary-B-D-dephased-reordered quotient, "
+            << "warmed primary-primary-B-D-numerical-decoherence-reordered quotient, "
             << "two post-success inverse-fault recoveries, "
             << "1024 sequential restorations, maximum error "
             << maximum_long_run_error << "\n";

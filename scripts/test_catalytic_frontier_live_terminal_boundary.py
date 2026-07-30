@@ -429,34 +429,41 @@ class LiveTerminalBoundaryTests(unittest.TestCase):
         )
         self.assertIn("neo3000_live_terminal_contract_equal", preflight)
 
-    def test_disconnect_or_cancel_poison_pending_live_boundary(self):
-        release_start = self.context.index("void release() {")
+    def test_static_binding_release_uses_lifecycle_not_pending_flag(self):
+        """STATIC_BINDING_CHECK only; behavioral proof lives in the native lifecycle test."""
+        release_start = self.context.index(
+            "void release(bool force_poison_live_terminal = false)"
+        )
         release = self.context[
             release_start :
-            self.context.index("result_timings get_timings() const", release_start)
+            self.context.index("void destroy()", release_start)
         ]
         self.assertIn(
+            "terminal_logits.live.must_poison_on_release(task->id)",
+            release,
+        )
+        self.assertIn("clear_incomplete_live_capture", release)
+        self.assertNotIn(
             "terminal_logits_pending_use && terminal_logits.live.valid()",
             release,
         )
         self.assertIn("prompt_clear(false);", release)
         self.assertIn("poisoned on release", release)
 
-    def test_shutdown_poisons_idle_live_boundary_before_backend_free(self):
+    def test_static_binding_shutdown_poisons_resident_state_before_backend_free(self):
+        """STATIC_BINDING_CHECK only; behavioral proof lives in the native lifecycle test."""
         start = self.context.index(
             "void poison_live_terminal_boundaries_for_shutdown()"
         )
         method = self.context[
             start : self.context.index("void handle_sleeping_state", start)
         ]
-        self.assertIn("slot.terminal_logits_pending_use", method)
         self.assertIn("slot.terminal_logits.live.valid()", method)
-        self.assertNotIn(
-            "if (!slot.terminal_logits_pending_use",
-            method,
-        )
+        self.assertNotIn("slot.terminal_logits_pending_use", method)
         self.assertIn("slot.prompt_clear(false);", method)
-        self.assertIn("slot.release();", method)
+        self.assertIn("slot.release(true);", method)
+        self.assertIn("slot.twin_rail.poison();", method)
+        self.assertIn("slot.two_evidence_compact_seed.fill(0.0f);", method)
         self.assertIn("std::count_if(", method)
         self.assertIn(
             "shutdown custody poisoned=%zu unresolved=%zu",

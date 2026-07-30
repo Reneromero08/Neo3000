@@ -44,13 +44,13 @@ std::vector<std::unique_ptr<field>> make_llama_cmpl_schema(const common_params &
         ->set_desc("Experimental: require an exact restored RAM-root terminal-logits boundary and sample from it before decode"));
 
     add((new field_bool("neo3000_capture_live_terminal_boundary", params.neo3000_capture_live_terminal_boundary))
-        ->set_desc("Experimental: retain one owner-bound live terminal boundary for the immediately next request"));
+        ->set_desc("Experimental: retain one structurally contract-bound live terminal boundary for the immediately next request"));
 
     add((new field_bool("neo3000_use_live_terminal_boundary", params.neo3000_use_live_terminal_boundary))
-        ->set_desc("Experimental: consume the exact owner-bound live terminal boundary once before decode"));
+        ->set_desc("Experimental: consume the exact structurally contract-bound live terminal boundary once before decode"));
 
     add((new field_bool("neo3000_two_evidence_twin_rail", params.neo3000_two_evidence_twin_rail))
-        ->set_desc("Experimental: compose two exact live candidate-logits rows on one unresolved owner-bound twin-rail carrier"));
+        ->set_desc("Experimental calibration: compose two exact live candidate-logits rows on one structurally contract-bound twin-rail workspace"));
 
     add((new field_bool("neo3000_two_evidence_hold_after_stage", params.neo3000_two_evidence_hold_after_stage))
         ->set_desc("Experimental control: hold the exact first two-evidence stage resident until disconnect or server shutdown"));
@@ -179,7 +179,7 @@ std::vector<std::unique_ptr<field>> make_llama_cmpl_schema(const common_params &
                 ctx.params.neo3000_twin_rail_stage.causal_position =
                         data.at("causal_position").get<std::string>();
             }))
-        ->set_desc("Exact first owner-bound port for two-evidence twin-rail composition"));
+        ->set_desc("Exact first structurally contract-bound port for two-row twin-rail calibration"));
 
     add((new field_nested("neo3000_twin_rail_final"))
         ->add_subfield((new field_str("boundary_id"))
@@ -235,7 +235,7 @@ std::vector<std::unique_ptr<field>> make_llama_cmpl_schema(const common_params &
                 ctx.params.neo3000_twin_rail_final.causal_position =
                         data.at("causal_position").get<std::string>();
             }))
-        ->set_desc("Exact second owner-bound port for two-evidence twin-rail composition"));
+        ->set_desc("Exact second structurally contract-bound port for two-row twin-rail calibration"));
 
     add((new field_num("n_predict", params.n_predict))
         ->set_hard_limits(-1, INT32_MAX)

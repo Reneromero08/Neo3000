@@ -6,6 +6,7 @@
 #include "server-queue.h"
 #include "server-schema.h"
 #include "server-stream.h"
+#include "neo3000-live-terminal-lifecycle.h"
 #include "neo3000-request-lifecycle.h"
 #include "neo3000-twin-rail-fiber.h"
 
@@ -123,7 +124,9 @@ static bool neo3000_live_terminal_contract_equal(
 static bool neo3000_twin_rail_contract_family(
         const task_params::neo3000_live_terminal_contract & contract) {
     return
-            contract.port_owner == neo3000::twin_rail_carrier::required_port_owner ||
+            contract.port_owner ==
+                    neo3000::twin_rail_carrier::
+                            required_contract_principal ||
             contract.port_type == neo3000::twin_rail_carrier::required_port_type ||
             contract.module_id == neo3000::twin_rail_carrier::required_module_id ||
             contract.projection_policy ==
@@ -134,7 +137,9 @@ static bool neo3000_twin_rail_contract_exact(
         const task_params::neo3000_live_terminal_contract & contract) {
     return
             contract.complete() &&
-            contract.port_owner == neo3000::twin_rail_carrier::required_port_owner &&
+            contract.port_owner ==
+                    neo3000::twin_rail_carrier::
+                            required_contract_principal &&
             contract.port_type == neo3000::twin_rail_carrier::required_port_type &&
             contract.module_id == neo3000::twin_rail_carrier::required_module_id &&
             contract.module_variant <= static_cast<uint32_t>(
@@ -205,7 +210,8 @@ static bool neo3000_two_evidence_stage_contract_exact(
             contract.complete() &&
             contract.boundary_id == "neo-exp-0102/two-evidence/stage" &&
             contract.port_owner ==
-                    neo3000::twin_rail_carrier::two_evidence_stage_owner &&
+                    neo3000::twin_rail_carrier::
+                            two_evidence_stage_principal &&
             contract.port_type ==
                     neo3000::twin_rail_carrier::two_evidence_stage_type &&
             contract.module_id ==
@@ -230,7 +236,8 @@ static bool neo3000_two_evidence_final_contract_exact(
             contract.complete() &&
             contract.boundary_id == "neo-exp-0102/two-evidence/final" &&
             contract.port_owner ==
-                    neo3000::twin_rail_carrier::two_evidence_final_owner &&
+                    neo3000::twin_rail_carrier::
+                            two_evidence_final_principal &&
             contract.port_type ==
                     neo3000::twin_rail_carrier::two_evidence_final_type &&
             contract.module_id ==
@@ -310,15 +317,54 @@ struct server_terminal_logits_boundary {
         uint64_t capture_request_epoch = 0;
         int32_t n_vocab = 0;
         std::string contract_fnv64;
+        neo3000::live_terminal_lifecycle lifecycle;
 
         bool valid() const {
             return identity.complete() &&
                     capture_request_epoch != 0 &&
                     n_vocab > 0 &&
-                    !contract_fnv64.empty();
+                    !contract_fnv64.empty() &&
+                    lifecycle.resident();
+        }
+
+        bool ready_for_consumer() const {
+            return valid() && lifecycle.ready_for_consumer();
+        }
+
+        bool begin_capture(uint64_t request_epoch, int task_id) {
+            if (!lifecycle.begin_capture(request_epoch, task_id)) {
+                return false;
+            }
+            capture_request_epoch = request_epoch;
+            return true;
+        }
+
+        bool complete_capture(int task_id) {
+            return lifecycle.complete_capture(task_id);
+        }
+
+        bool admit_for_use(uint64_t request_epoch) {
+            return lifecycle.admit_for_use(request_epoch);
+        }
+
+        bool cancellation_matches(int task_id) const {
+            return lifecycle.cancellation_matches(task_id);
+        }
+
+        bool preserve_on_release(int task_id) const {
+            return lifecycle.preserve_on_release(task_id);
+        }
+
+        bool must_poison_on_release(int task_id) const {
+            return lifecycle.must_poison_on_release(task_id);
+        }
+
+        void close() {
+            lifecycle.close();
         }
 
         void clear() {
+            lifecycle.poison();
             identity = {};
             capture_request_epoch = 0;
             n_vocab = 0;
@@ -828,14 +874,23 @@ struct server_slot {
         prompt.tokens.insert(spec_draft);
     }
 
-    void release() {
+    void release(bool force_poison_live_terminal = false) {
         if (is_processing()) {
             GGML_ASSERT(task);
 
             SLT_INF(*this, "stop processing: n_tokens = %d, truncated = %d\n", prompt.n_tokens(), truncated);
 
             const bool poison_live_terminal =
-                    terminal_logits_pending_use && terminal_logits.live.valid();
+                    terminal_logits.live.valid() &&
+                    (force_poison_live_terminal ||
+                     terminal_logits.live.must_poison_on_release(task->id));
+            const bool preserve_completed_capture =
+                    terminal_logits.live.valid() &&
+                    terminal_logits.live.preserve_on_release(task->id) &&
+                    !force_poison_live_terminal;
+            const bool clear_incomplete_live_capture =
+                    task->params.neo3000_capture_live_terminal_boundary &&
+                    !preserve_completed_capture;
             const bool poison_twin_rail = twin_rail.unresolved();
             const bool close_compact_seed =
                     two_evidence_compact_seed_valid;
@@ -851,7 +906,7 @@ struct server_slot {
                 twin_rail.poison();
                 SLT_WRN(*this,
                         "%s",
-                        "neo3000 twin-rail carrier poisoned on release\n");
+                        "neo3000 reversible twin-rail calibration state poisoned on release\n");
             }
             if (close_compact_seed) {
                 two_evidence_compact_seed.fill(0.0f);
@@ -866,12 +921,16 @@ struct server_slot {
 
             state = SLOT_STATE_IDLE;
 
-            if (poison_live_terminal) {
+            if (poison_live_terminal || clear_incomplete_live_capture) {
                 prompt_clear(false);
             } else if (task->is_child()) {
                 // do not keep context of the child slots - the parent's context is enough
                 prompt_clear(false);
             }
+
+            GGML_ASSERT(
+                    !terminal_logits.live.valid() ||
+                    preserve_completed_capture);
 
             reset();
 
@@ -1301,6 +1360,7 @@ public:
         if (!sleeping) {
             // destroy() is already called when entering sleeping state
             // we don't call it again here to avoid double free
+            poison_live_terminal_boundaries_for_shutdown();
             destroy();
         }
     }
@@ -1495,38 +1555,40 @@ private:
         size_t poisoned = 0;
         size_t twin_rail_poisoned = 0;
         for (auto & slot : slots) {
-            if (!slot.terminal_logits.live.valid()) {
+            const bool live_resident =
+                    slot.terminal_logits.live.valid();
+            const bool calibration_resident =
+                    slot.twin_rail.unresolved() ||
+                    slot.two_evidence_compact_seed_valid ||
+                    slot.two_evidence_projected_token !=
+                            LLAMA_TOKEN_NULL;
+            if (!live_resident && !calibration_resident) {
                 continue;
             }
             if (slot.is_processing()) {
-                // A capture can become resident before its zero-output task
-                // releases.  Force release() down its poison-and-clear path.
-                slot.terminal_logits_pending_use =
-                        slot.terminal_logits.live.valid();
-                slot.release();
-            } else {
+                poisoned += live_resident ? 1 : 0;
+                twin_rail_poisoned += calibration_resident ? 1 : 0;
+                slot.release(true);
+                continue;
+            }
+            if (live_resident) {
                 const std::string boundary_id =
                         slot.terminal_logits.live.identity.boundary_id;
                 SLT_WRN(slot,
                         "neo3000 one-use live terminal boundary poisoned on shutdown boundary=%s\n",
                         boundary_id.c_str());
                 slot.prompt_clear(false);
+                poisoned += 1;
             }
-            poisoned += 1;
-        }
-        for (auto & slot : slots) {
-            bool poisoned_slot = false;
             if (slot.twin_rail.unresolved()) {
                 slot.twin_rail.poison();
-                poisoned_slot = true;
             }
             if (slot.two_evidence_compact_seed_valid) {
                 slot.two_evidence_compact_seed.fill(0.0f);
                 slot.two_evidence_compact_seed_valid = false;
-                poisoned_slot = true;
             }
             slot.two_evidence_projected_token = LLAMA_TOKEN_NULL;
-            if (poisoned_slot) {
+            if (calibration_resident) {
                 twin_rail_poisoned += 1;
             }
         }
@@ -1558,6 +1620,7 @@ private:
         GGML_ASSERT(sleeping != new_state);
         if (new_state) {
             SRV_INF("%s", "server is entering sleeping state\n");
+            poison_live_terminal_boundaries_for_shutdown();
             destroy();
         } else {
             SRV_INF("%s", "server is exiting sleeping state\n");
@@ -2373,6 +2436,7 @@ private:
                     slot.id == 0 &&
                     task.tokens.validate(ctx_tgt) &&
                     task.params.neo3000_live_terminal.complete() &&
+                    live.ready_for_consumer() &&
                     live.capture_request_epoch == neo3000_request_epoch &&
                     live.n_vocab == n_vocab &&
                     neo3000_live_terminal_contract_equal(
@@ -2694,7 +2758,7 @@ private:
                     slots.size() == 1 &&
                     slot.id == 0 &&
                     task.params.neo3000_live_terminal.complete() &&
-                    live.valid() &&
+                    live.ready_for_consumer() &&
                     live.capture_request_epoch + 1 == task.neo3000_request_epoch &&
                     live.n_vocab == n_vocab &&
                     neo3000_live_terminal_contract_equal(
@@ -2725,10 +2789,20 @@ private:
                         ERROR_TYPE_INVALID_REQUEST);
                 return false;
             }
+            if (use_live_terminal &&
+                    !slot.terminal_logits.live.admit_for_use(
+                            task.neo3000_request_epoch)) {
+                slot.prompt_clear(false);
+                send_error(
+                        task,
+                        "Live terminal boundary lifecycle admission mismatch",
+                        ERROR_TYPE_INVALID_REQUEST);
+                return false;
+            }
             slot.terminal_logits_pending_use = true;
             if (use_live_terminal) {
                 SLT_WRN(slot,
-                        "neo3000 one-use live terminal boundary admitted boundary=%s carrier=%s lease=%" PRIu64 " generation=%u owner=%s type=%s module=%s variant=%u ordinal=%u contract=%s tokens=%d position=%d\n",
+                        "neo3000 one-use live terminal boundary admitted boundary=%s carrier=%s lease=%" PRIu64 " generation=%u structural_principal=%s type=%s module=%s variant=%u ordinal=%u contract=%s tokens=%d position=%d\n",
                         slot.terminal_logits.live.identity.boundary_id.c_str(),
                         slot.terminal_logits.live.identity.carrier_id.c_str(),
                         slot.terminal_logits.live.identity.outer_lease,
@@ -3459,10 +3533,28 @@ private:
             case SERVER_TASK_TYPE_CANCEL:
                 {
                     // release slot linked with the task id
+                    bool cancelled = false;
                     for (auto & slot : slots) {
                         if (slot.task && slot.task->id == task.id_target) {
                             slot.release();
+                            cancelled = true;
                             break;
+                        }
+                    }
+                    if (!cancelled) {
+                        for (auto & slot : slots) {
+                            if (slot.terminal_logits.live
+                                    .cancellation_matches(task.id_target)) {
+                                const std::string boundary_id =
+                                        slot.terminal_logits.live.identity
+                                                .boundary_id;
+                                slot.prompt_clear(false);
+                                SLT_WRN(
+                                        slot,
+                                        "neo3000 completed live terminal capture poisoned by cancellation boundary=%s\n",
+                                        boundary_id.c_str());
+                                break;
+                            }
                         }
                     }
                 } break;
@@ -4702,6 +4794,9 @@ private:
                                         slot.terminal_logits.logits_fnv64;
                                 slot.terminal_logits_pending_use = false;
                                 slot.terminal_logits_reused = true;
+                                if (live_source) {
+                                    slot.terminal_logits.live.close();
+                                }
                                 slot.terminal_logits.clear();
 
                                 if (twin_rail_source && !compact_classical) {
@@ -4717,13 +4812,13 @@ private:
                                         slot.prompt_clear(true);
                                         send_error(
                                                 slot,
-                                                "Twin-rail carrier restored without an admissible final projection",
+                                                "Twin-rail calibration eight-cell array numerically restored without an admissible final projection",
                                                 ERROR_TYPE_SERVER);
                                         slot.release();
                                         return;
                                     }
                                     SLT_WRN(slot,
-                                            "neo3000 twin-rail carrier restored and live source declared-closed before response boundary=%s carrier=%s lease=%" PRIu64 " generation=%u ordinal=%u variant=%u cells=%zu bytes=%zu object_bytes=%zu dynamic_capacity_bytes=%zu receipt_bytes=%zu contract_bytes=%zu fresh_result_bytes=%zu fresh_object_bytes=%zu fresh_dynamic_capacity_bytes=%zu score_error=%.17g restoration_error=%.17g classical_parity=%s canonical_tie_quotient=%s primary_margin_guard=%s backing_reused=%s fresh_parity=%s fresh_restoration_error=%.17g transactions=%" PRIu64 " reuses=%" PRIu64 " recoveries=%" PRIu64 "\n",
+                                            "neo3000 reversible twin-rail calibration eight-cell array numerically restored and live source declared-closed before response boundary=%s carrier=%s lease=%" PRIu64 " generation=%u ordinal=%u variant=%u cells=%zu bytes=%zu object_bytes=%zu dynamic_capacity_bytes=%zu receipt_bytes=%zu contract_bytes=%zu fresh_result_bytes=%zu fresh_object_bytes=%zu fresh_dynamic_capacity_bytes=%zu score_error=%.17g restoration_error=%.17g classical_parity=%s canonical_tie_quotient=%s primary_margin_guard=%s numerical_decoherence=%s backing_reused=%s metadata_committed=%s server_epoch=%" PRIu64 " retired_ids=%zu fresh_parity=%s fresh_restoration_error=%.17g transactions=%" PRIu64 " reuses=%" PRIu64 " recoveries=%" PRIu64 "\n",
                                             source_id.c_str(),
                                             slot.task->params.neo3000_live_terminal.carrier_id.c_str(),
                                             slot.task->params.neo3000_live_terminal.outer_lease,
@@ -4754,9 +4849,20 @@ private:
                                             twin_rail_receipt.primary_margin_guard_passed
                                                     ? "true"
                                                     : "false",
+                                            twin_rail_receipt.
+                                                    numerical_decoherence_applied
+                                                    ? "true"
+                                                    : "false",
                                             twin_rail_receipt.same_backing_as_prior_transaction
                                                     ? "true"
                                                     : "false",
+                                            twin_rail_receipt.
+                                                    metadata_committed
+                                                    ? "true"
+                                                    : "false",
+                                            twin_rail_receipt.server_epoch,
+                                            twin_rail_receipt.
+                                                    retired_carrier_identity_count,
                                             fresh_twin_rail_required &&
                                                     fresh_twin_rail_accepted
                                                     ? "true"
@@ -5613,7 +5719,7 @@ private:
                                         retained_evidence_bytes_after_call);
                     } else {
                         SLT_WRN(slot,
-                                "neo3000 two-evidence carrier restored and both live sources declared-closed before response carrier=%s lease=%" PRIu64 " generation=%u variant=%u cells=%zu bytes=%zu object_bytes=%zu dynamic_capacity_bytes=%zu receipt_bytes=%zu contract_bytes=%zu retained_peak_bytes=%zu retained_after_close_bytes=%zu score_error=%.17g restoration_error=%.17g classical_parity=%s primary_margin_guard=%s backing_reused=%s transactions=%" PRIu64 " reuses=%" PRIu64 " recoveries=%" PRIu64 " rows=2 split=91 total=142 suffix_while_resident=true\n",
+                                "neo3000 precontact two-row calibration eight-cell array numerically restored and both live sources declared-closed before response carrier=%s lease=%" PRIu64 " generation=%u variant=%u cells=%zu bytes=%zu object_bytes=%zu dynamic_capacity_bytes=%zu receipt_bytes=%zu contract_bytes=%zu retained_peak_bytes=%zu retained_after_close_bytes=%zu score_error=%.17g restoration_error=%.17g classical_parity=%s primary_margin_guard=%s numerical_decoherence=%s backing_reused=%s metadata_committed=%s server_epoch=%" PRIu64 " retired_ids=%zu transactions=%" PRIu64 " reuses=%" PRIu64 " recoveries=%" PRIu64 " rows=2 split=91 total=142 suffix_while_resident=true\n",
                                 slot.task->params.
                                         neo3000_twin_rail_stage.
                                                 carrier_id.c_str(),
@@ -5649,9 +5755,21 @@ private:
                                         ? "true"
                                         : "false",
                                 slot.two_evidence_final_receipt.
+                                        numerical_decoherence_applied
+                                        ? "true"
+                                        : "false",
+                                slot.two_evidence_final_receipt.
                                         same_backing_as_prior_transaction
                                         ? "true"
                                         : "false",
+                                slot.two_evidence_final_receipt.
+                                        metadata_committed
+                                        ? "true"
+                                        : "false",
+                                slot.two_evidence_final_receipt.
+                                        server_epoch,
+                                slot.two_evidence_final_receipt.
+                                        retired_carrier_identity_count,
                                 slot.two_evidence_final_receipt.
                                         completed_transactions,
                                 slot.two_evidence_final_receipt.
@@ -5708,17 +5826,27 @@ private:
                     if (slot.task->params.neo3000_capture_live_terminal_boundary) {
                         slot.terminal_logits.live.identity =
                                 slot.task->params.neo3000_live_terminal;
-                        slot.terminal_logits.live.capture_request_epoch =
-                                slot.task->neo3000_request_epoch;
                         slot.terminal_logits.live.n_vocab = n_vocab;
                         slot.terminal_logits.live.contract_fnv64 =
                                 neo3000_live_terminal_contract_fnv1a64(
                                         slot.task->params.neo3000_live_terminal);
+                        if (!slot.terminal_logits.live.begin_capture(
+                                    slot.task->neo3000_request_epoch,
+                                    slot.task->id)) {
+                            slot.prompt_clear(true);
+                            send_error(
+                                    slot,
+                                    "Unable to enter live terminal capture lifecycle",
+                                    ERROR_TYPE_SERVER);
+                            slot.release();
+                            slot.i_batch = -1;
+                            return;
+                        }
                     }
 
                     if (slot.task->params.neo3000_capture_live_terminal_boundary) {
                         SLT_WRN(slot,
-                                "neo3000 one-use live terminal boundary captured boundary=%s carrier=%s lease=%" PRIu64 " generation=%u owner=%s type=%s module=%s variant=%u ordinal=%u contract=%s prompt=%s sampler=%s tokens=%d position=%d bytes=%zu\n",
+                                "neo3000 one-use live terminal boundary captured boundary=%s carrier=%s lease=%" PRIu64 " generation=%u structural_principal=%s type=%s module=%s variant=%u ordinal=%u contract=%s prompt=%s sampler=%s tokens=%d position=%d bytes=%zu\n",
                                 slot.terminal_logits.live.identity.boundary_id.c_str(),
                                 slot.terminal_logits.live.identity.carrier_id.c_str(),
                                 slot.terminal_logits.live.identity.outer_lease,
@@ -5766,6 +5894,19 @@ private:
                     metrics.on_prompt_eval(slot);
                     slot.print_timings();
                     send_final_response(slot);
+                    if (slot.task->params
+                            .neo3000_capture_live_terminal_boundary &&
+                            !slot.terminal_logits.live.complete_capture(
+                                    slot.task->id)) {
+                        slot.prompt_clear(true);
+                        send_error(
+                                slot,
+                                "Unable to complete live terminal capture lifecycle",
+                                ERROR_TYPE_SERVER);
+                        slot.release();
+                        slot.i_batch = -1;
+                        return;
+                    }
                     metrics.on_prediction(slot);
                     slot.release();
                     slot.i_batch = -1;

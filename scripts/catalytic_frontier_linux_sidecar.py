@@ -5,8 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import signal
 import socket
 import subprocess
+import threading
 import time
 import urllib.request
 from pathlib import Path
@@ -21,6 +23,10 @@ HOST_GROWTH_CEILING_BYTES = 4 * 1024**3
 
 
 class LinuxSidecarError(RuntimeError):
+    pass
+
+
+class _GuardedCallbackTimeout(BaseException):
     pass
 
 
@@ -369,10 +375,36 @@ class LinuxSidecar:
         timeout: float,
         **_kwargs: Any,
     ) -> Any:
-        del timeout
+        require(timeout > 0, "guarded callback timeout must be positive")
+        require(
+            threading.current_thread() is threading.main_thread(),
+            "guarded callback timeout requires the main thread",
+        )
+        previous_timer = signal.getitimer(signal.ITIMER_REAL)
+        require(
+            previous_timer == (0.0, 0.0),
+            "guarded callback cannot replace an existing process alarm",
+        )
+        previous_handler = signal.getsignal(signal.SIGALRM)
+
+        def deadline_handler(_signum: int, _frame: Any) -> None:
+            raise _GuardedCallbackTimeout()
+
         self.exact_ownership(f"pre:{label}")
         self._sample(f"pre:{label}")
-        result = callback()
+        signal.signal(signal.SIGALRM, deadline_handler)
+        signal.setitimer(signal.ITIMER_REAL, timeout)
+        try:
+            result = callback()
+        except _GuardedCallbackTimeout:
+            self._sample(f"timeout:{label}")
+            self.exact_ownership(f"timeout:{label}")
+            raise LinuxSidecarError(
+                f"guarded callback exceeded {timeout} seconds: {label}"
+            ) from None
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0.0)
+            signal.signal(signal.SIGALRM, previous_handler)
         self._sample(f"post:{label}")
         self.exact_ownership(f"post:{label}")
         return result
