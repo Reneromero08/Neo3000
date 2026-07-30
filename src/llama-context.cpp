@@ -1253,6 +1253,15 @@ struct neo3000_phase_memory_backing {
     ggml_tensor * staging = nullptr;
 };
 
+struct neo3000_soft_role_backing {
+    ggml_context_ptr ctx;
+    ggml_backend_buffer_ptr buffer;
+    ggml_tensor * active = nullptr;
+    ggml_tensor * staging = nullptr;
+    std::array<ggml_tensor *, 4> active_slots = {};
+    std::array<ggml_tensor *, 4> staging_slots = {};
+};
+
 bool llama_context::install_neo3000_semantic_carrier(
         std::vector<float> query_map,
         const std::array<float, 4> & query_bias,
@@ -1612,6 +1621,120 @@ bool llama_context::install_neo3000_output_phase_memory(
     return true;
 }
 
+bool llama_context::install_neo3000_continuous_soft_role_memory(
+        const std::array<llama_token, 4> & candidate_tokens) {
+    if (model.arch != LLM_ARCH_QWEN35MOE ||
+        !model.tok_embd ||
+        !model.output ||
+        model.hparams.n_embd_inp() != model.hparams.n_embd_out() ||
+        std::any_of(
+            candidate_tokens.begin(),
+            candidate_tokens.end(),
+            [&](llama_token token) {
+                return token < 0 ||
+                    static_cast<uint32_t>(token) >=
+                        model.vocab.n_tokens();
+            }) ||
+        std::set<llama_token>(
+            candidate_tokens.begin(),
+            candidate_tokens.end()).size() !=
+            candidate_tokens.size()) {
+        return false;
+    }
+
+    ggml_init_params params = {
+        /*.mem_size   =*/ 10 * ggml_tensor_overhead(),
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    auto backing =
+        std::make_shared<neo3000_soft_role_backing>();
+    backing->ctx.reset(ggml_init(params));
+    if (!backing->ctx) {
+        return false;
+    }
+    const int64_t n_embd = model.hparams.n_embd_inp();
+    backing->active = ggml_new_tensor_2d(
+        backing->ctx.get(),
+        GGML_TYPE_F32,
+        n_embd,
+        4);
+    backing->staging = ggml_new_tensor_2d(
+        backing->ctx.get(),
+        GGML_TYPE_F32,
+        n_embd,
+        4);
+    ggml_set_name(
+        backing->active,
+        "neo3000_soft_role_active_resident");
+    ggml_set_name(
+        backing->staging,
+        "neo3000_soft_role_staging_resident");
+    for (size_t slot = 0; slot < 4; ++slot) {
+        backing->active_slots[slot] = ggml_view_1d(
+            backing->ctx.get(),
+            backing->active,
+            n_embd,
+            slot * n_embd * sizeof(float));
+        backing->staging_slots[slot] = ggml_view_1d(
+            backing->ctx.get(),
+            backing->staging,
+            n_embd,
+            slot * n_embd * sizeof(float));
+    }
+    const auto buft =
+        ggml_backend_buffer_get_type(model.output->buffer);
+    backing->buffer.reset(
+        ggml_backend_alloc_ctx_tensors_from_buft(
+            backing->ctx.get(),
+            buft));
+    if (!backing->buffer) {
+        return false;
+    }
+    ggml_backend_buffer_clear(backing->buffer.get(), 0);
+
+    auto carrier =
+        std::make_shared<llama_neo3000_semantic_carrier>();
+    carrier->n_embd = static_cast<uint32_t>(n_embd);
+    carrier->read_layer = -2;
+    carrier->output_written = true;
+    carrier->continuous_soft_role_memory = true;
+    carrier->soft_role_candidate_tokens = candidate_tokens;
+    carrier->soft_role_active = backing->active;
+    carrier->soft_role_staging = backing->staging;
+    carrier->soft_role_active_slots = backing->active_slots;
+    carrier->soft_role_staging_slots =
+        backing->staging_slots;
+    carrier->soft_role_backend_bytes =
+        ggml_backend_buffer_get_size(
+            backing->buffer.get());
+    carrier->soft_role_backing = std::move(backing);
+
+    uint64_t backing_id = 1469598103934665603ULL;
+    const auto mix_pointer = [&](const void * pointer) {
+        uintptr_t value = reinterpret_cast<uintptr_t>(pointer);
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            backing_id ^=
+                static_cast<uint8_t>(
+                    (value >> (8 * i)) & 0xffu);
+            backing_id *= 1099511628211ULL;
+        }
+    };
+    mix_pointer(carrier.get());
+    mix_pointer(carrier->soft_role_active);
+    mix_pointer(carrier->soft_role_active->data);
+    mix_pointer(carrier->soft_role_staging);
+    mix_pointer(carrier->soft_role_staging->data);
+    mix_pointer(carrier->soft_role_backing.get());
+    carrier->action_backing_id =
+        backing_id == 0 ? 1 : backing_id;
+
+    cparams.neo3000_semantic_carrier =
+        std::move(carrier);
+    sched_need_reserve = true;
+    return true;
+}
+
 bool llama_context::write_neo3000_semantic_port(
         const float * output_state,
         size_t output_state_count,
@@ -1912,6 +2035,128 @@ bool llama_context::advance_neo3000_phase_memory() {
     ++carrier->phase_graph_applications;
     ++carrier->phase_rotations;
     ++carrier->generation;
+    return true;
+}
+
+bool llama_context::set_neo3000_soft_role_capture_destination(
+        int32_t public_destination) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->continuous_soft_role_memory ||
+        carrier->soft_role_poisoned ||
+        public_destination < -1 ||
+        public_destination >= 4 ||
+        (public_destination >= 0 &&
+         (carrier->soft_role_staging_destination_mask &
+            (1u << public_destination)) != 0)) {
+        return false;
+    }
+    carrier->soft_role_capture_destination =
+        public_destination;
+    return true;
+}
+
+bool llama_context::capture_neo3000_soft_role_output(
+        ggml_tensor * soft_output,
+        uint32_t output_rows) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->continuous_soft_role_memory ||
+        carrier->soft_role_capture_destination < 0) {
+        return true;
+    }
+    const int32_t destination =
+        carrier->soft_role_capture_destination;
+    if (carrier->soft_role_poisoned ||
+        destination >= 4 ||
+        output_rows != 1 ||
+        !soft_output ||
+        soft_output->ne[0] != carrier->n_embd ||
+        soft_output->ne[1] != 1 ||
+        carrier->soft_role_staging_writes >= 4 ||
+        (carrier->soft_role_staging_destination_mask &
+            (1u << destination)) != 0 ||
+        !carrier->soft_role_staging_slots.at(
+            static_cast<size_t>(destination)) ||
+        !carrier->soft_role_backing) {
+        carrier->soft_role_poisoned = true;
+        carrier->soft_role_capture_destination = -1;
+        return false;
+    }
+    ggml_tensor * destination_slot =
+        carrier->soft_role_staging_slots.at(
+            static_cast<size_t>(destination));
+    if (ggml_nbytes(destination_slot) !=
+            ggml_nbytes(soft_output)) {
+        carrier->soft_role_poisoned = true;
+        carrier->soft_role_capture_destination = -1;
+        return false;
+    }
+    ggml_backend_tensor_copy(
+        soft_output,
+        destination_slot);
+    synchronize();
+    carrier->soft_role_capture_device_copy_bytes +=
+        ggml_nbytes(soft_output);
+    ++carrier->soft_role_staging_writes;
+    carrier->soft_role_staging_destination_mask |=
+        1u << destination;
+    ++carrier->soft_role_captures;
+    ++carrier->port_writes;
+    ++carrier->generation;
+    carrier->soft_role_capture_destination = -1;
+    return true;
+}
+
+bool llama_context::commit_neo3000_soft_role_memory() {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->continuous_soft_role_memory ||
+        carrier->soft_role_poisoned ||
+        !carrier->soft_role_active ||
+        !carrier->soft_role_staging ||
+        carrier->soft_role_staging_writes != 4 ||
+        carrier->soft_role_staging_destination_mask != 0x0fu ||
+        carrier->soft_role_capture_destination != -1 ||
+        ggml_nbytes(carrier->soft_role_active) !=
+            ggml_nbytes(carrier->soft_role_staging)) {
+        return false;
+    }
+    ggml_backend_tensor_copy(
+        carrier->soft_role_staging,
+        carrier->soft_role_active);
+    std::vector<float> zero(
+        static_cast<size_t>(carrier->n_embd) * 4,
+        0.0f);
+    ggml_backend_tensor_set(
+        carrier->soft_role_staging,
+        zero.data(),
+        0,
+        zero.size() * sizeof(float));
+    synchronize();
+    carrier->soft_role_commit_device_copy_bytes +=
+        ggml_nbytes(carrier->soft_role_active) +
+        ggml_nbytes(carrier->soft_role_staging);
+    carrier->soft_role_staging_writes = 0;
+    carrier->soft_role_staging_destination_mask = 0;
+    ++carrier->soft_role_commits;
+    ++carrier->generation;
+    return true;
+}
+
+bool llama_context::set_neo3000_soft_role_read_slot(
+        int32_t public_slot) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->continuous_soft_role_memory ||
+        carrier->soft_role_poisoned ||
+        public_slot < -1 ||
+        public_slot >= 4 ||
+        (public_slot >= 0 &&
+         carrier->soft_role_commits == 0)) {
+        return false;
+    }
+    carrier->soft_role_read_slot = public_slot;
     return true;
 }
 
@@ -2224,6 +2469,40 @@ void llama_context::clear_neo3000_semantic_carrier() {
         cparams.neo3000_semantic_carrier
             ->phase_staging_destination_mask = 0;
         cparams.neo3000_semantic_carrier->phase_poisoned = true;
+    }
+    if (cparams.neo3000_semantic_carrier
+            ->continuous_soft_role_memory &&
+        cparams.neo3000_semantic_carrier
+            ->soft_role_active &&
+        cparams.neo3000_semantic_carrier
+            ->soft_role_staging) {
+        std::vector<float> zero(
+            static_cast<size_t>(
+                cparams.neo3000_semantic_carrier->n_embd) * 4,
+            0.0f);
+        ggml_backend_tensor_set(
+            cparams.neo3000_semantic_carrier
+                ->soft_role_active,
+            zero.data(),
+            0,
+            zero.size() * sizeof(float));
+        ggml_backend_tensor_set(
+            cparams.neo3000_semantic_carrier
+                ->soft_role_staging,
+            zero.data(),
+            0,
+            zero.size() * sizeof(float));
+        synchronize();
+        cparams.neo3000_semantic_carrier
+            ->soft_role_capture_destination = -1;
+        cparams.neo3000_semantic_carrier
+            ->soft_role_read_slot = -1;
+        cparams.neo3000_semantic_carrier
+            ->soft_role_staging_writes = 0;
+        cparams.neo3000_semantic_carrier
+            ->soft_role_staging_destination_mask = 0;
+        cparams.neo3000_semantic_carrier
+            ->soft_role_poisoned = true;
     }
     cparams.neo3000_semantic_carrier->enabled = false;
     cparams.neo3000_semantic_carrier->port.fill(0.0f);
@@ -2959,9 +3238,21 @@ int llama_context::decode(const llama_batch & batch_inp) {
         auto * t_logits  = res->get_logits();
         auto * t_embd    = cparams.embeddings       ? res->get_embd()     : nullptr;
         auto * t_h_nextn = cparams.embeddings_nextn ? res->get_h_nextn()  : nullptr;
+        auto * t_neo3000_soft_role =
+            res->get_neo3000_soft_role_output();
 
         if (t_embd && res->get_embd_pooled()) {
             t_embd = res->get_embd_pooled();
+        }
+
+        if (!capture_neo3000_soft_role_output(
+                t_neo3000_soft_role,
+                static_cast<uint32_t>(n_outputs))) {
+            LLAMA_LOG_ERROR(
+                "%s: failed to capture continuous Neo3000 "
+                "soft-role output\n",
+                __func__);
+            return -3;
         }
 
         // extract logits

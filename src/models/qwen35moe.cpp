@@ -1,6 +1,91 @@
 #include "models.h"
 #include "llama-memory-recurrent.h"
 
+class llm_graph_input_neo3000_soft_role
+        : public llm_graph_input_i {
+public:
+    explicit llm_graph_input_neo3000_soft_role(
+            std::shared_ptr<llama_neo3000_semantic_carrier> carrier)
+        : carrier(std::move(carrier)) {
+    }
+
+    void set_input(const llama_ubatch * ubatch) override {
+        GGML_ASSERT(
+            carrier &&
+            carrier->continuous_soft_role_memory &&
+            soft_embedding &&
+            soft_gate &&
+            candidate_tokens);
+        GGML_ASSERT(ubatch);
+
+        ggml_backend_tensor_set(
+            candidate_tokens,
+            carrier->soft_role_candidate_tokens.data(),
+            0,
+            carrier->soft_role_candidate_tokens.size() *
+                sizeof(llama_token));
+        carrier->soft_role_candidate_id_upload_bytes +=
+            carrier->soft_role_candidate_tokens.size() *
+            sizeof(llama_token);
+
+        const bool read_enabled =
+            !carrier->soft_role_poisoned &&
+            carrier->soft_role_read_slot >= 0 &&
+            carrier->soft_role_read_slot < 4;
+        const float gate = read_enabled ? 1.0f : 0.0f;
+        ggml_backend_tensor_set(
+            soft_gate,
+            &gate,
+            0,
+            sizeof(gate));
+        carrier->soft_role_gate_upload_bytes += sizeof(gate);
+
+        if (read_enabled) {
+            ggml_tensor * source =
+                carrier->soft_role_active_slots.at(
+                    static_cast<size_t>(
+                        carrier->soft_role_read_slot));
+            GGML_ASSERT(
+                source &&
+                carrier->soft_role_backing &&
+                ggml_nbytes(source) ==
+                    static_cast<size_t>(carrier->n_embd) *
+                        sizeof(float));
+            ggml_backend_tensor_copy(source, soft_embedding);
+            carrier->soft_role_read_device_copy_bytes +=
+                ggml_nbytes(source);
+            ++carrier->soft_role_reads;
+        }
+
+        carrier->soft_role_projection_token_applications +=
+            ubatch->n_tokens;
+        carrier->soft_role_projection_multiply_accumulates +=
+            static_cast<uint64_t>(carrier->n_embd) * 4 *
+            ubatch->n_tokens;
+        carrier->soft_role_mixture_multiply_accumulates +=
+            static_cast<uint64_t>(carrier->n_embd) * 4 *
+            ubatch->n_tokens;
+    }
+
+    bool can_reuse(const llm_graph_params & params) override {
+        const auto & candidate =
+            params.cparams.neo3000_semantic_carrier;
+        return candidate.get() == carrier.get() &&
+            candidate->continuous_soft_role_memory &&
+            soft_embedding &&
+            soft_embedding->ne[0] == carrier->n_embd &&
+            soft_gate &&
+            soft_gate->ne[0] == 1 &&
+            candidate_tokens &&
+            candidate_tokens->ne[0] == 4;
+    }
+
+    std::shared_ptr<llama_neo3000_semantic_carrier> carrier;
+    ggml_tensor * soft_embedding = nullptr;
+    ggml_tensor * soft_gate = nullptr;
+    ggml_tensor * candidate_tokens = nullptr;
+};
+
 class llm_graph_input_neo3000_semantic_carrier
         : public llm_graph_input_i {
 public:
@@ -356,6 +441,63 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
 
     inpL = build_inp_embd(model.tok_embd);
 
+    llm_graph_input_neo3000_soft_role * soft_role_input = nullptr;
+    const auto & soft_role_state =
+        cparams.neo3000_semantic_carrier;
+    if (soft_role_state &&
+        soft_role_state->continuous_soft_role_memory) {
+        auto input =
+            std::make_unique<
+                llm_graph_input_neo3000_soft_role>(
+                    soft_role_state);
+        input->soft_embedding = ggml_new_tensor_1d(
+            ctx0,
+            GGML_TYPE_F32,
+            n_embd);
+        input->soft_gate = ggml_new_tensor_1d(
+            ctx0,
+            GGML_TYPE_F32,
+            1);
+        input->candidate_tokens = ggml_new_tensor_1d(
+            ctx0,
+            GGML_TYPE_I32,
+            4);
+        ggml_set_input(input->soft_embedding);
+        ggml_set_input(input->soft_gate);
+        ggml_set_input(input->candidate_tokens);
+        ggml_set_name(
+            input->soft_embedding,
+            "neo3000_soft_role_active_slot");
+        ggml_set_name(
+            input->soft_gate,
+            "neo3000_soft_role_read_gate");
+        ggml_set_name(
+            input->candidate_tokens,
+            "neo3000_soft_role_candidate_tokens");
+        soft_role_input = static_cast<
+            llm_graph_input_neo3000_soft_role *>(
+                res->add_input(std::move(input)));
+        ggml_tensor * repeated_soft = ggml_repeat(
+            ctx0,
+            soft_role_input->soft_embedding,
+            inpL);
+        ggml_tensor * repeated_gate = ggml_repeat(
+            ctx0,
+            soft_role_input->soft_gate,
+            inpL);
+        inpL = ggml_add(
+            ctx0,
+            inpL,
+            ggml_mul(
+                ctx0,
+                repeated_gate,
+                ggml_sub(
+                    ctx0,
+                    repeated_soft,
+                    inpL)));
+        cb(inpL, "neo3000_soft_role_input_override", -1);
+    }
+
     cb(inpL, "model.input_embed", -1);
 
     auto * inp = build_inp_mem_hybrid();
@@ -665,6 +807,49 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
 
     cb(cur, "result_norm", -1);
     res->t_embd = cur;
+
+    if (soft_role_input) {
+        ggml_tensor * candidate_output_rows = ggml_get_rows(
+            ctx0,
+            model.output,
+            soft_role_input->candidate_tokens);
+        ggml_tensor * candidate_logits = ggml_mul_mat(
+            ctx0,
+            candidate_output_rows,
+            cur);
+        if (model.output_s) {
+            candidate_logits = ggml_mul(
+                ctx0,
+                candidate_logits,
+                model.output_s);
+        }
+        ggml_tensor * candidate_probabilities = ggml_soft_max(
+            ctx0,
+            candidate_logits);
+        ggml_tensor * candidate_input_rows = ggml_get_rows(
+            ctx0,
+            model.tok_embd,
+            soft_role_input->candidate_tokens);
+        ggml_tensor * candidate_input_reader = ggml_cont(
+            ctx0,
+            ggml_transpose(
+                ctx0,
+                candidate_input_rows));
+        ggml_tensor * soft_output_embedding = ggml_mul_mat(
+            ctx0,
+            candidate_input_reader,
+            candidate_probabilities);
+        cb(
+            candidate_probabilities,
+            "neo3000_soft_role_candidate_probabilities",
+            -1);
+        cb(
+            soft_output_embedding,
+            "neo3000_soft_role_output_embedding",
+            -1);
+        res->t_neo3000_soft_role_output =
+            soft_output_embedding;
+    }
 
     // LM head
     cur = build_lora_mm(model.output, cur, model.output_s);

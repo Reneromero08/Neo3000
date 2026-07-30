@@ -153,6 +153,8 @@ struct llama_context {
         std::vector<float> phase_reader,
         std::vector<float> phase_generator,
         uint32_t phase_width);
+    bool install_neo3000_continuous_soft_role_memory(
+        const std::array<llama_token, 4> & candidate_tokens);
     bool write_neo3000_semantic_port(
         const float * output_state,
         size_t output_state_count,
@@ -162,6 +164,10 @@ struct llama_context {
         uint32_t public_destination);
     bool commit_neo3000_phase_memory();
     bool advance_neo3000_phase_memory();
+    bool set_neo3000_soft_role_capture_destination(
+        int32_t public_destination);
+    bool commit_neo3000_soft_role_memory();
+    bool set_neo3000_soft_role_read_slot(int32_t public_slot);
     bool reset_neo3000_semantic_port();
     bool set_neo3000_semantic_carrier_enabled(bool enabled);
     bool set_neo3000_semantic_carrier_phase(uint32_t phase);
@@ -337,6 +343,9 @@ public:
 
     // returns the result of ggml_backend_sched_graph_compute_async execution
     ggml_status graph_compute(ggml_cgraph * gf, bool batched);
+    bool capture_neo3000_soft_role_output(
+        ggml_tensor * soft_output,
+        uint32_t output_rows);
 
     // reserve a graph with a dummy ubatch of the specified size
     ggml_cgraph * graph_reserve(

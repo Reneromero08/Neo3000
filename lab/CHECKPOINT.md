@@ -103,6 +103,23 @@ The active recurrence and acceptance boundary are
   closes terminal phase-orbit adapters without further geometry or evidence
   revisions. The next mechanism must alter model-native preprojection
   continuous state or a dynamic weight transition.
+- `neo-exp-0157` is frozen precontact as that changed physical mechanism.
+  For each terminal query, the Qwen graph projects only the public A/B/C/D
+  rows, softmaxes them, and forms a probability-weighted mixture of the
+  corresponding frozen input embeddings. Four mixtures copy device-to-device
+  into an atomic `65,536`-byte CUDA active/staging panel before host logits
+  are inspected. Later one-token forwards replace the placeholder embedding
+  with one public carrier slot at the source-role position, and ordinary
+  downstream attention consumes the rematerialized row. No discrete output,
+  expected answer, phase table, or fitted writer drives the update.
+- One prospectively frozen G1 control performs the same four source-role
+  forwards with the carrier gate fixed at zero. The strict gate remains
+  `16/16`, no more than one enabled/disabled G1 boundary match, `4/4` G0
+  return, stable backing, quiescent staging, and complete closure. The audit
+  still retains ordinary host logits after device capture, so a pass cannot
+  claim exclusive unresolved custody. The probe and full Release server
+  build and focused tests pass `22/22`; no `0157` model contact has occurred.
+  This is one physical successor, not an evaluator or evidence-harness series.
 - The exact four-link/Z4 recurrence remains the stronger compact baseline.
   No inference-bearing recurrence, fresh-compute advantage, phase-native
   resource, Small Wall crossing, catalytic recurrence, or unbounded claim is

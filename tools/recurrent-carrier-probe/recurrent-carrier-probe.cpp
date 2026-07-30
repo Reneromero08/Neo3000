@@ -6048,9 +6048,14 @@ static json run_sparse_g_label_refresh(
         spec.value(
             "output_source_position_fixed_cell_rematerialization_action",
             false);
+    const bool output_continuous_soft_role_rematerialization_mode =
+        spec.value(
+            "output_continuous_soft_role_rematerialization_action",
+            false);
     const bool output_source_rematerialization_mode =
         output_source_relink_rematerialization_mode ||
-        output_source_fixed_cell_rematerialization_mode;
+        output_source_fixed_cell_rematerialization_mode ||
+        output_continuous_soft_role_rematerialization_mode;
     const bool output_written_semantic_port_mode =
         spec.value(
             "output_written_semantic_port_action",
@@ -6162,6 +6167,8 @@ static json run_sparse_g_label_refresh(
                 output_source_relink_rematerialization_mode) +
             static_cast<int>(
                 output_source_fixed_cell_rematerialization_mode) +
+            static_cast<int>(
+                output_continuous_soft_role_rematerialization_mode) +
             static_cast<int>(
                 legacy_trained_semantic_carrier_mode) +
             static_cast<int>(
@@ -7451,6 +7458,38 @@ static json run_sparse_g_label_refresh(
         llama_memory_clear(memory, true);
         llama_synchronize(ctx);
     }
+    if (output_continuous_soft_role_rematerialization_mode) {
+        if (candidates.size() != 4) {
+            throw std::runtime_error(
+                "continuous soft-role carrier requires four candidates");
+        }
+        const std::array<llama_token, 4> candidate_array = {
+            candidates.at(0),
+            candidates.at(1),
+            candidates.at(2),
+            candidates.at(3),
+        };
+        if (!ctx->install_neo3000_continuous_soft_role_memory(
+                candidate_array)) {
+            throw std::runtime_error(
+                "continuous soft-role carrier installation failed");
+        }
+        const auto * carrier =
+            ctx->get_neo3000_semantic_carrier();
+        if (!carrier ||
+            !carrier->continuous_soft_role_memory ||
+            carrier->soft_role_poisoned ||
+            carrier->soft_role_capture_destination != -1 ||
+            carrier->soft_role_read_slot != -1 ||
+            carrier->soft_role_backend_bytes == 0 ||
+            carrier->action_backing_id == 0) {
+            throw std::runtime_error(
+                "continuous soft-role carrier invariant failed");
+        }
+        semantic_carrier_backing_initial =
+            carrier->action_backing_id;
+        ctx->sched_reserve();
+    }
 
     llama_kv_cache::role_transport_operator
         role_transport_operator;
@@ -8019,6 +8058,8 @@ static json run_sparse_g_label_refresh(
                 ? "output_written_semantic_port_carrier"
                 : output_source_fixed_cell_rematerialization_mode
                 ? "output_source_position_fixed_cell_carrier"
+                : output_continuous_soft_role_rematerialization_mode
+                    ? "continuous_soft_output_source_role_carrier"
                 : output_source_relink_rematerialization_mode
                     ? "output_source_position_rematerialization_carrier"
                 : output_attention_kernel_writer_mode
@@ -8045,6 +8086,8 @@ static json run_sparse_g_label_refresh(
                 ? "output_written_semantic_port_carrier_return_G0"
                 : output_source_fixed_cell_rematerialization_mode
                 ? "output_source_position_fixed_cell_carrier_return_G0"
+                : output_continuous_soft_role_rematerialization_mode
+                    ? "continuous_soft_output_source_role_carrier_return_G0"
                 : output_source_relink_rematerialization_mode
                     ? "output_source_position_rematerialization_carrier_return_G0"
                 : output_attention_kernel_writer_mode
@@ -8955,6 +8998,21 @@ static json run_sparse_g_label_refresh(
                     query);
             }
         }
+        if (output_continuous_soft_role_rematerialization_mode &&
+            variant_index == 1) {
+            for (const auto & query : variant.at("queries")) {
+                project_from_source(
+                    work_seq,
+                    scaffold_seq,
+                    "carrier_disabled",
+                    id,
+                    query);
+            }
+            close_sequence(
+                work_seq,
+                id + ":soft-role-disabled-G1-close");
+            ++sequence_close_count;
+        }
 
         if (output_driven_carrier_mode) {
             std::vector<llama_pos> output_positions;
@@ -8963,6 +9021,20 @@ static json run_sparse_g_label_refresh(
                 label_offsets.size(), LLAMA_TOKEN_NULL);
             size_t query_index = 0;
             for (const auto & query : variant.at("queries")) {
+                const size_t public_destination =
+                    output_recurrent_delta_advance_mode
+                        ? query_index
+                        : output_promotion_label_indices.at(
+                            query_index);
+                if (output_continuous_soft_role_rematerialization_mode &&
+                    !ctx
+                        ->set_neo3000_soft_role_capture_destination(
+                            static_cast<int32_t>(
+                                public_destination))) {
+                    throw std::runtime_error(
+                        id +
+                        ": failed to arm continuous soft-role capture");
+                }
                 const llama_seq_id stage_seq =
                     output_source_rematerialization_mode
                         ? scaffold_seq
@@ -9004,7 +9076,9 @@ static json run_sparse_g_label_refresh(
                     ++sequence_copy_count;
                 }
                 const double output_wall_ms =
-                    output_written_carrier_mode
+                    output_continuous_soft_role_rematerialization_mode
+                        ? 0.0
+                    : output_written_carrier_mode
                         ? timed_decode_terminal(
                             std::vector<llama_token>{
                                 candidates.at(candidate_index)},
@@ -9017,13 +9091,15 @@ static json run_sparse_g_label_refresh(
                             stage_seq);
                 useful_output_decode_wall_ms_total +=
                     output_wall_ms;
-                ++useful_output_decode_tokens;
-                require_component_positions(
-                    stage_seq,
-                    output_position,
-                    output_position,
-                    id + ":output-token-resident-" +
-                        std::to_string(query_index));
+                if (!output_continuous_soft_role_rematerialization_mode) {
+                    ++useful_output_decode_tokens;
+                    require_component_positions(
+                        stage_seq,
+                        output_position,
+                        output_position,
+                        id + ":output-token-resident-" +
+                            std::to_string(query_index));
+                }
                 if (output_recurrent_delta_advance_mode) {
                     llama_memory_recurrent::neo3000_output_delta_metrics
                         metrics = {};
@@ -9114,10 +9190,7 @@ static json run_sparse_g_label_refresh(
                 }
                 output_positions.push_back(output_position);
                 const size_t destination_label_index =
-                    output_recurrent_delta_advance_mode
-                        ? query_index
-                        : output_promotion_label_indices.at(
-                            query_index);
+                    public_destination;
                 if (output_written_carrier_mode &&
                     (!output_phase_orbit_memory_mode ||
                      variant_index == 0)) {
@@ -9200,7 +9273,10 @@ static json run_sparse_g_label_refresh(
                             output_phase_memory_mode},
                         {"output_phase_orbit_memory",
                             output_phase_orbit_memory_mode},
+                        {"continuous_soft_output_capture",
+                            output_continuous_soft_role_rematerialization_mode},
                         {"output_written_to_carrier",
+                            output_continuous_soft_role_rematerialization_mode ||
                             !output_phase_orbit_memory_mode ||
                                 variant_index == 0},
                         {"source_role_model_forward_tokens", 0},
@@ -9230,6 +9306,13 @@ static json run_sparse_g_label_refresh(
                             : ": complete output panel failed to commit "
                               "phase memory"));
                 }
+            }
+            if (output_continuous_soft_role_rematerialization_mode &&
+                !ctx->commit_neo3000_soft_role_memory()) {
+                throw std::runtime_error(
+                    id +
+                    ": complete continuous output panel failed "
+                    "to commit");
             }
             if (output_recurrent_delta_advance_mode) {
                 llama_memory_recurrent::neo3000_output_delta_metrics
@@ -9314,6 +9397,83 @@ static json run_sparse_g_label_refresh(
                 });
             }
             if (output_source_rematerialization_mode) {
+                if (output_continuous_soft_role_rematerialization_mode &&
+                    variant_index == 0) {
+                    copy_full_sequence(
+                        candidate_seq,
+                        work_seq,
+                        source_boundary_pos,
+                        id + ":soft-role-disabled-G1-base");
+                    ++sequence_copy_count;
+                    for (size_t label_index = 0;
+                         label_index < label_offsets.size();
+                         ++label_index) {
+                        const llama_pos label_position =
+                            static_cast<llama_pos>(
+                                f_boundary_tokens +
+                                label_offsets.at(label_index));
+                        copy_full_sequence(
+                            stage_seqs.at(label_index),
+                            scaffold_seq,
+                            label_position - 1,
+                            id + ":soft-role-disabled-prefix-" +
+                                std::to_string(label_index));
+                        ++sequence_copy_count;
+                        const double role_wall_ms = timed_decode(
+                            std::vector<llama_token>{
+                                candidates.at(0)},
+                            label_position,
+                            scaffold_seq);
+                        source_role_rematerialization_wall_ms_total +=
+                            role_wall_ms;
+                        label_refresh_wall_ms_total += role_wall_ms;
+                        ++source_role_rematerialization_tokens;
+                        ++label_refresh_count;
+                        if (!attention->seq_rm(
+                                work_seq,
+                                label_position,
+                                label_position + 1)) {
+                            throw std::runtime_error(
+                                id +
+                                ": disabled soft-role prior row "
+                                "removal failed");
+                        }
+                        ++attention_label_remove_count;
+                        attention->seq_cp(
+                            scaffold_seq,
+                            work_seq,
+                            label_position,
+                            label_position + 1);
+                        llama_synchronize(ctx);
+                        ++attention_label_alias_count;
+                        ++output_promotion_row_count;
+                        source_role_rematerialization_records.push_back({
+                            {"variant", id},
+                            {"control", "carrier_read_gate_zero"},
+                            {"destination_label_index", label_index},
+                            {"destination_label_position",
+                                label_position},
+                            {"forwarded_placeholder_token",
+                                candidates.at(0)},
+                            {"continuous_soft_embedding_override",
+                                false},
+                            {"model_forward_tokens", 1},
+                            {"wall_ms", role_wall_ms},
+                            {"expected_answer_consulted", false},
+                            {"public_phase_table_consulted", false},
+                        });
+                        close_sequence(
+                            scaffold_seq,
+                            id + ":soft-role-disabled-scratch-close-" +
+                                std::to_string(label_index));
+                        ++sequence_close_count;
+                    }
+                    require_component_positions(
+                        work_seq,
+                        source_boundary_pos,
+                        source_boundary_pos,
+                        id + ":soft-role-disabled-G1-ready");
+                }
                 for (size_t label_index = 0;
                      label_index < label_offsets.size();
                      ++label_index) {
@@ -9335,10 +9495,27 @@ static json run_sparse_g_label_refresh(
                         id + ":source-role-prefix-" +
                             std::to_string(label_index));
                     ++sequence_copy_count;
+                    if (output_continuous_soft_role_rematerialization_mode &&
+                        !ctx->set_neo3000_soft_role_read_slot(
+                            static_cast<int32_t>(label_index))) {
+                        throw std::runtime_error(
+                            id +
+                            ": continuous source-role slot read failed");
+                    }
+                    const llama_token forwarded_token =
+                        output_continuous_soft_role_rematerialization_mode
+                            ? candidates.at(0)
+                            : actual_output;
                     const double role_wall_ms = timed_decode(
-                        std::vector<llama_token>{actual_output},
+                        std::vector<llama_token>{forwarded_token},
                         label_position,
                         scaffold_seq);
+                    if (output_continuous_soft_role_rematerialization_mode &&
+                        !ctx->set_neo3000_soft_role_read_slot(-1)) {
+                        throw std::runtime_error(
+                            id +
+                            ": continuous source-role slot release failed");
+                    }
                     variant_label_wall_ms += role_wall_ms;
                     label_refresh_wall_ms_total += role_wall_ms;
                     source_role_rematerialization_wall_ms_total +=
@@ -9438,6 +9615,12 @@ static json run_sparse_g_label_refresh(
                         {"destination_label_index", label_index},
                         {"destination_label_position", label_position},
                         {"actual_projected_token", actual_output},
+                        {"forwarded_placeholder_token",
+                            output_continuous_soft_role_rematerialization_mode
+                                ? forwarded_token
+                                : LLAMA_TOKEN_NULL},
+                        {"continuous_soft_embedding_override",
+                            output_continuous_soft_role_rematerialization_mode},
                         {"model_forward_tokens", 1},
                         {"wall_ms", role_wall_ms},
                         {"source_cell_id", source_cell_id},
@@ -9889,9 +10072,11 @@ static json run_sparse_g_label_refresh(
     size_t carrier_disabled_correct = 0;
     size_t carrier_disabled_boundary_matches = 0;
     if (trained_semantic_carrier_mode ||
+        output_continuous_soft_role_rematerialization_mode ||
         output_recurrent_delta_advance_mode) {
         const size_t disabled_variant_index =
             output_written_carrier_mode ||
+                output_continuous_soft_role_rematerialization_mode ||
                 output_recurrent_delta_advance_mode
                 ? 1
                 : 0;
@@ -9925,6 +10110,18 @@ static json run_sparse_g_label_refresh(
     uint64_t semantic_carrier_phase_rotation_upload_bytes = 0;
     uint64_t semantic_carrier_phase_rotation_element_operations = 0;
     uint64_t semantic_carrier_phase_rotations = 0;
+    uint64_t semantic_carrier_soft_role_backend_bytes = 0;
+    uint64_t semantic_carrier_soft_role_candidate_id_upload_bytes = 0;
+    uint64_t semantic_carrier_soft_role_gate_upload_bytes = 0;
+    uint64_t semantic_carrier_soft_role_capture_device_copy_bytes = 0;
+    uint64_t semantic_carrier_soft_role_commit_device_copy_bytes = 0;
+    uint64_t semantic_carrier_soft_role_read_device_copy_bytes = 0;
+    uint64_t semantic_carrier_soft_role_projection_token_applications = 0;
+    uint64_t semantic_carrier_soft_role_projection_multiply_accumulates = 0;
+    uint64_t semantic_carrier_soft_role_mixture_multiply_accumulates = 0;
+    uint64_t semantic_carrier_soft_role_captures = 0;
+    uint64_t semantic_carrier_soft_role_commits = 0;
+    uint64_t semantic_carrier_soft_role_reads = 0;
     uint64_t semantic_carrier_writer_host_input_bytes = 0;
     uint64_t semantic_carrier_port_writes = 0;
     uint64_t semantic_carrier_router_bias_token_applications = 0;
@@ -9939,7 +10136,8 @@ static json run_sparse_g_label_refresh(
     uint64_t semantic_carrier_generation = 0;
     bool semantic_carrier_quiescent = true;
     bool semantic_carrier_restored = true;
-    if (trained_semantic_carrier_mode) {
+    if (trained_semantic_carrier_mode ||
+        output_continuous_soft_role_rematerialization_mode) {
         const auto * carrier =
             ctx->get_neo3000_semantic_carrier();
         semantic_carrier_quiescent =
@@ -9955,10 +10153,17 @@ static json run_sparse_g_label_refresh(
             (!carrier->output_phase_memory ||
                 (!carrier->phase_poisoned &&
                  carrier->phase_staging_writes == 0 &&
-                 carrier->phase_staging_destination_mask == 0));
+                 carrier->phase_staging_destination_mask == 0)) &&
+            (!carrier->continuous_soft_role_memory ||
+                (!carrier->soft_role_poisoned &&
+                 carrier->soft_role_capture_destination == -1 &&
+                 carrier->soft_role_read_slot == -1 &&
+                 carrier->soft_role_staging_writes == 0 &&
+                 carrier->soft_role_staging_destination_mask == 0));
         semantic_carrier_restored =
             semantic_carrier_quiescent &&
-            !output_written_carrier_mode;
+            !output_written_carrier_mode &&
+            !output_continuous_soft_role_rematerialization_mode;
         if (carrier) {
             semantic_carrier_graph_input_sets =
                 carrier->graph_input_sets;
@@ -9986,6 +10191,30 @@ static json run_sparse_g_label_refresh(
                 carrier->phase_rotation_element_operations;
             semantic_carrier_phase_rotations =
                 carrier->phase_rotations;
+            semantic_carrier_soft_role_backend_bytes =
+                carrier->soft_role_backend_bytes;
+            semantic_carrier_soft_role_candidate_id_upload_bytes =
+                carrier->soft_role_candidate_id_upload_bytes;
+            semantic_carrier_soft_role_gate_upload_bytes =
+                carrier->soft_role_gate_upload_bytes;
+            semantic_carrier_soft_role_capture_device_copy_bytes =
+                carrier->soft_role_capture_device_copy_bytes;
+            semantic_carrier_soft_role_commit_device_copy_bytes =
+                carrier->soft_role_commit_device_copy_bytes;
+            semantic_carrier_soft_role_read_device_copy_bytes =
+                carrier->soft_role_read_device_copy_bytes;
+            semantic_carrier_soft_role_projection_token_applications =
+                carrier->soft_role_projection_token_applications;
+            semantic_carrier_soft_role_projection_multiply_accumulates =
+                carrier->soft_role_projection_multiply_accumulates;
+            semantic_carrier_soft_role_mixture_multiply_accumulates =
+                carrier->soft_role_mixture_multiply_accumulates;
+            semantic_carrier_soft_role_captures =
+                carrier->soft_role_captures;
+            semantic_carrier_soft_role_commits =
+                carrier->soft_role_commits;
+            semantic_carrier_soft_role_reads =
+                carrier->soft_role_reads;
             semantic_carrier_writer_host_input_bytes =
                 carrier->writer_host_input_bytes;
             semantic_carrier_port_writes =
@@ -10083,6 +10312,16 @@ static json run_sparse_g_label_refresh(
              (output_written_carrier_mode
                 ? semantic_carrier_quiescent
                 : semantic_carrier_restored))) &&
+        (!output_continuous_soft_role_rematerialization_mode ||
+            (semantic_carrier_quiescent &&
+             semantic_carrier_port_writes == comparisons &&
+             semantic_carrier_soft_role_captures == comparisons &&
+             semantic_carrier_soft_role_commits == variants.size() &&
+             semantic_carrier_soft_role_reads == comparisons &&
+             carrier_disabled_boundary_matches <=
+                 acceptance.at(
+                     "carrier_disabled_boundary_matches_maximum")
+                     .get<size_t>())) &&
         (!output_recurrent_delta_advance_mode ||
             (recurrent_output_delta_extraction_count == comparisons &&
              recurrent_output_delta_accumulation_count ==
@@ -10151,7 +10390,8 @@ static json run_sparse_g_label_refresh(
     }
     llama_memory_clear(memory, true);
     llama_synchronize(ctx);
-    if (trained_semantic_carrier_mode) {
+    if (trained_semantic_carrier_mode ||
+        output_continuous_soft_role_rematerialization_mode) {
         ctx->clear_neo3000_semantic_carrier();
         if (ctx->get_neo3000_semantic_carrier()) {
             throw std::runtime_error(
@@ -10247,6 +10487,8 @@ static json run_sparse_g_label_refresh(
                 : "ACTUAL_OUTPUT_WRITTEN_ROLE_INVARIANT_SEMANTIC_PORT"
             : output_source_fixed_cell_rematerialization_mode
             ? "ACTUAL_OUTPUT_SOURCE_ROLE_FIXED_CELL_KV_ADVANCE"
+            : output_continuous_soft_role_rematerialization_mode
+                ? "CONTINUOUS_PREPROJECTION_SOURCE_ROLE_REMATERIALIZATION"
             : output_source_relink_rematerialization_mode
                 ? "ACTUAL_OUTPUT_TOKEN_SOURCE_POSITION_REMATERIALIZATION"
             : subspace_value_orbit_mode
@@ -10332,6 +10574,8 @@ static json run_sparse_g_label_refresh(
                 output_source_relink_rematerialization_mode},
             {"output_source_position_fixed_cell_rematerialization_action",
                 output_source_fixed_cell_rematerialization_mode},
+            {"output_continuous_soft_role_rematerialization_action",
+                output_continuous_soft_role_rematerialization_mode},
             {"output_written_semantic_port_action",
                 output_written_semantic_port_mode},
             {"output_written_hidden_slot_action",
@@ -10750,8 +10994,10 @@ static json run_sparse_g_label_refresh(
             {"source_role_rematerialization_wall_ms_total",
                 source_role_rematerialization_wall_ms_total},
             {"source_role_rematerialization_projected_token_bytes",
-                source_role_rematerialization_tokens *
-                    sizeof(llama_token)},
+                output_continuous_soft_role_rematerialization_mode
+                    ? 0
+                    : source_role_rematerialization_tokens *
+                        sizeof(llama_token)},
             {"source_role_rematerialization_expected_answer_consulted",
                 false},
             {"source_role_rematerialization_phase_table_consulted",
@@ -10940,7 +11186,8 @@ static json run_sparse_g_label_refresh(
             {"semantic_carrier_logical_bytes",
                 semantic_adapter_build.logical_bytes +
                     semantic_carrier_hidden_slot_backend_bytes +
-                    semantic_carrier_phase_memory_backend_bytes},
+                    semantic_carrier_phase_memory_backend_bytes +
+                    semantic_carrier_soft_role_backend_bytes},
             {"semantic_carrier_hash",
                 trained_semantic_carrier_mode
                     ? hex64(semantic_adapter_build.hash)
@@ -11004,6 +11251,30 @@ static json run_sparse_g_label_refresh(
                 semantic_carrier_phase_rotation_element_operations},
             {"semantic_carrier_phase_rotations",
                 semantic_carrier_phase_rotations},
+            {"semantic_carrier_soft_role_backend_bytes",
+                semantic_carrier_soft_role_backend_bytes},
+            {"semantic_carrier_soft_role_candidate_id_upload_bytes",
+                semantic_carrier_soft_role_candidate_id_upload_bytes},
+            {"semantic_carrier_soft_role_gate_upload_bytes",
+                semantic_carrier_soft_role_gate_upload_bytes},
+            {"semantic_carrier_soft_role_capture_device_copy_bytes",
+                semantic_carrier_soft_role_capture_device_copy_bytes},
+            {"semantic_carrier_soft_role_commit_device_copy_bytes",
+                semantic_carrier_soft_role_commit_device_copy_bytes},
+            {"semantic_carrier_soft_role_read_device_copy_bytes",
+                semantic_carrier_soft_role_read_device_copy_bytes},
+            {"semantic_carrier_soft_role_projection_token_applications",
+                semantic_carrier_soft_role_projection_token_applications},
+            {"semantic_carrier_soft_role_projection_multiply_accumulates",
+                semantic_carrier_soft_role_projection_multiply_accumulates},
+            {"semantic_carrier_soft_role_mixture_multiply_accumulates",
+                semantic_carrier_soft_role_mixture_multiply_accumulates},
+            {"semantic_carrier_soft_role_captures",
+                semantic_carrier_soft_role_captures},
+            {"semantic_carrier_soft_role_commits",
+                semantic_carrier_soft_role_commits},
+            {"semantic_carrier_soft_role_reads",
+                semantic_carrier_soft_role_reads},
             {"semantic_carrier_writer_host_input_bytes",
                 semantic_carrier_writer_host_input_bytes},
             {"semantic_carrier_port_writes",

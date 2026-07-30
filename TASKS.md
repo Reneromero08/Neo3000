@@ -639,6 +639,21 @@ constructively unbounded local Agents-A1 inference.
   continuous state transition or dynamic weight law; do not mint phase,
   dimension, seed, gain, prompt, fixture, evaluator, or evidence-harness
   variants.
+- [ ] Execute `neo-exp-0157` exactly once as the next physical mechanism.
+  The terminal model graph computes each four-way candidate distribution
+  before discrete selection, forms its probability-weighted frozen token
+  embedding, and captures four embeddings device-to-device into one
+  panel-atomic `65,536`-byte CUDA active/staging carrier. Four later
+  one-token model forwards read those continuous slots at the public
+  source-role positions; no projected token drives the update. The frozen
+  G1 control runs the same forwards with the carrier read gate at zero.
+  Acceptance requires `16/16`, a changed disabled boundary, a `4/4`
+  four-step return, stable backing, and complete closure. The audit path
+  retains host logits after capture, so even a pass does not establish
+  exclusive unresolved custody. The probe and full Release server build,
+  focused tests pass `22/22`, and no model contact has occurred. Run one
+  contact only; no temperature, embedding-basis, prompt, fixture, evaluator,
+  carrier-evaluation, or evidence-harness successor is authorized.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

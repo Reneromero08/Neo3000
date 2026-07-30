@@ -47,6 +47,21 @@ struct llama_neo3000_semantic_carrier {
     uint32_t phase_width = 0;
     uint32_t phase_staging_writes = 0;
     uint32_t phase_staging_destination_mask = 0;
+    // Continuous-role mode retains four unresolved preprojection mixtures as
+    // model-input embeddings. The terminal graph derives each mixture from
+    // the four public candidate logits and frozen token-embedding rows before
+    // any host-selected token can drive the update. A later one-token model
+    // forward reads one active slot at a public source-role position.
+    std::shared_ptr<void> soft_role_backing;
+    ggml_tensor * soft_role_active = nullptr;  // [n_embd, 4]
+    ggml_tensor * soft_role_staging = nullptr; // [n_embd, 4]
+    std::array<ggml_tensor *, 4> soft_role_active_slots = {};
+    std::array<ggml_tensor *, 4> soft_role_staging_slots = {};
+    std::array<llama_token, 4> soft_role_candidate_tokens = {};
+    int32_t soft_role_capture_destination = -1;
+    int32_t soft_role_read_slot = -1;
+    uint32_t soft_role_staging_writes = 0;
+    uint32_t soft_role_staging_destination_mask = 0;
     uint32_t phase = 0;
     bool enabled = false;
     bool output_written = false;
@@ -54,6 +69,8 @@ struct llama_neo3000_semantic_carrier {
     bool output_phase_memory = false;
     bool native_phase_orbit = false;
     bool phase_poisoned = false;
+    bool continuous_soft_role_memory = false;
+    bool soft_role_poisoned = false;
     bool output_map_trainable = false;
     bool moe_router_bias = false;
     bool recurrent_transition_input = false;
@@ -72,6 +89,18 @@ struct llama_neo3000_semantic_carrier {
     uint64_t phase_rotation_upload_bytes = 0;
     uint64_t phase_rotation_element_operations = 0;
     uint64_t phase_rotations = 0;
+    uint64_t soft_role_backend_bytes = 0;
+    uint64_t soft_role_candidate_id_upload_bytes = 0;
+    uint64_t soft_role_gate_upload_bytes = 0;
+    uint64_t soft_role_capture_device_copy_bytes = 0;
+    uint64_t soft_role_commit_device_copy_bytes = 0;
+    uint64_t soft_role_read_device_copy_bytes = 0;
+    uint64_t soft_role_projection_token_applications = 0;
+    uint64_t soft_role_projection_multiply_accumulates = 0;
+    uint64_t soft_role_mixture_multiply_accumulates = 0;
+    uint64_t soft_role_captures = 0;
+    uint64_t soft_role_commits = 0;
+    uint64_t soft_role_reads = 0;
     uint64_t writer_host_input_bytes = 0;
     uint64_t port_writes = 0;
     uint64_t router_bias_token_applications = 0;
