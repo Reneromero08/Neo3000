@@ -115,6 +115,11 @@ The active recurrence and acceptance boundary are
   tasks (`3/4` and `0/4`) while both single-evidence controls remain
   insufficient. The complete 24-record evidence object is committed, and all
   retained roots close.
+- `neo-exp-0120` replaces global arithmetic with direct causal-position
+  topology. It copies F positions `48:79` and G positions `79:106` through
+  backend subviews into neutral active attention, moving `9,502,720` bytes
+  over eight composites with zero host tensor payload. Active backings remain
+  stable, the recurrent tensor digest matches, and every root closes.
 
 ### REJECTED
 
@@ -198,6 +203,10 @@ The active recurrence and acceptance boundary are
   composition law. Its host-mediated arithmetic reads `63,897,600` root bytes
   and writes `21,299,200` active bytes yet fails both useful-task gates. It is
   a compact classical sham, not relational geometry or catalysis.
+- Simple token-segment topology is also insufficient. The direct splice reaches
+  only `3/4` on EFGH and `1/4` on IOUV while both marginal controls remain
+  insufficient. The missing law is context-dependent G/closure state or a
+  deeper nonlinear update, not merely placement of independently computed KV.
 - Historical `neo-exp-0111` through `neo-exp-0114` runtime outputs were hashed
   but not committed; their committed summaries preserve the measured
   adjudications but do not make per-query numerical comparisons independently
@@ -207,14 +216,13 @@ The active recurrence and acceptance boundary are
 
 ### ACTIVE BOUNDARY
 
-Use the rejected global affine law to localize the next structured in-place KV
-operator. Copy only the public causal token segments: F positions from the
-F-only root and G positions from the G-only root into one neutral active
-attention allocation. No joint source, target root, host KV duplicate, target
-logits, or answer-conditioned selection may exist. If that fails, the missing
-object is cross-module nonlinear state rather than mere token topology. Count
-all traffic and compare against the exact 82-token-per-arm prefix-DAG
-baseline. `neo-exp-0102` remains frozen and unconsumed.
+Use the model causal forward as the first exact nonlinear `G(F)` operator.
+Retain an open prefix-plus-F carrier before G exists, then apply only the public
+G-plus-closure suffix and project delayed queries. No prebuilt joint source
+state, target root, target logits, or answer-conditioned selection may exist.
+Compare exactness and fully charged work with full replay and the 82-token
+prefix-DAG suffix, then localize the minimum context-conditioned update needed
+to replace fresh G decoding. `neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

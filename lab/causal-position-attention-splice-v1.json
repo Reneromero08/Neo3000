@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "id": "causal-position-attention-splice-v1",
+  "description": "Test whether public causal token topology is sufficient to construct a useful joint boundary from separately prepared attention-KV evidence carriers. Begin from neutral active attention, copy only the F module positions from the F-only root and G module positions from the G-only root, and leave common prefix and closure positions neutral. The candidate has no joint source, joint root, target logits, host KV payload, or answer-conditioned selector.",
+  "position_splice_attention_composition": true,
+  "expected_context_size": 512,
+  "expected_source_tokens": 130,
+  "expected_attention_layers": [3, 7, 11, 15, 19, 23, 27, 31, 35, 39],
+  "expected_recurrent_layers": [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26, 28, 29, 30, 32, 33, 34, 36, 37, 38],
+  "predecessor_evidence": {
+    "physical_panel_spec": {
+      "path": "lab/disjoint-physical-attention-capability-panel-v1.json",
+      "sha256": "BE2CDB323354DF4D554CDF6557762C4C30B230391262473003D5559C9ABD3A8C"
+    },
+    "physical_panel_result": {
+      "path": "lab/disjoint-physical-attention-capability-panel-v1-result.json",
+      "sha256": "B43D174E310559D5C931130C39E6A44F9FF45EC96EB029325BA4B8E0992AC433"
+    },
+    "exact_prefix_baseline_spec": {
+      "path": "lab/common-prefix-dag-attention-construction-gate-repair-v1.json",
+      "sha256": "ABE832F478FE3FD13CBD05D233E25AD65BA941EFFB55BDAAD659670CA90B0912"
+    },
+    "exact_prefix_baseline_result": {
+      "path": "lab/common-prefix-dag-attention-construction-gate-repair-v1-result.json",
+      "sha256": "B5899D318F14E5A8D5D8F1CD0431E6E8561AECEB8174A2377CC278C2D0027CA7"
+    },
+    "affine_rejection": {
+      "result_path": "lab/affine-attention-composition-v1-result.json",
+      "result_sha256": "9A4138D6039E3A01D9A8EE1FA23C2874CA1538726D49E26DBC4DB3FC371EC415",
+      "evidence_path": "lab/affine-attention-composition-v1-evidence.json",
+      "evidence_sha256": "2AED39E3D1256CEACD9CDCADBABC70F3A9454C0F20D038C19BBFD7757A7EB93D"
+    }
+  },
+  "neutral_source": {
+    "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+    "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+    "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+    "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+  },
+  "shared_g_source": {
+    "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+    "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+    "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+    "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+  },
+  "tasks": [
+    {
+      "id": "position-splice-forward-EFGH",
+      "f_source": {
+        "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+        "module_f": "F: Item E maps to vault J. Item F maps to vault K. Item G maps to vault L. Item H maps to vault M.\n",
+        "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+        "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+      },
+      "queries": [
+        {"id": "EFGH-E", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "EFGH-F", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "EFGH-G", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "EFGH-H", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "position_splice_correct_minimum": 4,
+      "f_only_correct_maximum": 1,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "position-splice-cycle-IOUV",
+      "f_source": {
+        "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+        "module_f": "F: Item I maps to vault K. Item O maps to vault L. Item U maps to vault M. Item V maps to vault J.\n",
+        "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+        "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+      },
+      "queries": [
+        {"id": "IOUV-I", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item I through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "IOUV-O", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item O through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "IOUV-U", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "IOUV-V", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "position_splice_correct_minimum": 4,
+      "f_only_correct_maximum": 1,
+      "g_only_correct_maximum": 1
+    }
+  ],
+  "acceptance_law": {
+    "task_passes_minimum": 2
+  },
+  "claim_ceiling": "Passing establishes only that public causal token topology can assemble separately prepared complete F-only and G-only attention segments into one useful active attention boundary without a joint source, target root, or host tensor payload. F/G source decoding, three retained complete overlays, direct backend copy traffic, repeated recurrent snapshot reload, and query decode remain fully charged. The fixed splice is a compact classical baseline and does not establish nonlinear relational geometry, native inverse restoration, fresh-work advantage over the exact prefix-DAG route, catalytic recurrence, Small Wall crossing, or unbounded inference. Failure localizes the missing law beyond simple segment topology into context-dependent cross-module states or deeper nonlinear correction."
+}

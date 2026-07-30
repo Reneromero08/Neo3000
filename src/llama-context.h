@@ -184,6 +184,12 @@ struct llama_context {
             llama_seq_id add_device_storage_key,
             llama_seq_id subtract_device_storage_key,
             llama_state_seq_affine_metrics * metrics);
+    bool state_seq_splice_device_positions(
+            llama_seq_id source_device_storage_key,
+            uint64_t total_positions,
+            uint64_t position_begin,
+            uint64_t position_end,
+            llama_state_seq_splice_metrics * metrics);
 
     bool state_load_file(
             const char * filepath,

@@ -3248,6 +3248,106 @@ bool llama_context::state_seq_apply_device_affine(
     return true;
 }
 
+bool llama_context::state_seq_splice_device_positions(
+        llama_seq_id source_device_storage_key,
+        uint64_t total_positions,
+        uint64_t position_begin,
+        uint64_t position_end,
+        llama_state_seq_splice_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    if (total_positions == 0 ||
+        position_begin >= position_end ||
+        position_end > total_positions) {
+        return false;
+    }
+    const auto source_it = mem_storage.find(source_device_storage_key);
+    if (source_it == mem_storage.end()) {
+        return false;
+    }
+
+    size_t tensor_count = 0;
+    for (const auto & [buft, memory] : source_it->second) {
+        GGML_UNUSED(buft);
+        if (memory.cpy.size() != memory.org.size()) {
+            return false;
+        }
+        tensor_count += memory.cpy.size();
+    }
+    if (tensor_count == 0) {
+        return false;
+    }
+
+    const size_t metadata_bytes =
+        2 * tensor_count * ggml_tensor_overhead();
+    ggml_init_params params = {
+        /*.mem_size   =*/ metadata_bytes,
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    ggml_context_ptr splice_ctx(ggml_init(params));
+    if (!splice_ctx) {
+        return false;
+    }
+
+    uint64_t backend_bytes_copied = 0;
+    uint64_t copied_tensor_count = 0;
+    for (const auto & [buft, memory] : source_it->second) {
+        GGML_UNUSED(buft);
+        for (size_t i = 0; i < memory.cpy.size(); ++i) {
+            ggml_tensor * src = memory.cpy[i];
+            ggml_tensor * dst = memory.org[i];
+            if (!src || !dst ||
+                !src->buffer || !dst->buffer ||
+                src->type != dst->type ||
+                !ggml_are_same_shape(src, dst) ||
+                ggml_blck_size(src->type) != 1) {
+                return false;
+            }
+            const uint64_t elements =
+                static_cast<uint64_t>(ggml_nelements(src));
+            if (elements % total_positions != 0) {
+                return false;
+            }
+            const uint64_t elements_per_position =
+                elements / total_positions;
+            const uint64_t range_elements =
+                (position_end - position_begin) * elements_per_position;
+            const uint64_t element_offset =
+                position_begin * elements_per_position;
+            const size_t byte_offset =
+                static_cast<size_t>(element_offset) *
+                ggml_type_size(src->type);
+            const size_t byte_count =
+                static_cast<size_t>(range_elements) *
+                ggml_type_size(src->type);
+
+            ggml_tensor * src_view = ggml_view_1d(
+                splice_ctx.get(), src,
+                static_cast<int64_t>(range_elements), byte_offset);
+            ggml_tensor * dst_view = ggml_view_1d(
+                splice_ctx.get(), dst,
+                static_cast<int64_t>(range_elements), byte_offset);
+            ggml_backend_view_init(src_view);
+            ggml_backend_view_init(dst_view);
+            ggml_backend_tensor_copy(src_view, dst_view);
+            backend_bytes_copied += byte_count;
+            ++copied_tensor_count;
+        }
+    }
+
+    if (metrics) {
+        metrics->backend_bytes_copied = backend_bytes_copied;
+        metrics->tensor_count = copied_tensor_count;
+        metrics->host_metadata_bytes = metadata_bytes;
+        metrics->total_positions = total_positions;
+        metrics->position_begin = position_begin;
+        metrics->position_end = position_end;
+    }
+    return true;
+}
+
 bool llama_context::state_load_file(const char * filepath, llama_token * tokens_out, size_t n_token_capacity, size_t * n_token_count_out) {
     llama_file file(filepath, "rb");
 
@@ -4354,6 +4454,24 @@ bool llama_state_seq_apply_device_affine(
         base_device_storage_key,
         add_device_storage_key,
         subtract_device_storage_key,
+        metrics);
+    ctx->synchronize();
+    return result;
+}
+
+bool llama_state_seq_splice_device_positions(
+        llama_context * ctx,
+        llama_seq_id source_device_storage_key,
+        uint64_t total_positions,
+        uint64_t position_begin,
+        uint64_t position_end,
+        llama_state_seq_splice_metrics * metrics) {
+    ctx->synchronize();
+    const bool result = ctx->state_seq_splice_device_positions(
+        source_device_storage_key,
+        total_positions,
+        position_begin,
+        position_end,
         metrics);
     ctx->synchronize();
     return result;

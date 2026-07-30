@@ -120,12 +120,22 @@ constructively unbounded local Agents-A1 inference.
   object makes every boundary, logit vector, root receipt, and resource total
   recomputable; this is evidence attached to the mechanism, not a new harness
   lane.
-- [ ] Test one fixed causal-position splice. Preserve the causally exact F
+- [x] Test one fixed causal-position splice. Preserve the causally exact F
   token positions from the F-only root and G token positions from the G-only
   root inside the same active attention allocation, with no joint source,
   target root, target logits, or answer-conditioned selection. This must
   distinguish missing token topology from genuinely nonlinear cross-module
-  state before any low-rank or learned operator.
+  state before any low-rank or learned operator. `neo-exp-0120` executes the
+  fixed spans `F=48:79` and `G=79:106` by direct backend subview copy with zero
+  host tensor payload. It moves `9,502,720` bytes across eight composites but
+  reaches only `3/4` and `1/4`; both task gates reject. Simple token topology is
+  insufficient.
+- [ ] Use the model causal forward itself as the first nonlinear `G(F)`
+  operator. Retain an open prefix-plus-F carrier before G exists, apply the
+  public G-plus-closure suffix directly to that state, and project only later
+  queries. No prebuilt joint state is allowed. Compare exactness and all work
+  against both full replay and the 82-token prefix-DAG suffix; then isolate the
+  minimum context-conditioned update that must replace fresh G decoding.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

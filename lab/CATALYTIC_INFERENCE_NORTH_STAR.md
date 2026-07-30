@@ -1063,3 +1063,16 @@ tokens under causal attention; G-token KV may contain the missing cross-module
 interaction. A fixed F/G positional splice therefore distinguishes simple
 topological assembly from genuinely nonlinear cross-module state without
 introducing a joint source, target root, or learned answer-conditioned map.
+
+That splice is now executed as `neo-exp-0120` and rejected. Direct backend
+subviews copy F positions `48:79` and G positions `79:106` into neutral active
+attention with zero host tensor payload. Eight composites move `9,502,720`
+bytes, preserve stable active backing, close every root, and still reach only
+`3/4` and `1/4`.
+
+The wall is therefore not global arithmetic or simple token placement. Later G
+and closure KV must depend on prior F context. The next carrier is the open
+prefix-plus-F state itself; the next lawful module is the model's causal
+G-plus-closure forward pass. This supplies an exact nonlinear `G(F)` reference
+without prebuilding the joint state and exposes the actual computation that a
+future compact operator must replace.

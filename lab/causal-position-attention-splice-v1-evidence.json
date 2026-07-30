@@ -1,0 +1,887 @@
+{
+  "schema_version": 1,
+  "mechanism": "DIRECT_CAUSAL_POSITION_ATTENTION_SPLICE",
+  "spec_id": "causal-position-attention-splice-v1",
+  "model_arch": "qwen35moe",
+  "configuration": {
+    "context_size": 512,
+    "source_tokens": 130,
+    "task_count": 2,
+    "queries_per_task": 4,
+    "attention_layers": [
+      3,
+      7,
+      11,
+      15,
+      19,
+      23,
+      27,
+      31,
+      35,
+      39
+    ],
+    "recurrent_layers": [
+      0,
+      1,
+      2,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10,
+      12,
+      13,
+      14,
+      16,
+      17,
+      18,
+      20,
+      21,
+      22,
+      24,
+      25,
+      26,
+      28,
+      29,
+      30,
+      32,
+      33,
+      34,
+      36,
+      37,
+      38
+    ],
+    "operator": "neutral attention with F and G causal-position splices",
+    "joint_source_available_to_candidate": false,
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "summary": {
+    "task_passes": 0,
+    "task_count": 2,
+    "scaffold_recurrent_tensor_digest_match": true,
+    "operator_metrics_stable": true,
+    "accepted": false
+  },
+  "task_summary": {
+    "position-splice-forward-EFGH": {
+      "position_splice": {
+        "answers": [
+          "A",
+          "D",
+          "C",
+          "D"
+        ],
+        "correct": 3
+      },
+      "F_only": {
+        "answers": [
+          "D",
+          "D",
+          "D",
+          "D"
+        ],
+        "correct": 1
+      },
+      "G_only": {
+        "answers": [
+          "D",
+          "D",
+          "D",
+          "D"
+        ],
+        "correct": 1
+      },
+      "passed": false
+    },
+    "position-splice-cycle-IOUV": {
+      "position_splice": {
+        "answers": [
+          "A",
+          "B",
+          "D",
+          "D"
+        ],
+        "correct": 1
+      },
+      "F_only": {
+        "answers": [
+          "D",
+          "D",
+          "B",
+          "D"
+        ],
+        "correct": 0
+      },
+      "G_only": {
+        "answers": [
+          "D",
+          "D",
+          "D",
+          "D"
+        ],
+        "correct": 1
+      },
+      "passed": false
+    }
+  },
+  "carrier": {
+    "scaffold": {
+      "logical_tensor_bytes": 65863680,
+      "backend_allocation_bytes": 65863680,
+      "root_backing_id": "f489b4c16565e1d2",
+      "restore_count": 25,
+      "recurrent_tensor_digest_before": "2a1fee4ba679b9ad",
+      "recurrent_tensor_digest_after": "2a1fee4ba679b9ad"
+    },
+    "neutral_attention_root_bytes": 2662400,
+    "shared_g_attention_root_bytes": 2662400,
+    "attention_restore_count": 24,
+    "active_cache_backend_allocation_bytes": 76349440,
+    "maximum_retained_root_backend_allocation_bytes": 73850880,
+    "active_plus_retained_backend_allocation_bytes": 150200320,
+    "active_recurrent_backing_stable": true,
+    "active_attention_backing_stable": true,
+    "complete_host_attention_copy_retained": false,
+    "joint_attention_root_constructed": false,
+    "all_retained_roots_closed": true
+  },
+  "construction": {
+    "operator_apply_count": 8,
+    "range_copy_count": 16,
+    "backend_bytes_copied": 9502720,
+    "tensor_visits": 320,
+    "peak_host_payload_work_bytes": 0,
+    "peak_host_metadata_bytes": 14720,
+    "position_layout": {
+      "prefix": {
+        "begin": 0,
+        "end": 48
+      },
+      "module_f": {
+        "begin": 48,
+        "end": 79
+      },
+      "module_g": {
+        "begin": 79,
+        "end": 106
+      },
+      "closure": {
+        "begin": 106,
+        "end": 130
+      }
+    },
+    "F_range_per_apply": {
+      "backend_bytes_copied": 634880,
+      "tensor_count": 20,
+      "position_begin": 48,
+      "position_end": 79
+    },
+    "G_range_per_apply": {
+      "backend_bytes_copied": 552960,
+      "tensor_count": 20,
+      "position_begin": 79,
+      "position_end": 106
+    }
+  },
+  "resource_accounting": {
+    "fresh_source_decode_tokens": 520,
+    "fresh_query_decode_tokens": 792,
+    "fresh_input_tokens_total": 1312,
+    "root_save_device_copy_bytes": 76513280,
+    "scaffold_restore_device_copy_bytes": 1646592000,
+    "attention_restore_device_copy_bytes": 63897600,
+    "scaffold_digest_d2h_bytes": 131727360,
+    "scaffold_digest_peak_host_work_bytes": 1048576,
+    "cleared_f_root_bytes": 5324800,
+    "cleared_neutral_root_bytes": 2662400,
+    "cleared_g_root_bytes": 2662400,
+    "cleared_scaffold_bytes": 65863680
+  },
+  "roots": [
+    {
+      "role": "recurrent-scaffold",
+      "logical_tensor_bytes": 65863680,
+      "backend_allocation_bytes": 65863680,
+      "root_backing_id": "f489b4c16565e1d2"
+    },
+    {
+      "role": "neutral-attention",
+      "logical_tensor_bytes": 2662400,
+      "backend_allocation_bytes": 2662400,
+      "root_backing_id": "d270617d7a4e17fd"
+    },
+    {
+      "role": "shared-G-attention",
+      "logical_tensor_bytes": 2662400,
+      "backend_allocation_bytes": 2662400,
+      "root_backing_id": "441dc0ce10adcede"
+    },
+    {
+      "role": "task-F-attention",
+      "task_id": "position-splice-forward-EFGH",
+      "logical_tensor_bytes": 2662400,
+      "backend_allocation_bytes": 2662400,
+      "root_backing_id": "3290b97d98ef6be7"
+    },
+    {
+      "role": "task-F-attention",
+      "task_id": "position-splice-cycle-IOUV",
+      "logical_tensor_bytes": 2662400,
+      "backend_allocation_bytes": 2662400,
+      "root_backing_id": "9fe0868a8851e6be"
+    }
+  ],
+  "records": [
+    {
+      "query_id": "EFGH-E",
+      "route": "F-only-control",
+      "source_variant": "position-splice-forward-EFGH:F_only",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        7.433740615844727,
+        4.96429967880249,
+        7.121243000030518,
+        10.559797286987305
+      ],
+      "candidate_softmax": [
+        0.0406500643454968,
+        0.0034403027693746977,
+        0.029740293299152273,
+        0.9261693395859761
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "95630e6d3e7d44bb",
+      "root_backing_id": "3290b97d98ef6be7",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 621.576732
+    },
+    {
+      "query_id": "EFGH-E",
+      "route": "G-only-control",
+      "source_variant": "position-splice-forward-EFGH:G_only",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.2321696281433105,
+        4.791420936584473,
+        7.034568786621094,
+        9.460952758789063
+      ],
+      "candidate_softmax": [
+        0.034823123621238156,
+        0.008244389813601214,
+        0.07768644557011985,
+        0.8792460409950408
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "c69e1f4f8366339c",
+      "root_backing_id": "441dc0ce10adcede",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 584.652328
+    },
+    {
+      "query_id": "EFGH-E",
+      "route": "causal-position-attention-splice",
+      "source_variant": "position-splice-forward-EFGH:neutral_with_F_and_G_position_segments",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        12.787015914916992,
+        7.819251537322998,
+        9.005178451538086,
+        10.555963516235352
+      ],
+      "candidate_softmax": [
+        0.8793877424865628,
+        0.0061193846284360535,
+        0.02003315106892346,
+        0.09445972181607745
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "02dcd36878793123",
+      "root_backing_id": "d270617d7a4e17fd",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 591.329574
+    },
+    {
+      "query_id": "EFGH-F",
+      "route": "F-only-control",
+      "source_variant": "position-splice-forward-EFGH:F_only",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.448782920837402,
+        5.103259086608887,
+        7.3286590576171875,
+        10.447956085205078
+      ],
+      "candidate_softmax": [
+        0.017175039428752648,
+        0.004472436326287646,
+        0.041402168992897254,
+        0.9369503552520626
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "c68cfbdbbe91de0b",
+      "root_backing_id": "3290b97d98ef6be7",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 579.747741
+    },
+    {
+      "query_id": "EFGH-F",
+      "route": "G-only-control",
+      "source_variant": "position-splice-forward-EFGH:G_only",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.301565170288086,
+        6.80549955368042,
+        8.638856887817383,
+        11.099162101745605
+      ],
+      "candidate_softmax": [
+        0.13101027249253513,
+        0.010796371651538132,
+        0.06752969679387616,
+        0.7906636590620506
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "086f120b9bd7d4c1",
+      "root_backing_id": "441dc0ce10adcede",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 582.289626
+    },
+    {
+      "query_id": "EFGH-F",
+      "route": "causal-position-attention-splice",
+      "source_variant": "position-splice-forward-EFGH:neutral_with_F_and_G_position_segments",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.047872543334961,
+        13.960647583007813,
+        11.387603759765625,
+        14.15864372253418
+      ],
+      "candidate_softmax": [
+        0.008631898507265917,
+        0.4319196216030531,
+        0.03295673651330165,
+        0.5264917433763793
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "59cd3ffac5577506",
+      "root_backing_id": "d270617d7a4e17fd",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 592.693188
+    },
+    {
+      "query_id": "EFGH-G",
+      "route": "F-only-control",
+      "source_variant": "position-splice-forward-EFGH:F_only",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        7.4455952644348145,
+        6.386817455291748,
+        8.99220085144043,
+        12.225874900817871
+      ],
+      "candidate_softmax": [
+        0.007988493710125113,
+        0.0027710447384195957,
+        0.03751000911608637,
+        0.9517304524353689
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "61e315f8f076d839",
+      "root_backing_id": "3290b97d98ef6be7",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 575.125657
+    },
+    {
+      "query_id": "EFGH-G",
+      "route": "G-only-control",
+      "source_variant": "position-splice-forward-EFGH:G_only",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.2942047119140625,
+        4.84421443939209,
+        6.536126136779785,
+        9.0240478515625
+      ],
+      "candidate_softmax": [
+        0.056057743353977244,
+        0.013149608920340321,
+        0.07140041742886921,
+        0.8593922302968132
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "14ccf9cf69cda7fd",
+      "root_backing_id": "441dc0ce10adcede",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 585.307625
+    },
+    {
+      "query_id": "EFGH-G",
+      "route": "causal-position-attention-splice",
+      "source_variant": "position-splice-forward-EFGH:neutral_with_F_and_G_position_segments",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.768574714660645,
+        9.97972583770752,
+        14.528266906738281,
+        13.220467567443848
+      ],
+      "candidate_softmax": [
+        0.006644290049588504,
+        0.008206355948658654,
+        0.7754550658286642,
+        0.2096942881730887
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "f410aee3105f5ccc",
+      "root_backing_id": "d270617d7a4e17fd",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 616.8566
+    },
+    {
+      "query_id": "EFGH-H",
+      "route": "F-only-control",
+      "source_variant": "position-splice-forward-EFGH:F_only",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.82589054107666,
+        4.826732635498047,
+        7.053893089294434,
+        11.220098495483398
+      ],
+      "candidate_softmax": [
+        0.011994434156938159,
+        0.001624637666335401,
+        0.015066071122975788,
+        0.9713148570537508
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "4147c6cefafa9510",
+      "root_backing_id": "3290b97d98ef6be7",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 610.337567
+    },
+    {
+      "query_id": "EFGH-H",
+      "route": "G-only-control",
+      "source_variant": "position-splice-forward-EFGH:G_only",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        7.0603532791137695,
+        5.349923610687256,
+        7.256785869598389,
+        10.10669231414795
+      ],
+      "candidate_softmax": [
+        0.04266935273966315,
+        0.007714111081576236,
+        0.05193087558530755,
+        0.897685660593453
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "063259212ed535d0",
+      "root_backing_id": "441dc0ce10adcede",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 577.424597
+    },
+    {
+      "query_id": "EFGH-H",
+      "route": "causal-position-attention-splice",
+      "source_variant": "position-splice-forward-EFGH:neutral_with_F_and_G_position_segments",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.686153411865234,
+        8.548673629760742,
+        12.497442245483398,
+        14.231172561645508
+      ],
+      "candidate_softmax": [
+        0.008919477076296617,
+        0.002859816720495346,
+        0.14834285089221863,
+        0.8398778553109895
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "9f57509a83e5fa8c",
+      "root_backing_id": "d270617d7a4e17fd",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 581.30644
+    },
+    {
+      "query_id": "IOUV-I",
+      "route": "F-only-control",
+      "source_variant": "position-splice-cycle-IOUV:F_only",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.554557800292969,
+        6.396579265594482,
+        7.767541885375977,
+        11.42578411102295
+      ],
+      "candidate_softmax": [
+        0.12976516039562166,
+        0.00551652329308339,
+        0.02173036178928504,
+        0.8429879545220098
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "aa17f79a2a5b2860",
+      "root_backing_id": "9fe0868a8851e6be",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 588.299843
+    },
+    {
+      "query_id": "IOUV-I",
+      "route": "G-only-control",
+      "source_variant": "position-splice-cycle-IOUV:G_only",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        5.779923915863037,
+        4.158405303955078,
+        6.510791301727295,
+        8.553991317749023
+      ],
+      "candidate_softmax": [
+        0.05181842229683198,
+        0.010239237120936426,
+        0.10762071143926655,
+        0.830321629142965
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "87d3b85a9659b72d",
+      "root_backing_id": "441dc0ce10adcede",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 574.254947
+    },
+    {
+      "query_id": "IOUV-I",
+      "route": "causal-position-attention-splice",
+      "source_variant": "position-splice-cycle-IOUV:neutral_with_F_and_G_position_segments",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        13.99838638305664,
+        8.900153160095215,
+        10.265460968017578,
+        11.838927268981934
+      ],
+      "candidate_softmax": [
+        0.873043885255139,
+        0.0053321396937100005,
+        0.02088561008204276,
+        0.1007383649691082
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "f81195928ffbc1d2",
+      "root_backing_id": "d270617d7a4e17fd",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 574.498444
+    },
+    {
+      "query_id": "IOUV-O",
+      "route": "F-only-control",
+      "source_variant": "position-splice-cycle-IOUV:F_only",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.987971305847168,
+        5.677910804748535,
+        7.3288493156433105,
+        10.955402374267578
+      ],
+      "candidate_softmax": [
+        0.01801004255093651,
+        0.004859176702161963,
+        0.025325392071384602,
+        0.9518053886755169
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "07dc3d5fc9d21cfe",
+      "root_backing_id": "9fe0868a8851e6be",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 579.380317
+    },
+    {
+      "query_id": "IOUV-O",
+      "route": "G-only-control",
+      "source_variant": "position-splice-cycle-IOUV:G_only",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.056206226348877,
+        4.547549724578857,
+        6.564968109130859,
+        9.520421028137207
+      ],
+      "candidate_softmax": [
+        0.028706101702738792,
+        0.006349989766202516,
+        0.04774486805360365,
+        0.9171990404774552
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "9d668e66c6f34ff1",
+      "root_backing_id": "441dc0ce10adcede",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 580.308477
+    },
+    {
+      "query_id": "IOUV-O",
+      "route": "causal-position-attention-splice",
+      "source_variant": "position-splice-cycle-IOUV:neutral_with_F_and_G_position_segments",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.77303695678711,
+        13.224751472473145,
+        10.463558197021484,
+        11.989177703857422
+      ],
+      "candidate_softmax": [
+        0.008537675376531191,
+        0.7323095318340512,
+        0.0462938909206051,
+        0.21285890186881257
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "91c5374cc50dd85b",
+      "root_backing_id": "d270617d7a4e17fd",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 578.585973
+    },
+    {
+      "query_id": "IOUV-U",
+      "route": "F-only-control",
+      "source_variant": "position-splice-cycle-IOUV:F_only",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.570764541625977,
+        13.748092651367188,
+        11.806686401367188,
+        12.26072883605957
+      ],
+      "candidate_softmax": [
+        0.011076934112088852,
+        0.7221212406154763,
+        0.10362584813575078,
+        0.16317597713668397
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "e86a894584bf7113",
+      "root_backing_id": "9fe0868a8851e6be",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 572.566449
+    },
+    {
+      "query_id": "IOUV-U",
+      "route": "G-only-control",
+      "source_variant": "position-splice-cycle-IOUV:G_only",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        7.358315467834473,
+        5.776164531707764,
+        7.7192559242248535,
+        10.676190376281738
+      ],
+      "candidate_softmax": [
+        0.033066768049776894,
+        0.006796296663449161,
+        0.04744016572435836,
+        0.9126967695624156
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "9eb7c04ef277de3c",
+      "root_backing_id": "441dc0ce10adcede",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 580.250826
+    },
+    {
+      "query_id": "IOUV-U",
+      "route": "causal-position-attention-splice",
+      "source_variant": "position-splice-cycle-IOUV:neutral_with_F_and_G_position_segments",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.007625579833984,
+        8.463382720947266,
+        11.44877815246582,
+        13.70345401763916
+      ],
+      "candidate_softmax": [
+        0.008159533291960742,
+        0.004734821906755174,
+        0.09372261779735132,
+        0.8933830270039327
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "c439285c45abe728",
+      "root_backing_id": "d270617d7a4e17fd",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 583.365199
+    },
+    {
+      "query_id": "IOUV-V",
+      "route": "F-only-control",
+      "source_variant": "position-splice-cycle-IOUV:F_only",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.776748657226563,
+        8.886824607849121,
+        12.817449569702148,
+        13.360916137695313
+      ],
+      "candidate_softmax": [
+        0.017136802520825726,
+        0.007037861048587674,
+        0.3585002142011296,
+        0.617325122229457
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "1b81753692e1d0f0",
+      "root_backing_id": "9fe0868a8851e6be",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 576.262628
+    },
+    {
+      "query_id": "IOUV-V",
+      "route": "G-only-control",
+      "source_variant": "position-splice-cycle-IOUV:G_only",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        6.248427867889404,
+        4.652763366699219,
+        6.815713405609131,
+        9.989518165588379
+      ],
+      "candidate_softmax": [
+        0.02216795411284726,
+        0.0044950789709760535,
+        0.03909260330480917,
+        0.9342443636113675
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "204e8eef0843d5cf",
+      "root_backing_id": "441dc0ce10adcede",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 572.379811
+    },
+    {
+      "query_id": "IOUV-V",
+      "route": "causal-position-attention-splice",
+      "source_variant": "position-splice-cycle-IOUV:neutral_with_F_and_G_position_segments",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.52137279510498,
+        9.043437004089355,
+        11.373903274536133,
+        14.79201602935791
+      ],
+      "candidate_softmax": [
+        0.013308253764624207,
+        0.0030357200208542797,
+        0.031215504359468915,
+        0.9524405218550526
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "75f3d66efa01a8f5",
+      "root_backing_id": "d270617d7a4e17fd",
+      "root_gpu_bytes": 2662400,
+      "active_recurrent_backing_id": "c8bd2cea23f2305f",
+      "wall_ms": 577.219623
+    }
+  ],
+  "verdict": "reject",
+  "claim_ceiling": "Passing establishes only that public causal token topology can assemble separately prepared complete F-only and G-only attention segments into one useful active attention boundary without a joint source, target root, or host tensor payload. F/G source decoding, three retained complete overlays, direct backend copy traffic, repeated recurrent snapshot reload, and query decode remain fully charged. The fixed splice is a compact classical baseline and does not establish nonlinear relational geometry, native inverse restoration, fresh-work advantage over the exact prefix-DAG route, catalytic recurrence, Small Wall crossing, or unbounded inference. Failure localizes the missing law beyond simple segment topology into context-dependent cross-module states or deeper nonlinear correction."
+}

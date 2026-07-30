@@ -2019,7 +2019,7 @@ static json run_physical_attention_capability_panel(
     };
 }
 
-static json run_affine_attention_composition(
+static json run_attention_operator_composition(
         llama_context * ctx,
         const llama_vocab * vocab,
         const std::vector<llama_token> & candidates,
@@ -2029,21 +2029,40 @@ static json run_affine_attention_composition(
     auto * hybrid = require_hybrid_memory(ctx);
     auto * attention = hybrid->get_mem_attn();
     auto * recurrent = hybrid->get_mem_recr();
+    const bool affine_mode =
+        spec.value("affine_attention_composition", false);
+    const bool position_splice_mode =
+        spec.value("position_splice_attention_composition", false);
+    if (affine_mode == position_splice_mode) {
+        throw std::runtime_error(
+            "attention composition spec must select exactly one operator");
+    }
+    const std::string operator_name = affine_mode
+        ? "active_attention = F_only + G_only - neutral"
+        : "neutral attention with F and G causal-position splices";
+    const std::string candidate_key =
+        affine_mode ? "affine" : "position_splice";
+    const std::string candidate_route = affine_mode
+        ? "affine-attention-composition"
+        : "causal-position-attention-splice";
+    const std::string candidate_variant = affine_mode
+        ? "F_plus_G_minus_neutral"
+        : "neutral_with_F_and_G_position_segments";
     const uint32_t actual_context_size = llama_n_ctx(ctx);
     if (actual_context_size != spec.at("expected_context_size").get<uint32_t>()) {
         throw std::runtime_error(
-            "affine attention composition context mismatch: " +
+            "attention operator composition context mismatch: " +
             std::to_string(actual_context_size));
     }
     const size_t expected_source_tokens =
         spec.at("expected_source_tokens").get<size_t>();
     const auto & tasks = spec.at("tasks");
     if (!tasks.is_array() || tasks.empty()) {
-        throw std::runtime_error("affine attention composition has no tasks");
+        throw std::runtime_error("attention operator composition has no tasks");
     }
     if (spec.contains("joint_source")) {
         throw std::runtime_error(
-            "affine attention composition must not contain a joint source");
+            "attention operator composition must not contain a joint source");
     }
 
     const std::vector<uint32_t> attention_layers = attention->get_layer_ids();
@@ -2058,15 +2077,48 @@ static json run_affine_attention_composition(
         recurrent_layers !=
             spec.at("expected_recurrent_layers").get<std::vector<uint32_t>>()) {
         throw std::runtime_error(
-            "model hybrid layer topology differs from affine composition spec");
+            "model hybrid layer topology differs from operator composition spec");
+    }
+
+    const auto source_piece_sizes =
+            [&](const json & source) -> std::vector<size_t> {
+        std::vector<size_t> result;
+        bool first = true;
+        for (const char * field :
+                {"prefix", "module_f", "module_g", "closure"}) {
+            result.push_back(tokenize_piece(
+                vocab, source.at(field).get<std::string>(), first, true).size());
+            first = false;
+        }
+        return result;
+    };
+    const auto expected_piece_sizes =
+        source_piece_sizes(spec.at("neutral_source"));
+    if (expected_piece_sizes.size() != 4) {
+        throw std::runtime_error("invalid source piece count");
+    }
+    const size_t f_position_begin = expected_piece_sizes[0];
+    const size_t f_position_end =
+        f_position_begin + expected_piece_sizes[1];
+    const size_t g_position_begin = f_position_end;
+    const size_t g_position_end =
+        g_position_begin + expected_piece_sizes[2];
+    if (g_position_end >= expected_source_tokens) {
+        throw std::runtime_error(
+            "source causal-position layout leaves no closure");
     }
 
     for (const char * source_name : {"neutral_source", "shared_g_source"}) {
         const auto tokens = tokenize_source(vocab, spec.at(source_name));
         if (tokens.size() != expected_source_tokens) {
             throw std::runtime_error(
-                std::string("affine composition source token mismatch for ") +
+                std::string("operator composition source token mismatch for ") +
                 source_name + ": " + std::to_string(tokens.size()));
+        }
+        if (source_piece_sizes(spec.at(source_name)) != expected_piece_sizes) {
+            throw std::runtime_error(
+                std::string("operator source piece layout mismatch for ") +
+                source_name);
         }
     }
     std::set<std::string> task_ids;
@@ -2074,35 +2126,39 @@ static json run_affine_attention_composition(
         const std::string id = task.at("id");
         if (!task_ids.insert(id).second) {
             throw std::runtime_error(
-                "duplicate affine-composition task id " + id);
+                "duplicate operator-composition task id " + id);
         }
         if (task.contains("joint") ||
             task.contains("joint_source") ||
             task.contains("sources")) {
             throw std::runtime_error(
-                "affine composition task exposes a forbidden joint/source map");
+                "operator composition task exposes a forbidden joint/source map");
         }
         if (tokenize_source(vocab, task.at("f_source")).size() !=
             expected_source_tokens) {
             throw std::runtime_error(
-                "affine composition F source token mismatch for " + id);
+                "operator composition F source token mismatch for " + id);
+        }
+        if (source_piece_sizes(task.at("f_source")) != expected_piece_sizes) {
+            throw std::runtime_error(
+                "operator composition F source piece layout mismatch for " + id);
         }
     }
 
     const auto neutral_tokens =
         prepare_source(ctx, vocab, spec.at("neutral_source"));
     auto scaffold_root = save_root(
-        ctx, "affine:F0_G0:recurrent-scaffold", 9000,
+        ctx, candidate_key + ":F0_G0:recurrent-scaffold", 9000,
         RECURRENT_DEVICE_FLAGS, neutral_tokens.size());
     auto neutral_root = save_root(
-        ctx, "affine:F0_G0:attention", 9001,
+        ctx, candidate_key + ":F0_G0:attention", 9001,
         ATTENTION_DEVICE_FLAGS, neutral_tokens.size());
     const auto scaffold_hash_before = hash_recurrent_state_streamed(ctx);
 
     const auto g_tokens =
         prepare_source(ctx, vocab, spec.at("shared_g_source"));
     auto g_root = save_root(
-        ctx, "affine:F0_G1:attention", 9002,
+        ctx, candidate_key + ":F0_G1:attention", 9002,
         ATTENTION_DEVICE_FLAGS, g_tokens.size());
     const size_t active_cache_backend_allocation_bytes =
         active_hybrid_backend_allocation_bytes(ctx);
@@ -2153,6 +2209,14 @@ static json run_affine_attention_composition(
     bool affine_metrics_stable = true;
     llama_state_seq_affine_metrics first_affine_metrics = {};
     bool have_first_affine_metrics = false;
+    uint64_t splice_backend_bytes_copied = 0;
+    uint64_t splice_tensor_count_total = 0;
+    uint64_t splice_host_metadata_bytes_peak = 0;
+    size_t splice_range_apply_count = 0;
+    bool splice_metrics_stable = true;
+    llama_state_seq_splice_metrics first_f_splice_metrics = {};
+    llama_state_seq_splice_metrics first_g_splice_metrics = {};
+    bool have_first_splice_metrics = false;
 
     for (const auto & task : tasks) {
         const std::string id = task.at("id");
@@ -2211,38 +2275,94 @@ static json run_affine_attention_composition(
             restore_root(ctx, scaffold_root);
             ++scaffold_restore_count;
             scaffold_restore_device_copy_bytes += scaffold_root.gpu_bytes;
-            restore_attention_root(ctx, f_root);
+            const auto & construction_base =
+                affine_mode ? f_root : neutral_root;
+            restore_attention_root(ctx, construction_base);
             ++attention_restore_count;
-            attention_restore_device_copy_bytes += f_root.gpu_bytes;
-            llama_state_seq_affine_metrics affine_metrics = {};
-            if (!llama_state_seq_apply_device_affine(
-                    ctx,
-                    f_root.key,
-                    g_root.key,
-                    neutral_root.key,
-                    &affine_metrics)) {
-                throw std::runtime_error(
-                    "in-place affine attention construction failed for " + id);
-            }
-            if (!have_first_affine_metrics) {
-                first_affine_metrics = affine_metrics;
-                have_first_affine_metrics = true;
+            attention_restore_device_copy_bytes +=
+                construction_base.gpu_bytes;
+            if (affine_mode) {
+                llama_state_seq_affine_metrics affine_metrics = {};
+                if (!llama_state_seq_apply_device_affine(
+                        ctx,
+                        f_root.key,
+                        g_root.key,
+                        neutral_root.key,
+                        &affine_metrics)) {
+                    throw std::runtime_error(
+                        "in-place affine attention construction failed for " +
+                        id);
+                }
+                if (!have_first_affine_metrics) {
+                    first_affine_metrics = affine_metrics;
+                    have_first_affine_metrics = true;
+                } else {
+                    affine_metrics_stable =
+                        affine_metrics_stable &&
+                        first_affine_metrics.root_bytes_read ==
+                            affine_metrics.root_bytes_read &&
+                        first_affine_metrics.active_bytes_written ==
+                            affine_metrics.active_bytes_written &&
+                        first_affine_metrics.peak_host_work_bytes ==
+                            affine_metrics.peak_host_work_bytes &&
+                        first_affine_metrics.tensor_count ==
+                            affine_metrics.tensor_count;
+                }
+                affine_root_bytes_read += affine_metrics.root_bytes_read;
+                affine_active_bytes_written +=
+                    affine_metrics.active_bytes_written;
+                affine_peak_host_work_bytes = std::max(
+                    affine_peak_host_work_bytes,
+                    affine_metrics.peak_host_work_bytes);
+                affine_tensor_count_total += affine_metrics.tensor_count;
+                ++affine_apply_count;
             } else {
-                affine_metrics_stable =
-                    affine_metrics_stable &&
-                    std::memcmp(
-                        &first_affine_metrics,
-                        &affine_metrics,
-                        sizeof(affine_metrics)) == 0;
+                llama_state_seq_splice_metrics f_metrics = {};
+                llama_state_seq_splice_metrics g_metrics = {};
+                if (!llama_state_seq_splice_device_positions(
+                        ctx, f_root.key, expected_source_tokens,
+                        f_position_begin, f_position_end, &f_metrics) ||
+                    !llama_state_seq_splice_device_positions(
+                        ctx, g_root.key, expected_source_tokens,
+                        g_position_begin, g_position_end, &g_metrics)) {
+                    throw std::runtime_error(
+                        "causal-position attention splice failed for " + id);
+                }
+                if (!have_first_splice_metrics) {
+                    first_f_splice_metrics = f_metrics;
+                    first_g_splice_metrics = g_metrics;
+                    have_first_splice_metrics = true;
+                } else {
+                    const auto metrics_equal =
+                            [](const llama_state_seq_splice_metrics & lhs,
+                               const llama_state_seq_splice_metrics & rhs) {
+                        return
+                            lhs.backend_bytes_copied ==
+                                rhs.backend_bytes_copied &&
+                            lhs.tensor_count == rhs.tensor_count &&
+                            lhs.host_metadata_bytes ==
+                                rhs.host_metadata_bytes &&
+                            lhs.total_positions == rhs.total_positions &&
+                            lhs.position_begin == rhs.position_begin &&
+                            lhs.position_end == rhs.position_end;
+                    };
+                    splice_metrics_stable =
+                        splice_metrics_stable &&
+                        metrics_equal(first_f_splice_metrics, f_metrics) &&
+                        metrics_equal(first_g_splice_metrics, g_metrics);
+                }
+                splice_backend_bytes_copied +=
+                    f_metrics.backend_bytes_copied +
+                    g_metrics.backend_bytes_copied;
+                splice_tensor_count_total +=
+                    f_metrics.tensor_count + g_metrics.tensor_count;
+                splice_host_metadata_bytes_peak = std::max({
+                    splice_host_metadata_bytes_peak,
+                    f_metrics.host_metadata_bytes,
+                    g_metrics.host_metadata_bytes,
+                });
+                splice_range_apply_count += 2;
             }
-            affine_root_bytes_read += affine_metrics.root_bytes_read;
-            affine_active_bytes_written +=
-                affine_metrics.active_bytes_written;
-            affine_peak_host_work_bytes = std::max(
-                affine_peak_host_work_bytes,
-                affine_metrics.peak_host_work_bytes);
-            affine_tensor_count_total += affine_metrics.tensor_count;
-            ++affine_apply_count;
             if (attention->seq_pos_max(0) !=
                     static_cast<llama_pos>(expected_source_tokens - 1) ||
                 recurrent->seq_pos_max(0) !=
@@ -2252,17 +2372,18 @@ static json run_affine_attention_composition(
                 active_attention_backing_id(ctx) !=
                     active_attention_backing_initial) {
                 throw std::runtime_error(
-                    "affine active-carrier invariant failed for " + id);
+                    "operator active-carrier invariant failed for " + id);
             }
-            auto affine_boundary = decode_query(
-                ctx, vocab, candidates, "affine-attention-composition",
-                id + ":F_plus_G_minus_neutral", query,
-                expected_source_tokens, f_root.backing_id,
-                f_root.gpu_bytes);
+            auto candidate_boundary = decode_query(
+                ctx, vocab, candidates, candidate_route,
+                id + ":" + candidate_variant, query,
+                expected_source_tokens, construction_base.backing_id,
+                construction_base.gpu_bytes);
             query_decode_tokens +=
-                affine_boundary.record.at("query_tokens").get<size_t>();
-            records.push_back(affine_boundary.record);
-            results[id]["affine"].push_back(std::move(affine_boundary));
+                candidate_boundary.record.at("query_tokens").get<size_t>();
+            records.push_back(candidate_boundary.record);
+            results[id][candidate_key].push_back(
+                std::move(candidate_boundary));
         }
 
         llama_memory_clear(llama_get_memory(ctx), true);
@@ -2270,7 +2391,7 @@ static json run_affine_attention_composition(
             llama_state_seq_clear_device_data(ctx, f_root.key);
         if (llama_state_seq_get_device_root_count(ctx) != 3) {
             throw std::runtime_error(
-                "affine task-root closure damaged shared roots");
+                "operator task-root closure damaged shared roots");
         }
     }
 
@@ -2289,17 +2410,17 @@ static json run_affine_attention_composition(
         const std::string id = task.at("id");
         const auto & task_results = results.at(id);
         const auto & queries = task.at("queries");
-        const size_t affine_correct = semantic_correct_count(
-            task_results.at("affine"), queries, false);
+        const size_t candidate_correct = semantic_correct_count(
+            task_results.at(candidate_key), queries, false);
         const size_t f_only_correct = semantic_correct_count(
             task_results.at("F_only"), queries, false);
         const size_t g_only_correct = semantic_correct_count(
             task_results.at("G_only"), queries, false);
-        std::vector<std::string> affine_answers;
+        std::vector<std::string> candidate_answers;
         std::vector<std::string> f_only_answers;
         std::vector<std::string> g_only_answers;
-        for (const auto & result : task_results.at("affine")) {
-            affine_answers.push_back(result.argmax);
+        for (const auto & result : task_results.at(candidate_key)) {
+            candidate_answers.push_back(result.argmax);
         }
         for (const auto & result : task_results.at("F_only")) {
             f_only_answers.push_back(result.argmax);
@@ -2307,18 +2428,21 @@ static json run_affine_attention_composition(
         for (const auto & result : task_results.at("G_only")) {
             g_only_answers.push_back(result.argmax);
         }
+        const char * candidate_minimum_field = affine_mode
+            ? "affine_correct_minimum"
+            : "position_splice_correct_minimum";
         const bool passed =
-            affine_correct >=
-                task.at("affine_correct_minimum").get<size_t>() &&
+            candidate_correct >=
+                task.at(candidate_minimum_field).get<size_t>() &&
             f_only_correct <=
                 task.at("f_only_correct_maximum").get<size_t>() &&
             g_only_correct <=
                 task.at("g_only_correct_maximum").get<size_t>();
         task_passes += passed;
         task_summary[id] = {
-            {"affine", {
-                {"answers", affine_answers},
-                {"correct", affine_correct},
+            {candidate_key, {
+                {"answers", candidate_answers},
+                {"correct", candidate_correct},
             }},
             {"F_only", {
                 {"answers", f_only_answers},
@@ -2336,8 +2460,9 @@ static json run_affine_attention_composition(
             spec.at("acceptance_law")
                 .at("task_passes_minimum").get<size_t>() &&
         scaffold_tensor_digest_match &&
-        affine_metrics_stable &&
-        have_first_affine_metrics;
+        (affine_mode
+            ? affine_metrics_stable && have_first_affine_metrics
+            : splice_metrics_stable && have_first_splice_metrics);
 
     llama_memory_clear(llama_get_memory(ctx), true);
     const size_t cleared_neutral_root_bytes =
@@ -2351,12 +2476,74 @@ static json run_affine_attention_composition(
         active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
         active_attention_backing_id(ctx) != active_attention_backing_initial) {
         throw std::runtime_error(
-            "affine attention composition close invariant failed");
+            "attention operator composition close invariant failed");
+    }
+
+    json construction;
+    if (affine_mode) {
+        construction = {
+            {"operator_apply_count", affine_apply_count},
+            {"root_bytes_read", affine_root_bytes_read},
+            {"active_bytes_written", affine_active_bytes_written},
+            {"peak_host_work_bytes", affine_peak_host_work_bytes},
+            {"tensor_visits", affine_tensor_count_total},
+            {"per_apply", {
+                {"root_bytes_read", first_affine_metrics.root_bytes_read},
+                {"active_bytes_written",
+                    first_affine_metrics.active_bytes_written},
+                {"peak_host_work_bytes",
+                    first_affine_metrics.peak_host_work_bytes},
+                {"tensor_count", first_affine_metrics.tensor_count},
+            }},
+        };
+    } else {
+        construction = {
+            {"operator_apply_count", splice_range_apply_count / 2},
+            {"range_copy_count", splice_range_apply_count},
+            {"backend_bytes_copied", splice_backend_bytes_copied},
+            {"tensor_visits", splice_tensor_count_total},
+            {"peak_host_payload_work_bytes", 0},
+            {"peak_host_metadata_bytes", splice_host_metadata_bytes_peak},
+            {"position_layout", {
+                {"prefix", {
+                    {"begin", 0},
+                    {"end", f_position_begin},
+                }},
+                {"module_f", {
+                    {"begin", f_position_begin},
+                    {"end", f_position_end},
+                }},
+                {"module_g", {
+                    {"begin", g_position_begin},
+                    {"end", g_position_end},
+                }},
+                {"closure", {
+                    {"begin", g_position_end},
+                    {"end", expected_source_tokens},
+                }},
+            }},
+            {"F_range_per_apply", {
+                {"backend_bytes_copied",
+                    first_f_splice_metrics.backend_bytes_copied},
+                {"tensor_count", first_f_splice_metrics.tensor_count},
+                {"position_begin", first_f_splice_metrics.position_begin},
+                {"position_end", first_f_splice_metrics.position_end},
+            }},
+            {"G_range_per_apply", {
+                {"backend_bytes_copied",
+                    first_g_splice_metrics.backend_bytes_copied},
+                {"tensor_count", first_g_splice_metrics.tensor_count},
+                {"position_begin", first_g_splice_metrics.position_begin},
+                {"position_end", first_g_splice_metrics.position_end},
+            }},
+        };
     }
 
     return {
         {"schema_version", 1},
-        {"mechanism", "IN_PLACE_AFFINE_ATTENTION_COMPOSITION_SHAM"},
+        {"mechanism", affine_mode
+            ? "IN_PLACE_AFFINE_ATTENTION_COMPOSITION_SHAM"
+            : "DIRECT_CAUSAL_POSITION_ATTENTION_SPLICE"},
         {"spec_id", spec.at("id")},
         {"model_arch", "qwen35moe"},
         {"configuration", {
@@ -2366,7 +2553,7 @@ static json run_affine_attention_composition(
             {"queries_per_task", tasks.at(0).at("queries").size()},
             {"attention_layers", attention_layers},
             {"recurrent_layers", recurrent_layers},
-            {"operator", "active_attention = F_only + G_only - neutral"},
+            {"operator", operator_name},
             {"joint_source_available_to_candidate", false},
             {"restoration_class", "SNAPSHOT_RELOAD"},
         }},
@@ -2375,7 +2562,9 @@ static json run_affine_attention_composition(
             {"task_count", tasks.size()},
             {"scaffold_recurrent_tensor_digest_match",
                 scaffold_tensor_digest_match},
-            {"affine_metrics_stable", affine_metrics_stable},
+            {"operator_metrics_stable", affine_mode
+                ? affine_metrics_stable
+                : splice_metrics_stable},
             {"accepted", accepted},
         }},
         {"task_summary", task_summary},
@@ -2412,21 +2601,7 @@ static json run_affine_attention_composition(
             {"all_retained_roots_closed",
                 llama_state_seq_get_device_root_count(ctx) == 0},
         }},
-        {"construction", {
-            {"affine_apply_count", affine_apply_count},
-            {"root_bytes_read", affine_root_bytes_read},
-            {"active_bytes_written", affine_active_bytes_written},
-            {"peak_host_work_bytes", affine_peak_host_work_bytes},
-            {"tensor_visits", affine_tensor_count_total},
-            {"per_apply", {
-                {"root_bytes_read", first_affine_metrics.root_bytes_read},
-                {"active_bytes_written",
-                    first_affine_metrics.active_bytes_written},
-                {"peak_host_work_bytes",
-                    first_affine_metrics.peak_host_work_bytes},
-                {"tensor_count", first_affine_metrics.tensor_count},
-            }},
-        }},
+        {"construction", construction},
         {"resource_accounting", {
             {"fresh_source_decode_tokens", source_decode_tokens},
             {"fresh_query_decode_tokens", query_decode_tokens},
@@ -2906,8 +3081,9 @@ int main(int argc, char ** argv) {
             return 0;
         }
 
-        if (spec.value("affine_attention_composition", false)) {
-            const json result = run_affine_attention_composition(
+        if (spec.value("affine_attention_composition", false) ||
+            spec.value("position_splice_attention_composition", false)) {
+            const json result = run_attention_operator_composition(
                 ctx,
                 vocab,
                 candidates,

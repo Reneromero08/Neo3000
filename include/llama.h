@@ -1002,6 +1002,27 @@ extern "C" {
                     llama_seq_id   subtract_device_storage_key,
             llama_state_seq_affine_metrics * metrics);
 
+    typedef struct llama_state_seq_splice_metrics {
+        uint64_t backend_bytes_copied;
+        uint64_t tensor_count;
+        uint64_t host_metadata_bytes;
+        uint64_t total_positions;
+        uint64_t position_begin;
+        uint64_t position_end;
+    } llama_state_seq_splice_metrics;
+
+    // Copies one causal position interval from a retained device root directly
+    // into the shape-identical active tensors addressed by that root. The
+    // retained tensors must represent total_positions contiguous cache cells.
+    // No tensor payload is materialized in host memory.
+    LLAMA_API bool llama_state_seq_splice_device_positions(
+            struct llama_context * ctx,
+                    llama_seq_id   source_device_storage_key,
+                        uint64_t   total_positions,
+                        uint64_t   position_begin,
+                        uint64_t   position_end,
+            llama_state_seq_splice_metrics * metrics);
+
     //
     // Decoding
     //
