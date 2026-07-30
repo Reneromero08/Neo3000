@@ -666,7 +666,7 @@ constructively unbounded local Agents-A1 inference.
   state occupied sequence 6 while that reference still owned it. No complete
   result object was produced. Preserve `0157` as inconclusive and do not rerun
   it.
-- [ ] Execute `neo-exp-0158` once after the one concrete sequence-custody
+- [x] Execute `neo-exp-0158` once after the one concrete sequence-custody
   repair. The physical carrier, prompts, candidate distribution, source-role
   rematerialization, acceptance gate, and claim ceiling are unchanged. The
   disabled G1 state is now derived from the completed G0 exact-reference
@@ -674,6 +674,28 @@ constructively unbounded local Agents-A1 inference.
   reference arm. This is the final controller repair for this mechanism:
   produce one adjudicable panel or close it without another evaluator,
   carrier-evaluation, or evidence-harness successor.
+  The sole contact is rejected. The four G0 carrier queries are finite and
+  correct (`B,C,D,A`), but all 36 later query records serialize four
+  non-finite candidate logits as JSON `null`, including the G0 exact
+  reference, the carrier-disabled G1 control, the remaining carrier phases,
+  later exact references, and the return. The repeated
+  `622ecb280a0fcb83` hash and default A argmax after contamination are not
+  valid parity evidence. Thus the continuous source-role transition fails
+  numerical isolation before a useful recurrence can be adjudicated.
+  The intended physical path still completes 16 device captures, four atomic
+  commits, 16 reads, and 20 source-role forwards on one `65,536`-byte
+  active/staging allocation; recurrent digests and active backings remain
+  stable and all sequences, roots, staging, and carrier state close. Close
+  probability-weighted token-embedding rematerialization and every
+  temperature, basis, prompt, fixture, controller, evaluator,
+  carrier-evaluation, and evidence-harness variant.
+- [ ] Implement one distinct model-native dynamic transition whose bounded
+  carrier modulates an internal attention, recurrent, MoE, or weight path
+  through a numerically defined read law before useful projection. It must
+  preserve a finite matched gate-off route by construction, make downstream
+  inference carrier-dependent, and attack semantic state transition rather
+  than evidence custody. One physical mechanism receives one contact and one
+  compact adjudication.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

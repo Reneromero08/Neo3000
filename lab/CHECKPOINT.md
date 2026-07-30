@@ -137,6 +137,29 @@ The active recurrence and acceptance boundary are
   The carrier, prompts, acceptance law, and claim ceiling remain frozen. This
   is the final controller repair admitted for the mechanism; it does not open
   an evaluator or evidence-harness series.
+- The sole `0158` contact is rejected. Its first four G0 carrier queries are
+  finite and correct (`B,C,D,A`). Every one of the 36 subsequent query
+  records contains four non-finite candidate logits, serialized as JSON
+  `null`: this includes the immediate G0 exact-reference route, the matched
+  read-gate-zero G1 route, all later carrier and exact-reference routes, and
+  the G0 return. Their common `622ecb280a0fcb83` hash, default A argmaxes,
+  nominal boundary matches, and zero maximum-difference fields are artifacts
+  of the non-finite collapse and cannot support parity or utility.
+- The physical seam did execute and close: 16 terminal distributions copied
+  device-to-device into four panel-atomic commits, 16 later reads and 20
+  one-token source-role forwards used one `65,536`-byte active/staging CUDA
+  allocation with zero projected-token payload, recurrent digests and active
+  backings stayed stable, and all sequences, roots, staging, and carrier state
+  closed. This supports only execution and closure of the bounded seam. It
+  rejects the probability-weighted token-embedding transition because it
+  becomes non-finite by the first rematerialized panel and contaminates even
+  the matched gate-off/reference path.
+- Close this mechanism without another controller, evaluator,
+  carrier-evaluation, or evidence-harness revision. The next physical
+  intervention must use a numerically defined model-native dynamic read law
+  inside attention, recurrent, MoE, or weight computation, with finite
+  gate-off isolation by construction. Evidence remains one compact packet
+  protecting one changed physical mechanism.
 - The exact four-link/Z4 recurrence remains the stronger compact baseline.
   No inference-bearing recurrence, fresh-compute advantage, phase-native
   resource, Small Wall crossing, catalytic recurrence, or unbounded claim is
