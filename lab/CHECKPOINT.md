@@ -593,6 +593,28 @@ The active recurrence and acceptance boundary are
   load or scientific kernel has occurred. One compact recomputable result
   packet will adjudicate the sole frozen execution. Evidence custody is not
   an experimental axis and will not mint evaluator or harness successors.
+- Exact pushed head `7167590eb664cd553c287e3eb6811a2736a0accc`
+  executed `neo-exp-0151` once without a server. Sixteen actual outputs create
+  complete device-resident recurrent differences; four accumulation graphs
+  write them into the same physical row 5. The update path materializes no
+  recurrent payload on the host, and later ordinary query copies read the
+  modified row. All branches, roots, and active backings close cleanly.
+- The additive full-row mechanism is scientifically negative. Exact full
+  state is `16/16`; the recurrent-delta route is `5/16`, by phase `4/4`,
+  `0/4`, `0/4`, `1/4`. G1 remains exactly at G0 and matches the disabled
+  control `4/4`; later phases corrupt rather than advance the relation. The
+  four-step return matches `0/4`, full-logit hashes match `0/4`, and the
+  recurrent hash changes from `7b3e135925cb55f3` to
+  `9ebb60f9dfc253cd` on the same row. A raw output difference is therefore
+  neither an update law nor an inverse.
+- Each logical row is `65,863,680` bytes. The twenty device graphs charge
+  `3,424,911,360` read bytes, `1,317,273,600` write bytes, and `790,364,160`
+  element operations, plus separately charged digest traffic. The mechanism
+  is larger and more expensive than the compact four-link recurrence. The
+  next substrate must learn a bounded writer/reader or weight adaptation that
+  rejects query-local nuisance state and makes a fixed latent causally useful.
+  No state subset, scale, layer, fixture, evaluator, or evidence-harness
+  successor follows.
 
 ### REJECTED
 

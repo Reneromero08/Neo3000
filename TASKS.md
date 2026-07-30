@@ -442,7 +442,7 @@ constructively unbounded local Agents-A1 inference.
   frozen labels in this run, which is preserved rather than retried. Reject
   query-local injection at the first recurrent transition. Do not produce
   layer, scale, fixture, evaluator, or evidence-harness variants.
-- [ ] Replace query-local delta injection with one explicit
+- [x] Replace query-local delta injection with one explicit
   actual-output-written persistent-state operator before query decode. Update
   the existing recurrent-memory backing directly under a fixed public
   topology, then require ordinary later inference to read the advanced state.
@@ -467,7 +467,29 @@ constructively unbounded local Agents-A1 inference.
   closure remains `139/139`. No `0151` model contact has occurred. Its sole
   next action is one native execution and a physical-mechanism decision. The
   evidence instrument remains one compact recomputable packet and is not a
-  research axis.
+  research axis. Exact full state is `16/16`, but the candidate is only
+  `5/16`: G0 is `B,C,D,A`, G1 remains the identical `B,C,D,A`, G2 becomes
+  `A,C,D,D`, and G3 becomes `D,C,D,D`. The matched pre-advance and enabled
+  G1 boundaries match `4/4`; return is `A,A,A,D`, matching none of the initial
+  boundaries. The same physical row 5 receives all four updates, but its
+  `65,863,680`-byte recurrent payload hash does not restore. Twenty device
+  graphs perform `3,424,911,360` read bytes, `1,317,273,600` write bytes, and
+  `790,364,160` element operations with zero host update payload; validation
+  traffic is charged separately. All sequences and roots close. Reject raw
+  additive full-row output deltas as a relational recurrence. Do not create
+  scale, subset, layer, prompt, fixture, evaluator, or evidence-harness
+  variants.
+- [ ] Replace raw state arithmetic with one learned, bounded, model-native
+  carrier update law. Train the smallest writer/reader or weight adapter that
+  maps actual query-output state into a fixed-capacity persistent latent and
+  makes later ordinary inference consume it across prospectively disjoint
+  relations. The carrier must update before the next query, retain no complete
+  target-state table or context-indexed operator, expose a matched carrier
+  mutation/disablement, and explicitly restore or lawfully advance its same
+  backing. Compare against the exact compact recurrence and charge training,
+  parameters, active state, update work, inference, validation, and closure.
+  This is a changed learned inference substrate; do not turn adapter
+  qualification into a panel or evidence-harness series.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.
