@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0112",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "ae7a9407db80deb7051360ecdabc903a61ea6af3",
+  "mechanism": "PHYSICAL_ATTENTION_ROOT_UNRELATED_REUSE_AND_ACTIVE_ALLOCATION",
+  "spec_id": "physical-attention-root-unrelated-reuse-v1",
+  "hypothesis": "The exact recurrent scaffold backing accepted in neo-exp-0111 can support an independently frozen E/F/G/H reverse-relation task through sequential attention-only roots while active-cache plus retained-root allocation remains bounded.",
+  "intervention": "Keep the neo-exp-0111 primary panel unchanged, add three prospectively frozen held-out attention-root routes over item identities absent from the scaffold and primary task, reuse the exact same recurrent root for all routes, and measure active cache plus retained-root backend allocation.",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "source_tokens": 130,
+    "scaffold_tokens": 130,
+    "primary_source_variant_count": 6,
+    "unrelated_source_variant_count": 3,
+    "query_count_per_variant": 4,
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "metrics_after": {
+    "primary_semantic_panel": {
+      "joint": {"correct": 4, "answers": ["A", "B", "C", "D"]},
+      "F_only": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "G_only": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "null": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "relation_mutation": {"correct": 4, "answers": ["B", "C", "D", "A"], "changes": 4},
+      "presentation": {"correct": 4, "answers": ["A", "B", "C", "D"], "matches": 4}
+    },
+    "unrelated_reuse_panel": {
+      "joint": {
+        "correct": 3,
+        "answers": ["D", "C", "B", "D"],
+        "expected": ["D", "C", "B", "A"],
+        "misses": [{"query": "H", "expected": "A", "observed": "D"}]
+      },
+      "F_only": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "G_only": {"correct": 1, "answers": ["D", "D", "D", "D"]}
+    },
+    "scaffold": {
+      "logical_tensor_bytes": 65863680,
+      "retained_backend_allocation_bytes": 65863680,
+      "retained_gpu_allocation_bytes": 65863680,
+      "metadata_bytes": 748,
+      "restore_count": 37,
+      "root_backing_id": "820100eebb28e3b9",
+      "content_hash_before": "5eb6dd1bea73e09e",
+      "content_hash_after": "5eb6dd1bea73e09e",
+      "cleared": true
+    },
+    "attention_roots": {
+      "created": 9,
+      "simultaneously_retained_maximum": 1,
+      "logical_tensor_bytes_each": 2662400,
+      "retained_backend_allocation_bytes_each": 2662400,
+      "restore_count_total": 36,
+      "metadata_peak_bytes": 2864,
+      "all_closed": true
+    },
+    "active_cache_backend_allocation_bytes": 76349440,
+    "maximum_simultaneous_retained_root_backend_allocation_bytes": 68526080,
+    "active_plus_retained_backend_allocation_bytes": 144875520,
+    "maximum_simultaneous_retained_root_gpu_allocation_bytes": 68526080,
+    "complete_host_scaffold_copy_retained": false,
+    "active_attention_backing_stable": true,
+    "active_recurrent_backing_stable": true
+  },
+  "resource_accounting": {
+    "root_save_device_copy_bytes": 89825280,
+    "scaffold_restore_device_copy_bytes": 2436956160,
+    "attention_restore_device_copy_bytes": 95846400,
+    "scaffold_hash_d2h_bytes": 131727360,
+    "scaffold_hash_peak_host_work_bytes": 1048576,
+    "host_root_metadata_peak_bytes": 3612,
+    "whole_process_cuda_residency_measured": false,
+    "active_cache_backend_allocation_measured": true,
+    "fresh_source_prompt_tokens": 1300,
+    "fresh_query_tokens": 1188,
+    "fresh_input_tokens_total": 2488,
+    "fresh_compute_reduction": false
+  },
+  "closure": {
+    "all_retained_roots_closed": true,
+    "background_processes_left_running": 0
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/physical-attention-root-unrelated-reuse-v1.json",
+      "bytes": 9656,
+      "sha256": "DD8AFF2F3CE6E8BBFC2C4E99EA4CD2F20A96848BCB1298C65CFA729E6F22FC57"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 85786,
+      "sha256": "510E6F2B76E212048163024F95DED9A695ECD3E74BA47A541E5C4F502856155F"
+    },
+    "probe_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 531504,
+      "sha256": "FAECFD9FE4DB719D739CC132401E15B7B44FCBDDEF3755FDA8A321CD7F001749"
+    },
+    "raw_result": {
+      "committed": false,
+      "bytes": 35816,
+      "sha256": "27144166C44F5898DA13B9BC79E48A3EF19ECEC3F97ABAA1B446FE1A0F9934D3"
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 76,
+    "input_tokens": 2488,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "quality_gates": {
+    "same_scaffold_root_actually_reused": true,
+    "primary_semantic_panel_preserved": true,
+    "unrelated_joint_correct": false,
+    "unrelated_F_alone_insufficient": true,
+    "unrelated_G_alone_insufficient": true,
+    "scaffold_content_restored_exactly": true,
+    "active_plus_retained_backend_allocation_accounted": true,
+    "complete_host_scaffold_duplicate_absent": true,
+    "all_roots_closed": true,
+    "whole_process_physical_residency_accounted": false,
+    "native_inverse_restoration": false,
+    "fresh_compute_reduction": false,
+    "unbounded_recurrence": false
+  },
+  "verdict": "reject",
+  "classification": "UNRELATED_REUSE_STRICT_GATE_FAILED_AT_THREE_OF_FOUR",
+  "strongest_supported_claim": "The exact 65,863,680-byte recurrent scaffold backing transfers useful joint inference to 3/4 on a prospectively frozen held-out reverse-relation task while both single-evidence controls remain at 1/4; the original panel remains exact, the scaffold hash is unchanged after 37 restores, one 2,662,400-byte attention root is retained at a time, and measured active-cache plus retained-root backend allocation is 144,875,520 bytes.",
+  "strongest_rejected_interpretation": "The strict unrelated-useful-reuse gate fails because H should map to A but yields D. The run also uses snapshot reload, 1,300 fresh source tokens, 2,532,802,560 restore-copy bytes, and incomplete whole-process CUDA accounting. It does not establish unrelated carrier reuse, fresh-compute reduction, catalytic recurrence, or unbounded inference.",
+  "next_boundary": "ON_THE_FROZEN_HELD_OUT_TASK_COMPARE_THE_PHYSICAL_DECOMPOSITION_WITH_AN_UNTOUCHED_FULL_HYBRID_ROOT_TO_DISTINGUISH_MODEL_TASK_FAILURE_FROM_DECOMPOSITION_FAILURE"
+}

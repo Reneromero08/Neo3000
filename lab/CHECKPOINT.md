@@ -71,6 +71,17 @@ The active recurrence and acceptance boundary are
 - Retained-root backend-buffer allocation peaks at `68,526,080` bytes. No
   complete host scaffold copy is retained; exact validation streams through
   one `1,048,576`-byte host work buffer.
+- `neo-exp-0112` reuses that exact scaffold backing for a prospectively frozen
+  E/F/G/H reverse-relation task. The original panel remains exact and both
+  held-out single-evidence controls remain insufficient at `1/4`, but the
+  held-out joint returns `D,C,B,D` rather than `D,C,B,A`: `3/4`, so the strict
+  unrelated-useful-reuse gate fails.
+- The same scaffold hash remains `5eb6dd1bea73e09e` after 37 restores; nine
+  attention roots are created and closed sequentially. Active cache backend
+  allocation is `76,349,440` bytes, maximum retained-root allocation is
+  `68,526,080` bytes, and their measured sum is `144,875,520` bytes. This is
+  not whole-process CUDA residency and excludes model weights and
+  allocator/driver overhead.
 - The Release server rebuild succeeds, all 139 configured CUDA objects remain
   present with zero CUDA source changes, and the focused no-model Python suite
   passes 57 tests.
@@ -127,14 +138,19 @@ The active recurrence and acceptance boundary are
   copies `1,646,592,000` scaffold bytes during 25 restores, and tests related
   semantic variants rather than an unrelated task family. Restoration remains
   `SNAPSHOT_RELOAD`.
+- `neo-exp-0112` does not close unrelated useful reuse: H -> A instead yields
+  D. Its `3/4` joint result is informative transfer, not acceptance. The run
+  also spends 1,300 fresh source tokens and performs `2,532,802,560` bytes of
+  scaffold-plus-attention restore copies.
 
 ### ACTIVE BOUNDARY
 
-Use the exact retained scaffold root in a prospectively frozen unrelated useful
-task transaction. Measure active cache backend allocation plus retained-root
-allocation, preserve sequential one-delta residency, and count save/restore
-device copies. Then localize or construct the attention delta without a full
-130-token source replay. `neo-exp-0102` remains frozen and unconsumed.
+Keep the failed E/F/G/H task and expected answers frozen. Compare its physical
+scaffold-plus-attention route with an untouched full-hybrid root. This one
+control decides whether 0112 exposed decomposition loss or a base-model task
+failure; do not tune the fixture first. Only after that discriminator should
+the frontier remove the full 130-token replay used to construct each delta.
+`neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

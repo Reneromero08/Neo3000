@@ -74,10 +74,19 @@ constructively unbounded local Agents-A1 inference.
   preserves the full semantic panel, exactly reproduces the streamed scaffold
   content hash, retains no complete host scaffold copy, and closes all roots.
   Retained-root backend allocation peaks at `68,526,080` bytes.
-- [ ] Reuse that exact scaffold root for a prospectively frozen unrelated
-  useful task, while measuring active cache allocation plus retained-root
-  allocation and all device-copy work. Then attack the still-unreduced 130
-  fresh source tokens per attention delta.
+- [x] Test that exact scaffold root on a prospectively frozen unrelated task
+  and count active plus retained allocation. `neo-exp-0112` preserves the
+  primary panel, exact scaffold hash, one-delta residency, and insufficient
+  F-only/G-only controls. The held-out joint reaches only `3/4`, missing
+  H -> A, so the strict unrelated-reuse gate is rejected. Measured active
+  cache plus retained-root backend allocation is `144,875,520` bytes; this
+  excludes model weights, allocator/driver overhead, and whole-process CUDA
+  residency.
+- [ ] On the unchanged frozen E/F/G/H task, run the untouched full-hybrid
+  root as a matched model-capability control. If it reaches `4/4`, the
+  scaffold-plus-attention decomposition failed transfer; if it also reaches
+  `3/4`, the fixture does not test a capability the base model possesses.
+  Do not modify the prompt or expected answer before this discriminator.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

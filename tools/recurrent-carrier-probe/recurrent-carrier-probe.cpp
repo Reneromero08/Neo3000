@@ -140,6 +140,38 @@ static uint64_t active_attention_backing_id(llama_context * ctx) {
     return hash;
 }
 
+static size_t active_hybrid_backend_allocation_bytes(llama_context * ctx) {
+    auto * hybrid = require_hybrid_memory(ctx);
+    auto * attention = hybrid->get_mem_attn();
+    auto * recurrent = hybrid->get_mem_recr();
+    std::set<ggml_backend_buffer_t> unique;
+    for (const uint32_t il : attention->get_layer_ids()) {
+        for (ggml_tensor * tensor : {
+                attention->get_k_storage(static_cast<int32_t>(il)),
+                attention->get_v_storage(static_cast<int32_t>(il))}) {
+            if (tensor && tensor->buffer) {
+                unique.insert(tensor->buffer);
+            }
+        }
+    }
+    for (ggml_tensor * tensor : recurrent->r_l) {
+        if (tensor && tensor->buffer) {
+            unique.insert(tensor->buffer);
+        }
+    }
+    for (ggml_tensor * tensor : recurrent->s_l) {
+        if (tensor && tensor->buffer) {
+            unique.insert(tensor->buffer);
+        }
+    }
+
+    size_t bytes = 0;
+    for (ggml_backend_buffer_t buffer : unique) {
+        bytes += ggml_backend_buffer_get_size(buffer);
+    }
+    return bytes;
+}
+
 static uint64_t retained_root_backing_id(llama_context * ctx, llama_seq_id key) {
     return llama_state_seq_get_device_backing_id(ctx, key);
 }
@@ -1116,9 +1148,12 @@ static json run_physical_attention_roots(
         ctx, "F0_G0:recurrent-scaffold", 4000,
         RECURRENT_DEVICE_FLAGS, scaffold_tokens.size());
     const auto scaffold_hash_before = hash_recurrent_state_streamed(ctx);
+    const size_t active_cache_backend_allocation_bytes =
+        active_hybrid_backend_allocation_bytes(ctx);
 
     const auto & queries = spec.at("queries");
     std::map<std::string, std::vector<boundary_result>> results;
+    std::map<std::string, std::vector<boundary_result>> reuse_results;
     json records = json::array();
     json roots = json::array();
     llama_seq_id key = 4001;
@@ -1130,9 +1165,15 @@ static json run_physical_attention_roots(
     size_t scaffold_restore_count = 0;
     size_t attention_restore_count = 0;
     size_t attention_metadata_peak_bytes = 0;
+    size_t source_transaction_count = 0;
 
-    for (const auto & variant : variants) {
-        const auto source_tokens = prepare_source(ctx, vocab, sources.at(variant));
+    const auto execute_attention_transaction = [&](
+            const std::string & family,
+            const std::string & variant,
+            const json & source,
+            const json & transaction_queries,
+            std::map<std::string, std::vector<boundary_result>> & destination) {
+        const auto source_tokens = prepare_source(ctx, vocab, source);
         if (attention->seq_pos_max(0) !=
                 static_cast<llama_pos>(source_tokens.size() - 1) ||
             recurrent->seq_pos_max(0) !=
@@ -1149,7 +1190,7 @@ static json run_physical_attention_roots(
         }
 
         auto attention_root = save_root(
-            ctx, variant + ":attention-delta", key++,
+            ctx, family + ":" + variant + ":attention-delta", key++,
             ATTENTION_DEVICE_FLAGS, source_tokens.size());
         if (attention_root.gpu_bytes >= scaffold_root.gpu_bytes) {
             throw std::runtime_error("attention root did not physically exclude recurrent tensors");
@@ -1166,7 +1207,7 @@ static json run_physical_attention_roots(
             maximum_simultaneous_gpu_allocation_bytes,
             scaffold_root.allocation_gpu_bytes + attention_root.allocation_gpu_bytes);
 
-        for (const auto & query : queries) {
+        for (const auto & query : transaction_queries) {
             restore_root(ctx, scaffold_root);
             ++scaffold_restore_count;
             if (recurrent->seq_pos_max(0) !=
@@ -1184,14 +1225,16 @@ static json run_physical_attention_roots(
                 throw std::runtime_error("assembled physical carrier invariant failed");
             }
             auto boundary = decode_query(
-                ctx, vocab, candidates, "physical-attention-root-fixed-recurrent",
+                ctx, vocab, candidates,
+                "physical-attention-root-fixed-recurrent:" + family,
                 variant, query, attention_root.source_tokens,
                 attention_root.backing_id, attention_root.gpu_bytes);
             records.push_back(boundary.record);
-            results[variant].push_back(std::move(boundary));
+            destination[variant].push_back(std::move(boundary));
         }
 
         roots.push_back({
+            {"transaction_family", family},
             {"source_variant", variant},
             {"logical_tensor_bytes", attention_root.resident_bytes},
             {"gpu_tensor_bytes", attention_root.gpu_bytes},
@@ -1206,6 +1249,26 @@ static json run_physical_attention_roots(
         if (llama_state_seq_get_device_data_size(ctx, attention_root.key) != 0 ||
             llama_state_seq_get_device_root_count(ctx) != 1) {
             throw std::runtime_error("attention root closure damaged recurrent scaffold custody");
+        }
+        ++source_transaction_count;
+    };
+
+    for (const auto & variant : variants) {
+        execute_attention_transaction(
+            "primary", variant, sources.at(variant), queries, results);
+    }
+
+    const bool has_reuse_task = spec.contains("reuse_sources");
+    if (has_reuse_task) {
+        const auto & reuse_sources = spec.at("reuse_sources");
+        const auto & reuse_queries = spec.at("reuse_queries");
+        for (const std::string variant : {"R_F1_G0", "R_F0_G1", "R_F1_G1"}) {
+            if (!reuse_sources.contains(variant)) {
+                throw std::runtime_error("reuse task missing source variant " + variant);
+            }
+            execute_attention_transaction(
+                "unrelated-reuse", variant, reuse_sources.at(variant),
+                reuse_queries, reuse_results);
         }
     }
 
@@ -1244,6 +1307,29 @@ static json run_physical_attention_roots(
         mutation_changes >= acceptance.at("mutation_changes_minimum").get<size_t>() &&
         presentation_matches >= acceptance.at("presentation_matches_minimum").get<size_t>();
 
+    size_t reuse_joint_correct = 0;
+    size_t reuse_f_only_correct = 0;
+    size_t reuse_g_only_correct = 0;
+    bool reuse_accepted = !has_reuse_task;
+    if (has_reuse_task) {
+        const auto & reuse_queries = spec.at("reuse_queries");
+        const auto & reuse_acceptance = spec.at("reuse_acceptance_law");
+        reuse_joint_correct = semantic_correct_count(
+            reuse_results.at("R_F1_G1"), reuse_queries, false);
+        reuse_f_only_correct = semantic_correct_count(
+            reuse_results.at("R_F1_G0"), reuse_queries, false);
+        reuse_g_only_correct = semantic_correct_count(
+            reuse_results.at("R_F0_G1"), reuse_queries, false);
+        reuse_accepted =
+            reuse_joint_correct >=
+                reuse_acceptance.at("joint_correct_minimum").get<size_t>() &&
+            reuse_f_only_correct <=
+                reuse_acceptance.at("f_only_correct_maximum").get<size_t>() &&
+            reuse_g_only_correct <=
+                reuse_acceptance.at("g_only_correct_maximum").get<size_t>();
+    }
+    const bool complete_acceptance = accepted && reuse_accepted;
+
     llama_memory_clear(llama_get_memory(ctx), true);
     const size_t cleared_scaffold_bytes =
         llama_state_seq_clear_device_data(ctx, scaffold_root.key);
@@ -1264,6 +1350,8 @@ static json run_physical_attention_roots(
             {"scaffold_tokens", scaffold_tokens.size()},
             {"query_count", queries.size()},
             {"source_variant_count", variants.size()},
+            {"source_transaction_count", source_transaction_count},
+            {"unrelated_reuse_task_present", has_reuse_task},
             {"attention_layers", attention_layers},
             {"recurrent_layers", recurrent_layers},
         }},
@@ -1298,6 +1386,11 @@ static json run_physical_attention_roots(
                 maximum_simultaneous_backend_allocation_bytes},
             {"maximum_simultaneous_gpu_allocation_bytes",
                 maximum_simultaneous_gpu_allocation_bytes},
+            {"active_cache_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes},
+            {"active_plus_retained_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes +
+                maximum_simultaneous_backend_allocation_bytes},
             {"complete_host_scaffold_copy_retained", false},
             {"all_retained_roots_closed", llama_state_seq_get_device_root_count(ctx) == 0},
             {"active_recurrent_backing_stable",
@@ -1307,6 +1400,9 @@ static json run_physical_attention_roots(
             {"restoration_class", "SNAPSHOT_RELOAD"},
         }},
         {"route_summary", semantic_route_summary(results, queries)},
+        {"unrelated_reuse_summary", has_reuse_task
+            ? semantic_route_summary(reuse_results, spec.at("reuse_queries"))
+            : json::object()},
         {"summary", {
             {"joint_correct", joint_correct},
             {"f_only_correct", f_only_correct},
@@ -1317,10 +1413,14 @@ static json run_physical_attention_roots(
             {"mutation_changes", mutation_changes},
             {"presentation_matches", presentation_matches},
             {"semantic_validation_passed", accepted},
+            {"unrelated_reuse_joint_correct", reuse_joint_correct},
+            {"unrelated_reuse_f_only_correct", reuse_f_only_correct},
+            {"unrelated_reuse_g_only_correct", reuse_g_only_correct},
+            {"unrelated_reuse_passed", reuse_accepted},
         }},
         {"attention_roots", roots},
         {"records", records},
-        {"verdict", accepted ? "accept" : "reject"},
+        {"verdict", complete_acceptance ? "accept" : "reject"},
         {"claim_ceiling", spec.at("claim_ceiling")},
     };
 }

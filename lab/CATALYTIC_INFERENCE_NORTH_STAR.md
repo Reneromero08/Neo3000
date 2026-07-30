@@ -175,6 +175,21 @@ the scaffold incurs 1.65 GB of restore copies, every delta costs a fresh
 next proof must reuse the exact scaffold for an unrelated useful task and then
 remove fresh source replay from delta construction.
 
+That unrelated-use test is now frozen and executed. The exact same scaffold
+backing transfers the held-out reverse relation to `3/4`; both held-out
+single-evidence controls remain at `1/4`, and the original semantic panel
+remains exact. The one failure is specific and preserved: H should map through
+J to A, but the physical decomposition returns D. Measured active-cache plus
+retained-root backend allocation is `144,875,520` bytes, with one delta root
+resident at a time and exact scaffold hash preservation after 37 restores.
+
+This is not accepted unrelated reuse. The next scientific contact must not
+tune the missed example. It must run the untouched full-hybrid state on the
+same frozen task. A full-hybrid `4/4` result would localize the failure to the
+decomposition; the same `3/4` result would show that the fixture exceeds the
+base model's demonstrated capability. That discriminator precedes any claim
+about transfer and any attack on fresh delta-construction work.
+
 ## 1. Executive conclusion
 
 The strongest coherent route to catalytic Agents-A1 inference is:
