@@ -179,6 +179,11 @@ struct llama_context {
     uint64_t state_seq_get_device_backing_id(llama_seq_id device_storage_key) const;
     size_t state_seq_get_device_root_count() const;
     size_t state_seq_clear_device_data(llama_seq_id device_storage_key);
+    bool state_seq_apply_device_affine(
+            llama_seq_id base_device_storage_key,
+            llama_seq_id add_device_storage_key,
+            llama_seq_id subtract_device_storage_key,
+            llama_state_seq_affine_metrics * metrics);
 
     bool state_load_file(
             const char * filepath,

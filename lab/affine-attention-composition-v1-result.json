@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0119",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "5e187f348e2515d9e7b57638b1039ad342ce1bd9",
+  "mechanism": "IN_PLACE_AFFINE_ATTENTION_COMPOSITION_SHAM",
+  "spec_id": "affine-attention-composition-v1",
+  "hypothesis": "A fixed affine law over separately prepared F-only, G-only, and neutral attention-KV roots may construct the useful joint boundary in active model backing without decoding or retaining a joint source.",
+  "intervention": "Add one bounded-chunk retained-root arithmetic API, restore F-only state into the stable active attention allocation, overwrite it with F-only + G-only - neutral, and let later Agents-A1 queries read the result on both previously accepted tasks.",
+  "model_hash": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "context_size": 512,
+    "source_tokens": 130,
+    "task_count": 2,
+    "queries_per_task": 4,
+    "routes_per_query": 3,
+    "operator": "active_attention = F_only + G_only - neutral",
+    "joint_source_available_to_candidate": false,
+    "joint_attention_root_constructed": false,
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "metrics_after": {
+    "task_passes": 0,
+    "task_count": 2,
+    "EFGH_affine_answers": ["A", "D", "C", "D"],
+    "EFGH_affine_correct": 3,
+    "EFGH_f_only_correct": 1,
+    "EFGH_g_only_correct": 1,
+    "IOUV_affine_answers": ["A", "B", "B", "C"],
+    "IOUV_affine_correct": 0,
+    "IOUV_f_only_correct": 0,
+    "IOUV_g_only_correct": 1,
+    "affine_apply_count": 8,
+    "affine_root_bytes_read": 63897600,
+    "affine_active_bytes_written": 21299200,
+    "affine_peak_host_work_bytes": 1572864,
+    "affine_tensor_visits": 160,
+    "active_cache_backend_allocation_bytes": 76349440,
+    "maximum_retained_root_backend_allocation_bytes": 73850880,
+    "active_plus_retained_backend_allocation_bytes": 150200320,
+    "scaffold_recurrent_tensor_digest_match": true,
+    "same_active_backings": true,
+    "all_roots_closed": true
+  },
+  "resource_accounting": {
+    "fresh_source_decode_tokens": 520,
+    "fresh_query_decode_tokens": 792,
+    "fresh_input_tokens_total": 1312,
+    "root_save_device_copy_bytes": 76513280,
+    "scaffold_restore_device_copy_bytes": 1646592000,
+    "attention_restore_device_copy_bytes": 63897600,
+    "scaffold_digest_d2h_bytes": 131727360,
+    "complete_host_attention_copy_retained": false,
+    "whole_process_cuda_residency_measured": false,
+    "wall_time_advantage_measured": false
+  },
+  "quality_gates": {
+    "candidate_has_no_joint_source_or_root": true,
+    "later_model_queries_read_constructed_active_state": true,
+    "both_single_evidence_controls_insufficient": true,
+    "all_tasks_joint_correct": false,
+    "affine_operator_sufficient": false,
+    "stable_active_backings": true,
+    "recurrent_tensor_digest_preserved": true,
+    "all_roots_closed": true,
+    "native_inverse_restoration": false,
+    "fresh_compute_advantage": false,
+    "catalytic_recurrence": false,
+    "unbounded_recurrence": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/affine-attention-composition-v1.json",
+      "bytes": 7090,
+      "sha256": "9285D6A7758554B78E2D82037E6707194400570DEDEFF1E6A9176D18496BC699"
+    },
+    "canonical_recomputable_evidence": {
+      "path": "lab/affine-attention-composition-v1-evidence.json",
+      "bytes": 24387,
+      "sha256": "2AED39E3D1256CEACD9CDCADBABC70F3A9454C0F20D038C19BBFD7757A7EB93D",
+      "per_query_records": 24,
+      "committed": true
+    },
+    "implementation": [
+      {
+        "path": "include/llama.h",
+        "bytes": 86734,
+        "sha256": "EB01620FA3B67181AB421DB7CC0DD5CB4701901564098C75059BBD9E022451D9"
+      },
+      {
+        "path": "src/llama-context.h",
+        "bytes": 13911,
+        "sha256": "3BFC85A04CCE1A7C5C197ED53C9F9A0A06FF895F17AAD832EB0476E1709FA45C"
+      },
+      {
+        "path": "src/llama-context.cpp",
+        "bytes": 158979,
+        "sha256": "415EA983511438AB99BE4DAAF372EC8DC5BCB1C9ADCAE16BDC8096593EFB54D"
+      },
+      {
+        "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+        "bytes": 152726,
+        "sha256": "D851D2F4600CE2891E5D8CCE49670242A44C87C9724DBAB41F6A2F3F818D7ABE"
+      }
+    ],
+    "runtime_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 785152,
+      "sha256": "5C6F1DBC2134D593DAA647BEE6B408595D4E78C4BF179C221F704A1B02AEA817",
+      "committed": false
+    },
+    "compiler": {
+      "identity": "c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "path": "/usr/bin/c++",
+      "sha256": "E6718F7E0C7D057C3FF77B550C603DA9BC4030E3EDE3C053705ACCE1293DBE4D"
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 40,
+    "input_tokens": 1312,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "reject",
+  "classification": "GLOBAL_AFFINE_ATTENTION_OVERLAY_COMPOSITION_INSUFFICIENT_ON_BOTH_ACCEPTED_TASKS",
+  "strongest_supported_claim": "Three separately prepared complete attention overlays can be streamed through a fixed affine operator into stable active attention backing and causally queried without any joint source or joint root; the operator is insufficient for the useful joint boundary.",
+  "strongest_rejected_interpretation": "Global linear superposition is not the attention-state composition law: it reaches only 3/4 and 0/4 while both single-evidence controls remain insufficient. The route is host-mediated compact classical arithmetic with repeated snapshot reload and no fresh-work advantage, native restoration, catalysis, or recurrence.",
+  "next_boundary": "TEST_FIXED_CAUSAL_POSITION_SPLICE_OF_F_AND_G_ATTENTION_SEGMENTS_WITHOUT_A_JOINT_SOURCE_OR_TARGET_ROOT"
+}

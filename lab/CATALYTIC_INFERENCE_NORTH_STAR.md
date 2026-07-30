@@ -1041,3 +1041,25 @@ All paths below are relative to
 on it, uncompute everything except a bounded output-sufficient successor, reuse
 the exact substrate, and prove the recurrence against the best compact
 baseline.**
+
+### Executed operator update — global affine overlay rejected
+
+`neo-exp-0119` removes the joint source and joint target root entirely. It
+prepares neutral, F-only, and G-only complete attention overlays, streams the
+fixed public law `F + G - neutral` into the stable active attention allocation,
+and lets later Agents-A1 queries read only that constructed state. This is a
+direct model-native operator contact, but prospectively a compact classical
+sham rather than a relational-resource claim.
+
+The result rejects global linear composition: EFGH reaches `3/4` and IOUV
+`0/4`, while both single-evidence controls remain insufficient. Eight
+applications read `63,897,600` retained-root bytes, write `21,299,200` active
+bytes, and use at most `1,572,864` host work bytes; all roots close and the
+streamed recurrent-tensor digest matches before and after snapshot reload.
+
+The failure selects one narrower successor: splice causally identified token
+segments rather than values globally. F-token KV is independent of later G
+tokens under causal attention; G-token KV may contain the missing cross-module
+interaction. A fixed F/G positional splice therefore distinguishes simple
+topological assembly from genuinely nonlinear cross-module state without
+introducing a joint source, target root, or learned answer-conditioned map.

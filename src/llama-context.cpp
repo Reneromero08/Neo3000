@@ -12,6 +12,7 @@
 #include "llama-ext.h"
 #include "llama.h"
 
+#include <algorithm>
 #include <cinttypes>
 #include <cmath>
 #include <cstring>
@@ -3130,6 +3131,123 @@ size_t llama_context::state_seq_clear_device_data(llama_seq_id device_storage_ke
     return size;
 }
 
+bool llama_context::state_seq_apply_device_affine(
+        llama_seq_id base_device_storage_key,
+        llama_seq_id add_device_storage_key,
+        llama_seq_id subtract_device_storage_key,
+        llama_state_seq_affine_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    const auto base_it = mem_storage.find(base_device_storage_key);
+    const auto add_it = mem_storage.find(add_device_storage_key);
+    const auto sub_it = mem_storage.find(subtract_device_storage_key);
+    if (base_it == mem_storage.end() ||
+        add_it == mem_storage.end() ||
+        sub_it == mem_storage.end()) {
+        return false;
+    }
+    if (base_it->second.size() != add_it->second.size() ||
+        base_it->second.size() != sub_it->second.size()) {
+        return false;
+    }
+
+    constexpr size_t chunk_elements = 64 * 1024;
+    uint64_t root_bytes_read = 0;
+    uint64_t active_bytes_written = 0;
+    uint64_t peak_host_work_bytes = 0;
+    uint64_t tensor_count = 0;
+
+    for (const auto & [buft, base_memory] : base_it->second) {
+        const auto add_memory_it = add_it->second.find(buft);
+        const auto sub_memory_it = sub_it->second.find(buft);
+        if (add_memory_it == add_it->second.end() ||
+            sub_memory_it == sub_it->second.end()) {
+            return false;
+        }
+        const auto & add_memory = add_memory_it->second;
+        const auto & sub_memory = sub_memory_it->second;
+        if (base_memory.cpy.size() != add_memory.cpy.size() ||
+            base_memory.cpy.size() != sub_memory.cpy.size() ||
+            base_memory.cpy.size() != base_memory.org.size()) {
+            return false;
+        }
+
+        for (size_t i = 0; i < base_memory.cpy.size(); ++i) {
+            const ggml_tensor * base = base_memory.cpy[i];
+            const ggml_tensor * add = add_memory.cpy[i];
+            const ggml_tensor * sub = sub_memory.cpy[i];
+            ggml_tensor * dst = base_memory.org[i];
+            if (!base || !add || !sub || !dst ||
+                base->type != add->type ||
+                base->type != sub->type ||
+                base->type != dst->type ||
+                !ggml_are_same_shape(base, add) ||
+                !ggml_are_same_shape(base, sub) ||
+                !ggml_are_same_shape(base, dst)) {
+                return false;
+            }
+            const ggml_type_traits * traits =
+                ggml_get_type_traits(base->type);
+            if (!traits || traits->blck_size != 1 ||
+                !traits->to_float || !traits->from_float_ref) {
+                return false;
+            }
+
+            const size_t elements =
+                static_cast<size_t>(ggml_nelements(base));
+            const size_t type_size = traits->type_size;
+            const size_t capacity = std::min(chunk_elements, elements);
+            std::vector<uint8_t> base_bytes(capacity * type_size);
+            std::vector<uint8_t> add_bytes(capacity * type_size);
+            std::vector<uint8_t> sub_bytes(capacity * type_size);
+            std::vector<uint8_t> out_bytes(capacity * type_size);
+            std::vector<float> base_f32(capacity);
+            std::vector<float> add_f32(capacity);
+            std::vector<float> sub_f32(capacity);
+            std::vector<float> out_f32(capacity);
+            peak_host_work_bytes = std::max<uint64_t>(
+                peak_host_work_bytes,
+                4 * capacity * type_size +
+                4 * capacity * sizeof(float));
+
+            for (size_t offset = 0; offset < elements; offset += capacity) {
+                const size_t count = std::min(capacity, elements - offset);
+                const size_t byte_offset = offset * type_size;
+                const size_t byte_count = count * type_size;
+                ggml_backend_tensor_get(
+                    base, base_bytes.data(), byte_offset, byte_count);
+                ggml_backend_tensor_get(
+                    add, add_bytes.data(), byte_offset, byte_count);
+                ggml_backend_tensor_get(
+                    sub, sub_bytes.data(), byte_offset, byte_count);
+                traits->to_float(base_bytes.data(), base_f32.data(), count);
+                traits->to_float(add_bytes.data(), add_f32.data(), count);
+                traits->to_float(sub_bytes.data(), sub_f32.data(), count);
+                for (size_t j = 0; j < count; ++j) {
+                    out_f32[j] =
+                        base_f32[j] + add_f32[j] - sub_f32[j];
+                }
+                traits->from_float_ref(
+                    out_f32.data(), out_bytes.data(), count);
+                ggml_backend_tensor_set(
+                    dst, out_bytes.data(), byte_offset, byte_count);
+                root_bytes_read += 3 * byte_count;
+                active_bytes_written += byte_count;
+            }
+            ++tensor_count;
+        }
+    }
+
+    if (metrics) {
+        metrics->root_bytes_read = root_bytes_read;
+        metrics->active_bytes_written = active_bytes_written;
+        metrics->peak_host_work_bytes = peak_host_work_bytes;
+        metrics->tensor_count = tensor_count;
+    }
+    return true;
+}
+
 bool llama_context::state_load_file(const char * filepath, llama_token * tokens_out, size_t n_token_capacity, size_t * n_token_count_out) {
     llama_file file(filepath, "rb");
 
@@ -4223,6 +4341,22 @@ size_t llama_state_seq_clear_device_data(llama_context * ctx, llama_seq_id devic
     ctx->synchronize();
 
     return ctx->state_seq_clear_device_data(device_storage_key);
+}
+
+bool llama_state_seq_apply_device_affine(
+        llama_context * ctx,
+        llama_seq_id base_device_storage_key,
+        llama_seq_id add_device_storage_key,
+        llama_seq_id subtract_device_storage_key,
+        llama_state_seq_affine_metrics * metrics) {
+    ctx->synchronize();
+    const bool result = ctx->state_seq_apply_device_affine(
+        base_device_storage_key,
+        add_device_storage_key,
+        subtract_device_storage_key,
+        metrics);
+    ctx->synchronize();
+    return result;
 }
 
 size_t llama_state_seq_save_file(llama_context * ctx, const char * filepath, llama_seq_id seq_id, const llama_token * tokens, size_t n_token_count) {

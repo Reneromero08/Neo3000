@@ -2019,6 +2019,442 @@ static json run_physical_attention_capability_panel(
     };
 }
 
+static json run_affine_attention_composition(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const std::vector<llama_token> & candidates,
+        const json & spec,
+        uint64_t active_recurrent_backing_initial,
+        uint64_t active_attention_backing_initial) {
+    auto * hybrid = require_hybrid_memory(ctx);
+    auto * attention = hybrid->get_mem_attn();
+    auto * recurrent = hybrid->get_mem_recr();
+    const uint32_t actual_context_size = llama_n_ctx(ctx);
+    if (actual_context_size != spec.at("expected_context_size").get<uint32_t>()) {
+        throw std::runtime_error(
+            "affine attention composition context mismatch: " +
+            std::to_string(actual_context_size));
+    }
+    const size_t expected_source_tokens =
+        spec.at("expected_source_tokens").get<size_t>();
+    const auto & tasks = spec.at("tasks");
+    if (!tasks.is_array() || tasks.empty()) {
+        throw std::runtime_error("affine attention composition has no tasks");
+    }
+    if (spec.contains("joint_source")) {
+        throw std::runtime_error(
+            "affine attention composition must not contain a joint source");
+    }
+
+    const std::vector<uint32_t> attention_layers = attention->get_layer_ids();
+    std::vector<uint32_t> recurrent_layers;
+    for (uint32_t il = 0; il < recurrent->r_l.size(); ++il) {
+        if (recurrent->r_l[il] || recurrent->s_l[il]) {
+            recurrent_layers.push_back(il);
+        }
+    }
+    if (attention_layers !=
+            spec.at("expected_attention_layers").get<std::vector<uint32_t>>() ||
+        recurrent_layers !=
+            spec.at("expected_recurrent_layers").get<std::vector<uint32_t>>()) {
+        throw std::runtime_error(
+            "model hybrid layer topology differs from affine composition spec");
+    }
+
+    for (const char * source_name : {"neutral_source", "shared_g_source"}) {
+        const auto tokens = tokenize_source(vocab, spec.at(source_name));
+        if (tokens.size() != expected_source_tokens) {
+            throw std::runtime_error(
+                std::string("affine composition source token mismatch for ") +
+                source_name + ": " + std::to_string(tokens.size()));
+        }
+    }
+    std::set<std::string> task_ids;
+    for (const auto & task : tasks) {
+        const std::string id = task.at("id");
+        if (!task_ids.insert(id).second) {
+            throw std::runtime_error(
+                "duplicate affine-composition task id " + id);
+        }
+        if (task.contains("joint") ||
+            task.contains("joint_source") ||
+            task.contains("sources")) {
+            throw std::runtime_error(
+                "affine composition task exposes a forbidden joint/source map");
+        }
+        if (tokenize_source(vocab, task.at("f_source")).size() !=
+            expected_source_tokens) {
+            throw std::runtime_error(
+                "affine composition F source token mismatch for " + id);
+        }
+    }
+
+    const auto neutral_tokens =
+        prepare_source(ctx, vocab, spec.at("neutral_source"));
+    auto scaffold_root = save_root(
+        ctx, "affine:F0_G0:recurrent-scaffold", 9000,
+        RECURRENT_DEVICE_FLAGS, neutral_tokens.size());
+    auto neutral_root = save_root(
+        ctx, "affine:F0_G0:attention", 9001,
+        ATTENTION_DEVICE_FLAGS, neutral_tokens.size());
+    const auto scaffold_hash_before = hash_recurrent_state_streamed(ctx);
+
+    const auto g_tokens =
+        prepare_source(ctx, vocab, spec.at("shared_g_source"));
+    auto g_root = save_root(
+        ctx, "affine:F0_G1:attention", 9002,
+        ATTENTION_DEVICE_FLAGS, g_tokens.size());
+    const size_t active_cache_backend_allocation_bytes =
+        active_hybrid_backend_allocation_bytes(ctx);
+
+    using route_results = std::map<std::string, std::vector<boundary_result>>;
+    std::map<std::string, route_results> results;
+    json records = json::array();
+    json roots = json::array({
+        {
+            {"role", "recurrent-scaffold"},
+            {"logical_tensor_bytes", scaffold_root.resident_bytes},
+            {"backend_allocation_bytes", scaffold_root.allocation_bytes},
+            {"root_backing_id", hex64(scaffold_root.backing_id)},
+        },
+        {
+            {"role", "neutral-attention"},
+            {"logical_tensor_bytes", neutral_root.resident_bytes},
+            {"backend_allocation_bytes", neutral_root.allocation_bytes},
+            {"root_backing_id", hex64(neutral_root.backing_id)},
+        },
+        {
+            {"role", "shared-G-attention"},
+            {"logical_tensor_bytes", g_root.resident_bytes},
+            {"backend_allocation_bytes", g_root.allocation_bytes},
+            {"root_backing_id", hex64(g_root.backing_id)},
+        },
+    });
+    llama_seq_id f_key = 9003;
+    size_t scaffold_restore_count = 0;
+    size_t attention_restore_count = 0;
+    size_t source_decode_tokens =
+        neutral_tokens.size() + g_tokens.size();
+    size_t query_decode_tokens = 0;
+    size_t root_save_device_copy_bytes =
+        scaffold_root.gpu_bytes + neutral_root.gpu_bytes + g_root.gpu_bytes;
+    size_t scaffold_restore_device_copy_bytes = 0;
+    size_t attention_restore_device_copy_bytes = 0;
+    size_t cleared_f_root_bytes = 0;
+    size_t maximum_retained_root_backend_allocation_bytes =
+        scaffold_root.allocation_bytes +
+        neutral_root.allocation_bytes +
+        g_root.allocation_bytes;
+    uint64_t affine_root_bytes_read = 0;
+    uint64_t affine_active_bytes_written = 0;
+    uint64_t affine_peak_host_work_bytes = 0;
+    uint64_t affine_tensor_count_total = 0;
+    size_t affine_apply_count = 0;
+    bool affine_metrics_stable = true;
+    llama_state_seq_affine_metrics first_affine_metrics = {};
+    bool have_first_affine_metrics = false;
+
+    for (const auto & task : tasks) {
+        const std::string id = task.at("id");
+        const auto f_tokens =
+            prepare_source(ctx, vocab, task.at("f_source"));
+        source_decode_tokens += f_tokens.size();
+        auto f_root = save_root(
+            ctx, id + ":F1_G0:attention", f_key++,
+            ATTENTION_DEVICE_FLAGS, f_tokens.size());
+        root_save_device_copy_bytes += f_root.gpu_bytes;
+        maximum_retained_root_backend_allocation_bytes = std::max(
+            maximum_retained_root_backend_allocation_bytes,
+            scaffold_root.allocation_bytes +
+            neutral_root.allocation_bytes +
+            g_root.allocation_bytes +
+            f_root.allocation_bytes);
+        roots.push_back({
+            {"role", "task-F-attention"},
+            {"task_id", id},
+            {"logical_tensor_bytes", f_root.resident_bytes},
+            {"backend_allocation_bytes", f_root.allocation_bytes},
+            {"root_backing_id", hex64(f_root.backing_id)},
+        });
+
+        for (const auto & query : task.at("queries")) {
+            restore_root(ctx, scaffold_root);
+            ++scaffold_restore_count;
+            scaffold_restore_device_copy_bytes += scaffold_root.gpu_bytes;
+            restore_attention_root(ctx, f_root);
+            ++attention_restore_count;
+            attention_restore_device_copy_bytes += f_root.gpu_bytes;
+            auto f_boundary = decode_query(
+                ctx, vocab, candidates, "F-only-control",
+                id + ":F_only", query, expected_source_tokens,
+                f_root.backing_id, f_root.gpu_bytes);
+            query_decode_tokens +=
+                f_boundary.record.at("query_tokens").get<size_t>();
+            records.push_back(f_boundary.record);
+            results[id]["F_only"].push_back(std::move(f_boundary));
+
+            restore_root(ctx, scaffold_root);
+            ++scaffold_restore_count;
+            scaffold_restore_device_copy_bytes += scaffold_root.gpu_bytes;
+            restore_attention_root(ctx, g_root);
+            ++attention_restore_count;
+            attention_restore_device_copy_bytes += g_root.gpu_bytes;
+            auto g_boundary = decode_query(
+                ctx, vocab, candidates, "G-only-control",
+                id + ":G_only", query, expected_source_tokens,
+                g_root.backing_id, g_root.gpu_bytes);
+            query_decode_tokens +=
+                g_boundary.record.at("query_tokens").get<size_t>();
+            records.push_back(g_boundary.record);
+            results[id]["G_only"].push_back(std::move(g_boundary));
+
+            restore_root(ctx, scaffold_root);
+            ++scaffold_restore_count;
+            scaffold_restore_device_copy_bytes += scaffold_root.gpu_bytes;
+            restore_attention_root(ctx, f_root);
+            ++attention_restore_count;
+            attention_restore_device_copy_bytes += f_root.gpu_bytes;
+            llama_state_seq_affine_metrics affine_metrics = {};
+            if (!llama_state_seq_apply_device_affine(
+                    ctx,
+                    f_root.key,
+                    g_root.key,
+                    neutral_root.key,
+                    &affine_metrics)) {
+                throw std::runtime_error(
+                    "in-place affine attention construction failed for " + id);
+            }
+            if (!have_first_affine_metrics) {
+                first_affine_metrics = affine_metrics;
+                have_first_affine_metrics = true;
+            } else {
+                affine_metrics_stable =
+                    affine_metrics_stable &&
+                    std::memcmp(
+                        &first_affine_metrics,
+                        &affine_metrics,
+                        sizeof(affine_metrics)) == 0;
+            }
+            affine_root_bytes_read += affine_metrics.root_bytes_read;
+            affine_active_bytes_written +=
+                affine_metrics.active_bytes_written;
+            affine_peak_host_work_bytes = std::max(
+                affine_peak_host_work_bytes,
+                affine_metrics.peak_host_work_bytes);
+            affine_tensor_count_total += affine_metrics.tensor_count;
+            ++affine_apply_count;
+            if (attention->seq_pos_max(0) !=
+                    static_cast<llama_pos>(expected_source_tokens - 1) ||
+                recurrent->seq_pos_max(0) !=
+                    static_cast<llama_pos>(expected_source_tokens - 1) ||
+                active_recurrent_backing_id(ctx) !=
+                    active_recurrent_backing_initial ||
+                active_attention_backing_id(ctx) !=
+                    active_attention_backing_initial) {
+                throw std::runtime_error(
+                    "affine active-carrier invariant failed for " + id);
+            }
+            auto affine_boundary = decode_query(
+                ctx, vocab, candidates, "affine-attention-composition",
+                id + ":F_plus_G_minus_neutral", query,
+                expected_source_tokens, f_root.backing_id,
+                f_root.gpu_bytes);
+            query_decode_tokens +=
+                affine_boundary.record.at("query_tokens").get<size_t>();
+            records.push_back(affine_boundary.record);
+            results[id]["affine"].push_back(std::move(affine_boundary));
+        }
+
+        llama_memory_clear(llama_get_memory(ctx), true);
+        cleared_f_root_bytes +=
+            llama_state_seq_clear_device_data(ctx, f_root.key);
+        if (llama_state_seq_get_device_root_count(ctx) != 3) {
+            throw std::runtime_error(
+                "affine task-root closure damaged shared roots");
+        }
+    }
+
+    restore_root(ctx, scaffold_root);
+    ++scaffold_restore_count;
+    scaffold_restore_device_copy_bytes += scaffold_root.gpu_bytes;
+    const auto scaffold_hash_after = hash_recurrent_state_streamed(ctx);
+    const bool scaffold_tensor_digest_match =
+        scaffold_hash_before.value == scaffold_hash_after.value &&
+        scaffold_hash_before.transferred_bytes ==
+            scaffold_hash_after.transferred_bytes;
+
+    json task_summary = json::object();
+    size_t task_passes = 0;
+    for (const auto & task : tasks) {
+        const std::string id = task.at("id");
+        const auto & task_results = results.at(id);
+        const auto & queries = task.at("queries");
+        const size_t affine_correct = semantic_correct_count(
+            task_results.at("affine"), queries, false);
+        const size_t f_only_correct = semantic_correct_count(
+            task_results.at("F_only"), queries, false);
+        const size_t g_only_correct = semantic_correct_count(
+            task_results.at("G_only"), queries, false);
+        std::vector<std::string> affine_answers;
+        std::vector<std::string> f_only_answers;
+        std::vector<std::string> g_only_answers;
+        for (const auto & result : task_results.at("affine")) {
+            affine_answers.push_back(result.argmax);
+        }
+        for (const auto & result : task_results.at("F_only")) {
+            f_only_answers.push_back(result.argmax);
+        }
+        for (const auto & result : task_results.at("G_only")) {
+            g_only_answers.push_back(result.argmax);
+        }
+        const bool passed =
+            affine_correct >=
+                task.at("affine_correct_minimum").get<size_t>() &&
+            f_only_correct <=
+                task.at("f_only_correct_maximum").get<size_t>() &&
+            g_only_correct <=
+                task.at("g_only_correct_maximum").get<size_t>();
+        task_passes += passed;
+        task_summary[id] = {
+            {"affine", {
+                {"answers", affine_answers},
+                {"correct", affine_correct},
+            }},
+            {"F_only", {
+                {"answers", f_only_answers},
+                {"correct", f_only_correct},
+            }},
+            {"G_only", {
+                {"answers", g_only_answers},
+                {"correct", g_only_correct},
+            }},
+            {"passed", passed},
+        };
+    }
+    const bool accepted =
+        task_passes >=
+            spec.at("acceptance_law")
+                .at("task_passes_minimum").get<size_t>() &&
+        scaffold_tensor_digest_match &&
+        affine_metrics_stable &&
+        have_first_affine_metrics;
+
+    llama_memory_clear(llama_get_memory(ctx), true);
+    const size_t cleared_neutral_root_bytes =
+        llama_state_seq_clear_device_data(ctx, neutral_root.key);
+    const size_t cleared_g_root_bytes =
+        llama_state_seq_clear_device_data(ctx, g_root.key);
+    const size_t cleared_scaffold_bytes =
+        llama_state_seq_clear_device_data(ctx, scaffold_root.key);
+    llama_synchronize(ctx);
+    if (llama_state_seq_get_device_root_count(ctx) != 0 ||
+        active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
+        active_attention_backing_id(ctx) != active_attention_backing_initial) {
+        throw std::runtime_error(
+            "affine attention composition close invariant failed");
+    }
+
+    return {
+        {"schema_version", 1},
+        {"mechanism", "IN_PLACE_AFFINE_ATTENTION_COMPOSITION_SHAM"},
+        {"spec_id", spec.at("id")},
+        {"model_arch", "qwen35moe"},
+        {"configuration", {
+            {"context_size", actual_context_size},
+            {"source_tokens", expected_source_tokens},
+            {"task_count", tasks.size()},
+            {"queries_per_task", tasks.at(0).at("queries").size()},
+            {"attention_layers", attention_layers},
+            {"recurrent_layers", recurrent_layers},
+            {"operator", "active_attention = F_only + G_only - neutral"},
+            {"joint_source_available_to_candidate", false},
+            {"restoration_class", "SNAPSHOT_RELOAD"},
+        }},
+        {"summary", {
+            {"task_passes", task_passes},
+            {"task_count", tasks.size()},
+            {"scaffold_recurrent_tensor_digest_match",
+                scaffold_tensor_digest_match},
+            {"affine_metrics_stable", affine_metrics_stable},
+            {"accepted", accepted},
+        }},
+        {"task_summary", task_summary},
+        {"carrier", {
+            {"scaffold", {
+                {"logical_tensor_bytes", scaffold_root.resident_bytes},
+                {"backend_allocation_bytes",
+                    scaffold_root.allocation_bytes},
+                {"root_backing_id", hex64(scaffold_root.backing_id)},
+                {"restore_count", scaffold_restore_count},
+                {"recurrent_tensor_digest_before",
+                    hex64(scaffold_hash_before.value)},
+                {"recurrent_tensor_digest_after",
+                    hex64(scaffold_hash_after.value)},
+            }},
+            {"neutral_attention_root_bytes", neutral_root.resident_bytes},
+            {"shared_g_attention_root_bytes", g_root.resident_bytes},
+            {"attention_restore_count", attention_restore_count},
+            {"active_cache_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes},
+            {"maximum_retained_root_backend_allocation_bytes",
+                maximum_retained_root_backend_allocation_bytes},
+            {"active_plus_retained_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes +
+                maximum_retained_root_backend_allocation_bytes},
+            {"active_recurrent_backing_stable",
+                active_recurrent_backing_id(ctx) ==
+                active_recurrent_backing_initial},
+            {"active_attention_backing_stable",
+                active_attention_backing_id(ctx) ==
+                active_attention_backing_initial},
+            {"complete_host_attention_copy_retained", false},
+            {"joint_attention_root_constructed", false},
+            {"all_retained_roots_closed",
+                llama_state_seq_get_device_root_count(ctx) == 0},
+        }},
+        {"construction", {
+            {"affine_apply_count", affine_apply_count},
+            {"root_bytes_read", affine_root_bytes_read},
+            {"active_bytes_written", affine_active_bytes_written},
+            {"peak_host_work_bytes", affine_peak_host_work_bytes},
+            {"tensor_visits", affine_tensor_count_total},
+            {"per_apply", {
+                {"root_bytes_read", first_affine_metrics.root_bytes_read},
+                {"active_bytes_written",
+                    first_affine_metrics.active_bytes_written},
+                {"peak_host_work_bytes",
+                    first_affine_metrics.peak_host_work_bytes},
+                {"tensor_count", first_affine_metrics.tensor_count},
+            }},
+        }},
+        {"resource_accounting", {
+            {"fresh_source_decode_tokens", source_decode_tokens},
+            {"fresh_query_decode_tokens", query_decode_tokens},
+            {"fresh_input_tokens_total",
+                source_decode_tokens + query_decode_tokens},
+            {"root_save_device_copy_bytes", root_save_device_copy_bytes},
+            {"scaffold_restore_device_copy_bytes",
+                scaffold_restore_device_copy_bytes},
+            {"attention_restore_device_copy_bytes",
+                attention_restore_device_copy_bytes},
+            {"scaffold_digest_d2h_bytes",
+                scaffold_hash_before.transferred_bytes +
+                scaffold_hash_after.transferred_bytes},
+            {"scaffold_digest_peak_host_work_bytes", std::max(
+                scaffold_hash_before.peak_host_work_bytes,
+                scaffold_hash_after.peak_host_work_bytes)},
+            {"cleared_f_root_bytes", cleared_f_root_bytes},
+            {"cleared_neutral_root_bytes", cleared_neutral_root_bytes},
+            {"cleared_g_root_bytes", cleared_g_root_bytes},
+            {"cleared_scaffold_bytes", cleared_scaffold_bytes},
+        }},
+        {"roots", roots},
+        {"records", records},
+        {"verdict", accepted ? "accept" : "reject"},
+        {"claim_ceiling", spec.at("claim_ceiling")},
+    };
+}
+
 static json run_prefix_dag_attention_construction(
         llama_context * ctx,
         const llama_vocab * vocab,
@@ -2456,6 +2892,22 @@ int main(int argc, char ** argv) {
 
         if (spec.value("prefix_dag_attention_construction", false)) {
             const json result = run_prefix_dag_attention_construction(
+                ctx,
+                vocab,
+                candidates,
+                spec,
+                active_backing_initial,
+                active_attention_backing_initial);
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
+        }
+
+        if (spec.value("affine_attention_composition", false)) {
+            const json result = run_affine_attention_composition(
                 ctx,
                 vocab,
                 candidates,

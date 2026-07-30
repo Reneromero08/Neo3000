@@ -61,8 +61,8 @@ constructively unbounded local Agents-A1 inference.
   logical variable support is the ten attention layers (`2,662,400` bytes).
   This does not contradict 0105, which erased recurrent state rather than
   supplying a fixed recurrent scaffold.
-- [x] Validate the attention delta on the fixed recurrent scaffold.
-  `neo-exp-0110` passes the full semantic law: attention-delta
+- [x] Validate the complete attention overlay on the fixed recurrent scaffold.
+  `neo-exp-0110` passes the full semantic law: attention-overlay
   joint/F-only/G-only/null are `4/4`, `1/4`, `1/4`, `1/4`; the relation
   mutation returns `B,C,D,A` with four changes; presentation returns
   `A,B,C,D` with four matches. The matched recurrent-delta complement remains
@@ -70,13 +70,14 @@ constructively unbounded local Agents-A1 inference.
   attention bytes on the tested fixed scaffold.
 - [x] Implement attention-only on-device roots on one actual recurrent
   scaffold root. `neo-exp-0111` reuses the same `65,863,680`-byte scaffold
-  root 25 times, composes one `2,662,400`-byte attention root at a time,
-  preserves the full semantic panel, exactly reproduces the streamed scaffold
-  content hash, retains no complete host scaffold copy, and closes all roots.
+  snapshot 25 times to repopulate stable active recurrent backing, composes
+  one complete `2,662,400`-byte attention overlay at a time, preserves the
+  full semantic panel, reproduces the same streamed recurrent-tensor digest,
+  retains no complete host scaffold copy, and closes all roots.
   Retained-root backend allocation peaks at `68,526,080` bytes.
-- [x] Test that exact scaffold root on a prospectively frozen unrelated task
+- [x] Test that retained scaffold snapshot on a prospectively frozen task
   and count active plus retained allocation. `neo-exp-0112` preserves the
-  primary panel, exact scaffold hash, one-delta residency, and insufficient
+  primary panel, matching scaffold tensor digest, one-overlay residency, and insufficient
   F-only/G-only controls. The held-out joint reaches only `3/4`, missing
   H -> A, so the strict unrelated-reuse gate is rejected. Measured active
   cache plus retained-root backend allocation is `144,875,520` bytes; this
@@ -96,8 +97,9 @@ constructively unbounded local Agents-A1 inference.
   pass joint/F-only/G-only at `4/4,1/4,1/4` and `4/4,0/4,1/4`; ABCD loses one
   joint boundary; NTUV reaches joint `4/4` but F-only `2/4`. The frozen all-task
   gate rejects, while two-instance same-scaffold useful reuse is supported.
-  All twelve deltas close sequentially, the exact scaffold survives 49
-  restores, and measured active-plus-retained allocation remains
+  All twelve complete overlays close sequentially, the recurrent tensor
+  digest matches after 49 snapshot reloads, and measured
+  active-plus-retained allocation remains
   `144,875,520` bytes.
 - [x] Build the exact common-prefix construction baseline on both complete
   passes. `neo-exp-0117` produces exact evidence but is inconclusive because
@@ -109,12 +111,21 @@ constructively unbounded local Agents-A1 inference.
   This exact baseline is ordinary prefix caching; its asymptotic fresh-source
   ratio is `82/130`, and measured active-plus-retained allocation rises to
   `211,722,240` bytes.
-- [ ] Build the smallest structured in-place KV operator candidate on the two
-  accepted tasks. It must start from a neutral attention root, apply public
-  F/G descriptors without retaining target attention roots or a complete
-  classical KV duplicate, be read causally by later queries, and beat the
-  exact prefix-DAG baseline in fully charged fresh work or expose the rank/
-  correction growth that prevents it.
+- [x] Test the strongest compact global affine sham before introducing a
+  structured KV operator. `neo-exp-0119` constructs no joint source or target
+  root; it streams `F-only + G-only - neutral` into the stable active attention
+  allocation and lets 24 later model queries read it. Both single-evidence
+  controls remain insufficient, but EFGH reaches only `3/4` and IOUV `0/4`.
+  Reject global linear overlay composition. The committed 24-record evidence
+  object makes every boundary, logit vector, root receipt, and resource total
+  recomputable; this is evidence attached to the mechanism, not a new harness
+  lane.
+- [ ] Test one fixed causal-position splice. Preserve the causally exact F
+  token positions from the F-only root and G token positions from the G-only
+  root inside the same active attention allocation, with no joint source,
+  target root, target logits, or answer-conditioned selection. This must
+  distinguish missing token topology from genuinely nonlinear cross-module
+  state before any low-rank or learned operator.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

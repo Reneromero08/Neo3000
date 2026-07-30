@@ -57,21 +57,22 @@ The active recurrence and acceptance boundary are
   The logical variable support is all ten attention layers: `2,662,400`
   source-conditioned bytes, 3.89% of the full source state.
 - `neo-exp-0110` revalidates the complete semantic law on that decomposition.
-  Attention-delta joint/F-only/G-only/F0G0 accuracy is
+  Complete attention-overlay joint/F-only/G-only/F0G0 accuracy is
   `4/4`, `1/4`, `1/4`, `1/4`; mutation returns `B,C,D,A` and changes all four
   joint boundaries; presentation returns `A,B,C,D` and matches all four. The
   source-conditioned recurrent-delta complement returns `D,D,D,D` for every
   variant. The full controls reproduce the accepted 0106 panel.
 - `neo-exp-0111` makes the decomposition physical. One recurrent-only
-  `65,863,680`-byte ON_DEVICE root is restored 25 times. Six attention-only
+  `65,863,680`-byte ON_DEVICE snapshot repopulates stable active recurrent
+  backing 25 times. Six complete attention-only
   `2,662,400`-byte ON_DEVICE roots are created and closed sequentially, never
   more than one at once. The assembled route preserves the full semantic
-  panel; scaffold hashes before and after reuse are exactly
+  panel; streamed recurrent-tensor digests before and after reuse are
   `5eb6dd1bea73e09e`; all backing identities stay stable and all roots close.
 - Retained-root backend-buffer allocation peaks at `68,526,080` bytes. No
-  complete host scaffold copy is retained; exact validation streams through
+  complete host scaffold copy is retained; tensor-payload validation streams through
   one `1,048,576`-byte host work buffer.
-- `neo-exp-0112` reuses that exact scaffold backing for a prospectively frozen
+- `neo-exp-0112` reuses that retained scaffold-snapshot backing for a prospectively frozen
   E/F/G/H reverse-relation task. The original panel remains exact and both
   held-out single-evidence controls remain insufficient at `1/4`, but the
   held-out joint returns `D,C,B,D` rather than `D,C,B,A`: `3/4`, so the strict
@@ -107,6 +108,13 @@ The active recurrence and acceptance boundary are
 - The Release server rebuild succeeds, all 139 configured CUDA objects remain
   present with zero CUDA source changes, and the focused no-model Python suite
   passes 57 tests.
+- `neo-exp-0119` executes the first direct operator without a joint source or
+  target root. Eight bounded-chunk applications write
+  `F-only + G-only - neutral` into stable active attention backing; later
+  Agents-A1 queries causally read the constructed state. The law fails both
+  tasks (`3/4` and `0/4`) while both single-evidence controls remain
+  insufficient. The complete 24-record evidence object is committed, and all
+  retained roots close.
 
 ### REJECTED
 
@@ -186,16 +194,27 @@ The active recurrence and acceptance boundary are
   active-plus-retained allocation to `211,722,240` bytes, performs more than
   3.75 GB of measured restore copies, and leaves an asymptotic fresh-source
   ratio of `82/130`. No wall-time advantage was measured.
+- A global affine combination of complete attention overlays is not the joint
+  composition law. Its host-mediated arithmetic reads `63,897,600` root bytes
+  and writes `21,299,200` active bytes yet fails both useful-task gates. It is
+  a compact classical sham, not relational geometry or catalysis.
+- Historical `neo-exp-0111` through `neo-exp-0114` runtime outputs were hashed
+  but not committed; their committed summaries preserve the measured
+  adjudications but do not make per-query numerical comparisons independently
+  recomputable from Git. Do not promote their hash/difference summaries beyond
+  that evidence scope. Starting with `neo-exp-0119`, the complete compact
+  per-query evidence object is committed alongside each substantive mechanism.
 
 ### ACTIVE BOUNDARY
 
-Use the exact prefix-DAG result as the baseline for a structured in-place KV
-operator. Begin from one neutral attention root, derive F/G actions from
-public descriptors, mutate the active KV backing directly, and allow later
-Agents-A1 queries to read it. No complete target root or host KV duplicate may
-exist at runtime. Count factor/basis bytes, workspace, application/inverse
-work, drift, and held-out failures; compare fully charged work against the
-82-token-per-arm suffix baseline. `neo-exp-0102` remains frozen and unconsumed.
+Use the rejected global affine law to localize the next structured in-place KV
+operator. Copy only the public causal token segments: F positions from the
+F-only root and G positions from the G-only root into one neutral active
+attention allocation. No joint source, target root, host KV duplicate, target
+logits, or answer-conditioned selection may exist. If that fails, the missing
+object is cross-module nonlinear state rather than mere token topology. Count
+all traffic and compare against the exact 82-token-per-arm prefix-DAG
+baseline. `neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

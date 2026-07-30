@@ -984,6 +984,24 @@ extern "C" {
             struct llama_context * ctx,
                     llama_seq_id   device_storage_key);
 
+    typedef struct llama_state_seq_affine_metrics {
+        uint64_t root_bytes_read;
+        uint64_t active_bytes_written;
+        uint64_t peak_host_work_bytes;
+        uint64_t tensor_count;
+    } llama_state_seq_affine_metrics;
+
+    // Writes base + add - subtract from three shape-identical retained device
+    // roots into the active tensors addressed by the base root. The operation
+    // streams bounded host chunks and retains no complete host state copy.
+    // Active sequence metadata must already have been restored from base.
+    LLAMA_API bool llama_state_seq_apply_device_affine(
+            struct llama_context * ctx,
+                    llama_seq_id   base_device_storage_key,
+                    llama_seq_id   add_device_storage_key,
+                    llama_seq_id   subtract_device_storage_key,
+            llama_state_seq_affine_metrics * metrics);
+
     //
     // Decoding
     //

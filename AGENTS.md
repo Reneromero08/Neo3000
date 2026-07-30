@@ -41,11 +41,11 @@ An agent must not rely on chat history when the repository task board says somet
 
 Checkpoint 0 is closed. Checkpoint 2 remains the active architectural checkpoint.
 
-Scientific contact is paused at the July 29 realignment boundary. `neo-exp-0102`
-is unconsumed and must not be executed until a new user-authorized catalytic
-inference goal selects a repaired scientific successor. Foundation repair,
-behavioral verification, builds, and audits may proceed without model-facing
-contact.
+The current user-authorized catalytic-inference goal has reactivated bounded
+carrier-causal scientific contact on `codex/catalytic-frontier`. Select each
+successor from executed evidence and continue without per-cycle permission.
+`neo-exp-0102` remains unconsumed, frozen under its reclassified calibration
+claim, and outside the active successor path.
 
 The strongest accepted fanout claim remains
 `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`.
@@ -58,8 +58,8 @@ The complete `neo-exp-0102` split-decode path is built and statically bound in
 the server, but it has not been server-integration tested or model-facing
 executed after realignment.
 
-Bounded autonomous catalytic-frontier successor mode is not active during this
-realignment pause.
+Bounded autonomous catalytic-frontier successor mode is active under the
+current goal.
 
 When a later user goal explicitly reactivates frontier research within
 `codex/catalytic-frontier`, an agent may continue without per-cycle human
