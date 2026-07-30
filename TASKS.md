@@ -654,6 +654,12 @@ constructively unbounded local Agents-A1 inference.
   focused tests pass `22/22`, and no model contact has occurred. Run one
   contact only; no temperature, embedding-basis, prompt, fixture, evaluator,
   carrier-evaluation, or evidence-harness successor is authorized.
+  The first launch loaded the model but stopped before its first graph compute,
+  prompt evaluation, carrier capture, or candidate boundary because the
+  soft-output branch had not been explicitly expanded into the executable
+  graph, leaving its candidate-ID input unallocated. The same precontact
+  identity now expands that branch; this is a plumbing repair, not a new
+  mechanism or result.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

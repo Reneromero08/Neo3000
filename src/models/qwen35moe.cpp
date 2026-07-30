@@ -849,6 +849,9 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
             -1);
         res->t_neo3000_soft_role_output =
             soft_output_embedding;
+        ggml_build_forward_expand(
+            gf,
+            soft_output_embedding);
     }
 
     // LM head

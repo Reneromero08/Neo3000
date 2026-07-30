@@ -120,6 +120,11 @@ The active recurrence and acceptance boundary are
   claim exclusive unresolved custody. The probe and full Release server
   build and focused tests pass `22/22`; no `0157` model contact has occurred.
   This is one physical successor, not an evaluator or evidence-harness series.
+  Its first launch stopped before graph compute, prompt evaluation, carrier
+  capture, or candidate output because the independent soft-output branch was
+  not expanded into the executable graph and its candidate-ID input therefore
+  had no scheduler buffer. The same precontact identity now explicitly
+  expands that branch. No scientific result was produced.
 - The exact four-link/Z4 recurrence remains the stronger compact baseline.
   No inference-bearing recurrence, fresh-compute advantage, phase-native
   resource, Small Wall crossing, catalytic recurrence, or unbounded claim is
