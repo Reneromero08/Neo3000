@@ -62,6 +62,24 @@ struct llama_neo3000_semantic_carrier {
     int32_t soft_role_read_slot = -1;
     uint32_t soft_role_staging_writes = 0;
     uint32_t soft_role_staging_destination_mask = 0;
+    // Depth-resolved output memory retains the actual output-token layer
+    // input at every full-attention layer for four public query ordinals.
+    // Active and staging panels remain device resident. Each graph read
+    // receives either the corresponding active layer panel, an exact-zero
+    // panel, or the same active bytes under one public cyclic layer
+    // permutation.
+    std::shared_ptr<void> depth_memory_backing;
+    ggml_tensor * depth_active = nullptr;  // [n_embd, 4, n_depth_layers]
+    ggml_tensor * depth_staging = nullptr; // [n_embd, 4, n_depth_layers]
+    ggml_tensor * depth_zero_layer = nullptr; // [n_embd, 4]
+    std::vector<int32_t> depth_layers;
+    std::vector<ggml_tensor *> depth_active_layers;
+    std::vector<ggml_tensor *> depth_staging_slots;
+    uint32_t depth_projected_kv_width = 0;
+    int32_t depth_capture_destination = -1;
+    uint32_t depth_layer_offset = 0;
+    uint32_t depth_staging_writes = 0;
+    uint32_t depth_staging_destination_mask = 0;
     uint32_t phase = 0;
     bool enabled = false;
     bool output_written = false;
@@ -71,6 +89,8 @@ struct llama_neo3000_semantic_carrier {
     bool phase_poisoned = false;
     bool continuous_soft_role_memory = false;
     bool soft_role_poisoned = false;
+    bool output_depth_memory = false;
+    bool depth_memory_poisoned = false;
     bool output_map_trainable = false;
     bool moe_router_bias = false;
     bool recurrent_transition_input = false;
@@ -101,6 +121,14 @@ struct llama_neo3000_semantic_carrier {
     uint64_t soft_role_captures = 0;
     uint64_t soft_role_commits = 0;
     uint64_t soft_role_reads = 0;
+    uint64_t depth_memory_backend_bytes = 0;
+    uint64_t depth_capture_device_copy_bytes = 0;
+    uint64_t depth_commit_device_copy_bytes = 0;
+    uint64_t depth_read_device_copy_bytes = 0;
+    uint64_t depth_cross_attention_multiply_accumulates = 0;
+    uint64_t depth_captures = 0;
+    uint64_t depth_commits = 0;
+    uint64_t depth_reads = 0;
     uint64_t writer_host_input_bytes = 0;
     uint64_t port_writes = 0;
     uint64_t router_bias_token_applications = 0;

@@ -1,6 +1,8 @@
 #include "models.h"
 #include "llama-memory-recurrent.h"
 
+#include <algorithm>
+
 class llm_graph_input_neo3000_soft_role
         : public llm_graph_input_i {
 public:
@@ -84,6 +86,91 @@ public:
     ggml_tensor * soft_embedding = nullptr;
     ggml_tensor * soft_gate = nullptr;
     ggml_tensor * candidate_tokens = nullptr;
+};
+
+class llm_graph_input_neo3000_depth_memory
+        : public llm_graph_input_i {
+public:
+    explicit llm_graph_input_neo3000_depth_memory(
+            std::shared_ptr<llama_neo3000_semantic_carrier> carrier)
+        : carrier(std::move(carrier)) {
+    }
+
+    void set_input(const llama_ubatch * ubatch) override {
+        GGML_ASSERT(
+            carrier &&
+            carrier->output_depth_memory &&
+            carrier->depth_zero_layer &&
+            carrier->depth_active_layers.size() ==
+                carrier->depth_layers.size() &&
+            layer_memory.size() ==
+                carrier->depth_layers.size());
+        GGML_ASSERT(ubatch);
+        const bool read_enabled =
+            carrier->enabled &&
+            !carrier->depth_memory_poisoned &&
+            carrier->depth_commits > 0;
+        const size_t n_layers = layer_memory.size();
+        for (size_t layer_index = 0;
+             layer_index < n_layers;
+             ++layer_index) {
+            const size_t source_index =
+                (layer_index +
+                 carrier->depth_layer_offset) %
+                n_layers;
+            ggml_tensor * source =
+                read_enabled
+                    ? carrier->depth_active_layers.at(
+                        source_index)
+                    : carrier->depth_zero_layer;
+            GGML_ASSERT(
+                source &&
+                layer_memory.at(layer_index) &&
+                ggml_nbytes(source) ==
+                    ggml_nbytes(
+                        layer_memory.at(layer_index)));
+            ggml_backend_tensor_copy(
+                source,
+                layer_memory.at(layer_index));
+            carrier->depth_read_device_copy_bytes +=
+                ggml_nbytes(source);
+        }
+        if (read_enabled) {
+            carrier->depth_reads += n_layers;
+        }
+        const uint64_t memory_tokens = 4;
+        const uint64_t n_embd = carrier->n_embd;
+        const uint64_t kv_width =
+            carrier->depth_projected_kv_width;
+        const uint64_t query_tokens = ubatch->n_tokens;
+        carrier->depth_cross_attention_multiply_accumulates +=
+            n_layers *
+            (2 * n_embd * kv_width * memory_tokens +
+             2 * n_embd * memory_tokens * query_tokens);
+        ++carrier->graph_input_sets;
+    }
+
+    bool can_reuse(const llm_graph_params & params) override {
+        const auto & candidate =
+            params.cparams.neo3000_semantic_carrier;
+        if (candidate.get() != carrier.get() ||
+            !candidate->output_depth_memory ||
+            layer_memory.size() !=
+                carrier->depth_layers.size()) {
+            return false;
+        }
+        return std::all_of(
+            layer_memory.begin(),
+            layer_memory.end(),
+            [&](const ggml_tensor * tensor) {
+                return tensor &&
+                    tensor->ne[0] == carrier->n_embd &&
+                    tensor->ne[1] == 4;
+            });
+    }
+
+    std::shared_ptr<llama_neo3000_semantic_carrier> carrier;
+    std::vector<ggml_tensor *> layer_memory;
 };
 
 class llm_graph_input_neo3000_semantic_carrier
@@ -498,6 +585,40 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
         cb(inpL, "neo3000_soft_role_input_override", -1);
     }
 
+    llm_graph_input_neo3000_depth_memory *
+        depth_memory_input = nullptr;
+    const auto & depth_memory_state =
+        cparams.neo3000_semantic_carrier;
+    if (depth_memory_state &&
+        depth_memory_state->output_depth_memory) {
+        auto input =
+            std::make_unique<
+                llm_graph_input_neo3000_depth_memory>(
+                    depth_memory_state);
+        input->layer_memory.reserve(
+            depth_memory_state->depth_layers.size());
+        for (size_t layer_index = 0;
+             layer_index <
+                depth_memory_state->depth_layers.size();
+             ++layer_index) {
+            ggml_tensor * layer_memory =
+                ggml_new_tensor_2d(
+                    ctx0,
+                    GGML_TYPE_F32,
+                    n_embd,
+                    4);
+            ggml_set_input(layer_memory);
+            ggml_set_name(
+                layer_memory,
+                "neo3000_depth_memory_layer_panel");
+            input->layer_memory.push_back(
+                layer_memory);
+        }
+        depth_memory_input = static_cast<
+            llm_graph_input_neo3000_depth_memory *>(
+                res->add_input(std::move(input)));
+    }
+
     cb(inpL, "model.input_embed", -1);
 
     auto * inp = build_inp_mem_hybrid();
@@ -712,6 +833,8 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
             static_cast<ggml_tensor *>(nullptr));
     };
 
+    size_t depth_memory_layer_index = 0;
+
     // MTP/NextN layers are loaded as extra decoder blocks but not executed in the main pass.
     for (int il = 0; il < n_layer; ++il) {
         res->t_layer_inp[il] = inpL;
@@ -753,7 +876,30 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
             cur = build_layer_attn_linear(inp->get_recr(), cur, il);
         } else {
             // Full attention layer
-            cur = build_layer_attn(inp->get_attn(), cur, inp_pos, sections, il);
+            ggml_tensor * depth_layer_memory = nullptr;
+            if (depth_memory_input) {
+                GGML_ASSERT(
+                    depth_memory_layer_index <
+                        depth_memory_input
+                            ->layer_memory.size());
+                GGML_ASSERT(
+                    depth_memory_state
+                        ->depth_layers.at(
+                            depth_memory_layer_index) ==
+                        il);
+                depth_layer_memory =
+                    depth_memory_input
+                        ->layer_memory.at(
+                            depth_memory_layer_index);
+            }
+            cur = build_layer_attn(
+                inp->get_attn(),
+                cur,
+                inp_pos,
+                sections,
+                il,
+                depth_layer_memory);
+            ++depth_memory_layer_index;
         }
 
         if (il == n_layer - 1 && inp_out_ids && cparams.embeddings_nextn_masked) {
@@ -895,7 +1041,8 @@ ggml_tensor * llama_model_qwen35moe::graph::build_layer_attn(
         ggml_tensor *             cur,
         ggml_tensor *             inp_pos,
         int *                     sections,
-        int                       il) {
+        int                       il,
+        ggml_tensor *             depth_memory) {
     const int64_t n_embd_head = hparams.n_embd_head_v();
     GGML_ASSERT(n_embd_head == hparams.n_embd_head_k());
 
@@ -913,6 +1060,7 @@ ggml_tensor * llama_model_qwen35moe::graph::build_layer_attn(
     // Apply Q normalization
     Qcur = build_norm(Qcur, model.layers[il].attn_q_norm, nullptr, LLM_NORM_RMS, il);
     cb(Qcur, "Qcur_normed", il);
+    ggml_tensor * Qcur_depth = Qcur;
 
     ggml_tensor * Kcur = build_lora_mm(model.layers[il].wk, cur, model.layers[il].wk_s);
     cb(Kcur, "Kcur", il);
@@ -958,6 +1106,57 @@ ggml_tensor * llama_model_qwen35moe::graph::build_layer_attn(
                 nullptr, nullptr, nullptr,
                 Qcur, Kcur, Vcur, nullptr, nullptr, nullptr, kq_scale, il);
     cb(cur, "attn_pregate", il);
+
+    if (depth_memory) {
+        GGML_ASSERT(
+            depth_memory->ne[0] == n_embd &&
+            depth_memory->ne[1] == 4);
+        ggml_tensor * depth_norm = build_norm(
+            depth_memory,
+            model.layers[il].attn_norm,
+            nullptr,
+            LLM_NORM_RMS,
+            il);
+        ggml_tensor * depth_k = build_lora_mm(
+            model.layers[il].wk,
+            depth_norm,
+            model.layers[il].wk_s);
+        ggml_tensor * depth_v = build_lora_mm(
+            model.layers[il].wv,
+            depth_norm,
+            model.layers[il].wv_s);
+        depth_k = ggml_reshape_3d(
+            ctx0,
+            depth_k,
+            n_embd_head,
+            n_head_kv,
+            4);
+        depth_k = build_norm(
+            depth_k,
+            model.layers[il].attn_k_norm,
+            nullptr,
+            LLM_NORM_RMS,
+            il);
+        depth_v = ggml_reshape_3d(
+            ctx0,
+            depth_v,
+            n_embd_head,
+            n_head_kv,
+            4);
+        ggml_tensor * depth_read = build_attn_mha(
+            Qcur_depth,
+            depth_k,
+            depth_v,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            kq_scale,
+            il);
+        cb(depth_read, "neo3000_depth_memory_read", il);
+        cur = ggml_add(ctx0, cur, depth_read);
+        cb(cur, "neo3000_depth_memory_attn_pregate", il);
+    }
 
     ggml_tensor * gate_sigmoid = ggml_sigmoid(ctx0, gate);
     cb(gate_sigmoid, "gate_sigmoid", il);

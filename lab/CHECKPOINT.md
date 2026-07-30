@@ -165,6 +165,37 @@ The active recurrence and acceptance boundary are
   resource, Small Wall crossing, catalytic recurrence, or unbounded claim is
   supported.
 
+### `neo-exp-0159` depth-resolved output memory [PRECONTACT / BUILT]
+
+- The next physical intervention is frozen in
+  `lab/output-fed-depth-resolved-cross-attention-memory-v1.json`. Four actual
+  output-token trajectories are captured device-to-device at all ten
+  Agents-A1 full-attention layer inputs and become one panel-atomic F32
+  active/staging CUDA memory. Each later full-attention layer reads only its
+  corresponding four rows through the frozen Q/K/V projections and
+  query-dependent softmax before the ordinary attention gate and output
+  projection.
+- The disabled G1 route copies a persistent exact-zero panel into every graph
+  input; it never multiplies a computed branch by zero. The sole geometry
+  control assigns the identical resident bytes to the next full-attention
+  layer cyclically. Slot assignment is public query order. No expected
+  answer, target row, fitted decoder, source-role forward, or host carrier
+  payload constructs the state. A partial or failed armed decode zeros and
+  poisons active and staging state; four complete destinations alone may
+  commit.
+- The focused probe and full Release CUDA server build. All `139/139`
+  configured CUDA objects are present and nonempty. JSON/spec and whitespace
+  validation pass. No model was loaded, no prompt was evaluated, and
+  `neo-exp-0159` remains unconsumed.
+- One contact only is authorized by the frozen law. Failure closes the entire
+  depth-indexed output-memory family without layer, scale, slot, prompt,
+  fixture, controller, evaluator, carrier-evaluation, or evidence-harness
+  successors. A pass supports at most bounded output-fed depth-resolved
+  model-native cross-attention recurrence; the actual output token has
+  already collapsed, and neither restoration, fresh-compute advantage,
+  catalytic inference, Small Wall crossing, nor an unbounded bridge is
+  implied.
+
 ### SUPPORTED
 
 - `neo-exp-0103` moves the tested carrier before terminal logits. A fixed

@@ -155,6 +155,7 @@ struct llama_context {
         uint32_t phase_width);
     bool install_neo3000_continuous_soft_role_memory(
         const std::array<llama_token, 4> & candidate_tokens);
+    bool install_neo3000_output_depth_memory();
     bool write_neo3000_semantic_port(
         const float * output_state,
         size_t output_state_count,
@@ -168,6 +169,11 @@ struct llama_context {
         int32_t public_destination);
     bool commit_neo3000_soft_role_memory();
     bool set_neo3000_soft_role_read_slot(int32_t public_slot);
+    bool set_neo3000_depth_capture_destination(
+        int32_t public_destination);
+    void poison_neo3000_depth_memory();
+    bool commit_neo3000_depth_memory();
+    bool set_neo3000_depth_layer_offset(uint32_t public_offset);
     bool reset_neo3000_semantic_port();
     bool set_neo3000_semantic_carrier_enabled(bool enabled);
     bool set_neo3000_semantic_carrier_phase(uint32_t phase);
@@ -346,6 +352,9 @@ public:
     bool capture_neo3000_soft_role_output(
         ggml_tensor * soft_output,
         uint32_t output_rows);
+    bool capture_neo3000_depth_memory_output(
+        const llm_graph_result * res,
+        uint32_t input_rows);
 
     // reserve a graph with a dummy ubatch of the specified size
     ggml_cgraph * graph_reserve(

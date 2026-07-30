@@ -1250,6 +1250,21 @@ void llm_graph_result::set_outputs(const llm_graph_params & params) {
             }
         }
     }
+    {
+        const auto & carrier =
+            params.cparams.neo3000_semantic_carrier;
+        if (carrier && carrier->output_depth_memory) {
+            for (int32_t il : carrier->depth_layers) {
+                GGML_ASSERT(
+                    il >= 0 &&
+                    static_cast<size_t>(il) <
+                        t_layer_inp.size() &&
+                    t_layer_inp[il] != nullptr &&
+                    "depth-memory layer input tensor is null");
+                ggml_set_output(t_layer_inp[il]);
+            }
+        }
+    }
     for (auto & [seq_id, t] : t_sampled) {
         if (t != nullptr) {
             ggml_set_output(t);

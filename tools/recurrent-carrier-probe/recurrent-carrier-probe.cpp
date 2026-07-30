@@ -6064,6 +6064,10 @@ static json run_sparse_g_label_refresh(
         spec.value(
             "output_written_hidden_slot_action",
             false);
+    const bool output_depth_memory_mode =
+        spec.value(
+            "output_depth_resolved_cross_attention_memory_action",
+            false);
     const bool output_phase_feedback_memory_mode =
         spec.value(
             "output_phase_memory_action",
@@ -6083,7 +6087,8 @@ static json run_sparse_g_label_refresh(
     const bool output_written_carrier_mode =
         output_written_semantic_port_mode ||
         output_written_hidden_slot_mode ||
-        output_phase_memory_mode;
+        output_phase_memory_mode ||
+        output_depth_memory_mode;
     const bool end_to_end_semantic_carrier_training =
         spec.value(
             "end_to_end_semantic_carrier_training",
@@ -6104,7 +6109,9 @@ static json run_sparse_g_label_refresh(
         spec.value("trained_semantic_carrier_action", false);
     const bool trained_semantic_carrier_mode =
         legacy_trained_semantic_carrier_mode ||
-        output_written_carrier_mode;
+        output_written_semantic_port_mode ||
+        output_written_hidden_slot_mode ||
+        output_phase_memory_mode;
     const bool semantic_carrier_layer_delta_mode =
         trained_semantic_carrier_mode &&
         spec.value(
@@ -6175,6 +6182,8 @@ static json run_sparse_g_label_refresh(
                 output_written_semantic_port_mode) +
             static_cast<int>(
                 output_written_hidden_slot_mode) +
+            static_cast<int>(
+                output_depth_memory_mode) +
             static_cast<int>(
                 output_phase_memory_mode) +
             static_cast<int>(
@@ -7458,6 +7467,36 @@ static json run_sparse_g_label_refresh(
         llama_memory_clear(memory, true);
         llama_synchronize(ctx);
     }
+    if (output_depth_memory_mode) {
+        if (candidates.size() != 4 ||
+            !ctx->install_neo3000_output_depth_memory() ||
+            !ctx->set_neo3000_semantic_carrier_enabled(false) ||
+            !ctx->set_neo3000_depth_layer_offset(0)) {
+            throw std::runtime_error(
+                "depth-resolved output memory installation failed");
+        }
+        const auto * carrier =
+            ctx->get_neo3000_semantic_carrier();
+        if (!carrier ||
+            !carrier->output_depth_memory ||
+            !carrier->output_written ||
+            carrier->enabled ||
+            carrier->depth_memory_poisoned ||
+            carrier->depth_capture_destination != -1 ||
+            carrier->depth_staging_writes != 0 ||
+            carrier->depth_staging_destination_mask != 0 ||
+            carrier->depth_layers.size() != 10 ||
+            carrier->depth_active_layers.size() != 10 ||
+            carrier->depth_staging_slots.size() != 40 ||
+            carrier->depth_memory_backend_bytes == 0 ||
+            carrier->action_backing_id == 0) {
+            throw std::runtime_error(
+                "depth-resolved output memory invariant failed");
+        }
+        semantic_carrier_backing_initial =
+            carrier->action_backing_id;
+        ctx->sched_reserve();
+    }
     if (output_continuous_soft_role_rematerialization_mode) {
         if (candidates.size() != 4) {
             throw std::runtime_error(
@@ -8052,6 +8091,8 @@ static json run_sparse_g_label_refresh(
                 ? output_phase_orbit_memory_mode
                     ? "output_phase_orbit_memory_carrier"
                     : "output_phase_memory_carrier"
+            : output_depth_memory_mode
+                ? "output_depth_resolved_cross_attention_memory_carrier"
             : output_written_hidden_slot_mode
                 ? "output_written_hidden_slot_carrier"
             : output_written_semantic_port_mode
@@ -8080,6 +8121,8 @@ static json run_sparse_g_label_refresh(
                 ? output_phase_orbit_memory_mode
                     ? "output_phase_orbit_memory_carrier_return_G0"
                     : "output_phase_memory_carrier_return_G0"
+            : output_depth_memory_mode
+                ? "output_depth_resolved_cross_attention_memory_carrier_return_G0"
             : output_written_hidden_slot_mode
                 ? "output_written_hidden_slot_carrier_return_G0"
             : output_written_semantic_port_mode
@@ -8116,12 +8159,16 @@ static json run_sparse_g_label_refresh(
         const bool enable_paired_complex_read =
             paired_complex_attention_read &&
             route != "exact_full_state";
+        const bool managed_semantic_carrier =
+            trained_semantic_carrier_mode ||
+            output_depth_memory_mode;
         const bool enable_semantic_carrier =
-            trained_semantic_carrier_mode &&
+            managed_semantic_carrier &&
             route != "exact_full_state" &&
             route != "carrier_disabled";
         bool semantic_carrier_was_enabled = false;
-        if (trained_semantic_carrier_mode) {
+        uint32_t depth_layer_offset_before = 0;
+        if (managed_semantic_carrier) {
             const auto * carrier =
                 ctx->get_neo3000_semantic_carrier();
             if (!carrier) {
@@ -8129,6 +8176,17 @@ static json run_sparse_g_label_refresh(
                     route + ": semantic carrier is absent");
             }
             semantic_carrier_was_enabled = carrier->enabled;
+            depth_layer_offset_before =
+                carrier->depth_layer_offset;
+            if (output_depth_memory_mode &&
+                !ctx->set_neo3000_depth_layer_offset(
+                    route == "wrong_layer_assignment"
+                        ? 1u
+                        : 0u)) {
+                throw std::runtime_error(
+                    route +
+                    ": failed to select depth-memory layer law");
+            }
             if (!ctx->set_neo3000_semantic_carrier_enabled(
                     enable_semantic_carrier &&
                     !semantic_carrier_layer_delta_mode)) {
@@ -8164,9 +8222,13 @@ static json run_sparse_g_label_refresh(
             if (enable_paired_complex_read) {
                 ctx->set_neo3000_paired_complex_attention(0.0f, -1);
             }
-            if (trained_semantic_carrier_mode) {
+            if (managed_semantic_carrier) {
                 ctx->set_neo3000_semantic_carrier_enabled(
                     semantic_carrier_was_enabled);
+                if (output_depth_memory_mode) {
+                    ctx->set_neo3000_depth_layer_offset(
+                        depth_layer_offset_before);
+                }
             }
             throw;
         }
@@ -8175,11 +8237,18 @@ static json run_sparse_g_label_refresh(
             throw std::runtime_error(
                 route + ": failed to disable paired-complex read");
         }
-        if (trained_semantic_carrier_mode &&
+        if (managed_semantic_carrier &&
             !ctx->set_neo3000_semantic_carrier_enabled(
                 semantic_carrier_was_enabled)) {
             throw std::runtime_error(
                 route + ": failed to restore semantic carrier state");
+        }
+        if (output_depth_memory_mode &&
+            !ctx->set_neo3000_depth_layer_offset(
+                depth_layer_offset_before)) {
+            throw std::runtime_error(
+                route +
+                ": failed to restore depth-memory layer law");
         }
         query_decode_tokens +=
             boundary.record.at("query_tokens").get<size_t>();
@@ -8997,6 +9066,17 @@ static json run_sparse_g_label_refresh(
                     id,
                     query);
             }
+            if (output_depth_memory_mode) {
+                for (const auto & query :
+                     variant.at("queries")) {
+                    project_from_source(
+                        candidate_seq,
+                        stage_seqs[0],
+                        "wrong_layer_assignment",
+                        id,
+                        query);
+                }
+            }
         }
         if (output_continuous_soft_role_rematerialization_mode &&
             variant_index == 1) {
@@ -9075,20 +9155,47 @@ static json run_sparse_g_label_refresh(
                             std::to_string(query_index));
                     ++sequence_copy_count;
                 }
-                const double output_wall_ms =
-                    output_continuous_soft_role_rematerialization_mode
-                        ? 0.0
-                    : output_written_carrier_mode
-                        ? timed_decode_terminal(
-                            std::vector<llama_token>{
-                                candidates.at(candidate_index)},
-                            output_position,
-                            stage_seq)
-                        : timed_decode(
-                            std::vector<llama_token>{
-                                candidates.at(candidate_index)},
-                            output_position,
-                            stage_seq);
+                if (output_depth_memory_mode &&
+                    (!ctx->set_neo3000_depth_capture_destination(
+                         static_cast<int32_t>(
+                             public_destination)) ||
+                     !ctx->set_neo3000_depth_layer_offset(0) ||
+                     !ctx->set_neo3000_semantic_carrier_enabled(
+                         true))) {
+                    throw std::runtime_error(
+                        id +
+                        ": failed to arm depth-resolved output capture");
+                }
+                double output_wall_ms = 0.0;
+                try {
+                    output_wall_ms =
+                        output_continuous_soft_role_rematerialization_mode
+                            ? 0.0
+                        : output_written_carrier_mode
+                            ? timed_decode_terminal(
+                                std::vector<llama_token>{
+                                    candidates.at(candidate_index)},
+                                output_position,
+                                stage_seq)
+                            : timed_decode(
+                                std::vector<llama_token>{
+                                    candidates.at(candidate_index)},
+                                output_position,
+                                stage_seq);
+                } catch (...) {
+                    if (output_depth_memory_mode) {
+                        ctx->set_neo3000_semantic_carrier_enabled(
+                            false);
+                    }
+                    throw;
+                }
+                if (output_depth_memory_mode &&
+                    !ctx->set_neo3000_semantic_carrier_enabled(
+                        false)) {
+                    throw std::runtime_error(
+                        id +
+                        ": failed to release depth-memory output read");
+                }
                 useful_output_decode_wall_ms_total +=
                     output_wall_ms;
                 if (!output_continuous_soft_role_rematerialization_mode) {
@@ -9191,7 +9298,9 @@ static json run_sparse_g_label_refresh(
                 output_positions.push_back(output_position);
                 const size_t destination_label_index =
                     public_destination;
-                if (output_written_carrier_mode &&
+                if (output_depth_memory_mode) {
+                    ++output_promotion_row_count;
+                } else if (output_written_carrier_mode &&
                     (!output_phase_orbit_memory_mode ||
                      variant_index == 0)) {
                     const bool wrote =
@@ -9269,6 +9378,8 @@ static json run_sparse_g_label_refresh(
                             output_written_semantic_port_mode},
                         {"output_written_hidden_slot",
                             output_written_hidden_slot_mode},
+                        {"output_depth_resolved_cross_attention_memory",
+                            output_depth_memory_mode},
                         {"output_phase_memory",
                             output_phase_memory_mode},
                         {"output_phase_orbit_memory",
@@ -9313,6 +9424,13 @@ static json run_sparse_g_label_refresh(
                     id +
                     ": complete continuous output panel failed "
                     "to commit");
+            }
+            if (output_depth_memory_mode &&
+                !ctx->commit_neo3000_depth_memory()) {
+                throw std::runtime_error(
+                    id +
+                    ": complete depth-resolved output panel "
+                    "failed to commit");
             }
             if (output_recurrent_delta_advance_mode) {
                 llama_memory_recurrent::neo3000_output_delta_metrics
@@ -10064,6 +10182,7 @@ static json run_sparse_g_label_refresh(
     size_t carrier_disabled_correct = 0;
     size_t carrier_disabled_boundary_matches = 0;
     if (trained_semantic_carrier_mode ||
+        output_depth_memory_mode ||
         output_continuous_soft_role_rematerialization_mode ||
         output_recurrent_delta_advance_mode) {
         const size_t disabled_variant_index =
@@ -10087,6 +10206,27 @@ static json run_sparse_g_label_refresh(
         for (size_t i = 0; i < disabled.size(); ++i) {
             carrier_disabled_boundary_matches +=
                 disabled.at(i).argmax == enabled.at(i).argmax;
+        }
+    }
+    size_t wrong_layer_correct = 0;
+    size_t wrong_layer_boundary_matches = 0;
+    if (output_depth_memory_mode) {
+        const size_t control_variant_index = 1;
+        const std::string canonical_id =
+            variants.at(control_variant_index)
+                .at("id").get<std::string>();
+        const auto & wrong =
+            outputs.at("wrong_layer_assignment").at(canonical_id);
+        const auto & enabled =
+            outputs.at(candidate_route).at(canonical_id);
+        wrong_layer_correct =
+            semantic_correct_count(
+                wrong,
+                variants.at(control_variant_index).at("queries"),
+                false);
+        for (size_t i = 0; i < wrong.size(); ++i) {
+            wrong_layer_boundary_matches +=
+                wrong.at(i).argmax == enabled.at(i).argmax;
         }
     }
     uint64_t semantic_carrier_graph_input_sets = 0;
@@ -10114,6 +10254,14 @@ static json run_sparse_g_label_refresh(
     uint64_t semantic_carrier_soft_role_captures = 0;
     uint64_t semantic_carrier_soft_role_commits = 0;
     uint64_t semantic_carrier_soft_role_reads = 0;
+    uint64_t semantic_carrier_depth_memory_backend_bytes = 0;
+    uint64_t semantic_carrier_depth_capture_device_copy_bytes = 0;
+    uint64_t semantic_carrier_depth_commit_device_copy_bytes = 0;
+    uint64_t semantic_carrier_depth_read_device_copy_bytes = 0;
+    uint64_t semantic_carrier_depth_cross_attention_multiply_accumulates = 0;
+    uint64_t semantic_carrier_depth_captures = 0;
+    uint64_t semantic_carrier_depth_commits = 0;
+    uint64_t semantic_carrier_depth_reads = 0;
     uint64_t semantic_carrier_writer_host_input_bytes = 0;
     uint64_t semantic_carrier_port_writes = 0;
     uint64_t semantic_carrier_router_bias_token_applications = 0;
@@ -10129,6 +10277,7 @@ static json run_sparse_g_label_refresh(
     bool semantic_carrier_quiescent = true;
     bool semantic_carrier_restored = true;
     if (trained_semantic_carrier_mode ||
+        output_depth_memory_mode ||
         output_continuous_soft_role_rematerialization_mode) {
         const auto * carrier =
             ctx->get_neo3000_semantic_carrier();
@@ -10151,7 +10300,13 @@ static json run_sparse_g_label_refresh(
                  carrier->soft_role_capture_destination == -1 &&
                  carrier->soft_role_read_slot == -1 &&
                  carrier->soft_role_staging_writes == 0 &&
-                 carrier->soft_role_staging_destination_mask == 0));
+                 carrier->soft_role_staging_destination_mask == 0)) &&
+            (!carrier->output_depth_memory ||
+                (!carrier->depth_memory_poisoned &&
+                 carrier->depth_capture_destination == -1 &&
+                 carrier->depth_layer_offset == 0 &&
+                 carrier->depth_staging_writes == 0 &&
+                 carrier->depth_staging_destination_mask == 0));
         semantic_carrier_restored =
             semantic_carrier_quiescent &&
             !output_written_carrier_mode &&
@@ -10207,6 +10362,23 @@ static json run_sparse_g_label_refresh(
                 carrier->soft_role_commits;
             semantic_carrier_soft_role_reads =
                 carrier->soft_role_reads;
+            semantic_carrier_depth_memory_backend_bytes =
+                carrier->depth_memory_backend_bytes;
+            semantic_carrier_depth_capture_device_copy_bytes =
+                carrier->depth_capture_device_copy_bytes;
+            semantic_carrier_depth_commit_device_copy_bytes =
+                carrier->depth_commit_device_copy_bytes;
+            semantic_carrier_depth_read_device_copy_bytes =
+                carrier->depth_read_device_copy_bytes;
+            semantic_carrier_depth_cross_attention_multiply_accumulates =
+                carrier
+                    ->depth_cross_attention_multiply_accumulates;
+            semantic_carrier_depth_captures =
+                carrier->depth_captures;
+            semantic_carrier_depth_commits =
+                carrier->depth_commits;
+            semantic_carrier_depth_reads =
+                carrier->depth_reads;
             semantic_carrier_writer_host_input_bytes =
                 carrier->writer_host_input_bytes;
             semantic_carrier_port_writes =
@@ -10240,7 +10412,26 @@ static json run_sparse_g_label_refresh(
     const auto & acceptance = spec.at("acceptance_law");
     const auto & primary =
         route_summary.at(candidate_route);
+    bool all_candidate_logits_finite = true;
+    for (const auto & [route, variants_by_id] : outputs) {
+        (void) route;
+        for (const auto & [variant_id, boundaries] :
+             variants_by_id) {
+            (void) variant_id;
+            for (const auto & boundary : boundaries) {
+                all_candidate_logits_finite =
+                    all_candidate_logits_finite &&
+                    std::all_of(
+                        boundary.candidate_logits.begin(),
+                        boundary.candidate_logits.end(),
+                        [](float value) {
+                            return std::isfinite(value);
+                        });
+            }
+        }
+    }
     const bool accepted =
+        all_candidate_logits_finite &&
         primary.at("correct").get<size_t>() ==
             acceptance.at("primary_correct").get<size_t>() &&
         primary.at("boundary_matches").get<size_t>() ==
@@ -10304,6 +10495,20 @@ static json run_sparse_g_label_refresh(
              (output_written_carrier_mode
                 ? semantic_carrier_quiescent
                 : semantic_carrier_restored))) &&
+        (!output_depth_memory_mode ||
+            (semantic_carrier_quiescent &&
+             semantic_carrier_port_writes == comparisons &&
+             semantic_carrier_depth_captures == comparisons &&
+             semantic_carrier_depth_commits == variants.size() &&
+             semantic_carrier_depth_reads > 0 &&
+             carrier_disabled_boundary_matches <=
+                 acceptance.at(
+                     "carrier_disabled_boundary_matches_maximum")
+                     .get<size_t>() &&
+             wrong_layer_boundary_matches <=
+                 acceptance.at(
+                     "wrong_layer_boundary_matches_maximum")
+                     .get<size_t>())) &&
         (!output_continuous_soft_role_rematerialization_mode ||
             (semantic_carrier_quiescent &&
              semantic_carrier_port_writes == comparisons &&
@@ -10383,6 +10588,7 @@ static json run_sparse_g_label_refresh(
     llama_memory_clear(memory, true);
     llama_synchronize(ctx);
     if (trained_semantic_carrier_mode ||
+        output_depth_memory_mode ||
         output_continuous_soft_role_rematerialization_mode) {
         ctx->clear_neo3000_semantic_carrier();
         if (ctx->get_neo3000_semantic_carrier()) {
@@ -10465,6 +10671,8 @@ static json run_sparse_g_label_refresh(
             ? output_phase_orbit_memory_mode
                 ? "OUTPUT_INITIALIZED_NATIVE_CYCLIC_PHASE_ORBIT"
                 : "ACTUAL_OUTPUT_SHARED_PHASE_FAST_WEIGHT_MEMORY"
+            : output_depth_memory_mode
+            ? "OUTPUT_FED_DEPTH_RESOLVED_MODEL_NATIVE_CROSS_ATTENTION_MEMORY"
             : output_written_hidden_slot_mode
             ? "ACTUAL_OUTPUT_WRITTEN_RESIDENT_HIDDEN_SLOT_CARRIER"
             : output_written_semantic_port_mode
@@ -10572,6 +10780,8 @@ static json run_sparse_g_label_refresh(
                 output_written_semantic_port_mode},
             {"output_written_hidden_slot_action",
                 output_written_hidden_slot_mode},
+            {"output_depth_resolved_cross_attention_memory_action",
+                output_depth_memory_mode},
             {"output_phase_memory_action",
                 output_phase_feedback_memory_mode},
             {"output_phase_orbit_memory_action",
@@ -10664,7 +10874,8 @@ static json run_sparse_g_label_refresh(
                         "carrier_adapter_training_contexts").size()
                     : 0},
             {"output_written_port_training_contexts",
-                output_written_carrier_mode
+                trained_semantic_carrier_mode &&
+                    output_written_carrier_mode
                     ? spec.at(
                         "output_written_port_training_contexts").size()
                     : 0},
@@ -10776,6 +10987,12 @@ static json run_sparse_g_label_refresh(
                 carrier_disabled_correct},
             {"carrier_disabled_boundary_matches",
                 carrier_disabled_boundary_matches},
+            {"all_candidate_logits_finite",
+                all_candidate_logits_finite},
+            {"wrong_layer_correct",
+                wrong_layer_correct},
+            {"wrong_layer_boundary_matches",
+                wrong_layer_boundary_matches},
             {"recurrent_output_delta_extractions",
                 recurrent_output_delta_extraction_count},
             {"recurrent_output_delta_accumulations",
@@ -10820,7 +11037,8 @@ static json run_sparse_g_label_refresh(
                 active_cache_backend_allocation_bytes},
             {"maximum_retained_root_backend_allocation_bytes", 0},
             {"active_plus_retained_backend_allocation_bytes",
-                active_cache_backend_allocation_bytes},
+                active_cache_backend_allocation_bytes +
+                    semantic_carrier_depth_memory_backend_bytes},
             {"F_recurrent_hash_before",
                 hex64(f_hash_before.tensor.value)},
             {"F_recurrent_hash_after",
@@ -10839,7 +11057,9 @@ static json run_sparse_g_label_refresh(
                 refreshed_attention_logical_bytes},
             {"complete_host_state_copy_retained", false},
             {"semantic_carrier_action_backing_id",
-                trained_semantic_carrier_mode
+                trained_semantic_carrier_mode ||
+                    output_depth_memory_mode ||
+                    output_continuous_soft_role_rematerialization_mode
                     ? hex64(
                         semantic_carrier_backing_initial)
                     : ""},
@@ -11179,7 +11399,8 @@ static json run_sparse_g_label_refresh(
                 semantic_adapter_build.logical_bytes +
                     semantic_carrier_hidden_slot_backend_bytes +
                     semantic_carrier_phase_memory_backend_bytes +
-                    semantic_carrier_soft_role_backend_bytes},
+                    semantic_carrier_soft_role_backend_bytes +
+                    semantic_carrier_depth_memory_backend_bytes},
             {"semantic_carrier_hash",
                 trained_semantic_carrier_mode
                     ? hex64(semantic_adapter_build.hash)
@@ -11267,6 +11488,22 @@ static json run_sparse_g_label_refresh(
                 semantic_carrier_soft_role_commits},
             {"semantic_carrier_soft_role_reads",
                 semantic_carrier_soft_role_reads},
+            {"semantic_carrier_depth_memory_backend_bytes",
+                semantic_carrier_depth_memory_backend_bytes},
+            {"semantic_carrier_depth_capture_device_copy_bytes",
+                semantic_carrier_depth_capture_device_copy_bytes},
+            {"semantic_carrier_depth_commit_device_copy_bytes",
+                semantic_carrier_depth_commit_device_copy_bytes},
+            {"semantic_carrier_depth_read_device_copy_bytes",
+                semantic_carrier_depth_read_device_copy_bytes},
+            {"semantic_carrier_depth_cross_attention_multiply_accumulates",
+                semantic_carrier_depth_cross_attention_multiply_accumulates},
+            {"semantic_carrier_depth_captures",
+                semantic_carrier_depth_captures},
+            {"semantic_carrier_depth_commits",
+                semantic_carrier_depth_commits},
+            {"semantic_carrier_depth_reads",
+                semantic_carrier_depth_reads},
             {"semantic_carrier_writer_host_input_bytes",
                 semantic_carrier_writer_host_input_bytes},
             {"semantic_carrier_port_writes",

@@ -1262,6 +1262,16 @@ struct neo3000_soft_role_backing {
     std::array<ggml_tensor *, 4> staging_slots = {};
 };
 
+struct neo3000_depth_memory_backing {
+    ggml_context_ptr ctx;
+    ggml_backend_buffer_ptr buffer;
+    ggml_tensor * active = nullptr;
+    ggml_tensor * staging = nullptr;
+    ggml_tensor * zero_layer = nullptr;
+    std::vector<ggml_tensor *> active_layers;
+    std::vector<ggml_tensor *> staging_slots;
+};
+
 bool llama_context::install_neo3000_semantic_carrier(
         std::vector<float> query_map,
         const std::array<float, 4> & query_bias,
@@ -1735,6 +1745,153 @@ bool llama_context::install_neo3000_continuous_soft_role_memory(
     return true;
 }
 
+bool llama_context::install_neo3000_output_depth_memory() {
+    std::vector<int32_t> depth_layers;
+    if (model.arch != LLM_ARCH_QWEN35MOE ||
+        !model.output ||
+        !model.output->buffer) {
+        return false;
+    }
+    for (uint32_t il = 0; il < model.hparams.n_layer(); ++il) {
+        if (!model.hparams.is_recr(il)) {
+            depth_layers.push_back(static_cast<int32_t>(il));
+        }
+    }
+    // This experiment is frozen to the Agents-A1 ten-layer full-attention
+    // complement localized by neo-exp-0109/0110.
+    if (depth_layers.size() != 10) {
+        return false;
+    }
+
+    const int64_t n_embd = model.hparams.n_embd;
+    const int64_t n_depth_layers =
+        static_cast<int64_t>(depth_layers.size());
+    const size_t tensor_count =
+        3 + depth_layers.size() + depth_layers.size() * 4;
+    ggml_init_params params = {
+        /*.mem_size   =*/ tensor_count * ggml_tensor_overhead(),
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    auto backing =
+        std::make_shared<neo3000_depth_memory_backing>();
+    backing->ctx.reset(ggml_init(params));
+    if (!backing->ctx) {
+        return false;
+    }
+    backing->active = ggml_new_tensor_3d(
+        backing->ctx.get(),
+        GGML_TYPE_F32,
+        n_embd,
+        4,
+        n_depth_layers);
+    backing->staging = ggml_new_tensor_3d(
+        backing->ctx.get(),
+        GGML_TYPE_F32,
+        n_embd,
+        4,
+        n_depth_layers);
+    backing->zero_layer = ggml_new_tensor_2d(
+        backing->ctx.get(),
+        GGML_TYPE_F32,
+        n_embd,
+        4);
+    ggml_set_name(
+        backing->active,
+        "neo3000_depth_memory_active_resident");
+    ggml_set_name(
+        backing->staging,
+        "neo3000_depth_memory_staging_resident");
+    ggml_set_name(
+        backing->zero_layer,
+        "neo3000_depth_memory_zero_layer");
+
+    const size_t row_bytes =
+        static_cast<size_t>(n_embd) * sizeof(float);
+    const size_t layer_bytes = row_bytes * 4;
+    backing->active_layers.reserve(depth_layers.size());
+    backing->staging_slots.reserve(depth_layers.size() * 4);
+    for (size_t layer_index = 0;
+         layer_index < depth_layers.size();
+         ++layer_index) {
+        backing->active_layers.push_back(
+            ggml_view_2d(
+                backing->ctx.get(),
+                backing->active,
+                n_embd,
+                4,
+                row_bytes,
+                layer_index * layer_bytes));
+        for (size_t slot = 0; slot < 4; ++slot) {
+            backing->staging_slots.push_back(
+                ggml_view_1d(
+                    backing->ctx.get(),
+                    backing->staging,
+                    n_embd,
+                    layer_index * layer_bytes +
+                        slot * row_bytes));
+        }
+    }
+
+    const auto buft =
+        ggml_backend_buffer_get_type(model.output->buffer);
+    backing->buffer.reset(
+        ggml_backend_alloc_ctx_tensors_from_buft(
+            backing->ctx.get(),
+            buft));
+    if (!backing->buffer) {
+        return false;
+    }
+    ggml_backend_buffer_clear(backing->buffer.get(), 0);
+
+    auto carrier =
+        std::make_shared<llama_neo3000_semantic_carrier>();
+    carrier->n_embd = static_cast<uint32_t>(n_embd);
+    carrier->read_layer = -3;
+    carrier->output_written = true;
+    carrier->output_depth_memory = true;
+    carrier->depth_active = backing->active;
+    carrier->depth_staging = backing->staging;
+    carrier->depth_zero_layer = backing->zero_layer;
+    carrier->depth_layers = std::move(depth_layers);
+    carrier->depth_projected_kv_width =
+        static_cast<uint32_t>(
+            model.hparams.n_embd_head_k() *
+            model.hparams.n_head_kv());
+    carrier->depth_active_layers = backing->active_layers;
+    carrier->depth_staging_slots =
+        backing->staging_slots;
+    carrier->depth_memory_backend_bytes =
+        ggml_backend_buffer_get_size(
+            backing->buffer.get());
+    carrier->depth_memory_backing = std::move(backing);
+
+    uint64_t backing_id = 1469598103934665603ULL;
+    const auto mix_pointer = [&](const void * pointer) {
+        uintptr_t value = reinterpret_cast<uintptr_t>(pointer);
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            backing_id ^=
+                static_cast<uint8_t>(
+                    (value >> (8 * i)) & 0xffu);
+            backing_id *= 1099511628211ULL;
+        }
+    };
+    mix_pointer(carrier.get());
+    mix_pointer(carrier->depth_active);
+    mix_pointer(carrier->depth_active->data);
+    mix_pointer(carrier->depth_staging);
+    mix_pointer(carrier->depth_staging->data);
+    mix_pointer(carrier->depth_zero_layer);
+    mix_pointer(carrier->depth_memory_backing.get());
+    carrier->action_backing_id =
+        backing_id == 0 ? 1 : backing_id;
+
+    cparams.neo3000_semantic_carrier =
+        std::move(carrier);
+    sched_need_reserve = true;
+    return true;
+}
+
 bool llama_context::write_neo3000_semantic_port(
         const float * output_state,
         size_t output_state_count,
@@ -2160,6 +2317,182 @@ bool llama_context::set_neo3000_soft_role_read_slot(
     return true;
 }
 
+bool llama_context::set_neo3000_depth_capture_destination(
+        int32_t public_destination) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->output_depth_memory ||
+        carrier->depth_memory_poisoned ||
+        public_destination < -1 ||
+        public_destination >= 4 ||
+        (public_destination >= 0 &&
+         (carrier->depth_staging_destination_mask &
+            (1u << public_destination)) != 0)) {
+        return false;
+    }
+    carrier->depth_capture_destination =
+        public_destination;
+    return true;
+}
+
+void llama_context::poison_neo3000_depth_memory() {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier || !carrier->output_depth_memory) {
+        return;
+    }
+    carrier->depth_memory_poisoned = true;
+    carrier->depth_capture_destination = -1;
+    if (carrier->depth_active) {
+        ggml_backend_tensor_memset(
+            carrier->depth_active,
+            0,
+            0,
+            ggml_nbytes(carrier->depth_active));
+    }
+    if (carrier->depth_staging) {
+        ggml_backend_tensor_memset(
+            carrier->depth_staging,
+            0,
+            0,
+            ggml_nbytes(carrier->depth_staging));
+    }
+    carrier->depth_staging_writes = 0;
+    carrier->depth_staging_destination_mask = 0;
+    ++carrier->generation;
+    synchronize();
+}
+
+bool llama_context::capture_neo3000_depth_memory_output(
+        const llm_graph_result * res,
+        uint32_t input_rows) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->output_depth_memory ||
+        carrier->depth_capture_destination < 0) {
+        return true;
+    }
+    const int32_t destination =
+        carrier->depth_capture_destination;
+    const auto poison = [&]() {
+        poison_neo3000_depth_memory();
+    };
+    if (!res ||
+        carrier->depth_memory_poisoned ||
+        destination >= 4 ||
+        input_rows != 1 ||
+        carrier->depth_staging_writes >= 4 ||
+        (carrier->depth_staging_destination_mask &
+            (1u << destination)) != 0 ||
+        carrier->depth_layers.empty() ||
+        carrier->depth_staging_slots.size() !=
+            carrier->depth_layers.size() * 4 ||
+        !carrier->depth_memory_backing) {
+        poison();
+        return false;
+    }
+
+    const size_t expected_bytes =
+        static_cast<size_t>(carrier->n_embd) *
+        sizeof(float);
+    std::vector<ggml_tensor *> sources;
+    sources.reserve(carrier->depth_layers.size());
+    for (int32_t layer : carrier->depth_layers) {
+        ggml_tensor * source = res->get_layer_inp(layer);
+        if (!source ||
+            source->ne[0] != carrier->n_embd ||
+            source->ne[1] != 1 ||
+            ggml_nbytes(source) != expected_bytes) {
+            poison();
+            return false;
+        }
+        sources.push_back(source);
+    }
+    for (size_t layer_index = 0;
+         layer_index < sources.size();
+         ++layer_index) {
+        ggml_tensor * target =
+            carrier->depth_staging_slots.at(
+                layer_index * 4 +
+                static_cast<size_t>(destination));
+        if (!target ||
+            ggml_nbytes(target) != expected_bytes) {
+            poison();
+            return false;
+        }
+    }
+    for (size_t layer_index = 0;
+         layer_index < sources.size();
+         ++layer_index) {
+        ggml_backend_tensor_copy(
+            sources.at(layer_index),
+            carrier->depth_staging_slots.at(
+                layer_index * 4 +
+                static_cast<size_t>(destination)));
+    }
+    synchronize();
+    carrier->depth_capture_device_copy_bytes +=
+        expected_bytes * sources.size();
+    ++carrier->depth_staging_writes;
+    carrier->depth_staging_destination_mask |=
+        1u << destination;
+    ++carrier->depth_captures;
+    ++carrier->port_writes;
+    ++carrier->generation;
+    carrier->depth_capture_destination = -1;
+    return true;
+}
+
+bool llama_context::commit_neo3000_depth_memory() {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->output_depth_memory ||
+        carrier->depth_memory_poisoned ||
+        !carrier->depth_active ||
+        !carrier->depth_staging ||
+        carrier->depth_staging_writes != 4 ||
+        carrier->depth_staging_destination_mask != 0x0fu ||
+        carrier->depth_capture_destination != -1 ||
+        ggml_nbytes(carrier->depth_active) !=
+            ggml_nbytes(carrier->depth_staging)) {
+        return false;
+    }
+    ggml_backend_tensor_copy(
+        carrier->depth_staging,
+        carrier->depth_active);
+    ggml_backend_tensor_memset(
+        carrier->depth_staging,
+        0,
+        0,
+        ggml_nbytes(carrier->depth_staging));
+    synchronize();
+    carrier->depth_commit_device_copy_bytes +=
+        ggml_nbytes(carrier->depth_active) +
+        ggml_nbytes(carrier->depth_staging);
+    carrier->depth_staging_writes = 0;
+    carrier->depth_staging_destination_mask = 0;
+    ++carrier->depth_commits;
+    ++carrier->generation;
+    return true;
+}
+
+bool llama_context::set_neo3000_depth_layer_offset(
+        uint32_t public_offset) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->output_depth_memory ||
+        carrier->depth_memory_poisoned ||
+        carrier->depth_layers.empty() ||
+        public_offset >= carrier->depth_layers.size()) {
+        return false;
+    }
+    if (carrier->depth_layer_offset == public_offset) {
+        return true;
+    }
+    carrier->depth_layer_offset = public_offset;
+    ++carrier->generation;
+    return true;
+}
+
 bool llama_context::reset_neo3000_semantic_port() {
     auto & carrier = cparams.neo3000_semantic_carrier;
     if (!carrier || !carrier->output_written) {
@@ -2203,6 +2536,34 @@ bool llama_context::reset_neo3000_semantic_port() {
         carrier->phase_poisoned = false;
         carrier->phase_backend_copy_bytes +=
             zero.size() * sizeof(float) * 2;
+    }
+    if (carrier->output_depth_memory) {
+        if (!carrier->depth_active ||
+            !carrier->depth_staging ||
+            !carrier->depth_zero_layer) {
+            return false;
+        }
+        ggml_backend_tensor_memset(
+            carrier->depth_active,
+            0,
+            0,
+            ggml_nbytes(carrier->depth_active));
+        ggml_backend_tensor_memset(
+            carrier->depth_staging,
+            0,
+            0,
+            ggml_nbytes(carrier->depth_staging));
+        ggml_backend_tensor_memset(
+            carrier->depth_zero_layer,
+            0,
+            0,
+            ggml_nbytes(carrier->depth_zero_layer));
+        synchronize();
+        carrier->depth_capture_destination = -1;
+        carrier->depth_layer_offset = 0;
+        carrier->depth_staging_writes = 0;
+        carrier->depth_staging_destination_mask = 0;
+        carrier->depth_memory_poisoned = false;
     }
     carrier->port.fill(0.0f);
     neo3000_set_semantic_carrier_action(*carrier);
@@ -2503,6 +2864,51 @@ void llama_context::clear_neo3000_semantic_carrier() {
             ->soft_role_staging_destination_mask = 0;
         cparams.neo3000_semantic_carrier
             ->soft_role_poisoned = true;
+    }
+    if (cparams.neo3000_semantic_carrier
+            ->output_depth_memory &&
+        cparams.neo3000_semantic_carrier
+            ->depth_active &&
+        cparams.neo3000_semantic_carrier
+            ->depth_staging) {
+        ggml_backend_tensor_memset(
+            cparams.neo3000_semantic_carrier
+                ->depth_active,
+            0,
+            0,
+            ggml_nbytes(
+                cparams.neo3000_semantic_carrier
+                    ->depth_active));
+        ggml_backend_tensor_memset(
+            cparams.neo3000_semantic_carrier
+                ->depth_staging,
+            0,
+            0,
+            ggml_nbytes(
+                cparams.neo3000_semantic_carrier
+                    ->depth_staging));
+        if (cparams.neo3000_semantic_carrier
+                ->depth_zero_layer) {
+            ggml_backend_tensor_memset(
+                cparams.neo3000_semantic_carrier
+                    ->depth_zero_layer,
+                0,
+                0,
+                ggml_nbytes(
+                    cparams.neo3000_semantic_carrier
+                        ->depth_zero_layer));
+        }
+        synchronize();
+        cparams.neo3000_semantic_carrier
+            ->depth_capture_destination = -1;
+        cparams.neo3000_semantic_carrier
+            ->depth_layer_offset = 0;
+        cparams.neo3000_semantic_carrier
+            ->depth_staging_writes = 0;
+        cparams.neo3000_semantic_carrier
+            ->depth_staging_destination_mask = 0;
+        cparams.neo3000_semantic_carrier
+            ->depth_memory_poisoned = true;
     }
     cparams.neo3000_semantic_carrier->enabled = false;
     cparams.neo3000_semantic_carrier->port.fill(0.0f);
@@ -3035,6 +3441,19 @@ static bool needs_raw_logits(const llama_ubatch & ubatch, const std::map<llama_s
 }
 
 int llama_context::decode(const llama_batch & batch_inp) {
+    struct neo3000_depth_capture_guard {
+        llama_context * ctx;
+        ~neo3000_depth_capture_guard() {
+            const auto * carrier =
+                ctx->get_neo3000_semantic_carrier();
+            if (carrier &&
+                carrier->output_depth_memory &&
+                carrier->depth_capture_destination >= 0) {
+                ctx->poison_neo3000_depth_memory();
+            }
+        }
+    } depth_capture_guard{this};
+
     // MTP hook batches carry both token (next-token id) and embd (h_nextn row),
     // so accept either present rather than requiring exactly one.
     GGML_ASSERT(batch_inp.token || batch_inp.embd);
@@ -3251,6 +3670,15 @@ int llama_context::decode(const llama_batch & batch_inp) {
             LLAMA_LOG_ERROR(
                 "%s: failed to capture continuous Neo3000 "
                 "soft-role output\n",
+                __func__);
+            return -3;
+        }
+        if (!capture_neo3000_depth_memory_output(
+                res,
+                static_cast<uint32_t>(ubatch.n_tokens))) {
+            LLAMA_LOG_ERROR(
+                "%s: failed to capture Neo3000 depth-resolved "
+                "output memory\n",
                 __func__);
             return -3;
         }

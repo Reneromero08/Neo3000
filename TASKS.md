@@ -694,8 +694,38 @@ constructively unbounded local Agents-A1 inference.
   through a numerically defined read law before useful projection. It must
   preserve a finite matched gate-off route by construction, make downstream
   inference carrier-dependent, and attack semantic state transition rather
-  than evidence custody. One physical mechanism receives one contact and one
-  compact adjudication.
+  than evidence custody. The frozen precontact identity is `neo-exp-0159`
+  with specification
+  `lab/output-fed-depth-resolved-cross-attention-memory-v1.json`. The frozen
+  intervention is one depth-resolved
+  output-memory panel: retain the actual output-token layer-input trajectory
+  at all ten Qwen full-attention layers for four public query ordinals,
+  commit all forty F32 rows atomically on CUDA, and let each later
+  full-attention layer read only its corresponding four rows through the
+  frozen Q/K/V projections and a query-dependent softmax before the ordinary
+  attention gate and output projection. Capture is device-to-device; slot
+  assignment is public query order; no expected answer, target row, fitted
+  decoder, source-role forward, or host carrier mirror may construct the
+  state. The disabled G1 control receives an exact-zero memory input rather
+  than multiplying a possibly non-finite branch by zero. A same-bytes cyclic
+  wrong-layer assignment is the sole geometry control.
+  One contact passes only with exact capability `16/16`, enabled carrier
+  `16/16`, G0 return `4/4`, finite disabled G1 differing on at least `3/4`,
+  wrong-layer control differing on at least `3/4`, stable backing, atomic
+  panels, and complete closure with every output forward, cross-attention
+  operation, byte transfer, and live allocation charged. Failure closes the
+  entire depth-indexed output-memory family without layer, scale, slot,
+  prompt, fixture, controller, evaluator, carrier-evaluation, or
+  evidence-harness successors. Passing supports at most bounded
+  output-fed depth-resolved model-native cross-attention recurrence; it does
+  not establish unresolved custody, restoration, catalytic inference,
+  Small Wall crossing, or an unbounded bridge. One physical mechanism
+  receives one contact and one compact adjudication. The implementation,
+  panel-atomic capture/commit/poison lifecycle, exact-zero read control,
+  cyclic same-bytes layer control, compact accounting fields, focused probe,
+  and full Release server now build without model contact; `139/139`
+  configured CUDA objects remain present. Commit this precontact mechanism,
+  then execute `neo-exp-0159` exactly once.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.
