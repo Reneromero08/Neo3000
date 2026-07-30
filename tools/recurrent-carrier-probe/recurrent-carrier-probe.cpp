@@ -5041,6 +5041,8 @@ static json run_sparse_g_label_refresh(
         spec.value("subspace_value_orbit_action", false);
     const bool model_weight_value_orbit_mode =
         spec.value("model_weight_value_orbit_action", false);
+    const bool output_promoted_value_carrier_mode =
+        spec.value("output_promoted_value_carrier_action", false);
     const bool trained_semantic_carrier_mode =
         spec.value("trained_semantic_carrier_action", false);
     const bool semantic_carrier_layer_delta_mode =
@@ -5077,6 +5079,7 @@ static json run_sparse_g_label_refresh(
         fourier_value_orbit_mode ||
         subspace_value_orbit_mode ||
         model_weight_value_orbit_mode ||
+        output_promoted_value_carrier_mode ||
         trained_semantic_carrier_mode;
     if (static_cast<int>(position_orbit_mode) +
             static_cast<int>(value_orbit_mode) +
@@ -5085,6 +5088,7 @@ static json run_sparse_g_label_refresh(
             static_cast<int>(fourier_value_orbit_mode) +
             static_cast<int>(subspace_value_orbit_mode) +
             static_cast<int>(model_weight_value_orbit_mode) +
+            static_cast<int>(output_promoted_value_carrier_mode) +
             static_cast<int>(trained_semantic_carrier_mode) > 1) {
         throw std::runtime_error(
             "label orbit action modes are mutually exclusive");
@@ -5194,6 +5198,7 @@ static json run_sparse_g_label_refresh(
         variant_g_tokens.push_back(std::move(tokens));
     }
     if (model_weight_value_orbit_mode ||
+        output_promoted_value_carrier_mode ||
         trained_semantic_carrier_mode) {
         std::vector<llama_token> canonical_labels;
         canonical_labels.reserve(label_offsets.size());
@@ -5224,6 +5229,28 @@ static json run_sparse_g_label_refresh(
                         "the frozen public Z4 cycle");
                 }
             }
+        }
+    }
+    std::vector<size_t> output_promotion_label_indices;
+    if (output_promoted_value_carrier_mode) {
+        output_promotion_label_indices =
+            spec.at("output_promotion_label_indices")
+                .get<std::vector<size_t>>();
+        if (output_promotion_label_indices.size() !=
+                spec.at("queries_per_variant").get<size_t>() ||
+            output_promotion_label_indices.size() !=
+                label_offsets.size() ||
+            std::set<size_t>(
+                output_promotion_label_indices.begin(),
+                output_promotion_label_indices.end()).size() !=
+                label_offsets.size() ||
+            *std::max_element(
+                output_promotion_label_indices.begin(),
+                output_promotion_label_indices.end()) >=
+                label_offsets.size()) {
+            throw std::runtime_error(
+                "output promotion label mapping is not one public "
+                "four-position permutation");
         }
     }
     std::vector<std::vector<uint32_t>> fourier_label_ordinals;
@@ -5293,7 +5320,8 @@ static json run_sparse_g_label_refresh(
          complex_phase_orbit_mode ||
          fourier_value_orbit_mode ||
          subspace_value_orbit_mode ||
-         model_weight_value_orbit_mode)
+         model_weight_value_orbit_mode ||
+         output_promoted_value_carrier_mode)
             ? spec.contains("orbit_attention_layers")
                 ? parse_layer_selection(
                     spec, "orbit_attention_layers", attention_layer_ids)
@@ -5689,6 +5717,9 @@ static json run_sparse_g_label_refresh(
     size_t attention_label_alias_count = 0;
     size_t orbit_action_count = 0;
     size_t orbit_position_shift_count = 0;
+    size_t output_promotion_row_count = 0;
+    size_t useful_output_decode_tokens = 0;
+    double useful_output_decode_wall_ms_total = 0.0;
     size_t fourier_calibration_sample_count = 0;
     size_t subspace_calibration_sample_count = 0;
     uint64_t orbit_backend_copy_bytes = 0;
@@ -5818,13 +5849,26 @@ static json run_sparse_g_label_refresh(
         std::map<std::string, std::vector<boundary_result>>> outputs;
     json records = json::array();
     json variant_timings = json::array();
+    json output_promotion_records = json::array();
+    const std::string candidate_route =
+        output_promoted_value_carrier_mode
+            ? "output_promoted_value_carrier"
+            : orbit_mode
+                ? "label_orbit_candidate"
+                : "sparse_label_refresh_candidate";
+    const std::string return_route =
+        output_promoted_value_carrier_mode
+            ? "output_promoted_value_carrier_return_G0"
+            : "label_orbit_return_G0";
 
     const auto project_from_source =
             [&](llama_seq_id source_seq,
                 llama_seq_id scratch_seq,
                 const std::string & route,
                 const std::string & variant_id,
-                const json & query) {
+                const json & query,
+                bool close_after_projection = true)
+                    -> boundary_result {
         copy_full_sequence(
             source_seq,
             scratch_seq,
@@ -5902,9 +5946,12 @@ static json run_sparse_g_label_refresh(
         query_decode_tokens +=
             boundary.record.at("query_tokens").get<size_t>();
         records.push_back(boundary.record);
-        outputs[route][variant_id].push_back(std::move(boundary));
-        close_sequence(scratch_seq, route + ":query-close");
-        ++sequence_close_count;
+        outputs[route][variant_id].push_back(boundary);
+        if (close_after_projection) {
+            close_sequence(scratch_seq, route + ":query-close");
+            ++sequence_close_count;
+        }
+        return boundary;
     };
 
     const auto refresh_candidate_labels =
@@ -6627,7 +6674,8 @@ static json run_sparse_g_label_refresh(
         const auto & target_g_tokens = variant_g_tokens.at(variant_index);
         double variant_label_wall_ms = 0.0;
         if (orbit_mode) {
-            if (variant_index > 0) {
+            if (variant_index > 0 &&
+                !output_promoted_value_carrier_mode) {
                 advance_label_orbit(id);
             }
         } else {
@@ -6641,15 +6689,130 @@ static json run_sparse_g_label_refresh(
                 refresh_candidate_labels(target_g_tokens, id);
         }
 
-        for (const auto & query : variant.at("queries")) {
-            project_from_source(
+        if (output_promoted_value_carrier_mode) {
+            std::vector<llama_pos> output_positions;
+            output_positions.reserve(stage_seqs.size());
+            size_t query_index = 0;
+            for (const auto & query : variant.at("queries")) {
+                const llama_seq_id stage_seq =
+                    stage_seqs.at(query_index);
+                const boundary_result boundary =
+                    project_from_source(
+                        candidate_seq,
+                        stage_seq,
+                        candidate_route,
+                        id,
+                        query,
+                        false);
+                const size_t candidate_index =
+                    static_cast<size_t>(
+                        boundary.argmax.at(0) - 'A');
+                if (candidate_index >= candidates.size()) {
+                    throw std::runtime_error(
+                        id + ": projected output is not a candidate");
+                }
+                const size_t query_tokens =
+                    boundary.record.at("query_tokens")
+                        .get<size_t>();
+                const llama_pos output_position =
+                    static_cast<llama_pos>(
+                        expected_source_tokens + query_tokens);
+                require_component_positions(
+                    stage_seq,
+                    output_position - 1,
+                    output_position - 1,
+                    id + ":output-promotion-query-ready-" +
+                        std::to_string(query_index));
+                const double output_wall_ms = timed_decode(
+                    std::vector<llama_token>{
+                        candidates.at(candidate_index)},
+                    output_position,
+                    stage_seq);
+                useful_output_decode_wall_ms_total +=
+                    output_wall_ms;
+                ++useful_output_decode_tokens;
+                require_component_positions(
+                    stage_seq,
+                    output_position,
+                    output_position,
+                    id + ":output-token-resident-" +
+                        std::to_string(query_index));
+                output_positions.push_back(output_position);
+                output_promotion_records.push_back({
+                    {"variant", id},
+                    {"query_id", query.at("id")},
+                    {"query_index", query_index},
+                    {"source_sequence", stage_seq},
+                    {"source_output_position", output_position},
+                    {"actual_projected_output", boundary.argmax},
+                    {"actual_projected_token",
+                        candidates.at(candidate_index)},
+                    {"destination_label_index",
+                        output_promotion_label_indices.at(
+                            query_index)},
+                    {"destination_label_position",
+                        static_cast<llama_pos>(
+                            f_boundary_tokens +
+                            label_offsets.at(
+                                output_promotion_label_indices.at(
+                                    query_index)))},
+                    {"output_decode_wall_ms", output_wall_ms},
+                });
+                ++query_index;
+            }
+            for (size_t i = 0; i < stage_seqs.size(); ++i) {
+                const size_t label_index =
+                    output_promotion_label_indices.at(i);
+                const llama_pos label_position =
+                    static_cast<llama_pos>(
+                        f_boundary_tokens +
+                        label_offsets.at(label_index));
+                llama_kv_cache::value_orbit_metrics metrics = {};
+                if (!attention->seq_copy_attention_value_row(
+                        stage_seqs.at(i),
+                        output_positions.at(i),
+                        candidate_seq,
+                        label_position,
+                        orbit_attention_layers,
+                        &metrics)) {
+                    throw std::runtime_error(
+                        id + ": output value promotion failed for query " +
+                        std::to_string(i));
+                }
+                llama_synchronize(ctx);
+                orbit_backend_copy_bytes +=
+                    metrics.backend_copy_bytes;
+                orbit_host_read_bytes += metrics.host_read_bytes;
+                orbit_host_write_bytes += metrics.host_write_bytes;
+                orbit_peak_host_work_bytes = std::max(
+                    orbit_peak_host_work_bytes,
+                    metrics.peak_host_work_bytes);
+                orbit_tensor_visits += metrics.tensor_count;
+                orbit_position_visits += metrics.position_count;
+                ++output_promotion_row_count;
+            }
+            ++orbit_action_count;
+            require_component_positions(
                 candidate_seq,
-                orbit_mode ? stage_seqs[0] : work_seq,
-                orbit_mode
-                    ? "label_orbit_candidate"
-                    : "sparse_label_refresh_candidate",
-                id,
-                query);
+                source_boundary_pos,
+                source_boundary_pos,
+                id + ":output-promoted-carrier-advanced");
+            for (size_t i = 0; i < stage_seqs.size(); ++i) {
+                close_sequence(
+                    stage_seqs.at(i),
+                    id + ":output-stage-close-" +
+                        std::to_string(i));
+                ++sequence_close_count;
+            }
+        } else {
+            for (const auto & query : variant.at("queries")) {
+                project_from_source(
+                    candidate_seq,
+                    orbit_mode ? stage_seqs[0] : work_seq,
+                    candidate_route,
+                    id,
+                    query);
+            }
         }
         if (!orbit_mode) {
             close_sequence(candidate_seq, id + ":candidate-close");
@@ -6694,7 +6857,7 @@ static json run_sparse_g_label_refresh(
             {"label_refresh_count",
                 orbit_mode ? 0 : label_offsets.size()},
             {"label_refresh_wall_ms", variant_label_wall_ms},
-            {"orbit_action_count_before_projection",
+            {"orbit_action_count_after_candidate_transaction",
                 orbit_action_count},
             {"reference_G_tokens", target_g_tokens.size()},
             {"reference_G_wall_ms", reference_G_wall_ms},
@@ -6721,20 +6884,22 @@ static json run_sparse_g_label_refresh(
     size_t return_full_logit_hash_matches = 0;
     double return_maximum_candidate_logit_absolute_difference = 0.0;
     if (orbit_mode) {
-        advance_label_orbit("orbit-return-G0");
+        if (!output_promoted_value_carrier_mode) {
+            advance_label_orbit("orbit-return-G0");
+        }
         for (const auto & query : variants.at(0).at("queries")) {
             project_from_source(
                 candidate_seq,
                 stage_seqs[0],
-                "label_orbit_return_G0",
+                return_route,
                 variants.at(0).at("id"),
                 query);
         }
         const auto & initial =
-            outputs.at("label_orbit_candidate")
+            outputs.at(candidate_route)
                 .at(variants.at(0).at("id").get<std::string>());
         const auto & returned =
-            outputs.at("label_orbit_return_G0")
+            outputs.at(return_route)
                 .at(variants.at(0).at("id").get<std::string>());
         for (size_t i = 0; i < initial.size(); ++i) {
             return_boundary_matches +=
@@ -6776,9 +6941,7 @@ static json run_sparse_g_label_refresh(
 
     const std::vector<std::string> routes = {
         "exact_full_state",
-        orbit_mode
-            ? "label_orbit_candidate"
-            : "sparse_label_refresh_candidate",
+        candidate_route,
     };
     json route_summary = json::object();
     const size_t comparisons =
@@ -6834,7 +6997,7 @@ static json run_sparse_g_label_refresh(
         const auto & disabled =
             outputs.at("carrier_disabled").at(canonical_id);
         const auto & enabled =
-            outputs.at("label_orbit_candidate").at(canonical_id);
+            outputs.at(candidate_route).at(canonical_id);
         carrier_disabled_correct =
             semantic_correct_count(
                 disabled,
@@ -6874,10 +7037,7 @@ static json run_sparse_g_label_refresh(
 
     const auto & acceptance = spec.at("acceptance_law");
     const auto & primary =
-        route_summary.at(
-            orbit_mode
-                ? "label_orbit_candidate"
-                : "sparse_label_refresh_candidate");
+        route_summary.at(candidate_route);
     const bool accepted =
         primary.at("correct").get<size_t>() ==
             acceptance.at("primary_correct").get<size_t>() &&
@@ -7003,6 +7163,8 @@ static json run_sparse_g_label_refresh(
                 : "TRAINED_FIXED_CAPACITY_PRELOGIT_SEMANTIC_CARRIER"
             : model_weight_value_orbit_mode
             ? "MODEL_WEIGHT_DERIVED_SEMANTIC_VALUE_CYCLE"
+            : output_promoted_value_carrier_mode
+            ? "OUTPUT_PROMOTED_IN_PLACE_ATTENTION_VALUE_CARRIER"
             : complex_phase_orbit_mode
             ? paired_complex_attention_read
                 ? "IN_PLACE_VALUE_PHASE_WITH_LAYER_LOCAL_PAIRED_COMPLEX_ATTENTION_READ"
@@ -7050,6 +7212,10 @@ static json run_sparse_g_label_refresh(
                 subspace_value_orbit_mode},
             {"model_weight_value_orbit_action",
                 model_weight_value_orbit_mode},
+            {"output_promoted_value_carrier_action",
+                output_promoted_value_carrier_mode},
+            {"output_promotion_label_indices",
+                output_promotion_label_indices},
             {"trained_semantic_carrier_action",
                 trained_semantic_carrier_mode},
             {"semantic_carrier_layer_delta_training",
@@ -7206,7 +7372,8 @@ static json run_sparse_g_label_refresh(
             {"all_route_input_tokens",
                 source_decode_tokens +
                 query_decode_tokens +
-                semantic_training_query_tokens},
+                semantic_training_query_tokens +
+                useful_output_decode_tokens},
             {"sequence_copy_count", sequence_copy_count},
             {"sequence_close_count", sequence_close_count},
             {"label_refresh_count", label_refresh_count},
@@ -7217,6 +7384,12 @@ static json run_sparse_g_label_refresh(
             {"orbit_action_count", orbit_action_count},
             {"orbit_position_shift_count",
                 orbit_position_shift_count},
+            {"output_promotion_row_count",
+                output_promotion_row_count},
+            {"useful_output_decode_tokens",
+                useful_output_decode_tokens},
+            {"useful_output_decode_wall_ms_total",
+                useful_output_decode_wall_ms_total},
             {"orbit_backend_copy_bytes",
                 orbit_backend_copy_bytes},
             {"orbit_host_read_bytes", orbit_host_read_bytes},
@@ -7333,6 +7506,8 @@ static json run_sparse_g_label_refresh(
                         static_cast<double>(expected_source_tokens)},
         }},
         {"training_records", semantic_training_records},
+        {"output_promotion_records",
+            output_promotion_records},
         {"records", records},
         {"verdict", accepted ? "accept" : "reject"},
         {"claim_ceiling", spec.at("claim_ceiling")},

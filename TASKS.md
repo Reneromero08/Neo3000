@@ -281,13 +281,25 @@ constructively unbounded local Agents-A1 inference.
   capability gate. Four turns return bit-exactly and all state closes. Reject
   the layer-23 mean-residual-delta law; no layer/gain/ridge/context/prompt/
   fixture/evidence variant follows.
-- [ ] Replace fitted query-output adapters with one dynamic carrier update
-  applied before the delayed query exists. The next intervention must act on
-  attention, recurrent, MoE, or weight-factor state that later ordinary
-  inference reads, preserve the accepted evidence-necessity law, and attack
-  the four fresh target-token forwards of `neo-exp-0126`. It must not be
-  another terminal feature decoder, residual-gain variant, layer sweep, or
-  carrier-evaluation version.
+- [x] Replace fitted query-output adapters with one dynamic carrier update
+  applied before the delayed query exists. `neo-exp-0142` builds canonical G0
+  once, projects four actual outputs per phase, decodes those selected tokens
+  on their live query sequences, and copies only their attention-value rows
+  device-to-device into the still-resident source-label cells. It performs
+  zero noncanonical target-label forwards and no host tensor transfer on stable
+  active backing. Exact full state is `16/16`; the output-promoted carrier is
+  only `8/16` and returns `1/4` G0 boundaries after four rounds. The first
+  round is `4/4`, then semantic role drift yields `2/4`, `1/4`, `1/4`.
+  Output-token V rows are therefore not source-label state. This closes raw
+  output-row promotion; do not try key, layer, gain, prompt, fixture, or
+  evidence-harness variants.
+- [ ] Replace raw row promotion with one trained model-native role transport
+  that converts actual output-produced state into bounded pre-query carrier
+  state. The intervention must learn a shared attention, recurrent, MoE, or
+  weight-factor update law across public construction contexts, test it
+  unchanged on a disjoint context, retain no complete target-row table, use no
+  expected answer at runtime, and eliminate separate noncanonical target-token
+  forwards. This is a generator change, not carrier-evaluation v2.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

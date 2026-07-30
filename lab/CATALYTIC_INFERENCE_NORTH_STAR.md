@@ -65,6 +65,23 @@ It does not open a layer/gain/ridge/context/prompt/fixture/evidence series.
 The next mechanism must update dynamic state before the delayed query exists
 and attack the measured four fresh label-token forwards directly.
 
+That dynamic update has now been tested once. `neo-exp-0142` initializes
+canonical G0 only, lets the model produce four actual useful outputs, and
+promotes their live attention-value rows directly into the same resident
+source carrier. The mechanism eliminates every noncanonical target-label
+forward and all host tensor payload. It is a genuine output-fed recurrence
+shape, not another fitted terminal decoder or evidence-evaluator revision.
+
+The raw semantic law fails. Exact state is `16/16`, while the promoted carrier
+decays `4/4 -> 2/4 -> 1/4 -> 1/4` and returns only one of four G0 boundaries.
+The experiment therefore identifies a specific missing operation: output-token
+state is in query/output role and must be transported into source-label role
+before later ordinary inference can reuse it. The next mechanism trains that
+shared model-native role transport across construction contexts and tests it
+unchanged on a disjoint context. It must retain no complete target-row table,
+must use the actual output rather than the expected answer, and must not become
+a key/layer/gain/fixture/evidence-harness series.
+
 ### Executed bridge update — model-native residual carrier
 
 The first Linux contact after this synthesis moved the carrier before logits.

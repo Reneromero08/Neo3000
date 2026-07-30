@@ -1387,6 +1387,117 @@ bool llama_kv_cache::seq_rotate_attention_positions(
     return true;
 }
 
+bool llama_kv_cache::seq_copy_attention_value_row(
+        llama_seq_id source_seq_id,
+        llama_pos source_position,
+        llama_seq_id destination_seq_id,
+        llama_pos destination_position,
+        const std::set<uint32_t> & layer_ids,
+        value_orbit_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    if (other ||
+        n_stream != 1 ||
+        source_seq_id < 0 ||
+        destination_seq_id < 0 ||
+        static_cast<size_t>(source_seq_id) >= seq_to_stream.size() ||
+        static_cast<size_t>(destination_seq_id) >= seq_to_stream.size() ||
+        seq_to_stream[source_seq_id] !=
+            seq_to_stream[destination_seq_id] ||
+        source_position < 0 ||
+        destination_position < 0 ||
+        layer_ids.empty()) {
+        return false;
+    }
+    for (const uint32_t il : layer_ids) {
+        if (map_layer_ids.find(static_cast<int32_t>(il)) ==
+            map_layer_ids.end()) {
+            return false;
+        }
+    }
+
+    auto & cells = v_cells[seq_to_stream[source_seq_id]];
+    const auto find_unique_cell =
+            [&](llama_seq_id seq_id, llama_pos position) {
+        uint32_t found = cells.size();
+        for (uint32_t i = 0; i < cells.size(); ++i) {
+            if (cells.pos_in(i, position, position + 1) &&
+                cells.seq_has(i, seq_id)) {
+                if (found != cells.size()) {
+                    return cells.size();
+                }
+                found = i;
+            }
+        }
+        return found;
+    };
+    const uint32_t source_cell =
+        find_unique_cell(source_seq_id, source_position);
+    const uint32_t destination_cell =
+        find_unique_cell(destination_seq_id, destination_position);
+    if (source_cell == cells.size() ||
+        destination_cell == cells.size() ||
+        source_cell == destination_cell) {
+        return false;
+    }
+
+    const size_t metadata_bytes =
+        2 * layer_ids.size() * ggml_tensor_overhead();
+    ggml_init_params params = {
+        /*.mem_size   =*/ metadata_bytes,
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    ggml_context_ptr copy_ctx(ggml_init(params));
+    if (!copy_ctx) {
+        return false;
+    }
+
+    uint64_t backend_copy_bytes = 0;
+    uint64_t tensor_count = 0;
+    for (const auto & layer : layers) {
+        if (layer_ids.find(layer.il) == layer_ids.end()) {
+            continue;
+        }
+        ggml_tensor * tensor = layer.v;
+        if (!tensor ||
+            !tensor->buffer ||
+            ggml_blck_size(tensor->type) != 1 ||
+            tensor->ne[1] != static_cast<int64_t>(get_size()) ||
+            tensor->ne[2] != static_cast<int64_t>(n_stream)) {
+            return false;
+        }
+        const size_t row_bytes =
+            ggml_row_size(tensor->type, tensor->ne[0]);
+        if (tensor->nb[1] != row_bytes) {
+            return false;
+        }
+        ggml_tensor * source = ggml_view_1d(
+            copy_ctx.get(),
+            tensor,
+            tensor->ne[0],
+            static_cast<size_t>(source_cell) * tensor->nb[1]);
+        ggml_tensor * destination = ggml_view_1d(
+            copy_ctx.get(),
+            tensor,
+            tensor->ne[0],
+            static_cast<size_t>(destination_cell) * tensor->nb[1]);
+        ggml_backend_view_init(source);
+        ggml_backend_view_init(destination);
+        ggml_backend_tensor_copy(source, destination);
+        backend_copy_bytes += row_bytes;
+        ++tensor_count;
+    }
+
+    if (metrics) {
+        metrics->backend_copy_bytes = backend_copy_bytes;
+        metrics->tensor_count = tensor_count;
+        metrics->position_count = 2;
+    }
+    return tensor_count == layer_ids.size();
+}
+
 bool llama_kv_cache::seq_apply_complex_phase_quarter_turn(
         llama_seq_id seq_id,
         const std::vector<llama_pos> & positions,

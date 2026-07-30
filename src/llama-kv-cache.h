@@ -189,6 +189,19 @@ public:
             bool include_keys,
             value_orbit_metrics * metrics);
 
+    // Copies one active value row directly between two sequence positions in
+    // the unified attention cache. Sequence ownership and position metadata
+    // are unchanged, keys are untouched, and no tensor payload crosses the
+    // host. This is used to promote an output-produced value row into a
+    // still-resident source carrier.
+    bool seq_copy_attention_value_row(
+            llama_seq_id source_seq_id,
+            llama_pos source_position,
+            llama_seq_id destination_seq_id,
+            llama_pos destination_position,
+            const std::set<uint32_t> & layer_ids,
+            value_orbit_metrics * metrics);
+
     // Applies one exact public Z4 quarter-turn to adjacent real channel pairs
     // in every selected active attention row:
     //
