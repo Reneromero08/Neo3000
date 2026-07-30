@@ -511,11 +511,17 @@ constructively unbounded local Agents-A1 inference.
   scientific candidate boundary because the graph-local output map was still
   classified as an input when autodiff traversed the graph. The same
   pre-outcome identity now marks that tensor as a parameter during graph
-  construction and invalidates incompatible cached graphs; no result was
-  produced. Failure after this plumbing repair rejects the learned late reader
-  and moves to an attention-state writer or weight adapter; it does not
-  authorize layer, learning-rate, epoch, prompt, context, fixture, evaluator,
-  carrier-evaluation, or evidence-harness variants.
+  construction and invalidates incompatible cached graphs. A diagnostic
+  relaunch then localized the next pre-step blocker to the view-backed
+  layer-39 `SET_ROWS` write for the current attention key. The same mechanism
+  now gathers overwritten-row gradients to the new key/value payload and uses
+  unfused full attention only for optimization because flash attention has no
+  backward rule; runtime remains flash-attention-enabled. Neither launch
+  produced a result or candidate boundary. Failure after these plumbing
+  repairs rejects the learned late reader and moves to an attention-state
+  writer or weight adapter; it does not authorize layer, learning-rate, epoch,
+  prompt, context, fixture, evaluator, carrier-evaluation, or
+  evidence-harness variants.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

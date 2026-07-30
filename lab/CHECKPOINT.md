@@ -641,9 +641,15 @@ The active recurrence and acceptance boundary are
   autodiff could not see the output map as a parameter because that flag had
   been applied after forward-graph traversal. The same pre-outcome identity
   now binds trainable status during graph construction and rejects
-  incompatible graph reuse. No result exists from the aborted launch and no
-  server ran. One compact result packet will adjudicate the repaired learned
-  mechanism; evidence formatting is not a successor axis.
+  incompatible graph reuse. A diagnostic relaunch then identified the next
+  pre-step blocker exactly as the view-backed layer-39 `SET_ROWS` current-key
+  cache write. The repaired path supplies its narrow overwritten-row
+  derivative and uses unfused full attention only for optimizer steps because
+  flash attention has no backward implementation; runtime inference remains
+  flash-attention-enabled. No result or candidate boundary exists from either
+  aborted launch and no server ran. One compact result packet will adjudicate
+  the repaired learned mechanism; evidence formatting is not a successor
+  axis.
 
 ### REJECTED
 

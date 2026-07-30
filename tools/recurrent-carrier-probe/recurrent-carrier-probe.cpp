@@ -9539,6 +9539,10 @@ static json run_sparse_g_label_refresh(
                     ? spec.at(
                         "semantic_carrier_optimizer_learning_rate")
                     : json(0.0)},
+            {"semantic_carrier_optimizer_flash_attention",
+                end_to_end_semantic_carrier_training
+                    ? json(false)
+                    : json(nullptr)},
             {"semantic_carrier_optimizer_target_variant",
                 end_to_end_semantic_carrier_training
                     ? spec.at(

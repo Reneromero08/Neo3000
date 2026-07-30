@@ -1546,14 +1546,17 @@ int llama_context::optimize_neo3000_semantic_carrier_output_map(
     ggml_backend_sched_reset(sched.get());
     ggml_backend_sched_set_eval_callback(
         sched.get(), cparams.cb_eval, cparams.cb_eval_user_data);
+    const bool flash_attn = cparams.flash_attn;
+    cparams.flash_attn = false;
+    carrier->output_map_trainable = true;
     const auto gparams = graph_params(
         res,
         ubatch,
         mctx.get(),
         ctx_type_to_graph_type(cparams.ctx_type));
-    carrier->output_map_trainable = true;
     auto * gf = model.build_graph(gparams);
     carrier->output_map_trainable = false;
+    cparams.flash_attn = flash_attn;
     if (!gf) {
         res->reset();
         return -3;
