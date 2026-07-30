@@ -1425,6 +1425,104 @@ static json run_physical_attention_roots(
     };
 }
 
+static json run_full_hybrid_capability_control(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const std::vector<llama_token> & candidates,
+        const json & spec,
+        uint64_t active_recurrent_backing_initial,
+        uint64_t active_attention_backing_initial) {
+    const uint32_t actual_context_size = llama_n_ctx(ctx);
+    if (spec.contains("expected_context_size") &&
+        actual_context_size != spec.at("expected_context_size").get<uint32_t>()) {
+        throw std::runtime_error(
+            "full-hybrid capability control context mismatch: " +
+            std::to_string(actual_context_size));
+    }
+    const auto source_tokens = prepare_source(ctx, vocab, spec.at("source"));
+    const auto & queries = spec.at("queries");
+    const size_t active_cache_backend_allocation_bytes =
+        active_hybrid_backend_allocation_bytes(ctx);
+    auto root = save_root(
+        ctx, "frozen-unrelated:full-hybrid", 5000,
+        FULL_DEVICE_FLAGS, source_tokens.size());
+
+    std::vector<boundary_result> results;
+    json records = json::array();
+    for (const auto & query : queries) {
+        restore_root(ctx, root);
+        if (active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
+            active_attention_backing_id(ctx) != active_attention_backing_initial) {
+            throw std::runtime_error(
+                "full-hybrid capability control changed active backing");
+        }
+        auto boundary = decode_query(
+            ctx, vocab, candidates, "untouched-full-hybrid-capability-control",
+            "R_F1_G1", query, source_tokens.size(), root.backing_id,
+            root.gpu_bytes);
+        records.push_back(boundary.record);
+        results.push_back(std::move(boundary));
+    }
+
+    const size_t correct = semantic_correct_count(results, queries, false);
+    const bool accepted =
+        correct >= spec.at("acceptance_law").at("correct_minimum").get<size_t>();
+    const auto summary = semantic_route_summary(
+        std::map<std::string, std::vector<boundary_result>>{
+            {"R_F1_G1_FULL", results}}, queries);
+
+    llama_memory_clear(llama_get_memory(ctx), true);
+    const size_t cleared_root_bytes =
+        llama_state_seq_clear_device_data(ctx, root.key);
+    llama_synchronize(ctx);
+    if (llama_state_seq_get_device_root_count(ctx) != 0 ||
+        active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
+        active_attention_backing_id(ctx) != active_attention_backing_initial) {
+        throw std::runtime_error("full-hybrid capability control close invariant failed");
+    }
+
+    return {
+        {"schema_version", 1},
+        {"mechanism", "FROZEN_UNRELATED_FULL_HYBRID_CAPABILITY_CONTROL"},
+        {"spec_id", spec.at("id")},
+        {"model_arch", "qwen35moe"},
+        {"configuration", {
+            {"source_tokens", source_tokens.size()},
+            {"query_count", queries.size()},
+            {"context_size", actual_context_size},
+            {"restoration_class", "SNAPSHOT_RELOAD"},
+        }},
+        {"root", {
+            {"logical_tensor_bytes", root.resident_bytes},
+            {"gpu_tensor_bytes", root.gpu_bytes},
+            {"backend_allocation_bytes", root.allocation_bytes},
+            {"gpu_allocation_bytes", root.allocation_gpu_bytes},
+            {"metadata_bytes", root.metadata.size()},
+            {"root_backing_id", hex64(root.backing_id)},
+            {"restore_count", queries.size()},
+            {"cleared_bytes", cleared_root_bytes},
+        }},
+        {"active_cache_backend_allocation_bytes",
+            active_cache_backend_allocation_bytes},
+        {"active_plus_retained_backend_allocation_bytes",
+            active_cache_backend_allocation_bytes + root.allocation_bytes},
+        {"route_summary", summary.at("R_F1_G1_FULL")},
+        {"summary", {
+            {"correct", correct},
+            {"accepted", accepted},
+        }},
+        {"records", records},
+        {"all_retained_roots_closed",
+            llama_state_seq_get_device_root_count(ctx) == 0},
+        {"active_recurrent_backing_stable",
+            active_recurrent_backing_id(ctx) == active_recurrent_backing_initial},
+        {"active_attention_backing_stable",
+            active_attention_backing_id(ctx) == active_attention_backing_initial},
+        {"verdict", accepted ? "accept" : "reject"},
+        {"claim_ceiling", spec.at("claim_ceiling")},
+    };
+}
+
 } // namespace
 
 int main(int argc, char ** argv) {
@@ -1476,6 +1574,22 @@ int main(int argc, char ** argv) {
         }
         if (active_attention_backing_initial == 0) {
             throw std::runtime_error("active attention backing identity is zero");
+        }
+
+        if (spec.value("full_hybrid_capability_control", false)) {
+            const json result = run_full_hybrid_capability_control(
+                ctx,
+                vocab,
+                candidates,
+                spec,
+                active_backing_initial,
+                active_attention_backing_initial);
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
         }
 
         if (spec.value("physical_attention_roots", false)) {

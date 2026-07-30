@@ -82,6 +82,11 @@ The active recurrence and acceptance boundary are
   `68,526,080` bytes, and their measured sum is `144,875,520` bytes. This is
   not whole-process CUDA residency and excludes model weights and
   allocator/driver overhead.
+- The exact untouched full-hybrid control at context 512 also returns
+  `D,C,B,D`, with the same H -> A miss and the same `76,349,440` active-cache
+  allocation. The physical split therefore preserves all four full-state
+  argmaxes on this fixture, but not the full numerical boundary: full-logit
+  hashes match `0/4` and candidate logits differ by at most `0.8624229431`.
 - The Release server rebuild succeeds, all 139 configured CUDA objects remain
   present with zero CUDA source changes, and the focused no-model Python suite
   passes 57 tests.
@@ -142,14 +147,18 @@ The active recurrence and acceptance boundary are
   D. Its `3/4` joint result is informative transfer, not acceptance. The run
   also spends 1,300 fresh source tokens and performs `2,532,802,560` bytes of
   scaffold-plus-attention restore copies.
+- The first full-state control, `neo-exp-0113`, used context 2,048 and is
+  preserved as inconclusive because its `107,806,720` active-cache allocation
+  did not match 0112. `neo-exp-0114` closes that configuration defect at
+  context 512 but rejects the base-model task gate at the same `3/4`.
 
 ### ACTIVE BOUNDARY
 
-Keep the failed E/F/G/H task and expected answers frozen. Compare its physical
-scaffold-plus-attention route with an untouched full-hybrid root. This one
-control decides whether 0112 exposed decomposition loss or a base-model task
-failure; do not tune the fixture first. Only after that discriminator should
-the frontier remove the full 130-token replay used to construct each delta.
+The failed E/F/G/H fixture remains frozen and retired from utility acceptance.
+Prospectively qualify a deterministic disjoint task panel with full-hybrid
+roots, then apply the physical split to every full-state pass. Do not select
+tasks from physical-route outcomes. After unrelated useful parity is closed,
+remove the full 130-token replay used to construct each delta.
 `neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]

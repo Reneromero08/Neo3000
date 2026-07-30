@@ -190,6 +190,19 @@ decomposition; the same `3/4` result would show that the fixture exceeds the
 base model's demonstrated capability. That discriminator precedes any claim
 about transfer and any attack on fresh delta-construction work.
 
+The matched discriminator now returns the same `D,C,B,D` at context 512 and
+the same active-cache allocation as the physical run. The split preserves all
+four full-state argmax boundaries; H -> A is not a capability demonstrated by
+the untouched model on this fixture. Numerical identity is explicitly
+rejected: no full-logit hash matches and the largest candidate-logit
+difference is `0.8624229431`.
+
+The next test therefore begins with capability qualification, not carrier
+selection. Freeze a deterministic disjoint task panel, execute untouched
+full-hybrid roots, then test the physical decomposition on every full-state
+pass. This prevents both a weak fixture from falsely rejecting the carrier
+and carrier-conditioned cherry-picking from falsely accepting it.
+
 ## 1. Executive conclusion
 
 The strongest coherent route to catalytic Agents-A1 inference is:

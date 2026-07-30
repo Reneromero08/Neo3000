@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0114",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "5fdec0c7595e620ccaf1b67895a893932ec95f5c",
+  "mechanism": "MATCHED_CONTEXT_FROZEN_UNRELATED_FULL_HYBRID_CAPABILITY_CONTROL",
+  "spec_id": "unrelated-full-hybrid-capability-control-matched-v1",
+  "hypothesis": "At the exact 512-token context physically bound by neo-exp-0112, untouched full-hybrid state will decide whether the frozen H-to-A miss is a base-model capability failure or a decomposition failure.",
+  "intervention": "Add fail-closed expected-context validation and run the byte-identical R_F1_G1 source and queries through one complete full-hybrid device root at context size 512.",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "context_size": 512,
+    "source_tokens": 130,
+    "query_count": 4,
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "metrics_after": {
+    "correct": 3,
+    "answers": ["D", "C", "B", "D"],
+    "expected": ["D", "C", "B", "A"],
+    "misses": [{"query": "H", "expected": "A", "observed": "D"}],
+    "comparison_to_neo_exp_0112_physical_route": {
+      "argmax_matches": 4,
+      "full_logit_hash_matches": 0,
+      "maximum_candidate_logit_absolute_difference": 0.8624229431152344
+    },
+    "full_root_logical_tensor_bytes": 68526080,
+    "full_root_backend_allocation_bytes": 68526080,
+    "active_cache_backend_allocation_bytes": 76349440,
+    "active_plus_retained_backend_allocation_bytes": 144875520,
+    "root_restore_count": 4,
+    "all_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "resource_accounting": {
+    "root_save_device_copy_bytes": 68526080,
+    "root_restore_device_copy_bytes": 274104320,
+    "fresh_source_prompt_tokens": 130,
+    "fresh_query_tokens": 132,
+    "fresh_input_tokens_total": 262,
+    "whole_process_cuda_residency_measured": false,
+    "fresh_compute_reduction": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/unrelated-full-hybrid-capability-control-matched-v1.json",
+      "bytes": 3362,
+      "sha256": "67A22DCA6EAD0EEBAD244310896BC396611A8440C7EB8D3590221799FB6D31D5"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 90789,
+      "sha256": "06F01935797F5C42B007F163C96C8D66818CD997D415716C38BD3288528A3307"
+    },
+    "probe_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 558280,
+      "sha256": "5DB62DD4D399630834BACF2FDF84B1A2522A1B12829497AF264F51F70FCF4E80"
+    },
+    "raw_result": {
+      "committed": false,
+      "bytes": 4618,
+      "sha256": "4AD08F493E376F5580485A3CED480D34E656D46B49DB56BE8071CE6CC734D34A"
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 8,
+    "input_tokens": 262,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "quality_gates": {
+    "frozen_task_identity_preserved": true,
+    "context_matched_to_neo_exp_0112": true,
+    "active_cache_allocation_matched_to_neo_exp_0112": true,
+    "full_hybrid_correct": false,
+    "physical_argmax_boundary_matches_full": true,
+    "physical_full_logits_match_full": false,
+    "all_roots_closed": true
+  },
+  "verdict": "reject",
+  "classification": "MATCHED_FULL_HYBRID_CAPABILITY_GATE_FAILED_WITH_PHYSICAL_ARGMAX_PARITY",
+  "strongest_supported_claim": "At the exact 512-token configuration and identical 76,349,440-byte active cache allocation, untouched full-hybrid state also returns D,C,B,D. The physical scaffold-plus-attention route preserves all four full-state argmax boundaries, so the strict H -> A failure is a frozen task-capability failure rather than evidence of useful-boundary loss in the decomposition.",
+  "strongest_rejected_interpretation": "The physical route is not numerically identical to full state: zero of four full-logit hashes match and candidate logits differ by up to 0.8624229431. The task remains only 3/4 useful, so unrelated useful carrier reuse, fresh-compute reduction, native restoration, catalytic recurrence, and unbounded inference remain unsupported.",
+  "next_boundary": "PROSPECTIVELY_QUALIFY_A_DETERMINISTIC_DISJOINT_TASK_PANEL_WITH_FULL_HYBRID_STATE_THEN_TEST_THE_PHYSICAL_DECOMPOSITION_ON_EVERY_FULL_PASS"
+}

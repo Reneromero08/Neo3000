@@ -82,11 +82,19 @@ constructively unbounded local Agents-A1 inference.
   cache plus retained-root backend allocation is `144,875,520` bytes; this
   excludes model weights, allocator/driver overhead, and whole-process CUDA
   residency.
-- [ ] On the unchanged frozen E/F/G/H task, run the untouched full-hybrid
-  root as a matched model-capability control. If it reaches `4/4`, the
-  scaffold-plus-attention decomposition failed transfer; if it also reaches
-  `3/4`, the fixture does not test a capability the base model possesses.
-  Do not modify the prompt or expected answer before this discriminator.
+- [x] Run the unchanged frozen E/F/G/H task through untouched full-hybrid
+  state. `neo-exp-0113` first observes `D,C,B,D` at context 2,048 but is
+  inconclusive because 0112 physically used context 512. `neo-exp-0114`
+  fail-closes on 512, matches the exact `76,349,440`-byte active allocation,
+  and again returns `D,C,B,D`. The physical route matches all four full-state
+  argmaxes, but zero full-logit hashes and differs by up to `0.8624229431`.
+  Therefore the frozen fixture lacks base-model 4/4 utility; it does not
+  demonstrate decomposition loss or accepted unrelated reuse.
+- [ ] Prospectively qualify a deterministic panel of disjoint task instances
+  with untouched full-hybrid roots, then test the physical decomposition on
+  every full-state pass without post-hoc prompt or answer tuning. Require
+  useful boundary parity, both evidence marginals to remain insufficient,
+  exact same-scaffold backing reuse, and complete resource/closure accounting.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

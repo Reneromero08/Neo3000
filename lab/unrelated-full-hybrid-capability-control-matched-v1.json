@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "unrelated-full-hybrid-capability-control-matched-v1",
+  "description": "Repeat the exact frozen neo-exp-0112 full-hybrid capability control at the predecessor's physically bound 512-token context. The 512-token law follows from the predecessor's active allocation: 65,863,680 recurrent bytes plus 10,485,760 attention-cache bytes equals the observed 76,349,440 bytes. The prompt, order, labels, expected answers, and candidate boundary are unchanged.",
+  "full_hybrid_capability_control": true,
+  "expected_context_size": 512,
+  "frozen_predecessor": {
+    "experiment_id": "neo-exp-0112",
+    "spec_path": "lab/physical-attention-root-unrelated-reuse-v1.json",
+    "spec_sha256": "DD8AFF2F3CE6E8BBFC2C4E99EA4CD2F20A96848BCB1298C65CFA729E6F22FC57",
+    "source_variant": "R_F1_G1",
+    "active_cache_backend_allocation_bytes": 76349440
+  },
+  "source": {
+    "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+    "module_f": "F: Item E maps to vault M. Item F maps to vault L. Item G maps to vault K. Item H maps to vault J.\n",
+    "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+    "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+  },
+  "queries": [
+    {
+      "id": "reuse-query-E",
+      "expected": "D",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "reuse-query-F",
+      "expected": "C",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "reuse-query-G",
+      "expected": "B",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "reuse-query-H",
+      "expected": "A",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    }
+  ],
+  "acceptance_law": {
+    "correct_minimum": 4
+  },
+  "outcome_law": {
+    "full_hybrid_4_of_4": "The base model possesses the frozen capability and the scaffold-plus-attention decomposition caused the neo-exp-0112 transfer failure.",
+    "full_hybrid_3_of_4_same_answers": "The frozen fixture does not demonstrate a capability of the base model, so neo-exp-0112 is inconclusive about decomposition transfer.",
+    "other": "Inspect exact boundaries before selecting a successor; do not tune the fixture post hoc."
+  },
+  "claim_ceiling": "Matched-context untouched full-hybrid model-capability control on one previously frozen held-out relation task. This can localize the neo-exp-0112 miss to the base task or the physical decomposition. It cannot establish unrelated carrier reuse, restoration, fresh-compute reduction, catalysis, task-family breadth, or an unbounded recurrence."
+}

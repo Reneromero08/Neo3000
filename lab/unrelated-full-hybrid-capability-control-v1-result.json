@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0113",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "5fdec0c7595e620ccaf1b67895a893932ec95f5c",
+  "mechanism": "FROZEN_UNRELATED_FULL_HYBRID_CAPABILITY_CONTROL",
+  "spec_id": "unrelated-full-hybrid-capability-control-v1",
+  "hypothesis": "An untouched full-hybrid root can distinguish a base-model task failure from loss caused by the scaffold-plus-attention decomposition on the frozen neo-exp-0112 task.",
+  "intervention": "Run only the frozen R_F1_G1 source and four held-out queries through one complete full-hybrid device root, without changing prompt text, order, labels, expected answers, or candidate tokens.",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "context_size": 2048,
+    "source_tokens": 130,
+    "query_count": 4,
+    "restoration_class": "SNAPSHOT_RELOAD",
+    "matched_to_neo_exp_0112_context": false
+  },
+  "metrics_after": {
+    "correct": 3,
+    "answers": ["D", "C", "B", "D"],
+    "expected": ["D", "C", "B", "A"],
+    "misses": [{"query": "H", "expected": "A", "observed": "D"}],
+    "full_root_logical_tensor_bytes": 68526080,
+    "full_root_backend_allocation_bytes": 68526080,
+    "active_cache_backend_allocation_bytes": 107806720,
+    "active_plus_retained_backend_allocation_bytes": 176332800,
+    "root_restore_count": 4,
+    "all_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "resource_accounting": {
+    "root_save_device_copy_bytes": 68526080,
+    "root_restore_device_copy_bytes": 274104320,
+    "fresh_source_prompt_tokens": 130,
+    "fresh_query_tokens": 132,
+    "fresh_input_tokens_total": 262,
+    "whole_process_cuda_residency_measured": false,
+    "fresh_compute_reduction": false
+  },
+  "precontact_incident": {
+    "description": "A first launch forced 99 GPU layers and failed model allocation before context creation or decode. The process exited; the same scientific identity continued with auto-fit GPU placement.",
+    "model_context_created": false,
+    "llama_decode_calls": 0,
+    "scientific_contact": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/unrelated-full-hybrid-capability-control-v1.json",
+      "bytes": 3216,
+      "sha256": "CEAAAA99769762AC6D6A7F25D33E4840141195312531ECCE0C374672C4443EA1"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 90390,
+      "sha256": "DD4D8C2A72FE525EA67A969DE47B3092DC007A83BEFFF78F3E4BD349F58FF9A5"
+    },
+    "probe_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 553960,
+      "sha256": "D59EC45DED70C955D0245F36F164193C7F5A5605EE877CFDA123EE6BF9DB8780"
+    },
+    "raw_result": {
+      "committed": false,
+      "bytes": 4568,
+      "sha256": "1573F0A55FE221FE2EF74106DEB458E1CC74F10B8E7BF3714427E3D4B4A67CC2"
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 8,
+    "input_tokens": 262,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "quality_gates": {
+    "frozen_task_identity_preserved": true,
+    "full_hybrid_correct": false,
+    "context_matched_to_neo_exp_0112": false,
+    "all_roots_closed": true
+  },
+  "verdict": "inconclusive",
+  "classification": "FULL_HYBRID_TASK_FAILURE_AT_UNMATCHED_2048_CONTEXT",
+  "strongest_supported_claim": "At a 2,048-token context, untouched full-hybrid state produces the same D,C,B,D argmax boundary as the physical decomposition on the frozen task and itself fails H -> A.",
+  "strongest_rejected_interpretation": "Because neo-exp-0112 physically binds a 512-token active cache, this arm alone cannot attribute its miss under exactly matched conditions. It also provides no unrelated-use, restoration, fresh-compute, catalytic, or recurrence claim.",
+  "next_boundary": "REPEAT_THE_UNCHANGED_CONTROL_AT_FAIL_CLOSED_CONTEXT_SIZE_512"
+}
