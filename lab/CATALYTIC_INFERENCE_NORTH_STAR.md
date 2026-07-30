@@ -1152,3 +1152,37 @@ strictly stronger on this finite fixture. The next mechanism must derive a
 fixed public action over the label-attention fiber so target branches require
 zero model forward, then test whether the resulting state can feed recursive
 model computation without accumulating numerical or material history.
+
+### Executed operator update — complete attention action nearly transfers
+
+The fixed-action branch now separates a false localization from the real
+carrier. A 31,408-byte position-averaged Fourier translation (`0132`) and a
+321,936-byte current-state-conditioned late-value action (`0133`) both fail to
+advance the calibration boundary. The latter maps its selected calibration
+rows within `2.87e-6`, so correct late values alone are insufficient. The
+earlier `10/16` row-permutation result moved contextual content between
+positions; it did not identify a true late-value relation fiber.
+
+`neo-exp-0134` acts on the complete same-position label cell: keys and values
+across all ten attention layers. Sixteen public calibration rows produce one
+fixed rank-15-per-tensor operator; complete rows are then erased. The operator
+receives only the current active cell—no ordinal, target row, target delta, or
+target root—and drives the complete E/F/G/H orbit at `16/16` with a bit-exact
+four-step G0 functional return. The unchanged 1,287,528-byte operator then
+preserves `15/16` boundaries prospectively in the disjoint N/T/U/V F context,
+where untouched full state is `16/16`.
+
+That is the strongest current bridge toward recurrence, but it is not yet
+catalysis. The operator is larger than the finite classical relation table,
+one transferred third-step boundary fails, numerical return is not exact, and
+its 16-token one-context calibration is not a general construction law.
+`neo-exp-0135` removes the only measured off-subspace image residue
+(`1.04e-6`) and leaves the same miss, so operator-evaluation and evidence
+versions stop here.
+
+The next mechanism must learn or derive the action across multiple source
+contexts and test one unseen context while retaining a fixed material bound.
+If its rank or bytes grow with contexts, tasks, queries, or horizon, it is a
+finite table in latent coordinates and fails the north star. Evidence remains
+one raw recomputable packet per mechanism; the research loop returns to the
+generator, active recurrence, and fresh-work law.

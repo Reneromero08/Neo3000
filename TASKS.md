@@ -203,15 +203,27 @@ constructively unbounded local Agents-A1 inference.
   bit-exactly, move `102,400` bytes over four actions, use zero target-branch
   model forwards, and close all sequences/roots. Uniform permutation is still
   insufficient; no more layer-subset variants are authorized by this result.
-- [ ] Derive one context-independent compact operator on the late value
-  subspace before target selection. Its construction must not retain target
-  roots, complete target deltas, or answer-conditioned tables. Test repeated
-  application and prospective reuse outside the calibration context, count
-  calibration/operator/workspace/query costs against the compact classical
-  relation baseline, and reject it if it merely memorizes the four frozen
-  links. Attach one compact evidence object to the mechanism. Do not create
-  carrier-evaluation or evidence-harness v2/v3/v4 loops unless a concrete
-  pre-existing evidence defect makes adjudication impossible.
+- [x] Derive and prospectively transfer one current-state-conditioned
+  attention action. `neo-exp-0132` rejects a 31,408-byte position-averaged
+  Fourier translation at `4/16`. `neo-exp-0133` then proves that even a
+  rank-15 operator mapping the selected late-value calibration rows within
+  `2.87e-6` remains semantically insufficient (`4/16` calibration,
+  `7/16` transfer). `neo-exp-0134` expands the same causal law to same-position
+  K/V in all ten attention layers: its unchanged 1,287,528-byte operator
+  reaches `16/16` on E/F/G/H and `15/16` prospectively on N/T/U/V with zero
+  noncanonical target forwards. `neo-exp-0135` removes a concrete
+  `1.04e-6` off-subspace image residue; the same transfer miss and larger
+  return drift remain. Every raw result is committed and recomputable.
+  Stop one-context operator and evidence-harness versions here.
+- [ ] Train or derive one fixed complete-attention action across multiple
+  source contexts, then test one prospectively frozen unseen context. The
+  successor must change the generator, not the evidence harness: use a fixed
+  public context set, erase complete calibration rows after construction,
+  apply the operator directly to active same-position K/V state without an
+  ordinal or target material, count training/operator/workspace costs, and
+  compare against the compact classical relation generator. Reject finite
+  memorization and stop if operator material grows with the query/task
+  horizon.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

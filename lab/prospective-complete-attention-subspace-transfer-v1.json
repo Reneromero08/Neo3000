@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "id": "prospective-complete-attention-subspace-transfer-v1",
+  "experiment_id": "neo-exp-0134",
+  "description": "Derive one fixed state-conditioned low-rank action over same-position key and value rows in all attention layers from E/F/G/H, erase the calibration rows, and apply the unchanged operator to the prospectively frozen N/T/U/V context. Each step receives only the active K/V cell state; no ordinal or target material is supplied.",
+  "subspace_operator_transfer": true,
+  "require_unified_kv": true,
+  "calibration_panel_path": "lab/complete-attention-subspace-calibration-panel-v1.json",
+  "transfer_panel_path": "lab/complete-attention-subspace-disjoint-transfer-panel-v1.json",
+  "predecessor": {
+    "experiment_id": "neo-exp-0133",
+    "classification": "EXACT_LATE_VALUE_ACTION_SEMANTICALLY_INSUFFICIENT",
+    "raw_result_sha256": "E1287DEEA2199CB27D77AC2BA6A30555F231B196DDB5788375B5D47D3596BB64"
+  },
+  "acceptance_law": {
+    "calibration_panel_correct": 16,
+    "calibration_panel_boundary_matches": 16,
+    "transfer_full_state_correct": 16,
+    "transfer_operator_correct": 16,
+    "transfer_operator_boundary_matches": 16,
+    "calibration_and_transfer_return_boundary_matches": 4,
+    "operator_hash_unchanged_during_transfer": true
+  },
+  "claim_ceiling": "Passing supports only bounded prospective transfer of one fixed state-conditioned complete-attention label action between two F contexts within the same four-label two-link schema. The operator must directly transform active same-position K/V cells across all attention layers, repeatedly advance the same carrier with zero noncanonical target-branch forward, remain unchanged across transfer, return the G0 decision boundary, preserve active backing, and close all state. Fully charge calibration, transfer initialization, operator/builder backing, active allocation, traffic, scratch, references, queries, drift, and closure. No compact-baseline advantage, exact physical restoration, task-family breadth, phase-native resource, Small Wall crossing, general catalysis, or unbounded inference follows."
+}

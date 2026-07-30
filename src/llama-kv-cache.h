@@ -5,6 +5,7 @@
 #include "llama-kv-cells.h"
 #include "llama-memory.h"
 
+#include <array>
 #include <set>
 #include <unordered_map>
 #include <vector>
@@ -187,6 +188,123 @@ public:
             const std::set<uint32_t> & layer_ids,
             bool include_keys,
             value_orbit_metrics * metrics);
+
+    struct value_fourier_layer {
+        uint32_t layer_id = 0;
+        std::vector<float> cosine;
+        std::vector<float> sine;
+        std::vector<float> parity;
+    };
+
+    struct value_fourier_operator {
+        std::vector<value_fourier_layer> layers;
+        uint64_t calibration_samples = 0;
+        uint64_t logical_bytes = 0;
+        uint64_t vector_backing_bytes = 0;
+    };
+
+    struct value_fourier_metrics {
+        uint64_t host_read_bytes = 0;
+        uint64_t host_write_bytes = 0;
+        uint64_t peak_host_work_bytes = 0;
+        uint64_t operator_bytes = 0;
+        uint64_t tensor_visits = 0;
+        uint64_t position_visits = 0;
+    };
+
+    // Streams one declared label-state sample into a compact real Fourier
+    // generator. Only the accumulated cosine, sine, and parity components
+    // remain in the operator; the complete sampled row is scratch state.
+    bool seq_accumulate_value_fourier_sample(
+            llama_seq_id seq_id,
+            llama_pos position,
+            const std::set<uint32_t> & layer_ids,
+            const std::array<float, 3> & coefficients,
+            value_fourier_operator * value_operator,
+            value_fourier_metrics * metrics);
+
+    // Advances the selected value rows by one public Z4 ordinal using the
+    // retained rank-3 Fourier generator. Keys, positions, and ownership stay
+    // fixed. This is an additive latent-state action, not target-state copy.
+    bool seq_apply_value_fourier_step(
+            llama_seq_id seq_id,
+            const std::vector<llama_pos> & positions,
+            const std::vector<uint32_t> & current_ordinals,
+            const value_fourier_operator & value_operator,
+            value_fourier_metrics * metrics);
+
+    struct value_subspace_builder_layer {
+        uint32_t layer_id = 0;
+        bool key = false;
+        std::vector<std::vector<float>> samples;
+        std::vector<bool> present;
+    };
+
+    struct value_subspace_builder {
+        std::vector<value_subspace_builder_layer> layers;
+        uint64_t sample_count = 0;
+        uint64_t vector_backing_bytes = 0;
+    };
+
+    struct value_subspace_layer {
+        uint32_t layer_id = 0;
+        bool key = false;
+        std::vector<float> center;
+        std::vector<std::vector<float>> basis;
+        std::vector<std::vector<float>> delta;
+        double calibration_max_abs_error = 0.0;
+        double subspace_closure_max_abs_error = 0.0;
+    };
+
+    struct value_subspace_operator {
+        std::vector<value_subspace_layer> layers;
+        uint64_t calibration_samples = 0;
+        uint64_t logical_bytes = 0;
+        uint64_t vector_backing_bytes = 0;
+        uint64_t total_rank = 0;
+        uint64_t maximum_layer_rank = 0;
+        double calibration_max_abs_error = 0.0;
+        double subspace_closure_max_abs_error = 0.0;
+    };
+
+    struct value_subspace_metrics {
+        uint64_t host_read_bytes = 0;
+        uint64_t host_write_bytes = 0;
+        uint64_t peak_host_work_bytes = 0;
+        uint64_t builder_bytes = 0;
+        uint64_t operator_bytes = 0;
+        uint64_t tensor_visits = 0;
+        uint64_t position_visits = 0;
+    };
+
+    // Collects one of the 16 public position/label calibration rows. The
+    // builder is bounded scratch and is erased when the operator is finalized.
+    bool seq_collect_value_subspace_sample(
+            llama_seq_id seq_id,
+            llama_pos position,
+            const std::set<uint32_t> & layer_ids,
+            bool include_keys,
+            uint32_t sample_index,
+            uint32_t sample_count,
+            value_subspace_builder * builder,
+            value_subspace_metrics * metrics);
+
+    // Derives one fixed affine low-rank action per selected layer. Complete
+    // calibration rows are not retained in the resulting operator.
+    bool finalize_value_subspace_operator(
+            value_subspace_builder * builder,
+            uint32_t position_count,
+            uint32_t label_count,
+            value_subspace_operator * value_operator,
+            value_subspace_metrics * metrics);
+
+    // Applies the same state-conditioned low-rank action to every selected
+    // active value row. No ordinal, target row, or target delta is supplied.
+    bool seq_apply_value_subspace_step(
+            llama_seq_id seq_id,
+            const std::vector<llama_pos> & positions,
+            const value_subspace_operator & value_operator,
+            value_subspace_metrics * metrics);
 
     //
     // graph_build API

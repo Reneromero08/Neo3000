@@ -11,6 +11,7 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -77,6 +78,40 @@ static void fnv1a64_update(uint64_t & hash, const void * data, size_t len) {
         hash ^= bytes[i];
         hash *= UINT64_C(1099511628211);
     }
+}
+
+static uint64_t hash_value_subspace_operator(
+        const llama_kv_cache::value_subspace_operator & value_operator) {
+    uint64_t hash = UINT64_C(1469598103934665603);
+    fnv1a64_update(
+        hash,
+        &value_operator.calibration_samples,
+        sizeof(value_operator.calibration_samples));
+    for (const auto & layer : value_operator.layers) {
+        fnv1a64_update(
+            hash, &layer.layer_id, sizeof(layer.layer_id));
+        fnv1a64_update(
+            hash, &layer.key, sizeof(layer.key));
+        const auto update_vector =
+                [&](const std::vector<float> & values) {
+            const uint64_t size = values.size();
+            fnv1a64_update(hash, &size, sizeof(size));
+            if (!values.empty()) {
+                fnv1a64_update(
+                    hash,
+                    values.data(),
+                    values.size() * sizeof(float));
+            }
+        };
+        update_vector(layer.center);
+        for (const auto & basis : layer.basis) {
+            update_vector(basis);
+        }
+        for (const auto & delta : layer.delta) {
+            update_vector(delta);
+        }
+    }
+    return hash;
 }
 
 static void fnv_mix_u64(uint64_t & hash, uint64_t value) {
@@ -4024,20 +4059,38 @@ static json run_sparse_g_label_refresh(
         const std::vector<llama_token> & candidates,
         const json & spec,
         uint64_t active_recurrent_backing_initial,
-        uint64_t active_attention_backing_initial) {
+        uint64_t active_attention_backing_initial,
+        llama_kv_cache::value_subspace_operator *
+            shared_subspace_operator = nullptr,
+        bool build_subspace_operator = true) {
     const bool position_orbit_mode =
         spec.value("label_orbit_attention_action", false);
     const bool value_orbit_mode =
         spec.value("value_orbit_attention_action", false);
     const bool key_value_orbit_mode =
         spec.value("key_value_orbit_attention_action", false);
+    const bool fourier_value_orbit_mode =
+        spec.value("fourier_value_orbit_action", false);
+    const bool subspace_value_orbit_mode =
+        spec.value("subspace_value_orbit_action", false);
+    const bool subspace_include_keys =
+        spec.value("subspace_include_keys", false);
+    if (subspace_include_keys &&
+        !subspace_value_orbit_mode) {
+        throw std::runtime_error(
+            "subspace key action requires subspace value action");
+    }
     const bool orbit_mode =
         position_orbit_mode ||
         value_orbit_mode ||
-        key_value_orbit_mode;
+        key_value_orbit_mode ||
+        fourier_value_orbit_mode ||
+        subspace_value_orbit_mode;
     if (static_cast<int>(position_orbit_mode) +
             static_cast<int>(value_orbit_mode) +
-            static_cast<int>(key_value_orbit_mode) > 1) {
+            static_cast<int>(key_value_orbit_mode) +
+            static_cast<int>(fourier_value_orbit_mode) +
+            static_cast<int>(subspace_value_orbit_mode) > 1) {
         throw std::runtime_error(
             "label orbit action modes are mutually exclusive");
     }
@@ -4122,6 +4175,51 @@ static json run_sparse_g_label_refresh(
             }
         }
         variant_g_tokens.push_back(std::move(tokens));
+    }
+    std::vector<std::vector<uint32_t>> fourier_label_ordinals;
+    if (fourier_value_orbit_mode ||
+        subspace_value_orbit_mode) {
+        fourier_label_ordinals =
+            spec.at("fourier_label_ordinals")
+                .get<std::vector<std::vector<uint32_t>>>();
+        if (fourier_label_ordinals.size() != variants.size()) {
+            throw std::runtime_error(
+                "Fourier label ordinal variant count mismatch");
+        }
+        for (const auto & row : fourier_label_ordinals) {
+            if (row.size() != label_offsets.size()) {
+                throw std::runtime_error(
+                    "Fourier label ordinal position count mismatch");
+            }
+            for (const uint32_t ordinal : row) {
+                if (ordinal >= 4) {
+                    throw std::runtime_error(
+                        "Fourier label ordinal out of range");
+                }
+            }
+        }
+        for (size_t position = 0;
+             position < label_offsets.size();
+             ++position) {
+            std::set<uint32_t> column;
+            for (size_t variant = 0;
+                 variant < variants.size();
+                 ++variant) {
+                column.insert(
+                    fourier_label_ordinals[variant][position]);
+                if (variant > 0 &&
+                    fourier_label_ordinals[variant][position] !=
+                        (fourier_label_ordinals[variant - 1][position] + 1) %
+                            4) {
+                    throw std::runtime_error(
+                        "Fourier label variants are not one public Z4 step");
+                }
+            }
+            if (column.size() != 4) {
+                throw std::runtime_error(
+                    "Fourier label ordinal column is not a permutation");
+            }
+        }
     }
 
     auto * hybrid = require_hybrid_memory(ctx);
@@ -4219,15 +4317,29 @@ static json run_sparse_g_label_refresh(
     size_t attention_label_alias_count = 0;
     size_t orbit_action_count = 0;
     size_t orbit_position_shift_count = 0;
+    size_t fourier_calibration_sample_count = 0;
+    size_t subspace_calibration_sample_count = 0;
     uint64_t orbit_backend_copy_bytes = 0;
     uint64_t orbit_host_read_bytes = 0;
     uint64_t orbit_host_write_bytes = 0;
     uint64_t orbit_peak_host_work_bytes = 0;
     uint64_t orbit_tensor_visits = 0;
+    uint64_t orbit_position_visits = 0;
+    uint64_t fourier_operator_logical_bytes = 0;
+    uint64_t fourier_operator_vector_backing_bytes = 0;
+    uint64_t subspace_builder_peak_bytes = 0;
+    uint64_t subspace_operator_logical_bytes = 0;
+    uint64_t subspace_operator_vector_backing_bytes = 0;
+    uint64_t subspace_operator_total_rank = 0;
+    uint64_t subspace_operator_maximum_layer_rank = 0;
+    double subspace_operator_calibration_max_abs_error = 0.0;
+    double subspace_operator_closure_max_abs_error = 0.0;
     size_t query_decode_tokens = 0;
     double scaffold_G_wall_ms = 0.0;
     double scaffold_closure_wall_ms = 0.0;
     double label_refresh_wall_ms_total = 0.0;
+    double fourier_calibration_wall_ms_total = 0.0;
+    double subspace_calibration_wall_ms_total = 0.0;
     double reference_G_wall_ms_total = 0.0;
     double reference_closure_wall_ms_total = 0.0;
 
@@ -4326,14 +4438,19 @@ static json run_sparse_g_label_refresh(
         attention_layer_ids.begin(),
         attention_layer_ids.end());
     const std::set<uint32_t> orbit_attention_layers =
-        (value_orbit_mode || key_value_orbit_mode)
+        (value_orbit_mode ||
+         key_value_orbit_mode ||
+         fourier_value_orbit_mode ||
+         subspace_value_orbit_mode)
             ? spec.contains("orbit_attention_layers")
                 ? parse_layer_selection(
                     spec, "orbit_attention_layers", attention_layer_ids)
                 : all_attention_layers
             : all_attention_layers;
     const bool layer_selective_value_orbit =
-        value_orbit_mode &&
+        (value_orbit_mode ||
+         fourier_value_orbit_mode ||
+         subspace_value_orbit_mode) &&
         orbit_attention_layers != all_attention_layers;
     const size_t refreshed_attention_logical_bytes =
         attention_source_bytes(
@@ -4440,6 +4557,336 @@ static json run_sparse_g_label_refresh(
         return variant_label_wall_ms;
     };
 
+    llama_kv_cache::value_fourier_operator fourier_operator;
+    std::vector<uint32_t> fourier_current_ordinals =
+        fourier_value_orbit_mode
+            ? fourier_label_ordinals.at(0)
+            : std::vector<uint32_t>{};
+    const auto calibrate_fourier_operator =
+            [&](const std::string & id) {
+        static constexpr std::array<
+            std::array<float, 3>, 4> basis_coefficients = {{
+            {{ 0.5f,  0.0f,  0.25f}},
+            {{ 0.0f,  0.5f, -0.25f}},
+            {{-0.5f,  0.0f,  0.25f}},
+            {{ 0.0f, -0.5f, -0.25f}},
+        }};
+        const float position_average =
+            1.0f / static_cast<float>(label_offsets.size());
+        double wall_ms = 0.0;
+        for (size_t position_index = 0;
+             position_index < label_offsets.size();
+             ++position_index) {
+            const size_t label_offset =
+                label_offsets[position_index];
+            const llama_pos label_pos = static_cast<llama_pos>(
+                f_boundary_tokens + label_offset);
+            for (uint32_t ordinal = 0; ordinal < 4; ++ordinal) {
+                size_t source_variant = variants.size();
+                for (size_t variant_index = 0;
+                     variant_index < variants.size();
+                     ++variant_index) {
+                    if (fourier_label_ordinals[variant_index]
+                            [position_index] == ordinal) {
+                        source_variant = variant_index;
+                        break;
+                    }
+                }
+                if (source_variant == variants.size()) {
+                    throw std::runtime_error(
+                        id + ": missing Fourier calibration label");
+                }
+                copy_full_sequence(
+                    stage_seqs[position_index],
+                    work_seq,
+                    label_pos - 1,
+                    id + ":stage-" +
+                        std::to_string(position_index) +
+                        ":ordinal-" + std::to_string(ordinal));
+                ++sequence_copy_count;
+                const std::vector<llama_token> label_token = {
+                    variant_g_tokens[source_variant].at(label_offset),
+                };
+                const double label_wall_ms = timed_decode(
+                    label_token, label_pos, work_seq);
+                wall_ms += label_wall_ms;
+                label_refresh_wall_ms_total += label_wall_ms;
+                ++label_refresh_count;
+                require_component_positions(
+                    work_seq,
+                    label_pos,
+                    label_pos,
+                    id + ":decoded-" +
+                        std::to_string(position_index) +
+                        "-" + std::to_string(ordinal));
+
+                std::array<float, 3> coefficients = {};
+                for (size_t component = 0;
+                     component < coefficients.size();
+                     ++component) {
+                    coefficients[component] =
+                        basis_coefficients[ordinal][component] *
+                        position_average;
+                }
+                llama_kv_cache::value_fourier_metrics metrics = {};
+                const auto calibration_started =
+                    std::chrono::steady_clock::now();
+                if (!attention->seq_accumulate_value_fourier_sample(
+                        work_seq,
+                        label_pos,
+                        orbit_attention_layers,
+                        coefficients,
+                        &fourier_operator,
+                        &metrics)) {
+                    throw std::runtime_error(
+                        id + ": Fourier calibration failed");
+                }
+                llama_synchronize(ctx);
+                fourier_calibration_wall_ms_total +=
+                    std::chrono::duration<double, std::milli>(
+                        std::chrono::steady_clock::now() -
+                        calibration_started).count();
+                orbit_host_read_bytes += metrics.host_read_bytes;
+                orbit_peak_host_work_bytes = std::max(
+                    orbit_peak_host_work_bytes,
+                    metrics.peak_host_work_bytes);
+                orbit_tensor_visits += metrics.tensor_visits;
+                orbit_position_visits += metrics.position_visits;
+                fourier_operator_logical_bytes =
+                    fourier_operator.logical_bytes;
+                fourier_operator_vector_backing_bytes =
+                    metrics.operator_bytes;
+                ++fourier_calibration_sample_count;
+
+                if (ordinal ==
+                    fourier_label_ordinals.at(0)
+                        .at(position_index)) {
+                    if (!attention->seq_rm(
+                            candidate_seq,
+                            label_pos,
+                            label_pos + 1)) {
+                        throw std::runtime_error(
+                            id +
+                            ": canonical label removal failed");
+                    }
+                    ++attention_label_remove_count;
+                    attention->seq_cp(
+                        work_seq,
+                        candidate_seq,
+                        label_pos,
+                        label_pos + 1);
+                    llama_synchronize(ctx);
+                    ++attention_label_alias_count;
+                }
+                close_sequence(
+                    work_seq,
+                    id + ":work-close-" +
+                        std::to_string(position_index) +
+                        "-" + std::to_string(ordinal));
+                ++sequence_close_count;
+            }
+        }
+        require_component_positions(
+            candidate_seq,
+            source_boundary_pos,
+            source_boundary_pos,
+            id + ":candidate-calibrated");
+        if (fourier_operator.calibration_samples !=
+                label_offsets.size() * 4 ||
+            fourier_calibration_sample_count !=
+                label_offsets.size() * 4 ||
+            fourier_operator.layers.size() !=
+                orbit_attention_layers.size()) {
+            throw std::runtime_error(
+                id + ": incomplete Fourier operator");
+        }
+        return wall_ms;
+    };
+
+    llama_kv_cache::value_subspace_builder subspace_builder;
+    llama_kv_cache::value_subspace_operator
+        local_subspace_operator;
+    llama_kv_cache::value_subspace_operator *
+        subspace_operator = shared_subspace_operator
+            ? shared_subspace_operator
+            : &local_subspace_operator;
+    if (subspace_value_orbit_mode &&
+        !build_subspace_operator &&
+        !shared_subspace_operator) {
+        throw std::runtime_error(
+            "subspace reuse requires an imported operator");
+    }
+    const auto calibrate_subspace_operator =
+            [&](const std::string & id) {
+        if (!build_subspace_operator ||
+            !subspace_operator ||
+            !subspace_operator->layers.empty()) {
+            throw std::runtime_error(
+                id + ": invalid subspace calibration state");
+        }
+        double wall_ms = 0.0;
+        const uint32_t sample_count =
+            static_cast<uint32_t>(
+                label_offsets.size() * 4);
+        for (size_t position_index = 0;
+             position_index < label_offsets.size();
+             ++position_index) {
+            const size_t label_offset =
+                label_offsets[position_index];
+            const llama_pos label_pos = static_cast<llama_pos>(
+                f_boundary_tokens + label_offset);
+            for (uint32_t ordinal = 0; ordinal < 4; ++ordinal) {
+                size_t source_variant = variants.size();
+                for (size_t variant_index = 0;
+                     variant_index < variants.size();
+                     ++variant_index) {
+                    if (fourier_label_ordinals[variant_index]
+                            [position_index] == ordinal) {
+                        source_variant = variant_index;
+                        break;
+                    }
+                }
+                if (source_variant == variants.size()) {
+                    throw std::runtime_error(
+                        id + ": missing subspace calibration label");
+                }
+                copy_full_sequence(
+                    stage_seqs[position_index],
+                    work_seq,
+                    label_pos - 1,
+                    id + ":stage-" +
+                        std::to_string(position_index) +
+                        ":ordinal-" + std::to_string(ordinal));
+                ++sequence_copy_count;
+                const std::vector<llama_token> label_token = {
+                    variant_g_tokens[source_variant].at(label_offset),
+                };
+                const double label_wall_ms = timed_decode(
+                    label_token, label_pos, work_seq);
+                wall_ms += label_wall_ms;
+                label_refresh_wall_ms_total += label_wall_ms;
+                ++label_refresh_count;
+                require_component_positions(
+                    work_seq,
+                    label_pos,
+                    label_pos,
+                    id + ":decoded-" +
+                        std::to_string(position_index) +
+                        "-" + std::to_string(ordinal));
+
+                llama_kv_cache::value_subspace_metrics metrics = {};
+                const auto calibration_started =
+                    std::chrono::steady_clock::now();
+                if (!attention->seq_collect_value_subspace_sample(
+                        work_seq,
+                        label_pos,
+                        orbit_attention_layers,
+                        subspace_include_keys,
+                        static_cast<uint32_t>(
+                            position_index * 4 + ordinal),
+                        sample_count,
+                        &subspace_builder,
+                        &metrics)) {
+                    throw std::runtime_error(
+                        id + ": subspace sample collection failed");
+                }
+                llama_synchronize(ctx);
+                subspace_calibration_wall_ms_total +=
+                    std::chrono::duration<double, std::milli>(
+                        std::chrono::steady_clock::now() -
+                        calibration_started).count();
+                orbit_host_read_bytes += metrics.host_read_bytes;
+                orbit_peak_host_work_bytes = std::max(
+                    orbit_peak_host_work_bytes,
+                    metrics.peak_host_work_bytes);
+                subspace_builder_peak_bytes = std::max(
+                    subspace_builder_peak_bytes,
+                    metrics.builder_bytes);
+                orbit_tensor_visits += metrics.tensor_visits;
+                orbit_position_visits += metrics.position_visits;
+                ++subspace_calibration_sample_count;
+
+                if (ordinal ==
+                    fourier_label_ordinals.at(0)
+                        .at(position_index)) {
+                    if (!attention->seq_rm(
+                            candidate_seq,
+                            label_pos,
+                            label_pos + 1)) {
+                        throw std::runtime_error(
+                            id +
+                            ": canonical label removal failed");
+                    }
+                    ++attention_label_remove_count;
+                    attention->seq_cp(
+                        work_seq,
+                        candidate_seq,
+                        label_pos,
+                        label_pos + 1);
+                    llama_synchronize(ctx);
+                    ++attention_label_alias_count;
+                }
+                close_sequence(
+                    work_seq,
+                    id + ":work-close-" +
+                        std::to_string(position_index) +
+                        "-" + std::to_string(ordinal));
+                ++sequence_close_count;
+            }
+        }
+        llama_kv_cache::value_subspace_metrics
+            finalize_metrics = {};
+        const auto finalize_started =
+            std::chrono::steady_clock::now();
+        if (!attention->finalize_value_subspace_operator(
+                &subspace_builder,
+                static_cast<uint32_t>(label_offsets.size()),
+                4,
+                subspace_operator,
+                &finalize_metrics)) {
+            throw std::runtime_error(
+                id + ": subspace operator finalization failed");
+        }
+        subspace_calibration_wall_ms_total +=
+            std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() -
+                finalize_started).count();
+        orbit_peak_host_work_bytes = std::max(
+            orbit_peak_host_work_bytes,
+            finalize_metrics.peak_host_work_bytes);
+        subspace_builder_peak_bytes = std::max(
+            subspace_builder_peak_bytes,
+            finalize_metrics.builder_bytes);
+        subspace_operator_logical_bytes =
+            subspace_operator->logical_bytes;
+        subspace_operator_vector_backing_bytes =
+            subspace_operator->vector_backing_bytes;
+        subspace_operator_total_rank =
+            subspace_operator->total_rank;
+        subspace_operator_maximum_layer_rank =
+            subspace_operator->maximum_layer_rank;
+        subspace_operator_calibration_max_abs_error =
+            subspace_operator->calibration_max_abs_error;
+        subspace_operator_closure_max_abs_error =
+            subspace_operator->subspace_closure_max_abs_error;
+        require_component_positions(
+            candidate_seq,
+            source_boundary_pos,
+            source_boundary_pos,
+            id + ":candidate-calibrated");
+        if (subspace_operator->calibration_samples !=
+                label_offsets.size() * 4 ||
+            subspace_calibration_sample_count !=
+                label_offsets.size() * 4 ||
+            subspace_operator->layers.size() !=
+                orbit_attention_layers.size() *
+                    (subspace_include_keys ? 2 : 1)) {
+            throw std::runtime_error(
+                id + ": incomplete subspace operator");
+        }
+        return wall_ms;
+    };
+
     const auto advance_label_orbit =
             [&](const std::string & stage) {
         std::vector<llama_pos> label_positions;
@@ -4447,6 +4894,68 @@ static json run_sparse_g_label_refresh(
         for (const size_t label_offset : label_offsets) {
             label_positions.push_back(static_cast<llama_pos>(
                 f_boundary_tokens + label_offset));
+        }
+        if (subspace_value_orbit_mode) {
+            llama_kv_cache::value_subspace_metrics metrics = {};
+            if (!attention->seq_apply_value_subspace_step(
+                    candidate_seq,
+                    label_positions,
+                    *subspace_operator,
+                    &metrics)) {
+                throw std::runtime_error(
+                    stage + ": subspace value action failed");
+            }
+            llama_synchronize(ctx);
+            orbit_host_read_bytes += metrics.host_read_bytes;
+            orbit_host_write_bytes += metrics.host_write_bytes;
+            orbit_peak_host_work_bytes = std::max(
+                orbit_peak_host_work_bytes,
+                metrics.peak_host_work_bytes);
+            orbit_tensor_visits += metrics.tensor_visits;
+            orbit_position_visits += metrics.position_visits;
+            subspace_operator_vector_backing_bytes =
+                metrics.operator_bytes;
+            ++orbit_action_count;
+            require_component_positions(
+                candidate_seq,
+                source_boundary_pos,
+                source_boundary_pos,
+                stage + ":subspace-value-advanced");
+            return;
+        }
+        if (fourier_value_orbit_mode) {
+            llama_kv_cache::value_fourier_metrics metrics = {};
+            if (!attention->seq_apply_value_fourier_step(
+                    candidate_seq,
+                    label_positions,
+                    fourier_current_ordinals,
+                    fourier_operator,
+                    &metrics)) {
+                throw std::runtime_error(
+                    stage + ": Fourier value action failed");
+            }
+            llama_synchronize(ctx);
+            for (uint32_t & ordinal : fourier_current_ordinals) {
+                ordinal = (ordinal + 1) % 4;
+            }
+            orbit_host_read_bytes += metrics.host_read_bytes;
+            orbit_host_write_bytes += metrics.host_write_bytes;
+            orbit_peak_host_work_bytes = std::max(
+                orbit_peak_host_work_bytes,
+                metrics.peak_host_work_bytes);
+            orbit_tensor_visits += metrics.tensor_visits;
+            orbit_position_visits += metrics.position_visits;
+            fourier_operator_logical_bytes =
+                fourier_operator.logical_bytes;
+            fourier_operator_vector_backing_bytes =
+                metrics.operator_bytes;
+            ++orbit_action_count;
+            require_component_positions(
+                candidate_seq,
+                source_boundary_pos,
+                source_boundary_pos,
+                stage + ":Fourier-value-advanced");
+            return;
         }
         if (value_orbit_mode || key_value_orbit_mode) {
             llama_kv_cache::value_orbit_metrics metrics = {};
@@ -4468,6 +4977,7 @@ static json run_sparse_g_label_refresh(
                 orbit_peak_host_work_bytes,
                 metrics.peak_host_work_bytes);
             orbit_tensor_visits += metrics.tensor_count;
+            orbit_position_visits += metrics.position_count;
             ++orbit_action_count;
             require_component_positions(
                 candidate_seq,
@@ -4528,17 +5038,66 @@ static json run_sparse_g_label_refresh(
             source_boundary_pos,
             canonical_id + ":orbit-scaffold-copy");
         ++sequence_copy_count;
+        if (subspace_value_orbit_mode &&
+            !build_subspace_operator) {
+            if (!subspace_operator ||
+                subspace_operator->layers.size() !=
+                    orbit_attention_layers.size() *
+                        (subspace_include_keys ? 2 : 1) ||
+                subspace_operator->calibration_samples !=
+                    label_offsets.size() * 4) {
+                throw std::runtime_error(
+                    canonical_id +
+                    ": imported subspace operator mismatch");
+            }
+            subspace_operator_logical_bytes =
+                subspace_operator->logical_bytes;
+            subspace_operator_vector_backing_bytes =
+                subspace_operator->vector_backing_bytes;
+            subspace_operator_total_rank =
+                subspace_operator->total_rank;
+            subspace_operator_maximum_layer_rank =
+                subspace_operator->maximum_layer_rank;
+            subspace_operator_calibration_max_abs_error =
+                subspace_operator->calibration_max_abs_error;
+            subspace_operator_closure_max_abs_error =
+                subspace_operator->subspace_closure_max_abs_error;
+        }
         const double canonical_label_wall_ms =
-            refresh_candidate_labels(
-                variant_g_tokens.at(0),
-                canonical_id + ":orbit-initialization");
+            subspace_value_orbit_mode &&
+                build_subspace_operator
+                ? calibrate_subspace_operator(
+                    canonical_id + ":subspace-calibration")
+            : fourier_value_orbit_mode
+                ? calibrate_fourier_operator(
+                    canonical_id + ":Fourier-calibration")
+                : refresh_candidate_labels(
+                    variant_g_tokens.at(0),
+                    canonical_id + ":orbit-initialization");
         carrier_recurrent_hash_before =
             hash_recurrent_sequence_streamed(ctx, candidate_seq);
         variant_timings.push_back({
             {"variant", canonical_id},
             {"role", "fixed_orbit_initialization"},
-            {"label_refresh_count", label_offsets.size()},
+            {"label_refresh_count",
+                (fourier_value_orbit_mode ||
+                 (subspace_value_orbit_mode &&
+                  build_subspace_operator))
+                    ? label_offsets.size() * 4
+                    : label_offsets.size()},
             {"label_refresh_wall_ms", canonical_label_wall_ms},
+            {"fourier_operator_logical_bytes",
+                fourier_operator_logical_bytes},
+            {"fourier_operator_vector_backing_bytes",
+                fourier_operator_vector_backing_bytes},
+            {"subspace_operator_vector_backing_bytes",
+                subspace_operator_vector_backing_bytes},
+            {"subspace_operator_total_rank",
+                subspace_operator_total_rank},
+            {"subspace_operator_calibration_max_abs_error",
+                subspace_operator_calibration_max_abs_error},
+            {"subspace_operator_closure_max_abs_error",
+                subspace_operator_closure_max_abs_error},
         });
         for (size_t i = 0; i < stage_seqs.size(); ++i) {
             close_sequence(
@@ -4822,13 +5381,29 @@ static json run_sparse_g_label_refresh(
         structural_g_tokens.size() +
         closure_tokens.size();
     const size_t candidate_initialization_source_tokens =
-        orbit_mode ? label_offsets.size() : 0;
+        orbit_mode &&
+            !fourier_value_orbit_mode &&
+            !(subspace_value_orbit_mode &&
+              build_subspace_operator)
+            ? label_offsets.size()
+            : 0;
+    const size_t fourier_calibration_source_tokens =
+        fourier_value_orbit_mode
+            ? label_offsets.size() * 4
+            : 0;
+    const size_t subspace_calibration_source_tokens =
+        subspace_value_orbit_mode &&
+            build_subspace_operator
+            ? label_offsets.size() * 4
+            : 0;
     const size_t candidate_variable_source_tokens =
         orbit_mode ? 0 :
             variants.size() * label_offsets.size();
     const size_t candidate_source_tokens =
         fixed_carrier_preparation_tokens +
         candidate_initialization_source_tokens +
+        fourier_calibration_source_tokens +
+        subspace_calibration_source_tokens +
         candidate_variable_source_tokens;
     const size_t reference_source_tokens =
         variants.size() *
@@ -4837,7 +5412,17 @@ static json run_sparse_g_label_refresh(
         candidate_source_tokens + reference_source_tokens;
     return {
         {"schema_version", 1},
-        {"mechanism", key_value_orbit_mode
+        {"mechanism", subspace_value_orbit_mode
+            ? subspace_include_keys
+                ? build_subspace_operator
+                    ? "IN_PLACE_STATE_CONDITIONED_LOW_RANK_KEY_VALUE_ACTION"
+                    : "TRANSFERRED_STATE_CONDITIONED_LOW_RANK_KEY_VALUE_ACTION"
+                : build_subspace_operator
+                    ? "IN_PLACE_STATE_CONDITIONED_LOW_RANK_VALUE_ACTION"
+                    : "TRANSFERRED_STATE_CONDITIONED_LOW_RANK_VALUE_ACTION"
+            : fourier_value_orbit_mode
+            ? "IN_PLACE_RANK3_FOURIER_LABEL_VALUE_ACTION"
+            : key_value_orbit_mode
             ? "IN_PLACE_LABEL_KEY_VALUE_ORBIT_ACTION"
             : layer_selective_value_orbit
                 ? "IN_PLACE_LAYER_SELECTIVE_LABEL_VALUE_ORBIT_ACTION"
@@ -4864,6 +5449,17 @@ static json run_sparse_g_label_refresh(
             {"label_orbit_action", orbit_mode},
             {"value_only_orbit_action", value_orbit_mode},
             {"key_value_orbit_action", key_value_orbit_mode},
+            {"fourier_value_orbit_action",
+                fourier_value_orbit_mode},
+            {"subspace_value_orbit_action",
+                subspace_value_orbit_mode},
+            {"subspace_include_keys",
+                subspace_include_keys},
+            {"subspace_operator_built_in_this_panel",
+                subspace_value_orbit_mode &&
+                build_subspace_operator},
+            {"fourier_label_ordinals",
+                fourier_label_ordinals},
             {"orbit_attention_layers", orbit_attention_layers},
             {"stage_sequence_count", stage_seqs.size()},
             {"retained_device_roots_used", false},
@@ -4921,6 +5517,10 @@ static json run_sparse_g_label_refresh(
                 scaffold_closure_wall_ms},
             {"label_refresh_wall_ms_total",
                 label_refresh_wall_ms_total},
+            {"fourier_calibration_wall_ms_total",
+                fourier_calibration_wall_ms_total},
+            {"subspace_calibration_wall_ms_total",
+                subspace_calibration_wall_ms_total},
             {"reference_G_wall_ms_total",
                 reference_G_wall_ms_total},
             {"reference_closure_wall_ms_total",
@@ -4929,6 +5529,10 @@ static json run_sparse_g_label_refresh(
                 fixed_carrier_preparation_tokens},
             {"candidate_initialization_source_tokens",
                 candidate_initialization_source_tokens},
+            {"fourier_calibration_source_tokens",
+                fourier_calibration_source_tokens},
+            {"subspace_calibration_source_tokens",
+                subspace_calibration_source_tokens},
             {"candidate_variable_source_tokens",
                 candidate_variable_source_tokens},
             {"candidate_source_tokens",
@@ -4964,6 +5568,29 @@ static json run_sparse_g_label_refresh(
             {"orbit_peak_host_work_bytes",
                 orbit_peak_host_work_bytes},
             {"orbit_tensor_visits", orbit_tensor_visits},
+            {"orbit_position_visits", orbit_position_visits},
+            {"fourier_calibration_sample_count",
+                fourier_calibration_sample_count},
+            {"fourier_operator_logical_bytes",
+                fourier_operator_logical_bytes},
+            {"fourier_operator_vector_backing_bytes",
+                fourier_operator_vector_backing_bytes},
+            {"subspace_calibration_sample_count",
+                subspace_calibration_sample_count},
+            {"subspace_builder_peak_bytes",
+                subspace_builder_peak_bytes},
+            {"subspace_operator_logical_bytes",
+                subspace_operator_logical_bytes},
+            {"subspace_operator_vector_backing_bytes",
+                subspace_operator_vector_backing_bytes},
+            {"subspace_operator_total_rank",
+                subspace_operator_total_rank},
+            {"subspace_operator_maximum_layer_rank",
+                subspace_operator_maximum_layer_rank},
+            {"subspace_operator_calibration_max_abs_error",
+                subspace_operator_calibration_max_abs_error},
+            {"subspace_operator_closure_max_abs_error",
+                subspace_operator_closure_max_abs_error},
             {"snapshot_root_save_device_copy_bytes", 0},
             {"snapshot_root_restore_device_copy_bytes", 0},
             {"carrier_hash_d2h_bytes",
@@ -5990,6 +6617,117 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
+        }
+
+        if (spec.value("subspace_operator_transfer", false)) {
+            const auto load_panel =
+                    [](const std::string & path) {
+                std::ifstream stream(path);
+                if (!stream) {
+                    throw std::runtime_error(
+                        "failed to open subspace panel: " + path);
+                }
+                json panel;
+                stream >> panel;
+                return panel;
+            };
+            const std::string calibration_path =
+                spec.at("calibration_panel_path");
+            const std::string transfer_path =
+                spec.at("transfer_panel_path");
+            const json calibration_spec =
+                load_panel(calibration_path);
+            const json transfer_spec =
+                load_panel(transfer_path);
+            llama_kv_cache::value_subspace_operator
+                value_operator;
+            const json calibration_result =
+                run_sparse_g_label_refresh(
+                    ctx,
+                    vocab,
+                    candidates,
+                    calibration_spec,
+                    active_backing_initial,
+                    active_attention_backing_initial,
+                    &value_operator,
+                    true);
+            const uint64_t operator_hash_before =
+                hash_value_subspace_operator(value_operator);
+            const json transfer_result =
+                run_sparse_g_label_refresh(
+                    ctx,
+                    vocab,
+                    candidates,
+                    transfer_spec,
+                    active_backing_initial,
+                    active_attention_backing_initial,
+                    &value_operator,
+                    false);
+            const uint64_t operator_hash_after =
+                hash_value_subspace_operator(value_operator);
+            const bool calibration_accepted =
+                calibration_result.at("summary")
+                    .at("accepted").get<bool>();
+            const bool transfer_accepted =
+                transfer_result.at("summary")
+                    .at("accepted").get<bool>();
+            const bool accepted =
+                calibration_accepted &&
+                transfer_accepted &&
+                operator_hash_before == operator_hash_after;
+            const bool includes_keys =
+                calibration_spec.value(
+                    "subspace_include_keys", false);
+            const json result = {
+                {"schema_version", 1},
+                {"mechanism", includes_keys
+                    ? "PROSPECTIVE_TRANSFERRED_STATE_CONDITIONED_LOW_RANK_KEY_VALUE_ACTION"
+                    : "PROSPECTIVE_TRANSFERRED_STATE_CONDITIONED_LOW_RANK_VALUE_ACTION"},
+                {"spec_id", spec.at("id")},
+                {"experiment_id", spec.at("experiment_id")},
+                {"calibration_panel_path", calibration_path},
+                {"transfer_panel_path", transfer_path},
+                {"operator", {
+                    {"calibration_samples",
+                        value_operator.calibration_samples},
+                    {"layers", value_operator.layers.size()},
+                    {"logical_bytes",
+                        value_operator.logical_bytes},
+                    {"vector_backing_bytes",
+                        value_operator.vector_backing_bytes},
+                    {"total_rank", value_operator.total_rank},
+                    {"maximum_layer_rank",
+                        value_operator.maximum_layer_rank},
+                    {"calibration_max_abs_error",
+                        value_operator.calibration_max_abs_error},
+                    {"subspace_closure_max_abs_error",
+                        value_operator.subspace_closure_max_abs_error},
+                    {"hash_before",
+                        hex64(operator_hash_before)},
+                    {"hash_after",
+                        hex64(operator_hash_after)},
+                    {"unchanged_during_transfer",
+                        operator_hash_before ==
+                            operator_hash_after},
+                }},
+                {"summary", {
+                    {"calibration_accepted",
+                        calibration_accepted},
+                    {"transfer_accepted",
+                        transfer_accepted},
+                    {"accepted", accepted},
+                }},
+                {"calibration_panel", calibration_result},
+                {"transfer_panel", transfer_result},
+                {"verdict", accepted ? "accept" : "reject"},
+                {"claim_ceiling", spec.at("claim_ceiling")},
+            };
             std::ofstream result_stream(params.out_file);
             result_stream << result.dump(2) << '\n';
             result_stream.close();

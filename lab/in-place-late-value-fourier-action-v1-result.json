@@ -1,0 +1,1210 @@
+{
+  "schema_version": 1,
+  "mechanism": "IN_PLACE_RANK3_FOURIER_LABEL_VALUE_ACTION",
+  "spec_id": "in-place-late-value-fourier-action-v1",
+  "model_arch": "qwen35moe",
+  "configuration": {
+    "context_size": 4096,
+    "context_per_sequence": 512,
+    "n_seq_max": 8,
+    "source_tokens": 130,
+    "F_boundary_tokens": 79,
+    "G_tokens": 27,
+    "closure_tokens": 24,
+    "label_token_offsets": [
+      6,
+      12,
+      18,
+      24
+    ],
+    "label_refresh_tokens_per_variant": 0,
+    "fixed_label_initialization_tokens": 0,
+    "label_orbit_action": true,
+    "value_only_orbit_action": false,
+    "key_value_orbit_action": false,
+    "fourier_value_orbit_action": true,
+    "fourier_label_ordinals": [
+      [
+        0,
+        1,
+        2,
+        3
+      ],
+      [
+        1,
+        2,
+        3,
+        0
+      ],
+      [
+        2,
+        3,
+        0,
+        1
+      ],
+      [
+        3,
+        0,
+        1,
+        2
+      ]
+    ],
+    "orbit_attention_layers": [
+      23,
+      27,
+      31,
+      35,
+      39
+    ],
+    "stage_sequence_count": 4,
+    "retained_device_roots_used": false,
+    "attention_stream_count": 1,
+    "partial_attention_sequence_copy_metadata_only": true,
+    "restoration_class": "DECLARED_CLOSURE"
+  },
+  "summary": {
+    "route_summary": {
+      "exact_full_state": {
+        "correct": 16,
+        "comparisons": 16,
+        "full_logit_hash_matches": 16,
+        "boundary_matches": 16,
+        "maximum_candidate_logit_absolute_difference": 0.0
+      },
+      "label_orbit_candidate": {
+        "correct": 4,
+        "comparisons": 16,
+        "full_logit_hash_matches": 0,
+        "boundary_matches": 4,
+        "maximum_candidate_logit_absolute_difference": 4.795899391174316
+      }
+    },
+    "F_recurrent_content_and_row_exact": true,
+    "scaffold_recurrent_content_and_row_exact": true,
+    "orbit_return_boundary_matches": 4,
+    "orbit_return_full_logit_hash_matches": 0,
+    "orbit_return_maximum_candidate_logit_absolute_difference": 0.3659791946411133,
+    "accepted": false
+  },
+  "carrier": {
+    "active_cache_backend_allocation_bytes": 610795520,
+    "maximum_retained_root_backend_allocation_bytes": 0,
+    "active_plus_retained_backend_allocation_bytes": 610795520,
+    "F_recurrent_hash_before": "b9b96a8603ee505a",
+    "F_recurrent_hash_after": "b9b96a8603ee505a",
+    "F_recurrent_physical_row": 0,
+    "scaffold_recurrent_hash_before": "b063941ab1a1cf49",
+    "scaffold_recurrent_hash_after": "b063941ab1a1cf49",
+    "scaffold_recurrent_physical_row": 5,
+    "scaffold_attention_logical_bytes": 2662400,
+    "refreshed_attention_logical_bytes": 81920,
+    "complete_host_state_copy_retained": false,
+    "all_sequences_closed": true,
+    "all_retained_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "variant_timings": [
+    {
+      "variant": "G-rotation-0",
+      "role": "fixed_orbit_initialization",
+      "label_refresh_count": 16,
+      "label_refresh_wall_ms": 521.1253029999999,
+      "fourier_operator_logical_bytes": 30720,
+      "fourier_operator_vector_backing_bytes": 31408
+    },
+    {
+      "variant": "G-rotation-0",
+      "label_refresh_count": 0,
+      "label_refresh_wall_ms": 0.0,
+      "orbit_action_count_before_projection": 0,
+      "reference_G_tokens": 27,
+      "reference_G_wall_ms": 246.874873,
+      "reference_closure_tokens": 24,
+      "reference_closure_wall_ms": 231.779783
+    },
+    {
+      "variant": "G-rotation-1",
+      "label_refresh_count": 0,
+      "label_refresh_wall_ms": 0.0,
+      "orbit_action_count_before_projection": 1,
+      "reference_G_tokens": 27,
+      "reference_G_wall_ms": 235.765019,
+      "reference_closure_tokens": 24,
+      "reference_closure_wall_ms": 216.70379
+    },
+    {
+      "variant": "G-rotation-2",
+      "label_refresh_count": 0,
+      "label_refresh_wall_ms": 0.0,
+      "orbit_action_count_before_projection": 2,
+      "reference_G_tokens": 27,
+      "reference_G_wall_ms": 219.765373,
+      "reference_closure_tokens": 24,
+      "reference_closure_wall_ms": 231.484159
+    },
+    {
+      "variant": "G-rotation-3",
+      "label_refresh_count": 0,
+      "label_refresh_wall_ms": 0.0,
+      "orbit_action_count_before_projection": 3,
+      "reference_G_tokens": 27,
+      "reference_G_wall_ms": 224.974866,
+      "reference_closure_tokens": 24,
+      "reference_closure_wall_ms": 212.225142
+    }
+  ],
+  "resource_accounting": {
+    "F_prefix_wall_ms": 4840.729628,
+    "F_module_wall_ms": 1346.3575,
+    "scaffold_G_wall_ms": 1107.081028,
+    "scaffold_closure_wall_ms": 494.236124,
+    "label_refresh_wall_ms_total": 521.1253029999999,
+    "fourier_calibration_wall_ms_total": 0.776653,
+    "reference_G_wall_ms_total": 927.3801310000001,
+    "reference_closure_wall_ms_total": 892.192874,
+    "fixed_carrier_preparation_tokens": 130,
+    "candidate_initialization_source_tokens": 0,
+    "fourier_calibration_source_tokens": 16,
+    "candidate_variable_source_tokens": 0,
+    "candidate_source_tokens": 146,
+    "predecessor_closure_scaffold_candidate_source_tokens": 317,
+    "predecessor_active_F_candidate_source_tokens": 283,
+    "reference_source_tokens": 204,
+    "source_decode_tokens": 350,
+    "query_decode_tokens": 1188,
+    "all_route_input_tokens": 1538,
+    "sequence_copy_count": 62,
+    "sequence_close_count": 63,
+    "label_refresh_count": 16,
+    "attention_label_remove_count": 4,
+    "attention_label_alias_count": 4,
+    "orbit_action_count": 4,
+    "orbit_position_shift_count": 0,
+    "orbit_backend_copy_bytes": 0,
+    "orbit_host_read_bytes": 163840,
+    "orbit_host_write_bytes": 81920,
+    "orbit_peak_host_work_bytes": 4096,
+    "orbit_tensor_visits": 100,
+    "orbit_position_visits": 96,
+    "fourier_calibration_sample_count": 16,
+    "fourier_operator_logical_bytes": 30720,
+    "fourier_operator_vector_backing_bytes": 31408,
+    "snapshot_root_save_device_copy_bytes": 0,
+    "snapshot_root_restore_device_copy_bytes": 0,
+    "carrier_hash_d2h_bytes": 263454720,
+    "carrier_hash_peak_host_work_bytes": 1048576,
+    "asymptotic_candidate_source_ratio": 0.0
+  },
+  "records": [
+    {
+      "query_id": "G0-E",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-0",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.453225135803223,
+        8.020447731018066,
+        9.99659538269043,
+        11.459638595581055
+      ],
+      "candidate_softmax": [
+        0.9404535140822441,
+        0.001512229143065345,
+        0.010910574620269396,
+        0.04712368215442135
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "7e92078949aa5056",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 1010.078955
+    },
+    {
+      "query_id": "G0-F",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-0",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.761768341064453,
+        14.087320327758789,
+        8.351308822631836,
+        10.690238952636719
+      ],
+      "candidate_softmax": [
+        0.004671497900068419,
+        0.9600945377395051,
+        0.003098816459390503,
+        0.032135147901035915
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "dc96ab3407fff682",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 654.190745
+    },
+    {
+      "query_id": "G0-G",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-0",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.677003860473633,
+        9.979818344116211,
+        15.112608909606934,
+        13.10421371459961
+      ],
+      "candidate_softmax": [
+        0.0274721890166804,
+        0.005032861294037258,
+        0.8530167924191151,
+        0.11447815727016727
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "7d43d78387a67516",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 683.233554
+    },
+    {
+      "query_id": "G0-H",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-0",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.680659294128418,
+        7.1041717529296875,
+        9.522148132324219,
+        14.017427444458008
+      ],
+      "candidate_softmax": [
+        0.004731120164682683,
+        0.0009779218252282118,
+        0.010975338858209607,
+        0.9833156191518796
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "d8ef980146bd8c07",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 654.15127
+    },
+    {
+      "query_id": "G0-E",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-0",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        15.089692115783691,
+        9.551417350769043,
+        11.328584671020508,
+        11.649869918823242
+      ],
+      "candidate_softmax": [
+        0.9440538016657343,
+        0.0037132533005952615,
+        0.02195677423403972,
+        0.03027617079963071
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "95254e96160444db",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 687.243868
+    },
+    {
+      "query_id": "G0-F",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-0",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.32101821899414,
+        13.556468963623047,
+        9.612695693969727,
+        11.396858215332031
+      ],
+      "candidate_softmax": [
+        0.0046702629877715335,
+        0.8771395739473431,
+        0.016994552633258928,
+        0.10119561043162655
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "41a9a9fc7b950e75",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 648.832669
+    },
+    {
+      "query_id": "G0-G",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-0",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.93173599243164,
+        11.400371551513672,
+        15.231819152832031,
+        13.029687881469727
+      ],
+      "candidate_softmax": [
+        0.03154502925499157,
+        0.018542243923924947,
+        0.8553401154011078,
+        0.09457261141997567
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "5d7da76b1ed1adc0",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 660.368325
+    },
+    {
+      "query_id": "G0-H",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-0",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.569822311401367,
+        7.560866355895996,
+        10.927066802978516,
+        14.806355476379395
+      ],
+      "candidate_softmax": [
+        0.0019120093263919526,
+        0.0006971175276996785,
+        0.020194275719295957,
+        0.9771965974266124
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "5e8ff6a4b37a3be3",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 655.082777
+    },
+    {
+      "query_id": "G1-E",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-1",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        13.54804801940918,
+        11.137941360473633,
+        8.98682975769043,
+        11.00339412689209
+      ],
+      "candidate_softmax": [
+        0.8483525287151179,
+        0.0761869058200107,
+        0.008864708044762016,
+        0.06659585742010951
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "1b8faf95f854970d",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 627.034506
+    },
+    {
+      "query_id": "G1-F",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-1",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.364835739135742,
+        13.943161964416504,
+        10.941452026367188,
+        10.182125091552734
+      ],
+      "candidate_softmax": [
+        0.009482787613051059,
+        0.9231618306960722,
+        0.04588299698048936,
+        0.021472384710387246
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "e4c0e93ab732dbf5",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 623.98186
+    },
+    {
+      "query_id": "G1-G",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-1",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.746337890625,
+        9.926053047180176,
+        14.73984432220459,
+        14.030845642089844
+      ],
+      "candidate_softmax": [
+        0.03232233068548146,
+        0.0052355583743496775,
+        0.6450093258838157,
+        0.31743278505635314
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "5afdcc1d4fe3ac6b",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 629.322513
+    },
+    {
+      "query_id": "G1-H",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-1",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        12.397331237792969,
+        7.113978385925293,
+        9.25782585144043,
+        12.65761947631836
+      ],
+      "candidate_softmax": [
+        0.4263149625176872,
+        0.0021637126590667117,
+        0.018461233285338767,
+        0.5530600915379074
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "4169a80c5fa39541",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 627.092607
+    },
+    {
+      "query_id": "G1-E",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-1",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.136152267456055,
+        13.64396858215332,
+        10.720233917236328,
+        11.270679473876953
+      ],
+      "candidate_softmax": [
+        0.06630499853669408,
+        0.8140986918869195,
+        0.04374367088446074,
+        0.07585263869192567
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "92cec2a8be8b5945",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 697.258011
+    },
+    {
+      "query_id": "G1-F",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-1",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.59636116027832,
+        9.147262573242188,
+        15.071778297424316,
+        12.006965637207031
+      ],
+      "candidate_softmax": [
+        0.003975685751541193,
+        0.0025372952775164935,
+        0.9491951229493489,
+        0.044291896021593384
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "dbebc302aa0ab23a",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 639.881465
+    },
+    {
+      "query_id": "G1-G",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-1",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.468209266662598,
+        10.560087203979492,
+        13.62188720703125,
+        15.710975646972656
+      ],
+      "candidate_softmax": [
+        0.01255967444163074,
+        0.005065076178517462,
+        0.10822032342740845,
+        0.8741549259524434
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "1986f1c2835e80bd",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 635.010127
+    },
+    {
+      "query_id": "G1-H",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-1",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.560214042663574,
+        8.622527122497559,
+        9.7334566116333,
+        13.054774284362793
+      ],
+      "candidate_softmax": [
+        0.8113127724673158,
+        0.002140344339337818,
+        0.0065006112533563774,
+        0.1800462719399901
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "5af6b13351f0867a",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 654.377732
+    },
+    {
+      "query_id": "G2-E",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-2",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.14271068572998,
+        9.469094276428223,
+        12.211846351623535,
+        10.523862838745117
+      ],
+      "candidate_softmax": [
+        0.8466147540123804,
+        0.007906058355427762,
+        0.12277843888681518,
+        0.022700748745376725
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "c94f0688d94b37fb",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 632.301439
+    },
+    {
+      "query_id": "G2-F",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-2",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.248503684997559,
+        13.765909194946289,
+        8.200014114379883,
+        12.885913848876953
+      ],
+      "candidate_softmax": [
+        0.0028231250077830395,
+        0.7029248169906908,
+        0.0026894988081074146,
+        0.2915625591934187
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "62ae7254e9c6cb16",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 677.345176
+    },
+    {
+      "query_id": "G2-G",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-2",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.042976379394531,
+        11.162935256958008,
+        15.12177848815918,
+        11.999455451965332
+      ],
+      "candidate_softmax": [
+        0.24231507399905558,
+        0.013601739861887665,
+        0.7126860114569832,
+        0.03139717468207355
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "101ebe97cb046bd1",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 638.954546
+    },
+    {
+      "query_id": "G2-H",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-2",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.674063682556152,
+        11.41083812713623,
+        9.73863410949707,
+        13.420538902282715
+      ],
+      "candidate_softmax": [
+        0.019953243566888018,
+        0.11331438904750676,
+        0.021284138881396807,
+        0.8454482285042084
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "2a5a9a996a78b09d",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 624.241175
+    },
+    {
+      "query_id": "G2-E",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-2",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.385801315307617,
+        8.741436958312988,
+        14.77036190032959,
+        11.36246109008789
+      ],
+      "candidate_softmax": [
+        0.03169270201329182,
+        0.0022517823923350025,
+        0.9350939626007003,
+        0.030961552993672897
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "17201457b338458e",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 647.447042
+    },
+    {
+      "query_id": "G2-F",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-2",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.948049545288086,
+        9.990955352783203,
+        8.8086519241333,
+        15.03085994720459
+      ],
+      "candidate_softmax": [
+        0.0022575071485716994,
+        0.006405563953295277,
+        0.001963765005364063,
+        0.9893731638927691
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "f4dd3cd2fb2a18e7",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 632.743392
+    },
+    {
+      "query_id": "G2-G",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-2",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        15.302094459533691,
+        9.42821979522705,
+        10.526634216308594,
+        12.16828727722168
+      ],
+      "candidate_softmax": [
+        0.9480489732627381,
+        0.0026658727666329703,
+        0.007996035987017007,
+        0.041289117983611845
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "c67c9fa75b3645e7",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 645.653812
+    },
+    {
+      "query_id": "G2-H",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-2",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.124679565429688,
+        13.229545593261719,
+        8.437602996826172,
+        12.169326782226563
+      ],
+      "candidate_softmax": [
+        0.012027863404807604,
+        0.7293049348027479,
+        0.0060505509863743616,
+        0.2526166508060701
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "1b8fba4cb512ef77",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 641.012904
+    },
+    {
+      "query_id": "G3-E",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-3",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        13.822450637817383,
+        8.595635414123535,
+        10.380172729492188,
+        13.69915771484375
+      ],
+      "candidate_softmax": [
+        0.5204627720654018,
+        0.0027951985408953294,
+        0.016650503459256727,
+        0.4600915259344461
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "a36b9dc64eff3cc6",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 623.706625
+    },
+    {
+      "query_id": "G3-F",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-3",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.18130111694336,
+        13.654300689697266,
+        8.653746604919434,
+        9.661514282226563
+      ],
+      "candidate_softmax": [
+        0.07600762380878523,
+        0.9012955437317439,
+        0.006069517644967317,
+        0.016627314814503767
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "17c96ad1e690cd5c",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 628.902451
+    },
+    {
+      "query_id": "G3-G",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-3",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.108453750610352,
+        12.944579124450684,
+        15.108412742614746,
+        11.921468734741211
+      ],
+      "candidate_softmax": [
+        0.015595078047496845,
+        0.09781527280866749,
+        0.8514274949649412,
+        0.03516215417889462
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "62fa7d62c81fd750",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 628.007402
+    },
+    {
+      "query_id": "G3-H",
+      "route": "sparse-G-label-refresh:label_orbit_candidate",
+      "source_variant": "G-rotation-3",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.195898056030273,
+        8.117889404296875,
+        12.468963623046875,
+        12.920587539672852
+      ],
+      "candidate_softmax": [
+        0.01445279855221405,
+        0.004917889207130799,
+        0.3814400266320348,
+        0.5991892856086204
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "f140933769df83c6",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 620.285315
+    },
+    {
+      "query_id": "G3-E",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-3",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.09653377532959,
+        6.839577674865723,
+        9.193806648254395,
+        15.0949068069458
+      ],
+      "candidate_softmax": [
+        0.0024692590158235323,
+        0.0002584538868368903,
+        0.002721521189876847,
+        0.9945507659074627
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "e818826dbca5187f",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 633.126412
+    },
+    {
+      "query_id": "G3-F",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-3",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.676252365112305,
+        10.313216209411621,
+        10.254247665405273,
+        11.438514709472656
+      ],
+      "candidate_softmax": [
+        0.9398475232208123,
+        0.011973327853146597,
+        0.01128769227649073,
+        0.036891456649550236
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "85c0fc4d40aa0c23",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 635.52483
+    },
+    {
+      "query_id": "G3-G",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-3",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.44903564453125,
+        13.457656860351563,
+        10.418986320495605,
+        10.862367630004883
+      ],
+      "candidate_softmax": [
+        0.0421199975732856,
+        0.8533278691727244,
+        0.040873147439767644,
+        0.06367898581422221
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "9bb966df6f3e18e4",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 628.189891
+    },
+    {
+      "query_id": "G3-H",
+      "route": "sparse-G-label-refresh:exact_full_state",
+      "source_variant": "G-rotation-3",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.633016586303711,
+        10.097091674804688,
+        14.80137825012207,
+        12.265002250671387
+      ],
+      "candidate_softmax": [
+        0.014023542070437262,
+        0.008205564997432635,
+        0.9060542271576514,
+        0.07171666577447879
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "e48bafdd727f7b3a",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 640.720216
+    },
+    {
+      "query_id": "G0-E",
+      "route": "sparse-G-label-refresh:label_orbit_return_G0",
+      "source_variant": "G-rotation-0",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.44681167602539,
+        7.928215026855469,
+        10.017190933227539,
+        11.594505310058594
+      ],
+      "candidate_softmax": [
+        0.9336145771671098,
+        0.0013777710960373982,
+        0.011127760721235436,
+        0.0538798910156171
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "d954f4bc605a4781",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 625.462566
+    },
+    {
+      "query_id": "G0-F",
+      "route": "sparse-G-label-refresh:label_orbit_return_G0",
+      "source_variant": "G-rotation-0",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.949607849121094,
+        14.011817932128906,
+        8.283872604370117,
+        10.68906021118164
+      ],
+      "candidate_softmax": [
+        0.006055200075323947,
+        0.9563533927758837,
+        0.003111740371645643,
+        0.03447966677714691
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "a578860a4060aaa0",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 617.754694
+    },
+    {
+      "query_id": "G0-G",
+      "route": "sparse-G-label-refresh:label_orbit_return_G0",
+      "source_variant": "G-rotation-0",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.821556091308594,
+        10.276298522949219,
+        15.257538795471191,
+        13.099085807800293
+      ],
+      "candidate_softmax": [
+        0.027883934115534525,
+        0.005946442350576028,
+        0.8661285935869505,
+        0.10004102994693899
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "b970ffec646df924",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 644.127048
+    },
+    {
+      "query_id": "G0-H",
+      "route": "sparse-G-label-refresh:label_orbit_return_G0",
+      "source_variant": "G-rotation-0",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.046638488769531,
+        7.035876750946045,
+        9.49710750579834,
+        14.11230754852295
+      ],
+      "candidate_softmax": [
+        0.006203882736549144,
+        0.0008306170721884809,
+        0.009734189323154936,
+        0.9832313108681076
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "9aa97f93669df0b2",
+      "root_backing_id": "085e18e15cca6797",
+      "root_gpu_bytes": 610795520,
+      "sequence_id": 1,
+      "active_recurrent_backing_id": "085e18e15cca6797",
+      "wall_ms": 625.383915
+    }
+  ],
+  "verdict": "reject",
+  "claim_ceiling": "Passing establishes only that one 16-token calibration can derive a position-averaged rank-3 real Fourier generator over late value space which repeatedly advances the same active frozen-context carrier through four useful public Z4 boundaries with zero target-branch source-token forward and functional G0 return. Count the fixed 130-token carrier preparation, all 16 calibration forwards, the complete operator bytes, all host/device traffic and scratch, the 610,795,520-byte active allocation, four fixed recurrent stage rows, query and exact-reference forwards, numerical drift, and closure. This calibration-context result does not establish context-independent reuse, compactness versus the four-link classical table, a distinct phase resource, exact physical restoration, Small Wall crossing, general catalysis, or unbounded inference."
+}

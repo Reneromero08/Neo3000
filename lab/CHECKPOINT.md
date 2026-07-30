@@ -188,12 +188,38 @@ The active recurrence and acceptance boundary are
   actions, uses no branch-variable source token, retains the same
   `610,795,520`-byte active allocation, returns G0 bit-exactly, and closes all
   state.
+- `neo-exp-0134` establishes the strongest current direct action. A fixed
+  state-conditioned operator over same-position K/V rows in all ten attention
+  layers is built from 16 public calibration states, after which the complete
+  rows are erased. The 1,287,528-byte operator receives only the current
+  active cell, uses zero noncanonical target-branch forwards, preserves all
+  `16/16` calibration boundaries, and remains byte-hash unchanged while
+  preserving `15/16` boundaries in the prospectively frozen N/T/U/V context.
+  Untouched full state is `16/16`; all sequences and roots close and active
+  backing remains stable.
+- The one authorized numerical repair in `neo-exp-0135` projects learned
+  image vectors into their identical source span. The removed residue is only
+  `1.0357e-6`; calibration remains `16/16`, but transfer remains `15/16` and
+  the functional-return candidate drift grows from `1.1482` to `1.2311`.
+  This rules out off-subspace bookkeeping as the remaining wall.
 - The complete Release server rebuild passes after the KV action change.
   Configured CUDA closure remains `139/139` compile entries and `139/139`
   unique objects. Seventeen focused declarative-runner/oracle tests and all 19
   exact two-evidence oracle gates pass.
 
 ### REJECTED
+
+- `neo-exp-0132` rejects a position-averaged rank-3 Fourier translation:
+  noncanonical boundaries remain at G0 (`4/16`) despite zero target-branch
+  forwards. `neo-exp-0133` maps late-value calibration rows within
+  `2.87e-6` yet still preserves only `4/16`, proving that the prior `10/16`
+  value-row permutation effect came from moving context-bearing rows between
+  positions rather than a correct late-value relation action.
+- The complete K/V operator is not yet context-independent. One-context
+  calibration misses one of sixteen disjoint transfer boundaries, is
+  1.29 MB versus a tiny four-link classical table, and has no exact transferred
+  return. No further one-context operator or evidence-harness versions are
+  authorized by this result.
 
 - The balanced held-out adapter produced joint/F-only/G-only accuracy
   `1/4`, `1/4`, and `2/4`; eligibility mutation failed. It is a conventional

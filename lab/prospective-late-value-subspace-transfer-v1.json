@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "id": "prospective-late-value-subspace-transfer-v1",
+  "experiment_id": "neo-exp-0133",
+  "description": "Derive one fixed state-conditioned low-rank late-value action on E/F/G/H, then without changing or recalibrating it apply it to the prospectively frozen disjoint N/T/U/V context. The operator receives only each current active value row; no ordinal, target row, target delta, target root, or noncanonical target-branch model forward is admitted.",
+  "subspace_operator_transfer": true,
+  "require_unified_kv": true,
+  "calibration_panel_path": "lab/late-value-subspace-calibration-panel-v1.json",
+  "transfer_panel_path": "lab/late-value-subspace-disjoint-transfer-panel-v1.json",
+  "predecessor": {
+    "experiment_id": "neo-exp-0132",
+    "classification": "POSITION_AVERAGED_RANK3_TRANSLATION_SEMANTICALLY_NULL",
+    "raw_result_sha256": "CAB6FF85283D3B09D5B94FEF5FDED4CB699C25C94541731EDEFCE0C56A500D73"
+  },
+  "acceptance_law": {
+    "calibration_panel_correct": 16,
+    "calibration_panel_boundary_matches": 16,
+    "transfer_full_state_correct": 16,
+    "transfer_operator_correct": 16,
+    "transfer_operator_boundary_matches": 16,
+    "calibration_and_transfer_return_boundary_matches": 4,
+    "operator_hash_unchanged_during_transfer": true
+  },
+  "claim_ceiling": "Passing supports only bounded prospective transfer of one fixed state-conditioned low-rank late-value action between two explicit F contexts within the same four-label two-link schema. It must operate directly on the active row, repeatedly advance the same carrier with zero noncanonical target-branch forward, remain unchanged across transfer, return the G0 decision boundary, preserve stable active backing, and close all state. Fully charge the 16-token calibration, four-token transfer initialization, operator and builder backing, active allocation, traffic, scratch, query and reference forwards, drift, and closure. Even a pass does not establish a compact advantage over the classical relation table, exact physical restoration, task-family breadth, a phase-native resource, Small Wall crossing, general catalysis, or unbounded inference."
+}

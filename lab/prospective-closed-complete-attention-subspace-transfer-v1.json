@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "id": "prospective-closed-complete-attention-subspace-transfer-v1",
+  "experiment_id": "neo-exp-0135",
+  "description": "Repair the exact defect exposed by neo-exp-0134: project every learned K/V image basis into the identical calibration source span before retaining the operator, then rerun the unchanged frozen calibration and N/T/U/V transfer gates. No other mechanism or evidence surface changes.",
+  "subspace_operator_transfer": true,
+  "require_unified_kv": true,
+  "calibration_panel_path": "lab/closed-complete-attention-subspace-calibration-panel-v1.json",
+  "transfer_panel_path": "lab/closed-complete-attention-subspace-disjoint-transfer-panel-v1.json",
+  "predecessor": {
+    "experiment_id": "neo-exp-0134",
+    "classification": "COMPLETE_ATTENTION_ACTION_CALIBRATED_BUT_TRANSFER_DRIFTS_OFF_SUBSPACE",
+    "raw_result_sha256": "5D23C9C17BF5F27B33AC8AD6D1614C34F9645666B89278F44DB88D0DA56282FE"
+  },
+  "acceptance_law": {
+    "calibration_panel_correct": 16,
+    "calibration_panel_boundary_matches": 16,
+    "transfer_full_state_correct": 16,
+    "transfer_operator_correct": 16,
+    "transfer_operator_boundary_matches": 16,
+    "calibration_and_transfer_return_boundary_matches": 4,
+    "operator_hash_unchanged_during_transfer": true
+  },
+  "claim_ceiling": "Passing supports only that explicit finite-subspace closure repairs the concrete off-manifold transfer defect of neo-exp-0134 for one disjoint F context. The fixed complete-attention operator must remain unchanged, receive only active K/V state, use zero noncanonical target-branch forwards, execute the four-step useful orbit, return G0, preserve active backing, and close all state. Fully charge calibration, initialization, operator/builder backing, active allocation, traffic, scratch, references, queries, drift, and closure. No compact-classical advantage, exact physical restoration, task-family breadth, phase-native resource, Small Wall crossing, general catalysis, or unbounded inference follows."
+}

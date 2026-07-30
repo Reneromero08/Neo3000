@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "id": "closed-complete-attention-subspace-disjoint-transfer-panel-v1",
+  "experiment_id": "neo-exp-0135",
+  "description": "Apply the unchanged subspace-closed complete-attention operator to the same frozen N/T/U/V transfer context and require all 16 useful boundaries plus G0 return.",
+  "open_f_prefix_nonlinear_composition": false,
+  "expected_context_size": 4096,
+  "expected_context_per_sequence": 512,
+  "expected_source_tokens": 130,
+  "expected_prefix_tokens": 48,
+  "expected_f_tokens": 31,
+  "expected_g_tokens": 27,
+  "expected_closure_tokens": 24,
+  "queries_per_variant": 4,
+  "predecessor_evidence": {
+    "path": "lab/closed-complete-attention-subspace-calibration-panel-v1.json",
+    "committed": true,
+    "role": "operator source only; transfer outcomes remain prospectively frozen"
+  },
+  "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+  "module_f": "F: Item N maps to vault M. Item T maps to vault K. Item U maps to vault J. Item V maps to vault L.\n",
+  "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n",
+  "g_variants": [
+    {
+      "id": "G-rotation-0",
+      "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+      "queries": [
+        {
+          "id": "transfer-G0-N",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item N through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "transfer-G0-T",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item T through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "transfer-G0-U",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "transfer-G0-V",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-1",
+      "module_g": "G: Vault J has code B. Vault K has code C. Vault L has code D. Vault M has code A.\n",
+      "queries": [
+        {
+          "id": "transfer-G1-N",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item N through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "transfer-G1-T",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item T through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "transfer-G1-U",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "transfer-G1-V",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-2",
+      "module_g": "G: Vault J has code C. Vault K has code D. Vault L has code A. Vault M has code B.\n",
+      "queries": [
+        {
+          "id": "transfer-G2-N",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item N through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "transfer-G2-T",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item T through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "transfer-G2-U",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "transfer-G2-V",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-3",
+      "module_g": "G: Vault J has code D. Vault K has code A. Vault L has code B. Vault M has code C.\n",
+      "queries": [
+        {
+          "id": "transfer-G3-N",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item N through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "transfer-G3-T",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item T through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "transfer-G3-U",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "transfer-G3-V",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    }
+  ],
+  "fourier_label_ordinals": [
+    [
+      0,
+      1,
+      2,
+      3
+    ],
+    [
+      1,
+      2,
+      3,
+      0
+    ],
+    [
+      2,
+      3,
+      0,
+      1
+    ],
+    [
+      3,
+      0,
+      1,
+      2
+    ]
+  ],
+  "acceptance_law": {
+    "primary_correct": 16,
+    "primary_boundary_matches": 16,
+    "return_boundary_matches": 4
+  },
+  "claim_ceiling": "Passing supports only that closing the learned K/V action on its calibration span repairs the previously observed third-step transfer defect while retaining zero noncanonical target-branch forwards, unchanged operator state, active backing, G0 return, and closure. Count all calibration, operator, active-state, traffic, scratch, query, reference, and drift costs. No compact-baseline advantage or unbounded claim follows.",
+  "active_f_sequence_branching": false,
+  "expected_n_seq_max": 8,
+  "g_forward_state_partition": false,
+  "closure_scaffold_advance": false,
+  "require_unified_kv": true,
+  "expected_attention_stream_count": 1,
+  "predecessor_result": {
+    "experiment_id": "neo-exp-0132",
+    "classification": "POSITION_AVERAGED_RANK3_TRANSLATION_SEMANTICALLY_NULL",
+    "semantic_boundary_matches": 4,
+    "return_boundary_matches": 4,
+    "return_full_logit_hash_matches": 0,
+    "raw_result_sha256": "CAB6FF85283D3B09D5B94FEF5FDED4CB699C25C94541731EDEFCE0C56A500D73"
+  },
+  "structural_module_g": "G: Vault J has code P. Vault K has code Q. Vault L has code R. Vault M has code S.\n",
+  "label_token_offsets": [
+    6,
+    12,
+    18,
+    24
+  ],
+  "sparse_g_label_refresh": true,
+  "label_orbit_attention_action": false,
+  "value_orbit_attention_action": false,
+  "key_value_orbit_attention_action": false,
+  "fourier_value_orbit_action": false,
+  "orbit_attention_layers": [
+    3,
+    7,
+    11,
+    15,
+    19,
+    23,
+    27,
+    31,
+    35,
+    39
+  ],
+  "subspace_value_orbit_action": true,
+  "panel_role": "closed_complete_attention_prospective_disjoint_transfer",
+  "subspace_include_keys": true
+}
