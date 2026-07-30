@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "experiment_id": "neo-exp-0150",
+  "baseline_commit": "3d90a524ec50f00eeaa556c46ec2d6712a2ed508",
+  "model_hash": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+  "mechanism": "ACTUAL_OUTPUT_WRITTEN_RECURRENT_STATE_TRANSITION",
+  "spec_id": "layer4-output-written-recurrent-transition-v1",
+  "execution": {
+    "raw_result_bytes": 82105,
+    "raw_result_sha256": "42DB5A3CE4BFD8DE5DD3E35F6F0CFC24F502CB8A693A09DDB63713C3BB5E3E69",
+    "spec_sha256": "405F5BAB3F7109C593C821403225BAB5B4498933C8CB0F601EF9687D65880C8E",
+    "probe_version": "376 (3d90a52)",
+    "probe_binary_sha256": "8F635032C15CF1F5416E5608AEA78FF6830D47CFEF2D76D78315AC7658E0A612",
+    "server_binary_sha256": "6F5B6E6BF5C1F533FEF41A6D4C5FDC870698D5B48A6CD5C76B11262F61F89926"
+  },
+  "configuration": {
+    "context_size": 4096,
+    "context_per_sequence": 512,
+    "n_seq_max": 8,
+    "semantic_carrier_read_layer": 4,
+    "semantic_carrier_recurrent_transition_input": true,
+    "semantic_carrier_moe_router_bias": false,
+    "restoration_class": "DECLARED_CLOSURE"
+  },
+  "summary": {
+    "exact_full_state_correct": 15,
+    "exact_full_state_comparisons": 16,
+    "exact_full_state_hash_matches": 16,
+    "candidate_correct": 4,
+    "candidate_comparisons": 16,
+    "candidate_boundary_matches": 3,
+    "candidate_full_logit_hash_matches": 0,
+    "candidate_maximum_logit_absolute_difference": 6.887042999267578,
+    "per_phase_correct": [4, 0, 0, 0],
+    "return_boundary_matches": 4,
+    "return_full_logit_hash_matches": 0,
+    "return_maximum_logit_absolute_difference": 1.1723785400390625,
+    "carrier_disabled_G1_correct": 0,
+    "enabled_disabled_G1_boundary_matches": 4,
+    "semantic_training_correct": 12,
+    "semantic_training_samples": 12,
+    "semantic_training_max_abs_error": 0.006450784830041911,
+    "writer_training_correct": 12,
+    "writer_training_max_abs_error": 0.000832672312942595,
+    "coupled_topology_training_correct": 12,
+    "coupled_topology_minimum_margin": 0.9893645153746239,
+    "accepted": false
+  },
+  "training_boundaries": {
+    "context_order": ["train-EFGH", "train-WXYZ", "train-ABCD"],
+    "query_order_per_context": [
+      ["E", "F", "G", "H"],
+      ["W", "X", "Y", "Z"],
+      ["A", "B", "C", "D"]
+    ],
+    "base_argmax": [
+      ["A", "B", "C", "D"],
+      ["A", "B", "C", "D"],
+      ["C", "A", "D", "B"]
+    ],
+    "target_argmax": [
+      ["B", "C", "D", "A"],
+      ["B", "C", "D", "A"],
+      ["D", "D", "A", "C"]
+    ],
+    "base_full_logits_fnv1a64": [
+      ["54de4ea92dc22086", "038ecd603994ad46", "041077da524bef3f", "da2efe4dcd47e835"],
+      ["0316b73418a9c774", "20f88a9fd62421b5", "cdf249d732e1215a", "a02cce5433d1d3d9"],
+      ["78fb0a49a12bb532", "21718e29b7ac992a", "df63fc2c97f614f9", "6f490a0f2631540c"]
+    ],
+    "target_full_logits_fnv1a64": [
+      ["67267da4f3cc1dc4", "c0fcd0741a33a630", "f4c247a55e8e5e46", "177ecc1b5e1f9621"],
+      ["fa12f05492254ef6", "554784492fa42b8f", "b8ade02fedb6ed33", "22fe94efbae16045"],
+      ["8a83d14ad014f5e8", "4b09190834562e94", "d58dff56a04a6680", "29f8f42431fc510d"]
+    ]
+  },
+  "boundary_panels": {
+    "phase_order": ["G-rotation-0", "G-rotation-1", "G-rotation-2", "G-rotation-3"],
+    "query_order": ["I", "O", "U", "V"],
+    "expected": [
+      ["B", "C", "D", "A"],
+      ["C", "D", "A", "B"],
+      ["D", "A", "B", "C"],
+      ["A", "B", "C", "D"]
+    ],
+    "candidate_argmax": [
+      ["B", "C", "D", "A"],
+      ["B", "C", "D", "A"],
+      ["B", "C", "D", "A"],
+      ["B", "C", "D", "A"]
+    ],
+    "candidate_logits": [
+      [
+        [11.346435546875, 13.938475608825684, 9.617036819458008, 11.04824161529541],
+        [9.21003246307373, 7.5372819900512695, 13.965349197387695, 10.529838562011719],
+        [8.15122127532959, 6.82454776763916, 9.984734535217285, 14.755112648010254],
+        [13.809898376464844, 7.7730488777160645, 9.410296440124512, 12.351280212402344]
+      ],
+      [
+        [11.485150337219238, 13.922399520874023, 9.71529769897461, 11.135811805725098],
+        [9.165066719055176, 7.374167442321777, 13.72996711730957, 10.387614250183105],
+        [8.265844345092773, 6.755803108215332, 10.021867752075195, 14.644448280334473],
+        [14.281913757324219, 7.793757915496826, 9.319952964782715, 12.36153793334961]
+      ],
+      [
+        [11.485150337219238, 13.922399520874023, 9.71529769897461, 11.135811805725098],
+        [9.165066719055176, 7.374167442321777, 13.72996711730957, 10.387614250183105],
+        [8.265844345092773, 6.755803108215332, 10.021867752075195, 14.644448280334473],
+        [14.281913757324219, 7.793757915496826, 9.319952964782715, 12.36153793334961]
+      ],
+      [
+        [11.485150337219238, 13.922399520874023, 9.71529769897461, 11.135811805725098],
+        [9.165066719055176, 7.374167442321777, 13.72996711730957, 10.387614250183105],
+        [8.265844345092773, 6.755803108215332, 10.021867752075195, 14.644448280334473],
+        [14.281913757324219, 7.793757915496826, 9.319952964782715, 12.36153793334961]
+      ]
+    ],
+    "candidate_full_logits_fnv1a64": [
+      ["e988e709dcf562e9", "fe9038e31b4b7fee", "b967f779e2928e3e", "fd56a96ddc9d738a"],
+      ["784d352769851b48", "0d60e44ca9651ecc", "d7f5c04c831eb484", "4b5908bfdd286a71"],
+      ["784d352769851b48", "0d60e44ca9651ecc", "d7f5c04c831eb484", "4b5908bfdd286a71"],
+      ["784d352769851b48", "0d60e44ca9651ecc", "d7f5c04c831eb484", "4b5908bfdd286a71"]
+    ],
+    "exact_argmax": [
+      ["B", "C", "D", "D"],
+      ["C", "D", "A", "B"],
+      ["D", "A", "B", "C"],
+      ["A", "B", "C", "D"]
+    ],
+    "exact_logits": [
+      [
+        [13.04326057434082, 14.848154067993164, 11.578134536743164, 12.0401029586792],
+        [9.476316452026367, 9.010943412780762, 14.31418228149414, 12.250228881835938],
+        [8.795005798339844, 7.889732837677002, 11.621322631835938, 15.205638885498047],
+        [13.592114448547363, 8.902176856994629, 10.973627090454102, 13.862884521484375]
+      ],
+      [
+        [11.216825485229492, 10.824575424194336, 15.118988037109375, 12.311262130737305],
+        [10.202924728393555, 8.448814392089844, 10.436080932617188, 15.3159761428833],
+        [14.69316291809082, 7.97590446472168, 9.303207397460938, 11.793094635009766],
+        [9.753263473510742, 12.745769500732422, 9.759623527526855, 11.614664077758789]
+      ],
+      [
+        [10.027250289916992, 9.064340591430664, 10.700511932373047, 14.927034378051758],
+        [14.649471282958984, 9.8579683303833, 8.789831161499023, 10.905359268188477],
+        [9.182812690734863, 13.64284610748291, 8.175323486328125, 10.640501022338867],
+        [9.04088020324707, 7.825957298278809, 14.113668441772461, 10.641525268554688]
+      ],
+      [
+        [13.620542526245117, 7.543441295623779, 8.544809341430664, 11.788369178771973],
+        [9.276451110839844, 13.7266263961792, 9.281341552734375, 10.638601303100586],
+        [9.471892356872559, 8.67354679107666, 14.506685256958008, 11.07596206665039],
+        [9.037513732910156, 7.7001543045043945, 10.342937469482422, 15.408777236938477]
+      ]
+    ],
+    "exact_full_logits_fnv1a64": [
+      ["7767bbe0b6a12948", "ea30e86e0617bd86", "8aabd542727dfd25", "b7d74c520b78b93f"],
+      ["c7a5e0e8610fdfee", "8a3a3714a581d4a8", "2d27b4525acbf37a", "60cf76a3c1ca7b12"],
+      ["9b471781bd3b29c3", "2256a4bd0df93826", "8e2eb3b912fa4332", "655542b62595ba0b"],
+      ["ce1d663bd65a224d", "1bba91c840adbd91", "93221e26abdacfb4", "c38355e7f13ca9ee"]
+    ],
+    "disabled_G1_argmax": ["B", "C", "D", "A"],
+    "disabled_G1_logits": [
+      [11.346435546875, 13.938475608825684, 9.617036819458008, 11.04824161529541],
+      [10.096184730529785, 8.607748985290527, 14.332277297973633, 11.369707107543945],
+      [7.784222602844238, 6.083688259124756, 9.241033554077148, 14.31100082397461],
+      [12.744955062866211, 6.59699821472168, 8.306290626525879, 11.350946426391602]
+    ],
+    "disabled_G1_full_logits_fnv1a64": [
+      "e988e709dcf562e9",
+      "1da4bc4fab24b264",
+      "bdb5ea8c0be29780",
+      "957640aebd68ff87"
+    ],
+    "return_G0_argmax": ["B", "C", "D", "A"],
+    "return_G0_logits": [
+      [11.485150337219238, 13.922399520874023, 9.71529769897461, 11.135811805725098],
+      [10.209247589111328, 8.683155059814453, 14.652718544006348, 11.702217102050781],
+      [7.861520767211914, 6.11855411529541, 9.205659866333008, 14.30137825012207],
+      [12.805349349975586, 6.674753665924072, 8.33611011505127, 11.457427978515625]
+    ],
+    "return_G0_full_logits_fnv1a64": [
+      "784d352769851b48",
+      "91584a1a1845a6b6",
+      "48a461415125f21f",
+      "e0449d4ca2275416"
+    ]
+  },
+  "carrier": {
+    "active_cache_backend_allocation_bytes": 610795520,
+    "maximum_retained_root_backend_allocation_bytes": 0,
+    "active_plus_retained_backend_allocation_bytes": 610795520,
+    "F_recurrent_hash_before": "68d991d1c69256a3",
+    "F_recurrent_hash_after": "68d991d1c69256a3",
+    "F_recurrent_physical_row": 0,
+    "scaffold_recurrent_hash_before": "f8f9f7759c4d7f7b",
+    "scaffold_recurrent_hash_after": "f8f9f7759c4d7f7b",
+    "scaffold_recurrent_physical_row": 5,
+    "complete_host_state_copy_retained": false,
+    "semantic_carrier_action_backing_id": "19f3d5609bf02dbf",
+    "semantic_carrier_same_backing_restored": false,
+    "semantic_carrier_reader_quiescent_on_same_backing": true,
+    "semantic_port_final_hash": "c726efa4e8c70364",
+    "semantic_port_writes": 16,
+    "semantic_carrier_closed": true,
+    "all_sequences_closed": true,
+    "all_retained_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "resource_accounting": {
+    "candidate_source_tokens": 134,
+    "reference_source_tokens": 204,
+    "source_decode_tokens": 1118,
+    "query_decode_tokens": 1320,
+    "semantic_training_source_tokens": 780,
+    "semantic_training_query_tokens": 792,
+    "semantic_training_output_tokens": 12,
+    "all_route_input_tokens": 3258,
+    "useful_output_decode_tokens": 16,
+    "semantic_carrier_logical_bytes": 98464,
+    "semantic_carrier_writer_host_input_bytes": 131072,
+    "semantic_carrier_host_to_backend_bytes": 7611456,
+    "semantic_carrier_port_writes": 16,
+    "semantic_carrier_recurrent_transition_token_applications": 1674,
+    "semantic_carrier_recurrent_transition_enabled_token_applications": 20,
+    "semantic_carrier_map_multiply_accumulates": 27453600,
+    "semantic_carrier_training_feature_peak_bytes": 296704,
+    "semantic_carrier_training_peak_host_work_bytes": 345552,
+    "carrier_hash_d2h_bytes": 263454720,
+    "carrier_hash_peak_host_work_bytes": 1048576
+  },
+  "quality_gates": {
+    "actual_outputs_write_port": true,
+    "model_native_recurrent_transition_reads_port": true,
+    "recurrent_transition_changes_logits": true,
+    "recurrent_transition_changes_useful_boundary": false,
+    "matched_G1_disablement_changes_useful_boundary": false,
+    "same_backing_quiescent": true,
+    "nonzero_port_restored": false,
+    "declared_closure": true,
+    "fresh_compute_advantage": false,
+    "catalytic_recurrence": false
+  },
+  "verdict": "reject",
+  "classification": "FIRST_RECURRENT_TRANSITION_CHANGES_LOGITS_WITHOUT_USEFUL_RELATIONAL_BOUNDARY",
+  "strongest_supported_claim": "Actual output states wrote one fixed port sixteen times; twenty enabled terminal tokens fed its retrieved delta into layer 4 recurrent-transition inputs before frozen delta-net and later-layer computation; logits changed, recurrent tensor digests remained stable outside the closed query branches, active backing remained stable, and all port, sequence, and root state closed.",
+  "strongest_rejected_interpretation": "This first-recurrent-layer intervention is not an inference-bearing relation law: every nonzero phase retains the G0 B,C,D,A argmaxes, enabled and disabled G1 have the same four useful boundaries, and the compact four-link Z4 recurrence remains smaller. The exact full control itself is only 15/16 against the frozen labels in this run. No retained recurrence, restoration, fresh-compute, catalytic, Small Wall, or unbounded claim follows.",
+  "next_boundary": "REPLACE_QUERY_LOCAL_DELTA_INJECTION_WITH_ONE_EXPLICIT_OUTPUT_WRITTEN_PERSISTENT_STATE_OPERATOR_THAT_ADVANCES_EXISTING_RECURRENT_MEMORY_BEFORE_QUERY_DECODE; NO_LAYER_SCALE_FIXTURE_EVALUATOR_OR_EVIDENCE_HARNESS_VARIANTS"
+}

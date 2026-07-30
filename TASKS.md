@@ -412,7 +412,7 @@ constructively unbounded local Agents-A1 inference.
   matched disabled G1 route has the same four argmaxes. Reject the fixed
   layer-3 router-bias law. Do not create layer, scale, ridge, prompt, fixture,
   evaluator, carrier-evaluation, or evidence-harness variants.
-- [ ] Feed the retrieved output-written port into the first recurrent
+- [x] Feed the retrieved output-written port into the first recurrent
   state transition after the full-attention boundary. Keep the original
   residual stream unchanged; let the port alter only the recurrent operator
   input so its Q/K/V, gates, and persistent delta-net state evolve on the
@@ -431,8 +431,26 @@ constructively unbounded local Agents-A1 inference.
   disabled. The probe and Release server build, focused tests pass `17/17`
   plus twelve subtests, the integrated exact oracle passes all nineteen gates
   on three fixtures, and CUDA closure remains `139/139`. No `0150` model
-  contact has occurred. Execute this frozen mechanism once; do not produce
+  contact had occurred at the precontact checkpoint. The sole execution then
+  ran `1,674` recurrent-transition token applications, including `20`
+  enabled terminal reads and `27,453,600` charged carrier-map
+  multiply-accumulates. It changes logits but produces only `4/16` correct:
+  every nonzero phase remains at G0 `B,C,D,A`, and enabled and disabled G1
+  have the same four argmaxes. The port writes sixteen times; recurrent
+  digests and active backing remain stable outside the closed query branches;
+  all state closes. The full-state control itself is `15/16` against the
+  frozen labels in this run, which is preserved rather than retried. Reject
+  query-local injection at the first recurrent transition. Do not produce
   layer, scale, fixture, evaluator, or evidence-harness variants.
+- [ ] Replace query-local delta injection with one explicit
+  actual-output-written persistent-state operator before query decode. Update
+  the existing recurrent-memory backing directly under a fixed public
+  topology, then require ordinary later inference to read the advanced state.
+  Retain zero source-role model forwards, no expected-answer/phase/context
+  table, one matched operator disablement, and one execution. Bind the exact
+  recurrent cells and bytes touched, pre/post/closure digests, update work,
+  and whether the next useful transaction consumes the same physical state.
+  This is a changed carrier substrate, not another port evaluator.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

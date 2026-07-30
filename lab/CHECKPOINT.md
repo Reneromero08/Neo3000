@@ -557,6 +557,27 @@ The active recurrence and acceptance boundary are
   source change. No server or `0150` model contact has occurred. Its next and
   only action is one frozen native execution. Evidence will remain one compact
   packet for this changed physical mechanism, never an evaluator series.
+- Exact pushed head `3d90a524ec50f00eeaa556c46ec2d6712a2ed508`
+  executed `neo-exp-0150` once without a server. The port writes sixteen times
+  and the graph charges `1,674` recurrent-transition token applications,
+  including `20` enabled terminal reads, plus `27,453,600` carrier-map
+  multiply-accumulates. Recurrent tensor digests outside the closed query
+  branches and active backing identity remain stable; every sequence, root,
+  and port closes.
+- The recurrent-transition intervention is scientifically negative. Its
+  useful boundary is `4/16`, by phase `4/4`, `0/4`, `0/4`, `0/4`; all
+  nonzero phases remain `B,C,D,A`. Enabled and disabled G1 also have identical
+  argmaxes. Full-logit hashes are `0/16` and maximum candidate-logit
+  difference is `6.8870`, so the operator changes numerical computation but
+  not the relation. The exact full-state control is `15/16` against the
+  frozen labels in this run because G0-V returns D rather than A; that
+  capability outcome is retained without a retry.
+- This closes query-local injection at the first recurrent transition. The
+  next physical mechanism must update existing recurrent memory before query
+  decode so a later ordinary transaction reads the advanced state on its
+  actual backing. It must bind the touched cells and bytes, transition work,
+  disablement, closure, and same-state consumption. No layer, scale, fixture,
+  evaluator, carrier-evaluation, or evidence-harness successor follows.
 
 ### REJECTED
 
