@@ -778,6 +778,14 @@ constructively unbounded local Agents-A1 inference.
   rank, layer, gain, or fixture series. Prefer a primitive that can become an
   actual in-place borrow/apply/inverse/reuse law rather than another
   out-of-place proof branch.
+  `neo-exp-0162` is frozen at
+  `lab/source-conditioned-low-rank-out-product-fast-weight-v1.json`.
+  It changes only the physical delta product to the legal native identity
+  `OUT_PROD(value-key, transpose(coefficients))`, which directly produces
+  `[n_embd,n_tokens]`; all source geometry, CUDA backing, controls, and claim
+  ceilings remain fixed. The probe and Release server build, CUDA closure is
+  `139/139`, and no CUDA source changed. Commit this mechanism, execute it
+  once, and close the line on another graph/operator integration failure.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

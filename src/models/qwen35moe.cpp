@@ -876,10 +876,14 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
             lifting_coefficients(key, hidden);
         ggml_tensor * factor_delta =
             ggml_sub(ctx0, value, key);
-        ggml_tensor * delta = ggml_mul_mat(
+        // factor_delta is [n_embd, rank] and coefficients are
+        // [rank, n_tokens]. ggml_mul_mat cannot accept a transposed left
+        // operand. OUT_PROD(delta, transpose(coefficients)) computes the
+        // required [n_embd, n_tokens] product with a native legal topology.
+        ggml_tensor * delta = ggml_out_prod(
             ctx0,
-            ggml_transpose(ctx0, factor_delta),
-            coefficients);
+            factor_delta,
+            ggml_transpose(ctx0, coefficients));
         ggml_tensor * transformed =
             ggml_add(ctx0, hidden, delta);
         cb(transformed, name, il);

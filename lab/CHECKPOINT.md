@@ -243,6 +243,14 @@ The active recurrence and acceptance boundary are
   `lab/source-conditioned-reversible-low-rank-lifting-v1-result.json`.
   Permit only one physical operator repair or distinct in-place substrate;
   do not create evaluator, carrier-evaluation, or evidence-harness versions.
+- `neo-exp-0162` is frozen precontact as the one allowed physical operator
+  repair. It replaces only the forbidden transposed-left `mul_mat` with
+  native `OUT_PROD(value-key, transpose(coefficients))`, whose output is the
+  required `[n_embd,n_tokens]` delta. The source-factor geometry, direct CUDA
+  backing, controls, resource law, and narrow claim ceiling are unchanged.
+  The probe and Release server build; CUDA object closure remains `139/139`
+  with no CUDA source change. No model contact has occurred for `0162`.
+  Execute once; no evaluator/evidence successor follows.
 
 ### SUPPORTED
 

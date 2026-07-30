@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "id": "source-conditioned-low-rank-out-product-fast-weight-v1",
+  "experiment_id": "neo-exp-0162",
+  "description": "One physical operator repair and one contact. Preserve the separate F and G source-factor geometry, CUDA active/staging backing, pre-Q/K/V ordered lifting action, reverse-residual branch, controls, and claim ceiling from the consumed 0161 contact. Replace only the invalid transposed-left mul_mat delta product with the native legal identity OUT_PROD(value-key, transpose(coefficients)), producing [n_embd,n_tokens] directly. This is a changed executable fast-weight primitive, not an evaluator, carrier-evaluation, evidence-harness, prompt, rank, layer, gain, or fixture revision. A second graph/operator integration failure closes the line.",
+  "open_f_prefix_nonlinear_composition": false,
+  "expected_context_size": 4096,
+  "expected_context_per_sequence": 512,
+  "expected_n_seq_max": 8,
+  "expected_attention_stream_count": 1,
+  "expected_source_tokens": 130,
+  "expected_prefix_tokens": 48,
+  "expected_f_tokens": 31,
+  "expected_g_tokens": 27,
+  "expected_closure_tokens": 24,
+  "queries_per_variant": 4,
+  "predecessor_evidence": {
+    "path": "lab/source-conditioned-reversible-low-rank-lifting-v1-result.json",
+    "classification": "GGML_TRANSPOSED_LEFT_MUL_MAT_ASSERT_BEFORE_ENABLED_LIFTING_COMPUTE"
+  },
+  "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+  "module_f": "F: Item I maps to vault K. Item O maps to vault L. Item U maps to vault M. Item V maps to vault J.\n",
+  "structural_module_f": "F: Item I maps to vault P. Item O maps to vault Q. Item U maps to vault R. Item V maps to vault S.\n",
+  "structural_module_g": "G: Vault J has code P. Vault K has code Q. Vault L has code R. Vault M has code S.\n",
+  "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n",
+  "lifting_f_key_offsets": [
+    3,
+    10,
+    17,
+    24
+  ],
+  "lifting_f_value_offsets": [
+    7,
+    14,
+    21,
+    28
+  ],
+  "lifting_g_key_offsets": [
+    3,
+    9,
+    15,
+    21
+  ],
+  "lifting_g_value_offsets": [
+    6,
+    12,
+    18,
+    24
+  ],
+  "label_token_offsets": [
+    6,
+    12,
+    18,
+    24
+  ],
+  "output_promotion_label_indices": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "g_variants": [
+    {
+      "id": "G-rotation-0",
+      "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+      "queries": [
+        {
+          "id": "IOUV-G0-I",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item I through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G0-O",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item O through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G0-U",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G0-V",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-1",
+      "module_g": "G: Vault J has code B. Vault K has code C. Vault L has code D. Vault M has code A.\n",
+      "queries": [
+        {
+          "id": "IOUV-G1-I",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item I through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G1-O",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item O through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G1-U",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G1-V",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-2",
+      "module_g": "G: Vault J has code C. Vault K has code D. Vault L has code A. Vault M has code B.\n",
+      "queries": [
+        {
+          "id": "IOUV-G2-I",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item I through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G2-O",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item O through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G2-U",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G2-V",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-3",
+      "module_g": "G: Vault J has code D. Vault K has code A. Vault L has code B. Vault M has code C.\n",
+      "queries": [
+        {
+          "id": "IOUV-G3-I",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item I through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G3-O",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item O through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G3-U",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G3-V",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    }
+  ],
+  "acceptance_law": {
+    "exact_correct": 16,
+    "joint_correct": 16,
+    "control_correct_maximum": 1,
+    "control_joint_matches_maximum": 1,
+    "restoration_error_maximum": 0.01
+  },
+  "unrelated_source": "<|im_start|>system\nAnswer the multiple-choice arithmetic question. Reply with only A, B, C, or D.<|im_end|>\n",
+  "unrelated_query": {
+    "id": "unrelated-arithmetic",
+    "expected": "B",
+    "suffix": "<|im_start|>user\nWhat is 2 + 2? A: 3. B: 4. C: 5. D: 6.<|im_end|>\n<|im_start|>assistant\n"
+  },
+  "claim_ceiling": "Passing establishes at most one bounded source-conditioned low-rank effective Q/K/V transition using the legal native OUT_PROD fast-weight primitive: separately captured F and G model states form ordered rank-four actions read directly from one CUDA backing; later frozen Q/K/V causally consumes the transformed state; a separately executed out-of-place branch checks the reverse computation numerically; F/G/order/relation controls fail; factors close by explicit zero and release; and a different useful inference runs while the same zeroed backing remains installed. Restoration class is NO_RESTORATION_CLAIM for activations and weights. The identical compact lifting recurrence and exact four-link table remain equally or more compact classical baselines. Passing does not establish active-state restoration, inference-knowledge reuse, fresh-compute reduction, phase-native resource, catalytic recurrence, Small Wall crossing, or unbounded inference. Failure closes this fast-weight lifting line without operator, layer, rank, scale, normalization, prompt, fixture, controller, evaluator, carrier-evaluation, or evidence-harness variants.",
+  "sparse_g_label_refresh": true,
+  "require_unified_kv": true,
+  "source_conditioned_lifting_action": true,
+  "label_orbit_attention_action": false,
+  "value_orbit_attention_action": false,
+  "key_value_orbit_attention_action": false,
+  "fourier_value_orbit_action": false,
+  "subspace_value_orbit_action": false,
+  "complex_phase_quarter_turn_action": false,
+  "model_weight_value_orbit_action": false,
+  "trained_semantic_carrier_action": false,
+  "output_promoted_value_carrier_action": false,
+  "output_role_transport_action": false,
+  "output_role_generator_action": false,
+  "output_source_position_rematerialization_action": false,
+  "output_source_position_fixed_cell_rematerialization_action": false,
+  "output_continuous_soft_role_rematerialization_action": false,
+  "output_depth_resolved_cross_attention_memory_action": false,
+  "orbit_attention_layers": [
+    3,
+    7,
+    11,
+    15,
+    19,
+    23,
+    27,
+    31,
+    35,
+    39
+  ],
+  "physical_operator": {
+    "coefficients": "mul_mat(key, hidden)",
+    "delta": "out_prod(value_minus_key, transpose(coefficients))",
+    "output_shape": "[n_embd,n_tokens]",
+    "left_operand_transposed": false
+  }
+}
