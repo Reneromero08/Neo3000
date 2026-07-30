@@ -344,6 +344,26 @@ The active recurrence and acceptance boundary are
   passes the seventeen focused runner/oracle tests, and makes no model-facing
   contact. The next action is the single frozen `neo-exp-0144` run, not a
   width/seed/ridge/fixture/transport/evaluator/evidence variant.
+- Exact clean pushed head `ed69fe52a256e2d92a70ac5eaf09475f322bbf27`
+  executed `neo-exp-0144` once. All 32 construction outputs were correct and
+  supplied 640 layer/K/V/destination training rows. The fixed generator has
+  64 tanh channels, `272,680` logical parameter bytes, `272,928` vector
+  backing bytes, and no retained construction row. Four runtime backend
+  graphs generated 320 cache rows using 21,299,200 multiply-accumulates and
+  uploaded 1,111,200 parameter/condition bytes; carrier payload host reads and
+  writes were both zero.
+- The nonlinear generator rejects. Construction maximum row error is `4.546`
+  and RMSE is `0.4085`. Exact full state remains `16/16`; the generator is
+  `7/16` (`4/4`, `1/4`, `0/4`, `2/4` by phase), with zero full-logit matches
+  and `5.1706` maximum candidate-logit error. Four rounds return only `1/4`
+  G0 boundaries and zero hashes. Recurrent digests and active backings remain
+  stable; all sequences and roots close. This is executed graph-native
+  generation, not useful recurrence, fresh-compute reduction, or catalysis.
+- The result consumes one mechanism packet, not an evaluator revision. The
+  next intervention changes the generator: rematerialize each actual output
+  token once at its public source-label position through frozen Agents-A1
+  computation, then test whether the resulting model-native row supports the
+  same recurrence. Width/seed/ridge/fixture/evidence variants remain closed.
 
 ### REJECTED
 

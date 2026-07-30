@@ -303,19 +303,26 @@ constructively unbounded local Agents-A1 inference.
   `2.1846`. The coordinate-wise map underfits the role conversion and makes
   recurrence worse. Do not tune ridge, rank, keys, layers, contexts, prompts,
   fixtures, or evidence.
-- [ ] Move role conversion into one shared nonlinear model computation rather
-  than another post-cache coordinate map. The next intervention must train or
-  distill a fixed-capacity generator consumed inside attention, recurrent, MoE,
-  or weight-factor computation; share parameters across layer/position
-  examples; retain no target-row basis/table; use actual outputs at runtime;
-  and test unchanged on disjoint recurrence. It must not become transport-v2
-  or carrier-evaluation-v2. **Precontact implementation frozen:** `neo-exp-0144`
-  uses one deterministic 64-channel tanh generator shared across all 640
-  construction layer/K/V/destination rows. Each phase applies it once as a
-  backend graph directly over resident output rows; ordinary attention later
-  consumes the generated rows. Construction rows are erased, and runtime has
-  no expected answer or target row/table. The fixed disjoint IOUV recurrence
-  remains unexecuted at this source checkpoint.
+- [x] Move role conversion into one shared nonlinear model computation rather
+  than another post-cache coordinate map. `neo-exp-0144` fits one deterministic
+  64-channel tanh generator across all 640 construction layer/K/V/destination
+  rows, erases the rows, and executes one backend graph per phase directly over
+  resident actual-output state. The `272,680`-byte generator transfers zero
+  carrier payload through the host and later ordinary attention consumes its
+  generated rows. It underfits construction (`4.546` maximum row error,
+  `0.4085` RMSE), reaches only `7/16` on disjoint IOUV versus exact `16/16`,
+  and returns only `1/4` G0 boundaries. Reject fixed random-feature role
+  reconstruction. Do not tune width, seed, ridge, layers, contexts, prompts,
+  fixtures, transports, evaluators, or evidence packets.
+- [ ] Rematerialize source-role state once through frozen Agents-A1 computation
+  instead of approximating target cache coordinates. Feed each actual useful
+  output token at its public source-label position under the still-resident
+  causal source prefix, then let later ordinary inference read the resulting
+  model-native K/V row. Use the projected output—not the expected answer or a
+  public phase table—as the token input; charge all four one-token role
+  forwards per phase; preserve stable active backing; test the unchanged
+  four-phase disjoint recurrence once. This changes the state generator, not
+  the fixture or evidence harness.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.
