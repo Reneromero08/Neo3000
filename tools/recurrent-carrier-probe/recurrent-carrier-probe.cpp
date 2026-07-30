@@ -3359,6 +3359,8 @@ static json run_g_forward_state_partition(
 
     const size_t expected_source_tokens =
         spec.at("expected_source_tokens").get<size_t>();
+    const bool closure_scaffold_advance =
+        spec.value("closure_scaffold_advance", false);
     const auto prefix_tokens = tokenize_piece(
         vocab, spec.at("prefix").get<std::string>(), true, true);
     const auto f_tokens = tokenize_piece(
@@ -3527,16 +3529,28 @@ static json run_g_forward_state_partition(
             attention,
             all_attention_layers,
             neutral_g_tokens.size() + closure_tokens.size());
+    const size_t G_attention_logical_bytes =
+        attention_source_bytes(
+            attention, all_attention_layers, neutral_g_tokens.size());
+    const size_t closure_attention_logical_bytes =
+        attention_source_bytes(
+            attention, all_attention_layers, closure_tokens.size());
     const size_t complete_attention_logical_bytes =
         F_attention_logical_bytes +
         G_closure_attention_logical_bytes;
 
-    const std::vector<std::string> routes = {
-        "exact_full_state",
-        "exact_attention_tail_on_F_recurrent",
-        "exact_attention_tail_on_neutral_recurrent",
-        "exact_recurrent_on_F_attention",
-    };
+    const std::vector<std::string> routes =
+        closure_scaffold_advance
+        ? std::vector<std::string>{
+            "exact_full_state",
+            "exact_G_attention_plus_scaffold_closure",
+        }
+        : std::vector<std::string>{
+            "exact_full_state",
+            "exact_attention_tail_on_F_recurrent",
+            "exact_attention_tail_on_neutral_recurrent",
+            "exact_recurrent_on_F_attention",
+        };
     std::map<
         std::string,
         std::map<std::string, std::vector<boundary_result>>> outputs;
@@ -3582,6 +3596,50 @@ static json run_g_forward_state_partition(
             g_tokens,
             static_cast<llama_pos>(f_boundary_tokens),
             exact_g_seq);
+        const llama_pos g_boundary_pos = static_cast<llama_pos>(
+            f_boundary_tokens + g_tokens.size() - 1);
+        require_component_positions(
+            exact_g_seq,
+            g_boundary_pos,
+            g_boundary_pos,
+            id + ":exact-G-module-complete");
+
+        if (closure_scaffold_advance) {
+            for (const auto & query : variant.at("queries")) {
+                copy_full_sequence(
+                    f_seq,
+                    scratch_seq,
+                    f_boundary_pos,
+                    id + ":closure-reuse-F-base");
+                ++sequence_copy_count;
+                attention->seq_cp(
+                    exact_g_seq,
+                    scratch_seq,
+                    static_cast<llama_pos>(f_boundary_tokens),
+                    static_cast<llama_pos>(
+                        f_boundary_tokens + g_tokens.size()));
+                attention->seq_cp(
+                    neutral_seq,
+                    scratch_seq,
+                    static_cast<llama_pos>(
+                        f_boundary_tokens + g_tokens.size()),
+                    static_cast<llama_pos>(expected_source_tokens));
+                recurrent->seq_cp(
+                    neutral_seq, scratch_seq, -1, -1);
+                llama_synchronize(ctx);
+                component_copy_count += 3;
+                require_component_positions(
+                    scratch_seq,
+                    source_boundary_pos,
+                    source_boundary_pos,
+                    id + ":exact-G-with-scaffold-closure");
+                project_and_close(
+                    "exact_G_attention_plus_scaffold_closure",
+                    id,
+                    query);
+            }
+        }
+
         const double closure_wall_ms = timed_decode(
             closure_tokens,
             static_cast<llama_pos>(
@@ -3600,76 +3658,88 @@ static json run_g_forward_state_partition(
             {"closure_wall_ms", closure_wall_ms},
         });
 
-        for (const auto & query : variant.at("queries")) {
-            copy_full_sequence(
-                exact_g_seq,
-                scratch_seq,
-                source_boundary_pos,
-                id + ":exact-full-copy");
-            ++sequence_copy_count;
-            project_and_close("exact_full_state", id, query);
+        if (closure_scaffold_advance) {
+            for (const auto & query : variant.at("queries")) {
+                copy_full_sequence(
+                    exact_g_seq,
+                    scratch_seq,
+                    source_boundary_pos,
+                    id + ":exact-full-copy");
+                ++sequence_copy_count;
+                project_and_close("exact_full_state", id, query);
+            }
+        } else {
+            for (const auto & query : variant.at("queries")) {
+                copy_full_sequence(
+                    exact_g_seq,
+                    scratch_seq,
+                    source_boundary_pos,
+                    id + ":exact-full-copy");
+                ++sequence_copy_count;
+                project_and_close("exact_full_state", id, query);
 
-            copy_full_sequence(
-                f_seq,
-                scratch_seq,
-                f_boundary_pos,
-                id + ":F-recurrent-base");
-            ++sequence_copy_count;
-            attention->seq_cp(
-                exact_g_seq,
-                scratch_seq,
-                static_cast<llama_pos>(f_boundary_tokens),
-                static_cast<llama_pos>(expected_source_tokens));
-            llama_synchronize(ctx);
-            ++component_copy_count;
-            require_component_positions(
-                scratch_seq,
-                source_boundary_pos,
-                f_boundary_pos,
-                id + ":attention-tail-on-F-recurrent");
-            project_and_close(
-                "exact_attention_tail_on_F_recurrent", id, query);
+                copy_full_sequence(
+                    f_seq,
+                    scratch_seq,
+                    f_boundary_pos,
+                    id + ":F-recurrent-base");
+                ++sequence_copy_count;
+                attention->seq_cp(
+                    exact_g_seq,
+                    scratch_seq,
+                    static_cast<llama_pos>(f_boundary_tokens),
+                    static_cast<llama_pos>(expected_source_tokens));
+                llama_synchronize(ctx);
+                ++component_copy_count;
+                require_component_positions(
+                    scratch_seq,
+                    source_boundary_pos,
+                    f_boundary_pos,
+                    id + ":attention-tail-on-F-recurrent");
+                project_and_close(
+                    "exact_attention_tail_on_F_recurrent", id, query);
 
-            copy_full_sequence(
-                f_seq,
-                scratch_seq,
-                f_boundary_pos,
-                id + ":neutral-recurrent-base");
-            ++sequence_copy_count;
-            attention->seq_cp(
-                exact_g_seq,
-                scratch_seq,
-                static_cast<llama_pos>(f_boundary_tokens),
-                static_cast<llama_pos>(expected_source_tokens));
-            recurrent->seq_cp(
-                neutral_seq, scratch_seq, -1, -1);
-            llama_synchronize(ctx);
-            component_copy_count += 2;
-            require_component_positions(
-                scratch_seq,
-                source_boundary_pos,
-                source_boundary_pos,
-                id + ":attention-tail-on-neutral-recurrent");
-            project_and_close(
-                "exact_attention_tail_on_neutral_recurrent", id, query);
+                copy_full_sequence(
+                    f_seq,
+                    scratch_seq,
+                    f_boundary_pos,
+                    id + ":neutral-recurrent-base");
+                ++sequence_copy_count;
+                attention->seq_cp(
+                    exact_g_seq,
+                    scratch_seq,
+                    static_cast<llama_pos>(f_boundary_tokens),
+                    static_cast<llama_pos>(expected_source_tokens));
+                recurrent->seq_cp(
+                    neutral_seq, scratch_seq, -1, -1);
+                llama_synchronize(ctx);
+                component_copy_count += 2;
+                require_component_positions(
+                    scratch_seq,
+                    source_boundary_pos,
+                    source_boundary_pos,
+                    id + ":attention-tail-on-neutral-recurrent");
+                project_and_close(
+                    "exact_attention_tail_on_neutral_recurrent", id, query);
 
-            copy_full_sequence(
-                f_seq,
-                scratch_seq,
-                f_boundary_pos,
-                id + ":exact-recurrent-base");
-            ++sequence_copy_count;
-            recurrent->seq_cp(
-                exact_g_seq, scratch_seq, -1, -1);
-            llama_synchronize(ctx);
-            ++component_copy_count;
-            require_component_positions(
-                scratch_seq,
-                f_boundary_pos,
-                source_boundary_pos,
-                id + ":exact-recurrent-on-F-attention");
-            project_and_close(
-                "exact_recurrent_on_F_attention", id, query);
+                copy_full_sequence(
+                    f_seq,
+                    scratch_seq,
+                    f_boundary_pos,
+                    id + ":exact-recurrent-base");
+                ++sequence_copy_count;
+                recurrent->seq_cp(
+                    exact_g_seq, scratch_seq, -1, -1);
+                llama_synchronize(ctx);
+                ++component_copy_count;
+                require_component_positions(
+                    scratch_seq,
+                    f_boundary_pos,
+                    source_boundary_pos,
+                    id + ":exact-recurrent-on-F-attention");
+                project_and_close(
+                    "exact_recurrent_on_F_attention", id, query);
+            }
         }
 
         close_sequence(exact_g_seq, id + ":exact-G-close");
@@ -3752,23 +3822,33 @@ static json run_g_forward_state_partition(
             timing.at("closure_wall_ms").get<double>();
     }
     const auto & acceptance = spec.at("acceptance_law");
-    const auto & primary =
-        route_summary.at(
-            "exact_attention_tail_on_neutral_recurrent");
-    const bool accepted =
+    const std::string primary_route = closure_scaffold_advance
+        ? "exact_G_attention_plus_scaffold_closure"
+        : "exact_attention_tail_on_neutral_recurrent";
+    const auto & primary = route_summary.at(primary_route);
+    bool accepted =
         primary.at("correct").get<size_t>() ==
             acceptance.at("primary_correct").get<size_t>() &&
-        primary.at("full_logit_hash_matches").get<size_t>() ==
-            acceptance.at(
-                "primary_full_logit_hash_matches").get<size_t>() &&
         primary.at("boundary_matches").get<size_t>() ==
             acceptance.at("primary_boundary_matches").get<size_t>() &&
-        primary.at(
-            "maximum_candidate_logit_absolute_difference").get<double>() <=
-            acceptance.at(
-                "primary_maximum_candidate_logit_absolute_difference").get<double>() &&
         f_exact &&
         neutral_exact;
+    if (acceptance.contains("primary_full_logit_hash_matches")) {
+        accepted =
+            accepted &&
+            primary.at("full_logit_hash_matches").get<size_t>() ==
+                acceptance.at(
+                    "primary_full_logit_hash_matches").get<size_t>();
+    }
+    if (acceptance.contains(
+            "primary_maximum_candidate_logit_absolute_difference")) {
+        accepted =
+            accepted &&
+            primary.at(
+                "maximum_candidate_logit_absolute_difference").get<double>() <=
+                acceptance.at(
+                    "primary_maximum_candidate_logit_absolute_difference").get<double>();
+    }
 
     close_sequence(f_seq, "partition:F-close");
     ++sequence_close_count;
@@ -3799,6 +3879,18 @@ static json run_g_forward_state_partition(
             "G-forward partition close invariant failed");
     }
 
+    const size_t fixed_carrier_preparation_tokens =
+        f_boundary_tokens + expected_source_tokens;
+    const size_t candidate_variable_source_tokens =
+        variants.size() * neutral_g_tokens.size();
+    const size_t candidate_source_tokens =
+        fixed_carrier_preparation_tokens +
+        (closure_scaffold_advance
+            ? candidate_variable_source_tokens
+            : variants.size() *
+                (neutral_g_tokens.size() + closure_tokens.size()));
+    const size_t reference_closure_tokens =
+        variants.size() * closure_tokens.size();
     const size_t source_decode_tokens =
         prefix_tokens.size() + f_tokens.size() +
         prefix_tokens.size() + neutral_f_tokens.size() +
@@ -3807,7 +3899,9 @@ static json run_g_forward_state_partition(
             (neutral_g_tokens.size() + closure_tokens.size());
     return {
         {"schema_version", 1},
-        {"mechanism", "ACTIVE_G_FORWARD_STATE_PARTITION"},
+        {"mechanism", closure_scaffold_advance
+            ? "ACTIVE_G_CLOSURE_SCAFFOLD_ADVANCE"
+            : "ACTIVE_G_FORWARD_STATE_PARTITION"},
         {"spec_id", spec.at("id")},
         {"model_arch", "qwen35moe"},
         {"configuration", {
@@ -3816,8 +3910,11 @@ static json run_g_forward_state_partition(
             {"n_seq_max", actual_n_seq_max},
             {"source_tokens", expected_source_tokens},
             {"F_boundary_tokens", f_boundary_tokens},
+            {"G_tokens", neutral_g_tokens.size()},
+            {"closure_tokens", closure_tokens.size()},
             {"G_closure_tokens",
                 neutral_g_tokens.size() + closure_tokens.size()},
+            {"closure_scaffold_advance", closure_scaffold_advance},
             {"retained_device_roots_used", false},
             {"attention_stream_count", attention_stream_count},
             {"partial_attention_sequence_copy_metadata_only",
@@ -3828,6 +3925,7 @@ static json run_g_forward_state_partition(
             {"route_summary", route_summary},
             {"F_recurrent_content_and_row_exact", f_exact},
             {"neutral_recurrent_content_and_row_exact", neutral_exact},
+            {"primary_route", primary_route},
             {"accepted", accepted},
         }},
         {"carrier", {
@@ -3852,6 +3950,10 @@ static json run_g_forward_state_partition(
                 F_attention_logical_bytes},
             {"G_closure_attention_logical_bytes",
                 G_closure_attention_logical_bytes},
+            {"G_attention_logical_bytes",
+                G_attention_logical_bytes},
+            {"closure_attention_logical_bytes",
+                closure_attention_logical_bytes},
             {"complete_attention_logical_bytes",
                 complete_attention_logical_bytes},
             {"complete_host_state_copy_retained", false},
@@ -3872,6 +3974,24 @@ static json run_g_forward_state_partition(
             {"exact_closure_wall_ms_total",
                 closure_wall_ms_total},
             {"source_decode_tokens", source_decode_tokens},
+            {"fixed_carrier_preparation_tokens",
+                fixed_carrier_preparation_tokens},
+            {"candidate_variable_source_tokens",
+                candidate_variable_source_tokens},
+            {"candidate_source_tokens",
+                candidate_source_tokens},
+            {"reference_closure_tokens",
+                reference_closure_tokens},
+            {"predecessor_active_F_candidate_source_tokens",
+                f_boundary_tokens +
+                variants.size() *
+                    (neutral_g_tokens.size() + closure_tokens.size())},
+            {"crossover_branch_count",
+                (expected_source_tokens + closure_tokens.size() - 1) /
+                    closure_tokens.size()},
+            {"asymptotic_candidate_source_ratio",
+                static_cast<double>(neutral_g_tokens.size()) /
+                    static_cast<double>(expected_source_tokens)},
             {"query_decode_tokens", query_decode_tokens},
             {"all_route_input_tokens",
                 source_decode_tokens + query_decode_tokens},

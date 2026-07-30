@@ -168,11 +168,20 @@ constructively unbounded local Agents-A1 inference.
   full-logit hashes are `0/16` and candidate logits differ by as much as
   `2.3261547089`. This localizes the useful variable state but does not remove
   the fresh 51-token forward.
-- [ ] Replace the fresh G-plus-closure forward with a direct attention-tail
-  state transform or lawful advance. Require useful recursive fidelity, no
-  prebuilt target root, and a decreasing fresh-work recurrence. Evidence
-  remains one compact record attached to the mechanism; do not create
-  carrier-evaluation v2/v3/v4 loops.
+- [x] Remove the fixed closure suffix from per-branch forward work.
+  `neo-exp-0125` keeps one neutral recurrent-plus-closure scaffold and decodes
+  only each 27-token G module. Its exact `552,960` G-attention bytes combine
+  with fixed `491,520` closure-attention bytes by metadata ownership and
+  preserve `16/16` useful decisions. Variable source work falls from 51 to 27
+  tokens per branch; the one-time 130-token scaffold crosses the active-F
+  predecessor at branch six. The result is semantic, not numerical:
+  full-logit hashes remain `0/16` and candidate drift reaches `2.4941301346`.
+- [ ] Replace the remaining 27-token G forward with a public group action or
+  direct attention advance. Test an operator derived before the target branch
+  against held-out G state; do not retain target roots or complete target
+  deltas. Require recursive useful fidelity and a decreasing fully charged
+  work recurrence. Evidence remains one compact record attached to the
+  mechanism; do not create carrier-evaluation v2/v3/v4 loops.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

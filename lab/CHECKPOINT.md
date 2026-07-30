@@ -154,6 +154,18 @@ The active recurrence and acceptance boundary are
   Release server, preserves 139/139 unique configured CUDA objects with zero
   CUDA source changes, and passes 37 focused Python tests plus 15 subtests.
   No background inference process remains.
+- `neo-exp-0125` converts the localization into a compute intervention. One
+  fixed neutral closure-plus-recurrent scaffold replaces every branch-specific
+  24-token closure forward. Exact F-conditioned G attention positions
+  `79:106` occupy `552,960` bytes; fixed closure positions `106:130` occupy
+  `491,520` bytes. Their unified-KV composition preserves all `16/16` useful
+  decisions and closes every sequence with zero retained-root traffic.
+- Variable source work falls from 51 to 27 tokens per branch. Including the
+  fixed 130-token scaffold, the new source law crosses 0122 at branch six and
+  approaches `27/130` rather than `51/130`. At N=4 it still costs 317 versus
+  283 source tokens. Full-logit hashes match `0/16` and candidate deviation
+  reaches `2.4941301346`; this is bounded semantic amortization, not exact
+  recursive inference.
 
 ### REJECTED
 
@@ -202,6 +214,10 @@ The active recurrence and acceptance boundary are
   asserts before the first partitioned route. `neo-exp-0124` rejects exact
   partition equivalence. Semantic argmax parity is a useful localization
   result, not numerical inference fidelity or a recursive carrier claim.
+- The accepted 0125 law still freshly evaluates the complete 27-token G
+  module. Its asymptotic fresh-source ratio is nonzero, numerical parity fails,
+  and no inverse, direct group action, unrelated recurrence, or unbounded
+  bridge is established.
 - The 0108 screen is not a physically reduced carrier. Every root still
   serializes `68,526,080` device-tensor bytes; the matched reference occupies
   `76,349,440` host bytes, and omitted layers require `399,769,600`
@@ -266,12 +282,12 @@ The active recurrence and acceptance boundary are
 
 ### ACTIVE BOUNDARY
 
-Use the 0124 localization to replace fresh G-plus-closure decode with a direct
-attention-tail state transform or lawful advance. Preserve recursive useful
-fidelity, count construction work, and compare with the 51-token causal
-forward. Do not grow the task fixture and do not turn carrier-evaluation
-versioning into the research loop. `neo-exp-0102` remains frozen and
-unconsumed.
+Replace the remaining 27-token G forward with a public state-space group
+action or direct attention advance derived before the target branch. A lawful
+candidate cannot retain the target root or complete target delta. Preserve
+recursive useful fidelity, count operator work against the compact baseline,
+and do not turn carrier-evaluation versioning into the research loop.
+`neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

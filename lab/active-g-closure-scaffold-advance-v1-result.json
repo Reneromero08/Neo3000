@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0125",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "ea68dbe678d29f90a57a7b4aec2fb28de062082e",
+  "mechanism": "ACTIVE_G_CLOSURE_SCAFFOLD_ADVANCE",
+  "spec_id": "active-g-closure-scaffold-advance-v1",
+  "hypothesis": "Once useful variable state is localized to attention, one fixed closure-plus-recurrent scaffold can replace the 24-token closure forward after each exact 27-token F-conditioned G advance.",
+  "intervention": "Keep exact F and one neutral full scaffold resident in unified KV. Decode only each G module, attach its positions 79:106 to fixed closure positions 106:130 and fixed recurrent state by metadata ownership, project, then run the omitted closure only for the matched reference.",
+  "model_hash": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "context_size_total": 2048,
+    "context_size_per_sequence": 512,
+    "n_seq_max": 4,
+    "attention_stream_count": 1,
+    "source_tokens": 130,
+    "F_boundary_tokens": 79,
+    "G_tokens": 27,
+    "closure_tokens": 24,
+    "retained_device_roots_used": false,
+    "partial_attention_copy": "same-stream metadata ownership",
+    "restoration_class": "DECLARED_CLOSURE"
+  },
+  "metrics_after": {
+    "exact_full_state": {
+      "correct": 16,
+      "comparisons": 16,
+      "full_logit_hash_matches": 16,
+      "boundary_matches": 16,
+      "maximum_candidate_logit_absolute_difference": 0.0
+    },
+    "exact_G_attention_plus_scaffold_closure": {
+      "correct": 16,
+      "comparisons": 16,
+      "full_logit_hash_matches": 0,
+      "boundary_matches": 16,
+      "maximum_candidate_logit_absolute_difference": 2.4941301345825195
+    },
+    "F_recurrent_content_and_row_exact": true,
+    "neutral_recurrent_content_and_row_exact": true,
+    "F_recurrent_hash": "cf7de9d446bbe457",
+    "neutral_recurrent_hash": "c5a995ac1a417d2a",
+    "F_attention_logical_bytes": 1617920,
+    "G_attention_logical_bytes": 552960,
+    "fixed_closure_attention_logical_bytes": 491520,
+    "active_cache_backend_allocation_bytes": 305397760,
+    "all_sequences_closed": true,
+    "all_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "resource_accounting": {
+    "fixed_carrier_preparation_tokens": 209,
+    "candidate_variable_source_tokens": 108,
+    "candidate_source_tokens_at_N4": 317,
+    "predecessor_active_F_source_tokens_at_N4": 283,
+    "reference_only_closure_tokens": 96,
+    "crossover_branch_count": 6,
+    "asymptotic_variable_source_tokens_per_branch_before": 51,
+    "asymptotic_variable_source_tokens_per_branch_after": 27,
+    "asymptotic_candidate_source_ratio_before": 0.3923076923076923,
+    "asymptotic_candidate_source_ratio_after": 0.2076923076923077,
+    "query_decode_tokens": 1056,
+    "all_route_input_tokens": 1469,
+    "sequence_copy_count": 36,
+    "component_copy_count": 48,
+    "sequence_close_count": 38,
+    "snapshot_root_save_device_copy_bytes": 0,
+    "snapshot_root_restore_device_copy_bytes": 0,
+    "carrier_hash_d2h_bytes": 263454720,
+    "exact_G_wall_ms_total": 3623.259314,
+    "reference_only_closure_wall_ms_total": 1778.8173519999998
+  },
+  "quality_gates": {
+    "all_useful_boundaries_preserved": true,
+    "all_reference_boundaries_correct": true,
+    "full_logit_parity": false,
+    "branch_specific_closure_forward_absent_from_candidate": true,
+    "candidate_variable_source_work_reduced": true,
+    "amortization_crossover_is_finite": true,
+    "metadata_only_partial_attention_ownership": true,
+    "no_retained_roots": true,
+    "stable_active_backings": true,
+    "all_state_closed": true,
+    "fresh_G_forward_eliminated": false,
+    "native_inverse_restoration": false,
+    "vanishing_fresh_work_ratio": false,
+    "catalytic_recurrence": false,
+    "unbounded_recurrence": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/active-g-closure-scaffold-advance-v1.json",
+      "bytes": 9542,
+      "sha256": "64EF993854A4A75926BF0E22512DED362DDC92F26E27D628FC5A47D44E1EEEF4"
+    },
+    "canonical_recomputable_evidence": {
+      "path": "lab/active-g-closure-scaffold-advance-v1-evidence.json",
+      "bytes": 31256,
+      "sha256": "87CCF071C5FABB8BFF1D7930324F1DD7D7D49644B235CE7A0D6DC952879C8967",
+      "per_query_records": 32,
+      "committed": true
+    },
+    "consumed_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 244885,
+      "sha256": "2AFBD631696D36A4F26142E2FC356AA842498DE853B6E4000E67AF6810B32F2F"
+    },
+    "consumed_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 1032744,
+      "sha256": "8764DD95052729090AAA2EE3D788F49B91F0CAC71FCD704DD3DD91D9A95F6E69",
+      "committed": false
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 46,
+    "input_tokens": 1469,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "accept",
+  "classification": "SEMANTIC_G_ADVANCE_WITH_FIXED_CLOSURE_SCAFFOLD_AND_FINITE_AMORTIZATION_CROSSOVER",
+  "strongest_supported_claim": "One fixed neutral closure-plus-recurrent scaffold replaces every branch-specific 24-token closure forward while exact 27-token F-conditioned G attention preserves all 16 useful decisions. The per-branch variable source law falls from 51 to 27 tokens and crosses the one-time 130-token scaffold cost at six branches.",
+  "strongest_rejected_interpretation": "Candidate total source work is still higher at N=4, full-logit hashes match 0/16, and every branch still performs a 27-token model forward. This is a bounded semantic/work recurrence step, not exact recursive inference, inverse restoration, vanishing fresh work, catalytic inference, or unbounded compute.",
+  "next_boundary": "REPLACE_THE_27_TOKEN_G_FORWARD_WITH_A_PUBLIC_GROUP_ACTION_OR_DIRECT_ATTENTION_ADVANCE"
+}

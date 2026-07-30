@@ -1,0 +1,1020 @@
+{
+  "schema_version": 1,
+  "mechanism": "ACTIVE_G_CLOSURE_SCAFFOLD_ADVANCE",
+  "spec_id": "active-g-closure-scaffold-advance-v1",
+  "model_arch": "qwen35moe",
+  "configuration": {
+    "context_size": 2048,
+    "context_per_sequence": 512,
+    "n_seq_max": 4,
+    "source_tokens": 130,
+    "F_boundary_tokens": 79,
+    "G_tokens": 27,
+    "closure_tokens": 24,
+    "G_closure_tokens": 51,
+    "closure_scaffold_advance": true,
+    "retained_device_roots_used": false,
+    "attention_stream_count": 1,
+    "partial_attention_sequence_copy_metadata_only": true,
+    "restoration_class": "DECLARED_CLOSURE"
+  },
+  "summary": {
+    "route_summary": {
+      "exact_full_state": {
+        "correct": 16,
+        "comparisons": 16,
+        "full_logit_hash_matches": 16,
+        "boundary_matches": 16,
+        "maximum_candidate_logit_absolute_difference": 0.0
+      },
+      "exact_G_attention_plus_scaffold_closure": {
+        "correct": 16,
+        "comparisons": 16,
+        "full_logit_hash_matches": 0,
+        "boundary_matches": 16,
+        "maximum_candidate_logit_absolute_difference": 2.4941301345825195
+      }
+    },
+    "F_recurrent_content_and_row_exact": true,
+    "neutral_recurrent_content_and_row_exact": true,
+    "primary_route": "exact_G_attention_plus_scaffold_closure",
+    "accepted": true
+  },
+  "carrier": {
+    "active_cache_backend_allocation_bytes": 305397760,
+    "maximum_retained_root_backend_allocation_bytes": 0,
+    "active_plus_retained_backend_allocation_bytes": 305397760,
+    "F_recurrent_hash_before": "cf7de9d446bbe457",
+    "F_recurrent_hash_after": "cf7de9d446bbe457",
+    "F_recurrent_physical_row": 0,
+    "neutral_recurrent_hash_before": "c5a995ac1a417d2a",
+    "neutral_recurrent_hash_after": "c5a995ac1a417d2a",
+    "neutral_recurrent_physical_row": 1,
+    "F_attention_logical_bytes": 1617920,
+    "G_closure_attention_logical_bytes": 1044480,
+    "G_attention_logical_bytes": 552960,
+    "closure_attention_logical_bytes": 491520,
+    "complete_attention_logical_bytes": 2662400,
+    "complete_host_state_copy_retained": false,
+    "all_sequences_closed": true,
+    "all_retained_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "forward_timings": [
+    {
+      "variant": "G-rotation-0",
+      "G_tokens": 27,
+      "G_wall_ms": 2083.946486,
+      "closure_tokens": 24,
+      "closure_wall_ms": 665.884828
+    },
+    {
+      "variant": "G-rotation-1",
+      "G_tokens": 27,
+      "G_wall_ms": 649.692724,
+      "closure_tokens": 24,
+      "closure_wall_ms": 370.547924
+    },
+    {
+      "variant": "G-rotation-2",
+      "G_tokens": 27,
+      "G_wall_ms": 478.938389,
+      "closure_tokens": 24,
+      "closure_wall_ms": 371.945986
+    },
+    {
+      "variant": "G-rotation-3",
+      "G_tokens": 27,
+      "G_wall_ms": 410.681715,
+      "closure_tokens": 24,
+      "closure_wall_ms": 370.438614
+    }
+  ],
+  "resource_accounting": {
+    "F_prefix_wall_ms": 11975.097334,
+    "F_module_wall_ms": 8221.668258,
+    "neutral_prefix_wall_ms": 4634.87785,
+    "neutral_F_wall_ms": 1023.886106,
+    "neutral_G_wall_ms": 2056.681033,
+    "neutral_closure_wall_ms": 2514.231065,
+    "exact_G_wall_ms_total": 3623.259314,
+    "exact_closure_wall_ms_total": 1778.8173519999998,
+    "source_decode_tokens": 413,
+    "fixed_carrier_preparation_tokens": 209,
+    "candidate_variable_source_tokens": 108,
+    "candidate_source_tokens": 317,
+    "reference_closure_tokens": 96,
+    "predecessor_active_F_candidate_source_tokens": 283,
+    "crossover_branch_count": 6,
+    "asymptotic_candidate_source_ratio": 0.2076923076923077,
+    "query_decode_tokens": 1056,
+    "all_route_input_tokens": 1469,
+    "sequence_copy_count": 36,
+    "component_copy_count": 48,
+    "sequence_close_count": 38,
+    "snapshot_root_save_device_copy_bytes": 0,
+    "snapshot_root_restore_device_copy_bytes": 0,
+    "carrier_hash_d2h_bytes": 263454720,
+    "carrier_hash_peak_host_work_bytes": 1048576
+  },
+  "records": [
+    {
+      "query_id": "G0-E",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-0",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        13.590699195861816,
+        8.561819076538086,
+        9.796926498413086,
+        11.594932556152344
+      ],
+      "candidate_softmax": [
+        0.8583940959572683,
+        0.00561916566110811,
+        0.019322894103469077,
+        0.1166638442781544
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "16ac50372eadccf4",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 4631.236398
+    },
+    {
+      "query_id": "G0-F",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-0",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.800207138061523,
+        14.249090194702148,
+        11.071416854858398,
+        12.49698543548584
+      ],
+      "candidate_softmax": [
+        0.009530309146227076,
+        0.8151402734137283,
+        0.03397710356499979,
+        0.14135231387504488
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "191e6fee9b810efc",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1638.589714
+    },
+    {
+      "query_id": "G0-G",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-0",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.838857650756836,
+        10.610342979431152,
+        15.086421966552734,
+        12.980379104614258
+      ],
+      "candidate_softmax": [
+        0.033165454772239485,
+        0.009708425764435943,
+        0.8532675287571446,
+        0.1038585907061799
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "b1d1d8906770922b",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1296.640441
+    },
+    {
+      "query_id": "G0-H",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-0",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.720428466796875,
+        8.633854866027832,
+        11.669698715209961,
+        14.973872184753418
+      ],
+      "candidate_softmax": [
+        0.005010406942001348,
+        0.0016903634026576256,
+        0.03519089506291293,
+        0.9581083345924281
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "8ce1ed1ef7043804",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1216.880276
+    },
+    {
+      "query_id": "G0-E",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-0",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        13.960369110107422,
+        8.353352546691895,
+        10.22076416015625,
+        11.43934154510498
+      ],
+      "candidate_softmax": [
+        0.9026798559929811,
+        0.0033146478653178517,
+        0.021450822868794524,
+        0.07255467327290642
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "051a11c4d2e4d1be",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1294.977632
+    },
+    {
+      "query_id": "G0-F",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-0",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.369930267333984,
+        14.205755233764648,
+        9.831947326660156,
+        11.353724479675293
+      ],
+      "candidate_softmax": [
+        0.00272164865532412,
+        0.9317483676141964,
+        0.011742971357842604,
+        0.05378701237263679
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "70f79d231bf63bb3",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1173.520337
+    },
+    {
+      "query_id": "G0-G",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-0",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        13.034331321716309,
+        11.921514511108398,
+        15.121833801269531,
+        14.063920974731445
+      ],
+      "candidate_softmax": [
+        0.08201227454835033,
+        0.02695185470118257,
+        0.6614083367888453,
+        0.22962753396162183
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "70f0e77908d4419f",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1272.260806
+    },
+    {
+      "query_id": "G0-H",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-0",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.258240699768066,
+        8.548274993896484,
+        11.636280059814453,
+        15.351304054260254
+      ],
+      "candidate_softmax": [
+        0.0021975553236759367,
+        0.0010804523760219143,
+        0.02369786325455361,
+        0.9730241290457484
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "9563feac34632546",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1150.235164
+    },
+    {
+      "query_id": "G1-E",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-1",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.834162712097168,
+        12.420355796813965,
+        9.665557861328125,
+        10.669615745544434
+      ],
+      "candidate_softmax": [
+        0.1419608743459825,
+        0.6934953756341632,
+        0.044121475472740444,
+        0.12042227454711396
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "435dc709e6711afa",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1228.507454
+    },
+    {
+      "query_id": "G1-F",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-1",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.823471069335938,
+        9.154906272888184,
+        14.403226852416992,
+        12.623600006103516
+      ],
+      "candidate_softmax": [
+        0.008661773853236932,
+        0.0044386698049995645,
+        0.8444413780012382,
+        0.14245817834052524
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "550a87450e7119ca",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1131.739055
+    },
+    {
+      "query_id": "G1-G",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-1",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.315593719482422,
+        10.165044784545898,
+        13.198723793029785,
+        15.720694541931152
+      ],
+      "candidate_softmax": [
+        0.011141079444507047,
+        0.003525739469830037,
+        0.07324201278125156,
+        0.9120911683044113
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "6a8c65d618f77057",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1151.140664
+    },
+    {
+      "query_id": "G1-H",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-1",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.298469543457031,
+        8.19911003112793,
+        9.145588874816895,
+        12.492197036743164
+      ],
+      "candidate_softmax": [
+        0.853029556799342,
+        0.0019144582510237796,
+        0.004932833299033187,
+        0.140123151650601
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "a33687dead7482f4",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1084.19673
+    },
+    {
+      "query_id": "G1-E",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-1",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.721474647521973,
+        14.035417556762695,
+        11.092004776000977,
+        11.407585144042969
+      ],
+      "candidate_softmax": [
+        0.08079045653048111,
+        0.8171329045888936,
+        0.043051151340720774,
+        0.05902548753990456
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "61220d313bce67af",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1087.840135
+    },
+    {
+      "query_id": "G1-F",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-1",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.070361137390137,
+        8.540562629699707,
+        14.323201179504395,
+        11.526712417602539
+      ],
+      "candidate_softmax": [
+        0.004893345633967633,
+        0.002880827964711658,
+        0.9351587400967118,
+        0.057067086304608716
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "8aa9b9c5920658be",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1075.328377
+    },
+    {
+      "query_id": "G1-G",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-1",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.259774208068848,
+        10.16777229309082,
+        13.439310073852539,
+        15.916614532470703
+      ],
+      "candidate_softmax": [
+        0.00865946475335517,
+        0.002905632221799183,
+        0.076568730828386,
+        0.9118661721964596
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "4a41fd0eb36f3962",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1081.253333
+    },
+    {
+      "query_id": "G1-H",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-1",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.795426368713379,
+        8.740592956542969,
+        9.763580322265625,
+        13.161380767822266
+      ],
+      "candidate_softmax": [
+        0.8305566673425953,
+        0.0019488953938036596,
+        0.005420836357671157,
+        0.16207360090593007
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "6472ef9afca9652c",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1123.541143
+    },
+    {
+      "query_id": "G2-E",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-2",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.161909103393555,
+        7.841330528259277,
+        12.974495887756348,
+        10.742908477783203
+      ],
+      "candidate_softmax": [
+        0.051179741396075965,
+        0.0050267075278080725,
+        0.8522931686057378,
+        0.09150038247037812
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "ade0325330d3579e",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1117.972959
+    },
+    {
+      "query_id": "G2-F",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-2",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.056023597717285,
+        9.650279998779297,
+        8.75065803527832,
+        14.845663070678711
+      ],
+      "candidate_softmax": [
+        0.0030262342507788582,
+        0.005482577988048618,
+        0.002229892688608742,
+        0.9892612950725638
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "cf294a67303ca1c4",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1127.11192
+    },
+    {
+      "query_id": "G2-G",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-2",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.635577201843262,
+        9.319452285766602,
+        9.94002628326416,
+        12.030842781066895
+      ],
+      "candidate_softmax": [
+        0.9191426952495676,
+        0.004514599445447222,
+        0.008397134057731214,
+        0.06794557124725388
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "a9050ecddc42112c",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1092.061465
+    },
+    {
+      "query_id": "G2-H",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-2",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.293291091918945,
+        12.669166564941406,
+        7.79071569442749,
+        11.494325637817383
+      ],
+      "candidate_softmax": [
+        0.009463216869612174,
+        0.7524148604210505,
+        0.005724968100217877,
+        0.2323969546091193
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "50b3c1837b91edda",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1107.376101
+    },
+    {
+      "query_id": "G2-E",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-2",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        11.120990753173828,
+        8.932388305664063,
+        14.347118377685547,
+        11.387022018432617
+      ],
+      "candidate_softmax": [
+        0.036233455408206286,
+        0.004060801740205086,
+        0.9124292051930545,
+        0.04727653765853421
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "6b53cd97ae6d5b9c",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1085.061594
+    },
+    {
+      "query_id": "G2-F",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-2",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.765995025634766,
+        10.18200397491455,
+        9.371561050415039,
+        15.573365211486816
+      ],
+      "candidate_softmax": [
+        0.0010971625551660078,
+        0.004521013982741162,
+        0.0020103189210037425,
+        0.9923715045410891
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "4e46768f58cceceb",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1059.44324
+    },
+    {
+      "query_id": "G2-G",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-2",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.927152633666992,
+        9.243575096130371,
+        10.083622932434082,
+        12.174808502197266
+      ],
+      "candidate_softmax": [
+        0.9301817284770202,
+        0.0031638904850356036,
+        0.007329082025496598,
+        0.05932529901244762
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "96d941b053792baf",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1076.441264
+    },
+    {
+      "query_id": "G2-H",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-2",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.414554595947266,
+        12.475975036621094,
+        7.7540998458862305,
+        11.923434257507324
+      ],
+      "candidate_softmax": [
+        0.010754521020043832,
+        0.6243722012067415,
+        0.005555961392679372,
+        0.35931731638053543
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "b2ca174bdac92728",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1032.497318
+    },
+    {
+      "query_id": "G3-E",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-3",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.57931900024414,
+        6.425766944885254,
+        8.234981536865234,
+        13.626555442810059
+      ],
+      "candidate_softmax": [
+        0.006352568428824079,
+        0.0007373498186357446,
+        0.004502000010096009,
+        0.9884080817424442
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "f1abdb8d84b8f4b8",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1092.996442
+    },
+    {
+      "query_id": "G3-F",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-3",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        14.53972053527832,
+        10.882784843444824,
+        10.58742618560791,
+        11.803605079650879
+      ],
+      "candidate_softmax": [
+        0.9010277570982088,
+        0.023256865349393648,
+        0.01730926166229319,
+        0.05840611589010439
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "313a2f3b4f569d74",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1138.364391
+    },
+    {
+      "query_id": "G3-G",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-3",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        10.235825538635254,
+        13.481544494628906,
+        10.49252700805664,
+        10.976938247680664
+      ],
+      "candidate_softmax": [
+        0.03325452622051456,
+        0.8539817647115827,
+        0.04298676829162478,
+        0.06977694077627798
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "27e5950188a9bc75",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1079.73994
+    },
+    {
+      "query_id": "G3-H",
+      "route": "G-forward-state-partition:exact_G_attention_plus_scaffold_closure",
+      "source_variant": "G-rotation-3",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.866011619567871,
+        9.253649711608887,
+        14.218486785888672,
+        12.026058197021484
+      ],
+      "candidate_softmax": [
+        0.011378624711804394,
+        0.006168000159379706,
+        0.8837831581883421,
+        0.09867021694047366
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "3ee98b6cd4579381",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1093.242743
+    },
+    {
+      "query_id": "G3-E",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-3",
+      "expected": "D",
+      "expected_mutated": "D",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        8.631253242492676,
+        6.645414352416992,
+        8.774988174438477,
+        14.729947090148926
+      ],
+      "candidate_softmax": [
+        0.0022342991777268635,
+        0.00030669200433302543,
+        0.002579672734581515,
+        0.9948793360833587
+      ],
+      "candidate_argmax": "D",
+      "full_logits_fnv1a64": "78c61b0d6bf8e3a3",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1121.606495
+    },
+    {
+      "query_id": "G3-F",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-3",
+      "expected": "A",
+      "expected_mutated": "A",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        13.763925552368164,
+        8.388654708862305,
+        8.87845230102539,
+        10.01899528503418
+      ],
+      "candidate_softmax": [
+        0.9654163821049818,
+        0.0044695540958993255,
+        0.007294249084096563,
+        0.022819814715022167
+      ],
+      "candidate_argmax": "A",
+      "full_logits_fnv1a64": "b259934cb855a9cd",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1057.985904
+    },
+    {
+      "query_id": "G3-G",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-3",
+      "expected": "B",
+      "expected_mutated": "B",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.976401329040527,
+        13.310192108154297,
+        10.10048770904541,
+        10.85333251953125
+      ],
+      "candidate_softmax": [
+        0.03069360466404219,
+        0.8607852851510746,
+        0.0347486490767121,
+        0.07377246110817118
+      ],
+      "candidate_argmax": "B",
+      "full_logits_fnv1a64": "1e09f58e9b10f5e8",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1070.374467
+    },
+    {
+      "query_id": "G3-H",
+      "route": "G-forward-state-partition:exact_full_state",
+      "source_variant": "G-rotation-3",
+      "expected": "C",
+      "expected_mutated": "C",
+      "source_tokens": 130,
+      "query_tokens": 33,
+      "candidate_logits": [
+        9.291014671325684,
+        8.811320304870605,
+        13.732571601867676,
+        11.124434471130371
+      ],
+      "candidate_softmax": [
+        0.010778040033207053,
+        0.00667131083359153,
+        0.9151314026251676,
+        0.06741924650803385
+      ],
+      "candidate_argmax": "C",
+      "full_logits_fnv1a64": "d6261ea9b1abb2b2",
+      "root_backing_id": "291a7b8f3f01db3b",
+      "root_gpu_bytes": 305397760,
+      "sequence_id": 3,
+      "active_recurrent_backing_id": "291a7b8f3f01db3b",
+      "wall_ms": 1078.152726
+    }
+  ],
+  "verdict": "accept",
+  "claim_ceiling": "Passing establishes only that, on the frozen four-G panel, one fixed neutral recurrent-plus-closure scaffold can replace the 24-token closure forward after each exact 27-token F-conditioned G attention advance while preserving all tested useful A/B/C/D boundaries. The fixed 130-token scaffold amortizes against the predecessor after six branches and the asymptotic variable source ratio falls from 51/130 to 27/130. Full-logit parity is diagnostic rather than expected. The mechanism still performs fresh G model forward and does not establish a direct label-group operator, numerical recursive fidelity, inverse restoration, vanishing fresh-work ratio, catalytic recurrence, Small Wall crossing, or unbounded inference."
+}

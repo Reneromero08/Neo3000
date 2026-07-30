@@ -1111,3 +1111,16 @@ recurrence. Each branch still spends a fresh 51-token nonlinear
 G-plus-closure forward, so source work approaches `51/130` rather than zero.
 The next mechanism must directly construct or advance the attention tail with
 recursive fidelity—not expand the fixture or version the evidence harness.
+
+`neo-exp-0125` takes the first construction step. One fixed neutral
+recurrent-plus-closure scaffold replaces the closure part of every branch.
+Only the 27-token G module is decoded; its `552,960` attention bytes attach to
+`491,520` fixed closure bytes through unified-KV metadata ownership. All 16
+useful decisions survive. The fixed scaffold amortizes at six branches and the
+variable source ratio falls from `51/130` to `27/130`.
+
+This is still not the recurrence: hashes match `0/16`, drift reaches
+`2.4941301346`, and the 27-token G model forward remains. The next mechanism
+must express G as a public group action or direct attention-state advance
+without retaining target roots or target deltas. Evidence is attached once to
+that mechanism; harness versions are not the research path.
