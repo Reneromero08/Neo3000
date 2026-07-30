@@ -159,6 +159,22 @@ scaffold borrowed in its original backing. The proof boundary is same-scaffold
 semantic parity, delta closure, no host scaffold copy, and unrelated useful
 reuse before any recurrence scaling claim.
 
+That physical split now executes. A new attention-only state flag retains
+`2,662,400`-byte attention roots independently of a recurrent-only
+`65,863,680`-byte scaffold root. The same scaffold root is restored 25 times
+across six sequential attention transactions; no complete host scaffold copy
+exists; a streamed hash is exact before and after reuse; and the semantic panel
+passes unchanged. Only one attention root is resident beside the scaffold, so
+retained backend-buffer allocation stays at `68,526,080` bytes.
+
+This is the first concrete bounded baseline-plus-delta carrier in the renewed
+frontier. It is still snapshot reload, not catalytic recurrence: active cache
+allocation and CUDA allocator overhead remain outside the retained-root count,
+the scaffold incurs 1.65 GB of restore copies, every delta costs a fresh
+130-token source decode, and the six transactions share one task family. The
+next proof must reuse the exact scaffold for an unrelated useful task and then
+remove fresh source replay from delta construction.
+
 ## 1. Executive conclusion
 
 The strongest coherent route to catalytic Agents-A1 inference is:

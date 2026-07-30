@@ -902,6 +902,10 @@ extern "C" {
 // The keyed get-data API invalidates only prior device state retained under the same storage key.
 #define LLAMA_STATE_SEQ_FLAGS_ON_DEVICE 2
 
+// Work only with the attention state in a hybrid attention/recurrent cache.
+// Restoring this state does not mutate the recurrent cache.
+#define LLAMA_STATE_SEQ_FLAGS_ATTENTION_ONLY 4
+
     typedef uint32_t llama_state_seq_flags;
 
     LLAMA_API size_t llama_state_seq_get_size_ext(
@@ -949,6 +953,17 @@ extern "C" {
 
     // Returns the subset of retained on-device tensor bytes held by GPU backends.
     LLAMA_API size_t llama_state_seq_get_device_data_gpu_size(
+            struct llama_context * ctx,
+                    llama_seq_id   device_storage_key);
+
+    // Returns the complete backend-buffer allocation retained for a device
+    // state. This can exceed logical tensor bytes due to backend alignment.
+    LLAMA_API size_t llama_state_seq_get_device_allocation_size(
+            struct llama_context * ctx,
+                    llama_seq_id   device_storage_key);
+
+    // Returns the GPU/IGPU portion of the complete retained backend allocation.
+    LLAMA_API size_t llama_state_seq_get_device_allocation_gpu_size(
             struct llama_context * ctx,
                     llama_seq_id   device_storage_key);
 

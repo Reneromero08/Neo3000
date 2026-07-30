@@ -68,11 +68,16 @@ constructively unbounded local Agents-A1 inference.
   `A,B,C,D` with four matches. The matched recurrent-delta complement remains
   `D,D,D,D`. This localizes variable semantic evidence to `2,662,400`
   attention bytes on the tested fixed scaffold.
-- [ ] Implement attention-only on-device roots that borrow one actual
-  recurrent scaffold backing rather than serializing a full hybrid root or
-  copying the scaffold from a `76,349,440`-byte host reference. Re-run the
-  semantic panel, close every delta, then use the same scaffold for an
-  unrelated useful inference transaction.
+- [x] Implement attention-only on-device roots on one actual recurrent
+  scaffold root. `neo-exp-0111` reuses the same `65,863,680`-byte scaffold
+  root 25 times, composes one `2,662,400`-byte attention root at a time,
+  preserves the full semantic panel, exactly reproduces the streamed scaffold
+  content hash, retains no complete host scaffold copy, and closes all roots.
+  Retained-root backend allocation peaks at `68,526,080` bytes.
+- [ ] Reuse that exact scaffold root for a prospectively frozen unrelated
+  useful task, while measuring active cache allocation plus retained-root
+  allocation and all device-copy work. Then attack the still-unreduced 130
+  fresh source tokens per attention delta.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

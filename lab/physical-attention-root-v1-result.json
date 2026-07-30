@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0111",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "7b5907de77ccfbd3f72b7f9191536b7d0757d042",
+  "mechanism": "PHYSICAL_ATTENTION_ROOTS_ON_REUSED_RECURRENT_SCAFFOLD",
+  "spec_id": "physical-attention-root-v1",
+  "hypothesis": "The accepted attention delta can be retained as a physically separate on-device root and composed with one repeatedly reused recurrent scaffold root without a complete host tensor copy.",
+  "intervention": "Add an attention-only sequence-state flag, save one recurrent-only F0G0 scaffold root, save and close one attention-only root per frozen semantic source, assemble every query by recurrent restore then non-clearing attention restore, and stream-hash the scaffold before and after reuse.",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "source_tokens": 130,
+    "scaffold_tokens": 130,
+    "query_count_per_variant": 4,
+    "source_variant_count": 6,
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "metrics_after": {
+    "semantic_panel": {
+      "joint": {"correct": 4, "answers": ["A", "B", "C", "D"]},
+      "F_only": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "G_only": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "null": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "relation_mutation": {"correct": 4, "answers": ["B", "C", "D", "A"], "changes": 4},
+      "presentation": {"correct": 4, "answers": ["A", "B", "C", "D"], "matches": 4}
+    },
+    "scaffold": {
+      "logical_tensor_bytes": 65863680,
+      "retained_backend_allocation_bytes": 65863680,
+      "retained_gpu_allocation_bytes": 65863680,
+      "metadata_bytes": 748,
+      "restore_count": 25,
+      "root_backing_id": "44420a644b61e143",
+      "content_hash_before": "5eb6dd1bea73e09e",
+      "content_hash_after": "5eb6dd1bea73e09e",
+      "cleared": true
+    },
+    "attention_roots": {
+      "created": 6,
+      "simultaneously_retained_maximum": 1,
+      "logical_tensor_bytes_each": 2662400,
+      "retained_backend_allocation_bytes_each": 2662400,
+      "restore_count_total": 24,
+      "metadata_peak_bytes": 2864,
+      "all_closed": true
+    },
+    "maximum_simultaneous_retained_root_backend_allocation_bytes": 68526080,
+    "maximum_simultaneous_retained_root_gpu_allocation_bytes": 68526080,
+    "complete_host_scaffold_copy_retained": false,
+    "active_attention_backing_stable": true,
+    "active_recurrent_backing_stable": true
+  },
+  "resource_accounting": {
+    "root_save_device_copy_bytes": 81838080,
+    "scaffold_restore_device_copy_bytes": 1646592000,
+    "attention_restore_device_copy_bytes": 63897600,
+    "scaffold_hash_d2h_bytes": 131727360,
+    "scaffold_hash_peak_host_work_bytes": 1048576,
+    "host_root_metadata_peak_bytes": 3612,
+    "whole_process_cuda_residency_measured": false,
+    "active_cache_backend_allocation_measured": false,
+    "fresh_source_prompt_tokens": 910,
+    "fresh_query_tokens": 792,
+    "fresh_input_tokens_total": 1702,
+    "fresh_compute_reduction": false
+  },
+  "closure": {
+    "all_retained_roots_closed": true,
+    "background_processes_left_running": 0
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/physical-attention-root-v1.json",
+      "bytes": 6562,
+      "sha256": "EE5D28D6A32C77C3F5E87CB4EC72F083D5CC1B07278CFAFEE2761E99ED8D8049"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 81362,
+      "sha256": "4949877C5FA171DE2810C7DECBD74D823D236B279C6B88F47481E21F8CD88F55"
+    },
+    "probe_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 526048,
+      "sha256": "B8BA8CEFA42CAB727670F06E0B2DA34CE83D087B270E8FF945663251BCE651ED"
+    },
+    "raw_result": {
+      "committed": false,
+      "bytes": 23935,
+      "sha256": "063B679BECD886E4C3B196F298A3FB680B75490FF3938E977D7AB343527E7CA4"
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 52,
+    "input_tokens": 1702,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "quality_gates": {
+    "attention_roots_physically_exclude_recurrent_tensors": true,
+    "same_scaffold_root_actually_reused": true,
+    "semantic_panel_preserved": true,
+    "scaffold_content_restored_exactly": true,
+    "complete_host_scaffold_duplicate_absent": true,
+    "all_roots_closed": true,
+    "whole_process_physical_residency_accounted": false,
+    "unrelated_task_reuse": false,
+    "native_inverse_restoration": false,
+    "fresh_compute_reduction": false,
+    "unbounded_recurrence": false
+  },
+  "verdict": "accept",
+  "classification": "PHYSICALLY_SEPARATED_ATTENTION_DELTAS_REUSE_ONE_RECURRENT_SCAFFOLD_ROOT",
+  "strongest_supported_claim": "Six physically separate 2,662,400-byte attention roots preserve the full semantic panel when composed one at a time with the same 65,863,680-byte recurrent device root, whose content hash is unchanged after 25 restores; retained-root backend allocation stays at 68,526,080 bytes and no complete host scaffold copy is retained.",
+  "strongest_rejected_interpretation": "This remains snapshot reload with 910 fresh source prompt tokens, substantial device-copy work, no unrelated task family, and incomplete whole-process residency accounting. It is not native inverse restoration, fresh-compute reduction, catalytic recurrence, or unbounded inference.",
+  "next_boundary": "REUSE_THE_SAME_SCAFFOLD_ROOT_FOR_A_PROSPECTIVELY_FROZEN_UNRELATED_USEFUL_TASK_AND_MEASURE_ACTIVE_PLUS_RETAINED_BACKEND_ALLOCATION"
+}

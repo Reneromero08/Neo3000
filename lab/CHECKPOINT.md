@@ -62,6 +62,15 @@ The active recurrence and acceptance boundary are
   joint boundaries; presentation returns `A,B,C,D` and matches all four. The
   source-conditioned recurrent-delta complement returns `D,D,D,D` for every
   variant. The full controls reproduce the accepted 0106 panel.
+- `neo-exp-0111` makes the decomposition physical. One recurrent-only
+  `65,863,680`-byte ON_DEVICE root is restored 25 times. Six attention-only
+  `2,662,400`-byte ON_DEVICE roots are created and closed sequentially, never
+  more than one at once. The assembled route preserves the full semantic
+  panel; scaffold hashes before and after reuse are exactly
+  `5eb6dd1bea73e09e`; all backing identities stay stable and all roots close.
+- Retained-root backend-buffer allocation peaks at `68,526,080` bytes. No
+  complete host scaffold copy is retained; exact validation streams through
+  one `1,048,576`-byte host work buffer.
 - The Release server rebuild succeeds, all 139 configured CUDA objects remain
   present with zero CUDA source changes, and the focused no-model Python suite
   passes 57 tests.
@@ -112,15 +121,20 @@ The active recurrence and acceptance boundary are
   source variant, with `205,578,240` simultaneous serialized device bytes and
   a `76,349,440`-byte host reference. Semantic delta sufficiency is not
   physical compactness, duplicate-free custody, restoration, or catalysis.
+- The 0111 measurement covers retained backend buffers, not total CUDA
+  allocator/driver or whole-process residency. Active cache allocation was not
+  separately measured. The run still spends 910 fresh source prompt tokens,
+  copies `1,646,592,000` scaffold bytes during 25 restores, and tests related
+  semantic variants rather than an unrelated task family. Restoration remains
+  `SNAPSHOT_RELOAD`.
 
 ### ACTIVE BOUNDARY
 
-Add an attention-only device-root serialization law that leaves one actual
-F0G0 recurrent scaffold in the active backing. Eliminate the host scaffold
-duplicate, measure root allocation and transfer directly, repeat the accepted
-semantic panel, close each delta, and run an unrelated useful inference
-transaction on the same scaffold backing. `neo-exp-0102` remains frozen and
-unconsumed.
+Use the exact retained scaffold root in a prospectively frozen unrelated useful
+task transaction. Measure active cache backend allocation plus retained-root
+allocation, preserve sequential one-delta residency, and count save/restore
+device copies. Then localize or construct the attention delta without a full
+130-token source replay. `neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

@@ -174,6 +174,8 @@ struct llama_context {
 
     size_t state_seq_get_device_data_size(llama_seq_id device_storage_key) const;
     size_t state_seq_get_device_data_gpu_size(llama_seq_id device_storage_key) const;
+    size_t state_seq_get_device_allocation_size(llama_seq_id device_storage_key) const;
+    size_t state_seq_get_device_allocation_gpu_size(llama_seq_id device_storage_key) const;
     uint64_t state_seq_get_device_backing_id(llama_seq_id device_storage_key) const;
     size_t state_seq_get_device_root_count() const;
     size_t state_seq_clear_device_data(llama_seq_id device_storage_key);

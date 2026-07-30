@@ -33,6 +33,8 @@ constexpr llama_state_seq_flags RECURRENT_DEVICE_FLAGS =
     LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY | LLAMA_STATE_SEQ_FLAGS_ON_DEVICE;
 constexpr llama_state_seq_flags FULL_DEVICE_FLAGS =
     LLAMA_STATE_SEQ_FLAGS_ON_DEVICE;
+constexpr llama_state_seq_flags ATTENTION_DEVICE_FLAGS =
+    LLAMA_STATE_SEQ_FLAGS_ATTENTION_ONLY | LLAMA_STATE_SEQ_FLAGS_ON_DEVICE;
 
 struct boundary_result {
     json record;
@@ -49,6 +51,8 @@ struct device_root {
     std::vector<uint8_t> metadata;
     size_t resident_bytes = 0;
     size_t gpu_bytes = 0;
+    size_t allocation_bytes = 0;
+    size_t allocation_gpu_bytes = 0;
     uint64_t backing_id = 0;
 };
 
@@ -65,6 +69,14 @@ static uint64_t fnv1a64(const void * data, size_t len) {
         hash *= UINT64_C(1099511628211);
     }
     return hash;
+}
+
+static void fnv1a64_update(uint64_t & hash, const void * data, size_t len) {
+    const auto * bytes = static_cast<const uint8_t *>(data);
+    for (size_t i = 0; i < len; ++i) {
+        hash ^= bytes[i];
+        hash *= UINT64_C(1099511628211);
+    }
 }
 
 static void fnv_mix_u64(uint64_t & hash, uint64_t value) {
@@ -221,12 +233,21 @@ static device_root save_root(
         ctx, root.metadata.data(), root.metadata.size(), 0, key, flags);
     llama_synchronize(ctx);
     if (written != root.metadata.size()) {
+        llama_state_seq_clear_device_data(ctx, key);
         throw std::runtime_error("state metadata write mismatch for " + variant);
     }
     root.resident_bytes = llama_state_seq_get_device_data_size(ctx, key);
     root.gpu_bytes = llama_state_seq_get_device_data_gpu_size(ctx, key);
+    root.allocation_bytes = llama_state_seq_get_device_allocation_size(ctx, key);
+    root.allocation_gpu_bytes =
+        llama_state_seq_get_device_allocation_gpu_size(ctx, key);
     root.backing_id = retained_root_backing_id(ctx, key);
-    if (root.resident_bytes == 0 || root.gpu_bytes == 0 || root.backing_id == 0) {
+    if (root.resident_bytes == 0 ||
+        root.gpu_bytes == 0 ||
+        root.allocation_bytes == 0 ||
+        root.allocation_gpu_bytes == 0 ||
+        root.backing_id == 0) {
+        llama_state_seq_clear_device_data(ctx, key);
         throw std::runtime_error("device root is not physically resident for " + variant);
     }
     return root;
@@ -238,12 +259,45 @@ static void restore_root(llama_context * ctx, const device_root & root) {
         ctx, root.metadata.data(), root.metadata.size(), 0, root.flags);
     llama_synchronize(ctx);
     if (read != root.metadata.size()) {
+        llama_memory_clear(llama_get_memory(ctx), true);
+        llama_synchronize(ctx);
         throw std::runtime_error("state metadata restore mismatch for " + root.variant);
     }
     if (llama_state_seq_get_device_data_size(ctx, root.key) != root.resident_bytes ||
         llama_state_seq_get_device_data_gpu_size(ctx, root.key) != root.gpu_bytes ||
+        llama_state_seq_get_device_allocation_size(ctx, root.key) != root.allocation_bytes ||
+        llama_state_seq_get_device_allocation_gpu_size(ctx, root.key) != root.allocation_gpu_bytes ||
         retained_root_backing_id(ctx, root.key) != root.backing_id) {
+        llama_memory_clear(llama_get_memory(ctx), true);
+        llama_synchronize(ctx);
         throw std::runtime_error("retained root backing changed during restore for " + root.variant);
+    }
+}
+
+static void restore_attention_root(llama_context * ctx, const device_root & root) {
+    if (root.flags != ATTENTION_DEVICE_FLAGS) {
+        llama_memory_clear(llama_get_memory(ctx), true);
+        llama_synchronize(ctx);
+        throw std::runtime_error("non-attention root passed to attention-only restore");
+    }
+    const size_t read = llama_state_seq_set_data_ext(
+        ctx, root.metadata.data(), root.metadata.size(), 0, root.flags);
+    llama_synchronize(ctx);
+    if (read != root.metadata.size()) {
+        llama_memory_clear(llama_get_memory(ctx), true);
+        llama_synchronize(ctx);
+        throw std::runtime_error(
+            "attention state metadata restore mismatch for " + root.variant);
+    }
+    if (llama_state_seq_get_device_data_size(ctx, root.key) != root.resident_bytes ||
+        llama_state_seq_get_device_data_gpu_size(ctx, root.key) != root.gpu_bytes ||
+        llama_state_seq_get_device_allocation_size(ctx, root.key) != root.allocation_bytes ||
+        llama_state_seq_get_device_allocation_gpu_size(ctx, root.key) != root.allocation_gpu_bytes ||
+        retained_root_backing_id(ctx, root.key) != root.backing_id) {
+        llama_memory_clear(llama_get_memory(ctx), true);
+        llama_synchronize(ctx);
+        throw std::runtime_error(
+            "attention root backing changed during restore for " + root.variant);
     }
 }
 
@@ -395,6 +449,48 @@ static hybrid_tensor_reference capture_hybrid_reference(llama_context * ctx) {
         }
     }
     return reference;
+}
+
+struct streamed_tensor_hash {
+    uint64_t value = UINT64_C(1469598103934665603);
+    size_t transferred_bytes = 0;
+    size_t peak_host_work_bytes = 0;
+};
+
+static void hash_tensor_streamed(
+        streamed_tensor_hash & hash,
+        ggml_tensor * tensor,
+        uint64_t layer,
+        uint64_t kind) {
+    if (!tensor) {
+        return;
+    }
+    const size_t chunk_capacity = 1024 * 1024;
+    std::vector<uint8_t> work(std::min(chunk_capacity, ggml_nbytes(tensor)));
+    fnv_mix_u64(hash.value, layer);
+    fnv_mix_u64(hash.value, kind);
+    fnv_mix_u64(hash.value, ggml_nbytes(tensor));
+    if (ggml_nbytes(tensor) == 0) {
+        return;
+    }
+    for (size_t offset = 0; offset < ggml_nbytes(tensor); offset += work.size()) {
+        const size_t size = std::min(work.size(), ggml_nbytes(tensor) - offset);
+        ggml_backend_tensor_get(tensor, work.data(), offset, size);
+        fnv1a64_update(hash.value, work.data(), size);
+        hash.transferred_bytes += size;
+    }
+    hash.peak_host_work_bytes = std::max(hash.peak_host_work_bytes, work.size());
+}
+
+static streamed_tensor_hash hash_recurrent_state_streamed(llama_context * ctx) {
+    llama_synchronize(ctx);
+    auto * recurrent = require_hybrid_memory(ctx)->get_mem_recr();
+    streamed_tensor_hash hash;
+    for (uint32_t il = 0; il < recurrent->r_l.size(); ++il) {
+        hash_tensor_streamed(hash, recurrent->r_l[il], il, 0);
+        hash_tensor_streamed(hash, recurrent->s_l[il], il, 1);
+    }
+    return hash;
 }
 
 static std::set<uint32_t> parse_layer_selection(
@@ -976,6 +1072,259 @@ static json run_matched_semantic_validation(
     };
 }
 
+static json run_physical_attention_roots(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const std::vector<llama_token> & candidates,
+        const json & spec,
+        uint64_t active_recurrent_backing_initial,
+        uint64_t active_attention_backing_initial) {
+    auto * hybrid = require_hybrid_memory(ctx);
+    auto * attention = hybrid->get_mem_attn();
+    auto * recurrent = hybrid->get_mem_recr();
+
+    const std::vector<uint32_t> attention_layers = attention->get_layer_ids();
+    std::vector<uint32_t> recurrent_layers;
+    for (uint32_t il = 0; il < recurrent->r_l.size(); ++il) {
+        if (recurrent->r_l[il] || recurrent->s_l[il]) {
+            recurrent_layers.push_back(il);
+        }
+    }
+    if (attention_layers != spec.at("expected_attention_layers").get<std::vector<uint32_t>>() ||
+        recurrent_layers != spec.at("expected_recurrent_layers").get<std::vector<uint32_t>>()) {
+        throw std::runtime_error("model hybrid layer topology differs from physical-root spec");
+    }
+
+    const auto & sources = spec.at("sources");
+    const std::vector<std::string> variants = {
+        "F0_G0", "F1_G0", "F0_G1", "F1_G1", "F1_G_MUT", "F1_G_PRESENTATION"
+    };
+    for (const auto & variant : variants) {
+        if (!sources.contains(variant)) {
+            throw std::runtime_error("physical-root spec missing source variant " + variant);
+        }
+    }
+
+    const auto scaffold_tokens = prepare_source(ctx, vocab, sources.at("F0_G0"));
+    if (attention->seq_pos_max(0) !=
+            static_cast<llama_pos>(scaffold_tokens.size() - 1) ||
+        recurrent->seq_pos_max(0) !=
+            static_cast<llama_pos>(scaffold_tokens.size() - 1)) {
+        throw std::runtime_error("physical recurrent scaffold position mismatch");
+    }
+    auto scaffold_root = save_root(
+        ctx, "F0_G0:recurrent-scaffold", 4000,
+        RECURRENT_DEVICE_FLAGS, scaffold_tokens.size());
+    const auto scaffold_hash_before = hash_recurrent_state_streamed(ctx);
+
+    const auto & queries = spec.at("queries");
+    std::map<std::string, std::vector<boundary_result>> results;
+    json records = json::array();
+    json roots = json::array();
+    llama_seq_id key = 4001;
+    size_t common_source_tokens = 0;
+    size_t maximum_simultaneous_logical_tensor_bytes = 0;
+    size_t maximum_simultaneous_backend_allocation_bytes = 0;
+    size_t maximum_simultaneous_gpu_allocation_bytes = 0;
+    size_t cleared_attention_root_bytes = 0;
+    size_t scaffold_restore_count = 0;
+    size_t attention_restore_count = 0;
+    size_t attention_metadata_peak_bytes = 0;
+
+    for (const auto & variant : variants) {
+        const auto source_tokens = prepare_source(ctx, vocab, sources.at(variant));
+        if (attention->seq_pos_max(0) !=
+                static_cast<llama_pos>(source_tokens.size() - 1) ||
+            recurrent->seq_pos_max(0) !=
+                static_cast<llama_pos>(source_tokens.size() - 1)) {
+            throw std::runtime_error("physical attention source position mismatch");
+        }
+        if (common_source_tokens == 0) {
+            common_source_tokens = source_tokens.size();
+            if (common_source_tokens != scaffold_tokens.size()) {
+                throw std::runtime_error("physical source/scaffold token count mismatch");
+            }
+        } else if (common_source_tokens != source_tokens.size()) {
+            throw std::runtime_error("physical attention source token count changed");
+        }
+
+        auto attention_root = save_root(
+            ctx, variant + ":attention-delta", key++,
+            ATTENTION_DEVICE_FLAGS, source_tokens.size());
+        if (attention_root.gpu_bytes >= scaffold_root.gpu_bytes) {
+            throw std::runtime_error("attention root did not physically exclude recurrent tensors");
+        }
+        attention_metadata_peak_bytes =
+            std::max(attention_metadata_peak_bytes, attention_root.metadata.size());
+        maximum_simultaneous_logical_tensor_bytes = std::max(
+            maximum_simultaneous_logical_tensor_bytes,
+            scaffold_root.resident_bytes + attention_root.resident_bytes);
+        maximum_simultaneous_backend_allocation_bytes = std::max(
+            maximum_simultaneous_backend_allocation_bytes,
+            scaffold_root.allocation_bytes + attention_root.allocation_bytes);
+        maximum_simultaneous_gpu_allocation_bytes = std::max(
+            maximum_simultaneous_gpu_allocation_bytes,
+            scaffold_root.allocation_gpu_bytes + attention_root.allocation_gpu_bytes);
+
+        for (const auto & query : queries) {
+            restore_root(ctx, scaffold_root);
+            ++scaffold_restore_count;
+            if (recurrent->seq_pos_max(0) !=
+                static_cast<llama_pos>(scaffold_tokens.size() - 1)) {
+                throw std::runtime_error("restored scaffold position changed");
+            }
+            restore_attention_root(ctx, attention_root);
+            ++attention_restore_count;
+            if (attention->seq_pos_max(0) !=
+                    static_cast<llama_pos>(source_tokens.size() - 1) ||
+                recurrent->seq_pos_max(0) !=
+                    static_cast<llama_pos>(scaffold_tokens.size() - 1) ||
+                active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
+                active_attention_backing_id(ctx) != active_attention_backing_initial) {
+                throw std::runtime_error("assembled physical carrier invariant failed");
+            }
+            auto boundary = decode_query(
+                ctx, vocab, candidates, "physical-attention-root-fixed-recurrent",
+                variant, query, attention_root.source_tokens,
+                attention_root.backing_id, attention_root.gpu_bytes);
+            records.push_back(boundary.record);
+            results[variant].push_back(std::move(boundary));
+        }
+
+        roots.push_back({
+            {"source_variant", variant},
+            {"logical_tensor_bytes", attention_root.resident_bytes},
+            {"gpu_tensor_bytes", attention_root.gpu_bytes},
+            {"backend_allocation_bytes", attention_root.allocation_bytes},
+            {"gpu_allocation_bytes", attention_root.allocation_gpu_bytes},
+            {"metadata_bytes", attention_root.metadata.size()},
+            {"root_backing_id", hex64(attention_root.backing_id)},
+        });
+        llama_memory_clear(llama_get_memory(ctx), true);
+        cleared_attention_root_bytes +=
+            llama_state_seq_clear_device_data(ctx, attention_root.key);
+        if (llama_state_seq_get_device_data_size(ctx, attention_root.key) != 0 ||
+            llama_state_seq_get_device_root_count(ctx) != 1) {
+            throw std::runtime_error("attention root closure damaged recurrent scaffold custody");
+        }
+    }
+
+    restore_root(ctx, scaffold_root);
+    ++scaffold_restore_count;
+    const auto scaffold_hash_after = hash_recurrent_state_streamed(ctx);
+    if (scaffold_hash_after.value != scaffold_hash_before.value ||
+        scaffold_hash_after.transferred_bytes != scaffold_hash_before.transferred_bytes) {
+        throw std::runtime_error("recurrent scaffold content changed after reuse");
+    }
+
+    const auto & acceptance = spec.at("acceptance_law");
+    const size_t joint_correct =
+        semantic_correct_count(results.at("F1_G1"), queries, false);
+    const size_t f_only_correct =
+        semantic_correct_count(results.at("F1_G0"), queries, false);
+    const size_t g_only_correct =
+        semantic_correct_count(results.at("F0_G1"), queries, false);
+    const size_t null_correct =
+        semantic_correct_count(results.at("F0_G0"), queries, false);
+    const size_t mutated_correct =
+        semantic_correct_count(results.at("F1_G_MUT"), queries, true);
+    const size_t presentation_correct =
+        semantic_correct_count(results.at("F1_G_PRESENTATION"), queries, false);
+    const size_t mutation_changes =
+        boundary_changes(results.at("F1_G1"), results.at("F1_G_MUT"));
+    const size_t presentation_matches =
+        boundary_matches(results.at("F1_G1"), results.at("F1_G_PRESENTATION"));
+    const bool accepted =
+        joint_correct >= acceptance.at("joint_correct_minimum").get<size_t>() &&
+        f_only_correct <= acceptance.at("f_only_correct_maximum").get<size_t>() &&
+        g_only_correct <= acceptance.at("g_only_correct_maximum").get<size_t>() &&
+        null_correct <= acceptance.at("null_correct_maximum").get<size_t>() &&
+        mutated_correct >= acceptance.at("mutated_correct_minimum").get<size_t>() &&
+        presentation_correct >= acceptance.at("presentation_correct_minimum").get<size_t>() &&
+        mutation_changes >= acceptance.at("mutation_changes_minimum").get<size_t>() &&
+        presentation_matches >= acceptance.at("presentation_matches_minimum").get<size_t>();
+
+    llama_memory_clear(llama_get_memory(ctx), true);
+    const size_t cleared_scaffold_bytes =
+        llama_state_seq_clear_device_data(ctx, scaffold_root.key);
+    llama_synchronize(ctx);
+    if (llama_state_seq_get_device_root_count(ctx) != 0 ||
+        active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
+        active_attention_backing_id(ctx) != active_attention_backing_initial) {
+        throw std::runtime_error("physical attention-root close invariant failed");
+    }
+
+    return {
+        {"schema_version", 1},
+        {"mechanism", "PHYSICAL_ATTENTION_ROOTS_ON_REUSED_RECURRENT_SCAFFOLD"},
+        {"spec_id", spec.at("id")},
+        {"model_arch", "qwen35moe"},
+        {"configuration", {
+            {"source_tokens", common_source_tokens},
+            {"scaffold_tokens", scaffold_tokens.size()},
+            {"query_count", queries.size()},
+            {"source_variant_count", variants.size()},
+            {"attention_layers", attention_layers},
+            {"recurrent_layers", recurrent_layers},
+        }},
+        {"carrier", {
+            {"scaffold", {
+                {"logical_tensor_bytes", scaffold_root.resident_bytes},
+                {"gpu_tensor_bytes", scaffold_root.gpu_bytes},
+                {"backend_allocation_bytes", scaffold_root.allocation_bytes},
+                {"gpu_allocation_bytes", scaffold_root.allocation_gpu_bytes},
+                {"metadata_bytes", scaffold_root.metadata.size()},
+                {"root_backing_id", hex64(scaffold_root.backing_id)},
+                {"restore_count", scaffold_restore_count},
+                {"content_hash_before", hex64(scaffold_hash_before.value)},
+                {"content_hash_after", hex64(scaffold_hash_after.value)},
+                {"hash_d2h_bytes",
+                    scaffold_hash_before.transferred_bytes +
+                    scaffold_hash_after.transferred_bytes},
+                {"hash_peak_host_work_bytes", std::max(
+                    scaffold_hash_before.peak_host_work_bytes,
+                    scaffold_hash_after.peak_host_work_bytes)},
+                {"cleared_bytes", cleared_scaffold_bytes},
+            }},
+            {"attention_roots", {
+                {"root_count", roots.size()},
+                {"restore_count", attention_restore_count},
+                {"metadata_peak_bytes", attention_metadata_peak_bytes},
+                {"cleared_tensor_bytes", cleared_attention_root_bytes},
+            }},
+            {"maximum_simultaneous_logical_tensor_bytes",
+                maximum_simultaneous_logical_tensor_bytes},
+            {"maximum_simultaneous_backend_allocation_bytes",
+                maximum_simultaneous_backend_allocation_bytes},
+            {"maximum_simultaneous_gpu_allocation_bytes",
+                maximum_simultaneous_gpu_allocation_bytes},
+            {"complete_host_scaffold_copy_retained", false},
+            {"all_retained_roots_closed", llama_state_seq_get_device_root_count(ctx) == 0},
+            {"active_recurrent_backing_stable",
+                active_recurrent_backing_id(ctx) == active_recurrent_backing_initial},
+            {"active_attention_backing_stable",
+                active_attention_backing_id(ctx) == active_attention_backing_initial},
+            {"restoration_class", "SNAPSHOT_RELOAD"},
+        }},
+        {"route_summary", semantic_route_summary(results, queries)},
+        {"summary", {
+            {"joint_correct", joint_correct},
+            {"f_only_correct", f_only_correct},
+            {"g_only_correct", g_only_correct},
+            {"null_correct", null_correct},
+            {"mutated_correct", mutated_correct},
+            {"presentation_correct", presentation_correct},
+            {"mutation_changes", mutation_changes},
+            {"presentation_matches", presentation_matches},
+            {"semantic_validation_passed", accepted},
+        }},
+        {"attention_roots", roots},
+        {"records", records},
+        {"verdict", accepted ? "accept" : "reject"},
+        {"claim_ceiling", spec.at("claim_ceiling")},
+    };
+}
+
 } // namespace
 
 int main(int argc, char ** argv) {
@@ -1027,6 +1376,22 @@ int main(int argc, char ** argv) {
         }
         if (active_attention_backing_initial == 0) {
             throw std::runtime_error("active attention backing identity is zero");
+        }
+
+        if (spec.value("physical_attention_roots", false)) {
+            const json result = run_physical_attention_roots(
+                ctx,
+                vocab,
+                candidates,
+                spec,
+                active_backing_initial,
+                active_attention_backing_initial);
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
         }
 
         if (spec.value("matched_semantic_validation", false)) {

@@ -3059,6 +3059,45 @@ size_t llama_context::state_seq_get_device_data_gpu_size(llama_seq_id device_sto
     return size;
 }
 
+size_t llama_context::state_seq_get_device_allocation_size(llama_seq_id device_storage_key) const {
+    const auto it = mem_storage.find(device_storage_key);
+    if (it == mem_storage.end()) {
+        return 0;
+    }
+
+    size_t size = 0;
+    for (const auto & [buft, mbuf] : it->second) {
+        GGML_UNUSED(buft);
+        if (mbuf.buf) {
+            size += ggml_backend_buffer_get_size(mbuf.buf.get());
+        }
+    }
+    return size;
+}
+
+size_t llama_context::state_seq_get_device_allocation_gpu_size(llama_seq_id device_storage_key) const {
+    const auto it = mem_storage.find(device_storage_key);
+    if (it == mem_storage.end()) {
+        return 0;
+    }
+
+    size_t size = 0;
+    for (const auto & [buft, mbuf] : it->second) {
+        if (!mbuf.buf || ggml_backend_buft_is_host(buft)) {
+            continue;
+        }
+        ggml_backend_dev_t dev = ggml_backend_buft_get_device(buft);
+        if (dev == nullptr) {
+            continue;
+        }
+        const auto dev_type = ggml_backend_dev_type(dev);
+        if (dev_type == GGML_BACKEND_DEVICE_TYPE_GPU || dev_type == GGML_BACKEND_DEVICE_TYPE_IGPU) {
+            size += ggml_backend_buffer_get_size(mbuf.buf.get());
+        }
+    }
+    return size;
+}
+
 uint64_t llama_context::state_seq_get_device_backing_id(llama_seq_id device_storage_key) const {
     const auto it = mem_storage.find(device_storage_key);
     if (it == mem_storage.end()) {
@@ -4162,6 +4201,14 @@ size_t llama_state_seq_get_device_data_size(llama_context * ctx, llama_seq_id de
 
 size_t llama_state_seq_get_device_data_gpu_size(llama_context * ctx, llama_seq_id device_storage_key) {
     return ctx->state_seq_get_device_data_gpu_size(device_storage_key);
+}
+
+size_t llama_state_seq_get_device_allocation_size(llama_context * ctx, llama_seq_id device_storage_key) {
+    return ctx->state_seq_get_device_allocation_size(device_storage_key);
+}
+
+size_t llama_state_seq_get_device_allocation_gpu_size(llama_context * ctx, llama_seq_id device_storage_key) {
+    return ctx->state_seq_get_device_allocation_gpu_size(device_storage_key);
 }
 
 uint64_t llama_state_seq_get_device_backing_id(llama_context * ctx, llama_seq_id device_storage_key) {

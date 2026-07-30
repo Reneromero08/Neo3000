@@ -4,6 +4,8 @@
 #include "llama-model.h"
 #include "llama-context.h"
 
+#include <stdexcept>
+
 //
 // llama_memory_hybrid_iswa
 //
@@ -193,11 +195,25 @@ std::map<ggml_backend_buffer_type_t, size_t> llama_memory_hybrid_iswa::memory_br
 }
 
 void llama_memory_hybrid_iswa::state_write(llama_io_write_i & io, llama_seq_id seq_id, llama_state_seq_flags flags) const {
+    if (flags & LLAMA_STATE_SEQ_FLAGS_ATTENTION_ONLY) {
+        if (flags & LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY) {
+            throw std::runtime_error("attention-only and partial-only state flags are mutually exclusive");
+        }
+        mem_attn->state_write(io, seq_id, flags);
+        return;
+    }
     mem_attn->state_write(io, seq_id, flags);
     mem_recr->state_write(io, seq_id, flags);
 }
 
 void llama_memory_hybrid_iswa::state_read(llama_io_read_i & io, llama_seq_id seq_id, llama_state_seq_flags flags) {
+    if (flags & LLAMA_STATE_SEQ_FLAGS_ATTENTION_ONLY) {
+        if (flags & LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY) {
+            throw std::runtime_error("attention-only and partial-only state flags are mutually exclusive");
+        }
+        mem_attn->state_read(io, seq_id, flags);
+        return;
+    }
     mem_attn->state_read(io, seq_id, flags);
     mem_recr->state_read(io, seq_id, flags);
 }
