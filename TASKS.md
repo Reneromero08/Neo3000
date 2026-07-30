@@ -746,7 +746,7 @@ constructively unbounded local Agents-A1 inference.
   complete factor copies in scheduler-owned graph inputs after the claimed
   closure and lacked fail-closed custody between individual staged captures.
   This is a physical-mechanism rejection, not an evaluator revision.
-- [ ] Execute `neo-exp-0161` once as one source-conditioned low-rank effective
+- [x] Execute `neo-exp-0161` once as one source-conditioned low-rank effective
   Q/K/V transition, then adjudicate it compactly. The frozen specification is
   `lab/source-conditioned-reversible-low-rank-lifting-v1.json`. Separate F
   item/vault and G vault/code model states form two rank-four lifting actions
@@ -766,6 +766,18 @@ constructively unbounded local Agents-A1 inference.
   receives one contact and one compact adjudication—no rank, layer, gain,
   prompt, fixture, controller, evaluator, carrier-evaluation, or
   evidence-harness series.
+- [ ] Replace the invalid transposed-left `mul_mat` with one legal physical
+  fast-weight primitive or a distinct in-place substrate, then make one
+  bounded contact. The consumed `0161` path loaded Agents-A1, completed its
+  exact-reference lead-in, and reached the first enabled graph reservation,
+  where GGML rejected `transpose(value-key)` as a left `mul_mat` operand.
+  The enabled transition never built or computed: zero carrier reads,
+  candidate records, useful boundaries, reverse residuals, or closure
+  observations exist. This is one concrete physical operator defect, not
+  authority for an evaluator, carrier-evaluation, evidence-packet, prompt,
+  rank, layer, gain, or fixture series. Prefer a primitive that can become an
+  actual in-place borrow/apply/inverse/reuse law rather than another
+  out-of-place proof branch.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

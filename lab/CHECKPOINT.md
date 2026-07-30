@@ -231,6 +231,18 @@ The active recurrence and acceptance boundary are
   changed. No model or scientific CUDA contact has occurred. Execute this
   physical mechanism once, then select the next substrate from its physical
   result without evaluator or evidence-harness versioning.
+- `neo-exp-0161` is now consumed and inconclusive. Agents-A1 loaded and the
+  exact-reference lead-in reached the first enabled lifting graph reserve;
+  graph construction then failed at
+  `GGML_ASSERT(!ggml_is_transposed(a))` because the delta path supplied
+  `transpose(value-key)` as the left operand of `ggml_mul_mat`. The enabled
+  transition never computed: zero carrier reads, candidate records, useful
+  boundaries, reverse residuals, or closure observations are supported.
+  Process exit was `134`, no server or background probe remains, and `0102`
+  remains unconsumed. Preserve compact boundary
+  `lab/source-conditioned-reversible-low-rank-lifting-v1-result.json`.
+  Permit only one physical operator repair or distinct in-place substrate;
+  do not create evaluator, carrier-evaluation, or evidence-harness versions.
 
 ### SUPPORTED
 

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0161",
+  "record_type": "scientific_contact_boundary",
+  "date": "2026-07-30",
+  "candidate_commit": "934e9c821bc823e261c4a690104ad161a6a5ce08",
+  "spec_id": "source-conditioned-reversible-low-rank-lifting-v1",
+  "mechanism": "SOURCE_CONDITIONED_LOW_RANK_EFFECTIVE_QKV_TRANSITION",
+  "contact": {
+    "model_loads": 1,
+    "model_facing_contact": true,
+    "server_launches": 0,
+    "process_exit_code": 134,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "observed_boundary": {
+    "model_loaded": true,
+    "exact_reference_path_entered": true,
+    "first_enabled_lifting_graph_reserve_entered": true,
+    "enabled_lifting_graph_built": false,
+    "enabled_lifting_graph_computed": false,
+    "carrier_lifting_reads_observed": 0,
+    "candidate_query_records_observed": 0,
+    "useful_carrier_boundaries_observed": 0,
+    "raw_runtime_result_written": false
+  },
+  "terminal_failure": {
+    "classification": "GGML_TRANSPOSED_LEFT_MUL_MAT_ASSERT_BEFORE_ENABLED_LIFTING_COMPUTE",
+    "message": "ggml/src/ggml.c:3244: GGML_ASSERT(!ggml_is_transposed(a)) failed",
+    "cause": "The low-rank delta path passed transpose(value-key) as the left operand of ggml_mul_mat. GGML requires the left operand to be non-transposed.",
+    "first_claim_bearing_frames": [
+      "ggml_mul_mat",
+      "llama_model_qwen35moe::graph::graph",
+      "llama_context::graph_reserve",
+      "llama_context::sched_reserve",
+      "llama_context::decode",
+      "decode_query",
+      "run_source_conditioned_lifting"
+    ]
+  },
+  "quality_gates": {
+    "one_contact_only": true,
+    "transition_executed": false,
+    "carrier_causality_adjudicable": false,
+    "reverse_residual_executed": false,
+    "factor_closure_observed": false,
+    "fresh_compute_advantage": false,
+    "catalytic_recurrence": false,
+    "unbounded_recurrence": false
+  },
+  "runtime_binding": {
+    "probe_version": "399 (5973e83)",
+    "probe_sha256": "21397964AFF15F4BB74E50D494276F52B6F0B9324BCC6837F92CD689838A4524",
+    "model_sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+    "spec_bytes": 10531,
+    "spec_sha256": "A31A10EB1A1DA417668993D4AC46B322224D29793973A1C35AAC59055561418C",
+    "configured_cuda_objects_present_nonzero": "139/139"
+  },
+  "verdict": "inconclusive",
+  "strongest_supported_claim": "The source-conditioned lifting path loaded Agents-A1 and reached the first enabled effective-QKV graph reservation.",
+  "strongest_rejected_interpretation": "The enabled lifting transition never built or computed, so this contact establishes no carrier causality, useful inference, reverse computation, restoration, reuse, fresh-compute reduction, catalysis, Small Wall crossing, or unbounded bridge.",
+  "next_boundary": "ONE_BOUNDED_PHYSICAL_OPERATOR_REPAIR_USING_A_LEGAL_NON_TRANSPOSED_FAST_WEIGHT_PRIMITIVE; NO_CONTROLLER_EVALUATOR_CARRIER_EVALUATION_OR_EVIDENCE_HARNESS_SUCCESSOR"
+}
