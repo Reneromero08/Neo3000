@@ -652,6 +652,16 @@ The active recurrence and acceptance boundary are
   boundary exists from these aborted launches and no server ran. One compact
   result packet will adjudicate the repaired learned mechanism; evidence
   formatting is not a successor axis.
+- Final `neo-exp-0152` classification is
+  `END_TO_END_LATE_READER_BLOCKED_BEFORE_OPTIMIZER_BY_MODEL_SPECIFIC_MOE_AUTODIFF`.
+  Six bounded launches performed construction prompt evaluation but zero
+  optimizer steps and zero candidate boundaries. After the narrow generic
+  derivatives above, the graph stops at the final shared-expert sigmoid and
+  would next require expert-selected `MUL_MAT_ID` backward support. Extending
+  full model-specific MoE autodiff is outside this bounded reader mechanism.
+  No learned-reader, carrier-causality, recurrence, or compute claim exists.
+  The next substrate is a learned attention-state writer or weight adapter;
+  no optimizer, evaluator, fixture, or evidence-harness successor follows.
 
 ### REJECTED
 

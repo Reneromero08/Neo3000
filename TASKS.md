@@ -524,6 +524,16 @@ constructively unbounded local Agents-A1 inference.
   attention-state writer or weight adapter; it does not authorize layer,
   learning-rate, epoch, prompt, context, fixture, evaluator,
   carrier-evaluation, or evidence-harness variants.
+  Final `0152` adjudication is `INCONCLUSIVE_PRE_INTERVENTION`: full backward
+  construction next stops at the final shared-expert sigmoid, and the same
+  path requires expert-selected `MUL_MAT_ID`, which has no ggml backward rule.
+  Across six bounded launches the model loaded and construction prompts ran,
+  but optimizer steps and candidate boundaries remained exactly zero. The
+  zero-initialization, parameter binding, `SET_ROWS` derivative, unfused
+  optimizer attention, and clamp derivative remain valid engineering seams;
+  they establish no learned reader or carrier result. Do not build further
+  optimizer variants. The active physical successor is a learned attention-
+  state writer or weight adapter.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

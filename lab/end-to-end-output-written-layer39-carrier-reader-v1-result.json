@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "experiment_id": "neo-exp-0152",
+  "spec_id": "end-to-end-output-written-layer39-carrier-reader-v1",
+  "record_type": "pre_intervention_engineering_result",
+  "date": "2026-07-30",
+  "candidate_commit": "20d25cf20188eb72d39ca4a1aee02c042ee029d2",
+  "mechanism": "END_TO_END_LEARNED_OUTPUT_WRITTEN_MODEL_NATIVE_CARRIER_READER",
+  "hypothesis": "A zero-initialized layer-39 output map trained through actual Agents-A1 next-token loss can make a fixed actual-output-written port drive a useful four-step relation.",
+  "intervention": "Fit only fixed query and actual-output writer interfaces on two construction relations, then update only one 65,536-byte output map for 32 frozen loss steps before a disjoint output-driven recurrence.",
+  "contact": {
+    "model_loads": 6,
+    "construction_prompt_evaluation": true,
+    "optimizer_steps": 0,
+    "candidate_boundaries": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "pre_intervention_incidents": [
+    {
+      "classification": "OUTPUT_MAP_PARAMETER_FLAG_APPLIED_AFTER_FORWARD_GRAPH_TRAVERSAL",
+      "terminal_error": "no trainable parameters found",
+      "repair": "Bind parameter status during graph construction and reject cached graphs with different trainable status."
+    },
+    {
+      "classification": "LAYER39_CURRENT_KEY_SET_ROWS_LACKED_BACKWARD_PATH",
+      "terminal_error": "unsupported inplace gradient node cache_k_l39 (view), op SET_ROWS",
+      "repair": "Gather the overwritten-row gradient to the new key/value payload; keep the old cache payload constant."
+    },
+    {
+      "classification": "FLASH_ATTENTION_LACKED_BACKWARD_PATH",
+      "repair": "Use the mathematically matched unfused full-attention graph only for optimization; retain flash attention for runtime inference."
+    },
+    {
+      "classification": "FINAL_MOE_NORMALIZATION_CLAMP_LACKED_BACKWARD_PATH",
+      "terminal_error": "unsupported inplace gradient node ffn_moe_weights_sum_clamped-39, op CLAMP",
+      "repair": "Apply the bounded interior-mask derivative."
+    },
+    {
+      "classification": "MODEL_SPECIFIC_MOE_AUTODIFF_REMAINS_UNAVAILABLE",
+      "terminal_error": "unsupported unary op for backward pass: SIGMOID",
+      "remaining_path": "The same downstream graph also uses expert-selected MUL_MAT_ID, which has no ggml backward rule."
+    }
+  ],
+  "metrics_after": {
+    "optimizer_steps": 0,
+    "candidate_correct": null,
+    "candidate_boundary_matches": null,
+    "carrier_disabled_boundary_matches": null,
+    "return_boundary_matches": null,
+    "output_map_changed": false
+  },
+  "quality_gates": {
+    "zero_initialized_output_map": true,
+    "no_target_context_hidden_delta": true,
+    "only_output_map_declared_trainable": true,
+    "optimizer_executed": false,
+    "carrier_causality_established": false,
+    "useful_recurrence_established": false,
+    "fresh_compute_advantage": false,
+    "catalytic_recurrence": false
+  },
+  "runtime_binding": {
+    "probe_version": "383 (20d25cf)",
+    "spec_bytes": 13267,
+    "spec_sha256": "E03D9D9777DE2E5AD40E9366CEFC8BAE66E12DF5DB19278B2D6A7666D2936CC1",
+    "probe_sha256": "BD8A7C02562F633C28C32CDC6653CA463084C6B7EC9B27937A25D311A1A4BA96",
+    "server_sha256": "32B1945F1C1F2D336498190B794A85A915C5B7781A09B9B3A2C9ECC76B6790B0",
+    "libllama_sha256": "0E237AFA42F5032AEEB212B6A57F90F356A2A87B7A08C233A8E7D4407AAB64F1",
+    "libggml_base_sha256": "64E0AFF7CB2348E91F1D798C0AD98398EFCB4682CB47E7D6DD0FB8801B1CAAD",
+    "libggml_cuda_sha256": "1D99B4CF90CDB7DE50183A09122DAE59B2221B4A322E10772F64FBDAE8E237A4",
+    "configured_cuda_objects_present_nonzero": "139/139"
+  },
+  "verdict": "inconclusive",
+  "classification": "END_TO_END_LATE_READER_BLOCKED_BEFORE_OPTIMIZER_BY_MODEL_SPECIFIC_MOE_AUTODIFF",
+  "strongest_supported_claim": "The zero-initialized reader, fixed writer/query interfaces, parameter binding, attention-cache derivative, unfused optimizer attention, and final-MoE clamp derivative are built and reach the downstream MoE backward boundary.",
+  "strongest_rejected_interpretation": "No optimizer step or candidate boundary occurred, so this result establishes no learned reader, inference-bearing carrier, useful recurrence, compute reduction, catalytic inference, Small Wall crossing, or unbounded inference.",
+  "next_boundary": "CHANGE_THE_PHYSICAL_SUBSTRATE_TO_A_LEARNED_ATTENTION_STATE_WRITER_OR_WEIGHT_ADAPTER; DO_NOT CREATE OPTIMIZER_OR_EVIDENCE_HARNESS VARIANTS"
+}
