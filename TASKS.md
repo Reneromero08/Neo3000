@@ -10,8 +10,18 @@ contact.
 - Linux CUDA qualification and the complete 139 configured-unit build closure.
 - Exact live CUDA KV/recurrent plus terminal-logit capture and one-use
   continuation.
-- The exact split-decode seam, final-response withholding, numerical inverse,
-  seed zeroing, and fail-closed staged cleanup where behaviorally exercised.
+- Executed component tests support live-boundary lifecycle, anti-replay,
+  metadata rollback, numerical decoherence, inverse/restoration, seed zeroing,
+  and fail-closed staged cleanup laws.
+
+**BUILT AND STATICALLY BOUND; NOT MODEL-FACING EXECUTED**
+
+- The full Release server contains the `neo-exp-0102` split-decode seam. It is
+  designed to capture two model-logit rows at an exact split, retain staged
+  state during suffix decoding, and withhold the final response until closure.
+- The complete two-row path, suffix decode while staged state is resident,
+  final composed model boundary, and post-composition model reuse have not been
+  server-integration tested or model-facing executed after realignment.
 
 **RECLASSIFIED**
 
@@ -25,9 +35,11 @@ contact.
 - Historical `dephased` routes are forced-equal-score shams.
 - `neo-exp-0102` is
   `PRECONTACT_TWO_ROW_REVERSIBLE_SCORE_COMPOSITION_CALIBRATION`. Its maximum
-  current statement is: two model logit rows can be captured at an exact split,
-  kept off the external wire, composed through a reversible numerical encoding,
-  and withheld from output until numerical cell restoration.
+  current statement is: the server contains a built and statically bound
+  implementation designed to capture two model-logit rows at an exact split,
+  keep staged state off the external wire, compose a reversible numerical
+  encoding, and withhold output until numerical cell restoration. This
+  model-facing path remains unexecuted.
 
 **RETIRED FROM THE ACTIVE PATH**
 
@@ -44,6 +56,10 @@ contact.
   poisoned states. Release, cancellation, malformed use, sleep, shutdown, and
   destruction clear or poison resident state independently of the old pending
   Boolean.
+- Capture-task cancellation authority ends at consumer admission. A delayed
+  cancellation for the capture ID cannot clear a processing consumer; the
+  consumer task owns admitted custody and exits through its normal
+  release/poison path.
 - Calibration transitions now use a server-owned monotonic epoch and a bounded
   retired-identity registry. `A1 -> B1 -> A1`, same-lease, old-generation, and
   retired-ID replay are behaviorally rejected.

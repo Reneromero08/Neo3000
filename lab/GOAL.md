@@ -10,6 +10,8 @@ the renewed-goal readiness boundary.
 
 `neo-exp-0102` remains unconsumed and frozen. Do not select or execute a
 scientific successor from this document until a new user-authorized goal begins.
+Its split-decode server path is built and statically bound, but has not been
+server-integration tested or model-facing executed after realignment.
 The verification authority is
 `lab/realignment-2026-07-29-verification.json`.
 

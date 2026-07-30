@@ -490,6 +490,22 @@ class LiveTerminalBoundaryTests(unittest.TestCase):
             ),
         )
 
+    def test_static_binding_late_capture_cancel_fallback_is_idle_only(self):
+        """STATIC_BINDING_CHECK only; behavioral proof lives in the native lifecycle test."""
+        start = self.context.index("case SERVER_TASK_TYPE_CANCEL:")
+        cancel = self.context[
+            start : self.context.index(
+                "case SERVER_TASK_TYPE_CONTROL:",
+                start,
+            )
+        ]
+        idle_guard = cancel.index("!slot.is_processing()")
+        capture_match = cancel.index(".capture_cancellation_matches(")
+        idle_clear = cancel.index("slot.prompt_clear(false);")
+        self.assertLess(idle_guard, capture_match)
+        self.assertLess(capture_match, idle_clear)
+        self.assertNotIn(".cancellation_matches(", cancel)
+
     def test_live_boundary_cannot_enter_ram_root_terminal_receipt(self):
         root_save = self.context[
             self.context.index("case SERVER_TASK_TYPE_SLOT_ROOT_SAVE:") :

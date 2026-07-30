@@ -7,7 +7,9 @@ catalytic frontier remains paused at the readiness boundary. `neo-exp-0102` is
 unconsumed and must not be executed unless a new user-authorized catalytic goal
 establishes a scientifically repaired successor.
 
-The accepted live-terminal and split-decode interfaces remain valuable. The
+The accepted live-terminal interface and the built, statically bound
+split-decode interface remain valuable. The split-decode server path has not
+been server-integration tested or model-facing executed after realignment. The
 `0094–0101` twin-rail line is now a reversible numerical calibration line, not
 evidence of an inference-bearing phase carrier. The immediate roadmap is one
 completed foundation repair covering behavioral lifecycle custody, replay resistance,

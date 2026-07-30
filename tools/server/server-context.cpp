@@ -343,12 +343,12 @@ struct server_terminal_logits_boundary {
             return lifecycle.complete_capture(task_id);
         }
 
-        bool admit_for_use(uint64_t request_epoch) {
-            return lifecycle.admit_for_use(request_epoch);
+        bool admit_for_use(uint64_t request_epoch, int task_id) {
+            return lifecycle.admit_for_use(request_epoch, task_id);
         }
 
-        bool cancellation_matches(int task_id) const {
-            return lifecycle.cancellation_matches(task_id);
+        bool capture_cancellation_matches(int task_id) const {
+            return lifecycle.capture_cancellation_matches(task_id);
         }
 
         bool preserve_on_release(int task_id) const {
@@ -2791,7 +2791,8 @@ private:
             }
             if (use_live_terminal &&
                     !slot.terminal_logits.live.admit_for_use(
-                            task.neo3000_request_epoch)) {
+                            task.neo3000_request_epoch,
+                            task.id)) {
                 slot.prompt_clear(false);
                 send_error(
                         task,
@@ -3543,8 +3544,10 @@ private:
                     }
                     if (!cancelled) {
                         for (auto & slot : slots) {
-                            if (slot.terminal_logits.live
-                                    .cancellation_matches(task.id_target)) {
+                            if (!slot.is_processing() &&
+                                    slot.terminal_logits.live
+                                            .capture_cancellation_matches(
+                                                    task.id_target)) {
                                 const std::string boundary_id =
                                         slot.terminal_logits.live.identity
                                                 .boundary_id;

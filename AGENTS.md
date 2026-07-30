@@ -47,7 +47,16 @@ inference goal selects a repaired scientific successor. Foundation repair,
 behavioral verification, builds, and audits may proceed without model-facing
 contact.
 
-Current evidence supports only `PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`. The checkpoint-free N=16 run showed fixed-residency positive token and wall amortization but failed its strict utility gate; the direct-only qualifier then accepted cold-chain at `16/16`, rejected datacenter at `15/16`, and created no carrier authority.
+The strongest accepted fanout claim remains
+`PROCESS_LOCAL_RUNTIME_NATIVE_CARRIER_FANOUT_AMORTIZATION_SUPPORTED_TO_N8`.
+Separate bounded T, R, terminal-continuation, live-boundary, handoff, and
+numerical-calibration claims are governed by `TASKS.md`, `lab/CHECKPOINT.md`,
+and the append-only result records. None establishes general,
+recursive-unbounded, or inference-bearing twin-rail catalysis.
+
+The complete `neo-exp-0102` split-decode path is built and statically bound in
+the server, but it has not been server-integration tested or model-facing
+executed after realignment.
 
 Bounded autonomous catalytic-frontier successor mode is not active during this
 realignment pause.

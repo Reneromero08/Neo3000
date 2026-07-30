@@ -10,11 +10,19 @@
   `GGML_CUDA_FA_ALL_QUANTS=OFF`; they are not missing configured units.
 - Exact live CUDA KV/recurrent state plus one host terminal-logit row supports
   one-use continuation with zero fresh consumer prompt tokens.
-- The split-decode seam can force an exact first logits row, retain server
-  state while suffix decode continues, capture a second row, withhold the final
-  response, and close or poison staged state before release.
 - Earlier root, terminal-continuation, output-bearing capsule, and finite CUDA
   open-intermediate results retain their original bounded claims.
+
+### BUILT AND STATICALLY BOUND SERVER PATH
+
+- The full Release server contains a split-decode seam designed to force an
+  exact first logits row, retain staged state while suffix decode continues,
+  capture a second row, withhold the final response, and close or poison state
+  before release.
+- This complete `neo-exp-0102` server path has not been server-integration
+  tested or model-facing executed after realignment. Two live model rows,
+  resident suffix decode, the final composed model boundary, and
+  post-composition model reuse therefore remain unexecuted.
 
 ### SUPPORTED NUMERICAL CALIBRATIONS
 
@@ -50,6 +58,10 @@
   and shutdown. Server release and destruction paths are statically bound to
   that lifecycle and no longer rely on `terminal_logits_pending_use` to detect
   resident state.
+- Capture-task cancellation matches only before consumer admission. Executed
+  component behavior proves a delayed capture cancellation cannot steal
+  admitted custody from the consumer task; the server idle fallback is also
+  statically bound to reject processing slots.
 - Twin-rail calibration uses a bounded fixed-capacity retired-identity registry
   and monotonically advancing server epoch. Executed controls reject identity,
   lease, and generation replay.
@@ -61,8 +73,8 @@
 - The exact `0102` calibration oracle now uses three realizable normalized
   four-way fixtures and rejects the old detached tuple. This repairs the oracle,
   not the absent carrier causality.
-- The split-decode seam remains separate from the `p*q` fixture. The first-row
-  seed remains a declared 16-byte duplicate classical intermediate.
+- The built split-decode seam remains separate from the `p*q` fixture. The
+  first-row seed remains a declared 16-byte duplicate classical intermediate.
 - The active controller path is one immutable declarative runner. Historical
   wrappers remain only for provenance and are not imported.
 - Evidence classes are explicit in

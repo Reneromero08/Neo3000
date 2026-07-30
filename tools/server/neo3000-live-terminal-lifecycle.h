@@ -24,6 +24,7 @@ public:
         }
         capture_request_epoch_ = request_epoch;
         capture_task_id_ = capture_task_id;
+        consumer_task_id_ = -1;
         state_ = live_terminal_state::CAPTURING;
         return true;
     }
@@ -37,17 +38,31 @@ public:
         return true;
     }
 
-    bool admit_for_use(uint64_t consumer_request_epoch) {
+    bool admit_for_use(
+            uint64_t consumer_request_epoch,
+            int consumer_task_id) {
         if (state_ != live_terminal_state::CAPTURED_RESIDENT ||
-                consumer_request_epoch != capture_request_epoch_ + 1) {
+                consumer_request_epoch != capture_request_epoch_ + 1 ||
+                consumer_task_id < 0 ||
+                consumer_task_id == capture_task_id_) {
             return false;
         }
+        consumer_task_id_ = consumer_task_id;
         state_ = live_terminal_state::ADMITTED_FOR_USE;
         return true;
     }
 
-    bool cancellation_matches(int task_id) const {
-        return resident() && task_id == capture_task_id_;
+    bool capture_cancellation_matches(int task_id) const {
+        const bool capture_owns_custody =
+                state_ == live_terminal_state::CAPTURING ||
+                state_ == live_terminal_state::CAPTURED_RESIDENT;
+        return capture_owns_custody && task_id == capture_task_id_;
+    }
+
+    bool consumer_owns_custody(int task_id) const {
+        return
+                state_ == live_terminal_state::ADMITTED_FOR_USE &&
+                task_id == consumer_task_id_;
     }
 
     bool preserve_on_release(int releasing_task_id) const {
@@ -97,10 +112,15 @@ public:
         return capture_task_id_;
     }
 
+    int consumer_task_id() const {
+        return consumer_task_id_;
+    }
+
 private:
     live_terminal_state state_ = live_terminal_state::EMPTY;
     uint64_t capture_request_epoch_ = 0;
     int capture_task_id_ = -1;
+    int consumer_task_id_ = -1;
 };
 
 } // namespace neo3000

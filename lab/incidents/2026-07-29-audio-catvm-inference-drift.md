@@ -127,3 +127,14 @@ are bound in `lab/realignment-2026-07-29-verification.json`.
 This closes the incident’s active repair phase. It does not close the
 scientific frontier: no inference-bearing phase carrier or catalytic inference
 claim was produced. The repository is paused for a new user-authorized goal.
+
+### Late capture-cancellation correction
+
+A final bounded audit found that the capture task ID still matched cancellation
+after the boundary entered `ADMITTED_FOR_USE`. That could route delayed capture
+cancellation into an idle-only clear while the consumer slot was processing.
+The corrected lifecycle ends capture ownership at admission, records the
+consumer task owner, routes consumer cancellation through normal release and
+poison, and requires the capture-cancellation fallback to observe an idle slot.
+The native lifecycle test executes the complete late-cancellation sequence;
+the server-context test is separately classified as a static binding check.
