@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0124",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "e2e3cc4c3ca477ce0d20fd3314f0bf0c3426c94d",
+  "mechanism": "ACTIVE_G_FORWARD_STATE_PARTITION_UNIFIED_KV",
+  "spec_id": "active-g-forward-state-partition-unified-kv-v1",
+  "hypothesis": "The exact 51-position G-plus-closure attention tail, composed by metadata ownership with one independent recurrent scaffold, may reproduce complete exact G(F) inference.",
+  "intervention": "Use one unified attention-KV stream across four logical sequences. Construct exact G(F) once per public G variant, then compare complete state with three component substitutions while retaining no device roots.",
+  "model_hash": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "context_size_total": 2048,
+    "context_size_per_sequence": 512,
+    "n_seq_max": 4,
+    "attention_stream_count": 1,
+    "source_tokens": 130,
+    "F_boundary_tokens": 79,
+    "G_plus_closure_tokens": 51,
+    "retained_device_roots_used": false,
+    "partial_attention_copy": "same-stream metadata ownership",
+    "restoration_class": "DECLARED_CLOSURE"
+  },
+  "metrics_after": {
+    "exact_full_state": {
+      "correct": 16,
+      "comparisons": 16,
+      "full_logit_hash_matches": 16,
+      "boundary_matches": 16,
+      "maximum_candidate_logit_absolute_difference": 0.0
+    },
+    "exact_attention_tail_on_F_recurrent": {
+      "correct": 10,
+      "comparisons": 16,
+      "full_logit_hash_matches": 0,
+      "boundary_matches": 10,
+      "maximum_candidate_logit_absolute_difference": 10.735881567001343
+    },
+    "exact_attention_tail_on_neutral_recurrent": {
+      "correct": 16,
+      "comparisons": 16,
+      "full_logit_hash_matches": 0,
+      "boundary_matches": 16,
+      "maximum_candidate_logit_absolute_difference": 2.3261547088623047
+    },
+    "exact_recurrent_on_F_attention": {
+      "correct": 4,
+      "comparisons": 16,
+      "full_logit_hash_matches": 0,
+      "boundary_matches": 4,
+      "maximum_candidate_logit_absolute_difference": 10.476733207702637
+    },
+    "F_recurrent_content_and_row_exact": true,
+    "neutral_recurrent_content_and_row_exact": true,
+    "F_recurrent_hash": "cf7de9d446bbe457",
+    "neutral_recurrent_hash": "c5a995ac1a417d2a",
+    "F_attention_logical_bytes": 1617920,
+    "G_plus_closure_attention_logical_bytes": 1044480,
+    "complete_attention_logical_bytes": 2662400,
+    "active_cache_backend_allocation_bytes": 305397760,
+    "all_sequences_closed": true,
+    "all_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "resource_accounting": {
+    "source_decode_tokens": 413,
+    "query_decode_tokens": 2112,
+    "all_route_input_tokens": 2525,
+    "sequence_copy_count": 68,
+    "component_copy_count": 64,
+    "sequence_close_count": 70,
+    "snapshot_root_save_device_copy_bytes": 0,
+    "snapshot_root_restore_device_copy_bytes": 0,
+    "carrier_hash_d2h_bytes": 263454720,
+    "carrier_hash_peak_host_work_bytes": 1048576,
+    "exact_G_wall_ms_total": 2450.0371969999997,
+    "exact_closure_wall_ms_total": 1466.201314
+  },
+  "quality_gates": {
+    "semantic_boundary_parity": true,
+    "exact_full_logit_parity": false,
+    "metadata_only_partial_attention_ownership": true,
+    "no_retained_roots": true,
+    "stable_active_backings": true,
+    "all_state_closed": true,
+    "fresh_G_forward_eliminated": false,
+    "native_inverse_restoration": false,
+    "catalytic_recurrence": false,
+    "unbounded_recurrence": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/active-g-forward-state-partition-unified-kv-v1.json",
+      "bytes": 9128,
+      "sha256": "A340B307C098C7A078BE5BA8E135F1C737DACFDAA29012E0DE3A79C18EA697E8"
+    },
+    "canonical_recomputable_evidence": {
+      "path": "lab/active-g-forward-state-partition-unified-kv-v1-evidence.json",
+      "bytes": 57632,
+      "sha256": "34A8594F6923305BA703741DAA724750A26A0A17EF5E0BE2CAFA85769955938C",
+      "per_query_records": 64,
+      "committed": true
+    },
+    "consumed_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 239472,
+      "sha256": "1EF40B62CF81CD5A74F8BC5DD3ED774FDFB9A2124E12EAF5109B87DEEC2971AB"
+    },
+    "consumed_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 1020056,
+      "sha256": "5A64BA93FE21E68AA089EA29CAD6C30713188905AB959B4BD50A8816DC14D15D",
+      "committed": false
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 78,
+    "input_tokens": 2525,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "reject",
+  "classification": "SEMANTIC_G_ATTENTION_TAIL_SUFFICIENT_EXACT_NUMERICAL_PARTITION_REJECTED",
+  "strongest_supported_claim": "On the frozen four-G panel, the exact 1,044,480-byte G-plus-closure attention tail over one fixed neutral recurrent scaffold preserves all 16 useful A/B/C/D decisions using same-stream metadata ownership, while exact G recurrent state alone on F attention preserves only 4/16.",
+  "strongest_rejected_interpretation": "The partition is not exact inference state: no full-logit hash matches and candidate logits differ by as much as 2.3261547089. The tail is still produced by fresh 51-token model forward, so no compact generator, fresh-work reduction, restoration, catalytic recurrence, or unbounded inference is established.",
+  "next_boundary": "REPLACE_FRESH_G_PLUS_CLOSURE_FORWARD_WITH_A_DIRECT_ATTENTION_TAIL_ADVANCE_OPERATOR_AND_REQUIRE_RECURSIVE_FIDELITY"
+}

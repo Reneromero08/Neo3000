@@ -1090,14 +1090,24 @@ sequence and uses one bounded working sequence for branch, projection, and
 closure. Evidence remains one compact record attached to that mechanism; it is
 not a versioned research lane.
 
-`neo-exp-0122` closes that physical wall. Three native llama.cpp sequences form
-a bounded copy-on-write machine: sequence 0 retains F, sequence 1 advances G,
-and sequence 2 projects then closes. All 16 full-replay rows and a late
-four-query reuse sentinel are bit-identical; F remains at the same physical
-recurrent row with the same streamed hash; root save/restore traffic is zero.
+`neo-exp-0122` closes the retained-root reload wall. Three native llama.cpp
+sequences keep F recurrent state active, advance G, project, and close. All 16
+full-replay rows and a late four-query reuse sentinel are bit-identical; F
+remains at the same physical recurrent row with the same streamed hash; root
+save/restore traffic is zero. A later source audit narrows the copy claim:
+with non-unified KV, the 62 attention branches copied a complete
+`10,485,760`-byte stream each. Recurrent row ownership was copy-on-write; the
+whole hybrid branch was not.
 
-This is the first active same-backing model-native carrier fanout in the renewed
-trajectory. It is not the terminal recurrence: each branch still spends a
-fresh 51-token nonlinear G-plus-closure forward, so source work approaches
-`51/130` rather than zero. The next mechanism must replace that forward with a
-bounded state transform or lawful advance—not expand the evidence harness.
+`neo-exp-0124` localizes that remaining forward. Under one unified attention
+stream, the exact `1,044,480`-byte G-plus-closure attention tail can be attached
+by metadata ownership to one neutral recurrent scaffold and preserves all 16
+tested semantic decisions. It does not preserve exact logits: hashes match
+`0/16` and candidate deviation reaches `2.3261547089`. Exact recurrent state
+without the tail preserves only `4/16`.
+
+This is an active model-native carrier localization, not the terminal
+recurrence. Each branch still spends a fresh 51-token nonlinear
+G-plus-closure forward, so source work approaches `51/130` rather than zero.
+The next mechanism must directly construct or advance the attention tail with
+recursive fidelity—not expand the fixture or version the evidence harness.

@@ -148,17 +148,31 @@ constructively unbounded local Agents-A1 inference.
   working-sequence closure. This attacks the measured multi-gigabyte snapshot
   wall; it is not another evidence-harness revision. `neo-exp-0122` passes:
   three native sequences keep F live, branch G, and project queries with
-  copy-on-write closure. All `16/16` replay rows and `4/4` late-repeat rows are
-  bit-identical; F remains at recurrent row 0 with hash
+  recurrent row ownership and explicit closure. All `16/16` replay rows and
+  `4/4` late-repeat rows are bit-identical; F remains at recurrent row 0 with hash
   `cf7de9d446bbe457`; all 63 sequence closures pass; retained-root traffic is
   zero. Active allocation is `229,048,320` bytes, `50,790,400` below 0121's
-  measured active-plus-retained total.
-- [ ] Replace the remaining fresh 51-token G-plus-closure forward with a
-  bounded model-state transform or lawful advance on that same active F
-  carrier. Measure the actual G-forward layer/time/traffic decomposition first,
-  then intervene at the smallest causal layer boundary. Require exact useful
-  output, no prebuilt target root, and a decreasing fresh-work recurrence—not
-  more task fixtures or evidence-harness versions.
+  measured active-plus-retained total. Append-only correction:
+  `kv_unified=false` gave three attention streams, so 62 cross-stream
+  `seq_cp` operations each copied a complete `10,485,760`-byte attention
+  buffer (`650,117,120` derived bytes total). The recurrent carrier was
+  retained in place; the complete hybrid branch was not wholly copy-on-write.
+- [x] Partition the remaining exact G-plus-closure forward once, without
+  expanding the task fixture. `neo-exp-0123` is an inconclusive consumed
+  contact: separate KV streams reject partial attention ownership before any
+  component route executes. `neo-exp-0124` uses one unified attention stream,
+  so positions `79:130` transfer by metadata ownership. The exact
+  `1,044,480`-byte G-plus-closure attention tail on one neutral recurrent
+  scaffold preserves `16/16` semantic decisions, while exact G recurrent state
+  on F attention preserves only `4/16`. The strict exact gate rejects:
+  full-logit hashes are `0/16` and candidate logits differ by as much as
+  `2.3261547089`. This localizes the useful variable state but does not remove
+  the fresh 51-token forward.
+- [ ] Replace the fresh G-plus-closure forward with a direct attention-tail
+  state transform or lawful advance. Require useful recursive fidelity, no
+  prebuilt target root, and a decreasing fresh-work recurrence. Evidence
+  remains one compact record attached to the mechanism; do not create
+  carrier-evaluation v2/v3/v4 loops.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

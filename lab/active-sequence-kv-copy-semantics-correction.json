@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "neo-correction-0122-kv-copy-semantics",
+  "record_type": "append_only_claim_correction",
+  "date": "2026-07-29",
+  "affected_experiment": "neo-exp-0122",
+  "historical_result_preserved": true,
+  "finding": "The 0122 probe ran with kv_unified=false. Its three logical sequences therefore occupied three separate attention-KV streams. Recurrent sequence branching used native row ownership, but every cross-stream attention seq_cp copied a complete attention stream buffer; the route was not wholly copy-on-write.",
+  "measured_and_derived_scope": {
+    "active_hybrid_allocation_bytes": 229048320,
+    "recurrent_rows": 3,
+    "recurrent_bytes_per_row": 65863680,
+    "attention_allocation_bytes": 31457280,
+    "attention_stream_count": 3,
+    "attention_bytes_per_stream": 10485760,
+    "cross_stream_sequence_copies": 62,
+    "derived_attention_copy_bytes": 650117120,
+    "snapshot_root_save_bytes": 0,
+    "snapshot_root_restore_bytes": 0
+  },
+  "superseded_wording": "active copy-on-write fanout",
+  "corrected_wording": "active F recurrent carrier fanout with recurrent row ownership and complete cross-stream attention-buffer copies",
+  "supported_claim_after_correction": "The same active F recurrent row survived all branches exactly, all working sequences closed, and retained-root traffic was zero. Attention branch formation nevertheless copied a complete 10,485,760-byte stream on each of 62 cross-stream sequence copies.",
+  "unsupported_interpretation": "The complete hybrid branch operation was zero-copy or wholly copy-on-write.",
+  "rerun": false
+}

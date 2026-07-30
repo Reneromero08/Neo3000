@@ -128,16 +128,32 @@ The active recurrence and acceptance boundary are
 - Candidate source work is 283 tokens, versus 520 for full replay and 376 for
   the exact prefix-DAG baseline. This localizes the required nonlinear
   operation to causal G-plus-closure forward on F-conditioned state.
-- `neo-exp-0122` removes the snapshot transaction from that candidate path.
-  Sequence 0 keeps the 79-token F state active; sequence 1 copy-on-write
-  advances each G-plus-closure branch; sequence 2 projects one later query and
-  closes. All `16/16` full-replay comparisons and a `4/4` late G0 repeat are
-  bit-identical with zero candidate-logit error.
+- `neo-exp-0122` removes the retained-root snapshot transaction from that
+  candidate path. Sequence 0 keeps the 79-token F recurrent row active;
+  sequences 1 and 2 advance and close. All `16/16` full-replay comparisons
+  and a `4/4` late G0 repeat are bit-identical with zero candidate-logit error.
 - The F recurrent payload remains hash `cf7de9d446bbe457` at physical row 0
   before and after all branches. All working sequences close, active attention
   and recurrent backing identities remain stable, and no retained device root
   is created. Root save/restore traffic falls from 0121's more than 4.3 GB to
   zero; active allocation is `229,048,320` bytes.
+- Append-only correction narrows the physical claim. With `kv_unified=false`,
+  recurrent sequence ownership was copy-on-write but attention used three
+  separate streams. Each of 62 cross-stream copies moved the complete
+  `10,485,760`-byte attention stream, for `650,117,120` derived attention-copy
+  bytes. Zero root traffic did not mean zero attention-copy traffic.
+- `neo-exp-0124` then uses one unified attention stream and executes partial
+  positions `79:130` ownership as metadata only. The exact `1,044,480`-byte
+  G-plus-closure attention tail over one independently decoded neutral
+  recurrent scaffold preserves all `16/16` semantic decisions; exact
+  G-conditioned recurrent state over F attention preserves only `4/16`.
+  Every sequence closes, no retained root exists, and active backings remain
+  stable. The strict exact gate rejects because full-logit hashes match
+  `0/16` and the primary candidate-logit deviation reaches `2.3261547089`.
+- Post-contact verification rebuilds both the recurrent-carrier probe and full
+  Release server, preserves 139/139 unique configured CUDA objects with zero
+  CUDA source changes, and passes 37 focused Python tests plus 15 subtests.
+  No background inference process remains.
 
 ### REJECTED
 
@@ -175,12 +191,17 @@ The active recurrence and acceptance boundary are
   the fresh suffix ratio remains `51/130`, and the same active F state does
   not survive each branch transaction. Exact nonlinear composition is
   supported; active-carrier restoration and catalytic recurrence are not.
-- The accepted 0122 route is active copy-on-write fanout with
+- The accepted 0122 route is active recurrent-row fanout with
   `DECLARED_CLOSURE`, not inverse restoration. It preallocates three recurrent
-  rows and still decodes every 51-token G-plus-closure module and every query.
+  rows, performs complete cross-stream attention-buffer copies, and still
+  decodes every 51-token G-plus-closure module and every query.
   Its asymptotic source-work ratio remains `51/130`; unrelated task-family
   reuse, a vanishing fresh-work recurrence, and unbounded catalysis remain
   unsupported.
+- `neo-exp-0123` is consumed but inconclusive: cross-stream partial KV copy
+  asserts before the first partitioned route. `neo-exp-0124` rejects exact
+  partition equivalence. Semantic argmax parity is a useful localization
+  result, not numerical inference fidelity or a recursive carrier claim.
 - The 0108 screen is not a physically reduced carrier. Every root still
   serializes `68,526,080` device-tensor bytes; the matched reference occupies
   `76,349,440` host bytes, and omitted layers require `399,769,600`
@@ -245,11 +266,12 @@ The active recurrence and acceptance boundary are
 
 ### ACTIVE BOUNDARY
 
-Keep the accepted active F sequence and replace the remaining fresh 51-token
-G-plus-closure forward with the smallest bounded state transform or lawful
-advance that preserves exact useful output. First measure which layers,
-traffic, and wall time dominate G(F); do not grow the task fixture or evidence
-harness. `neo-exp-0102` remains frozen and unconsumed.
+Use the 0124 localization to replace fresh G-plus-closure decode with a direct
+attention-tail state transform or lawful advance. Preserve recursive useful
+fidelity, count construction work, and compare with the 51-token causal
+forward. Do not grow the task fixture and do not turn carrier-evaluation
+versioning into the research loop. `neo-exp-0102` remains frozen and
+unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

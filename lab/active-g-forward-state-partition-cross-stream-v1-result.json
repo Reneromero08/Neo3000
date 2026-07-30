@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0123",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "e2e3cc4c3ca477ce0d20fd3314f0bf0c3426c94d",
+  "mechanism": "ACTIVE_G_FORWARD_STATE_PARTITION_CROSS_STREAM",
+  "spec_id": "active-g-forward-state-partition-v1",
+  "hypothesis": "The exact G-plus-closure attention tail may be sufficient when composed with a fixed recurrent scaffold, allowing the remaining variable state to be localized below the complete hybrid branch.",
+  "intervention": "Keep exact F, neutral full scaffold, exact G(F), and scratch query state on four native sequences, then attempt a partial attention-only ownership copy for positions 79:130.",
+  "model_hash": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+  "configuration": {
+    "context_size_total": 2048,
+    "context_size_per_sequence": 512,
+    "n_seq_max": 4,
+    "kv_unified": false,
+    "restoration_class": "DECLARED_CLOSURE"
+  },
+  "outcome": {
+    "verdict": "inconclusive",
+    "classification": "CROSS_STREAM_PARTIAL_KV_SEQUENCE_COPY_UNSUPPORTED",
+    "scientific_contact": true,
+    "completed_component_intervention": false,
+    "failure": "llama-kv-cache.cpp asserted that seq_cp is supported only for full KV buffers when a partial 79:130 copy crossed attention streams",
+    "raw_result_written": false
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 9,
+    "source_tokens": 260,
+    "query_tokens": 33,
+    "input_tokens": 293,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/active-g-forward-state-partition-v1.json",
+      "bytes": 9018,
+      "sha256": "B56773813D3FC0D9B25A82184ABD1B8490DEDDD640580705B26FC04D9500E1C"
+    },
+    "consumed_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "sha256": "C63AC0C1A690199ACFDAFC023BD378D40372F477983FC1C44A811744455C3202"
+    },
+    "consumed_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "sha256": "39F4CB8E779734AD9A12F730B5A727A200F4F44110B80B400438E71FE0F85F99",
+      "committed": false
+    }
+  },
+  "strongest_supported_claim": "The failed contact identifies a concrete llama.cpp physical law: partial attention ownership transfer is unavailable across separate KV streams.",
+  "strongest_rejected_interpretation": "No state-partition or carrier-sufficiency conclusion follows because the first partial component intervention did not execute.",
+  "next_boundary": "USE_ONE_UNIFIED_ATTENTION_STREAM_FOR_METADATA_ONLY_PARTIAL_SEQUENCE_OWNERSHIP"
+}
