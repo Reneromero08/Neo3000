@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "output-conditioned-shared-phase-fast-weight-memory-v1",
   "experiment_id": "neo-exp-0155",
-  "description": "One physical carrier-mechanism contact, not an evidence-harness revision. The rejected forward-only attention writer is replaced by one fixed-width shared complex fast-weight memory that bypasses attention-state reconstruction. Public destination and output phasors bind each actual projected output into a CUDA-resident staging vector; four writes superpose there before one atomic active/staging commit, so a phase never reads its own partial successor. Later Agents-A1 query computation decodes a destination, correlates the same active phase vector against all destination/output bindings, and injects the retrieved candidate code before the frozen LM head. Three frozen construction contexts fit only the query decoder and bounded model-output dual gain. The live expected answer, target K/V rows, source replay, context-specific operator, host carrier mirror, and evidence-harness variants are forbidden. One disjoint four-phase IOUV recurrence, a matched carrier-off route, and the four-step return are executed once.",
+  "description": "One physical carrier-mechanism contact, not an evidence-harness revision. The rejected forward-only attention writer is replaced by one fixed-width shared complex fast-weight memory that bypasses attention-state reconstruction. Public destination and output phasors bind each actual projected output into a CUDA-resident staging vector; four writes superpose there before one atomic active/staging commit, so a phase never reads its own partial successor. Later Agents-A1 query computation decodes a destination, correlates the same active phase vector against all destination/output bindings, and injects the retrieved candidate code before the frozen LM head. The two already-qualified 0154 construction contexts fit only the query decoder and bounded model-output dual gain. The live expected answer, target K/V rows, source replay, context-specific operator, host carrier mirror, and evidence-harness variants are forbidden. One disjoint four-phase IOUV recurrence, a matched carrier-off route, and the four-step return are executed once.",
   "open_f_prefix_nonlinear_composition": false,
   "expected_context_size": 4096,
   "expected_context_per_sequence": 512,
@@ -201,41 +201,6 @@
           "next_output_ordinal": 0,
           "expected": "D",
           "suffix": "<|im_start|>user\nWhich code belongs to Item Z through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
-        }
-      ]
-    },
-    {
-      "id": "train-ABCD",
-      "module_f": "F: Item A maps to vault L. Item B maps to vault J. Item C maps to vault M. Item D maps to vault K.\n",
-      "output_promotion_label_indices": [1, 3, 2, 0],
-      "queries": [
-        {
-          "id": "train-ABCD-A",
-          "vault_ordinal": 2,
-          "next_output_ordinal": 3,
-          "expected": "C",
-          "suffix": "<|im_start|>user\nWhich code belongs to Item A through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
-        },
-        {
-          "id": "train-ABCD-B",
-          "vault_ordinal": 0,
-          "next_output_ordinal": 1,
-          "expected": "A",
-          "suffix": "<|im_start|>user\nWhich code belongs to Item B through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
-        },
-        {
-          "id": "train-ABCD-C",
-          "vault_ordinal": 3,
-          "next_output_ordinal": 0,
-          "expected": "D",
-          "suffix": "<|im_start|>user\nWhich code belongs to Item C through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
-        },
-        {
-          "id": "train-ABCD-D",
-          "vault_ordinal": 1,
-          "next_output_ordinal": 2,
-          "expected": "B",
-          "suffix": "<|im_start|>user\nWhich code belongs to Item D through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
         }
       ]
     }
