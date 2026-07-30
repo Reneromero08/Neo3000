@@ -379,6 +379,32 @@ The active recurrence and acceptance boundary are
   action is one execution of the frozen
   `lab/actual-output-source-position-rematerialization-v1.json`, not a prompt,
   position, layer, transport, evaluator, or evidence-packet variant.
+- Exact clean pushed head `ec0caf52e08c9493943f620a75f552cd9c20d9d3`
+  executed `neo-exp-0145` once. Every phase uses the four actually projected
+  tokens and four frozen-model source-position forwards. The candidate matches
+  all `16/16` useful phase decisions from exact full state, with zero full-logit
+  hashes and `3.2015` maximum candidate-logit error. This is the first output-
+  fed route in this sequence to preserve every phase boundary.
+- The complete cyclic gate still rejects. After the fourth update, the return
+  route preserves only `3/4` G0 decisions and zero hashes; G0-V changes from A
+  to D, with `2.6718` maximum candidate-logit error. Source inspection shows
+  that each update removes the destination's logical ownership and aliases a
+  newly allocated scratch cell. It preserves the cache allocation but not the
+  destination cell identity. The evidence therefore supports model-native
+  source-role rematerialization, not same-cell restoration or a closed useful
+  recurrence.
+- Complete accounting is 150 candidate source tokens, including four initial
+  labels and sixteen source-role rematerializations; 204 reference source
+  tokens; 1,188 query tokens; sixteen useful output-token forwards; 1,558 total
+  input tokens; and 64 bytes of projected public token identities. No tensor
+  payload crosses the host, no snapshot root is used, active allocation remains
+  `610,795,520` bytes, recurrent digests match, and all sequences and roots
+  close.
+- The next mechanism preserves the four destination cells and overwrites their
+  complete K/V payload device-to-device from each rematerialized scratch row.
+  It measures fixed cell identities and copied bytes, then executes the same
+  recurrence once. This attacks the observed physical advance law; it is not
+  an evaluator, fixture, or evidence-packet successor.
 
 ### REJECTED
 

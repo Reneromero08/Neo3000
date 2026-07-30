@@ -314,21 +314,29 @@ constructively unbounded local Agents-A1 inference.
   and returns only `1/4` G0 boundaries. Reject fixed random-feature role
   reconstruction. Do not tune width, seed, ridge, layers, contexts, prompts,
   fixtures, transports, evaluators, or evidence packets.
-- [ ] Rematerialize source-role state once through frozen Agents-A1 computation
+- [x] Rematerialize source-role state once through frozen Agents-A1 computation
   instead of approximating target cache coordinates. Feed each actual useful
   output token at its public source-label position under the still-resident
   causal source prefix, then let later ordinary inference read the resulting
   model-native K/V row. Use the projected output—not the expected answer or a
   public phase table—as the token input; charge all four one-token role
   forwards per phase; preserve stable active backing; test the unchanged
-  four-phase disjoint recurrence once. This changes the state generator, not
-  the fixture or evidence harness. **Precontact implementation frozen:**
-  `neo-exp-0145` retains four public structural prefixes, projects each actual
-  useful token through one frozen-model forward at its public label position,
-  aliases only that model-native attention row into the live carrier, and
-  reuses one closed scratch sequence. Expected answers and phase tables never
-  choose runtime tokens. The fixed four-phase recurrence remains unexecuted at
-  this source checkpoint.
+  four-phase disjoint recurrence once. `neo-exp-0145` uses sixteen actual-token
+  source-role forwards and reaches `16/16` across all four phases versus exact
+  full state's `16/16`, with no expected-answer or phase-table selection and
+  no host tensor payload. The fourth advance returns only `3/4` G0 decisions:
+  G0-V flips A→D, full hashes are `0/4`, and maximum candidate drift is
+  `2.6718`. The relink operation replaced logical label ownership with newly
+  allocated attention cells rather than overwriting the original physical
+  cells. Reject complete cyclic recurrence; retain the model-native role
+  rematerialization seam.
+- [ ] Preserve the candidate label cells themselves while applying the
+  rematerialized source-role row. Copy complete K/V payload device-to-device
+  from each one-token scratch result into the existing fixed destination cell;
+  do not remove/relink its metadata. Record destination cell identities before,
+  during, and after the cycle, charge every copied byte, and run the unchanged
+  recurrence once. This changes the physical carrier advance law; it is not
+  role-rematerialization-v2, a fixture change, or an evidence-harness revision.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

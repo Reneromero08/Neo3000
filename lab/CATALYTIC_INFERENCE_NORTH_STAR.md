@@ -97,6 +97,28 @@ MoE, or weight-factor computation. Parameters must be shared across layer and
 position examples, target rows must not survive as a basis or table, and the
 runtime selector remains the actual model output plus public causal topology.
 
+`neo-exp-0144` tested that shared nonlinear generator once and rejected it.
+One 64-channel tanh network was shared across 640 layer/K/V/destination rows
+and executed graph-native from resident output state, but it underfit its
+construction rows and transferred only `7/16`. Width, seed, ridge, context,
+transport, evaluator, and evidence versions remain closed.
+
+`neo-exp-0145` then stopped approximating the role conversion. Each actual
+useful output token was forwarded once through frozen Agents-A1 at its public
+source-label position, and later ordinary inference read the resulting
+model-native attention row. This preserves all `16/16` phase decisions on the
+frozen recurrence with no expected-answer or phase-table selector and no host
+tensor payload. It is the strongest output-fed semantic advance so far.
+
+The cycle does not close: the fourth advance returns only `3/4` G0 decisions.
+The implementation retained one active cache allocation but removed each
+destination's logical cell ownership and aliased a newly allocated scratch
+cell. Thus “same allocation” concealed a weaker physical law than same-cell
+advance. The next mechanism copies the complete rematerialized K/V payload
+into the original destination cells without metadata relinking, binds those
+cell identities across the cycle, and executes the unchanged recurrence once.
+That is a carrier-law change, not `carrier-evaluation-v2`.
+
 ### Executed bridge update — model-native residual carrier
 
 The first Linux contact after this synthesis moved the carrier before logits.
