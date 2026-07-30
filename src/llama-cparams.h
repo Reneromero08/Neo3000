@@ -18,14 +18,24 @@ struct llama_neo3000_semantic_carrier {
     int32_t read_layer = -1;        // -1: post-norm pre-LM-head
     std::vector<float> query_map;   // [4, n_embd] GGML layout [n_embd, 4]
     std::array<float, 4> query_bias = {};
+    std::vector<float> writer_map;  // [4, n_embd] GGML layout [n_embd, 4]
+    std::array<float, 4> writer_bias = {};
     std::vector<float> output_map;  // [n_embd, 4] GGML layout [4, n_embd]
+    // `port` is the retained role-invariant 4x4 process state. In
+    // output-written mode `action` stays zero and acts only as the disabled
+    // graph input; the enabled graph input reads `port` directly. Legacy
+    // phase mode continues to materialize its 4x4 action here.
+    std::array<float, 16> port = {};
     std::array<float, 16> action = {};
     uint32_t phase = 0;
     bool enabled = false;
+    bool output_written = false;
     uint64_t generation = 0;
     uint64_t action_backing_id = 0;
     uint64_t graph_input_sets = 0;
     uint64_t host_to_backend_bytes = 0;
+    uint64_t writer_host_input_bytes = 0;
+    uint64_t port_writes = 0;
 };
 
 struct llama_cparams {

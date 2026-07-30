@@ -1222,6 +1222,9 @@ static void neo3000_set_semantic_carrier_action(
     if (!carrier.enabled) {
         return;
     }
+    if (carrier.output_written) {
+        return;
+    }
     for (uint32_t source = 0; source < 4; ++source) {
         const uint32_t destination =
             (source + carrier.phase) % 4;
@@ -1288,6 +1291,125 @@ bool llama_context::install_neo3000_semantic_carrier(
     return true;
 }
 
+bool llama_context::install_neo3000_output_written_semantic_port(
+        std::vector<float> query_map,
+        const std::array<float, 4> & query_bias,
+        std::vector<float> writer_map,
+        const std::array<float, 4> & writer_bias,
+        std::vector<float> output_map,
+        int32_t read_layer) {
+    const size_t expected =
+        static_cast<size_t>(model.hparams.n_embd) * 4;
+    if (model.arch != LLM_ARCH_QWEN35MOE ||
+        read_layer != -1 ||
+        query_map.size() != expected ||
+        writer_map.size() != expected ||
+        output_map.size() != expected ||
+        !std::all_of(
+            query_map.begin(),
+            query_map.end(),
+            [](float value) { return std::isfinite(value); }) ||
+        !std::all_of(
+            query_bias.begin(),
+            query_bias.end(),
+            [](float value) { return std::isfinite(value); }) ||
+        !std::all_of(
+            writer_map.begin(),
+            writer_map.end(),
+            [](float value) { return std::isfinite(value); }) ||
+        !std::all_of(
+            writer_bias.begin(),
+            writer_bias.end(),
+            [](float value) { return std::isfinite(value); }) ||
+        !std::all_of(
+            output_map.begin(),
+            output_map.end(),
+            [](float value) { return std::isfinite(value); })) {
+        return false;
+    }
+
+    auto carrier =
+        std::make_shared<llama_neo3000_semantic_carrier>();
+    carrier->n_embd = model.hparams.n_embd;
+    carrier->read_layer = read_layer;
+    carrier->query_map = std::move(query_map);
+    carrier->query_bias = query_bias;
+    carrier->writer_map = std::move(writer_map);
+    carrier->writer_bias = writer_bias;
+    carrier->output_map = std::move(output_map);
+    carrier->output_written = true;
+    carrier->enabled = false;
+    carrier->phase = 0;
+    carrier->port.fill(0.0f);
+    neo3000_set_semantic_carrier_action(*carrier);
+
+    uint64_t backing_id = 1469598103934665603ULL;
+    const auto mix_pointer = [&](const void * pointer) {
+        uintptr_t value = reinterpret_cast<uintptr_t>(pointer);
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            backing_id ^=
+                static_cast<uint8_t>((value >> (8 * i)) & 0xffu);
+            backing_id *= 1099511628211ULL;
+        }
+    };
+    mix_pointer(carrier.get());
+    mix_pointer(carrier->query_map.data());
+    mix_pointer(carrier->writer_map.data());
+    mix_pointer(carrier->output_map.data());
+    mix_pointer(carrier->port.data());
+    mix_pointer(carrier->action.data());
+    carrier->action_backing_id = backing_id == 0 ? 1 : backing_id;
+
+    cparams.neo3000_semantic_carrier = std::move(carrier);
+    sched_need_reserve = true;
+    return true;
+}
+
+bool llama_context::write_neo3000_semantic_port(
+        const float * output_state,
+        size_t output_state_count,
+        uint32_t public_destination) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->output_written ||
+        !output_state ||
+        output_state_count != carrier->n_embd ||
+        public_destination >= 4 ||
+        carrier->writer_map.size() !=
+            static_cast<size_t>(carrier->n_embd) * 4) {
+        return false;
+    }
+
+    std::array<double, 4> code = {};
+    for (uint32_t output = 0; output < 4; ++output) {
+        double value = carrier->writer_bias[output];
+        const size_t offset =
+            static_cast<size_t>(output) * carrier->n_embd;
+        for (size_t j = 0; j < carrier->n_embd; ++j) {
+            value +=
+                static_cast<double>(carrier->writer_map[offset + j]) *
+                static_cast<double>(output_state[j]);
+        }
+        if (!std::isfinite(value)) {
+            return false;
+        }
+        code[output] = value;
+    }
+
+    for (uint32_t output = 0; output < 4; ++output) {
+        carrier->port[
+            static_cast<size_t>(output) * 4 +
+            public_destination] =
+            static_cast<float>(code[output]);
+    }
+    neo3000_set_semantic_carrier_action(*carrier);
+    carrier->writer_host_input_bytes +=
+        output_state_count * sizeof(float);
+    ++carrier->port_writes;
+    ++carrier->generation;
+    return true;
+}
+
 bool llama_context::set_neo3000_semantic_carrier_enabled(bool enabled) {
     auto & carrier = cparams.neo3000_semantic_carrier;
     if (!carrier) {
@@ -1304,7 +1426,7 @@ bool llama_context::set_neo3000_semantic_carrier_enabled(bool enabled) {
 
 bool llama_context::set_neo3000_semantic_carrier_phase(uint32_t phase) {
     auto & carrier = cparams.neo3000_semantic_carrier;
-    if (!carrier || phase >= 4) {
+    if (!carrier || carrier->output_written || phase >= 4) {
         return false;
     }
     if (carrier->phase == phase) {
@@ -1318,7 +1440,7 @@ bool llama_context::set_neo3000_semantic_carrier_phase(uint32_t phase) {
 
 bool llama_context::advance_neo3000_semantic_carrier() {
     auto & carrier = cparams.neo3000_semantic_carrier;
-    if (!carrier) {
+    if (!carrier || carrier->output_written) {
         return false;
     }
     carrier->phase = (carrier->phase + 1) % 4;
@@ -1332,6 +1454,7 @@ void llama_context::clear_neo3000_semantic_carrier() {
         return;
     }
     cparams.neo3000_semantic_carrier->enabled = false;
+    cparams.neo3000_semantic_carrier->port.fill(0.0f);
     cparams.neo3000_semantic_carrier->action.fill(0.0f);
     ++cparams.neo3000_semantic_carrier->generation;
     cparams.neo3000_semantic_carrier.reset();

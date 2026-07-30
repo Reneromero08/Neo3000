@@ -31,9 +31,13 @@ public:
             carrier->output_map.data(),
             0,
             carrier->output_map.size() * sizeof(float));
+        const float * action_data =
+            carrier->output_written && carrier->enabled
+                ? carrier->port.data()
+                : carrier->action.data();
         ggml_backend_tensor_set(
             action,
-            carrier->action.data(),
+            action_data,
             0,
             carrier->action.size() * sizeof(float));
         ++carrier->graph_input_sets;

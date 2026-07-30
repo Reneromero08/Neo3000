@@ -440,6 +440,35 @@ The active recurrence and acceptance boundary are
   zero source-position rematerialization forwards and no target-row or
   context-indexed table. Evidence remains one packet for that changed
   mechanism.
+- `neo-exp-0147` is frozen at the precontact source boundary. The new port
+  retains four role-invariant topology slots in one 64-byte matrix. It is read
+  directly rather than duplicated into the host action array; the separate
+  64-byte zero gate and transient backend graph input remain charged. A linear
+  writer consumes each actual decoded output token's hidden state and updates
+  one public slot; a query-side decoder and frozen output-head dual let a later
+  query read the matrix before its answer. The writer never receives the
+  expected answer, public phase, target K/V row, or source-position model
+  state. Runtime source-role model forwards are exactly zero.
+- Training is prospectively fixed to EFGH, WXYZ, and ABCD; IOUV is disjoint.
+  The writer/query decoders use fixed ridge `0.001`, while the composed
+  writer-port-reader response derives only the minimum gain needed for a
+  two-logit construction margin under a frozen maximum of `64`. The complete
+  construction examples are released after fitting. Training, immutable maps,
+  sixteen output-token forwards, transient output-state host transfers, graph
+  inputs, queries, references, initialization, and closure are all charged
+  against the exact compact four-link/Z4 recurrence.
+- The probe target and full Release server build successfully. The unchanged
+  configured CUDA closure is `139/139` compile entries and present objects.
+  Declarative-runner tests pass `7/7`; the exact bounded oracle passes. One
+  unrelated inherited harness test still fails its pre-existing generic-Mock
+  `resource_snapshot` assumption (`22/23` in the combined focused selection);
+  this mechanism does not repair or version that harness. No model-facing
+  `0147` contact, server launch, source prompt evaluation, or CUDA scientific
+  kernel run has occurred. The next action is one execution of the frozen
+  port, not another evaluator.
+- Reader disablement is only same-backing quiescence before declared closure;
+  it is not restoration of the nonzero port. The result schema records these
+  separately.
 
 ### REJECTED
 

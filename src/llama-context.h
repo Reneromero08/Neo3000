@@ -132,6 +132,17 @@ struct llama_context {
         const std::array<float, 4> & query_bias,
         std::vector<float> output_map,
         int32_t read_layer = -1);
+    bool install_neo3000_output_written_semantic_port(
+        std::vector<float> query_map,
+        const std::array<float, 4> & query_bias,
+        std::vector<float> writer_map,
+        const std::array<float, 4> & writer_bias,
+        std::vector<float> output_map,
+        int32_t read_layer = -1);
+    bool write_neo3000_semantic_port(
+        const float * output_state,
+        size_t output_state_count,
+        uint32_t public_destination);
     bool set_neo3000_semantic_carrier_enabled(bool enabled);
     bool set_neo3000_semantic_carrier_phase(uint32_t phase);
     bool advance_neo3000_semantic_carrier();

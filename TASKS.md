@@ -350,6 +350,17 @@ constructively unbounded local Agents-A1 inference.
   model forward at runtime. Freeze multiple construction contexts and one
   disjoint transfer context prospectively, charge training and runtime against
   the compact recurrence, and test one mechanism once.
+  `neo-exp-0147` is now frozen precontact as that one mechanism. Three fixed
+  EFGH/WXYZ/ABCD construction contexts fit a query-side vault decoder and an
+  actual-output-hidden-state writer; their composed next-step utility margins
+  derive one bounded gain before disjoint IOUV. Runtime retains one 64-byte
+  four-slot port without a second enabled host copy; the pre-existing 64-byte
+  zero gate and transient backend graph input are charged. It performs zero
+  source-role forwards, consults no expected answer or phase table, and
+  exposes a causal G1 disablement. The probe and Release server build;
+  configured CUDA closure is `139/139`. No model-facing `0147` contact has
+  occurred. Execute this frozen mechanism once; do not create gain, ridge,
+  context, prompt, fixture, evaluator, or evidence-packet variants.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

@@ -1365,3 +1365,35 @@ disjoint transfer screen. It must retain fixed capacity, no target rows or
 per-context action table, and charge training, adapter, state-action, and
 runtime work against the compact Z4 recurrence. More coordinate guesses,
 layer/prompt variants, and evidence-harness versions are closed.
+
+### Frozen mechanism update — output-written role-invariant port
+
+The cache-coordinate branch is closed. `neo-exp-0145` proved that exact
+frozen-model source-role rematerialization can preserve all `16/16` phase
+decisions, but it still spends sixteen source-role forwards and returns only
+`3/4` G0 boundaries. `neo-exp-0146` preserved the exact four physical cells
+while copying complete K/V payloads and degraded to `11/16`, with only `2/4`
+G0 return. Neither metadata placement nor same-cell overwrite is the missing
+semantic law.
+
+`neo-exp-0147` therefore changes the model interface, not the evidence
+evaluator. One fixed four-slot latent matrix is written from actual output
+token hidden states. Later disjoint queries decode their vault relation and
+read that same matrix before the LM-head boundary. Three fixed construction
+contexts fit the writer and query maps, and their composed next-step utility
+response derives one bounded margin gain. Runtime receives no expected
+answer, phase selector, target row, answer table, context-indexed operator, or
+source-position forward.
+
+This is still a bounded finite learned classical port, not the north star.
+Its immutable maps, output-token forwards, 8 KiB transient hidden-state
+transfer per write, 64-byte zero gate, transient backend graph input, and all
+fitting work are material costs; the enabled host read uses the port directly
+instead of retaining a second copy. Reader disablement is quiescence before
+declared closure, not port restoration. The exact compact Z4 recurrence
+remains the strongest baseline. One frozen disjoint run now asks only whether
+this new carrier law eliminates source replay while preserving useful
+recurrence and causal disablement. Passing moves the port earlier and onto
+persistent backend state before scaling recurrence. Failure moves the read
+into earlier nonlinear model computation. Neither outcome authorizes
+carrier-evaluation, gain, ridge, context, prompt, or evidence-packet versions.
