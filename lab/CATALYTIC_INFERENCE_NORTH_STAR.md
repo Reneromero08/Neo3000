@@ -219,6 +219,23 @@ attention-root allocation. Only after measuring that baseline should Neo test
 an operator-native structured KV update; otherwise ordinary radix caching
 could masquerade as catalytic leverage.
 
+The exact prefix-DAG baseline is now measured. A 48-token root plus 82 fresh
+suffix tokens constructs each attention state bit-exactly to full replay,
+while one fixed attention allocation is overwritten across all arms. Across
+six arms, construction falls from 780 to 540 tokens. This is real fresh-work
+reduction, but its recurrence is not catalytic:
+
+```text
+F_source(T) / U_source(T) -> 82 / 130
+```
+
+The ratio remains positive, peak measured active-plus-retained allocation
+rises from 144.9 MB to 211.7 MB, and snapshot restore traffic dominates. The
+next candidate must act directly on a neutral KV carrier using compact public
+F/G operators without retaining target roots. Its persistent factor rank,
+workspace, drift correction, and inverse cost must be charged against this
+prefix-DAG baseline; tensor notation alone is not compactness.
+
 ## 1. Executive conclusion
 
 The strongest coherent route to catalytic Agents-A1 inference is:

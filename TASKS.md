@@ -99,12 +99,22 @@ constructively unbounded local Agents-A1 inference.
   All twelve deltas close sequentially, the exact scaffold survives 49
   restores, and measured active-plus-retained allocation remains
   `144,875,520` bytes.
-- [ ] For the two complete passes, implement the strongest exact classical
-  construction baseline: decode the common prefix once into an on-device
-  root, restore it, decode only F+G+closure, overwrite one fixed attention-root
-  allocation, and compare exact utility/resources with full 130-token replay.
-  Then use that measured irreducible boundary to design an operator-native KV
-  update rather than relabeling prefix caching as catalysis.
+- [x] Build the exact common-prefix construction baseline on both complete
+  passes. `neo-exp-0117` produces exact evidence but is inconclusive because
+  its JSON demanded 48 matches for only 24 comparison pairs and runtime did
+  not read that field. `neo-exp-0118` changes only the executable gate and
+  passes `24/24` full-logit hashes with zero error. A 48-token prefix plus six
+  82-token suffixes replaces six 130-token replays (`780 -> 540`, 240 avoided)
+  while overwriting one stable `2,662,400`-byte attention allocation.
+  This exact baseline is ordinary prefix caching; its asymptotic fresh-source
+  ratio is `82/130`, and measured active-plus-retained allocation rises to
+  `211,722,240` bytes.
+- [ ] Build the smallest structured in-place KV operator candidate on the two
+  accepted tasks. It must start from a neutral attention root, apply public
+  F/G descriptors without retaining target attention roots or a complete
+  classical KV duplicate, be read causally by later queries, and beat the
+  exact prefix-DAG baseline in fully charged fresh work or expose the rank/
+  correction growth that prevents it.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

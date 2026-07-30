@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0118",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "999d0c8118e8ee38b66fefeee10c95ef8e4af76a",
+  "mechanism": "EXECUTABLE_GATE_COMMON_PREFIX_DAG_FIXED_ATTENTION_ALLOCATION",
+  "spec_id": "common-prefix-dag-attention-construction-gate-repair-v1",
+  "hypothesis": "The identical prefix-DAG mechanism will pass when the executable gate binds the mathematically correct 24 paired comparisons.",
+  "intervention": "Change only the acceptance cardinality from an impossible 48 to 24 paired comparisons and require runtime acceptance to read every JSON gate.",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "context_size": 512,
+    "source_tokens": 130,
+    "prefix_tokens": 48,
+    "suffix_tokens_per_arm": 82,
+    "task_count": 2,
+    "arms_per_task": 3,
+    "queries_per_arm": 4,
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "metrics_after": {
+    "comparisons": 24,
+    "expected_comparisons": 24,
+    "full_logit_hash_matches": 24,
+    "expected_full_logit_hash_matches": 24,
+    "boundary_matches": 24,
+    "expected_boundary_matches": 24,
+    "maximum_candidate_logit_absolute_difference": 0.0,
+    "fixed_attention_backing_stable": true,
+    "scaffold_content_exact": true,
+    "full_replay_source_tokens": 780,
+    "prefix_candidate_one_time_tokens": 48,
+    "prefix_candidate_suffix_tokens": 492,
+    "prefix_candidate_source_tokens_total": 540,
+    "avoided_source_tokens": 240,
+    "source_token_reduction_fraction": 0.3076923076923077,
+    "asymptotic_fresh_source_ratio": 0.6307692307692307,
+    "fixed_attention_root_logical_bytes": 2662400,
+    "fixed_attention_root_backing_id": "52d3c0de925ca647",
+    "prefix_root_logical_bytes": 66846720,
+    "scaffold_root_logical_bytes": 65863680,
+    "active_cache_backend_allocation_bytes": 76349440,
+    "maximum_retained_root_backend_allocation_bytes": 135372800,
+    "active_plus_retained_backend_allocation_bytes": 211722240,
+    "all_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "resource_accounting": {
+    "root_save_device_copy_bytes": 164659200,
+    "prefix_restore_device_copy_bytes": 401080320,
+    "scaffold_restore_device_copy_bytes": 3227320320,
+    "attention_restore_device_copy_bytes": 127795200,
+    "scaffold_hash_d2h_bytes": 131727360,
+    "fresh_input_tokens_total": 3034,
+    "whole_process_cuda_residency_measured": false,
+    "fresh_compute_reduction": true,
+    "wall_time_advantage_measured": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/common-prefix-dag-attention-construction-gate-repair-v1.json",
+      "bytes": 8385,
+      "sha256": "ABE832F478FE3FD13CBD05D233E25AD65BA941EFFB55BDAAD659670CA90B0912"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 132480,
+      "sha256": "19721B311CF603E8437E15CE024E080FCB28BFD67A37EB2E004151737EF8B979"
+    },
+    "probe_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 721200,
+      "sha256": "FD31739D7E3C8D4114BB974023642A59EB37F939119712C1CBCFED2C4FAAE6EF"
+    },
+    "raw_result": {
+      "committed": false,
+      "bytes": 42930,
+      "sha256": "5F9608FFED6091D7BF679A7DCEDA3A6D1BF983C87A901ABD5F689C7879B56B51"
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 95,
+    "input_tokens": 3034,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "quality_gates": {
+    "executable_acceptance_law": true,
+    "exact_full_logit_parity": true,
+    "fixed_attention_backing_reused": true,
+    "source_tokens_reduced": true,
+    "scaffold_content_restored_exactly": true,
+    "complete_host_state_duplicate_absent": true,
+    "all_roots_closed": true,
+    "operator_native_update": false,
+    "native_inverse_restoration": false,
+    "vanishing_fresh_compute_ratio": false,
+    "unbounded_recurrence": false
+  },
+  "verdict": "accept",
+  "classification": "EXACT_PREFIX_DAG_CONSTRUCTION_REUSES_FIXED_ATTENTION_ALLOCATION_AND_AVOIDS_240_SOURCE_TOKENS",
+  "strongest_supported_claim": "A 48-token common-prefix root plus 82 suffix tokens per arm constructs attention state bit-exactly to six complete 130-token replays across 24 delayed queries, overwrites one stable 2,662,400-byte attention allocation, and avoids 240/780 source tokens while preserving exact scaffold content and closing all roots.",
+  "strongest_rejected_interpretation": "This is ordinary prefix caching plus snapshot restoration. Its asymptotic fresh-source ratio is 82/130, measured active-plus-retained allocation rises to 211,722,240 bytes, device-copy work is large, and wall-time advantage is unmeasured. It is not an operator-native update, native restoration, catalytic recurrence, or unbounded inference.",
+  "next_boundary": "BUILD_A_STRUCTURED_IN_PLACE_KV_OPERATOR_CANDIDATE_AND_REQUIRE_IT_TO_BEAT_THE_PREFIX_DAG_BASELINE_WITHOUT_RETAINING_TARGET_ROOTS"
+}

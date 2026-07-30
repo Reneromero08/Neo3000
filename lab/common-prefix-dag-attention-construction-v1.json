@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "id": "common-prefix-dag-attention-construction-v1",
+  "description": "On the two complete neo-exp-0116 task passes, compare full 130-token source replay with exact common-prefix-root restoration plus F+G+closure suffix decode. Both routes overwrite the same fixed attention-root key and query through the same recurrent scaffold. This is the strongest exact prefix-caching baseline, not a catalytic claim.",
+  "prefix_dag_attention_construction": true,
+  "expected_context_size": 512,
+  "expected_source_tokens": 130,
+  "frozen_predecessors": {
+    "full_panel_experiment_id": "neo-exp-0115",
+    "full_panel_spec_sha256": "120D4C96C3BC2D8F81D9DE2442C7552335CBDC6F0ED82D6761FAA43098DE0EC8",
+    "full_panel_raw_result_sha256": "03E86D8E969D6F3D52BB0371B159E53B831544BF94D48819707CFBC042E07DBA",
+    "physical_panel_experiment_id": "neo-exp-0116",
+    "physical_panel_spec_sha256": "BE2CDB323354DF4D554CDF6557762C4C30B230391262473003D5559C9ABD3A8C",
+    "physical_panel_raw_result_sha256": "712DABD7DF2D28202390ECC8EBB4426A635A32B3DC389DFE6BC02488B5E6DC04",
+    "complete_passes": ["panel-forward-EFGH", "panel-cycle-IOUV"]
+  },
+  "scaffold_source": {
+    "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+    "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+    "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+    "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+  },
+  "tasks": [
+    {
+      "id": "panel-forward-EFGH",
+      "sources": {
+        "F_only": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item E maps to vault J. Item F maps to vault K. Item G maps to vault L. Item H maps to vault M.\n",
+          "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        },
+        "G_only": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+          "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        },
+        "joint": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item E maps to vault J. Item F maps to vault K. Item G maps to vault L. Item H maps to vault M.\n",
+          "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        }
+      },
+      "queries": [
+        {"id": "EFGH-E", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "EFGH-F", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "EFGH-G", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "EFGH-H", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ]
+    },
+    {
+      "id": "panel-cycle-IOUV",
+      "sources": {
+        "F_only": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item I maps to vault K. Item O maps to vault L. Item U maps to vault M. Item V maps to vault J.\n",
+          "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        },
+        "G_only": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+          "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        },
+        "joint": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item I maps to vault K. Item O maps to vault L. Item U maps to vault M. Item V maps to vault J.\n",
+          "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        }
+      },
+      "queries": [
+        {"id": "IOUV-I", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item I through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "IOUV-O", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item O through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "IOUV-U", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "IOUV-V", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ]
+    }
+  ],
+  "acceptance_law": {
+    "full_logit_hash_matches": 48,
+    "boundary_matches": 48,
+    "maximum_candidate_logit_absolute_difference": 0.0,
+    "fixed_attention_backing_stable": true,
+    "source_tokens_avoided_minimum": 1
+  },
+  "claim_ceiling": "Exact common-prefix DAG baseline for attention-root construction on two already qualified tasks. Acceptance can establish bit-exact suffix-only construction, source-token avoidance, and overwrite reuse of one attention-root allocation. It remains ordinary prefix caching plus snapshot roots and cannot establish operator-native carrier updates, native inverse restoration, catalytic advantage, task-family breadth, Small Wall crossing, or unbounded recurrence."
+}

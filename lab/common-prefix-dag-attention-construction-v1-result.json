@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0117",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "999d0c8118e8ee38b66fefeee10c95ef8e4af76a",
+  "mechanism": "COMMON_PREFIX_DAG_FIXED_ATTENTION_ALLOCATION",
+  "spec_id": "common-prefix-dag-attention-construction-v1",
+  "hypothesis": "A common-prefix device root can construct the accepted attention states with fewer source tokens while overwriting one stable attention-root allocation and preserving exact full-replay logits.",
+  "intervention": "Decode a 48-token common prefix once, restore it before each of six arms, decode only the 82-token F+G+closure suffix, overwrite one fixed attention-root key, and compare with complete 130-token replay on every query.",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "context_size": 512,
+    "source_tokens": 130,
+    "prefix_tokens": 48,
+    "task_count": 2,
+    "arms_per_task": 3,
+    "queries_per_arm": 4,
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "metrics_after": {
+    "observed_comparisons": 24,
+    "full_logit_hash_matches": 24,
+    "boundary_matches": 24,
+    "maximum_candidate_logit_absolute_difference": 0.0,
+    "fixed_attention_backing_stable": true,
+    "full_replay_source_tokens": 780,
+    "prefix_candidate_source_tokens_total": 540,
+    "avoided_source_tokens": 240,
+    "active_plus_retained_backend_allocation_bytes": 211722240,
+    "all_roots_closed": true
+  },
+  "acceptance_defect": {
+    "predeclared_full_logit_hash_matches": 48,
+    "mathematically_available_paired_comparisons": 24,
+    "implementation_read_acceptance_law": false,
+    "raw_runtime_verdict": "accept",
+    "canonical_adjudication": "inconclusive"
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/common-prefix-dag-attention-construction-v1.json",
+      "bytes": 8485,
+      "sha256": "AB1D27C0D3591C628B8BD02C6AC4255B13AC1CDDA383E846D81B3500C76E0EC2"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 131311,
+      "sha256": "804D878FB39287CADA63F63699F0FC002B73031907709992E1444E65AFE2B4E7"
+    },
+    "probe_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 707400,
+      "sha256": "9A5341FA0F130EB6837C3CC76F5B84747CDA1E45FD5395BB2BB5AF9E7E20D097"
+    },
+    "raw_result": {
+      "committed": false,
+      "bytes": 42739,
+      "sha256": "78B04B8DC1F399E2C1E0A6FCD2F245451391A92CE9003A145FE84662229C7349"
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 95,
+    "input_tokens": 3034,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "inconclusive",
+  "classification": "EXACT_PREFIX_DAG_EVIDENCE_WITH_INVALID_PREDECLARED_CARDINALITY_GATE",
+  "strongest_supported_claim": "The raw mechanism produced 24/24 exact paired full-logit hashes, zero candidate-logit error, one stable attention backing, exact scaffold preservation, and 240 avoided construction tokens.",
+  "strongest_rejected_interpretation": "The predeclared gate demanded 48 matches although only 24 pairs exist, and the implementation ignored that gate. The result cannot be canonically accepted; it also remains ordinary prefix caching with snapshot roots and no catalytic recurrence.",
+  "next_boundary": "EXECUTE_THE_IDENTICAL_MECHANISM_UNDER_AN_EXECUTABLE_24_PAIR_GATE"
+}

@@ -259,6 +259,36 @@ static std::vector<llama_token> tokenize_source(
     return all;
 }
 
+static std::vector<llama_token> prepare_source_prefix(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const json & source) {
+    llama_memory_clear(llama_get_memory(ctx), true);
+    auto tokens = tokenize_piece(
+        vocab, source.at("prefix").get<std::string>(), true, true);
+    decode_tokens(ctx, tokens, 0, false);
+    llama_synchronize(ctx);
+    return tokens;
+}
+
+static size_t decode_source_suffix(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const json & source,
+        size_t prefix_tokens) {
+    llama_pos pos = static_cast<llama_pos>(prefix_tokens);
+    size_t suffix_tokens = 0;
+    for (const char * field : {"module_f", "module_g", "closure"}) {
+        auto tokens = tokenize_piece(
+            vocab, source.at(field).get<std::string>(), false, true);
+        decode_tokens(ctx, tokens, pos, false);
+        pos += static_cast<llama_pos>(tokens.size());
+        suffix_tokens += tokens.size();
+    }
+    llama_synchronize(ctx);
+    return suffix_tokens;
+}
+
 static device_root save_root(
         llama_context * ctx,
         const std::string & variant,
@@ -1989,6 +2019,388 @@ static json run_physical_attention_capability_panel(
     };
 }
 
+static json run_prefix_dag_attention_construction(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const std::vector<llama_token> & candidates,
+        const json & spec,
+        uint64_t active_recurrent_backing_initial,
+        uint64_t active_attention_backing_initial) {
+    const uint32_t actual_context_size = llama_n_ctx(ctx);
+    if (actual_context_size != spec.at("expected_context_size").get<uint32_t>()) {
+        throw std::runtime_error(
+            "prefix-DAG context mismatch: " +
+            std::to_string(actual_context_size));
+    }
+    const size_t expected_source_tokens =
+        spec.at("expected_source_tokens").get<size_t>();
+    const auto & tasks = spec.at("tasks");
+    if (!tasks.is_array() || tasks.empty()) {
+        throw std::runtime_error("prefix-DAG spec has no tasks");
+    }
+
+    for (const auto & task : tasks) {
+        for (const char * arm : {"F_only", "G_only", "joint"}) {
+            if (tokenize_source(vocab, task.at("sources").at(arm)).size() !=
+                expected_source_tokens) {
+                throw std::runtime_error(
+                    "prefix-DAG source token mismatch for " +
+                    task.at("id").get<std::string>() + ":" + arm);
+            }
+        }
+    }
+    if (tokenize_source(vocab, spec.at("scaffold_source")).size() !=
+        expected_source_tokens) {
+        throw std::runtime_error("prefix-DAG scaffold token mismatch");
+    }
+
+    const auto prefix_tokens = prepare_source_prefix(
+        ctx, vocab, tasks.at(0).at("sources").at("joint"));
+    if (prefix_tokens.empty() ||
+        prefix_tokens.size() >= expected_source_tokens) {
+        throw std::runtime_error("prefix-DAG common prefix has invalid length");
+    }
+    for (const auto & task : tasks) {
+        for (const char * arm : {"F_only", "G_only", "joint"}) {
+            const auto tokens = tokenize_piece(
+                vocab,
+                task.at("sources").at(arm).at("prefix").get<std::string>(),
+                true, true);
+            if (tokens != prefix_tokens) {
+                throw std::runtime_error(
+                    "prefix-DAG source prefixes are not token-identical");
+            }
+        }
+    }
+    auto prefix_root = save_root(
+        ctx, "common-prefix:full-hybrid", 8000, FULL_DEVICE_FLAGS,
+        prefix_tokens.size());
+
+    const auto scaffold_tokens =
+        prepare_source(ctx, vocab, spec.at("scaffold_source"));
+    auto scaffold_root = save_root(
+        ctx, "prefix-DAG:F0_G0:recurrent-scaffold", 8001,
+        RECURRENT_DEVICE_FLAGS, scaffold_tokens.size());
+    const auto scaffold_hash_before = hash_recurrent_state_streamed(ctx);
+    const size_t active_cache_backend_allocation_bytes =
+        active_hybrid_backend_allocation_bytes(ctx);
+
+    const llama_seq_id attention_key = 8002;
+    bool attention_root_initialized = false;
+    uint64_t fixed_attention_backing_id = 0;
+    size_t fixed_attention_allocation_bytes = 0;
+    size_t fixed_attention_logical_bytes = 0;
+    size_t attention_root_write_count = 0;
+    size_t prefix_restore_count = 0;
+    size_t scaffold_restore_count = 0;
+    size_t attention_restore_count = 0;
+    size_t reference_source_tokens = 0;
+    size_t prefix_candidate_source_tokens = prefix_tokens.size();
+    size_t prefix_candidate_suffix_tokens = 0;
+    size_t root_save_device_copy_bytes =
+        prefix_root.gpu_bytes + scaffold_root.gpu_bytes;
+    size_t prefix_restore_device_copy_bytes = 0;
+    size_t scaffold_restore_device_copy_bytes = 0;
+    size_t attention_restore_device_copy_bytes = 0;
+    json records = json::array();
+    json construction_records = json::array();
+    json task_summary = json::object();
+    size_t full_logit_hash_matches = 0;
+    size_t boundary_matches_total = 0;
+    size_t comparisons = 0;
+    double maximum_candidate_logit_absolute_difference = 0.0;
+    bool fixed_backing_stable = true;
+
+    for (const auto & task : tasks) {
+        const std::string id = task.at("id");
+        json arm_summary = json::object();
+        for (const char * arm : {"F_only", "G_only", "joint"}) {
+            const auto & source = task.at("sources").at(arm);
+            const auto & queries = task.at("queries");
+
+            const auto full_source_tokens = prepare_source(ctx, vocab, source);
+            reference_source_tokens += full_source_tokens.size();
+            auto reference_root = save_root(
+                ctx, id + ":" + arm + ":full-replay-attention",
+                attention_key, ATTENTION_DEVICE_FLAGS,
+                full_source_tokens.size());
+            ++attention_root_write_count;
+            root_save_device_copy_bytes += reference_root.gpu_bytes;
+            if (!attention_root_initialized) {
+                attention_root_initialized = true;
+                fixed_attention_backing_id = reference_root.backing_id;
+                fixed_attention_allocation_bytes =
+                    reference_root.allocation_bytes;
+                fixed_attention_logical_bytes = reference_root.resident_bytes;
+            } else {
+                fixed_backing_stable =
+                    fixed_backing_stable &&
+                    reference_root.backing_id == fixed_attention_backing_id &&
+                    reference_root.allocation_bytes ==
+                        fixed_attention_allocation_bytes &&
+                    reference_root.resident_bytes ==
+                        fixed_attention_logical_bytes;
+            }
+
+            std::vector<boundary_result> reference_results;
+            for (const auto & query : queries) {
+                restore_root(ctx, scaffold_root);
+                ++scaffold_restore_count;
+                scaffold_restore_device_copy_bytes += scaffold_root.gpu_bytes;
+                restore_attention_root(ctx, reference_root);
+                ++attention_restore_count;
+                attention_restore_device_copy_bytes += reference_root.gpu_bytes;
+                auto boundary = decode_query(
+                    ctx, vocab, candidates, "full-source-replay",
+                    id + ":" + arm, query, full_source_tokens.size(),
+                    reference_root.backing_id, reference_root.gpu_bytes);
+                records.push_back(boundary.record);
+                reference_results.push_back(std::move(boundary));
+            }
+
+            restore_root(ctx, prefix_root);
+            ++prefix_restore_count;
+            prefix_restore_device_copy_bytes += prefix_root.gpu_bytes;
+            const size_t suffix_tokens = decode_source_suffix(
+                ctx, vocab, source, prefix_tokens.size());
+            prefix_candidate_suffix_tokens += suffix_tokens;
+            if (prefix_tokens.size() + suffix_tokens !=
+                expected_source_tokens) {
+                throw std::runtime_error(
+                    "prefix-DAG constructed source length changed");
+            }
+            auto candidate_root = save_root(
+                ctx, id + ":" + arm + ":prefix-DAG-attention",
+                attention_key, ATTENTION_DEVICE_FLAGS,
+                expected_source_tokens);
+            ++attention_root_write_count;
+            root_save_device_copy_bytes += candidate_root.gpu_bytes;
+            fixed_backing_stable =
+                fixed_backing_stable &&
+                candidate_root.backing_id == fixed_attention_backing_id &&
+                candidate_root.allocation_bytes ==
+                    fixed_attention_allocation_bytes &&
+                candidate_root.resident_bytes ==
+                    fixed_attention_logical_bytes;
+
+            std::vector<boundary_result> candidate_results;
+            for (const auto & query : queries) {
+                restore_root(ctx, scaffold_root);
+                ++scaffold_restore_count;
+                scaffold_restore_device_copy_bytes += scaffold_root.gpu_bytes;
+                restore_attention_root(ctx, candidate_root);
+                ++attention_restore_count;
+                attention_restore_device_copy_bytes += candidate_root.gpu_bytes;
+                auto boundary = decode_query(
+                    ctx, vocab, candidates, "common-prefix-DAG",
+                    id + ":" + arm, query, expected_source_tokens,
+                    candidate_root.backing_id, candidate_root.gpu_bytes);
+                records.push_back(boundary.record);
+                candidate_results.push_back(std::move(boundary));
+            }
+
+            size_t arm_hash_matches = 0;
+            size_t arm_boundary_matches = 0;
+            double arm_maximum_difference = 0.0;
+            for (size_t i = 0; i < queries.size(); ++i) {
+                const auto & reference = reference_results.at(i);
+                const auto & candidate = candidate_results.at(i);
+                arm_hash_matches +=
+                    reference.full_logits_fnv1a64 ==
+                    candidate.full_logits_fnv1a64;
+                arm_boundary_matches +=
+                    reference.argmax == candidate.argmax;
+                for (size_t c = 0; c < reference.candidate_logits.size(); ++c) {
+                    arm_maximum_difference = std::max(
+                        arm_maximum_difference,
+                        std::abs(
+                            static_cast<double>(
+                                reference.candidate_logits.at(c)) -
+                            static_cast<double>(
+                                candidate.candidate_logits.at(c))));
+                }
+            }
+            full_logit_hash_matches += arm_hash_matches;
+            boundary_matches_total += arm_boundary_matches;
+            comparisons += queries.size();
+            maximum_candidate_logit_absolute_difference = std::max(
+                maximum_candidate_logit_absolute_difference,
+                arm_maximum_difference);
+            arm_summary[arm] = {
+                {"full_logit_hash_matches", arm_hash_matches},
+                {"boundary_matches", arm_boundary_matches},
+                {"comparisons", queries.size()},
+                {"maximum_candidate_logit_absolute_difference",
+                    arm_maximum_difference},
+            };
+            construction_records.push_back({
+                {"task_id", id},
+                {"arm", arm},
+                {"prefix_tokens", prefix_tokens.size()},
+                {"suffix_tokens", suffix_tokens},
+                {"full_source_tokens", full_source_tokens.size()},
+                {"fixed_attention_backing_id",
+                    hex64(candidate_root.backing_id)},
+            });
+        }
+        task_summary[id] = arm_summary;
+    }
+
+    restore_root(ctx, scaffold_root);
+    ++scaffold_restore_count;
+    scaffold_restore_device_copy_bytes += scaffold_root.gpu_bytes;
+    const auto scaffold_hash_after = hash_recurrent_state_streamed(ctx);
+    const bool scaffold_exact =
+        scaffold_hash_before.value == scaffold_hash_after.value &&
+        scaffold_hash_before.transferred_bytes ==
+            scaffold_hash_after.transferred_bytes;
+    const auto & acceptance = spec.at("acceptance_law");
+    const size_t expected_comparisons =
+        acceptance.at("comparisons").get<size_t>();
+    const size_t expected_hash_matches =
+        acceptance.at("full_logit_hash_matches").get<size_t>();
+    const size_t expected_boundary_matches =
+        acceptance.at("boundary_matches").get<size_t>();
+    const double maximum_allowed_difference =
+        acceptance.at(
+            "maximum_candidate_logit_absolute_difference").get<double>();
+    const size_t minimum_avoided_source_tokens =
+        acceptance.at("source_tokens_avoided_minimum").get<size_t>();
+    const size_t avoided_source_tokens =
+        reference_source_tokens -
+        (prefix_candidate_source_tokens +
+         prefix_candidate_suffix_tokens);
+    const bool accepted =
+        comparisons == expected_comparisons &&
+        full_logit_hash_matches == expected_hash_matches &&
+        boundary_matches_total == expected_boundary_matches &&
+        maximum_candidate_logit_absolute_difference <=
+            maximum_allowed_difference &&
+        fixed_backing_stable ==
+            acceptance.at("fixed_attention_backing_stable").get<bool>() &&
+        scaffold_exact &&
+        avoided_source_tokens >= minimum_avoided_source_tokens;
+
+    llama_memory_clear(llama_get_memory(ctx), true);
+    const size_t cleared_attention_bytes =
+        llama_state_seq_clear_device_data(ctx, attention_key);
+    const size_t cleared_scaffold_bytes =
+        llama_state_seq_clear_device_data(ctx, scaffold_root.key);
+    const size_t cleared_prefix_bytes =
+        llama_state_seq_clear_device_data(ctx, prefix_root.key);
+    llama_synchronize(ctx);
+    if (llama_state_seq_get_device_root_count(ctx) != 0 ||
+        active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
+        active_attention_backing_id(ctx) != active_attention_backing_initial) {
+        throw std::runtime_error("prefix-DAG close invariant failed");
+    }
+
+    const size_t maximum_retained_root_backend_allocation_bytes =
+        prefix_root.allocation_bytes +
+        scaffold_root.allocation_bytes +
+        fixed_attention_allocation_bytes;
+    return {
+        {"schema_version", 1},
+        {"mechanism", "COMMON_PREFIX_DAG_FIXED_ATTENTION_ALLOCATION"},
+        {"spec_id", spec.at("id")},
+        {"model_arch", "qwen35moe"},
+        {"configuration", {
+            {"context_size", actual_context_size},
+            {"source_tokens", expected_source_tokens},
+            {"prefix_tokens", prefix_tokens.size()},
+            {"task_count", tasks.size()},
+            {"arms_per_task", 3},
+            {"queries_per_arm", tasks.at(0).at("queries").size()},
+            {"restoration_class", "SNAPSHOT_RELOAD"},
+        }},
+        {"summary", {
+            {"full_logit_hash_matches", full_logit_hash_matches},
+            {"boundary_matches", boundary_matches_total},
+            {"comparisons", comparisons},
+            {"maximum_candidate_logit_absolute_difference",
+                maximum_candidate_logit_absolute_difference},
+            {"expected_comparisons", expected_comparisons},
+            {"expected_full_logit_hash_matches", expected_hash_matches},
+            {"expected_boundary_matches", expected_boundary_matches},
+            {"maximum_allowed_candidate_logit_absolute_difference",
+                maximum_allowed_difference},
+            {"fixed_attention_backing_stable", fixed_backing_stable},
+            {"scaffold_content_exact", scaffold_exact},
+            {"accepted", accepted},
+        }},
+        {"task_summary", task_summary},
+        {"construction", {
+            {"full_replay_source_tokens", reference_source_tokens},
+            {"prefix_candidate_one_time_tokens",
+                prefix_candidate_source_tokens},
+            {"prefix_candidate_suffix_tokens",
+                prefix_candidate_suffix_tokens},
+            {"prefix_candidate_source_tokens_total",
+                prefix_candidate_source_tokens +
+                prefix_candidate_suffix_tokens},
+            {"avoided_source_tokens",
+                avoided_source_tokens},
+            {"attention_root_write_count", attention_root_write_count},
+            {"fixed_attention_root_logical_bytes",
+                fixed_attention_logical_bytes},
+            {"fixed_attention_root_backend_allocation_bytes",
+                fixed_attention_allocation_bytes},
+            {"fixed_attention_root_backing_id",
+                hex64(fixed_attention_backing_id)},
+            {"prefix_root_logical_bytes", prefix_root.resident_bytes},
+            {"prefix_root_backend_allocation_bytes",
+                prefix_root.allocation_bytes},
+            {"prefix_restore_count", prefix_restore_count},
+        }},
+        {"carrier", {
+            {"scaffold", {
+                {"logical_tensor_bytes", scaffold_root.resident_bytes},
+                {"backend_allocation_bytes", scaffold_root.allocation_bytes},
+                {"root_backing_id", hex64(scaffold_root.backing_id)},
+                {"restore_count", scaffold_restore_count},
+                {"content_hash_before", hex64(scaffold_hash_before.value)},
+                {"content_hash_after", hex64(scaffold_hash_after.value)},
+            }},
+            {"attention_restore_count", attention_restore_count},
+            {"active_cache_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes},
+            {"maximum_retained_root_backend_allocation_bytes",
+                maximum_retained_root_backend_allocation_bytes},
+            {"active_plus_retained_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes +
+                maximum_retained_root_backend_allocation_bytes},
+            {"complete_host_state_copy_retained", false},
+            {"all_retained_roots_closed",
+                llama_state_seq_get_device_root_count(ctx) == 0},
+            {"active_recurrent_backing_stable",
+                active_recurrent_backing_id(ctx) ==
+                active_recurrent_backing_initial},
+            {"active_attention_backing_stable",
+                active_attention_backing_id(ctx) ==
+                active_attention_backing_initial},
+        }},
+        {"resource_accounting", {
+            {"root_save_device_copy_bytes", root_save_device_copy_bytes},
+            {"prefix_restore_device_copy_bytes",
+                prefix_restore_device_copy_bytes},
+            {"scaffold_restore_device_copy_bytes",
+                scaffold_restore_device_copy_bytes},
+            {"attention_restore_device_copy_bytes",
+                attention_restore_device_copy_bytes},
+            {"scaffold_hash_d2h_bytes",
+                scaffold_hash_before.transferred_bytes +
+                scaffold_hash_after.transferred_bytes},
+            {"cleared_attention_bytes", cleared_attention_bytes},
+            {"cleared_scaffold_bytes", cleared_scaffold_bytes},
+            {"cleared_prefix_bytes", cleared_prefix_bytes},
+        }},
+        {"construction_records", construction_records},
+        {"records", records},
+        {"verdict", accepted ? "accept" : "reject"},
+        {"claim_ceiling", spec.at("claim_ceiling")},
+    };
+}
+
 } // namespace
 
 int main(int argc, char ** argv) {
@@ -2040,6 +2452,22 @@ int main(int argc, char ** argv) {
         }
         if (active_attention_backing_initial == 0) {
             throw std::runtime_error("active attention backing identity is zero");
+        }
+
+        if (spec.value("prefix_dag_attention_construction", false)) {
+            const json result = run_prefix_dag_attention_construction(
+                ctx,
+                vocab,
+                candidates,
+                spec,
+                active_backing_initial,
+                active_attention_backing_initial);
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
         }
 
         if (spec.value("physical_attention_capability_panel", false)) {

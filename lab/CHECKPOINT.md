@@ -96,6 +96,14 @@ The active recurrence and acceptance boundary are
   joint/F-only/G-only. The exact same `65,863,680`-byte scaffold survives 49
   restores; twelve `2,662,400`-byte attention roots are retained and closed
   one at a time; active plus retained backend allocation is `144,875,520`.
+- `neo-exp-0118` establishes the strongest exact construction baseline. One
+  48-token full-hybrid prefix root is restored six times; only each 82-token
+  F+G+closure suffix is decoded. The resulting attention state is bit-exact
+  to six 130-token full replays on `24/24` complete logit rows with zero
+  candidate-logit error.
+- All twelve reference/candidate writes overwrite the same
+  `2,662,400`-byte attention-root allocation and preserve its backing ID.
+  Candidate source work falls from 780 to 540 tokens, avoiding 240.
 - The Release server rebuild succeeds, all 139 configured CUDA objects remain
   present with zero CUDA source changes, and the focused no-model Python suite
   passes 57 tests.
@@ -169,16 +177,25 @@ The active recurrence and acceptance boundary are
   `3,355,115,520` bytes during scaffold-plus-attention restoration. Its two
   passing instances do not establish task-family breadth or catalytic
   recurrence.
+- `neo-exp-0117` is preserved as inconclusive despite exact raw parity because
+  its predeclared 48-match gate exceeded the 24 available pairs and the
+  implementation did not read the JSON gate. `neo-exp-0118` repairs only this
+  acceptance boundary and executes it prospectively.
+- Prefix-DAG construction is ordinary exact caching, not catalytic inference.
+  It retains a `66,846,720`-byte prefix root, raises measured
+  active-plus-retained allocation to `211,722,240` bytes, performs more than
+  3.75 GB of measured restore copies, and leaves an asymptotic fresh-source
+  ratio of `82/130`. No wall-time advantage was measured.
 
 ### ACTIVE BOUNDARY
 
-Use the two complete physical passes to build the exact strongest compact
-construction baseline: one on-device common-prefix root, suffix-only
-F+G+closure decode, and one fixed attention-root allocation overwritten
-between transactions. Count avoided source tokens, root traffic, stable
-backing, and parity against full replay. This is an ordinary prefix-DAG
-baseline, not catalysis; it defines the irreducible work an operator-native KV
-update must beat. `neo-exp-0102` remains frozen and unconsumed.
+Use the exact prefix-DAG result as the baseline for a structured in-place KV
+operator. Begin from one neutral attention root, derive F/G actions from
+public descriptors, mutate the active KV backing directly, and allow later
+Agents-A1 queries to read it. No complete target root or host KV duplicate may
+exist at runtime. Count factor/basis bytes, workspace, application/inverse
+work, drift, and held-out failures; compare fully charged work against the
+82-token-per-arm suffix baseline. `neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 
