@@ -243,13 +243,25 @@ constructively unbounded local Agents-A1 inference.
   Agents-A1 therefore has no usable learned semantics for this frozen
   adjacent-channel complex coordinate law. No layer, mix, fixture, or
   evidence-packet variants are authorized.
-- [ ] Derive the next generator from actual model semantic weights or train
-  the smallest carrier-aware adapter. It must give the live label value state
-  a public context-independent code/update law without target cache rows,
-  target-token model forwards, per-context tables, or post-hoc layer/mix
-  selection. Compare its full physical cost to the compact four-link/Z4
-  recurrence. If a weight-derived screen fails, move to carrier-aware training
-  rather than another untrained coordinate interpretation.
+- [x] Screen one generator derived from actual frozen model semantic weights.
+  `neo-exp-0139` constructs four per-layer codes directly from the public
+  A/B/C/D token embeddings, each learned attention RMSNorm, and each learned
+  value projection, then applies their fixed rank-3 Z4 map to the same live
+  label-value cells in all ten attention layers. Exact state is `16/16`; the
+  weight-derived route is `4/16`, with every noncanonical phase retaining the
+  original `A,B,C,D` decisions. Four turns retain the G0 boundary but return
+  `0/4` full-logit hashes with `1.2906` maximum candidate drift. The operator
+  uses zero noncanonical target forwards, but its `147,056` bytes plus
+  `7,606,784` bytes of weight reads are strictly worse than the compact Z4
+  relation. Raw lexical model-weight coordinates are rejected; no layer,
+  prompt, fixture, or evidence-packet variant follows.
+- [ ] Train the smallest carrier-aware semantic action, rather than evaluate
+  another hand-chosen coordinate system. The intervention must teach one
+  bounded public update law to act on live model-native state, use a
+  prospectively disjoint context to test transfer, retain no target cache rows
+  or per-context operator table, and expose its full training plus runtime
+  material cost against the compact Z4 recurrence. This is a generator change,
+  not an evidence-harness version.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

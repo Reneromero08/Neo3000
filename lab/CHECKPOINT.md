@@ -224,6 +224,21 @@ The active recurrence and acceptance boundary are
   receives the same public quarter-turn with fixed keys, and four turns return
   all four G0 full-logit hashes exactly. This is executed model-native
   multiplicative state use, not a post-logit wrapper.
+- `neo-exp-0139` replaces hand-chosen coordinates with one fixed action
+  derived only from frozen Agents-A1 weights. Public A/B/C/D token embeddings,
+  each full-attention layer's learned RMSNorm, and its learned value projection
+  produce four value codes and a centered rank-3 Z4 map per layer. The
+  resulting `147,056`-byte operator acts on live label-value rows across all
+  ten attention layers with zero noncanonical target-token forwards, stable
+  active backing, no retained target row or context table, and complete
+  sequence/root closure.
+- The exact 0139 route remains `16/16`; the weight-derived route is `4/16`.
+  Every noncanonical phase retains the original G0 `A,B,C,D` mapping. Four
+  turns preserve the four coarse G0 decisions but not their numerical state:
+  return hashes match `0/4` and maximum candidate-logit drift is `1.2906`.
+  Construction reads `7,606,784` bytes of model tensors and retains
+  `147,056` operator bytes, so the tiny exact classical Z4 recurrence is still
+  strictly stronger.
 - The complete Release server rebuild passes after the KV action change.
   Configured CUDA closure remains `139/139` compile entries and `139/139`
   unique objects. Seventeen focused declarative-runner/oracle tests and all 19
@@ -263,6 +278,13 @@ The active recurrence and acceptance boundary are
   No layer/mix/fixture/evidence series follows. The next mechanism must derive
   semantic coordinates from actual weights or explicitly train the model to
   consume a bounded carrier.
+- The raw frozen-weight semantic construction is now rejected too.
+  `neo-exp-0139` proves that lexical embedding -> learned norm -> learned Wv
+  coordinates do not supply the context-independent relation action: they
+  change logits but advance none of the twelve noncanonical decisions. This
+  closes untrained coordinate interpretation as the active path. The next
+  mechanism is the smallest carrier-aware training intervention, not another
+  layer choice, prompt panel, operator evaluator, or evidence-harness version.
 
 - The balanced held-out adapter produced joint/F-only/G-only accuracy
   `1/4`, `1/4`, and `2/4`; eligibility mutation failed. It is a conventional

@@ -30,6 +30,8 @@ using json = nlohmann::ordered_json;
 
 namespace {
 
+static llama_memory_hybrid * require_hybrid_memory(llama_context * ctx);
+
 constexpr llama_state_seq_flags RECURRENT_DEVICE_FLAGS =
     LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY | LLAMA_STATE_SEQ_FLAGS_ON_DEVICE;
 constexpr llama_state_seq_flags FULL_DEVICE_FLAGS =
@@ -55,6 +57,16 @@ struct device_root {
     size_t allocation_bytes = 0;
     size_t allocation_gpu_bytes = 0;
     uint64_t backing_id = 0;
+};
+
+struct model_weight_value_operator_build {
+    llama_kv_cache::value_subspace_operator value_operator;
+    std::vector<llama_token> semantic_tokens;
+    std::map<uint32_t, std::vector<double>> code_norms;
+    uint64_t source_tensor_read_bytes = 0;
+    uint64_t peak_host_work_bytes = 0;
+    uint64_t builder_bytes = 0;
+    uint64_t operator_hash = 0;
 };
 
 static void print_usage(int, char ** argv) {
@@ -121,6 +133,245 @@ static uint64_t hash_value_subspace_operator(
         }
     }
     return hash;
+}
+
+static std::vector<float> read_model_tensor_row_f32(
+        const ggml_tensor * tensor,
+        int64_t row,
+        uint64_t & transferred_bytes,
+        uint64_t & peak_host_work_bytes) {
+    if (!tensor ||
+        !tensor->buffer ||
+        row < 0 ||
+        row >= tensor->ne[1] ||
+        tensor->ne[2] != 1 ||
+        tensor->ne[3] != 1) {
+        throw std::runtime_error(
+            "model semantic-code tensor row is unavailable");
+    }
+    const ggml_type_traits * traits =
+        ggml_get_type_traits(tensor->type);
+    if (!traits ||
+        (tensor->type != GGML_TYPE_F32 && !traits->to_float) ||
+        tensor->ne[0] <= 0 ||
+        tensor->ne[0] % traits->blck_size != 0) {
+        throw std::runtime_error(
+            "model semantic-code tensor type cannot be decoded");
+    }
+    const size_t elements =
+        static_cast<size_t>(tensor->ne[0]);
+    const size_t row_bytes =
+        ggml_row_size(tensor->type, tensor->ne[0]);
+    if (tensor->nb[1] < row_bytes) {
+        throw std::runtime_error(
+            "model semantic-code tensor row stride is invalid");
+    }
+    std::vector<uint8_t> raw(row_bytes);
+    std::vector<float> values(elements);
+    ggml_backend_tensor_get(
+        tensor,
+        raw.data(),
+        static_cast<size_t>(row) * tensor->nb[1],
+        raw.size());
+    if (tensor->type == GGML_TYPE_F32) {
+        std::memcpy(
+            values.data(),
+            raw.data(),
+            elements * sizeof(float));
+    } else {
+        traits->to_float(raw.data(), values.data(), elements);
+    }
+    transferred_bytes += raw.size();
+    peak_host_work_bytes = std::max<uint64_t>(
+        peak_host_work_bytes,
+        raw.size() + values.size() * sizeof(float));
+    return values;
+}
+
+static model_weight_value_operator_build
+build_model_weight_value_operator(
+        llama_context * ctx,
+        const std::set<uint32_t> & layer_ids,
+        const std::vector<llama_token> & semantic_tokens) {
+    if (!ctx ||
+        layer_ids.empty() ||
+        semantic_tokens.size() != 4 ||
+        std::set<llama_token>(
+            semantic_tokens.begin(),
+            semantic_tokens.end()).size() !=
+            semantic_tokens.size()) {
+        throw std::runtime_error(
+            "weight-derived semantic operator geometry is invalid");
+    }
+    const llama_model & model = ctx->get_model();
+    if (model.arch != LLM_ARCH_QWEN35MOE ||
+        !model.tok_embd ||
+        !model.loras.empty()) {
+        throw std::runtime_error(
+            "weight-derived semantic operator requires unadapted qwen35moe");
+    }
+    const size_t n_embd =
+        static_cast<size_t>(model.hparams.n_embd);
+    if (model.tok_embd->ne[0] !=
+        static_cast<int64_t>(n_embd)) {
+        throw std::runtime_error(
+            "semantic token embedding width mismatch");
+    }
+
+    model_weight_value_operator_build result;
+    result.semantic_tokens = semantic_tokens;
+    std::vector<std::vector<float>> token_embeddings;
+    token_embeddings.reserve(semantic_tokens.size());
+    for (const llama_token token : semantic_tokens) {
+        token_embeddings.push_back(
+            read_model_tensor_row_f32(
+                model.tok_embd,
+                token,
+                result.source_tensor_read_bytes,
+                result.peak_host_work_bytes));
+    }
+
+    llama_kv_cache::value_subspace_builder builder;
+    builder.layers.reserve(layer_ids.size());
+    for (const uint32_t layer_id : layer_ids) {
+        if (layer_id >= model.layers.size()) {
+            throw std::runtime_error(
+                "semantic operator layer is out of range");
+        }
+        const llama_layer & layer = model.layers[layer_id];
+        if (!layer.attn_norm ||
+            !layer.wv ||
+            layer.wv_s ||
+            layer.attn_norm->ne[0] !=
+                static_cast<int64_t>(n_embd) ||
+            layer.wv->ne[0] !=
+                static_cast<int64_t>(n_embd) ||
+            layer.wv->ne[1] <= 0 ||
+            layer.wv->ne[2] != 1 ||
+            layer.wv->ne[3] != 1) {
+            throw std::runtime_error(
+                "semantic operator layer weights are unsupported");
+        }
+
+        const auto norm_weight =
+            read_model_tensor_row_f32(
+                layer.attn_norm,
+                0,
+                result.source_tensor_read_bytes,
+                result.peak_host_work_bytes);
+        std::vector<std::vector<float>> normalized(
+            semantic_tokens.size(),
+            std::vector<float>(n_embd));
+        for (size_t token_index = 0;
+             token_index < semantic_tokens.size();
+             ++token_index) {
+            double mean_square = 0.0;
+            for (const float value :
+                 token_embeddings[token_index]) {
+                mean_square +=
+                    static_cast<double>(value) *
+                    static_cast<double>(value);
+            }
+            mean_square /= static_cast<double>(n_embd);
+            const double inverse_rms =
+                1.0 /
+                std::sqrt(
+                    mean_square +
+                    model.hparams.f_norm_rms_eps);
+            for (size_t j = 0; j < n_embd; ++j) {
+                normalized[token_index][j] =
+                    static_cast<float>(
+                        static_cast<double>(
+                            token_embeddings[token_index][j]) *
+                        inverse_rms *
+                        static_cast<double>(norm_weight[j]));
+            }
+        }
+
+        const size_t value_elements =
+            static_cast<size_t>(layer.wv->ne[1]);
+        std::vector<std::vector<float>> codes(
+            semantic_tokens.size(),
+            std::vector<float>(value_elements, 0.0f));
+        for (size_t output_index = 0;
+             output_index < value_elements;
+             ++output_index) {
+            const auto weights =
+                read_model_tensor_row_f32(
+                    layer.wv,
+                    static_cast<int64_t>(output_index),
+                    result.source_tensor_read_bytes,
+                    result.peak_host_work_bytes);
+            for (size_t token_index = 0;
+                 token_index < semantic_tokens.size();
+                 ++token_index) {
+                double value = 0.0;
+                for (size_t j = 0; j < n_embd; ++j) {
+                    value +=
+                        static_cast<double>(weights[j]) *
+                        static_cast<double>(
+                            normalized[token_index][j]);
+                }
+                codes[token_index][output_index] =
+                    static_cast<float>(value);
+            }
+        }
+
+        std::vector<double> norms;
+        norms.reserve(codes.size());
+        for (const auto & code : codes) {
+            double norm_squared = 0.0;
+            for (const float value : code) {
+                norm_squared +=
+                    static_cast<double>(value) *
+                    static_cast<double>(value);
+            }
+            norms.push_back(std::sqrt(norm_squared));
+        }
+        result.code_norms[layer_id] = std::move(norms);
+
+        llama_kv_cache::value_subspace_builder_layer item;
+        item.layer_id = layer_id;
+        item.key = false;
+        item.samples = std::move(codes);
+        item.present.assign(semantic_tokens.size(), true);
+        builder.layers.push_back(std::move(item));
+    }
+    builder.sample_count = semantic_tokens.size();
+    builder.vector_backing_bytes =
+        sizeof(builder) +
+        builder.layers.capacity() *
+            sizeof(llama_kv_cache::value_subspace_builder_layer);
+    for (const auto & item : builder.layers) {
+        builder.vector_backing_bytes +=
+            item.samples.capacity() *
+                sizeof(std::vector<float>) +
+            item.present.capacity() / 8 + 1;
+        for (const auto & sample : item.samples) {
+            builder.vector_backing_bytes +=
+                sample.capacity() * sizeof(float);
+        }
+    }
+
+    auto * attention =
+        require_hybrid_memory(ctx)->get_mem_attn();
+    llama_kv_cache::value_subspace_metrics metrics = {};
+    if (!attention->finalize_value_subspace_operator(
+            &builder,
+            1,
+            semantic_tokens.size(),
+            &result.value_operator,
+            &metrics)) {
+        throw std::runtime_error(
+            "weight-derived semantic operator construction failed");
+    }
+    result.builder_bytes = metrics.builder_bytes;
+    result.peak_host_work_bytes = std::max<uint64_t>(
+        result.peak_host_work_bytes,
+        metrics.peak_host_work_bytes);
+    result.operator_hash =
+        hash_value_subspace_operator(result.value_operator);
+    return result;
 }
 
 static uint64_t refresh_value_subspace_operator_backing(
@@ -4291,6 +4542,8 @@ static json run_sparse_g_label_refresh(
         spec.value("fourier_value_orbit_action", false);
     const bool subspace_value_orbit_mode =
         spec.value("subspace_value_orbit_action", false);
+    const bool model_weight_value_orbit_mode =
+        spec.value("model_weight_value_orbit_action", false);
     const bool subspace_include_keys =
         spec.value("subspace_include_keys", false);
     if (subspace_include_keys &&
@@ -4314,13 +4567,15 @@ static json run_sparse_g_label_refresh(
         key_value_orbit_mode ||
         complex_phase_orbit_mode ||
         fourier_value_orbit_mode ||
-        subspace_value_orbit_mode;
+        subspace_value_orbit_mode ||
+        model_weight_value_orbit_mode;
     if (static_cast<int>(position_orbit_mode) +
             static_cast<int>(value_orbit_mode) +
             static_cast<int>(key_value_orbit_mode) +
             static_cast<int>(complex_phase_orbit_mode) +
             static_cast<int>(fourier_value_orbit_mode) +
-            static_cast<int>(subspace_value_orbit_mode) > 1) {
+            static_cast<int>(subspace_value_orbit_mode) +
+            static_cast<int>(model_weight_value_orbit_mode) > 1) {
         throw std::runtime_error(
             "label orbit action modes are mutually exclusive");
     }
@@ -4406,6 +4661,38 @@ static json run_sparse_g_label_refresh(
         }
         variant_g_tokens.push_back(std::move(tokens));
     }
+    if (model_weight_value_orbit_mode) {
+        std::vector<llama_token> canonical_labels;
+        canonical_labels.reserve(label_offsets.size());
+        for (const size_t offset : label_offsets) {
+            canonical_labels.push_back(
+                variant_g_tokens.at(0).at(offset));
+        }
+        if (std::set<llama_token>(
+                canonical_labels.begin(),
+                canonical_labels.end()).size() !=
+                canonical_labels.size()) {
+            throw std::runtime_error(
+                "weight-derived semantic labels are not distinct");
+        }
+        for (size_t variant = 0;
+             variant < variant_g_tokens.size();
+             ++variant) {
+            for (size_t position = 0;
+                 position < label_offsets.size();
+                 ++position) {
+                if (variant_g_tokens[variant]
+                        [label_offsets[position]] !=
+                    canonical_labels[
+                        (position + variant) %
+                        canonical_labels.size()]) {
+                    throw std::runtime_error(
+                        "weight-derived semantic labels do not follow "
+                        "the frozen public Z4 cycle");
+                }
+            }
+        }
+    }
     std::vector<std::vector<uint32_t>> fourier_label_ordinals;
     if (fourier_value_orbit_mode ||
         subspace_value_orbit_mode) {
@@ -4461,6 +4748,64 @@ static json run_sparse_g_label_refresh(
         spec.at("expected_attention_stream_count").get<uint32_t>()) {
         throw std::runtime_error(
             "sparse G refresh attention stream mismatch");
+    }
+    const std::vector<uint32_t> attention_layer_ids =
+        attention->get_layer_ids();
+    const std::set<uint32_t> all_attention_layers(
+        attention_layer_ids.begin(),
+        attention_layer_ids.end());
+    const std::set<uint32_t> orbit_attention_layers =
+        (value_orbit_mode ||
+         key_value_orbit_mode ||
+         complex_phase_orbit_mode ||
+         fourier_value_orbit_mode ||
+         subspace_value_orbit_mode ||
+         model_weight_value_orbit_mode)
+            ? spec.contains("orbit_attention_layers")
+                ? parse_layer_selection(
+                    spec, "orbit_attention_layers", attention_layer_ids)
+                : all_attention_layers
+            : all_attention_layers;
+    if (paired_complex_attention_read &&
+        orbit_attention_layers !=
+            std::set<uint32_t>{
+                static_cast<uint32_t>(
+                    paired_complex_attention_layer)}) {
+        throw std::runtime_error(
+            "paired-complex read requires the value-phase action and "
+            "read to share one frozen attention layer");
+    }
+    const bool layer_selective_value_orbit =
+        (value_orbit_mode ||
+         fourier_value_orbit_mode ||
+         subspace_value_orbit_mode ||
+         model_weight_value_orbit_mode) &&
+        orbit_attention_layers != all_attention_layers;
+    model_weight_value_operator_build
+        model_weight_operator_build;
+    if (model_weight_value_orbit_mode) {
+        std::vector<llama_token> semantic_tokens;
+        semantic_tokens.reserve(label_offsets.size());
+        for (const size_t offset : label_offsets) {
+            semantic_tokens.push_back(
+                variant_g_tokens.at(0).at(offset));
+        }
+        model_weight_operator_build =
+            build_model_weight_value_operator(
+                ctx,
+                orbit_attention_layers,
+                semantic_tokens);
+        if (model_weight_operator_build.value_operator.layers.size() !=
+                orbit_attention_layers.size() ||
+            model_weight_operator_build.value_operator
+                .calibration_samples != semantic_tokens.size() ||
+            model_weight_operator_build.value_operator
+                .maximum_layer_rank > 3 ||
+            model_weight_operator_build.value_operator
+                .training_contexts != 1) {
+            throw std::runtime_error(
+                "weight-derived semantic operator invariant failed");
+        }
     }
     llama_memory_t memory = llama_get_memory(ctx);
     const llama_seq_id f_seq = 0;
@@ -4662,36 +5007,6 @@ static json run_sparse_g_label_refresh(
         scaffold_hash_before;
     const size_t active_cache_backend_allocation_bytes =
         active_hybrid_backend_allocation_bytes(ctx);
-    const std::vector<uint32_t> attention_layer_ids =
-        attention->get_layer_ids();
-    const std::set<uint32_t> all_attention_layers(
-        attention_layer_ids.begin(),
-        attention_layer_ids.end());
-    const std::set<uint32_t> orbit_attention_layers =
-        (value_orbit_mode ||
-         key_value_orbit_mode ||
-         complex_phase_orbit_mode ||
-         fourier_value_orbit_mode ||
-         subspace_value_orbit_mode)
-            ? spec.contains("orbit_attention_layers")
-                ? parse_layer_selection(
-                    spec, "orbit_attention_layers", attention_layer_ids)
-                : all_attention_layers
-            : all_attention_layers;
-    if (paired_complex_attention_read &&
-        orbit_attention_layers !=
-            std::set<uint32_t>{
-                static_cast<uint32_t>(
-                    paired_complex_attention_layer)}) {
-        throw std::runtime_error(
-            "paired-complex read requires the value-phase action and "
-            "read to share one frozen attention layer");
-    }
-    const bool layer_selective_value_orbit =
-        (value_orbit_mode ||
-         fourier_value_orbit_mode ||
-         subspace_value_orbit_mode) &&
-        orbit_attention_layers != all_attention_layers;
     const size_t refreshed_attention_logical_bytes =
         attention_source_bytes(
             attention, all_attention_layers, label_offsets.size());
@@ -5157,6 +5472,33 @@ static json run_sparse_g_label_refresh(
         for (const size_t label_offset : label_offsets) {
             label_positions.push_back(static_cast<llama_pos>(
                 f_boundary_tokens + label_offset));
+        }
+        if (model_weight_value_orbit_mode) {
+            llama_kv_cache::value_subspace_metrics metrics = {};
+            if (!attention->seq_apply_value_subspace_step(
+                    candidate_seq,
+                    label_positions,
+                    model_weight_operator_build.value_operator,
+                    &metrics)) {
+                throw std::runtime_error(
+                    stage +
+                    ": weight-derived semantic value action failed");
+            }
+            llama_synchronize(ctx);
+            orbit_host_read_bytes += metrics.host_read_bytes;
+            orbit_host_write_bytes += metrics.host_write_bytes;
+            orbit_peak_host_work_bytes = std::max(
+                orbit_peak_host_work_bytes,
+                metrics.peak_host_work_bytes);
+            orbit_tensor_visits += metrics.tensor_visits;
+            orbit_position_visits += metrics.position_visits;
+            ++orbit_action_count;
+            require_component_positions(
+                candidate_seq,
+                source_boundary_pos,
+                source_boundary_pos,
+                stage + ":weight-semantic-value-advanced");
+            return;
         }
         if (subspace_value_orbit_mode) {
             llama_kv_cache::value_subspace_metrics metrics = {};
@@ -5721,6 +6063,8 @@ static json run_sparse_g_label_refresh(
                     : "TRANSFERRED_STATE_CONDITIONED_LOW_RANK_VALUE_ACTION"
             : fourier_value_orbit_mode
             ? "IN_PLACE_RANK3_FOURIER_LABEL_VALUE_ACTION"
+            : model_weight_value_orbit_mode
+            ? "MODEL_WEIGHT_DERIVED_SEMANTIC_VALUE_CYCLE"
             : complex_phase_orbit_mode
             ? paired_complex_attention_read
                 ? "IN_PLACE_VALUE_PHASE_WITH_LAYER_LOCAL_PAIRED_COMPLEX_ATTENTION_READ"
@@ -5766,11 +6110,22 @@ static json run_sparse_g_label_refresh(
                 fourier_value_orbit_mode},
             {"subspace_value_orbit_action",
                 subspace_value_orbit_mode},
+            {"model_weight_value_orbit_action",
+                model_weight_value_orbit_mode},
             {"subspace_include_keys",
                 subspace_include_keys},
             {"subspace_operator_built_in_this_panel",
                 subspace_value_orbit_mode &&
                 build_subspace_operator},
+            {"model_weight_semantic_tokens",
+                model_weight_operator_build.semantic_tokens},
+            {"model_weight_code_norms",
+                model_weight_operator_build.code_norms},
+            {"model_weight_operator_hash",
+                model_weight_value_orbit_mode
+                    ? hex64(
+                        model_weight_operator_build.operator_hash)
+                    : ""},
             {"fourier_label_ordinals",
                 fourier_label_ordinals},
             {"orbit_attention_layers", orbit_attention_layers},
@@ -5912,6 +6267,33 @@ static json run_sparse_g_label_refresh(
                 subspace_operator_calibration_max_abs_error},
             {"subspace_operator_closure_max_abs_error",
                 subspace_operator_closure_max_abs_error},
+            {"model_weight_source_tensor_read_bytes",
+                model_weight_operator_build
+                    .source_tensor_read_bytes},
+            {"model_weight_builder_bytes",
+                model_weight_operator_build.builder_bytes},
+            {"model_weight_operator_logical_bytes",
+                model_weight_operator_build
+                    .value_operator.logical_bytes},
+            {"model_weight_operator_vector_backing_bytes",
+                model_weight_operator_build
+                    .value_operator.vector_backing_bytes},
+            {"model_weight_operator_total_rank",
+                model_weight_operator_build
+                    .value_operator.total_rank},
+            {"model_weight_operator_maximum_layer_rank",
+                model_weight_operator_build
+                    .value_operator.maximum_layer_rank},
+            {"model_weight_operator_calibration_max_abs_error",
+                model_weight_operator_build
+                    .value_operator.calibration_max_abs_error},
+            {"model_weight_operator_closure_max_abs_error",
+                model_weight_operator_build
+                    .value_operator
+                    .subspace_closure_max_abs_error},
+            {"model_weight_operator_construction_peak_host_work_bytes",
+                model_weight_operator_build
+                    .peak_host_work_bytes},
             {"snapshot_root_save_device_copy_bytes", 0},
             {"snapshot_root_restore_device_copy_bytes", 0},
             {"carrier_hash_d2h_bytes",

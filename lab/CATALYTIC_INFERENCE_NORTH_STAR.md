@@ -1234,3 +1234,18 @@ derive or learn one fixed context-independent label-code update that consumes
 live state, retains no target cache rows or context table, and replaces the
 four target-token forwards. It is charged against the compact Z4/classical
 recurrence. No layer, mix, prompt, or evidence-packet series is allowed.
+
+`neo-exp-0139` closes the remaining untrained semantic-coordinate shortcut.
+The public A/B/C/D embeddings, learned attention norms, and learned value
+projections define a real frozen-model code at every full-attention layer, but
+their fixed rank-3 Z4 action preserves only the original G0 decision pattern:
+`4/16` versus exact model state's `16/16`. Four turns also accumulate
+numerical drift rather than restoring the full logits.
+
+The frontier therefore changes the generator, not the evaluator. The next
+mechanism is one minimal carrier-aware training law that teaches the model to
+read and advance a bounded semantic carrier, followed by one prospectively
+disjoint transfer screen. It must retain fixed capacity, no target rows or
+per-context action table, and charge training, adapter, state-action, and
+runtime work against the compact Z4 recurrence. More coordinate guesses,
+layer/prompt variants, and evidence-harness versions are closed.
