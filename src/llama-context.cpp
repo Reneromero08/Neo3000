@@ -1301,7 +1301,8 @@ bool llama_context::install_neo3000_output_written_semantic_port(
     const size_t expected =
         static_cast<size_t>(model.hparams.n_embd) * 4;
     if (model.arch != LLM_ARCH_QWEN35MOE ||
-        read_layer != -1 ||
+        read_layer < -1 ||
+        read_layer >= static_cast<int32_t>(model.hparams.n_layer()) ||
         query_map.size() != expected ||
         writer_map.size() != expected ||
         output_map.size() != expected ||

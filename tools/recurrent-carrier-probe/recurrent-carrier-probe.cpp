@@ -78,6 +78,7 @@ struct semantic_carrier_training_sample {
     std::array<float, 4> candidate_logits = {};
     uint32_t port_destination = 0;
     uint32_t next_output_ordinal = 0;
+    uint32_t output_code_ordinal = 0;
 };
 
 struct semantic_carrier_writer_sample {
@@ -817,10 +818,14 @@ build_semantic_carrier_adapter(
                 throw std::runtime_error(
                     "semantic carrier layer delta is absent");
             }
-            ++output_counts[sample.vault_ordinal];
+            if (sample.output_code_ordinal >= 4) {
+                throw std::runtime_error(
+                    "semantic carrier output code is invalid");
+            }
+            ++output_counts[sample.output_code_ordinal];
             for (size_t j = 0; j < n_embd; ++j) {
                 result.output_map[
-                    j * 4 + sample.vault_ordinal] +=
+                    j * 4 + sample.output_code_ordinal] +=
                     sample.target_delta[j];
             }
         }
@@ -838,7 +843,7 @@ build_semantic_carrier_adapter(
             for (size_t j = 0; j < n_embd; ++j) {
                 const double predicted =
                     result.output_map[
-                        j * 4 + sample.vault_ordinal];
+                        j * 4 + sample.output_code_ordinal];
                 const double expected =
                     static_cast<double>(
                         sample.target_delta[j]) *
@@ -957,6 +962,7 @@ static void complete_output_written_semantic_port(
         const std::vector<semantic_carrier_training_sample> & query_samples,
         const std::vector<semantic_carrier_writer_sample> & writer_samples,
         double ridge_fraction,
+        bool layer_delta_mode,
         double training_margin,
         double maximum_output_gain,
         semantic_carrier_adapter_build * adapter) {
@@ -966,10 +972,11 @@ static void complete_output_written_semantic_port(
         query_samples.size() < 8 ||
         query_samples.size() != writer_samples.size() ||
         query_samples.size() % 4 != 0 ||
-        !std::isfinite(training_margin) ||
-        training_margin <= 0.0 ||
-        !std::isfinite(maximum_output_gain) ||
-        maximum_output_gain <= 0.0) {
+        (!layer_delta_mode &&
+         (!std::isfinite(training_margin) ||
+          training_margin <= 0.0 ||
+          !std::isfinite(maximum_output_gain) ||
+          maximum_output_gain <= 0.0))) {
         throw std::runtime_error(
             "output-written semantic port training law is invalid");
     }
@@ -1028,150 +1035,218 @@ static void complete_output_written_semantic_port(
         return code;
     };
 
-    std::array<std::array<double, 4>, 4>
-        unit_candidate_response = {};
-    for (size_t token = 0; token < candidates.size(); ++token) {
-        uint64_t read_bytes = 0;
-        uint64_t peak_bytes = 0;
-        const auto row = read_model_tensor_row_f32(
-            ctx->get_model().output,
-            candidates[token],
-            read_bytes,
-            peak_bytes);
-        adapter->source_tensor_read_bytes += read_bytes;
-        adapter->peak_host_work_bytes = std::max(
-            adapter->peak_host_work_bytes,
-            peak_bytes);
-        for (size_t code = 0; code < 4; ++code) {
-            for (size_t j = 0; j < n_embd; ++j) {
-                unit_candidate_response[token][code] +=
-                    static_cast<double>(row[j]) *
-                    static_cast<double>(
-                        adapter->output_map[j * 4 + code]);
+    if (layer_delta_mode) {
+        adapter->coupled_output_gain = 1.0;
+        adapter->coupled_training_correct = 0;
+        adapter->coupled_training_minimum_margin =
+            std::numeric_limits<double>::infinity();
+        for (size_t group = 0;
+             group < query_samples.size();
+             group += 4) {
+            std::array<double, 16> port = {};
+            for (size_t i = 0; i < 4; ++i) {
+                const auto writer_code = decode(
+                    adapter->writer_map,
+                    adapter->writer_bias,
+                    writer_samples[group + i].embedding);
+                const uint32_t destination =
+                    query_samples[group + i].port_destination;
+                if (destination >= 4) {
+                    throw std::runtime_error(
+                        "semantic port destination is invalid");
+                }
+                for (size_t output = 0; output < 4; ++output) {
+                    port[output * 4 + destination] =
+                        writer_code[output];
+                }
+            }
+            for (size_t i = 0; i < 4; ++i) {
+                const auto query_code = decode(
+                    adapter->query_map,
+                    adapter->query_bias,
+                    query_samples[group + i].embedding);
+                std::array<double, 4> retrieved = {};
+                for (size_t output = 0; output < 4; ++output) {
+                    for (size_t source = 0; source < 4; ++source) {
+                        retrieved[output] +=
+                            port[output * 4 + source] *
+                            query_code[source];
+                    }
+                }
+                const uint32_t target =
+                    query_samples[group + i].output_code_ordinal;
+                if (target >= 4) {
+                    throw std::runtime_error(
+                        "semantic port layer target is invalid");
+                }
+                const size_t predicted = static_cast<size_t>(
+                    std::distance(
+                        retrieved.begin(),
+                        std::max_element(
+                            retrieved.begin(),
+                            retrieved.end())));
+                adapter->coupled_training_correct +=
+                    predicted == target;
+                for (size_t competitor = 0;
+                     competitor < 4;
+                     ++competitor) {
+                    if (competitor != target) {
+                        adapter->coupled_training_minimum_margin =
+                            std::min(
+                                adapter
+                                    ->coupled_training_minimum_margin,
+                                retrieved[target] -
+                                    retrieved[competitor]);
+                    }
+                }
             }
         }
-    }
+    } else {
+        std::array<std::array<double, 4>, 4>
+            unit_candidate_response = {};
+        for (size_t token = 0; token < candidates.size(); ++token) {
+            uint64_t read_bytes = 0;
+            uint64_t peak_bytes = 0;
+            const auto row = read_model_tensor_row_f32(
+                ctx->get_model().output,
+                candidates[token],
+                read_bytes,
+                peak_bytes);
+            adapter->source_tensor_read_bytes += read_bytes;
+            adapter->peak_host_work_bytes = std::max(
+                adapter->peak_host_work_bytes,
+                peak_bytes);
+            for (size_t code = 0; code < 4; ++code) {
+                for (size_t j = 0; j < n_embd; ++j) {
+                    unit_candidate_response[token][code] +=
+                        static_cast<double>(row[j]) *
+                        static_cast<double>(
+                            adapter->output_map[j * 4 + code]);
+                }
+            }
+        }
 
-    struct coupled_sample {
-        std::array<double, 4> base = {};
-        std::array<double, 4> unit_delta = {};
-        uint32_t target = 0;
-    };
-    std::vector<coupled_sample> coupled;
-    coupled.reserve(query_samples.size());
-    double required_gain = 1.0;
-    for (size_t group = 0;
-         group < query_samples.size();
-         group += 4) {
-        std::array<double, 16> port = {};
-        for (size_t i = 0; i < 4; ++i) {
-            const auto writer_code = decode(
-                adapter->writer_map,
-                adapter->writer_bias,
-                writer_samples[group + i].embedding);
-            const uint32_t destination =
-                query_samples[group + i].port_destination;
-            if (destination >= 4) {
-                throw std::runtime_error(
-                    "semantic port destination is invalid");
+        struct coupled_sample {
+            std::array<double, 4> base = {};
+            std::array<double, 4> unit_delta = {};
+            uint32_t target = 0;
+        };
+        std::vector<coupled_sample> coupled;
+        coupled.reserve(query_samples.size());
+        double required_gain = 1.0;
+        for (size_t group = 0;
+             group < query_samples.size();
+             group += 4) {
+            std::array<double, 16> port = {};
+            for (size_t i = 0; i < 4; ++i) {
+                const auto writer_code = decode(
+                    adapter->writer_map,
+                    adapter->writer_bias,
+                    writer_samples[group + i].embedding);
+                const uint32_t destination =
+                    query_samples[group + i].port_destination;
+                if (destination >= 4) {
+                    throw std::runtime_error(
+                        "semantic port destination is invalid");
+                }
+                for (size_t output = 0; output < 4; ++output) {
+                    port[output * 4 + destination] =
+                        writer_code[output];
+                }
             }
-            for (size_t output = 0; output < 4; ++output) {
-                port[output * 4 + destination] =
-                    writer_code[output];
+            for (size_t i = 0; i < 4; ++i) {
+                const auto query_code = decode(
+                    adapter->query_map,
+                    adapter->query_bias,
+                    query_samples[group + i].embedding);
+                std::array<double, 4> retrieved = {};
+                for (size_t output = 0; output < 4; ++output) {
+                    for (size_t source = 0; source < 4; ++source) {
+                        retrieved[output] +=
+                            port[output * 4 + source] *
+                            query_code[source];
+                    }
+                }
+                coupled_sample sample;
+                sample.target =
+                    query_samples[group + i].next_output_ordinal;
+                if (sample.target >= 4) {
+                    throw std::runtime_error(
+                        "semantic port utility target is invalid");
+                }
+                for (size_t token = 0; token < 4; ++token) {
+                    sample.base[token] =
+                        query_samples[group + i]
+                            .candidate_logits[token];
+                    for (size_t code = 0; code < 4; ++code) {
+                        sample.unit_delta[token] +=
+                            unit_candidate_response[token][code] *
+                            retrieved[code];
+                    }
+                }
+                for (size_t competitor = 0;
+                     competitor < 4;
+                     ++competitor) {
+                    if (competitor == sample.target) {
+                        continue;
+                    }
+                    const double denominator =
+                        sample.unit_delta[sample.target] -
+                        sample.unit_delta[competitor];
+                    if (!std::isfinite(denominator) ||
+                        denominator <= 1e-9) {
+                        throw std::runtime_error(
+                            "semantic port cannot separate a training target");
+                    }
+                    required_gain = std::max(
+                        required_gain,
+                        (sample.base[competitor] -
+                         sample.base[sample.target] +
+                         training_margin) /
+                            denominator);
+                }
+                coupled.push_back(sample);
             }
         }
-        for (size_t i = 0; i < 4; ++i) {
-            const auto query_code = decode(
-                adapter->query_map,
-                adapter->query_bias,
-                query_samples[group + i].embedding);
-            std::array<double, 4> retrieved = {};
-            for (size_t output = 0; output < 4; ++output) {
-                for (size_t source = 0; source < 4; ++source) {
-                    retrieved[output] +=
-                        port[output * 4 + source] *
-                        query_code[source];
-                }
-            }
-            coupled_sample sample;
-            sample.target =
-                query_samples[group + i].next_output_ordinal;
-            if (sample.target >= 4) {
-                throw std::runtime_error(
-                    "semantic port utility target is invalid");
-            }
+        if (!std::isfinite(required_gain) ||
+            required_gain > maximum_output_gain) {
+            throw std::runtime_error(
+                "semantic port utility gain exceeds the frozen bound");
+        }
+        adapter->coupled_output_gain = required_gain;
+        for (float & value : adapter->output_map) {
+            value = static_cast<float>(
+                static_cast<double>(value) * required_gain);
+        }
+        adapter->output_dual_max_abs_error *=
+            required_gain;
+
+        adapter->coupled_training_correct = 0;
+        adapter->coupled_training_minimum_margin =
+            std::numeric_limits<double>::infinity();
+        for (const auto & sample : coupled) {
+            std::array<double, 4> logits = {};
             for (size_t token = 0; token < 4; ++token) {
-                sample.base[token] =
-                    query_samples[group + i]
-                        .candidate_logits[token];
-                for (size_t code = 0; code < 4; ++code) {
-                    sample.unit_delta[token] +=
-                        unit_candidate_response[token][code] *
-                        retrieved[code];
-                }
+                logits[token] =
+                    sample.base[token] +
+                    required_gain * sample.unit_delta[token];
             }
+            const size_t predicted = static_cast<size_t>(
+                std::distance(
+                    logits.begin(),
+                    std::max_element(logits.begin(), logits.end())));
+            adapter->coupled_training_correct +=
+                predicted == sample.target;
             for (size_t competitor = 0;
                  competitor < 4;
                  ++competitor) {
-                if (competitor == sample.target) {
-                    continue;
+                if (competitor != sample.target) {
+                    adapter->coupled_training_minimum_margin =
+                        std::min(
+                            adapter->coupled_training_minimum_margin,
+                            logits[sample.target] -
+                                logits[competitor]);
                 }
-                const double denominator =
-                    sample.unit_delta[sample.target] -
-                    sample.unit_delta[competitor];
-                if (!std::isfinite(denominator) ||
-                    denominator <= 1e-9) {
-                    throw std::runtime_error(
-                        "semantic port cannot separate a training target");
-                }
-                required_gain = std::max(
-                    required_gain,
-                    (sample.base[competitor] -
-                     sample.base[sample.target] +
-                     training_margin) /
-                        denominator);
-            }
-            coupled.push_back(sample);
-        }
-    }
-    if (!std::isfinite(required_gain) ||
-        required_gain > maximum_output_gain) {
-        throw std::runtime_error(
-            "semantic port utility gain exceeds the frozen bound");
-    }
-    adapter->coupled_output_gain = required_gain;
-    for (float & value : adapter->output_map) {
-        value = static_cast<float>(
-            static_cast<double>(value) * required_gain);
-    }
-    adapter->output_dual_max_abs_error *=
-        required_gain;
-
-    adapter->coupled_training_correct = 0;
-    adapter->coupled_training_minimum_margin =
-        std::numeric_limits<double>::infinity();
-    for (const auto & sample : coupled) {
-        std::array<double, 4> logits = {};
-        for (size_t token = 0; token < 4; ++token) {
-            logits[token] =
-                sample.base[token] +
-                required_gain * sample.unit_delta[token];
-        }
-        const size_t predicted = static_cast<size_t>(
-            std::distance(
-                logits.begin(),
-                std::max_element(logits.begin(), logits.end())));
-        adapter->coupled_training_correct +=
-            predicted == sample.target;
-        for (size_t competitor = 0;
-             competitor < 4;
-             ++competitor) {
-            if (competitor != sample.target) {
-                adapter->coupled_training_minimum_margin =
-                    std::min(
-                        adapter->coupled_training_minimum_margin,
-                        logits[sample.target] -
-                            logits[competitor]);
             }
         }
     }
@@ -6036,6 +6111,7 @@ static json run_sparse_g_label_refresh(
                         ? boundary.layer_embedding
                         : boundary.embedding;
                 sample.vault_ordinal = vault_ordinal;
+                sample.output_code_ordinal = vault_ordinal;
                 if (output_written_semantic_port_mode) {
                     const auto destinations =
                         training_context.at(
@@ -6048,16 +6124,22 @@ static json run_sparse_g_label_refresh(
                     }
                     sample.port_destination =
                         destinations[query_index];
-                    sample.next_output_ordinal =
-                        query.at("next_output_ordinal")
-                            .get<uint32_t>();
-                    if (sample.next_output_ordinal >= 4 ||
+                    if (semantic_carrier_layer_delta_mode) {
+                        sample.next_output_ordinal = 0;
+                    } else {
+                        sample.next_output_ordinal =
+                            query.at("next_output_ordinal")
+                                .get<uint32_t>();
+                    }
+                    if ((!semantic_carrier_layer_delta_mode &&
+                         sample.next_output_ordinal >= 4) ||
                         boundary.argmax.size() != 1 ||
                         boundary.argmax[0] < 'A' ||
                         boundary.argmax[0] > 'D' ||
-                        boundary.argmax !=
+                        (!semantic_carrier_layer_delta_mode &&
+                         boundary.argmax !=
                             query.at("expected")
-                                .get<std::string>()) {
+                                .get<std::string>())) {
                         throw std::runtime_error(
                             "semantic port construction capability failed");
                     }
@@ -6080,7 +6162,12 @@ static json run_sparse_g_label_refresh(
                         work_seq);
                     ++semantic_training_output_tokens;
                     const float * output_embedding =
-                        llama_get_embeddings_ith(ctx, -1);
+                        semantic_carrier_layer_delta_mode
+                            ? llama_get_embeddings_layer_inp(
+                                ctx,
+                                static_cast<uint32_t>(
+                                    semantic_carrier_read_layer))
+                            : llama_get_embeddings_ith(ctx, -1);
                     if (!output_embedding) {
                         throw std::runtime_error(
                             "semantic port writer state is absent");
@@ -6112,6 +6199,49 @@ static json run_sparse_g_label_refresh(
                     training_id + ":training-query-close");
                 ++query_index;
             }
+            if (output_written_semantic_port_mode &&
+                semantic_carrier_layer_delta_mode) {
+                std::array<uint32_t, 4> output_by_destination = {};
+                std::array<bool, 4> destination_present = {};
+                for (size_t i = 0; i < 4; ++i) {
+                    const auto & sample =
+                        training_samples.at(
+                            context_sample_begin + i);
+                    const auto & writer =
+                        writer_samples.at(
+                            context_sample_begin + i);
+                    if (sample.port_destination >= 4 ||
+                        writer.output_ordinal >= 4 ||
+                        destination_present[
+                            sample.port_destination]) {
+                        throw std::runtime_error(
+                            "semantic port construction topology is not "
+                            "one public permutation");
+                    }
+                    output_by_destination[
+                        sample.port_destination] =
+                        writer.output_ordinal;
+                    destination_present[
+                        sample.port_destination] = true;
+                }
+                if (!std::all_of(
+                        destination_present.begin(),
+                        destination_present.end(),
+                        [](bool present) { return present; })) {
+                    throw std::runtime_error(
+                        "semantic port construction topology is incomplete");
+                }
+                for (size_t i = 0; i < 4; ++i) {
+                    auto & sample =
+                        training_samples.at(
+                            context_sample_begin + i);
+                    sample.output_code_ordinal =
+                        output_by_destination[
+                            sample.vault_ordinal];
+                    sample.next_output_ordinal =
+                        sample.output_code_ordinal;
+                }
+            }
             close_sequence(
                 f_seq,
                 training_id + ":training-source-close");
@@ -6128,8 +6258,18 @@ static json run_sparse_g_label_refresh(
                     training_f_tokens.end());
                 target_source.insert(
                     target_source.end(),
-                    variant_g_tokens.at(0).begin(),
-                    variant_g_tokens.at(0).end());
+                    variant_g_tokens.at(
+                        output_written_semantic_port_mode
+                            ? spec.at(
+                                "output_written_port_target_variant_index")
+                                .get<size_t>()
+                            : 0).begin(),
+                    variant_g_tokens.at(
+                        output_written_semantic_port_mode
+                            ? spec.at(
+                                "output_written_port_target_variant_index")
+                                .get<size_t>()
+                            : 0).end());
                 target_source.insert(
                     target_source.end(),
                     closure_tokens.begin(),
@@ -6251,12 +6391,17 @@ static json run_sparse_g_label_refresh(
                 training_samples,
                 writer_samples,
                 ridge_fraction,
-                spec.at(
-                    "output_written_port_training_margin")
-                    .get<double>(),
-                spec.at(
-                    "output_written_port_maximum_gain")
-                    .get<double>(),
+                semantic_carrier_layer_delta_mode,
+                semantic_carrier_layer_delta_mode
+                    ? 0.0
+                    : spec.at(
+                        "output_written_port_training_margin")
+                        .get<double>(),
+                semantic_carrier_layer_delta_mode
+                    ? 0.0
+                    : spec.at(
+                        "output_written_port_maximum_gain")
+                        .get<double>(),
                 &semantic_adapter_build);
         }
         const bool installed =
@@ -7777,7 +7922,12 @@ static json run_sparse_g_label_refresh(
                         query_index);
                 if (output_written_semantic_port_mode) {
                     const float * output_state =
-                        llama_get_embeddings_ith(ctx, -1);
+                        semantic_carrier_layer_delta_mode
+                            ? llama_get_embeddings_layer_inp(
+                                ctx,
+                                static_cast<uint32_t>(
+                                    semantic_carrier_read_layer))
+                            : llama_get_embeddings_ith(ctx, -1);
                     if (!output_state ||
                         !ctx->write_neo3000_semantic_port(
                             output_state,
@@ -8574,7 +8724,9 @@ static json run_sparse_g_label_refresh(
     return {
         {"schema_version", 1},
         {"mechanism", output_written_semantic_port_mode
-            ? "ACTUAL_OUTPUT_WRITTEN_ROLE_INVARIANT_SEMANTIC_PORT"
+            ? semantic_carrier_layer_delta_mode
+                ? "ACTUAL_OUTPUT_WRITTEN_LAYER_LOCAL_NONLINEAR_SEMANTIC_PORT"
+                : "ACTUAL_OUTPUT_WRITTEN_ROLE_INVARIANT_SEMANTIC_PORT"
             : output_source_fixed_cell_rematerialization_mode
             ? "ACTUAL_OUTPUT_SOURCE_ROLE_FIXED_CELL_KV_ADVANCE"
             : output_source_relink_rematerialization_mode
@@ -8727,6 +8879,12 @@ static json run_sparse_g_label_refresh(
                     ? spec.at(
                         "output_written_port_maximum_gain")
                     : json(0.0)},
+            {"output_written_port_target_variant_index",
+                output_written_semantic_port_mode &&
+                    semantic_carrier_layer_delta_mode
+                    ? spec.at(
+                        "output_written_port_target_variant_index")
+                    : json(0)},
             {"subspace_include_keys",
                 subspace_include_keys},
             {"subspace_operator_built_in_this_panel",

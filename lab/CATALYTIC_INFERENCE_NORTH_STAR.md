@@ -1411,3 +1411,13 @@ must learn a layer-local update law from actual output-side and query-side
 layer state, retain no target rows or runtime answer table, and face one
 disjoint execution against the compact recurrence. This is a new model
 mechanism, not carrier-evaluation v2.
+
+`neo-exp-0148` fixes that site at layer 3, the first full-attention boundary,
+instead of starting a layer search. The unchanged construction panel supplies
+actual G0 output-side layer states, including wrong model outputs; none are
+dropped. A charged G1 pass supplies one mean layer-state update keyed by the
+code the public output-written port actually returns to each query. During the
+disjoint run, only the terminal query token reads the port and layers 3–39
+must propagate the effect to the ordinary head. This changes where Agents-A1
+computes with the carrier; it does not change the evidence harness. One frozen
+contact decides this law.

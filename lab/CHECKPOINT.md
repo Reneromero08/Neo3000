@@ -479,6 +479,22 @@ The active recurrence and acceptance boundary are
   predeclared earlier nonlinear model layer, where remaining Agents-A1
   computation can consume and transform the output-written latent before the
   answer. Evidence remains one packet for that changed model seam.
+- `neo-exp-0148` is frozen precontact as that changed seam. It reads at layer
+  3, the first full-attention layer, and captures actual output-token state at
+  the same boundary. EFGH, WXYZ, and ABCD remain fixed. Their G0 terminal
+  outputs are accepted as the actual writer inputs even when incorrect; no
+  capability-based context selection occurs. A charged G1 source pass supplies
+  the layer-state delta, grouped by the code the trained writer/query pair
+  actually retrieves through the public port topology.
+- Runtime retains the same 64-byte port, zero gate, and immutable maps,
+  performs zero source-role forwards, and gives no expected answer, target
+  row, phase selector, or context-indexed operator to the carrier. Only the
+  terminal query token reads the port; frozen attention, recurrent, and MoE
+  computation in layers 3–39 must create the final boundary.
+- The probe and full Release server build after the change; declarative-runner
+  tests pass `7/7`, the exact bounded oracle passes, and CUDA object closure
+  remains `139/139`. No `0148` model contact or server launch has occurred.
+  One execution and one evidence packet follow; no carrier-evaluation series.
 
 ### REJECTED
 

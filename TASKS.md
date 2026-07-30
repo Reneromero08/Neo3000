@@ -371,6 +371,16 @@ constructively unbounded local Agents-A1 inference.
   terminal output-head dual—turn the port read into the useful boundary. Use
   the same compact baseline and one disjoint execution. This is one new
   physical mechanism, not `carrier evaluation v2`.
+  `neo-exp-0148` is frozen precontact at layer 3, the first full-attention
+  layer. Three unchanged construction contexts fit query and actual-output
+  layer-state decoders plus one mean G0→G1 layer-state update keyed by the
+  code actually retrieved through the public port topology. Incorrect
+  construction answers are retained as actual writer inputs rather than
+  removed or used to select easier fixtures. Runtime has zero source-role
+  forwards and no expected-answer input. The probe and Release server build,
+  runner tests pass `7/7`, the exact oracle passes, and CUDA closure remains
+  `139/139`. Execute this changed model seam once; do not create layer, gain,
+  context, prompt, evaluator, or evidence-packet variants.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.
