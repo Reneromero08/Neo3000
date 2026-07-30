@@ -165,7 +165,7 @@ The active recurrence and acceptance boundary are
   resource, Small Wall crossing, catalytic recurrence, or unbounded claim is
   supported.
 
-### `neo-exp-0159` depth-resolved output memory [PRECONTACT / BUILT]
+### `neo-exp-0159` depth-resolved output memory [CONTACT CONSUMED / INCONCLUSIVE / FAMILY CLOSED]
 
 - The next physical intervention is frozen in
   `lab/output-fed-depth-resolved-cross-attention-memory-v1.json`. Four actual
@@ -184,17 +184,31 @@ The active recurrence and acceptance boundary are
   poisons active and staging state; four complete destinations alone may
   commit.
 - The focused probe and full Release CUDA server build. All `139/139`
-  configured CUDA objects are present and nonempty. JSON/spec and whitespace
-  validation pass. No model was loaded, no prompt was evaluated, and
-  `neo-exp-0159` remains unconsumed.
-- One contact only is authorized by the frozen law. Failure closes the entire
-  depth-indexed output-memory family without layer, scale, slot, prompt,
-  fixture, controller, evaluator, carrier-evaluation, or evidence-harness
-  successors. A pass supports at most bounded output-fed depth-resolved
-  model-native cross-attention recurrence; the actual output token has
-  already collapsed, and neither restoration, fresh-compute advantage,
-  catalytic inference, Small Wall crossing, nor an unbounded bridge is
-  implied.
+  configured CUDA objects are present and nonempty. The exact precontact
+  checkpoint is
+  `a6d0718b8c0e864536dfe46fc2db52cdc94eec3b`; probe version is
+  `398 (a6d0718)` with SHA-256
+  `83152C66B808F8585E264BB539C1767432E0696BE6365DD48F3552756008A1F2`.
+- One explicit `-ngl 99` launch failed before model load or graph contact
+  because it forced a 20,869,704,192-byte CUDA model allocation on a
+  12,288-MiB device. The unchanged automatic-fit launch loaded Agents-A1 and
+  entered the first actual prefix graph compute. The added depth-memory graph
+  then failed with CUDA `misaligned address` at
+  `cudaStreamSynchronize`, through
+  `ggml_backend_sched_graph_compute_async -> llama_context::graph_compute ->
+  llama_context::decode`.
+- No decode completed. There are zero query records, output trajectories,
+  carrier captures, panel commits, useful boundaries, matched controls, or
+  return observations. The process abort released its resources and left no
+  background probe, but this is not declared carrier closure. The one
+  model-facing contact is consumed and cannot be rerun.
+- Close the entire depth-indexed output-memory family without layer, scale,
+  slot, prompt, fixture, controller, evaluator, carrier-evaluation, or
+  evidence-harness successors. The next physical intervention changes the
+  model transition law through a source-conditioned reversible low-rank
+  weight action rather than attaching another cross-attention memory bank.
+  No restoration, fresh-compute advantage, carrier causality, catalytic
+  inference, Small Wall crossing, or unbounded bridge was observed.
 
 ### SUPPORTED
 

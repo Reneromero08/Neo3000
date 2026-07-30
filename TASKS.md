@@ -689,7 +689,7 @@ constructively unbounded local Agents-A1 inference.
   probability-weighted token-embedding rematerialization and every
   temperature, basis, prompt, fixture, controller, evaluator,
   carrier-evaluation, and evidence-harness variant.
-- [ ] Implement one distinct model-native dynamic transition whose bounded
+- [x] Implement one distinct model-native dynamic transition whose bounded
   carrier modulates an internal attention, recurrent, MoE, or weight path
   through a numerically defined read law before useful projection. It must
   preserve a finite matched gate-off route by construction, make downstream
@@ -726,6 +726,30 @@ constructively unbounded local Agents-A1 inference.
   and full Release server now build without model contact; `139/139`
   configured CUDA objects remain present. Commit this precontact mechanism,
   then execute `neo-exp-0159` exactly once.
+  The exact checkpoint was pushed at
+  `a6d0718b8c0e864536dfe46fc2db52cdc94eec3b`. One automatic-fit launch
+  loaded Agents-A1 and reached the first actual prefix graph compute, where
+  the added depth-memory graph raised CUDA `misaligned address` during
+  `cudaStreamSynchronize`. No decode, query, output trajectory, carrier
+  capture, commit, useful boundary, control, or result file completed. A
+  preceding explicit `-ngl 99` launch failed before model load and contact
+  because it disabled normal device-memory fitting. The scientific contact
+  is consumed and inconclusive. Close the complete depth-indexed
+  cross-attention-memory family without a layer, scale, slot, prompt,
+  fixture, controller, evaluator, carrier-evaluation, or evidence-harness
+  successor.
+- [ ] Implement one source-conditioned reversible low-rank weight transition
+  that changes the model's token transition law rather than attaching
+  another memory bank. Derive bounded factors from model-native source state
+  before the delayed query; apply them to a frozen Q/K/V or MoE weight path
+  through an explicitly invertible coupling or Cayley-style law; let later
+  useful inference depend on the modified weights; reverse the public module
+  sequence to restore the exact scoped weight payload; then run unrelated
+  useful inference on the same active backing. The strongest matched
+  baseline is the identical compact classical low-rank recurrence. Start
+  with one bounded construction probe and one contact; no rank, layer, gain,
+  prompt, fixture, controller, evaluator, carrier-evaluation, or
+  evidence-harness series.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

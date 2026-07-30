@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "experiment_id": "neo-exp-0159",
+  "spec_id": "output-fed-depth-resolved-cross-attention-memory-v1",
+  "date": "2026-07-30",
+  "baseline_commit": "5fdb54ad4fac7c9714130b09d0c6b70a5c84308e",
+  "candidate_commit": "a6d0718b8c0e864536dfe46fc2db52cdc94eec3b",
+  "mechanism": "OUTPUT_FED_DEPTH_RESOLVED_MODEL_NATIVE_CROSS_ATTENTION_MEMORY",
+  "hypothesis": "Four actual output-token trajectories retained across all ten full-attention layers can causally drive the next useful relation phase through frozen layer-local Q/K/V projections and query-dependent softmax.",
+  "intervention": "Install one panel-atomic CUDA active/staging memory for four output trajectories at the ten full-attention layer inputs, add a layer-matched cross-attention read before the ordinary attention gate and output projection, and freeze exact-zero and same-bytes cyclic wrong-layer controls.",
+  "precontact_launch": {
+    "outcome": "failed_before_model_load",
+    "reason": "Explicit -ngl 99 disabled automatic device-memory fitting and requested a 20,869,704,192-byte CUDA model buffer on a 12,288-MiB device.",
+    "cuda_error": "cudaMalloc failed: out of memory",
+    "model_loaded": false,
+    "graph_compute_attempted": false,
+    "scientific_contact": false,
+    "result_file_created": false
+  },
+  "scientific_contact": {
+    "outcome": "inconclusive_runtime_failure",
+    "model_loaded": true,
+    "graph_compute_attempted": true,
+    "completed_decode_calls": 0,
+    "completed_query_records": 0,
+    "carrier_captures": 0,
+    "carrier_commits": 0,
+    "useful_boundaries": 0,
+    "result_file_created": false,
+    "failure": {
+      "error": "CUDA error: misaligned address",
+      "operation": "cudaStreamSynchronize",
+      "cuda_source": "ggml/src/ggml-cuda/ggml-cuda.cu:3249",
+      "stack_boundary": "ggml_backend_cuda_synchronize -> ggml_backend_sched_graph_compute_async -> llama_context::graph_compute -> llama_context::process_ubatch -> llama_context::decode -> decode_tokens -> run_sparse_g_label_refresh",
+      "first_model_path": "initial prefix decode",
+      "failure_scope": "The added depth-memory graph was resident during the first actual model graph compute. No output trajectory, panel, useful boundary, matched control, return, or recurrence was produced."
+    }
+  },
+  "metrics_after": {
+    "exact_full_state_capability": "not_observed",
+    "enabled_carrier_boundary": "not_observed",
+    "carrier_disabled_boundary": "not_observed",
+    "wrong_layer_boundary": "not_observed",
+    "return_boundary": "not_observed",
+    "finite_candidate_logits": "not_observed",
+    "same_backing_reuse": "not_observed",
+    "declared_carrier_closure": false,
+    "process_resources_released_after_abort": true,
+    "background_processes_left_running": 0
+  },
+  "resource_accounting": {
+    "gpu_total_mib": 12288,
+    "gpu_free_before_contact_mib": 11210,
+    "precontact_forced_model_allocation_bytes": 20869704192,
+    "completed_input_tokens": 0,
+    "completed_output_tokens": 0,
+    "persistent_carrier_bytes_observed": 0,
+    "carrier_transfer_bytes_observed": 0,
+    "cross_attention_multiply_accumulates_observed": 0
+  },
+  "quality_gates": {
+    "one_contact_only": true,
+    "model_native_transition_executed_to_useful_boundary": false,
+    "carrier_causality_adjudicable": false,
+    "finite_gate_off_control": false,
+    "wrong_layer_geometry_control": false,
+    "semantic_recurrence": false,
+    "fresh_compute_advantage": false,
+    "strongest_compact_classical_baseline_beaten": false,
+    "catalytic_recurrence": false,
+    "unbounded_recurrence": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/output-fed-depth-resolved-cross-attention-memory-v1.json",
+      "bytes": 9954,
+      "sha256": "1F5FA04F5D255D850493E5212F03F803B0EACA0F0D3CE6553936019BFF044489"
+    },
+    "runtime_binding": {
+      "probe_version": "398 (a6d0718)",
+      "probe_bytes": 1667624,
+      "probe_sha256": "83152C66B808F8585E264BB539C1767432E0696BE6365DD48F3552756008A1F2",
+      "model_sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+      "context_source_sha256": "C9F457B9D60FC926CFEF03BD97D83EA858A7CEC96B518BBA578196B631B41AA5",
+      "carrier_source_sha256": "A770DC2BEFAEB964C90D3FE71F281CD0A1B3BEBCED8722DBE3362B0410DF3379",
+      "graph_source_sha256": "1E1F9A52EA10C7F01D9E84E71996B3CF20CA59C8C29839BA3009182A49A98BA4",
+      "model_graph_source_sha256": "B17885F627855F6D241D9486B2B500770B1FABB5C590259A34A42280E1223791",
+      "probe_source_sha256": "B0F4C6CEFCB8E51486A5EDCFC622123F83959550319A843717F7D1D093741475",
+      "configured_cuda_objects_present_nonzero": "139/139"
+    }
+  },
+  "verdict": "inconclusive",
+  "classification": "DEPTH_RESOLVED_CROSS_ATTENTION_GRAPH_FAILS_FIRST_CUDA_COMPUTE_WITH_MISALIGNED_ADDRESS",
+  "strongest_supported_claim": "The depth-resolved output-memory implementation and full CUDA server build statically, but the sole model-facing contact failed at the first CUDA graph compute before producing any carrier state or useful inference evidence.",
+  "strongest_rejected_interpretation": "No output-fed recurrence, layer-indexed geometry, carrier causality, restoration, fresh-compute reduction, catalytic inference, Small Wall crossing, or unbounded bridge was observed.",
+  "next_boundary": "CLOSE_DEPTH_INDEXED_OUTPUT_MEMORY_AND_CHANGE_THE_PHYSICAL_TRANSITION_TO_A_SOURCE_CONDITIONED_REVERSIBLE_LOW_RANK_WEIGHT_ACTION_WITH_NO_CROSS_ATTENTION_MEMORY_BANK",
+  "family_disposition": "CLOSED_WITHOUT_LAYER_SCALE_SLOT_PROMPT_FIXTURE_CONTROLLER_EVALUATOR_CARRIER_EVALUATION_OR_EVIDENCE_HARNESS_SUCCESSORS"
+}
