@@ -5,25 +5,37 @@
 The active recurrence and acceptance boundary are
 `lab/CATALYTIC_INFERENCE_NORTH_STAR.md`.
 
-### CURRENT PRECONTACT MECHANISM
+### CURRENT PHYSICAL BOUNDARY
 
-- `neo-exp-0153` changes the carrier substrate rather than its evidence
-  wrapper. Four complete actual-output layer-39 input vectors occupy one
-  dedicated `32,768`-byte backend allocation with no retained host mirror.
-  A fixed query decoder content-addresses that tensor at the terminal token
-  before frozen layer-39 attention, MoE, and the ordinary LM head. There is no
-  writer decoder, target-context hidden delta, output map, model backward
-  pass, source-role forward, runtime expected answer, or phase-indexed
-  operator.
-- The frozen contact is the unchanged four-phase IOUV recurrence with two
-  public decoder-training contexts, one disabled G1 control, same-backing
-  checks, full resource charging, and declared closure. It is one mechanism
-  result, not the start of a carrier-evaluation or evidence-harness series.
-- A pass would establish only a bounded actual-output hidden-slot recurrence.
-  The complete hidden vectors and query decoder remain material classical
-  state, and the exact four-link/Z4 recurrence remains the stronger compact
-  baseline. No fresh-compute, phase-native, Small Wall, catalytic-recurrence,
-  or unbounded claim is available precontact.
+- `neo-exp-0153` is executed once and rejected. Four complete actual-output
+  layer-39 input vectors occupied one dedicated `32,768`-byte backend tensor
+  with no retained host mirror. A fixed query decoder content-addressed those
+  slots at the terminal token before frozen layer-39 attention, MoE, and the
+  ordinary LM head. There was no writer decoder, target-context hidden delta,
+  output map, model backward pass, source-role forward, runtime expected
+  answer, or phase-indexed operator.
+- The first launch stopped before any candidate boundary on a matrix-shape
+  defect. The same precontact identity was repaired with one bounded
+  graph-local slot transpose and then executed once. Exact full state was
+  `16/16`; the hidden-slot route was `4/16`, all at G0. G1, G2, and G3
+  retained the G0 mapping. The matched disabled G1 route changed logits but
+  preserved the same four argmaxes. The nominal `4/4` G0 return is therefore
+  non-evidence: semantic state never advanced.
+- Sixteen actual-output writes, stable persistent backing, quiescence, and
+  declared closure passed. The query decoder fit `8/8` construction samples.
+  Persistent slot traffic was `3,801,088` device-to-graph bytes across 116
+  graph input sets; the required graph-local transposes add the same
+  `3,801,088` bytes of bounded transient device work. No complete host slot
+  mirror was retained.
+- This closes complete layer-39 output-state slots as the update law. The
+  active physical successor is a learned attention-state writer or dynamic
+  weight adapter. It must change the model-native update substrate, not the
+  fixture, slot/layer/scale, optimizer, evaluator, carrier-evaluation, or
+  evidence-harness packaging.
+- The exact four-link/Z4 recurrence remains the stronger compact baseline.
+  No inference-bearing recurrence, fresh-compute advantage, phase-native
+  resource, Small Wall crossing, catalytic recurrence, or unbounded claim is
+  supported.
 
 ### SUPPORTED
 

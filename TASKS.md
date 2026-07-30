@@ -534,20 +534,28 @@ constructively unbounded local Agents-A1 inference.
   they establish no learned reader or carrier result. Do not build further
   optimizer variants. The active physical successor is a learned attention-
   state writer or weight adapter.
-  `neo-exp-0153` is now frozen precontact as that changed writer/reader
-  substrate. Two public construction contexts fit only a query-side
-  four-way vault decoder. Each actual projected output writes its complete
-  layer-39 input state directly into one of four public destinations in a
-  dedicated `32,768`-byte backend tensor; no retained host mirror, writer
+  `neo-exp-0153` changed the physical writer/reader substrate and is now
+  executed once and rejected. Two public construction contexts fit only a
+  query-side four-way vault decoder. Each actual projected output wrote its
+  complete layer-39 input state directly into one of four public destinations
+  in a dedicated `32,768`-byte backend tensor; no retained host mirror, writer
   decoder, target-context hidden delta, output map, answer table, or model
-  backward graph exists. A later terminal query content-addresses the same
+  backward graph existed. A terminal query content-addressed the same
   resident slots inside the graph before layer 39, so frozen attention, MoE,
-  and the LM head must consume the selected actual-output vector. The
-  unchanged disjoint IOUV recurrence must pass `16/16`, change every matched
-  disabled G1 boundary, return `4/4` G0, preserve the backend identity, and
-  close completely. Failure closes complete layer-39 hidden slots and moves
-  to an attention-KV writer or dynamic weight adapter; it does not authorize
-  slot, layer, scale, context, prompt, fixture, optimizer, evaluator,
+  and the LM head consumed the selected actual-output vector.
+  The first launch stopped before a candidate boundary because the
+  slot-major carrier needed one bounded graph-local transpose for GGML's
+  left-matrix convention. Repairing that precontact shape law under the same
+  identity produced the sole result. Exact full state remained `16/16`;
+  the hidden-slot route was `4/16`, entirely from G0. G1/G2/G3 all retained
+  the G0 mapping, while matched disablement changed logits but not the useful
+  boundary. The four-step return was `4/4` only because the carrier failed to
+  advance. Sixteen actual-output writes, stable backing, quiescence, and
+  declared closure passed. The persistent slots therefore are causal
+  model-native state but complete layer-39 output vectors do not encode the
+  required relation update law. Close this substrate. Move only to a learned
+  attention-state writer or dynamic weight adapter; do not create slot,
+  layer, scale, context, prompt, fixture, optimizer, evaluator,
   carrier-evaluation, or evidence-harness variants.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded

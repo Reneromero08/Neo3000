@@ -398,10 +398,21 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
                     ctx0,
                     carrier->action,
                     carrier_code);
+            // The resident tensor is slot-major so that one complete actual
+            // output state can be written into one contiguous column. GGML's
+            // left matrix convention requires the slot axis to be ne[0].
+            // Materialize only this bounded graph-local transpose; the
+            // persistent carrier remains the same four CUDA-resident slots.
+            ggml_tensor * hidden_slot_reader =
+                ggml_cont(
+                    ctx0,
+                    ggml_transpose(
+                        ctx0,
+                        carrier->hidden_slots));
             carrier_delta =
                 ggml_mul_mat(
                     ctx0,
-                    carrier->hidden_slots,
+                    hidden_slot_reader,
                     carrier_code);
         } else {
             carrier_code =
