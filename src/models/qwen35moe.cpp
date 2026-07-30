@@ -834,6 +834,195 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
     };
 
     size_t depth_memory_layer_index = 0;
+    size_t lifting_layer_index = 0;
+    ggml_tensor * lifting_restoration_error = nullptr;
+
+    struct lifting_step {
+        ggml_tensor * key = nullptr;
+        ggml_tensor * coefficients = nullptr;
+        ggml_tensor * delta = nullptr;
+    };
+    const auto lifting_coefficients =
+            [&](ggml_tensor * key, ggml_tensor * hidden) {
+        GGML_ASSERT(
+            key &&
+            hidden &&
+            key->ne[0] == n_embd &&
+            key->ne[1] == 4 &&
+            hidden->ne[0] == n_embd);
+        ggml_tensor * coefficients =
+            ggml_mul_mat(ctx0, key, hidden);
+        ggml_tensor * denominator =
+            ggml_sum_rows(ctx0, ggml_sqr(ctx0, key));
+        denominator = ggml_reshape_2d(
+            ctx0, denominator, 4, 1);
+        denominator = ggml_clamp(
+            ctx0, denominator, 1e-6f, 1e30f);
+        denominator = ggml_repeat(
+            ctx0, denominator, coefficients);
+        return ggml_div(ctx0, coefficients, denominator);
+    };
+    const auto lifting_forward_step =
+            [&](ggml_tensor * hidden,
+                ggml_tensor * key,
+                ggml_tensor * value,
+                const char * name,
+                int32_t il) {
+        GGML_ASSERT(
+            value &&
+            value->ne[0] == n_embd &&
+            value->ne[1] == 4);
+        ggml_tensor * coefficients =
+            lifting_coefficients(key, hidden);
+        ggml_tensor * factor_delta =
+            ggml_sub(ctx0, value, key);
+        ggml_tensor * delta = ggml_mul_mat(
+            ctx0,
+            ggml_transpose(ctx0, factor_delta),
+            coefficients);
+        ggml_tensor * transformed =
+            ggml_add(ctx0, hidden, delta);
+        cb(transformed, name, il);
+        return std::make_pair(
+            transformed,
+            lifting_step{key, coefficients, delta});
+    };
+    const auto cyclic_value_panel =
+            [&](ggml_tensor * panel) {
+        GGML_ASSERT(
+            panel &&
+            panel->ne[0] == n_embd &&
+            panel->ne[1] == 4);
+        std::array<ggml_tensor *, 4> slots = {};
+        for (size_t destination = 0;
+             destination < slots.size();
+             ++destination) {
+            const size_t source =
+                (destination + 1) % slots.size();
+            slots[destination] = ggml_view_2d(
+                ctx0,
+                panel,
+                n_embd,
+                1,
+                panel->nb[1],
+                source * panel->nb[1]);
+        }
+        ggml_tensor * result =
+            ggml_concat(ctx0, slots[0], slots[1], 1);
+        result = ggml_concat(ctx0, result, slots[2], 1);
+        return ggml_concat(ctx0, result, slots[3], 1);
+    };
+    const auto apply_lifting =
+            [&](ggml_tensor * hidden,
+                size_t layer_index,
+                int32_t il) {
+        const auto & state =
+            cparams.neo3000_semantic_carrier;
+        const uint32_t control =
+            cparams.neo3000_lifting_control;
+        GGML_ASSERT(
+            state &&
+            state->source_conditioned_lifting &&
+            control > 0 &&
+            control <= 5 &&
+            layer_index < state->lifting_layers.size() &&
+            state->lifting_layers.at(layer_index) == il);
+        ggml_tensor * f_key =
+            state->lifting_f_key_active_layers.at(layer_index);
+        ggml_tensor * f_value =
+            state->lifting_f_value_active_layers.at(layer_index);
+        ggml_tensor * g_key =
+            state->lifting_g_key_active_layers.at(layer_index);
+        ggml_tensor * g_value =
+            state->lifting_g_value_active_layers.at(layer_index);
+        if (control == 5) {
+            g_value = cyclic_value_panel(g_value);
+        }
+
+        const bool use_f =
+            control == 1 || control == 2 ||
+            control == 4 || control == 5;
+        const bool use_g =
+            control == 1 || control == 3 ||
+            control == 4 || control == 5;
+        const bool reverse = control == 4;
+        std::array<lifting_step, 2> steps = {};
+        size_t step_count = 0;
+        ggml_tensor * transformed = hidden;
+        const auto add_f = [&]() {
+            auto result = lifting_forward_step(
+                transformed,
+                f_key,
+                f_value,
+                "neo3000_lifting_F_forward",
+                il);
+            transformed = result.first;
+            steps[step_count++] = result.second;
+        };
+        const auto add_g = [&]() {
+            auto result = lifting_forward_step(
+                transformed,
+                g_key,
+                g_value,
+                control == 5
+                    ? "neo3000_lifting_G_mutated_forward"
+                    : "neo3000_lifting_G_forward",
+                il);
+            transformed = result.first;
+            steps[step_count++] = result.second;
+        };
+        if (reverse) {
+            if (use_g) {
+                add_g();
+            }
+            if (use_f) {
+                add_f();
+            }
+        } else {
+            if (use_f) {
+                add_f();
+            }
+            if (use_g) {
+                add_g();
+            }
+        }
+
+        // Q/K/V consume `transformed`. The reverse path is a declared graph
+        // output so the hidden state and both rank-four ancillas are actually
+        // uncomputed after that read.
+        ggml_tensor * restored = transformed;
+        ggml_tensor * error = nullptr;
+        for (size_t reverse_index = step_count;
+             reverse_index > 0;
+             --reverse_index) {
+            const lifting_step & step =
+                steps[reverse_index - 1];
+            restored = ggml_sub(ctx0, restored, step.delta);
+            ggml_tensor * restored_coefficients =
+                lifting_coefficients(step.key, restored);
+            ggml_tensor * ancilla_residual = ggml_sub(
+                ctx0,
+                step.coefficients,
+                restored_coefficients);
+            ggml_tensor * ancilla_error = ggml_sum(
+                ctx0,
+                ggml_sqr(ctx0, ancilla_residual));
+            error = error
+                ? ggml_add(ctx0, error, ancilla_error)
+                : ancilla_error;
+        }
+        ggml_tensor * hidden_error = ggml_sum(
+            ctx0,
+            ggml_sqr(
+                ctx0,
+                ggml_sub(ctx0, restored, hidden)));
+        error = error
+            ? ggml_add(ctx0, error, hidden_error)
+            : hidden_error;
+        cb(restored, "neo3000_lifting_restored_hidden", il);
+        cb(error, "neo3000_lifting_restoration_error", il);
+        return std::make_pair(transformed, error);
+    };
 
     // MTP/NextN layers are loaded as extra decoder blocks but not executed in the main pass.
     for (int il = 0; il < n_layer; ++il) {
@@ -868,6 +1057,31 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
             il);
         cb(cur, "attn_norm", il);
 
+        const auto & lifting_state =
+            cparams.neo3000_semantic_carrier;
+        if (!hparams.is_recr(il) &&
+            lifting_state &&
+            lifting_state->source_conditioned_lifting) {
+            GGML_ASSERT(
+                lifting_layer_index <
+                    lifting_state->lifting_layers.size() &&
+                lifting_state->lifting_layers.at(
+                    lifting_layer_index) == il);
+            res->t_neo3000_lifting_state[il] = cur;
+            if (cparams.neo3000_lifting_control != 0) {
+                auto lifting = apply_lifting(
+                    cur, lifting_layer_index, il);
+                cur = lifting.first;
+                lifting_restoration_error =
+                    lifting_restoration_error
+                        ? ggml_add(
+                            ctx0,
+                            lifting_restoration_error,
+                            lifting.second)
+                        : lifting.second;
+            }
+        }
+
         ggml_build_forward_expand(gf, cur);
 
         // Determine layer type and build appropriate attention mechanism
@@ -900,6 +1114,7 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
                 il,
                 depth_layer_memory);
             ++depth_memory_layer_index;
+            ++lifting_layer_index;
         }
 
         if (il == n_layer - 1 && inp_out_ids && cparams.embeddings_nextn_masked) {
@@ -936,6 +1151,15 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
 
         // Input for next layer
         inpL = cur;
+    }
+    if (cparams.neo3000_lifting_control != 0) {
+        GGML_ASSERT(lifting_restoration_error);
+        // This branch is not a dependency of the transformed Q/K/V path.
+        // Expand it explicitly so the reverse computation and residual are
+        // executed rather than merely marked as an output after graph build.
+        ggml_build_forward_expand(gf, lifting_restoration_error);
+        res->t_neo3000_lifting_restoration_error =
+            lifting_restoration_error;
     }
     cur = inpL;
 

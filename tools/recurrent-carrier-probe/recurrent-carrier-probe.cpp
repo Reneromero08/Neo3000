@@ -5998,6 +5998,763 @@ static json run_g_forward_state_partition(
     };
 }
 
+static json run_source_conditioned_lifting(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const std::vector<llama_token> & candidates,
+        const json & spec,
+        uint64_t active_recurrent_backing_initial) {
+    if (candidates.size() != 4 ||
+        !spec.value("source_conditioned_lifting_action", false)) {
+        throw std::runtime_error(
+            "source-conditioned lifting mode is not frozen");
+    }
+    const uint32_t actual_context_size = llama_n_ctx(ctx);
+    const uint32_t actual_n_seq_max = llama_n_seq_max(ctx);
+    const uint32_t actual_context_per_sequence =
+        actual_context_size / actual_n_seq_max;
+    if (actual_context_size !=
+            spec.at("expected_context_size").get<uint32_t>() ||
+        actual_n_seq_max !=
+            spec.at("expected_n_seq_max").get<uint32_t>() ||
+        actual_context_per_sequence !=
+            spec.at("expected_context_per_sequence").get<uint32_t>()) {
+        throw std::runtime_error(
+            "source-conditioned lifting context geometry mismatch");
+    }
+
+    const auto prefix_tokens = tokenize_piece(
+        vocab, spec.at("prefix").get<std::string>(), true, true);
+    const auto f_tokens = tokenize_piece(
+        vocab, spec.at("module_f").get<std::string>(), false, true);
+    const auto neutral_f_tokens = tokenize_piece(
+        vocab,
+        spec.at("structural_module_f").get<std::string>(),
+        false,
+        true);
+    const auto structural_g_tokens = tokenize_piece(
+        vocab,
+        spec.at("structural_module_g").get<std::string>(),
+        false,
+        true);
+    const auto closure_tokens = tokenize_piece(
+        vocab, spec.at("closure").get<std::string>(), false, true);
+    const size_t expected_source_tokens =
+        spec.at("expected_source_tokens").get<size_t>();
+    if (prefix_tokens.size() !=
+            spec.at("expected_prefix_tokens").get<size_t>() ||
+        f_tokens.size() !=
+            spec.at("expected_f_tokens").get<size_t>() ||
+        neutral_f_tokens.size() != f_tokens.size() ||
+        structural_g_tokens.size() !=
+            spec.at("expected_g_tokens").get<size_t>() ||
+        closure_tokens.size() !=
+            spec.at("expected_closure_tokens").get<size_t>() ||
+        prefix_tokens.size() + f_tokens.size() +
+            structural_g_tokens.size() + closure_tokens.size() !=
+            expected_source_tokens) {
+        throw std::runtime_error(
+            "source-conditioned lifting token geometry mismatch");
+    }
+
+    const auto f_key_offsets =
+        spec.at("lifting_f_key_offsets")
+            .get<std::vector<size_t>>();
+    const auto f_value_offsets =
+        spec.at("lifting_f_value_offsets")
+            .get<std::vector<size_t>>();
+    const auto g_key_offsets =
+        spec.at("lifting_g_key_offsets")
+            .get<std::vector<size_t>>();
+    const auto g_value_offsets =
+        spec.at("lifting_g_value_offsets")
+            .get<std::vector<size_t>>();
+    for (const auto * offsets :
+         {&f_key_offsets, &f_value_offsets,
+          &g_key_offsets, &g_value_offsets}) {
+        if (offsets->size() != 4 ||
+            !std::is_sorted(offsets->begin(), offsets->end())) {
+            throw std::runtime_error(
+                "source-conditioned lifting capture offsets invalid");
+        }
+    }
+    if (f_key_offsets.back() >= f_tokens.size() ||
+        f_value_offsets.back() >= f_tokens.size() ||
+        g_key_offsets.back() >= structural_g_tokens.size() ||
+        g_value_offsets.back() >= structural_g_tokens.size()) {
+        throw std::runtime_error(
+            "source-conditioned lifting capture offset out of range");
+    }
+
+    const auto & variants = spec.at("g_variants");
+    if (!variants.is_array() || variants.size() != 4) {
+        throw std::runtime_error(
+            "source-conditioned lifting requires four frozen variants");
+    }
+    std::vector<std::vector<llama_token>> variant_g_tokens;
+    for (const auto & variant : variants) {
+        auto tokens = tokenize_piece(
+            vocab,
+            variant.at("module_g").get<std::string>(),
+            false,
+            true);
+        if (tokens.size() != structural_g_tokens.size() ||
+            variant.at("queries").size() != 4) {
+            throw std::runtime_error(
+                "source-conditioned lifting variant geometry mismatch");
+        }
+        variant_g_tokens.push_back(std::move(tokens));
+    }
+
+    auto * hybrid = require_hybrid_memory(ctx);
+    auto * attention = hybrid->get_mem_attn();
+    auto * recurrent = hybrid->get_mem_recr();
+    if (attention->get_n_stream() !=
+            spec.at("expected_attention_stream_count")
+                .get<uint32_t>()) {
+        throw std::runtime_error(
+            "source-conditioned lifting attention stream mismatch");
+    }
+    llama_memory_t memory = llama_get_memory(ctx);
+    const llama_seq_id f_source_seq = 0;
+    const llama_seq_id scaffold_seq = 1;
+    const llama_seq_id factor_source_seq = 2;
+    const llama_seq_id candidate_scratch_seq = 3;
+    const llama_seq_id exact_source_seq = 4;
+    const llama_seq_id exact_scratch_seq = 5;
+    const llama_seq_id unrelated_seq = 6;
+    const llama_pos source_boundary_pos =
+        static_cast<llama_pos>(expected_source_tokens - 1);
+
+    const auto require_positions =
+            [&](llama_seq_id seq_id,
+                llama_pos expected,
+                const std::string & stage) {
+        const llama_pos attention_pos =
+            attention->seq_pos_max(seq_id);
+        const llama_pos recurrent_pos =
+            recurrent->seq_pos_max(seq_id);
+        if (attention_pos != expected ||
+            recurrent_pos != expected) {
+            throw std::runtime_error(
+                stage + " sequence " +
+                std::to_string(seq_id) +
+                " positions attention=" +
+                std::to_string(attention_pos) +
+                " recurrent=" +
+                std::to_string(recurrent_pos));
+        }
+    };
+    const auto close_sequence =
+            [&](llama_seq_id seq_id, const std::string & stage) {
+        if (!llama_memory_seq_rm(memory, seq_id, -1, -1)) {
+            throw std::runtime_error(
+                stage + " sequence close failed");
+        }
+        llama_synchronize(ctx);
+        require_positions(seq_id, -1, stage + ":closed");
+    };
+    const auto copy_sequence =
+            [&](llama_seq_id source,
+                llama_seq_id destination,
+                llama_pos expected,
+                const std::string & stage) {
+        require_positions(
+            destination, -1, stage + ":destination-empty");
+        llama_memory_seq_cp(
+            memory, source, destination, -1, -1);
+        llama_synchronize(ctx);
+        require_positions(
+            destination, expected, stage + ":copied");
+    };
+    const auto token_slice =
+            [](const std::vector<llama_token> & tokens,
+               size_t begin,
+               size_t end) {
+        return std::vector<llama_token>(
+            tokens.begin() +
+                static_cast<std::ptrdiff_t>(begin),
+            tokens.begin() +
+                static_cast<std::ptrdiff_t>(end));
+    };
+    uint64_t source_decode_tokens = 0;
+    uint64_t query_decode_tokens = 0;
+    uint64_t sequence_copies = 0;
+    uint64_t sequence_closes = 0;
+    double source_decode_wall_ms = 0.0;
+    const auto timed_decode =
+            [&](const std::vector<llama_token> & tokens,
+                llama_pos start_pos,
+                llama_seq_id seq_id) {
+        const auto started = std::chrono::steady_clock::now();
+        decode_tokens(
+            ctx, tokens, start_pos, false, seq_id);
+        llama_synchronize(ctx);
+        source_decode_tokens += tokens.size();
+        source_decode_wall_ms +=
+            std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() -
+                started).count();
+    };
+
+    struct capture_event {
+        size_t offset = 0;
+        int32_t kind = 0;
+        int32_t slot = 0;
+    };
+    const auto decode_captured_module =
+            [&](const std::vector<llama_token> & tokens,
+                llama_pos start_pos,
+                llama_seq_id seq_id,
+                std::vector<capture_event> events,
+                const std::string & stage) {
+        std::sort(
+            events.begin(),
+            events.end(),
+            [](const capture_event & lhs,
+               const capture_event & rhs) {
+                return lhs.offset < rhs.offset;
+            });
+        for (size_t i = 1; i < events.size(); ++i) {
+            if (events[i - 1].offset == events[i].offset) {
+                throw std::runtime_error(
+                    stage + " has two captures on one token");
+            }
+        }
+        size_t cursor = 0;
+        for (const auto & event : events) {
+            if (event.offset >= tokens.size()) {
+                throw std::runtime_error(
+                    stage + " capture is out of range");
+            }
+            if (event.offset > cursor) {
+                timed_decode(
+                    token_slice(tokens, cursor, event.offset),
+                    start_pos +
+                        static_cast<llama_pos>(cursor),
+                    seq_id);
+            }
+            if (!ctx->set_neo3000_lifting_capture(
+                    event.kind, event.slot)) {
+                throw std::runtime_error(
+                    stage + " failed to arm capture");
+            }
+            timed_decode(
+                std::vector<llama_token>{
+                    tokens.at(event.offset)},
+                start_pos +
+                    static_cast<llama_pos>(event.offset),
+                seq_id);
+            cursor = event.offset + 1;
+        }
+        if (cursor < tokens.size()) {
+            timed_decode(
+                token_slice(tokens, cursor, tokens.size()),
+                start_pos + static_cast<llama_pos>(cursor),
+                seq_id);
+        }
+    };
+
+    if (!ctx->install_neo3000_source_conditioned_lifting()) {
+        throw std::runtime_error(
+            "source-conditioned lifting installation failed");
+    }
+    const auto * installed =
+        ctx->get_neo3000_semantic_carrier();
+    if (!installed ||
+        !installed->source_conditioned_lifting ||
+        installed->lifting_poisoned ||
+        installed->lifting_update_resident ||
+        installed->lifting_layers.size() != 10 ||
+        installed->lifting_f_key_active_layers.size() != 10 ||
+        installed->lifting_f_key_staging_slots.size() != 40 ||
+        installed->lifting_backend_bytes == 0 ||
+        installed->action_backing_id == 0) {
+        throw std::runtime_error(
+            "source-conditioned lifting install invariant failed");
+    }
+    const uint64_t backing_id_initial =
+        installed->action_backing_id;
+    ctx->sched_reserve();
+
+    try {
+        llama_memory_clear(memory, true);
+        llama_synchronize(ctx);
+
+        // Candidate inference receives a matched neutral scaffold. It never
+        // receives the actual F or G relation text.
+        std::vector<llama_token> scaffold_tokens;
+        scaffold_tokens.reserve(expected_source_tokens);
+        scaffold_tokens.insert(
+            scaffold_tokens.end(),
+            prefix_tokens.begin(), prefix_tokens.end());
+        scaffold_tokens.insert(
+            scaffold_tokens.end(),
+            neutral_f_tokens.begin(), neutral_f_tokens.end());
+        scaffold_tokens.insert(
+            scaffold_tokens.end(),
+            structural_g_tokens.begin(),
+            structural_g_tokens.end());
+        scaffold_tokens.insert(
+            scaffold_tokens.end(),
+            closure_tokens.begin(), closure_tokens.end());
+        timed_decode(scaffold_tokens, 0, scaffold_seq);
+        require_positions(
+            scaffold_seq,
+            source_boundary_pos,
+            "lifting:neutral-scaffold");
+
+        timed_decode(prefix_tokens, 0, f_source_seq);
+        std::vector<capture_event> f_events;
+        for (size_t slot = 0; slot < 4; ++slot) {
+            f_events.push_back(
+                {f_key_offsets[slot], 1,
+                 static_cast<int32_t>(slot)});
+            f_events.push_back(
+                {f_value_offsets[slot], 2,
+                 static_cast<int32_t>(slot)});
+        }
+        decode_captured_module(
+            f_tokens,
+            static_cast<llama_pos>(prefix_tokens.size()),
+            f_source_seq,
+            std::move(f_events),
+            "lifting:F");
+        close_sequence(
+            f_source_seq, "lifting:F-source");
+        ++sequence_closes;
+
+        const size_t active_cache_backend_allocation_bytes =
+            active_hybrid_backend_allocation_bytes(ctx);
+        json records = json::array();
+        json route_summaries = json::array();
+        std::array<std::vector<boundary_result>, 4> joint = {};
+        size_t exact_correct = 0;
+        size_t joint_correct = 0;
+        std::map<std::string, size_t> control_correct;
+        std::map<std::string, size_t> control_joint_matches;
+
+        const auto run_query =
+                [&](llama_seq_id source_seq,
+                    llama_seq_id scratch_seq,
+                    size_t route_source_tokens,
+                    uint32_t control,
+                    const std::string & route,
+                    const std::string & variant_id,
+                    const json & query) {
+            copy_sequence(
+                source_seq,
+                scratch_seq,
+                static_cast<llama_pos>(
+                    route_source_tokens - 1),
+                route + ":copy");
+            ++sequence_copies;
+            if (!ctx->set_neo3000_lifting_control(control)) {
+                throw std::runtime_error(
+                    route + ": failed to select lifting control");
+            }
+            boundary_result result;
+            try {
+                result = decode_query(
+                    ctx,
+                    vocab,
+                    candidates,
+                    "source-conditioned-lifting:" + route,
+                    variant_id,
+                    query,
+                    route_source_tokens,
+                    active_recurrent_backing_initial,
+                    active_cache_backend_allocation_bytes,
+                    scratch_seq);
+            } catch (...) {
+                ctx->set_neo3000_lifting_control(0);
+                throw;
+            }
+            if (!ctx->set_neo3000_lifting_control(0)) {
+                throw std::runtime_error(
+                    route + ": failed to close lifting read");
+            }
+            query_decode_tokens +=
+                result.record.at("query_tokens")
+                    .get<size_t>();
+            result.record["lifting_control"] = control;
+            result.record["factor_backing_id"] =
+                backing_id_initial;
+            records.push_back(result.record);
+            close_sequence(
+                scratch_seq, route + ":query");
+            ++sequence_closes;
+            return result;
+        };
+
+        size_t variant_index = 0;
+        for (const auto & variant : variants) {
+            const std::string variant_id =
+                variant.at("id").get<std::string>();
+            if (variant_index > 0 &&
+                !ctx->begin_neo3000_lifting_g_update()) {
+                throw std::runtime_error(
+                    variant_id +
+                    ": failed to begin G factor update");
+            }
+
+            timed_decode(
+                prefix_tokens, 0, factor_source_seq);
+            timed_decode(
+                neutral_f_tokens,
+                static_cast<llama_pos>(prefix_tokens.size()),
+                factor_source_seq);
+            std::vector<capture_event> g_events;
+            for (size_t slot = 0; slot < 4; ++slot) {
+                g_events.push_back(
+                    {g_key_offsets[slot], 3,
+                     static_cast<int32_t>(slot)});
+                g_events.push_back(
+                    {g_value_offsets[slot], 4,
+                     static_cast<int32_t>(slot)});
+            }
+            decode_captured_module(
+                variant_g_tokens.at(variant_index),
+                static_cast<llama_pos>(
+                    prefix_tokens.size() +
+                    neutral_f_tokens.size()),
+                factor_source_seq,
+                std::move(g_events),
+                variant_id + ":G");
+            timed_decode(
+                closure_tokens,
+                static_cast<llama_pos>(
+                    prefix_tokens.size() +
+                    neutral_f_tokens.size() +
+                    variant_g_tokens.at(
+                        variant_index).size()),
+                factor_source_seq);
+            close_sequence(
+                factor_source_seq,
+                variant_id + ":factor-source");
+            ++sequence_closes;
+            if (!ctx->commit_neo3000_source_conditioned_lifting()) {
+                throw std::runtime_error(
+                    variant_id +
+                    ": complete factor panel failed to commit");
+            }
+            const auto * committed =
+                ctx->get_neo3000_semantic_carrier();
+            if (!committed ||
+                committed->action_backing_id !=
+                    backing_id_initial ||
+                committed->lifting_update_resident ||
+                committed->lifting_poisoned) {
+                throw std::runtime_error(
+                    variant_id +
+                    ": committed factor backing changed");
+            }
+
+            std::vector<llama_token> exact_source;
+            exact_source.reserve(expected_source_tokens);
+            exact_source.insert(
+                exact_source.end(),
+                prefix_tokens.begin(), prefix_tokens.end());
+            exact_source.insert(
+                exact_source.end(),
+                f_tokens.begin(), f_tokens.end());
+            exact_source.insert(
+                exact_source.end(),
+                variant_g_tokens.at(variant_index).begin(),
+                variant_g_tokens.at(variant_index).end());
+            exact_source.insert(
+                exact_source.end(),
+                closure_tokens.begin(), closure_tokens.end());
+            timed_decode(
+                exact_source, 0, exact_source_seq);
+            require_positions(
+                exact_source_seq,
+                source_boundary_pos,
+                variant_id + ":exact-source");
+
+            size_t query_index = 0;
+            for (const auto & query : variant.at("queries")) {
+                auto exact = run_query(
+                    exact_source_seq,
+                    exact_scratch_seq,
+                    expected_source_tokens,
+                    0,
+                    "exact_full_state",
+                    variant_id,
+                    query);
+                exact_correct +=
+                    exact.argmax ==
+                    query.at("expected").get<std::string>();
+                auto candidate = run_query(
+                    scaffold_seq,
+                    candidate_scratch_seq,
+                    expected_source_tokens,
+                    1,
+                    "lifting_F_then_G",
+                    variant_id,
+                    query);
+                joint_correct +=
+                    candidate.argmax ==
+                    query.at("expected").get<std::string>();
+                joint.at(variant_index).push_back(
+                    std::move(candidate));
+                ++query_index;
+            }
+            close_sequence(
+                exact_source_seq,
+                variant_id + ":exact-source");
+            ++sequence_closes;
+
+            if (variant_index == 1) {
+                const std::array<
+                    std::pair<const char *, uint32_t>, 5>
+                    controls = {{
+                        {"carrier_off", 0},
+                        {"F_only", 2},
+                        {"G_only", 3},
+                        {"G_then_F", 4},
+                        {"cyclic_G_relation_mutation", 5},
+                    }};
+                for (const auto & [route, control] : controls) {
+                    size_t control_index = 0;
+                    for (const auto & query :
+                         variant.at("queries")) {
+                        auto boundary = run_query(
+                            scaffold_seq,
+                            candidate_scratch_seq,
+                            expected_source_tokens,
+                            control,
+                            route,
+                            variant_id,
+                            query);
+                        control_correct[route] +=
+                            boundary.argmax ==
+                            query.at("expected")
+                                .get<std::string>();
+                        control_joint_matches[route] +=
+                            boundary.argmax ==
+                            joint.at(variant_index)
+                                .at(control_index).argmax;
+                        ++control_index;
+                    }
+                }
+            }
+            route_summaries.push_back({
+                {"variant", variant_id},
+                {"exact_query_records", 4},
+                {"joint_query_records", 4},
+                {"control_query_records",
+                    variant_index == 1 ? 20 : 0},
+                {"factor_backing_id", backing_id_initial},
+            });
+            ++variant_index;
+        }
+
+        const auto * before_close =
+            ctx->get_neo3000_semantic_carrier();
+        if (!before_close ||
+            before_close->lifting_captures != 40 ||
+            before_close->lifting_commits != 4 ||
+            before_close->lifting_reads == 0 ||
+            before_close->action_backing_id !=
+                backing_id_initial) {
+            throw std::runtime_error(
+                "source-conditioned lifting accounting invariant failed");
+        }
+        const uint64_t lifting_backend_bytes =
+            before_close->lifting_backend_bytes;
+        const uint64_t capture_copy_bytes =
+            before_close->lifting_capture_device_copy_bytes;
+        const uint64_t commit_copy_bytes =
+            before_close->lifting_commit_device_copy_bytes;
+        const uint64_t lifting_token_applications =
+            before_close->lifting_token_applications;
+        const uint64_t lifting_multiply_accumulates =
+            before_close->lifting_multiply_accumulates;
+        const uint64_t lifting_reads =
+            before_close->lifting_reads;
+        const uint64_t lifting_captures =
+            before_close->lifting_captures;
+        const uint64_t lifting_commits =
+            before_close->lifting_commits;
+        const double restoration_error_max =
+            before_close->lifting_restoration_error_max;
+        const double restoration_error_sum =
+            before_close->lifting_restoration_error_sum;
+
+        if (!ctx->reset_neo3000_semantic_port()) {
+            throw std::runtime_error(
+                "source-conditioned lifting factor close failed");
+        }
+        const auto * closed =
+            ctx->get_neo3000_semantic_carrier();
+        if (!closed ||
+            closed->action_backing_id != backing_id_initial ||
+            closed->lifting_update_resident ||
+            closed->lifting_poisoned ||
+            closed->enabled) {
+            throw std::runtime_error(
+                "source-conditioned lifting close invariant failed");
+        }
+        const uint64_t closure_zero_bytes =
+            closed->lifting_closure_device_zero_bytes;
+
+        const auto unrelated_source_tokens = tokenize_piece(
+            vocab,
+            spec.at("unrelated_source").get<std::string>(),
+            true,
+            true);
+        timed_decode(
+            unrelated_source_tokens, 0, unrelated_seq);
+        const auto unrelated = run_query(
+            unrelated_seq,
+            candidate_scratch_seq,
+            unrelated_source_tokens.size(),
+            0,
+            "post_close_unrelated_reuse",
+            "unrelated",
+            spec.at("unrelated_query"));
+        const bool unrelated_useful =
+            unrelated.argmax ==
+            spec.at("unrelated_query")
+                .at("expected").get<std::string>();
+        close_sequence(
+            unrelated_seq, "lifting:unrelated-source");
+        ++sequence_closes;
+        close_sequence(
+            scaffold_seq, "lifting:neutral-scaffold");
+        ++sequence_closes;
+
+        const auto & acceptance = spec.at("acceptance_law");
+        const bool control_gate =
+            std::all_of(
+                control_correct.begin(),
+                control_correct.end(),
+                [&](const auto & entry) {
+                    return entry.second <=
+                        acceptance.at(
+                            "control_correct_maximum")
+                            .get<size_t>();
+                }) &&
+            std::all_of(
+                control_joint_matches.begin(),
+                control_joint_matches.end(),
+                [&](const auto & entry) {
+                    return entry.second <=
+                        acceptance.at(
+                            "control_joint_matches_maximum")
+                            .get<size_t>();
+                });
+        const bool accepted =
+            exact_correct ==
+                acceptance.at("exact_correct")
+                    .get<size_t>() &&
+            joint_correct ==
+                acceptance.at("joint_correct")
+                    .get<size_t>() &&
+            control_gate &&
+            restoration_error_max <=
+                acceptance.at(
+                    "restoration_error_maximum")
+                    .get<double>() &&
+            unrelated_useful;
+
+        ctx->clear_neo3000_semantic_carrier();
+        const bool carrier_released =
+            ctx->get_neo3000_semantic_carrier() == nullptr;
+        if (!carrier_released) {
+            throw std::runtime_error(
+                "source-conditioned lifting backing release failed");
+        }
+        llama_memory_clear(memory, true);
+        llama_synchronize(ctx);
+
+        return {
+            {"mode",
+                "source_conditioned_reversible_low_rank_lifting"},
+            {"mechanism", {
+                {"forward",
+                    "cF=(KF^T*x)/rowsum(KF^2); "
+                    "xF=x+(VF-KF)*cF; "
+                    "cG=(KG^T*xF)/rowsum(KG^2); "
+                    "xFG=xF+(VG-KG)*cG"},
+                {"reverse_check",
+                    "xF'=xFG-(VG-KG)*cG; "
+                    "x'=xF'-(VF-KF)*cF; "
+                    "compare x' with x and recomputed cF,cG "
+                    "with retained graph ancillas"},
+                {"effective_transition",
+                    "frozen Q/K/V consume transformed x before inverse"},
+                {"factor_source_separated", true},
+                {"second_complete_factor_panel_retained", false},
+                {"reverse_check_out_of_place", true},
+                {"restoration_class",
+                    "NO_RESTORATION_CLAIM"},
+                {"factor_disposition",
+                    "DECLARED_CLOSURE_BY_ZERO_AND_RELEASE"},
+            }},
+            {"summary", {
+                {"exact_correct", exact_correct},
+                {"joint_correct", joint_correct},
+                {"control_correct", control_correct},
+                {"control_joint_matches",
+                    control_joint_matches},
+                {"restoration_error_max",
+                    restoration_error_max},
+                {"restoration_error_sum",
+                    restoration_error_sum},
+                {"unrelated_useful_after_close",
+                    unrelated_useful},
+                {"same_backing_before_close",
+                    backing_id_initial},
+                {"carrier_released", carrier_released},
+                {"accepted", accepted},
+            }},
+            {"carrier", {
+                {"backing_id", backing_id_initial},
+                {"backend_bytes", lifting_backend_bytes},
+                {"captures", lifting_captures},
+                {"commits", lifting_commits},
+                {"reads", lifting_reads},
+                {"capture_device_copy_bytes",
+                    capture_copy_bytes},
+                {"commit_device_copy_bytes",
+                    commit_copy_bytes},
+                {"closure_device_zero_bytes",
+                    closure_zero_bytes},
+                {"partial_update_resident_after_close", false},
+                {"second_complete_factor_panel_retained", false},
+            }},
+            {"resource_accounting", {
+                {"source_decode_tokens", source_decode_tokens},
+                {"query_decode_tokens", query_decode_tokens},
+                {"all_route_input_tokens",
+                    source_decode_tokens + query_decode_tokens},
+                {"source_decode_wall_ms",
+                    source_decode_wall_ms},
+                {"sequence_copies", sequence_copies},
+                {"sequence_closes", sequence_closes},
+                {"lifting_token_applications",
+                    lifting_token_applications},
+                {"lifting_multiply_accumulates",
+                    lifting_multiply_accumulates},
+                {"active_cache_backend_allocation_bytes",
+                    active_cache_backend_allocation_bytes},
+            }},
+            {"route_summaries", route_summaries},
+            {"records", records},
+            {"verdict", accepted ? "accept" : "reject"},
+            {"claim_ceiling", spec.at("claim_ceiling")},
+        };
+    } catch (...) {
+        ctx->poison_neo3000_source_conditioned_lifting();
+        ctx->clear_neo3000_semantic_carrier();
+        llama_memory_clear(memory, true);
+        llama_synchronize(ctx);
+        throw;
+    }
+}
+
 static json run_sparse_g_label_refresh(
         llama_context * ctx,
         const llama_vocab * vocab,
@@ -6008,6 +6765,16 @@ static json run_sparse_g_label_refresh(
         llama_kv_cache::value_subspace_operator *
             shared_subspace_operator = nullptr,
         bool build_subspace_operator = true) {
+    if (spec.value(
+            "source_conditioned_lifting_action",
+            false)) {
+        return run_source_conditioned_lifting(
+            ctx,
+            vocab,
+            candidates,
+            spec,
+            active_recurrent_backing_initial);
+    }
     const bool position_orbit_mode =
         spec.value("label_orbit_attention_action", false);
     const bool value_orbit_mode =

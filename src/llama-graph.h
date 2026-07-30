@@ -771,6 +771,8 @@ struct llm_graph_params {
                 other.cparams.neo3000_paired_complex_attention_mix &&
             cparams.neo3000_paired_complex_attention_layer ==
                 other.cparams.neo3000_paired_complex_attention_layer &&
+            cparams.neo3000_lifting_control ==
+                other.cparams.neo3000_lifting_control &&
             cparams.neo3000_semantic_carrier.get() ==
                 other.cparams.neo3000_semantic_carrier.get() &&
             arch  == other.arch  &&
@@ -794,6 +796,12 @@ public:
     ggml_tensor * get_h_nextn()     const { return t_h_nextn; }
     ggml_tensor * get_neo3000_soft_role_output() const {
         return t_neo3000_soft_role_output;
+    }
+    ggml_tensor * get_neo3000_lifting_state(int il) const {
+        return t_neo3000_lifting_state[il];
+    }
+    ggml_tensor * get_neo3000_lifting_restoration_error() const {
+        return t_neo3000_lifting_restoration_error;
     }
 
     ggml_tensor * get_layer_inp(int il) const { return t_layer_inp[il]; }
@@ -827,8 +835,10 @@ public:
     ggml_tensor * t_embd_pooled = nullptr;
     ggml_tensor * t_h_nextn     = nullptr; // [n_embd, n_outputs] hidden state before final output norm
     ggml_tensor * t_neo3000_soft_role_output = nullptr; // [n_embd, n_outputs]
+    ggml_tensor * t_neo3000_lifting_restoration_error = nullptr; // scalar
 
     std::vector<ggml_tensor *> t_layer_inp;
+    std::vector<ggml_tensor *> t_neo3000_lifting_state;
 
     std::map<llama_seq_id, ggml_tensor *> t_sampled_logits;
     std::map<llama_seq_id, ggml_tensor *> t_candidates;

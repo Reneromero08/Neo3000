@@ -156,6 +156,7 @@ struct llama_context {
     bool install_neo3000_continuous_soft_role_memory(
         const std::array<llama_token, 4> & candidate_tokens);
     bool install_neo3000_output_depth_memory();
+    bool install_neo3000_source_conditioned_lifting();
     bool write_neo3000_semantic_port(
         const float * output_state,
         size_t output_state_count,
@@ -174,6 +175,13 @@ struct llama_context {
     void poison_neo3000_depth_memory();
     bool commit_neo3000_depth_memory();
     bool set_neo3000_depth_layer_offset(uint32_t public_offset);
+    bool set_neo3000_lifting_capture(
+        int32_t capture_kind,
+        int32_t public_slot);
+    bool begin_neo3000_lifting_g_update();
+    bool commit_neo3000_source_conditioned_lifting();
+    bool set_neo3000_lifting_control(uint32_t control);
+    void poison_neo3000_source_conditioned_lifting();
     bool reset_neo3000_semantic_port();
     bool set_neo3000_semantic_carrier_enabled(bool enabled);
     bool set_neo3000_semantic_carrier_phase(uint32_t phase);
@@ -353,6 +361,9 @@ public:
         ggml_tensor * soft_output,
         uint32_t output_rows);
     bool capture_neo3000_depth_memory_output(
+        const llm_graph_result * res,
+        uint32_t input_rows);
+    bool capture_neo3000_lifting_output(
         const llm_graph_result * res,
         uint32_t input_rows);
 

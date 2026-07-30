@@ -209,6 +209,28 @@ The active recurrence and acceptance boundary are
   weight action rather than attaching another cross-attention memory bank.
   No restoration, fresh-compute advantage, carrier causality, catalytic
   inference, Small Wall crossing, or unbounded bridge was observed.
+- A precontact source-separated pre-RoPE two-hop implementation was rejected
+  without model load or prompt evaluation. It captured model-native factors
+  cleanly, but its actual intervention was two additive cross-attention reads
+  after ordinary attention rather than a changed Q/K/V weight transition.
+  It therefore overlapped the closed `0159` sidecar family. Its scheduler
+  graph inputs also retained complete factor copies after the claimed close,
+  and partial staged captures were not fail-closed. `neo-exp-0160` remains
+  unconsumed. No evaluator or evidence-harness successor is authorized; the
+  next intervention must change the model transition law itself and read
+  factors directly from the declared backing.
+- `neo-exp-0161` is frozen precontact as one source-conditioned low-rank
+  effective Q/K/V transition, not a carrier-evaluation revision. Separate
+  F and G source states populate one CUDA active/staging factor backing;
+  every full-attention layer applies their ordered rank-four lifting actions
+  before frozen Q/K/V. A separately expanded reverse-computation branch
+  reports numerical hidden/ancilla residual only; restoration class is
+  `NO_RESTORATION_CLAIM`, while factors have declared zero/release closure.
+  The probe and Release server build, tokenizer geometry is exact at
+  `48/31/31/27/24`, configured CUDA closure is `139/139`, and no CUDA source
+  changed. No model or scientific CUDA contact has occurred. Execute this
+  physical mechanism once, then select the next substrate from its physical
+  result without evaluator or evidence-harness versioning.
 
 ### SUPPORTED
 

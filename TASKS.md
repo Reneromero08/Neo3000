@@ -738,16 +738,32 @@ constructively unbounded local Agents-A1 inference.
   cross-attention-memory family without a layer, scale, slot, prompt,
   fixture, controller, evaluator, carrier-evaluation, or evidence-harness
   successor.
-- [ ] Implement one source-conditioned reversible low-rank weight transition
-  that changes the model's token transition law rather than attaching
-  another memory bank. Derive bounded factors from model-native source state
-  before the delayed query; apply them to a frozen Q/K/V or MoE weight path
-  through an explicitly invertible coupling or Cayley-style law; let later
-  useful inference depend on the modified weights; reverse the public module
-  sequence to restore the exact scoped weight payload; then run unrelated
-  useful inference on the same active backing. The strongest matched
-  baseline is the identical compact classical low-rank recurrence. Start
-  with one bounded construction probe and one contact; no rank, layer, gain,
+- [x] Reject the precontact `neo-exp-0160` source-separated pre-RoPE
+  two-hop proposal without model contact. Actual-code review showed that its
+  intervention left every frozen Q/K/V projection unchanged and added two
+  post-attention cross-attention contractions, placing it inside the
+  depth-memory sidecar family already closed by `neo-exp-0159`. It also left
+  complete factor copies in scheduler-owned graph inputs after the claimed
+  closure and lacked fail-closed custody between individual staged captures.
+  This is a physical-mechanism rejection, not an evaluator revision.
+- [ ] Execute `neo-exp-0161` once as one source-conditioned low-rank effective
+  Q/K/V transition, then adjudicate it compactly. The frozen specification is
+  `lab/source-conditioned-reversible-low-rank-lifting-v1.json`. Separate F
+  item/vault and G vault/code model states form two rank-four lifting actions
+  on one active/staging CUDA backing. Every full-attention layer applies them
+  in public F-then-G order to the live normalized hidden state before frozen
+  Q/K/V consumes it. An explicitly expanded out-of-place reverse branch
+  measures the hidden/ancilla residual; this makes no physical activation or
+  weight-restoration claim. Carrier-off, F-only, G-only, reversed-order, and
+  cyclic-relation controls are frozen. Factors are direct external graph
+  leaves with no second retained complete panel; partial staging poisons and
+  zeros the backing. The probe and full Release server build, tokenizer
+  geometry is exact at `48/31/31/27/24`, all `139/139` configured CUDA
+  objects remain present and nonzero, and no CUDA source changed. Passing can
+  establish only one bounded causal effective transition plus declared
+  factor closure; the identical compact lifting recurrence and exact
+  four-link table remain stronger compact baselines. One physical mechanism
+  receives one contact and one compact adjudication—no rank, layer, gain,
   prompt, fixture, controller, evaluator, carrier-evaluation, or
   evidence-harness series.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the

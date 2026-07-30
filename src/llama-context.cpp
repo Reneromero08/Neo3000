@@ -16,6 +16,7 @@
 #include <cinttypes>
 #include <cmath>
 #include <cstring>
+#include <exception>
 #include <limits>
 #include <stdexcept>
 
@@ -418,6 +419,10 @@ llama_context::llama_context(
 }
 
 llama_context::~llama_context() {
+    // Experimental carriers own separate backend buffers. Zero and close
+    // them before scheduler/model teardown, including any partial staged
+    // update left by an exceptional probe path.
+    clear_neo3000_semantic_carrier();
     if (!model.hparams.no_alloc) {
         for (size_t i = 0; i < backend_ptrs.size(); ++i) {
             ggml_backend_t             backend = backend_ptrs[i];
@@ -1272,6 +1277,27 @@ struct neo3000_depth_memory_backing {
     std::vector<ggml_tensor *> staging_slots;
 };
 
+struct neo3000_lifting_backing {
+    ggml_context_ptr ctx;
+    ggml_backend_buffer_ptr buffer;
+    ggml_tensor * f_key_active = nullptr;
+    ggml_tensor * f_key_staging = nullptr;
+    ggml_tensor * f_value_active = nullptr;
+    ggml_tensor * f_value_staging = nullptr;
+    ggml_tensor * g_key_active = nullptr;
+    ggml_tensor * g_key_staging = nullptr;
+    ggml_tensor * g_value_active = nullptr;
+    ggml_tensor * g_value_staging = nullptr;
+    std::vector<ggml_tensor *> f_key_active_layers;
+    std::vector<ggml_tensor *> f_value_active_layers;
+    std::vector<ggml_tensor *> g_key_active_layers;
+    std::vector<ggml_tensor *> g_value_active_layers;
+    std::vector<ggml_tensor *> f_key_staging_slots;
+    std::vector<ggml_tensor *> f_value_staging_slots;
+    std::vector<ggml_tensor *> g_key_staging_slots;
+    std::vector<ggml_tensor *> g_value_staging_slots;
+};
+
 bool llama_context::install_neo3000_semantic_carrier(
         std::vector<float> query_map,
         const std::array<float, 4> & query_bias,
@@ -1892,6 +1918,188 @@ bool llama_context::install_neo3000_output_depth_memory() {
     return true;
 }
 
+bool llama_context::install_neo3000_source_conditioned_lifting() {
+    std::vector<int32_t> layers;
+    if (model.arch != LLM_ARCH_QWEN35MOE ||
+        !model.output ||
+        !model.output->buffer ||
+        cparams.neo3000_semantic_carrier) {
+        return false;
+    }
+    for (uint32_t il = 0; il < model.hparams.n_layer(); ++il) {
+        if (!model.hparams.is_recr(il)) {
+            layers.push_back(static_cast<int32_t>(il));
+        }
+    }
+    if (layers.size() != 10) {
+        return false;
+    }
+
+    const int64_t n_embd = model.hparams.n_embd;
+    const int64_t n_layers =
+        static_cast<int64_t>(layers.size());
+    constexpr size_t tensor_capacity = 256;
+    ggml_init_params params = {
+        /*.mem_size   =*/ tensor_capacity * ggml_tensor_overhead(),
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    auto backing =
+        std::make_shared<neo3000_lifting_backing>();
+    backing->ctx.reset(ggml_init(params));
+    if (!backing->ctx) {
+        return false;
+    }
+
+    const auto make_panel = [&](const char * name) {
+        ggml_tensor * tensor = ggml_new_tensor_3d(
+            backing->ctx.get(),
+            GGML_TYPE_F32,
+            n_embd,
+            4,
+            n_layers);
+        ggml_set_name(tensor, name);
+        return tensor;
+    };
+    backing->f_key_active =
+        make_panel("neo3000_lifting_f_key_active");
+    backing->f_key_staging =
+        make_panel("neo3000_lifting_f_key_staging");
+    backing->f_value_active =
+        make_panel("neo3000_lifting_f_value_active");
+    backing->f_value_staging =
+        make_panel("neo3000_lifting_f_value_staging");
+    backing->g_key_active =
+        make_panel("neo3000_lifting_g_key_active");
+    backing->g_key_staging =
+        make_panel("neo3000_lifting_g_key_staging");
+    backing->g_value_active =
+        make_panel("neo3000_lifting_g_value_active");
+    backing->g_value_staging =
+        make_panel("neo3000_lifting_g_value_staging");
+
+    const auto make_views = [&](
+            ggml_tensor * active,
+            ggml_tensor * staging,
+            std::vector<ggml_tensor *> & active_layers,
+            std::vector<ggml_tensor *> & staging_slots) {
+        const size_t row_bytes =
+            static_cast<size_t>(n_embd) * sizeof(float);
+        const size_t layer_bytes = row_bytes * 4;
+        active_layers.reserve(layers.size());
+        staging_slots.reserve(layers.size() * 4);
+        for (size_t layer_index = 0;
+             layer_index < layers.size();
+             ++layer_index) {
+            active_layers.push_back(ggml_view_2d(
+                backing->ctx.get(),
+                active,
+                n_embd,
+                4,
+                row_bytes,
+                layer_index * layer_bytes));
+            for (size_t slot = 0; slot < 4; ++slot) {
+                staging_slots.push_back(ggml_view_1d(
+                    backing->ctx.get(),
+                    staging,
+                    n_embd,
+                    layer_index * layer_bytes +
+                        slot * row_bytes));
+            }
+        }
+    };
+    make_views(
+        backing->f_key_active,
+        backing->f_key_staging,
+        backing->f_key_active_layers,
+        backing->f_key_staging_slots);
+    make_views(
+        backing->f_value_active,
+        backing->f_value_staging,
+        backing->f_value_active_layers,
+        backing->f_value_staging_slots);
+    make_views(
+        backing->g_key_active,
+        backing->g_key_staging,
+        backing->g_key_active_layers,
+        backing->g_key_staging_slots);
+    make_views(
+        backing->g_value_active,
+        backing->g_value_staging,
+        backing->g_value_active_layers,
+        backing->g_value_staging_slots);
+
+    const auto buft =
+        ggml_backend_buffer_get_type(model.output->buffer);
+    backing->buffer.reset(
+        ggml_backend_alloc_ctx_tensors_from_buft(
+            backing->ctx.get(),
+            buft));
+    if (!backing->buffer) {
+        return false;
+    }
+    ggml_backend_buffer_clear(backing->buffer.get(), 0);
+
+    auto carrier =
+        std::make_shared<llama_neo3000_semantic_carrier>();
+    carrier->n_embd = static_cast<uint32_t>(n_embd);
+    carrier->read_layer = -5;
+    carrier->output_written = true;
+    carrier->source_conditioned_lifting = true;
+    carrier->lifting_layers = std::move(layers);
+    carrier->lifting_f_key_active = backing->f_key_active;
+    carrier->lifting_f_key_staging = backing->f_key_staging;
+    carrier->lifting_f_value_active = backing->f_value_active;
+    carrier->lifting_f_value_staging = backing->f_value_staging;
+    carrier->lifting_g_key_active = backing->g_key_active;
+    carrier->lifting_g_key_staging = backing->g_key_staging;
+    carrier->lifting_g_value_active = backing->g_value_active;
+    carrier->lifting_g_value_staging = backing->g_value_staging;
+    carrier->lifting_f_key_active_layers =
+        backing->f_key_active_layers;
+    carrier->lifting_f_value_active_layers =
+        backing->f_value_active_layers;
+    carrier->lifting_g_key_active_layers =
+        backing->g_key_active_layers;
+    carrier->lifting_g_value_active_layers =
+        backing->g_value_active_layers;
+    carrier->lifting_f_key_staging_slots =
+        backing->f_key_staging_slots;
+    carrier->lifting_f_value_staging_slots =
+        backing->f_value_staging_slots;
+    carrier->lifting_g_key_staging_slots =
+        backing->g_key_staging_slots;
+    carrier->lifting_g_value_staging_slots =
+        backing->g_value_staging_slots;
+    carrier->lifting_backend_bytes =
+        ggml_backend_buffer_get_size(backing->buffer.get());
+    carrier->lifting_backing = std::move(backing);
+
+    uint64_t backing_id = 1469598103934665603ULL;
+    const auto mix_pointer = [&](const void * pointer) {
+        uintptr_t value = reinterpret_cast<uintptr_t>(pointer);
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            backing_id ^=
+                static_cast<uint8_t>(
+                    (value >> (8 * i)) & 0xffu);
+            backing_id *= 1099511628211ULL;
+        }
+    };
+    mix_pointer(carrier.get());
+    mix_pointer(carrier->lifting_f_key_active);
+    mix_pointer(carrier->lifting_f_value_active);
+    mix_pointer(carrier->lifting_g_key_active);
+    mix_pointer(carrier->lifting_g_value_active);
+    mix_pointer(carrier->lifting_backing.get());
+    carrier->action_backing_id =
+        backing_id == 0 ? 1 : backing_id;
+
+    cparams.neo3000_lifting_control = 0;
+    cparams.neo3000_semantic_carrier = std::move(carrier);
+    sched_need_reserve = true;
+    return true;
+}
+
 bool llama_context::write_neo3000_semantic_port(
         const float * output_state,
         size_t output_state_count,
@@ -2493,6 +2701,298 @@ bool llama_context::set_neo3000_depth_layer_offset(
     return true;
 }
 
+bool llama_context::set_neo3000_lifting_capture(
+        int32_t capture_kind,
+        int32_t public_slot) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->source_conditioned_lifting ||
+        carrier->lifting_poisoned ||
+        capture_kind < 1 ||
+        capture_kind > 4 ||
+        public_slot < 0 ||
+        public_slot >= 4 ||
+        carrier->lifting_capture_kind != 0 ||
+        carrier->lifting_capture_slot != -1) {
+        return false;
+    }
+    uint32_t * mask = nullptr;
+    switch (capture_kind) {
+        case 1: mask = &carrier->lifting_f_key_mask; break;
+        case 2: mask = &carrier->lifting_f_value_mask; break;
+        case 3: mask = &carrier->lifting_g_key_mask; break;
+        case 4: mask = &carrier->lifting_g_value_mask; break;
+        default: return false;
+    }
+    if ((*mask & (1u << public_slot)) != 0) {
+        return false;
+    }
+    carrier->lifting_update_resident = true;
+    carrier->lifting_capture_kind = capture_kind;
+    carrier->lifting_capture_slot = public_slot;
+    return true;
+}
+
+void llama_context::poison_neo3000_source_conditioned_lifting() {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier || !carrier->source_conditioned_lifting) {
+        return;
+    }
+    carrier->enabled = false;
+    carrier->lifting_poisoned = true;
+    carrier->lifting_update_resident = false;
+    carrier->lifting_capture_kind = 0;
+    carrier->lifting_capture_slot = -1;
+    cparams.neo3000_lifting_control = 0;
+    for (ggml_tensor * tensor : {
+             carrier->lifting_f_key_active,
+             carrier->lifting_f_key_staging,
+             carrier->lifting_f_value_active,
+             carrier->lifting_f_value_staging,
+             carrier->lifting_g_key_active,
+             carrier->lifting_g_key_staging,
+             carrier->lifting_g_value_active,
+             carrier->lifting_g_value_staging}) {
+        if (tensor) {
+            ggml_backend_tensor_memset(
+                tensor, 0, 0, ggml_nbytes(tensor));
+            carrier->lifting_closure_device_zero_bytes +=
+                ggml_nbytes(tensor);
+        }
+    }
+    carrier->lifting_f_key_mask = 0;
+    carrier->lifting_f_value_mask = 0;
+    carrier->lifting_g_key_mask = 0;
+    carrier->lifting_g_value_mask = 0;
+    ++carrier->generation;
+    synchronize();
+    sched_need_reserve = true;
+}
+
+bool llama_context::capture_neo3000_lifting_output(
+        const llm_graph_result * res,
+        uint32_t input_rows) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->source_conditioned_lifting ||
+        carrier->lifting_capture_kind == 0) {
+        return true;
+    }
+    const int32_t kind = carrier->lifting_capture_kind;
+    const int32_t slot = carrier->lifting_capture_slot;
+    if (!res ||
+        carrier->lifting_poisoned ||
+        !carrier->lifting_update_resident ||
+        kind < 1 ||
+        kind > 4 ||
+        slot < 0 ||
+        slot >= 4 ||
+        input_rows != 1 ||
+        carrier->lifting_layers.size() != 10 ||
+        !carrier->lifting_backing) {
+        poison_neo3000_source_conditioned_lifting();
+        return false;
+    }
+
+    std::vector<ggml_tensor *> * targets = nullptr;
+    uint32_t * mask = nullptr;
+    switch (kind) {
+        case 1:
+            targets = &carrier->lifting_f_key_staging_slots;
+            mask = &carrier->lifting_f_key_mask;
+            break;
+        case 2:
+            targets = &carrier->lifting_f_value_staging_slots;
+            mask = &carrier->lifting_f_value_mask;
+            break;
+        case 3:
+            targets = &carrier->lifting_g_key_staging_slots;
+            mask = &carrier->lifting_g_key_mask;
+            break;
+        case 4:
+            targets = &carrier->lifting_g_value_staging_slots;
+            mask = &carrier->lifting_g_value_mask;
+            break;
+        default:
+            poison_neo3000_source_conditioned_lifting();
+            return false;
+    }
+    if (!targets ||
+        !mask ||
+        (*mask & (1u << slot)) != 0 ||
+        targets->size() != carrier->lifting_layers.size() * 4) {
+        poison_neo3000_source_conditioned_lifting();
+        return false;
+    }
+
+    const size_t expected_bytes =
+        static_cast<size_t>(carrier->n_embd) * sizeof(float);
+    std::vector<ggml_tensor *> sources;
+    sources.reserve(carrier->lifting_layers.size());
+    for (int32_t layer : carrier->lifting_layers) {
+        ggml_tensor * source =
+            res->get_neo3000_lifting_state(layer);
+        if (!source ||
+            source->ne[0] != carrier->n_embd ||
+            source->ne[1] != 1 ||
+            ggml_nbytes(source) != expected_bytes) {
+            poison_neo3000_source_conditioned_lifting();
+            return false;
+        }
+        sources.push_back(source);
+    }
+    for (size_t layer_index = 0;
+         layer_index < sources.size();
+         ++layer_index) {
+        ggml_tensor * target = targets->at(
+            layer_index * 4 + static_cast<size_t>(slot));
+        if (!target || ggml_nbytes(target) != expected_bytes) {
+            poison_neo3000_source_conditioned_lifting();
+            return false;
+        }
+        ggml_backend_tensor_copy(
+            sources.at(layer_index), target);
+    }
+    synchronize();
+    carrier->lifting_capture_device_copy_bytes +=
+        expected_bytes * sources.size();
+    *mask |= 1u << slot;
+    carrier->lifting_capture_kind = 0;
+    carrier->lifting_capture_slot = -1;
+    ++carrier->lifting_captures;
+    ++carrier->port_writes;
+    ++carrier->generation;
+    return true;
+}
+
+bool llama_context::begin_neo3000_lifting_g_update() {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->source_conditioned_lifting ||
+        carrier->lifting_poisoned ||
+        carrier->lifting_update_resident ||
+        carrier->lifting_commits == 0 ||
+        carrier->lifting_capture_kind != 0 ||
+        carrier->lifting_capture_slot != -1 ||
+        cparams.neo3000_lifting_control != 0) {
+        return false;
+    }
+    const std::array<std::pair<ggml_tensor *, ggml_tensor *>, 2>
+        copies = {{
+            {carrier->lifting_f_key_active,
+             carrier->lifting_f_key_staging},
+            {carrier->lifting_f_value_active,
+             carrier->lifting_f_value_staging},
+        }};
+    for (const auto & pair : copies) {
+        if (!pair.first ||
+            !pair.second ||
+            ggml_nbytes(pair.first) != ggml_nbytes(pair.second)) {
+            poison_neo3000_source_conditioned_lifting();
+            return false;
+        }
+    }
+    for (const auto & pair : copies) {
+        ggml_backend_tensor_copy(pair.first, pair.second);
+        carrier->lifting_commit_device_copy_bytes +=
+            ggml_nbytes(pair.first);
+    }
+    for (ggml_tensor * tensor : {
+             carrier->lifting_g_key_staging,
+             carrier->lifting_g_value_staging}) {
+        if (!tensor) {
+            poison_neo3000_source_conditioned_lifting();
+            return false;
+        }
+        ggml_backend_tensor_memset(
+            tensor, 0, 0, ggml_nbytes(tensor));
+        carrier->lifting_commit_device_copy_bytes +=
+            ggml_nbytes(tensor);
+    }
+    synchronize();
+    carrier->lifting_f_key_mask = 0x0fu;
+    carrier->lifting_f_value_mask = 0x0fu;
+    carrier->lifting_g_key_mask = 0;
+    carrier->lifting_g_value_mask = 0;
+    carrier->lifting_update_resident = true;
+    return true;
+}
+
+bool llama_context::commit_neo3000_source_conditioned_lifting() {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->source_conditioned_lifting ||
+        carrier->lifting_poisoned ||
+        !carrier->lifting_update_resident ||
+        carrier->lifting_capture_kind != 0 ||
+        carrier->lifting_capture_slot != -1 ||
+        carrier->lifting_f_key_mask != 0x0fu ||
+        carrier->lifting_f_value_mask != 0x0fu ||
+        carrier->lifting_g_key_mask != 0x0fu ||
+        carrier->lifting_g_value_mask != 0x0fu ||
+        cparams.neo3000_lifting_control != 0) {
+        return false;
+    }
+    const std::array<std::pair<ggml_tensor *, ggml_tensor *>, 4>
+        copies = {{
+            {carrier->lifting_f_key_staging,
+             carrier->lifting_f_key_active},
+            {carrier->lifting_f_value_staging,
+             carrier->lifting_f_value_active},
+            {carrier->lifting_g_key_staging,
+             carrier->lifting_g_key_active},
+            {carrier->lifting_g_value_staging,
+             carrier->lifting_g_value_active},
+        }};
+    for (const auto & pair : copies) {
+        if (!pair.first ||
+            !pair.second ||
+            ggml_nbytes(pair.first) != ggml_nbytes(pair.second)) {
+            poison_neo3000_source_conditioned_lifting();
+            return false;
+        }
+    }
+    for (const auto & pair : copies) {
+        ggml_backend_tensor_copy(pair.first, pair.second);
+    }
+    synchronize();
+    for (const auto & pair : copies) {
+        ggml_backend_tensor_memset(
+            pair.first, 0, 0, ggml_nbytes(pair.first));
+        carrier->lifting_commit_device_copy_bytes +=
+            ggml_nbytes(pair.first) * 2;
+    }
+    synchronize();
+    carrier->lifting_f_key_mask = 0;
+    carrier->lifting_f_value_mask = 0;
+    carrier->lifting_g_key_mask = 0;
+    carrier->lifting_g_value_mask = 0;
+    carrier->lifting_update_resident = false;
+    ++carrier->lifting_commits;
+    ++carrier->generation;
+    return true;
+}
+
+bool llama_context::set_neo3000_lifting_control(uint32_t control) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->source_conditioned_lifting ||
+        carrier->lifting_poisoned ||
+        carrier->lifting_update_resident ||
+        control > 5 ||
+        (control != 0 && carrier->lifting_commits == 0)) {
+        return false;
+    }
+    if (cparams.neo3000_lifting_control == control) {
+        return true;
+    }
+    cparams.neo3000_lifting_control = control;
+    carrier->enabled = control != 0;
+    ++carrier->generation;
+    sched_need_reserve = true;
+    return true;
+}
+
 bool llama_context::reset_neo3000_semantic_port() {
     auto & carrier = cparams.neo3000_semantic_carrier;
     if (!carrier || !carrier->output_written) {
@@ -2564,6 +3064,43 @@ bool llama_context::reset_neo3000_semantic_port() {
         carrier->depth_staging_writes = 0;
         carrier->depth_staging_destination_mask = 0;
         carrier->depth_memory_poisoned = false;
+    }
+    if (carrier->source_conditioned_lifting) {
+        if (!carrier->lifting_f_key_active ||
+            !carrier->lifting_f_key_staging ||
+            !carrier->lifting_f_value_active ||
+            !carrier->lifting_f_value_staging ||
+            !carrier->lifting_g_key_active ||
+            !carrier->lifting_g_key_staging ||
+            !carrier->lifting_g_value_active ||
+            !carrier->lifting_g_value_staging) {
+            return false;
+        }
+        for (ggml_tensor * tensor : {
+                 carrier->lifting_f_key_active,
+                 carrier->lifting_f_key_staging,
+                 carrier->lifting_f_value_active,
+                 carrier->lifting_f_value_staging,
+                 carrier->lifting_g_key_active,
+                 carrier->lifting_g_key_staging,
+                 carrier->lifting_g_value_active,
+                 carrier->lifting_g_value_staging}) {
+            ggml_backend_tensor_memset(
+                tensor, 0, 0, ggml_nbytes(tensor));
+            carrier->lifting_closure_device_zero_bytes +=
+                ggml_nbytes(tensor);
+        }
+        synchronize();
+        carrier->lifting_capture_kind = 0;
+        carrier->lifting_capture_slot = -1;
+        carrier->lifting_f_key_mask = 0;
+        carrier->lifting_f_value_mask = 0;
+        carrier->lifting_g_key_mask = 0;
+        carrier->lifting_g_value_mask = 0;
+        carrier->lifting_update_resident = false;
+        carrier->lifting_poisoned = false;
+        cparams.neo3000_lifting_control = 0;
+        sched_need_reserve = true;
     }
     carrier->port.fill(0.0f);
     neo3000_set_semantic_carrier_action(*carrier);
@@ -2909,6 +3446,44 @@ void llama_context::clear_neo3000_semantic_carrier() {
             ->depth_staging_destination_mask = 0;
         cparams.neo3000_semantic_carrier
             ->depth_memory_poisoned = true;
+    }
+    if (cparams.neo3000_semantic_carrier
+            ->source_conditioned_lifting) {
+        for (ggml_tensor * tensor : {
+                 cparams.neo3000_semantic_carrier
+                     ->lifting_f_key_active,
+                 cparams.neo3000_semantic_carrier
+                     ->lifting_f_key_staging,
+                 cparams.neo3000_semantic_carrier
+                     ->lifting_f_value_active,
+                 cparams.neo3000_semantic_carrier
+                     ->lifting_f_value_staging,
+                 cparams.neo3000_semantic_carrier
+                     ->lifting_g_key_active,
+                 cparams.neo3000_semantic_carrier
+                     ->lifting_g_key_staging,
+                 cparams.neo3000_semantic_carrier
+                     ->lifting_g_value_active,
+                 cparams.neo3000_semantic_carrier
+                     ->lifting_g_value_staging}) {
+            if (tensor) {
+                ggml_backend_tensor_memset(
+                    tensor, 0, 0, ggml_nbytes(tensor));
+                cparams.neo3000_semantic_carrier
+                    ->lifting_closure_device_zero_bytes +=
+                    ggml_nbytes(tensor);
+            }
+        }
+        synchronize();
+        cparams.neo3000_semantic_carrier
+            ->lifting_capture_kind = 0;
+        cparams.neo3000_semantic_carrier
+            ->lifting_capture_slot = -1;
+        cparams.neo3000_semantic_carrier
+            ->lifting_update_resident = false;
+        cparams.neo3000_semantic_carrier
+            ->lifting_poisoned = true;
+        cparams.neo3000_lifting_control = 0;
     }
     cparams.neo3000_semantic_carrier->enabled = false;
     cparams.neo3000_semantic_carrier->port.fill(0.0f);
@@ -3453,6 +4028,21 @@ int llama_context::decode(const llama_batch & batch_inp) {
             }
         }
     } depth_capture_guard{this};
+    struct neo3000_lifting_capture_guard {
+        llama_context * ctx;
+        int uncaught = std::uncaught_exceptions();
+        ~neo3000_lifting_capture_guard() {
+            const auto * carrier =
+                ctx->get_neo3000_semantic_carrier();
+            if (carrier &&
+                carrier->source_conditioned_lifting &&
+                (carrier->lifting_capture_kind != 0 ||
+                 (std::uncaught_exceptions() > uncaught &&
+                  carrier->lifting_update_resident))) {
+                ctx->poison_neo3000_source_conditioned_lifting();
+            }
+        }
+    } lifting_capture_guard{this};
 
     // MTP hook batches carry both token (next-token id) and embd (h_nextn row),
     // so accept either present rather than requiring exactly one.
@@ -3681,6 +4271,65 @@ int llama_context::decode(const llama_batch & batch_inp) {
                 "output memory\n",
                 __func__);
             return -3;
+        }
+        if (!capture_neo3000_lifting_output(
+                res,
+                static_cast<uint32_t>(ubatch.n_tokens))) {
+            LLAMA_LOG_ERROR(
+                "%s: failed to capture Neo3000 source-conditioned "
+                "lifting factors\n",
+                __func__);
+            return -3;
+        }
+        if (auto & carrier = cparams.neo3000_semantic_carrier;
+            carrier &&
+            carrier->source_conditioned_lifting &&
+            cparams.neo3000_lifting_control != 0) {
+            ggml_tensor * restoration_error =
+                res->get_neo3000_lifting_restoration_error();
+            if (!restoration_error ||
+                ggml_nelements(restoration_error) != 1 ||
+                restoration_error->type != GGML_TYPE_F32) {
+                poison_neo3000_source_conditioned_lifting();
+                LLAMA_LOG_ERROR(
+                    "%s: missing Neo3000 lifting restoration scalar\n",
+                    __func__);
+                return -3;
+            }
+            float error = 0.0f;
+            ggml_backend_tensor_get(
+                restoration_error,
+                &error,
+                0,
+                sizeof(error));
+            if (!std::isfinite(error)) {
+                poison_neo3000_source_conditioned_lifting();
+                LLAMA_LOG_ERROR(
+                    "%s: non-finite Neo3000 lifting restoration error\n",
+                    __func__);
+                return -3;
+            }
+            carrier->lifting_restoration_error_sum += error;
+            carrier->lifting_restoration_error_max =
+                std::max(
+                    carrier->lifting_restoration_error_max,
+                    static_cast<double>(error));
+            const uint64_t modules =
+                cparams.neo3000_lifting_control == 2 ||
+                cparams.neo3000_lifting_control == 3
+                    ? 1
+                    : 2;
+            carrier->lifting_token_applications +=
+                static_cast<uint64_t>(ubatch.n_tokens) *
+                carrier->lifting_layers.size();
+            carrier->lifting_multiply_accumulates +=
+                modules * 3ULL *
+                static_cast<uint64_t>(carrier->n_embd) *
+                4ULL *
+                static_cast<uint64_t>(ubatch.n_tokens) *
+                carrier->lifting_layers.size();
+            carrier->lifting_reads +=
+                carrier->lifting_layers.size();
         }
 
         // extract logits

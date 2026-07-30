@@ -80,6 +80,40 @@ struct llama_neo3000_semantic_carrier {
     uint32_t depth_layer_offset = 0;
     uint32_t depth_staging_writes = 0;
     uint32_t depth_staging_destination_mask = 0;
+    // Source-conditioned lifting mode retains four layer-local factor
+    // panels. F maps item state toward vault state; G maps the resulting
+    // state toward code state. The graph applies each as a rank-four coupling
+    // before frozen Q/K/V projections, lets Q/K/V consume the transformed
+    // state, then executes an out-of-place reverse computation and reports its
+    // joint hidden/ancilla residual. Factors are direct external graph leaves;
+    // the implementation retains no second complete factor panel.
+    std::shared_ptr<void> lifting_backing;
+    std::vector<int32_t> lifting_layers;
+    ggml_tensor * lifting_f_key_active = nullptr;
+    ggml_tensor * lifting_f_key_staging = nullptr;
+    ggml_tensor * lifting_f_value_active = nullptr;
+    ggml_tensor * lifting_f_value_staging = nullptr;
+    ggml_tensor * lifting_g_key_active = nullptr;
+    ggml_tensor * lifting_g_key_staging = nullptr;
+    ggml_tensor * lifting_g_value_active = nullptr;
+    ggml_tensor * lifting_g_value_staging = nullptr;
+    std::vector<ggml_tensor *> lifting_f_key_active_layers;
+    std::vector<ggml_tensor *> lifting_f_value_active_layers;
+    std::vector<ggml_tensor *> lifting_g_key_active_layers;
+    std::vector<ggml_tensor *> lifting_g_value_active_layers;
+    std::vector<ggml_tensor *> lifting_f_key_staging_slots;
+    std::vector<ggml_tensor *> lifting_f_value_staging_slots;
+    std::vector<ggml_tensor *> lifting_g_key_staging_slots;
+    std::vector<ggml_tensor *> lifting_g_value_staging_slots;
+    int32_t lifting_capture_kind = 0; // 0:none, 1:F-key, 2:F-value, 3:G-key, 4:G-value
+    int32_t lifting_capture_slot = -1;
+    uint32_t lifting_f_key_mask = 0;
+    uint32_t lifting_f_value_mask = 0;
+    uint32_t lifting_g_key_mask = 0;
+    uint32_t lifting_g_value_mask = 0;
+    bool source_conditioned_lifting = false;
+    bool lifting_update_resident = false;
+    bool lifting_poisoned = false;
     uint32_t phase = 0;
     bool enabled = false;
     bool output_written = false;
@@ -129,6 +163,17 @@ struct llama_neo3000_semantic_carrier {
     uint64_t depth_captures = 0;
     uint64_t depth_commits = 0;
     uint64_t depth_reads = 0;
+    uint64_t lifting_backend_bytes = 0;
+    uint64_t lifting_capture_device_copy_bytes = 0;
+    uint64_t lifting_commit_device_copy_bytes = 0;
+    uint64_t lifting_closure_device_zero_bytes = 0;
+    uint64_t lifting_token_applications = 0;
+    uint64_t lifting_multiply_accumulates = 0;
+    uint64_t lifting_captures = 0;
+    uint64_t lifting_commits = 0;
+    uint64_t lifting_reads = 0;
+    double lifting_restoration_error_sum = 0.0;
+    double lifting_restoration_error_max = 0.0;
     uint64_t writer_host_input_bytes = 0;
     uint64_t port_writes = 0;
     uint64_t router_bias_token_applications = 0;
@@ -178,6 +223,8 @@ struct llama_cparams {
     // layer disables the branch. Kept internal to the Neo3000 probe.
     float   neo3000_paired_complex_attention_mix   = 0.0f;
     int32_t neo3000_paired_complex_attention_layer = -1;
+    // 0 off, 1 F->G, 2 F only, 3 G only, 4 G->F, 5 F->cyclic-G.
+    uint32_t neo3000_lifting_control = 0;
     std::shared_ptr<llama_neo3000_semantic_carrier>
         neo3000_semantic_carrier;
 

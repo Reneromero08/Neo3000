@@ -1193,9 +1193,15 @@ void llm_graph_result::reset() {
     t_embd_pooled = nullptr;
     t_h_nextn     = nullptr;
     t_neo3000_soft_role_output = nullptr;
+    t_neo3000_lifting_restoration_error = nullptr;
 
     t_layer_inp.resize(LLAMA_MAX_LAYERS);
     std::fill(t_layer_inp.begin(), t_layer_inp.end(), nullptr);
+    t_neo3000_lifting_state.resize(LLAMA_MAX_LAYERS);
+    std::fill(
+        t_neo3000_lifting_state.begin(),
+        t_neo3000_lifting_state.end(),
+        nullptr);
 
     t_sampled.clear();
     t_sampled_probs.clear();
@@ -1241,6 +1247,9 @@ void llm_graph_result::set_outputs(const llm_graph_params & params) {
     if (t_neo3000_soft_role_output != nullptr) {
         ggml_set_output(t_neo3000_soft_role_output);
     }
+    if (t_neo3000_lifting_restoration_error != nullptr) {
+        ggml_set_output(t_neo3000_lifting_restoration_error);
+    }
     {
         const auto & embeddings_layer_inp = params.cparams.embeddings_layer_inp;
         for (size_t il = 0; il < embeddings_layer_inp.size(); ++il) {
@@ -1262,6 +1271,21 @@ void llm_graph_result::set_outputs(const llm_graph_params & params) {
                     t_layer_inp[il] != nullptr &&
                     "depth-memory layer input tensor is null");
                 ggml_set_output(t_layer_inp[il]);
+            }
+        }
+    }
+    {
+        const auto & carrier =
+            params.cparams.neo3000_semantic_carrier;
+        if (carrier && carrier->source_conditioned_lifting) {
+            for (int32_t il : carrier->lifting_layers) {
+                GGML_ASSERT(
+                    il >= 0 &&
+                    static_cast<size_t>(il) <
+                        t_neo3000_lifting_state.size() &&
+                    t_neo3000_lifting_state[il] != nullptr &&
+                    "lifting source-state tensor is null");
+                ggml_set_output(t_neo3000_lifting_state[il]);
             }
         }
     }
