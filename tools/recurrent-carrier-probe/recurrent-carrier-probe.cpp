@@ -9397,83 +9397,6 @@ static json run_sparse_g_label_refresh(
                 });
             }
             if (output_source_rematerialization_mode) {
-                if (output_continuous_soft_role_rematerialization_mode &&
-                    variant_index == 0) {
-                    copy_full_sequence(
-                        candidate_seq,
-                        work_seq,
-                        source_boundary_pos,
-                        id + ":soft-role-disabled-G1-base");
-                    ++sequence_copy_count;
-                    for (size_t label_index = 0;
-                         label_index < label_offsets.size();
-                         ++label_index) {
-                        const llama_pos label_position =
-                            static_cast<llama_pos>(
-                                f_boundary_tokens +
-                                label_offsets.at(label_index));
-                        copy_full_sequence(
-                            stage_seqs.at(label_index),
-                            scaffold_seq,
-                            label_position - 1,
-                            id + ":soft-role-disabled-prefix-" +
-                                std::to_string(label_index));
-                        ++sequence_copy_count;
-                        const double role_wall_ms = timed_decode(
-                            std::vector<llama_token>{
-                                candidates.at(0)},
-                            label_position,
-                            scaffold_seq);
-                        source_role_rematerialization_wall_ms_total +=
-                            role_wall_ms;
-                        label_refresh_wall_ms_total += role_wall_ms;
-                        ++source_role_rematerialization_tokens;
-                        ++label_refresh_count;
-                        if (!attention->seq_rm(
-                                work_seq,
-                                label_position,
-                                label_position + 1)) {
-                            throw std::runtime_error(
-                                id +
-                                ": disabled soft-role prior row "
-                                "removal failed");
-                        }
-                        ++attention_label_remove_count;
-                        attention->seq_cp(
-                            scaffold_seq,
-                            work_seq,
-                            label_position,
-                            label_position + 1);
-                        llama_synchronize(ctx);
-                        ++attention_label_alias_count;
-                        ++output_promotion_row_count;
-                        source_role_rematerialization_records.push_back({
-                            {"variant", id},
-                            {"control", "carrier_read_gate_zero"},
-                            {"destination_label_index", label_index},
-                            {"destination_label_position",
-                                label_position},
-                            {"forwarded_placeholder_token",
-                                candidates.at(0)},
-                            {"continuous_soft_embedding_override",
-                                false},
-                            {"model_forward_tokens", 1},
-                            {"wall_ms", role_wall_ms},
-                            {"expected_answer_consulted", false},
-                            {"public_phase_table_consulted", false},
-                        });
-                        close_sequence(
-                            scaffold_seq,
-                            id + ":soft-role-disabled-scratch-close-" +
-                                std::to_string(label_index));
-                        ++sequence_close_count;
-                    }
-                    require_component_positions(
-                        work_seq,
-                        source_boundary_pos,
-                        source_boundary_pos,
-                        id + ":soft-role-disabled-G1-ready");
-                }
                 for (size_t label_index = 0;
                      label_index < label_offsets.size();
                      ++label_index) {
@@ -9894,8 +9817,77 @@ static json run_sparse_g_label_refresh(
                 id,
                 query);
         }
-        close_sequence(work_seq, id + ":reference-close");
-        ++sequence_close_count;
+        if (output_continuous_soft_role_rematerialization_mode &&
+            variant_index == 0) {
+            for (size_t label_index = 0;
+                 label_index < label_offsets.size();
+                 ++label_index) {
+                const llama_pos label_position =
+                    static_cast<llama_pos>(
+                        f_boundary_tokens +
+                        label_offsets.at(label_index));
+                copy_full_sequence(
+                    stage_seqs.at(label_index),
+                    scaffold_seq,
+                    label_position - 1,
+                    id + ":soft-role-disabled-prefix-" +
+                        std::to_string(label_index));
+                ++sequence_copy_count;
+                const double role_wall_ms = timed_decode(
+                    std::vector<llama_token>{
+                        candidates.at(0)},
+                    label_position,
+                    scaffold_seq);
+                source_role_rematerialization_wall_ms_total +=
+                    role_wall_ms;
+                label_refresh_wall_ms_total += role_wall_ms;
+                ++source_role_rematerialization_tokens;
+                ++label_refresh_count;
+                if (!attention->seq_rm(
+                        work_seq,
+                        label_position,
+                        label_position + 1)) {
+                    throw std::runtime_error(
+                        id +
+                        ": disabled soft-role prior row removal failed");
+                }
+                ++attention_label_remove_count;
+                attention->seq_cp(
+                    scaffold_seq,
+                    work_seq,
+                    label_position,
+                    label_position + 1);
+                llama_synchronize(ctx);
+                ++attention_label_alias_count;
+                ++output_promotion_row_count;
+                source_role_rematerialization_records.push_back({
+                    {"variant", id},
+                    {"control", "carrier_read_gate_zero"},
+                    {"destination_label_index", label_index},
+                    {"destination_label_position", label_position},
+                    {"forwarded_placeholder_token",
+                        candidates.at(0)},
+                    {"continuous_soft_embedding_override", false},
+                    {"model_forward_tokens", 1},
+                    {"wall_ms", role_wall_ms},
+                    {"expected_answer_consulted", false},
+                    {"public_phase_table_consulted", false},
+                });
+                close_sequence(
+                    scaffold_seq,
+                    id + ":soft-role-disabled-scratch-close-" +
+                        std::to_string(label_index));
+                ++sequence_close_count;
+            }
+            require_component_positions(
+                work_seq,
+                source_boundary_pos,
+                source_boundary_pos,
+                id + ":soft-role-disabled-G1-ready");
+        } else {
+            close_sequence(work_seq, id + ":reference-close");
+            ++sequence_close_count;
+        }
         variant_timings.push_back({
             {"variant", id},
             {"label_refresh_count",

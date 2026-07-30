@@ -125,6 +125,18 @@ The active recurrence and acceptance boundary are
   not expanded into the executable graph and its candidate-ID input therefore
   had no scheduler buffer. The same precontact identity now explicitly
   expands that branch. No scientific result was produced.
+  The repaired launch then crossed G0 contact: four candidate captures, one
+  atomic commit, and four continuous source-role reads completed. It stopped
+  before the G0 exact-reference route because the disabled-control state had
+  claimed sequence 6 while that reference still owned the same sequence.
+  No complete result object exists, so `0157` is preserved as inconclusive
+  and consumed.
+- `neo-exp-0158` changes no scientific mechanism. It repairs only that
+  concrete sequence-custody collision by constructing the disabled G1 state
+  from the already-complete G0 exact-reference sequence after its queries.
+  The carrier, prompts, acceptance law, and claim ceiling remain frozen. This
+  is the final controller repair admitted for the mechanism; it does not open
+  an evaluator or evidence-harness series.
 - The exact four-link/Z4 recurrence remains the stronger compact baseline.
   No inference-bearing recurrence, fresh-compute advantage, phase-native
   resource, Small Wall crossing, catalytic recurrence, or unbounded claim is

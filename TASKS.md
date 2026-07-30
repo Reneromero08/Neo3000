@@ -639,7 +639,7 @@ constructively unbounded local Agents-A1 inference.
   continuous state transition or dynamic weight law; do not mint phase,
   dimension, seed, gain, prompt, fixture, evaluator, or evidence-harness
   variants.
-- [ ] Execute `neo-exp-0157` exactly once as the next physical mechanism.
+- [x] Consume `neo-exp-0157` as one partial physical contact.
   The terminal model graph computes each four-way candidate distribution
   before discrete selection, forms its probability-weighted frozen token
   embedding, and captures four embeddings device-to-device into one
@@ -660,6 +660,20 @@ constructively unbounded local Agents-A1 inference.
   graph, leaving its candidate-ID input unallocated. The same precontact
   identity now expands that branch; this is a plumbing repair, not a new
   mechanism or result.
+  The repaired launch completed the G0 candidate panel, its four device
+  captures, atomic commit, and continuous source-role writes, then stopped
+  before the G0 exact-reference arm because the prospective disabled-control
+  state occupied sequence 6 while that reference still owned it. No complete
+  result object was produced. Preserve `0157` as inconclusive and do not rerun
+  it.
+- [ ] Execute `neo-exp-0158` once after the one concrete sequence-custody
+  repair. The physical carrier, prompts, candidate distribution, source-role
+  rematerialization, acceptance gate, and claim ceiling are unchanged. The
+  disabled G1 state is now derived from the completed G0 exact-reference
+  sequence after its queries, so no extra sequence is occupied before the
+  reference arm. This is the final controller repair for this mechanism:
+  produce one adjudicable panel or close it without another evaluator,
+  carrier-evaluation, or evidence-harness successor.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.
