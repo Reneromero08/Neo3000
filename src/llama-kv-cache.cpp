@@ -11,6 +11,7 @@
 #include <cstring>
 #include <limits>
 #include <map>
+#include <set>
 #include <stdexcept>
 
 static bool ggml_is_power_of_2(int n) {
@@ -1244,6 +1245,146 @@ ggml_tensor * llama_kv_cache::get_v_storage(int32_t il) const {
     const int32_t ikv = map_layer_ids.at(il);
 
     return layers[ikv].v;
+}
+
+bool llama_kv_cache::seq_rotate_attention_positions(
+        llama_seq_id seq_id,
+        const std::vector<llama_pos> & positions,
+        const std::set<uint32_t> & layer_ids,
+        bool include_keys,
+        value_orbit_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    if (other ||
+        n_stream != 1 ||
+        seq_id < 0 ||
+        static_cast<size_t>(seq_id) >= seq_to_stream.size() ||
+        positions.size() < 2 ||
+        layer_ids.empty()) {
+        return false;
+    }
+    const std::set<llama_pos> unique_positions(
+        positions.begin(), positions.end());
+    if (unique_positions.size() != positions.size()) {
+        return false;
+    }
+    for (const uint32_t il : layer_ids) {
+        if (map_layer_ids.find(static_cast<int32_t>(il)) ==
+            map_layer_ids.end()) {
+            return false;
+        }
+    }
+
+    const uint32_t stream = seq_to_stream[seq_id];
+    auto & cells = v_cells[stream];
+    std::vector<uint32_t> cell_indices;
+    cell_indices.reserve(positions.size());
+    for (const llama_pos position : positions) {
+        uint32_t found = cells.size();
+        for (uint32_t i = 0; i < cells.size(); ++i) {
+            if (cells.pos_in(i, position, position + 1) &&
+                cells.seq_has(i, seq_id)) {
+                if (found != cells.size()) {
+                    return false;
+                }
+                found = i;
+            }
+        }
+        if (found == cells.size()) {
+            return false;
+        }
+        cell_indices.push_back(found);
+    }
+
+    const size_t metadata_bytes =
+        2 * (positions.size() - 1) *
+        layer_ids.size() * (include_keys ? 2 : 1) *
+        ggml_tensor_overhead();
+    ggml_init_params params = {
+        /*.mem_size   =*/ metadata_bytes,
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    ggml_context_ptr orbit_ctx(ggml_init(params));
+    if (!orbit_ctx) {
+        return false;
+    }
+
+    uint64_t backend_copy_bytes = 0;
+    uint64_t host_read_bytes = 0;
+    uint64_t host_write_bytes = 0;
+    uint64_t peak_host_work_bytes = 0;
+    uint64_t tensor_count = 0;
+    for (const auto & layer : layers) {
+        if (layer_ids.find(layer.il) == layer_ids.end()) {
+            continue;
+        }
+        std::vector<ggml_tensor *> tensors;
+        if (include_keys) {
+            tensors.push_back(layer.k);
+        }
+        tensors.push_back(layer.v);
+        for (ggml_tensor * tensor : tensors) {
+            if (!tensor ||
+                !tensor->buffer ||
+                ggml_blck_size(tensor->type) != 1 ||
+                tensor->ne[1] != static_cast<int64_t>(get_size()) ||
+                tensor->ne[2] != static_cast<int64_t>(n_stream)) {
+                return false;
+            }
+            const size_t row_bytes =
+                ggml_row_size(tensor->type, tensor->ne[0]);
+            if (tensor->nb[1] != row_bytes) {
+                return false;
+            }
+
+            std::vector<uint8_t> first_row(row_bytes);
+            const size_t first_offset =
+                static_cast<size_t>(cell_indices.front()) * tensor->nb[1];
+            ggml_backend_tensor_get(
+                tensor, first_row.data(), first_offset, row_bytes);
+            host_read_bytes += row_bytes;
+            peak_host_work_bytes = std::max<uint64_t>(
+                peak_host_work_bytes, first_row.size());
+
+            for (size_t i = 0; i + 1 < cell_indices.size(); ++i) {
+                const size_t source_offset =
+                    static_cast<size_t>(cell_indices[i + 1]) *
+                    tensor->nb[1];
+                const size_t destination_offset =
+                    static_cast<size_t>(cell_indices[i]) *
+                    tensor->nb[1];
+                ggml_tensor * source = ggml_view_1d(
+                    orbit_ctx.get(), tensor,
+                    tensor->ne[0], source_offset);
+                ggml_tensor * destination = ggml_view_1d(
+                    orbit_ctx.get(), tensor,
+                    tensor->ne[0], destination_offset);
+                ggml_backend_view_init(source);
+                ggml_backend_view_init(destination);
+                ggml_backend_tensor_copy(source, destination);
+                backend_copy_bytes += row_bytes;
+            }
+
+            const size_t final_offset =
+                static_cast<size_t>(cell_indices.back()) * tensor->nb[1];
+            ggml_backend_tensor_set(
+                tensor, first_row.data(), final_offset, row_bytes);
+            host_write_bytes += row_bytes;
+            ++tensor_count;
+        }
+    }
+
+    if (metrics) {
+        metrics->backend_copy_bytes = backend_copy_bytes;
+        metrics->host_read_bytes = host_read_bytes;
+        metrics->host_write_bytes = host_write_bytes;
+        metrics->peak_host_work_bytes = peak_host_work_bytes;
+        metrics->tensor_count = tensor_count;
+        metrics->position_count = positions.size();
+    }
+    return true;
 }
 
 uint32_t llama_kv_cache::get_n_kv(const slot_info & sinfo) const {

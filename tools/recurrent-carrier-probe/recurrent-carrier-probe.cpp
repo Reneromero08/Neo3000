@@ -4025,6 +4025,22 @@ static json run_sparse_g_label_refresh(
         const json & spec,
         uint64_t active_recurrent_backing_initial,
         uint64_t active_attention_backing_initial) {
+    const bool position_orbit_mode =
+        spec.value("label_orbit_attention_action", false);
+    const bool value_orbit_mode =
+        spec.value("value_orbit_attention_action", false);
+    const bool key_value_orbit_mode =
+        spec.value("key_value_orbit_attention_action", false);
+    const bool orbit_mode =
+        position_orbit_mode ||
+        value_orbit_mode ||
+        key_value_orbit_mode;
+    if (static_cast<int>(position_orbit_mode) +
+            static_cast<int>(value_orbit_mode) +
+            static_cast<int>(key_value_orbit_mode) > 1) {
+        throw std::runtime_error(
+            "label orbit action modes are mutually exclusive");
+    }
     const uint32_t actual_context_size = llama_n_ctx(ctx);
     const uint32_t actual_n_seq_max = llama_n_seq_max(ctx);
     const uint32_t actual_context_per_sequence =
@@ -4076,6 +4092,10 @@ static json run_sparse_g_label_refresh(
     if (!variants.is_array() || variants.empty()) {
         throw std::runtime_error(
             "sparse G refresh has no G variants");
+    }
+    if (orbit_mode && variants.size() != 4) {
+        throw std::runtime_error(
+            "label orbit requires the frozen four-element cycle");
     }
     std::vector<std::vector<llama_token>> variant_g_tokens;
     for (const auto & variant : variants) {
@@ -4197,6 +4217,13 @@ static json run_sparse_g_label_refresh(
     size_t label_refresh_count = 0;
     size_t attention_label_remove_count = 0;
     size_t attention_label_alias_count = 0;
+    size_t orbit_action_count = 0;
+    size_t orbit_position_shift_count = 0;
+    uint64_t orbit_backend_copy_bytes = 0;
+    uint64_t orbit_host_read_bytes = 0;
+    uint64_t orbit_host_write_bytes = 0;
+    uint64_t orbit_peak_host_work_bytes = 0;
+    uint64_t orbit_tensor_visits = 0;
     size_t query_decode_tokens = 0;
     double scaffold_G_wall_ms = 0.0;
     double scaffold_closure_wall_ms = 0.0;
@@ -4289,6 +4316,8 @@ static json run_sparse_g_label_refresh(
         hash_recurrent_sequence_streamed(ctx, f_seq);
     const auto scaffold_hash_before =
         hash_recurrent_sequence_streamed(ctx, scaffold_seq);
+    streamed_sequence_hash carrier_recurrent_hash_before =
+        scaffold_hash_before;
     const size_t active_cache_backend_allocation_bytes =
         active_hybrid_backend_allocation_bytes(ctx);
     const std::vector<uint32_t> attention_layer_ids =
@@ -4296,6 +4325,16 @@ static json run_sparse_g_label_refresh(
     const std::set<uint32_t> all_attention_layers(
         attention_layer_ids.begin(),
         attention_layer_ids.end());
+    const std::set<uint32_t> orbit_attention_layers =
+        (value_orbit_mode || key_value_orbit_mode)
+            ? spec.contains("orbit_attention_layers")
+                ? parse_layer_selection(
+                    spec, "orbit_attention_layers", attention_layer_ids)
+                : all_attention_layers
+            : all_attention_layers;
+    const bool layer_selective_value_orbit =
+        value_orbit_mode &&
+        orbit_attention_layers != all_attention_layers;
     const size_t refreshed_attention_logical_bytes =
         attention_source_bytes(
             attention, all_attention_layers, label_offsets.size());
@@ -4342,19 +4381,9 @@ static json run_sparse_g_label_refresh(
         ++sequence_close_count;
     };
 
-    for (size_t variant_index = 0;
-         variant_index < variants.size();
-         ++variant_index) {
-        const auto & variant = variants.at(variant_index);
-        const std::string id = variant.at("id");
-        const auto & target_g_tokens = variant_g_tokens.at(variant_index);
-        copy_full_sequence(
-            scaffold_seq,
-            candidate_seq,
-            source_boundary_pos,
-            id + ":candidate-scaffold-copy");
-        ++sequence_copy_count;
-
+    const auto refresh_candidate_labels =
+            [&](const std::vector<llama_token> & target_g_tokens,
+                const std::string & id) {
         double variant_label_wall_ms = 0.0;
         for (size_t label_index = 0;
              label_index < label_offsets.size();
@@ -4408,17 +4437,156 @@ static json run_sparse_g_label_refresh(
                     std::to_string(label_index));
             ++sequence_close_count;
         }
+        return variant_label_wall_ms;
+    };
+
+    const auto advance_label_orbit =
+            [&](const std::string & stage) {
+        std::vector<llama_pos> label_positions;
+        label_positions.reserve(label_offsets.size());
+        for (const size_t label_offset : label_offsets) {
+            label_positions.push_back(static_cast<llama_pos>(
+                f_boundary_tokens + label_offset));
+        }
+        if (value_orbit_mode || key_value_orbit_mode) {
+            llama_kv_cache::value_orbit_metrics metrics = {};
+            if (!attention->seq_rotate_attention_positions(
+                    candidate_seq,
+                    label_positions,
+                    orbit_attention_layers,
+                    key_value_orbit_mode,
+                    &metrics)) {
+                throw std::runtime_error(
+                    stage + ": value orbit action failed");
+            }
+            llama_synchronize(ctx);
+            orbit_backend_copy_bytes +=
+                metrics.backend_copy_bytes;
+            orbit_host_read_bytes += metrics.host_read_bytes;
+            orbit_host_write_bytes += metrics.host_write_bytes;
+            orbit_peak_host_work_bytes = std::max(
+                orbit_peak_host_work_bytes,
+                metrics.peak_host_work_bytes);
+            orbit_tensor_visits += metrics.tensor_count;
+            ++orbit_action_count;
+            require_component_positions(
+                candidate_seq,
+                source_boundary_pos,
+                source_boundary_pos,
+                stage + ":value-orbit-advanced");
+            return;
+        }
+
+        const llama_pos temporary_begin =
+            source_boundary_pos + 65;
+        if (temporary_begin +
+                static_cast<llama_pos>(label_offsets.size()) >=
+            static_cast<llama_pos>(actual_context_per_sequence)) {
+            throw std::runtime_error(
+                "label orbit temporary topology exceeds sequence context");
+        }
+        for (size_t i = 0; i < label_positions.size(); ++i) {
+            const llama_pos temporary =
+                temporary_begin + static_cast<llama_pos>(i);
+            attention->seq_add(
+                candidate_seq,
+                label_positions[i],
+                label_positions[i] + 1,
+                temporary - label_positions[i]);
+            ++orbit_position_shift_count;
+        }
+        for (size_t i = 0; i < label_positions.size(); ++i) {
+            const llama_pos temporary =
+                temporary_begin + static_cast<llama_pos>(i);
+            const llama_pos destination =
+                label_positions[
+                    (i + label_positions.size() - 1) %
+                    label_positions.size()];
+            attention->seq_add(
+                candidate_seq,
+                temporary,
+                temporary + 1,
+                destination - temporary);
+            ++orbit_position_shift_count;
+        }
+        ++orbit_action_count;
+        require_component_positions(
+            candidate_seq,
+            source_boundary_pos,
+            source_boundary_pos,
+            stage + ":orbit-advanced");
+    };
+
+    bool fixed_preparation_sequences_closed = false;
+    if (orbit_mode) {
+        const auto & canonical_variant = variants.at(0);
+        const std::string canonical_id =
+            canonical_variant.at("id");
+        copy_full_sequence(
+            scaffold_seq,
+            candidate_seq,
+            source_boundary_pos,
+            canonical_id + ":orbit-scaffold-copy");
+        ++sequence_copy_count;
+        const double canonical_label_wall_ms =
+            refresh_candidate_labels(
+                variant_g_tokens.at(0),
+                canonical_id + ":orbit-initialization");
+        carrier_recurrent_hash_before =
+            hash_recurrent_sequence_streamed(ctx, candidate_seq);
+        variant_timings.push_back({
+            {"variant", canonical_id},
+            {"role", "fixed_orbit_initialization"},
+            {"label_refresh_count", label_offsets.size()},
+            {"label_refresh_wall_ms", canonical_label_wall_ms},
+        });
+        for (size_t i = 0; i < stage_seqs.size(); ++i) {
+            close_sequence(
+                stage_seqs[i],
+                "orbit:stage-close-" + std::to_string(i));
+            ++sequence_close_count;
+        }
+        close_sequence(scaffold_seq, "orbit:scaffold-close");
+        ++sequence_close_count;
+        fixed_preparation_sequences_closed = true;
+    }
+
+    for (size_t variant_index = 0;
+         variant_index < variants.size();
+         ++variant_index) {
+        const auto & variant = variants.at(variant_index);
+        const std::string id = variant.at("id");
+        const auto & target_g_tokens = variant_g_tokens.at(variant_index);
+        double variant_label_wall_ms = 0.0;
+        if (orbit_mode) {
+            if (variant_index > 0) {
+                advance_label_orbit(id);
+            }
+        } else {
+            copy_full_sequence(
+                scaffold_seq,
+                candidate_seq,
+                source_boundary_pos,
+                id + ":candidate-scaffold-copy");
+            ++sequence_copy_count;
+            variant_label_wall_ms =
+                refresh_candidate_labels(target_g_tokens, id);
+        }
 
         for (const auto & query : variant.at("queries")) {
             project_from_source(
                 candidate_seq,
-                work_seq,
-                "sparse_label_refresh_candidate",
+                orbit_mode ? stage_seqs[0] : work_seq,
+                orbit_mode
+                    ? "label_orbit_candidate"
+                    : "sparse_label_refresh_candidate",
                 id,
                 query);
         }
-        close_sequence(candidate_seq, id + ":candidate-close");
-        ++sequence_close_count;
+        if (!orbit_mode) {
+            close_sequence(candidate_seq, id + ":candidate-close");
+            ++sequence_close_count;
+        }
 
         copy_full_sequence(
             f_seq,
@@ -4446,7 +4614,7 @@ static json run_sparse_g_label_refresh(
         for (const auto & query : variant.at("queries")) {
             project_from_source(
                 work_seq,
-                candidate_seq,
+                orbit_mode ? stage_seqs[0] : candidate_seq,
                 "exact_full_state",
                 id,
                 query);
@@ -4455,8 +4623,11 @@ static json run_sparse_g_label_refresh(
         ++sequence_close_count;
         variant_timings.push_back({
             {"variant", id},
-            {"label_refresh_count", label_offsets.size()},
+            {"label_refresh_count",
+                orbit_mode ? 0 : label_offsets.size()},
             {"label_refresh_wall_ms", variant_label_wall_ms},
+            {"orbit_action_count_before_projection",
+                orbit_action_count},
             {"reference_G_tokens", target_g_tokens.size()},
             {"reference_G_wall_ms", reference_G_wall_ms},
             {"reference_closure_tokens", closure_tokens.size()},
@@ -4471,30 +4642,75 @@ static json run_sparse_g_label_refresh(
             id + ":F-survives");
         require_component_positions(
             scaffold_seq,
-            source_boundary_pos,
-            source_boundary_pos,
-            id + ":scaffold-survives");
+            fixed_preparation_sequences_closed ? -1 :
+                source_boundary_pos,
+            fixed_preparation_sequences_closed ? -1 :
+                source_boundary_pos,
+            id + ":scaffold-lifecycle");
+    }
+
+    size_t return_boundary_matches = 0;
+    size_t return_full_logit_hash_matches = 0;
+    double return_maximum_candidate_logit_absolute_difference = 0.0;
+    if (orbit_mode) {
+        advance_label_orbit("orbit-return-G0");
+        for (const auto & query : variants.at(0).at("queries")) {
+            project_from_source(
+                candidate_seq,
+                stage_seqs[0],
+                "label_orbit_return_G0",
+                variants.at(0).at("id"),
+                query);
+        }
+        const auto & initial =
+            outputs.at("label_orbit_candidate")
+                .at(variants.at(0).at("id").get<std::string>());
+        const auto & returned =
+            outputs.at("label_orbit_return_G0")
+                .at(variants.at(0).at("id").get<std::string>());
+        for (size_t i = 0; i < initial.size(); ++i) {
+            return_boundary_matches +=
+                initial.at(i).argmax == returned.at(i).argmax;
+            return_full_logit_hash_matches +=
+                initial.at(i).full_logits_fnv1a64 ==
+                returned.at(i).full_logits_fnv1a64;
+            for (size_t c = 0;
+                 c < initial.at(i).candidate_logits.size();
+                 ++c) {
+                return_maximum_candidate_logit_absolute_difference =
+                    std::max(
+                        return_maximum_candidate_logit_absolute_difference,
+                        std::abs(
+                            static_cast<double>(
+                                initial.at(i).candidate_logits.at(c)) -
+                            static_cast<double>(
+                                returned.at(i).candidate_logits.at(c))));
+            }
+        }
     }
 
     const auto f_hash_after =
         hash_recurrent_sequence_streamed(ctx, f_seq);
-    const auto scaffold_hash_after =
-        hash_recurrent_sequence_streamed(ctx, scaffold_seq);
+    const auto carrier_recurrent_hash_after =
+        hash_recurrent_sequence_streamed(
+            ctx, orbit_mode ? candidate_seq : scaffold_seq);
     const bool f_exact =
         f_hash_before.tensor.value == f_hash_after.tensor.value &&
         f_hash_before.physical_row == f_hash_after.physical_row &&
         f_hash_before.position == f_hash_after.position;
     const bool scaffold_exact =
-        scaffold_hash_before.tensor.value ==
-            scaffold_hash_after.tensor.value &&
-        scaffold_hash_before.physical_row ==
-            scaffold_hash_after.physical_row &&
-        scaffold_hash_before.position ==
-            scaffold_hash_after.position;
+        carrier_recurrent_hash_before.tensor.value ==
+            carrier_recurrent_hash_after.tensor.value &&
+        carrier_recurrent_hash_before.physical_row ==
+            carrier_recurrent_hash_after.physical_row &&
+        carrier_recurrent_hash_before.position ==
+            carrier_recurrent_hash_after.position;
 
     const std::vector<std::string> routes = {
         "exact_full_state",
-        "sparse_label_refresh_candidate",
+        orbit_mode
+            ? "label_orbit_candidate"
+            : "sparse_label_refresh_candidate",
     };
     json route_summary = json::object();
     const size_t comparisons =
@@ -4544,25 +4760,38 @@ static json run_sparse_g_label_refresh(
 
     const auto & acceptance = spec.at("acceptance_law");
     const auto & primary =
-        route_summary.at("sparse_label_refresh_candidate");
+        route_summary.at(
+            orbit_mode
+                ? "label_orbit_candidate"
+                : "sparse_label_refresh_candidate");
     const bool accepted =
         primary.at("correct").get<size_t>() ==
             acceptance.at("primary_correct").get<size_t>() &&
         primary.at("boundary_matches").get<size_t>() ==
             acceptance.at("primary_boundary_matches").get<size_t>() &&
+        (!orbit_mode ||
+            return_boundary_matches ==
+                acceptance.at(
+                    "return_boundary_matches").get<size_t>()) &&
         f_exact &&
         scaffold_exact;
 
-    close_sequence(f_seq, "sparse:F-close");
-    ++sequence_close_count;
-    for (size_t i = 0; i < stage_seqs.size(); ++i) {
-        close_sequence(
-            stage_seqs[i],
-            "sparse:stage-close-" + std::to_string(i));
+    if (orbit_mode) {
+        close_sequence(candidate_seq, "orbit:carrier-close");
         ++sequence_close_count;
     }
-    close_sequence(scaffold_seq, "sparse:scaffold-close");
+    close_sequence(f_seq, "sparse:F-close");
     ++sequence_close_count;
+    if (!fixed_preparation_sequences_closed) {
+        for (size_t i = 0; i < stage_seqs.size(); ++i) {
+            close_sequence(
+                stage_seqs[i],
+                "sparse:stage-close-" + std::to_string(i));
+            ++sequence_close_count;
+        }
+        close_sequence(scaffold_seq, "sparse:scaffold-close");
+        ++sequence_close_count;
+    }
     llama_memory_clear(memory, true);
     llama_synchronize(ctx);
     bool all_sequences_closed = true;
@@ -4592,10 +4821,14 @@ static json run_sparse_g_label_refresh(
         f_boundary_tokens +
         structural_g_tokens.size() +
         closure_tokens.size();
+    const size_t candidate_initialization_source_tokens =
+        orbit_mode ? label_offsets.size() : 0;
     const size_t candidate_variable_source_tokens =
-        variants.size() * label_offsets.size();
+        orbit_mode ? 0 :
+            variants.size() * label_offsets.size();
     const size_t candidate_source_tokens =
         fixed_carrier_preparation_tokens +
+        candidate_initialization_source_tokens +
         candidate_variable_source_tokens;
     const size_t reference_source_tokens =
         variants.size() *
@@ -4604,7 +4837,15 @@ static json run_sparse_g_label_refresh(
         candidate_source_tokens + reference_source_tokens;
     return {
         {"schema_version", 1},
-        {"mechanism", "SPARSE_G_LABEL_REFRESH_ADVANCE"},
+        {"mechanism", key_value_orbit_mode
+            ? "IN_PLACE_LABEL_KEY_VALUE_ORBIT_ACTION"
+            : layer_selective_value_orbit
+                ? "IN_PLACE_LAYER_SELECTIVE_LABEL_VALUE_ORBIT_ACTION"
+            : value_orbit_mode
+                ? "IN_PLACE_LABEL_VALUE_ORBIT_ACTION"
+            : orbit_mode
+                ? "IN_PLACE_LABEL_ORBIT_ATTENTION_ACTION"
+                : "SPARSE_G_LABEL_REFRESH_ADVANCE"},
         {"spec_id", spec.at("id")},
         {"model_arch", "qwen35moe"},
         {"configuration", {
@@ -4617,7 +4858,13 @@ static json run_sparse_g_label_refresh(
             {"closure_tokens", closure_tokens.size()},
             {"label_token_offsets", label_offsets},
             {"label_refresh_tokens_per_variant",
-                label_offsets.size()},
+                orbit_mode ? 0 : label_offsets.size()},
+            {"fixed_label_initialization_tokens",
+                candidate_initialization_source_tokens},
+            {"label_orbit_action", orbit_mode},
+            {"value_only_orbit_action", value_orbit_mode},
+            {"key_value_orbit_action", key_value_orbit_mode},
+            {"orbit_attention_layers", orbit_attention_layers},
             {"stage_sequence_count", stage_seqs.size()},
             {"retained_device_roots_used", false},
             {"attention_stream_count", attention_stream_count},
@@ -4630,6 +4877,12 @@ static json run_sparse_g_label_refresh(
             {"F_recurrent_content_and_row_exact", f_exact},
             {"scaffold_recurrent_content_and_row_exact",
                 scaffold_exact},
+            {"orbit_return_boundary_matches",
+                return_boundary_matches},
+            {"orbit_return_full_logit_hash_matches",
+                return_full_logit_hash_matches},
+            {"orbit_return_maximum_candidate_logit_absolute_difference",
+                return_maximum_candidate_logit_absolute_difference},
             {"accepted", accepted},
         }},
         {"carrier", {
@@ -4645,11 +4898,11 @@ static json run_sparse_g_label_refresh(
             {"F_recurrent_physical_row",
                 f_hash_before.physical_row},
             {"scaffold_recurrent_hash_before",
-                hex64(scaffold_hash_before.tensor.value)},
+                hex64(carrier_recurrent_hash_before.tensor.value)},
             {"scaffold_recurrent_hash_after",
-                hex64(scaffold_hash_after.tensor.value)},
+                hex64(carrier_recurrent_hash_after.tensor.value)},
             {"scaffold_recurrent_physical_row",
-                scaffold_hash_before.physical_row},
+                carrier_recurrent_hash_before.physical_row},
             {"scaffold_attention_logical_bytes",
                 scaffold_attention_logical_bytes},
             {"refreshed_attention_logical_bytes",
@@ -4674,6 +4927,8 @@ static json run_sparse_g_label_refresh(
                 reference_closure_wall_ms_total},
             {"fixed_carrier_preparation_tokens",
                 fixed_carrier_preparation_tokens},
+            {"candidate_initialization_source_tokens",
+                candidate_initialization_source_tokens},
             {"candidate_variable_source_tokens",
                 candidate_variable_source_tokens},
             {"candidate_source_tokens",
@@ -4699,22 +4954,33 @@ static json run_sparse_g_label_refresh(
                 attention_label_remove_count},
             {"attention_label_alias_count",
                 attention_label_alias_count},
+            {"orbit_action_count", orbit_action_count},
+            {"orbit_position_shift_count",
+                orbit_position_shift_count},
+            {"orbit_backend_copy_bytes",
+                orbit_backend_copy_bytes},
+            {"orbit_host_read_bytes", orbit_host_read_bytes},
+            {"orbit_host_write_bytes", orbit_host_write_bytes},
+            {"orbit_peak_host_work_bytes",
+                orbit_peak_host_work_bytes},
+            {"orbit_tensor_visits", orbit_tensor_visits},
             {"snapshot_root_save_device_copy_bytes", 0},
             {"snapshot_root_restore_device_copy_bytes", 0},
             {"carrier_hash_d2h_bytes",
                 f_hash_before.tensor.transferred_bytes +
                 f_hash_after.tensor.transferred_bytes +
-                scaffold_hash_before.tensor.transferred_bytes +
-                scaffold_hash_after.tensor.transferred_bytes},
+                carrier_recurrent_hash_before.tensor.transferred_bytes +
+                carrier_recurrent_hash_after.tensor.transferred_bytes},
             {"carrier_hash_peak_host_work_bytes", std::max({
                 f_hash_before.tensor.peak_host_work_bytes,
                 f_hash_after.tensor.peak_host_work_bytes,
-                scaffold_hash_before.tensor.peak_host_work_bytes,
-                scaffold_hash_after.tensor.peak_host_work_bytes,
+                carrier_recurrent_hash_before.tensor.peak_host_work_bytes,
+                carrier_recurrent_hash_after.tensor.peak_host_work_bytes,
             })},
             {"asymptotic_candidate_source_ratio",
-                static_cast<double>(label_offsets.size()) /
-                    static_cast<double>(expected_source_tokens)},
+                orbit_mode ? 0.0 :
+                    static_cast<double>(label_offsets.size()) /
+                        static_cast<double>(expected_source_tokens)},
         }},
         {"records", records},
         {"verdict", accepted ? "accept" : "reject"},

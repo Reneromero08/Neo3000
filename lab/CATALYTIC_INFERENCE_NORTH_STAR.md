@@ -13,6 +13,17 @@
 This report synthesizes source code and executed evidence into a scientific
 and engineering direction.
 
+### Research-loop constraint — evidence protects the mechanism
+
+Evidence custody is a bounded receipt, not the primary research object. Each
+substantive mechanism gets one compact recomputable evidence packet. A
+successor changes the inference mechanism; it does not become
+`carrier-evaluation-v2/v3/v4`. Evidence machinery may be revised only when one
+concrete defect in the existing packet makes the causal result
+unadjudicable. After a frozen panel is auditable, work returns immediately to
+source replay, active-state advance/restoration, fresh-compute reduction, and
+recurrence.
+
 ### Executed bridge update — model-native residual carrier
 
 The first Linux contact after this synthesis moved the carrier before logits.

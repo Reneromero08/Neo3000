@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "evidence_id": "in-place-value-orbit-layer-partition-v1",
+  "experiment_ids": ["neo-exp-0130", "neo-exp-0131"],
+  "date": "2026-07-30",
+  "frozen_layer_partition": {
+    "early": [3, 7, 11, 15, 19],
+    "late": [23, 27, 31, 35, 39]
+  },
+  "raw_bindings": {
+    "early": {
+      "path": "build/in-place-early-half-value-orbit-action-v1-raw.json",
+      "bytes": 35841,
+      "sha256": "FD256E53443F41C5A0644D599740DEF117581362005D0078129232896964FF73",
+      "committed": false
+    },
+    "late": {
+      "path": "build/in-place-late-half-value-orbit-action-v1-raw.json",
+      "bytes": 35814,
+      "sha256": "251BBD7ED28B96730C1B0A109820B51E6366B9F28F61B4E3A632478E287F060D",
+      "committed": false
+    }
+  },
+  "outcomes": {
+    "exact_full_state": {
+      "correct": 16,
+      "comparisons": 16,
+      "full_logit_hash_matches": 16,
+      "boundary_matches": 16,
+      "maximum_candidate_logit_absolute_difference": 0.0
+    },
+    "early_value_action": {
+      "correct": 4,
+      "comparisons": 16,
+      "full_logit_hash_matches": 0,
+      "boundary_matches": 4,
+      "maximum_candidate_logit_absolute_difference": 6.656186103820801,
+      "return_boundary_matches": 4,
+      "return_full_logit_hash_matches": 4,
+      "return_maximum_candidate_logit_absolute_difference": 0.0
+    },
+    "late_value_action": {
+      "correct": 10,
+      "comparisons": 16,
+      "full_logit_hash_matches": 0,
+      "boundary_matches": 10,
+      "maximum_candidate_logit_absolute_difference": 5.672917366027832,
+      "return_boundary_matches": 4,
+      "return_full_logit_hash_matches": 4,
+      "return_maximum_candidate_logit_absolute_difference": 0.0
+    }
+  },
+  "common_resources_per_route": {
+    "fixed_carrier_preparation_tokens": 130,
+    "candidate_initialization_source_tokens": 4,
+    "candidate_variable_source_tokens": 0,
+    "candidate_source_tokens": 134,
+    "reference_source_tokens": 204,
+    "query_decode_tokens": 1188,
+    "all_route_input_tokens": 1526,
+    "orbit_action_count": 4,
+    "orbit_backend_copy_bytes": 61440,
+    "orbit_host_read_bytes": 20480,
+    "orbit_host_write_bytes": 20480,
+    "orbit_peak_host_work_bytes": 1024,
+    "orbit_tensor_visits": 20,
+    "snapshot_root_traffic_bytes": 0,
+    "active_cache_backend_allocation_bytes": 610795520
+  },
+  "carrier_invariants": {
+    "F_recurrent_content_and_row_exact": true,
+    "carrier_recurrent_content_and_row_exact": true,
+    "all_sequences_closed": true,
+    "all_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "query_records": [
+    {"source_variant":"G-rotation-0","query_id":"G0-E","expected":"A","exact":{"candidate_logits":[15.089692115783691,9.551417350769043,11.328584671020508,11.649869918823242],"candidate_argmax":"A","full_logits_fnv1a64":"95254e96160444db"},"early":{"candidate_logits":[14.453225135803223,8.020447731018066,9.99659538269043,11.459638595581055],"candidate_argmax":"A","full_logits_fnv1a64":"7e92078949aa5056"},"late":{"candidate_logits":[14.453225135803223,8.020447731018066,9.99659538269043,11.459638595581055],"candidate_argmax":"A","full_logits_fnv1a64":"7e92078949aa5056"}},
+    {"source_variant":"G-rotation-0","query_id":"G0-F","expected":"B","exact":{"candidate_logits":[8.32101821899414,13.556468963623047,9.612695693969727,11.396858215332031],"candidate_argmax":"B","full_logits_fnv1a64":"41a9a9fc7b950e75"},"early":{"candidate_logits":[8.761768341064453,14.087320327758789,8.351308822631836,10.690238952636719],"candidate_argmax":"B","full_logits_fnv1a64":"dc96ab3407fff682"},"late":{"candidate_logits":[8.761768341064453,14.087320327758789,8.351308822631836,10.690238952636719],"candidate_argmax":"B","full_logits_fnv1a64":"dc96ab3407fff682"}},
+    {"source_variant":"G-rotation-0","query_id":"G0-G","expected":"C","exact":{"candidate_logits":[11.93173599243164,11.400371551513672,15.231819152832031,13.029687881469727],"candidate_argmax":"C","full_logits_fnv1a64":"5d7da76b1ed1adc0"},"early":{"candidate_logits":[11.677003860473633,9.979818344116211,15.112608909606934,13.10421371459961],"candidate_argmax":"C","full_logits_fnv1a64":"7d43d78387a67516"},"late":{"candidate_logits":[11.677003860473633,9.979818344116211,15.112608909606934,13.10421371459961],"candidate_argmax":"C","full_logits_fnv1a64":"7d43d78387a67516"}},
+    {"source_variant":"G-rotation-0","query_id":"G0-H","expected":"D","exact":{"candidate_logits":[8.569822311401367,7.560866355895996,10.927066802978516,14.806355476379395],"candidate_argmax":"D","full_logits_fnv1a64":"5e8ff6a4b37a3be3"},"early":{"candidate_logits":[8.680659294128418,7.1041717529296875,9.522148132324219,14.017427444458008],"candidate_argmax":"D","full_logits_fnv1a64":"d8ef980146bd8c07"},"late":{"candidate_logits":[8.680659294128418,7.1041717529296875,9.522148132324219,14.017427444458008],"candidate_argmax":"D","full_logits_fnv1a64":"d8ef980146bd8c07"}},
+    {"source_variant":"G-rotation-1","query_id":"G1-E","expected":"B","exact":{"candidate_logits":[11.136152267456055,13.64396858215332,10.720233917236328,11.270679473876953],"candidate_argmax":"B","full_logits_fnv1a64":"92cec2a8be8b5945"},"early":{"candidate_logits":[13.975130081176758,6.9877824783325195,9.460906982421875,11.550446510314941],"candidate_argmax":"A","full_logits_fnv1a64":"3a5728f12e032123"},"late":{"candidate_logits":[12.818840980529785,12.264375686645508,11.320874214172363,13.238018035888672],"candidate_argmax":"D","full_logits_fnv1a64":"6f7086c964f2bd7f"}},
+    {"source_variant":"G-rotation-1","query_id":"G1-F","expected":"C","exact":{"candidate_logits":[9.59636116027832,9.147262573242188,15.071778297424316,12.006965637207031],"candidate_argmax":"C","full_logits_fnv1a64":"dbebc302aa0ab23a"},"early":{"candidate_logits":[8.692896842956543,13.890076637268066,8.836297988891602,10.764501571655273],"candidate_argmax":"B","full_logits_fnv1a64":"a7b9fde81a18f064"},"late":{"candidate_logits":[11.72128677368164,11.119223594665527,13.597808837890625,13.743309020996094],"candidate_argmax":"D","full_logits_fnv1a64":"b35d4c231347d698"}},
+    {"source_variant":"G-rotation-1","query_id":"G1-G","expected":"D","exact":{"candidate_logits":[11.468209266662598,10.560087203979492,13.62188720703125,15.710975646972656],"candidate_argmax":"D","full_logits_fnv1a64":"1986f1c2835e80bd"},"early":{"candidate_logits":[9.541484832763672,8.865287780761719,13.510797500610352,12.707515716552734],"candidate_argmax":"C","full_logits_fnv1a64":"835018ca076ccff7"},"late":{"candidate_logits":[12.355979919433594,12.115942001342773,13.090352058410645,14.722179412841797],"candidate_argmax":"D","full_logits_fnv1a64":"5d4af852e5d6374f"}},
+    {"source_variant":"G-rotation-1","query_id":"G1-H","expected":"A","exact":{"candidate_logits":[14.560214042663574,8.622527122497559,9.7334566116333,13.054774284362793],"candidate_argmax":"A","full_logits_fnv1a64":"5af6b13351f0867a"},"early":{"candidate_logits":[8.375716209411621,7.083767890930176,9.398496627807617,14.22373104095459],"candidate_argmax":"D","full_logits_fnv1a64":"600e731fcd6a22ce"},"late":{"candidate_logits":[11.869192123413086,9.644689559936523,11.09092903137207,12.59450912475586],"candidate_argmax":"D","full_logits_fnv1a64":"329a8c4f715517d3"}},
+    {"source_variant":"G-rotation-2","query_id":"G2-E","expected":"C","exact":{"candidate_logits":[11.385801315307617,8.741436958312988,14.77036190032959,11.36246109008789],"candidate_argmax":"C","full_logits_fnv1a64":"17201457b338458e"},"early":{"candidate_logits":[12.855088233947754,6.372746467590332,8.92612361907959,10.990478515625],"candidate_argmax":"A","full_logits_fnv1a64":"574b85e5febf72ce"},"late":{"candidate_logits":[13.348240852355957,9.444256782531738,13.960638046264648,11.723894119262695],"candidate_argmax":"C","full_logits_fnv1a64":"3ff20e119445ef7b"}},
+    {"source_variant":"G-rotation-2","query_id":"G2-F","expected":"D","exact":{"candidate_logits":[8.948049545288086,9.990955352783203,8.8086519241333,15.03085994720459],"candidate_argmax":"D","full_logits_fnv1a64":"f4dd3cd2fb2a18e7"},"early":{"candidate_logits":[7.5909013748168945,12.882019996643066,7.479818820953369,10.020462989807129],"candidate_argmax":"B","full_logits_fnv1a64":"1e04db2259cf23c6"},"late":{"candidate_logits":[9.512961387634277,12.572413444519043,9.71285343170166,15.135590553283691],"candidate_argmax":"D","full_logits_fnv1a64":"3f28d93d688dfec7"}},
+    {"source_variant":"G-rotation-2","query_id":"G2-G","expected":"A","exact":{"candidate_logits":[15.302094459533691,9.42821979522705,10.526634216308594,12.16828727722168],"candidate_argmax":"A","full_logits_fnv1a64":"c67c9fa75b3645e7"},"early":{"candidate_logits":[10.496174812316895,9.396188735961914,15.06554126739502,12.65249252319336],"candidate_argmax":"C","full_logits_fnv1a64":"b35a15ba8a72da86"},"late":{"candidate_logits":[14.155550003051758,11.06748104095459,13.845109939575195,12.851178169250488],"candidate_argmax":"A","full_logits_fnv1a64":"adf7ed67b160b7f7"}},
+    {"source_variant":"G-rotation-2","query_id":"G2-H","expected":"B","exact":{"candidate_logits":[9.124679565429688,13.229545593261719,8.437602996826172,12.169326782226563],"candidate_argmax":"B","full_logits_fnv1a64":"1b8fba4cb512ef77"},"early":{"candidate_logits":[9.030055046081543,8.004048347473145,9.829174995422363,14.723388671875],"candidate_argmax":"D","full_logits_fnv1a64":"2ba0f5a039d7a6c2"},"late":{"candidate_logits":[8.69051742553711,11.746057510375977,9.42919921875,13.635834693908691],"candidate_argmax":"D","full_logits_fnv1a64":"dfb83540900e1a6b"}},
+    {"source_variant":"G-rotation-3","query_id":"G3-E","expected":"D","exact":{"candidate_logits":[9.09653377532959,6.839577674865723,9.193806648254395,15.0949068069458],"candidate_argmax":"D","full_logits_fnv1a64":"e818826dbca5187f"},"early":{"candidate_logits":[13.810802459716797,6.871448516845703,9.581759452819824,11.283426284790039],"candidate_argmax":"A","full_logits_fnv1a64":"3ca6f060154502d5"},"late":{"candidate_logits":[13.557243347167969,12.512495040893555,12.359027862548828,13.758783340454102],"candidate_argmax":"D","full_logits_fnv1a64":"d923f68b2b3a0507"}},
+    {"source_variant":"G-rotation-3","query_id":"G3-F","expected":"A","exact":{"candidate_logits":[14.676252365112305,10.313216209411621,10.254247665405273,11.438514709472656],"candidate_argmax":"A","full_logits_fnv1a64":"85c0fc4d40aa0c23"},"early":{"candidate_logits":[8.622583389282227,13.602850914001465,9.197126388549805,10.817837715148926],"candidate_argmax":"B","full_logits_fnv1a64":"10960d5ac11792dd"},"late":{"candidate_logits":[13.153379440307617,11.706277847290039,11.62496566772461,11.714064598083496],"candidate_argmax":"A","full_logits_fnv1a64":"ab31e3ad2f4f953f"}},
+    {"source_variant":"G-rotation-3","query_id":"G3-G","expected":"B","exact":{"candidate_logits":[10.44903564453125,13.457656860351563,10.418986320495605,10.862367630004883],"candidate_argmax":"B","full_logits_fnv1a64":"9bb966df6f3e18e4"},"early":{"candidate_logits":[10.180109977722168,8.585399627685547,13.604635238647461,12.896965026855469],"candidate_argmax":"C","full_logits_fnv1a64":"b474cf0fa0e8003c"},"late":{"candidate_logits":[12.46833610534668,12.538361549377441,13.43467903137207,13.938915252685547],"candidate_argmax":"D","full_logits_fnv1a64":"b3ebe4942659e405"}},
+    {"source_variant":"G-rotation-3","query_id":"G3-H","expected":"C","exact":{"candidate_logits":[10.633016586303711,10.097091674804688,14.80137825012207,12.265002250671387],"candidate_argmax":"C","full_logits_fnv1a64":"e48bafdd727f7b3a"},"early":{"candidate_logits":[8.412933349609375,6.604147911071777,9.515729904174805,14.17752742767334],"candidate_argmax":"D","full_logits_fnv1a64":"d6f02628195db9f4"},"late":{"candidate_logits":[9.18242073059082,9.833061218261719,11.656328201293945,12.236335754394531],"candidate_argmax":"D","full_logits_fnv1a64":"95c1060bed4ebeef"}}
+  ],
+  "return_records": [
+    {"query_id":"G0-E","early_hash":"7e92078949aa5056","late_hash":"7e92078949aa5056","argmax":"A"},
+    {"query_id":"G0-F","early_hash":"dc96ab3407fff682","late_hash":"dc96ab3407fff682","argmax":"B"},
+    {"query_id":"G0-G","early_hash":"7d43d78387a67516","late_hash":"7d43d78387a67516","argmax":"C"},
+    {"query_id":"G0-H","early_hash":"d8ef980146bd8c07","late_hash":"d8ef980146bd8c07","argmax":"D"}
+  ],
+  "adjudication": {
+    "early_argmax_effect": false,
+    "early_numerical_effect": true,
+    "late_carries_all_observed_argmax_effect": true,
+    "uniform_late_value_permutation_sufficient": false,
+    "next_mechanism": "CONTEXT_INDEPENDENT_LATE_VALUE_SUBSPACE_OPERATOR_WITH_PROSPECTIVE_REUSE"
+  }
+}

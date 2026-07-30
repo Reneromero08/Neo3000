@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0127",
+  "record_type": "scientific_result",
+  "date": "2026-07-30",
+  "baseline_commit": "4b05d5c23eda4a176b7dc418c30e2acc263437d4",
+  "mechanism": "IN_PLACE_LABEL_ORBIT_ATTENTION_ACTION",
+  "spec_id": "in-place-label-orbit-attention-action-v1",
+  "hypothesis": "One canonical four-label attention fiber can remain active and advance through the public G rotation by cyclically relocating the same four attention cells, with llama.cpp applying the corresponding positional-key update.",
+  "intervention": "Construct canonical G0 from the accepted four-token sparse advance, close its preparation rows, project G0 and its exact reference, then attempt the first G0-to-G1 cyclic attention-cell position action without target forward, target roots, or target deltas.",
+  "model_hash": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+  "metrics_after": {
+    "canonical_G0_preparation_completed": true,
+    "canonical_G0_candidate_queries_completed": 4,
+    "canonical_G0_reference_queries_completed": 4,
+    "orbit_actions_completed": 0,
+    "assertion": "seq_add() is only supported for n_pos_per_embd() == 1",
+    "model_position_geometry": "multi-position RoPE"
+  },
+  "quality_gates": {
+    "scientific_contact": true,
+    "group_action_executed": false,
+    "target_branch_forward_eliminated": false,
+    "result_file_written_by_runtime": false,
+    "background_processes_left_running": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/in-place-label-orbit-attention-action-v1.json",
+      "bytes": 8400,
+      "sha256": "416F75037BFCF04A0986FF5F72A6CCEA50BBD8267E488C79155356CD845DD82B"
+    },
+    "consumed_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 282082,
+      "sha256": "FBDFBB3F859338DE749F423F9F8CDD3423F258DD5F6D43BF06D8B1E8E334F82F"
+    },
+    "consumed_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 1124256,
+      "sha256": "53C58BCC61A554A4CAD23F0A94E6AD4B9962F5AA96E538AFF10E410F05FAC331",
+      "committed": false
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 22,
+    "input_tokens": 449,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "inconclusive",
+  "classification": "MULTI_POSITION_ROPE_REJECTS_SCALAR_SEQUENCE_SHIFT_BEFORE_GROUP_ACTION",
+  "strongest_supported_claim": "The canonical sparse label carrier and its first matched boundary were constructed, but Agents-A1 cannot use llama.cpp's scalar sequence-position shift for a label-orbit action.",
+  "strongest_rejected_interpretation": "No cyclic carrier advance, restoration, zero-target-forward recurrence, catalytic inference, or unbounded compute was tested.",
+  "next_boundary": "PERMUTE_ONLY_VALUE_ROWS_IN_PLACE_WHILE_KEEPING_KEYS_AND_MULTI_POSITION_ROPE_COORDINATES_FIXED"
+}

@@ -186,13 +186,32 @@ constructively unbounded local Agents-A1 inference.
   remain `0/16`, drift reaches `2.5400037766`, and active cache allocation is
   `610,795,520` bytes. All sequences and roots close; F and scaffold recurrent
   content and physical rows remain exact.
-- [ ] Eliminate the remaining four target-token model forwards with a fixed
-  public label action derived before target selection. Do not retain target
-  roots, complete target deltas, or answer-conditioned tables. Require useful
-  later model inference to read the advanced state, count the four fixed stage
-  rows and operator work against the compact classical relation baseline, and
-  test recursive fidelity. Attach one compact evidence record to the
-  mechanism; do not create carrier-evaluation v2/v3/v4 loops.
+- [x] Test direct fixed-cell group actions without target-token forwards.
+  `neo-exp-0127` establishes that scalar position relocation is not a lawful
+  action under Agents-A1 multi-position RoPE. `neo-exp-0128` cycles all ten
+  label-value rows and preserves `10/16`; `neo-exp-0129` cycles K/V pairs and
+  preserves only the unchanged canonical mapping (`4/16`). Both executed
+  actions return G0 bit-exactly after four cycles, use zero target-branch
+  tokens, retain stable backing, and close all state. They reject simple row
+  motion as the public relation operator.
+- [x] Close one bounded causal layer partition and stop subset enumeration.
+  `neo-exp-0130` cycles early attention values `[3,7,11,15,19]`, changes
+  logits but advances no noncanonical argmax (`4/16`). The prospectively
+  complementary `neo-exp-0131` cycles late values `[23,27,31,35,39]` and
+  reproduces the complete observed all-layer argmax effect (`10/16`) with a
+  smaller maximum candidate error of `5.6729173660`. Both return G0
+  bit-exactly, move `102,400` bytes over four actions, use zero target-branch
+  model forwards, and close all sequences/roots. Uniform permutation is still
+  insufficient; no more layer-subset variants are authorized by this result.
+- [ ] Derive one context-independent compact operator on the late value
+  subspace before target selection. Its construction must not retain target
+  roots, complete target deltas, or answer-conditioned tables. Test repeated
+  application and prospective reuse outside the calibration context, count
+  calibration/operator/workspace/query costs against the compact classical
+  relation baseline, and reject it if it merely memorizes the four frozen
+  links. Attach one compact evidence object to the mechanism. Do not create
+  carrier-evaluation or evidence-harness v2/v3/v4 loops unless a concrete
+  pre-existing evidence defect makes adjudication impossible.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

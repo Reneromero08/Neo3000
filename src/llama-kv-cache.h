@@ -5,6 +5,7 @@
 #include "llama-kv-cells.h"
 #include "llama-memory.h"
 
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -164,6 +165,28 @@ public:
     std::vector<uint32_t> get_layer_ids() const;
     ggml_tensor * get_k_storage(int32_t il) const;
     ggml_tensor * get_v_storage(int32_t il) const;
+
+    struct value_orbit_metrics {
+        uint64_t backend_copy_bytes = 0;
+        uint64_t host_read_bytes = 0;
+        uint64_t host_write_bytes = 0;
+        uint64_t peak_host_work_bytes = 0;
+        uint64_t tensor_count = 0;
+        uint64_t position_count = 0;
+    };
+
+    // Cyclically moves the selected attention rows at the declared positions
+    // so that each position receives the following position's row and the
+    // final position receives the first. Positions and sequence ownership
+    // remain unchanged. With include_keys false only values move; with true,
+    // keys and values move together. This is a fixed-cell action, not a
+    // general sequence-position shift.
+    bool seq_rotate_attention_positions(
+            llama_seq_id seq_id,
+            const std::vector<llama_pos> & positions,
+            const std::set<uint32_t> & layer_ids,
+            bool include_keys,
+            value_orbit_metrics * metrics);
 
     //
     // graph_build API

@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0128",
+  "record_type": "scientific_result",
+  "date": "2026-07-30",
+  "baseline_commit": "4b05d5c23eda4a176b7dc418c30e2acc263437d4",
+  "mechanism": "IN_PLACE_LABEL_VALUE_ORBIT_ACTION",
+  "spec_id": "in-place-label-value-orbit-action-v1",
+  "hypothesis": "The four label-position value rows are the output-bearing fiber of the accepted sparse advance, so cyclically permuting only those same active value rows can realize the public G orbit with zero target-branch model forward and exact four-step return.",
+  "intervention": "Initialize canonical G0 once with four label-token forwards, close its preparation rows, keep keys and multi-position RoPE coordinates fixed, cyclically permute only the four active value rows through G1/G2/G3/G0, and compare each later useful boundary with exact forward.",
+  "model_hash": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "context_size_total": 4096,
+    "context_size_per_sequence": 512,
+    "n_seq_max": 8,
+    "label_positions": [
+      6,
+      12,
+      18,
+      24
+    ],
+    "fixed_initialization_tokens": 4,
+    "target_branch_source_tokens": 0,
+    "orbit_action": "cyclic value-row permutation with fixed keys and positions",
+    "restoration_class": "DECLARED_CLOSURE"
+  },
+  "metrics_after": {
+    "exact_full_state": {
+      "correct": 16,
+      "comparisons": 16,
+      "full_logit_hash_matches": 16,
+      "boundary_matches": 16,
+      "maximum_candidate_logit_absolute_difference": 0.0
+    },
+    "value_orbit_candidate": {
+      "correct": 10,
+      "comparisons": 16,
+      "full_logit_hash_matches": 0,
+      "boundary_matches": 10,
+      "maximum_candidate_logit_absolute_difference": 6.341379165649414
+    },
+    "orbit_return_boundary_matches": 4,
+    "orbit_return_full_logit_hash_matches": 4,
+    "orbit_return_maximum_candidate_logit_absolute_difference": 0.0,
+    "F_recurrent_content_and_row_exact": true,
+    "carrier_recurrent_content_and_row_exact": true,
+    "active_cache_backend_allocation_bytes": 610795520,
+    "all_sequences_closed": true,
+    "all_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "resource_accounting": {
+    "fixed_carrier_preparation_tokens": 130,
+    "candidate_initialization_source_tokens": 4,
+    "candidate_variable_source_tokens": 0,
+    "candidate_source_tokens": 134,
+    "reference_source_tokens": 204,
+    "query_decode_tokens": 1188,
+    "all_route_input_tokens": 1526,
+    "orbit_action_count": 4,
+    "orbit_backend_copy_bytes": 122880,
+    "orbit_host_read_bytes": 40960,
+    "orbit_host_write_bytes": 40960,
+    "orbit_peak_host_work_bytes": 1024,
+    "orbit_tensor_visits": 40,
+    "sequence_copy_count": 50,
+    "sequence_close_count": 51,
+    "snapshot_root_traffic_bytes": 0,
+    "asymptotic_candidate_source_ratio": 0.0
+  },
+  "quality_gates": {
+    "zero_target_branch_model_forward": true,
+    "same_active_label_cells_advanced": true,
+    "all_useful_boundaries_preserved": false,
+    "full_logit_parity": false,
+    "four_step_functional_return_bit_exact": true,
+    "recurrent_carrier_unchanged": true,
+    "all_state_closed": true,
+    "complete_host_state_copy_retained": false,
+    "strongest_compact_classical_baseline_beaten": false,
+    "catalytic_recurrence": false,
+    "unbounded_recurrence": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/in-place-label-value-orbit-action-v1.json",
+      "bytes": 8328,
+      "sha256": "D2D8B00F0F386ED0143C56E39E86C19B679DE163CFBA284E033BC0527DCA6806"
+    },
+    "canonical_recomputable_evidence": {
+      "path": "lab/in-place-label-value-orbit-action-v1-evidence.json",
+      "bytes": 35653,
+      "sha256": "F3090C06EEC877CC0A22128C345C75FCF4EF5996BA0C3F7213745CBA794436D8",
+      "per_query_records": 36,
+      "committed": true
+    },
+    "consumed_source": {
+      "probe": {
+        "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+        "bytes": 284164,
+        "sha256": "9A002A556DD7F559825FBA9E6531CF35AC3D4DF3470BDA1F5A30FA739492A3D4"
+      },
+      "kv_cache": {
+        "path": "src/llama-kv-cache.cpp",
+        "bytes": 93560,
+        "sha256": "7C718AE1689D34D7070EC2F227D9957749C31BA72326BAF59ABD588AEDD6D6DC"
+      },
+      "kv_cache_header": {
+        "path": "src/llama-kv-cache.h",
+        "bytes": 15759,
+        "sha256": "71CD991BAAacf6a91e4ed8134cfed3673d94664a3dbf7713836e49082bad5d21"
+      }
+    },
+    "consumed_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 1132568,
+      "sha256": "5C5646C0FAC606233220D1BA14C5ADE613E500CAAE034B8FE81641E75F951F92",
+      "committed": false
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 56,
+    "input_tokens": 1526,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "reject",
+  "classification": "BIT_EXACT_FOUR_STEP_VALUE_ORBIT_RETURN_WITH_SEMANTIC_SUFFICIENCY_REJECTED",
+  "strongest_supported_claim": "The same four active value-row cells execute four public in-place cyclic actions with zero target-branch model forward, bounded 204,800-byte total value movement, stable active backing, complete closure, and a bit-exact G0 functional return after the fourth action.",
+  "strongest_rejected_interpretation": "Value rows alone preserve only 10/16 rotated decisions with 0/16 reference-logit hashes and maximum candidate-logit error 6.3413791656. Fixed-key value cycling is not the relation action, exact carrier restoration, catalytic recurrence, or unbounded inference.",
+  "next_boundary": "CYCLE_THE_COMPLETE_LABEL_KEY_VALUE_ROWS_AT_FIXED_CACHE_POSITIONS_ONCE"
+}

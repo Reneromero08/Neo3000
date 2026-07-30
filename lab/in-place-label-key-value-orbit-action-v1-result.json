@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0129",
+  "record_type": "scientific_result",
+  "date": "2026-07-30",
+  "baseline_commit": "4b05d5c23eda4a176b7dc418c30e2acc263437d4",
+  "mechanism": "IN_PLACE_LABEL_KEY_VALUE_ORBIT_ACTION",
+  "spec_id": "in-place-label-key-value-orbit-action-v1",
+  "hypothesis": "The complete label-position key/value pairs form the output-bearing relation fiber, so cycling each pair together at fixed cache coordinates can realize the public G orbit with zero target-branch model forward.",
+  "intervention": "Initialize canonical G0 once, close its preparation rows, cyclically permute both key and value rows of the same four active cells through G1/G2/G3/G0 while cache coordinates stay fixed, and compare every useful boundary with exact forward.",
+  "model_hash": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "context_size_total": 4096,
+    "context_size_per_sequence": 512,
+    "n_seq_max": 8,
+    "label_positions": [
+      6,
+      12,
+      18,
+      24
+    ],
+    "fixed_initialization_tokens": 4,
+    "target_branch_source_tokens": 0,
+    "orbit_action": "cyclic key/value-row pair permutation at fixed cache positions",
+    "restoration_class": "DECLARED_CLOSURE"
+  },
+  "metrics_after": {
+    "exact_full_state": {
+      "correct": 16,
+      "comparisons": 16,
+      "full_logit_hash_matches": 16,
+      "boundary_matches": 16,
+      "maximum_candidate_logit_absolute_difference": 0.0
+    },
+    "key_value_orbit_candidate": {
+      "correct": 4,
+      "comparisons": 16,
+      "full_logit_hash_matches": 0,
+      "boundary_matches": 4,
+      "maximum_candidate_logit_absolute_difference": 6.625099182128906
+    },
+    "orbit_return_boundary_matches": 4,
+    "orbit_return_full_logit_hash_matches": 4,
+    "orbit_return_maximum_candidate_logit_absolute_difference": 0.0,
+    "F_recurrent_content_and_row_exact": true,
+    "carrier_recurrent_content_and_row_exact": true,
+    "active_cache_backend_allocation_bytes": 610795520,
+    "all_sequences_closed": true,
+    "all_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "resource_accounting": {
+    "fixed_carrier_preparation_tokens": 130,
+    "candidate_initialization_source_tokens": 4,
+    "candidate_variable_source_tokens": 0,
+    "candidate_source_tokens": 134,
+    "reference_source_tokens": 204,
+    "query_decode_tokens": 1188,
+    "all_route_input_tokens": 1526,
+    "orbit_action_count": 4,
+    "orbit_backend_copy_bytes": 245760,
+    "orbit_host_read_bytes": 81920,
+    "orbit_host_write_bytes": 81920,
+    "orbit_peak_host_work_bytes": 1024,
+    "orbit_tensor_visits": 80,
+    "sequence_copy_count": 50,
+    "sequence_close_count": 51,
+    "snapshot_root_traffic_bytes": 0,
+    "asymptotic_candidate_source_ratio": 0.0
+  },
+  "quality_gates": {
+    "zero_target_branch_model_forward": true,
+    "same_active_label_cells_advanced": true,
+    "all_useful_boundaries_preserved": false,
+    "full_logit_parity": false,
+    "four_step_functional_return_bit_exact": true,
+    "recurrent_carrier_unchanged": true,
+    "all_state_closed": true,
+    "complete_host_state_copy_retained": false,
+    "strongest_compact_classical_baseline_beaten": false,
+    "catalytic_recurrence": false,
+    "unbounded_recurrence": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/in-place-label-key-value-orbit-action-v1.json",
+      "bytes": 8394,
+      "sha256": "998642620DB41100E791ABE797DCD290C5F7735459C405BDBFA5C3680C986899"
+    },
+    "canonical_recomputable_evidence": {
+      "path": "lab/in-place-label-key-value-orbit-action-v1-evidence.json",
+      "bytes": 35703,
+      "sha256": "5898D92BAF962FECFA5E011165A6C60F3174BA944E49A73F6976C5F369CDCB4C",
+      "per_query_records": 36,
+      "committed": true
+    },
+    "consumed_source": {
+      "probe": {
+        "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+        "bytes": 284674,
+        "sha256": "CF0CB006B4C04872F60AE6BAAF439C609CB4DEA5C22D47927A783B5C9DA36119"
+      },
+      "kv_cache": {
+        "path": "src/llama-kv-cache.cpp",
+        "bytes": 94058,
+        "sha256": "4E6A3420C65601D1907FCEDC84C2E713C1130AB45A88D74213CC71F5CEF0BE0E"
+      },
+      "kv_cache_header": {
+        "path": "src/llama-kv-cache.h",
+        "bytes": 15861,
+        "sha256": "845A0F72A1D7E9A0ED452E968E249D382F39C36C6FDC9D9419ACFC5EAC756737"
+      }
+    },
+    "consumed_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 1132792,
+      "sha256": "380E3789350A34DE584C8268C04A91968880540F58AE939DDE5C141A8F6BE06B",
+      "committed": false
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 56,
+    "input_tokens": 1526,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "reject",
+  "classification": "BIT_EXACT_KV_ORBIT_RETURN_WITH_RELATION_ATTACHED_TO_KEY_VALUE_PAIR",
+  "strongest_supported_claim": "The same active K/V label cells execute four bounded zero-target-forward cyclic actions and return G0 bit-exactly, but the key/value pair carries its original vault relation when moved as a unit.",
+  "strongest_rejected_interpretation": "The candidate preserves only the canonical G0 mapping and scores 4/16 with 0/16 reference-logit hashes. Complete K/V pair movement is not the public relation action, catalytic recurrence, or unbounded inference.",
+  "next_boundary": "ROTATE_ONLY_LATE_OUTPUT_BEARING_VALUE_LAYERS_WHILE_PRESERVING_EARLY_RELATION_KEYS_AND_VALUES"
+}

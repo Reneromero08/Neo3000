@@ -176,6 +176,22 @@ The active recurrence and acceptance boundary are
   to `4/130`. Active cache allocation is `610,795,520` bytes and includes all
   eight recurrent rows and unified attention backing. F and scaffold recurrent
   content plus physical rows remain exact; all sequences and roots close.
+- `neo-exp-0128` and `neo-exp-0129` establish real bounded active-state
+  actions with zero target-branch model forward and bit-exact four-step G0
+  return. Value-only cycling changes the useful boundary (`10/16`); complete
+  K/V-pair cycling leaves the original vault relation attached to the moved
+  pair and preserves only canonical G0 (`4/16`).
+- The frozen `neo-exp-0130/0131` partition localizes every observed argmax
+  effect of value cycling to late attention layers `[23,27,31,35,39]`.
+  Early-half cycling is `4/16`; late-half cycling is `10/16`, the same boundary
+  count as all-layer cycling. Each route moves `102,400` bytes over four
+  actions, uses no branch-variable source token, retains the same
+  `610,795,520`-byte active allocation, returns G0 bit-exactly, and closes all
+  state.
+- The complete Release server rebuild passes after the KV action change.
+  Configured CUDA closure remains `139/139` compile entries and `139/139`
+  unique objects. Seventeen focused declarative-runner/oracle tests and all 19
+  exact two-evidence oracle gates pass.
 
 ### REJECTED
 
@@ -235,6 +251,13 @@ The active recurrence and acceptance boundary are
   four-link relation table remains the stronger baseline. Sparse semantic
   advance is not a public group action, numerical recurrence, inverse
   restoration, catalytic inference, or unbounded compute.
+- Scalar cell relocation is not available under the model's multi-position
+  RoPE law. Cycling all value rows preserves only `10/16`; cycling complete
+  K/V pairs preserves only the unchanged `4/16`; cycling early values alone
+  advances no argmax; and cycling late values alone remains `10/16`.
+  Bit-exact finite return proves reversible row motion, not semantic
+  sufficiency. These results close naive permutation and further layer-subset
+  enumeration as the active path.
 - The 0108 screen is not a physically reduced carrier. Every root still
   serializes `68,526,080` device-tensor bytes; the matched reference occupies
   `76,349,440` host bytes, and omitted layers require `399,769,600`
@@ -299,12 +322,14 @@ The active recurrence and acceptance boundary are
 
 ### ACTIVE BOUNDARY
 
-Replace the remaining four target-label model forwards with a fixed public
-state-space action derived before target selection. A lawful candidate cannot
-retain target roots, complete target deltas, or an answer-conditioned table.
-Preserve useful later-model dependence and recursive fidelity, count all four
-fixed stage rows and operator work against the compact relation baseline, and
-do not turn carrier-evaluation versioning into the research loop.
+Derive one compact, context-independent late-value subspace operator before
+target selection. It must be applied repeatedly to the same active carrier,
+tested prospectively outside its calibration context, and rejected if it
+merely stores the four frozen links. Count calibration, operator, workspace,
+query, and fixed-stage costs against the strongest compact classical
+baseline. Stop layer-subset enumeration. Evidence is one compact receipt for
+the mechanism, not a versioned research lane; revise it only when a concrete
+pre-existing defect prevents scientific adjudication.
 `neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]

@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "record_type": "scientific_result_bundle",
+  "ids": ["neo-exp-0130", "neo-exp-0131"],
+  "date": "2026-07-30",
+  "baseline_commit": "4b05d5c23eda4a176b7dc418c30e2acc263437d4",
+  "mechanism": "IN_PLACE_VALUE_ORBIT_LAYER_PARTITION",
+  "hypothesis": "The value-row effect of the all-layer cyclic action is localized to one causal half of the attention stack; isolating that half distinguishes an output-bearing latent fiber from indiscriminate cache motion.",
+  "intervention": "Starting from the same canonical G0 carrier, execute the identical four-step value-row orbit first on layers 3/7/11/15/19 and then on the prospectively complementary layers 23/27/31/35/39. Keep all keys, positions, sequence ownership, the other value half, and recurrent state fixed.",
+  "model_hash": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+  "outcomes": {
+    "neo-exp-0130": {
+      "selected_layers": [3, 7, 11, 15, 19],
+      "correct": 4,
+      "boundary_matches": 4,
+      "full_logit_hash_matches": 0,
+      "maximum_candidate_logit_absolute_difference": 6.656186103820801,
+      "return_boundary_matches": 4,
+      "return_full_logit_hash_matches": 4,
+      "verdict": "reject",
+      "classification": "EARLY_HALF_VALUE_ACTION_HAS_NO_ARGMAX_ADVANCE"
+    },
+    "neo-exp-0131": {
+      "selected_layers": [23, 27, 31, 35, 39],
+      "correct": 10,
+      "boundary_matches": 10,
+      "full_logit_hash_matches": 0,
+      "maximum_candidate_logit_absolute_difference": 5.672917366027832,
+      "return_boundary_matches": 4,
+      "return_full_logit_hash_matches": 4,
+      "verdict": "reject",
+      "classification": "LATE_HALF_CONTAINS_OBSERVED_VALUE_ACTION_BUT_UNIFORM_PERMUTATION_IS_INSUFFICIENT"
+    }
+  },
+  "common_resource_accounting": {
+    "fixed_carrier_preparation_tokens": 130,
+    "candidate_initialization_source_tokens": 4,
+    "candidate_variable_source_tokens": 0,
+    "candidate_source_tokens": 134,
+    "reference_source_tokens": 204,
+    "query_decode_tokens": 1188,
+    "orbit_action_count": 4,
+    "orbit_backend_copy_bytes": 61440,
+    "orbit_host_read_bytes": 20480,
+    "orbit_host_write_bytes": 20480,
+    "orbit_peak_host_work_bytes": 1024,
+    "orbit_tensor_visits": 20,
+    "snapshot_root_traffic_bytes": 0,
+    "active_cache_backend_allocation_bytes": 610795520
+  },
+  "quality_gates": {
+    "zero_target_branch_model_forward": true,
+    "same_active_label_cells_advanced": true,
+    "late_half_contains_all_observed_argmax_effect": true,
+    "all_useful_boundaries_preserved": false,
+    "full_logit_parity": false,
+    "four_step_functional_return_bit_exact": true,
+    "recurrent_carrier_unchanged": true,
+    "all_state_closed": true,
+    "strongest_compact_classical_baseline_beaten": false,
+    "catalytic_recurrence": false,
+    "unbounded_recurrence": false
+  },
+  "artifacts": {
+    "early_spec": {
+      "path": "lab/in-place-early-half-value-orbit-action-v1.json",
+      "bytes": 8470,
+      "sha256": "7DB1968968DB90C9DD8FC6B7C16F12E22860728D6887227274985BC409B45DC6"
+    },
+    "late_spec": {
+      "path": "lab/in-place-late-half-value-orbit-action-v1.json",
+      "bytes": 8494,
+      "sha256": "C7E6C03C42F01FB028827C2693139874FD040676D4B8BB960964C5C083E73AB5"
+    },
+    "canonical_recomputable_evidence": {
+      "path": "lab/in-place-value-orbit-layer-partition-v1-evidence.json",
+      "bytes": 12524,
+      "sha256": "85B52CCEA39F21067B9E66E392BC0894A64526BF3F3391B3EE2AF1F6A4E1CA28",
+      "per_query_records": 16,
+      "committed": true
+    },
+    "consumed_source": {
+      "probe": {
+        "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+        "bytes": 285371,
+        "sha256": "731380E0ED6D4AAACEE7719FE1AA1D85557E4D6A6CC29F99FF5FAE06B6FF2BD3"
+      },
+      "kv_cache": {
+        "path": "src/llama-kv-cache.cpp",
+        "bytes": 94406,
+        "sha256": "53A47F4C521572355F56EAB4910FE146F14E4C1FE34984E212DDBCA3FC0594D3"
+      },
+      "kv_cache_header": {
+        "path": "src/llama-kv-cache.h",
+        "bytes": 15924,
+        "sha256": "C2454CDC97EBEC02168D620F9C052E402646C8339AE17F464364F6680D1746E9"
+      }
+    },
+    "consumed_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 1133600,
+      "sha256": "72E99A277F705FBC036527513D5EB5131F214DB4084A20F55CB2BB693D914320",
+      "committed": false
+    }
+  },
+  "contact": {
+    "model_loads": 2,
+    "llama_decode_calls": 112,
+    "input_tokens": 3052,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "reject",
+  "strongest_supported_claim": "On the frozen panel, all 6/12 noncanonical argmax changes produced by all-layer value cycling are reproduced by cycling only late attention layers 23/27/31/35/39. Cycling only early layers changes logits but advances no argmax. Both selected-row actions have bit-exact four-step G0 return and zero target-branch forwards.",
+  "strongest_rejected_interpretation": "Late value rows are causal but a uniform row permutation preserves only 10/16 boundaries with 0/16 full-logit hashes. This is not the public relation operator, numerical restoration of the complete carrier, catalytic recurrence, or unbounded inference.",
+  "next_boundary": "DERIVE_ONE_CONTEXT_INDEPENDENT_LATE_VALUE_SUBSPACE_OPERATOR_AND_TEST_PROSPECTIVE_REUSE; DO_NOT_RUN_MORE_LAYER_SUBSET OR EVIDENCE_HARNESS VERSIONS"
+}
