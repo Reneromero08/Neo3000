@@ -233,13 +233,23 @@ constructively unbounded local Agents-A1 inference.
   `16/16` for exact model state. This proves reversible real-channel motion
   is not the missing semantic generator. Do not tune angles, layer subsets,
   fixtures, or evidence packets for this branch.
-- [ ] Move the multiplicative relation into layer-local model computation
-  rather than rotating post-cache rows. Implement the smallest native
-  bilinear/complex attention seam or weight-derived nonlinear K/V generator
-  that acts on live unresolved F/G representations, retains no target state
-  or per-context table, and can eliminate the four remaining label-token
-  forwards. Compare it to the identical compact bilinear recurrence. This is
-  a mechanism change, not `carrier-evaluation v2/v3/v4`.
+- [x] Move the multiplicative relation into layer-local model computation
+  once. `neo-exp-0138` makes final attention layer 39 execute an actual
+  paired-real complex query-key phase times value operation, while one
+  value-only quarter-turn advances the same four active label rows. The
+  canonical G0 route remains useful at `4/4` and four turns return its full
+  logits bit-exactly, but every noncanonical branch retains the original
+  `A,B,C,D` argmaxes: the route is only `4/16` versus exact `16/16`.
+  Agents-A1 therefore has no usable learned semantics for this frozen
+  adjacent-channel complex coordinate law. No layer, mix, fixture, or
+  evidence-packet variants are authorized.
+- [ ] Derive the next generator from actual model semantic weights or train
+  the smallest carrier-aware adapter. It must give the live label value state
+  a public context-independent code/update law without target cache rows,
+  target-token model forwards, per-context tables, or post-hoc layer/mix
+  selection. Compare its full physical cost to the compact four-link/Z4
+  recurrence. If a weight-derived screen fails, move to carrier-aware training
+  rather than another untrained coordinate interpretation.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

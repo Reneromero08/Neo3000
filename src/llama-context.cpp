@@ -1186,6 +1186,28 @@ void llama_context::set_warmup(bool value) {
     //sched_need_reserve = true;
 }
 
+bool llama_context::set_neo3000_paired_complex_attention(float mix, int32_t layer) {
+    if (!std::isfinite(mix) ||
+        mix < 0.0f ||
+        mix > 1.0f ||
+        layer < -1 ||
+        (layer >= 0 &&
+         static_cast<uint32_t>(layer) >= model.hparams.n_layer()) ||
+        ((mix == 0.0f) != (layer == -1))) {
+        return false;
+    }
+
+    if (cparams.neo3000_paired_complex_attention_mix == mix &&
+        cparams.neo3000_paired_complex_attention_layer == layer) {
+        return true;
+    }
+
+    cparams.neo3000_paired_complex_attention_mix = mix;
+    cparams.neo3000_paired_complex_attention_layer = layer;
+    sched_need_reserve = true;
+    return true;
+}
+
 bool llama_context::set_sampler(llama_seq_id seq_id, llama_sampler * sampler) {
     if (!sampler && sampling.samplers.count(seq_id) == 0) {
         return true;

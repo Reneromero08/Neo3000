@@ -217,6 +217,13 @@ The active recurrence and acceptance boundary are
   intermediate boundary is only `7/16`; exact full state remains `16/16`.
   This is a real reversible active-state action, not a semantic relation
   generator or a distinct phase resource.
+- `neo-exp-0138` moves the multiplication into actual layer-local inference.
+  In final attention layer 39, paired-real query-key geometry produces a
+  normalized complex phase which multiplies live value state before the
+  pretrained output projection. G0 remains `4/4`; each selected value row
+  receives the same public quarter-turn with fixed keys, and four turns return
+  all four G0 full-logit hashes exactly. This is executed model-native
+  multiplicative state use, not a post-logit wrapper.
 - The complete Release server rebuild passes after the KV action change.
   Configured CUDA closure remains `139/139` compile entries and `139/139`
   unique objects. Seventeen focused declarative-runner/oracle tests and all 19
@@ -247,6 +254,15 @@ The active recurrence and acceptance boundary are
   fixture, or evidence-harness variants are warranted. The next intervention
   moves the multiplicative relation into the layer-local attention/update
   computation.
+- The corresponding untrained layer-local complex coordinate law is also
+  rejected as the semantic generator. `neo-exp-0138` preserves only the
+  original G0 mapping across all four phases (`4/16` versus exact `16/16`);
+  the phase actions change logits but never advance an argmax. The identical
+  compact complex recurrence remains the strongest baseline, graph-local
+  materialization adds work, and no distinct phase resource is established.
+  No layer/mix/fixture/evidence series follows. The next mechanism must derive
+  semantic coordinates from actual weights or explicitly train the model to
+  consume a bounded carrier.
 
 - The balanced held-out adapter produced joint/F-only/G-only accuracy
   `1/4`, `1/4`, and `2/4`; eligibility mutation failed. It is a conventional

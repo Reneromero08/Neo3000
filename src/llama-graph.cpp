@@ -2372,6 +2372,38 @@ ggml_tensor * llm_graph_context::build_pos_bias(ggml_tensor * pos_bucket, ggml_t
     return pos_bias;
 }
 
+// Interpret adjacent feature channels as (real, imaginary) pairs and apply
+// the public quarter turn J(real, imaginary) = (-imaginary, real). This is
+// expressed only with ordinary graph operations so CPU and CUDA execute the
+// same exact paired-real law.
+static ggml_tensor * neo3000_build_pair_quarter_turn(
+        ggml_context * ctx,
+        ggml_tensor  * src) {
+    GGML_ASSERT(src->ne[0] > 0 && src->ne[0] % 2 == 0);
+
+    const int64_t ne0 = src->ne[0];
+    const int64_t ne1 = src->ne[1];
+    const int64_t ne2 = src->ne[2];
+    const int64_t ne3 = src->ne[3];
+    const int64_t n_pairs = ne0 / 2;
+
+    ggml_tensor * contiguous = ggml_cont(ctx, src);
+    ggml_tensor * paired = ggml_reshape_4d(
+        ctx, contiguous, 2, n_pairs, ne1, ne2 * ne3);
+    ggml_tensor * real = ggml_view_4d(
+        ctx, paired,
+        1, n_pairs, ne1, ne2 * ne3,
+        paired->nb[1], paired->nb[2], paired->nb[3], 0);
+    ggml_tensor * imag = ggml_view_4d(
+        ctx, paired,
+        1, n_pairs, ne1, ne2 * ne3,
+        paired->nb[1], paired->nb[2], paired->nb[3],
+        paired->nb[0]);
+    ggml_tensor * turned = ggml_concat(
+        ctx, ggml_neg(ctx, imag), real, 0);
+    return ggml_reshape_4d(ctx, turned, ne0, ne1, ne2, ne3);
+}
+
 ggml_tensor * llm_graph_context::build_attn_mha(
          ggml_tensor * q,
          ggml_tensor * k,
@@ -2395,7 +2427,20 @@ ggml_tensor * llm_graph_context::build_attn_mha(
 
     ggml_tensor * cur;
 
-    const bool use_flash_attn = cparams.flash_attn && kq_b == nullptr;
+    const bool use_paired_complex_attention =
+        cparams.neo3000_paired_complex_attention_mix > 0.0f &&
+        cparams.neo3000_paired_complex_attention_layer == il;
+    if (use_paired_complex_attention) {
+        GGML_ASSERT(arch == LLM_ARCH_QWEN35MOE);
+        GGML_ASSERT(kq_b == nullptr);
+        GGML_ASSERT(v_mla == nullptr);
+        GGML_ASSERT(!hparams.attn_soft_cap);
+    }
+
+    const bool use_flash_attn =
+        cparams.flash_attn &&
+        kq_b == nullptr &&
+        !use_paired_complex_attention;
     if (use_flash_attn) {
         GGML_ASSERT(kq_b == nullptr && "Flash attention does not support KQ bias yet");
 
@@ -2445,6 +2490,16 @@ ggml_tensor * llm_graph_context::build_attn_mha(
         //       while for some models F16 is enough, for others it is not, so we default to F32 here
         ggml_mul_mat_set_prec(kq, GGML_PREC_F32);
 
+        ggml_tensor * kq_imag = nullptr;
+        if (use_paired_complex_attention) {
+            ggml_tensor * k_quarter_turn =
+                neo3000_build_pair_quarter_turn(ctx0, k);
+            cb(k_quarter_turn, "neo3000_pair_k_quarter_turn", il);
+            kq_imag = ggml_mul_mat(ctx0, k_quarter_turn, q);
+            ggml_mul_mat_set_prec(kq_imag, GGML_PREC_F32);
+            cb(kq_imag, "neo3000_pair_kq_imag", il);
+        }
+
         if (arch == LLM_ARCH_GROK) {
             // need to do the following:
             // multiply by attn_output_multiplier
@@ -2472,18 +2527,78 @@ ggml_tensor * llm_graph_context::build_attn_mha(
             cb(kq, "kq_plus_kq_b", il);
         }
 
+        ggml_tensor * paired_phase_real = nullptr;
+        ggml_tensor * paired_phase_imag = nullptr;
+        if (use_paired_complex_attention) {
+            ggml_tensor * magnitude_squared = ggml_add(
+                ctx0,
+                ggml_sqr(ctx0, kq),
+                ggml_sqr(ctx0, kq_imag));
+            ggml_tensor * epsilon =
+                ggml_new_tensor_1d(ctx0, GGML_TYPE_F32, 1);
+            epsilon = ggml_fill(ctx0, epsilon, 1.0e-12f);
+            magnitude_squared =
+                ggml_add(ctx0, magnitude_squared, epsilon);
+            ggml_tensor * magnitude = ggml_sqrt(
+                ctx0, magnitude_squared);
+            paired_phase_real = ggml_div(ctx0, kq, magnitude);
+            paired_phase_imag = ggml_div(ctx0, kq_imag, magnitude);
+            cb(paired_phase_real, "neo3000_pair_phase_real", il);
+            cb(paired_phase_imag, "neo3000_pair_phase_imag", il);
+        }
+
         kq = ggml_soft_max_ext(ctx0, kq, kq_mask, kq_scale, hparams.f_max_alibi_bias);
         ggml_soft_max_add_sinks(kq, sinks);
         cb(kq, "kq_soft_max", il);
 
-        if (!v_trans) {
-            // note: avoid this branch
-            v = ggml_cont(ctx0, ggml_transpose(ctx0, v));
-            cb(v, "v_cont", il);
+        ggml_tensor * v_matmul = v;
+        ggml_tensor * v_quarter_turn_matmul = nullptr;
+        if (use_paired_complex_attention) {
+            ggml_tensor * v_feature_major = v;
+            if (v_trans) {
+                v_feature_major =
+                    ggml_cont(ctx0, ggml_transpose(ctx0, v));
+            }
+            ggml_tensor * v_quarter_turn =
+                neo3000_build_pair_quarter_turn(
+                    ctx0, v_feature_major);
+            cb(v_quarter_turn, "neo3000_pair_v_quarter_turn", il);
+            v_quarter_turn_matmul = ggml_cont(
+                ctx0, ggml_transpose(ctx0, v_quarter_turn));
         }
 
-        ggml_tensor * kqv = ggml_mul_mat(ctx0, v, kq);
+        if (!v_trans) {
+            // note: avoid this branch
+            v_matmul = ggml_cont(ctx0, ggml_transpose(ctx0, v));
+            cb(v_matmul, "v_cont", il);
+        }
+
+        ggml_tensor * kqv = ggml_mul_mat(ctx0, v_matmul, kq);
         cb(kqv, "kqv", il);
+
+        if (use_paired_complex_attention) {
+            ggml_tensor * real_weights =
+                ggml_mul(ctx0, kq, paired_phase_real);
+            ggml_tensor * imag_weights =
+                ggml_mul(ctx0, kq, paired_phase_imag);
+            ggml_tensor * complex_kqv = ggml_add(
+                ctx0,
+                ggml_mul_mat(ctx0, v_matmul, real_weights),
+                ggml_mul_mat(
+                    ctx0,
+                    v_quarter_turn_matmul,
+                    imag_weights));
+            cb(complex_kqv, "neo3000_pair_complex_kqv", il);
+            ggml_tensor * delta = ggml_sub(ctx0, complex_kqv, kqv);
+            kqv = ggml_add(
+                ctx0,
+                kqv,
+                ggml_scale(
+                    ctx0,
+                    delta,
+                    cparams.neo3000_paired_complex_attention_mix));
+            cb(kqv, "neo3000_pair_mixed_kqv", il);
+        }
 
         // for MLA with the absorption optimization, we need to "decompress" from MQA back to MHA
         if (v_mla) {

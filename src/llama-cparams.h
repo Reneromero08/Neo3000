@@ -31,6 +31,11 @@ struct llama_cparams {
     float yarn_beta_fast;
     float yarn_beta_slow;
 
+    // Experimental graph-local paired-complex attention read. A negative
+    // layer disables the branch. Kept internal to the Neo3000 probe.
+    float   neo3000_paired_complex_attention_mix   = 0.0f;
+    int32_t neo3000_paired_complex_attention_layer = -1;
+
     bool embeddings;
     bool embeddings_nextn;        // also extract the hidden state before the final output norm
     bool embeddings_nextn_masked; // extract for only rows where batch.logits != 0

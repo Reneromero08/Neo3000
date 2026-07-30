@@ -1217,3 +1217,20 @@ table, be charged against the identical compact bilinear recurrence, and
 state how it removes the four remaining label-token forwards. Post-cache
 phase-angle tuning, layer partitions, fixture multiplication, and evidence
 packet versions are closed by this result.
+
+`neo-exp-0138` then performs that one lawful screen. Final attention layer 39
+computes a true paired-real complex query-key phase and multiplies it into
+live value state before the pretrained output projection. The canonical G0
+boundary remains `4/4`, the value-only carrier turns change complete logits,
+and four turns restore all four G0 logit hashes exactly. But every phase keeps
+the original `A,B,C,D` argmax mapping, so the semantic orbit is only `4/16`
+against exact `16/16`.
+
+This rejects untrained adjacent-channel interpretation, not multiplicative
+carrier computation in principle. Agents-A1 was never trained to assign
+semantic meaning to those coordinate phases. The successor therefore moves
+to actual model semantic weights or the smallest carrier-aware training law:
+derive or learn one fixed context-independent label-code update that consumes
+live state, retains no target cache rows or context table, and replaces the
+four target-token forwards. It is charged against the compact Z4/classical
+recurrence. No layer, mix, prompt, or evidence-packet series is allowed.

@@ -4279,6 +4279,14 @@ static json run_sparse_g_label_refresh(
         spec.value("key_value_orbit_attention_action", false);
     const bool complex_phase_orbit_mode =
         spec.value("complex_phase_quarter_turn_action", false);
+    const bool paired_complex_attention_read =
+        spec.value("paired_complex_attention_read", false);
+    const bool complex_phase_include_keys =
+        spec.value("complex_phase_include_keys", true);
+    const float paired_complex_attention_mix =
+        spec.value("paired_complex_attention_mix", 0.0f);
+    const int32_t paired_complex_attention_layer =
+        spec.value("paired_complex_attention_layer", -1);
     const bool fourier_value_orbit_mode =
         spec.value("fourier_value_orbit_action", false);
     const bool subspace_value_orbit_mode =
@@ -4289,6 +4297,16 @@ static json run_sparse_g_label_refresh(
         !subspace_value_orbit_mode) {
         throw std::runtime_error(
             "subspace key action requires subspace value action");
+    }
+    if (paired_complex_attention_read &&
+        (!complex_phase_orbit_mode ||
+         complex_phase_include_keys ||
+         paired_complex_attention_mix <= 0.0f ||
+         paired_complex_attention_mix > 1.0f ||
+         paired_complex_attention_layer < 0)) {
+        throw std::runtime_error(
+            "paired-complex read requires a value-only complex phase "
+            "orbit and one valid frozen graph layer/mix");
     }
     const bool orbit_mode =
         position_orbit_mode ||
@@ -4660,6 +4678,15 @@ static json run_sparse_g_label_refresh(
                     spec, "orbit_attention_layers", attention_layer_ids)
                 : all_attention_layers
             : all_attention_layers;
+    if (paired_complex_attention_read &&
+        orbit_attention_layers !=
+            std::set<uint32_t>{
+                static_cast<uint32_t>(
+                    paired_complex_attention_layer)}) {
+        throw std::runtime_error(
+            "paired-complex read requires the value-phase action and "
+            "read to share one frozen attention layer");
+    }
     const bool layer_selective_value_orbit =
         (value_orbit_mode ||
          fourier_value_orbit_mode ||
@@ -4692,17 +4719,40 @@ static json run_sparse_g_label_refresh(
             source_boundary_pos,
             route + ":query-copy");
         ++sequence_copy_count;
-        auto boundary = decode_query(
-            ctx,
-            vocab,
-            candidates,
-            "sparse-G-label-refresh:" + route,
-            variant_id,
-            query,
-            expected_source_tokens,
-            active_recurrent_backing_initial,
-            active_cache_backend_allocation_bytes,
-            scratch_seq);
+        const bool enable_paired_complex_read =
+            paired_complex_attention_read &&
+            route != "exact_full_state";
+        if (enable_paired_complex_read &&
+            !ctx->set_neo3000_paired_complex_attention(
+                paired_complex_attention_mix,
+                paired_complex_attention_layer)) {
+            throw std::runtime_error(
+                route + ": failed to enable paired-complex read");
+        }
+        boundary_result boundary;
+        try {
+            boundary = decode_query(
+                ctx,
+                vocab,
+                candidates,
+                "sparse-G-label-refresh:" + route,
+                variant_id,
+                query,
+                expected_source_tokens,
+                active_recurrent_backing_initial,
+                active_cache_backend_allocation_bytes,
+                scratch_seq);
+        } catch (...) {
+            if (enable_paired_complex_read) {
+                ctx->set_neo3000_paired_complex_attention(0.0f, -1);
+            }
+            throw;
+        }
+        if (enable_paired_complex_read &&
+            !ctx->set_neo3000_paired_complex_attention(0.0f, -1)) {
+            throw std::runtime_error(
+                route + ": failed to disable paired-complex read");
+        }
         query_decode_tokens +=
             boundary.record.at("query_tokens").get<size_t>();
         records.push_back(boundary.record);
@@ -5176,10 +5226,10 @@ static json run_sparse_g_label_refresh(
                     candidate_seq,
                     label_positions,
                     orbit_attention_layers,
-                    true,
+                    complex_phase_include_keys,
                     &metrics)) {
                 throw std::runtime_error(
-                    stage + ": complex K/V phase action failed");
+                    stage + ": complex phase action failed");
             }
             llama_synchronize(ctx);
             orbit_host_read_bytes += metrics.host_read_bytes;
@@ -5672,7 +5722,9 @@ static json run_sparse_g_label_refresh(
             : fourier_value_orbit_mode
             ? "IN_PLACE_RANK3_FOURIER_LABEL_VALUE_ACTION"
             : complex_phase_orbit_mode
-            ? "IN_PLACE_COMPLEX_KV_PHASE_QUARTER_TURN"
+            ? paired_complex_attention_read
+                ? "IN_PLACE_VALUE_PHASE_WITH_LAYER_LOCAL_PAIRED_COMPLEX_ATTENTION_READ"
+                : "IN_PLACE_COMPLEX_KV_PHASE_QUARTER_TURN"
             : key_value_orbit_mode
             ? "IN_PLACE_LABEL_KEY_VALUE_ORBIT_ACTION"
             : layer_selective_value_orbit
@@ -5702,6 +5754,14 @@ static json run_sparse_g_label_refresh(
             {"key_value_orbit_action", key_value_orbit_mode},
             {"complex_phase_quarter_turn_action",
                 complex_phase_orbit_mode},
+            {"complex_phase_include_keys",
+                complex_phase_include_keys},
+            {"paired_complex_attention_read",
+                paired_complex_attention_read},
+            {"paired_complex_attention_layer",
+                paired_complex_attention_layer},
+            {"paired_complex_attention_mix",
+                paired_complex_attention_mix},
             {"fourier_value_orbit_action",
                 fourier_value_orbit_mode},
             {"subspace_value_orbit_action",
