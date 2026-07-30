@@ -251,6 +251,22 @@ The active recurrence and acceptance boundary are
   The probe and Release server build; CUDA object closure remains `139/139`
   with no CUDA source change. No model contact has occurred for `0162`.
   Execute once; no evaluator/evidence successor follows.
+- `neo-exp-0162` executed once and closes raw source-state lifting. Exact
+  full state is `16/16`; the native fast-weight route is only `4/16`, with
+  thirteen A outputs and three C outputs. On G1, joint, F-only, G-then-F,
+  and cyclic relation mutation all return `AAAA`; G is not necessary and
+  neither order nor relation mutation is represented. The operator is
+  physically causal relative to carrier-off, but not usefully relational.
+  The out-of-place reverse residual reaches `1777.5633544921875`, so no
+  reverse-computation fidelity is supported. One `2,621,440`-byte factor
+  backing completed 40 captures, four commits, 320 layer reads, explicit
+  zero/release, and an unrelated arithmetic query after closure. That query
+  used control-off state and is not inference-knowledge reuse. Preserve raw
+  result `lab/source-conditioned-low-rank-out-product-fast-weight-v1-result.json`.
+  No lifting operator, normalization, layer, rank, scale, prompt, fixture,
+  controller, evaluator, carrier-evaluation, or evidence-harness successor
+  is authorized. The next substrate is active bounded recurrent advance with
+  fixed attention residency and actual output feedback.
 
 ### SUPPORTED
 

@@ -766,7 +766,7 @@ constructively unbounded local Agents-A1 inference.
   receives one contact and one compact adjudication—no rank, layer, gain,
   prompt, fixture, controller, evaluator, carrier-evaluation, or
   evidence-harness series.
-- [ ] Replace the invalid transposed-left `mul_mat` with one legal physical
+- [x] Replace the invalid transposed-left `mul_mat` with one legal physical
   fast-weight primitive or a distinct in-place substrate, then make one
   bounded contact. The consumed `0161` path loaded Agents-A1, completed its
   exact-reference lead-in, and reached the first enabled graph reservation,
@@ -786,6 +786,18 @@ constructively unbounded local Agents-A1 inference.
   ceilings remain fixed. The probe and Release server build, CUDA closure is
   `139/139`, and no CUDA source changed. Commit this mechanism, execute it
   once, and close the line on another graph/operator integration failure.
+- [ ] Build one bounded rolling Agents-A1 recurrent carrier that lawfully
+  advances the actual recurrent backing while keeping a fixed maximum
+  attention window. Use a prospectively fixed stream of useful state-update
+  and tool/decision queries whose full-history baseline grows with depth.
+  Feed each actual projected output back into the live sequence, evict only
+  closed attention rows, retain the same recurrent backing, and compare
+  against untouched full-history inference plus the strongest compact
+  classical recurrence. Require a recurrent-state ablation or mutation to
+  change later useful boundaries, fixed peak active allocation, explicit
+  attention-row closure, and unrelated useful inference on the same active
+  backing. This is a new state substrate, not a continuation of the rejected
+  lifting fixture and not an evaluator/evidence-harness series.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.
