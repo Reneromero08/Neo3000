@@ -646,10 +646,12 @@ The active recurrence and acceptance boundary are
   cache write. The repaired path supplies its narrow overwritten-row
   derivative and uses unfused full attention only for optimizer steps because
   flash attention has no backward implementation; runtime inference remains
-  flash-attention-enabled. No result or candidate boundary exists from either
-  aborted launch and no server ran. One compact result packet will adjudicate
-  the repaired learned mechanism; evidence formatting is not a successor
-  axis.
+  flash-attention-enabled. A one-pass gradient audit then found exactly one
+  other unsupported in-place node, the final MoE normalization clamp; its
+  backward path now applies the bounded interior mask. No result or candidate
+  boundary exists from these aborted launches and no server ran. One compact
+  result packet will adjudicate the repaired learned mechanism; evidence
+  formatting is not a successor axis.
 
 ### REJECTED
 

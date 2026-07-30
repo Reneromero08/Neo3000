@@ -6534,6 +6534,35 @@ static void ggml_compute_backward(
                 ggml_add_or_set(ctx, cgraph, isrc0, ggml_repeat(ctx, grad, src0));
             }
         } break;
+        case GGML_OP_CLAMP: {
+            if (src0_needs_grads) {
+                float min;
+                float max;
+                memcpy(&min, (const float *) tensor->op_params + 0, sizeof(float));
+                memcpy(&max, (const float *) tensor->op_params + 1, sizeof(float));
+                struct ggml_tensor * mask = ggml_step(
+                    ctx,
+                    ggml_scale_impl(ctx, src0, 1.0f, -min, false));
+                if (isfinite(max)) {
+                    mask = ggml_mul(
+                        ctx,
+                        mask,
+                        ggml_step(
+                            ctx,
+                            ggml_scale_impl(
+                                ctx,
+                                src0,
+                                -1.0f,
+                                max,
+                                false)));
+                }
+                ggml_add_or_set(
+                    ctx,
+                    cgraph,
+                    isrc0,
+                    ggml_mul(ctx, grad, mask));
+            }
+        } break;
         case GGML_OP_MEAN: {
             if (src0_needs_grads) {
                 ggml_add1_or_set(ctx, cgraph, isrc0, ggml_scale_impl(ctx, grad, 1.0f/src0->ne[0], 0.0, false));
@@ -7093,7 +7122,8 @@ void ggml_build_backward_expand(
             node->op == GGML_OP_RESHAPE ||
             node->op == GGML_OP_PERMUTE ||
             node->op == GGML_OP_TRANSPOSE ||
-            node->op == GGML_OP_SET_ROWS);
+            node->op == GGML_OP_SET_ROWS ||
+            node->op == GGML_OP_CLAMP);
 
         const size_t ihash = ggml_hash_find(&cgraph->visited_hash_set, node);
         GGML_ASSERT(ihash != GGML_HASHSET_FULL);
