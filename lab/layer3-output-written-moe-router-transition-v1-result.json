@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "experiment_id": "neo-exp-0149",
+  "baseline_commit": "34b9d2ae8d34e342caed78964e1b41ce0d5bb19b",
+  "model_hash": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+  "mechanism": "ACTUAL_OUTPUT_WRITTEN_MOE_ROUTER_STATE_TRANSITION",
+  "spec_id": "layer3-output-written-moe-router-transition-v1",
+  "execution": {
+    "raw_result_bytes": 81821,
+    "raw_result_sha256": "0512B04593B1BEF3C4CC49CED278BA55108E0DD800E59F7C93F7D8C9AA86FD0F",
+    "spec_sha256": "7F5342B780CF6B09FA93C2E690374F85B851CA48B8D1D321030A60F4C6AD6244",
+    "probe_version": "374 (34b9d2a)",
+    "probe_binary_sha256": "49FA64A612876AEAE00509C6C7A3F9958A985E202D659E3DC134B3EB54AB9D93",
+    "server_binary_sha256": "DE3CAA4377822C5AE6CB0B813BA36957ECA0295ABC9F2E35B135E40E28E5778D"
+  },
+  "configuration": {
+    "context_size": 4096,
+    "context_per_sequence": 512,
+    "n_seq_max": 8,
+    "semantic_carrier_read_layer": 3,
+    "semantic_carrier_moe_router_bias": true,
+    "restoration_class": "DECLARED_CLOSURE"
+  },
+  "summary": {
+    "exact_full_state_correct": 16,
+    "exact_full_state_comparisons": 16,
+    "exact_full_state_hash_matches": 16,
+    "candidate_correct": 4,
+    "candidate_comparisons": 16,
+    "candidate_boundary_matches": 4,
+    "candidate_full_logit_hash_matches": 0,
+    "candidate_maximum_logit_absolute_difference": 7.3043131828308105,
+    "per_phase_correct": [4, 0, 0, 0],
+    "return_boundary_matches": 4,
+    "return_full_logit_hash_matches": 0,
+    "return_maximum_logit_absolute_difference": 0.9287586212158203,
+    "carrier_disabled_G1_correct": 0,
+    "enabled_disabled_G1_boundary_matches": 4,
+    "semantic_training_correct": 12,
+    "semantic_training_samples": 12,
+    "semantic_training_max_abs_error": 0.009357665317482056,
+    "writer_training_correct": 12,
+    "writer_training_max_abs_error": 0.0007951201551071874,
+    "coupled_topology_training_correct": 12,
+    "coupled_topology_minimum_margin": 0.9847086711124141,
+    "accepted": false
+  },
+  "training_boundaries": {
+    "context_order": ["train-EFGH", "train-WXYZ", "train-ABCD"],
+    "query_order_per_context": [
+      ["E", "F", "G", "H"],
+      ["W", "X", "Y", "Z"],
+      ["A", "B", "C", "D"]
+    ],
+    "base_argmax": [
+      ["A", "B", "C", "D"],
+      ["A", "B", "C", "D"],
+      ["C", "A", "D", "B"]
+    ],
+    "target_argmax": [
+      ["B", "C", "D", "A"],
+      ["B", "C", "D", "A"],
+      ["D", "D", "A", "C"]
+    ],
+    "base_full_logits_fnv1a64": [
+      ["54de4ea92dc22086", "038ecd603994ad46", "041077da524bef3f", "da2efe4dcd47e835"],
+      ["0316b73418a9c774", "20f88a9fd62421b5", "cdf249d732e1215a", "a02cce5433d1d3d9"],
+      ["78fb0a49a12bb532", "21718e29b7ac992a", "df63fc2c97f614f9", "6f490a0f2631540c"]
+    ],
+    "target_full_logits_fnv1a64": [
+      ["67267da4f3cc1dc4", "c0fcd0741a33a630", "f4c247a55e8e5e46", "177ecc1b5e1f9621"],
+      ["fa12f05492254ef6", "554784492fa42b8f", "b8ade02fedb6ed33", "22fe94efbae16045"],
+      ["8a83d14ad014f5e8", "4b09190834562e94", "d58dff56a04a6680", "29f8f42431fc510d"]
+    ]
+  },
+  "boundary_panels": {
+    "phase_order": ["G-rotation-0", "G-rotation-1", "G-rotation-2", "G-rotation-3"],
+    "query_order": ["I", "O", "U", "V"],
+    "expected": [
+      ["B", "C", "D", "A"],
+      ["C", "D", "A", "B"],
+      ["D", "A", "B", "C"],
+      ["A", "B", "C", "D"]
+    ],
+    "candidate_argmax": [
+      ["B", "C", "D", "A"],
+      ["B", "C", "D", "A"],
+      ["B", "C", "D", "A"],
+      ["B", "C", "D", "A"]
+    ],
+    "candidate_logits": [
+      [
+        [10.95201301574707, 14.271583557128906, 9.28559684753418, 11.203777313232422],
+        [10.182429313659668, 8.475343704223633, 14.985405921936035, 11.654254913330078],
+        [8.560169219970703, 7.261207580566406, 10.079265594482422, 15.42348861694336],
+        [12.92681884765625, 7.017971038818359, 8.436467170715332, 11.249469757080078]
+      ],
+      [
+        [10.950207710266113, 14.183465957641602, 9.28882884979248, 11.176839828491211],
+        [10.15509033203125, 8.597402572631836, 14.922281265258789, 11.778726577758789],
+        [8.646683692932129, 7.348903656005859, 10.223827362060547, 15.47439193725586],
+        [13.221378326416016, 6.6068501472473145, 7.930202007293701, 10.780421257019043]
+      ],
+      [
+        [10.950207710266113, 14.183465957641602, 9.28882884979248, 11.176839828491211],
+        [10.15509033203125, 8.597402572631836, 14.922281265258789, 11.778726577758789],
+        [8.646683692932129, 7.348903656005859, 10.223827362060547, 15.47439193725586],
+        [13.221378326416016, 6.6068501472473145, 7.930202007293701, 10.780421257019043]
+      ],
+      [
+        [10.950207710266113, 14.183465957641602, 9.28882884979248, 11.176839828491211],
+        [10.15509033203125, 8.597402572631836, 14.922281265258789, 11.778726577758789],
+        [8.646683692932129, 7.348903656005859, 10.223827362060547, 15.47439193725586],
+        [13.221378326416016, 6.6068501472473145, 7.930202007293701, 10.780421257019043]
+      ]
+    ],
+    "candidate_full_logits_fnv1a64": [
+      ["8728c67cb82a0ee5", "e7e14b3c5c5699ed", "8707952ce41dc891", "8343efdf12aa91ea"],
+      ["5ca2eb119defa595", "5986c9a9418fcdcd", "eeb8219883faaa59", "93b64d2893c50abb"],
+      ["5ca2eb119defa595", "5986c9a9418fcdcd", "eeb8219883faaa59", "93b64d2893c50abb"],
+      ["5ca2eb119defa595", "5986c9a9418fcdcd", "eeb8219883faaa59", "93b64d2893c50abb"]
+    ],
+    "exact_argmax": [
+      ["B", "C", "D", "A"],
+      ["C", "D", "A", "B"],
+      ["D", "A", "B", "C"],
+      ["A", "B", "C", "D"]
+    ],
+    "exact_logits": [
+      [
+        [12.407125473022461, 14.874231338500977, 11.178473472595215, 12.034218788146973],
+        [9.331787109375, 8.463764190673828, 14.155487060546875, 11.986412048339844],
+        [7.242439270019531, 6.542420387268066, 10.233973503112793, 14.183182716369629],
+        [13.966062545776367, 8.536205291748047, 10.779281616210938, 13.132063865661621]
+      ],
+      [
+        [11.243975639343262, 10.982019424438477, 15.19202995300293, 12.897171020507813],
+        [9.717484474182129, 8.30119514465332, 10.16083812713623, 15.347625732421875],
+        [14.60135269165039, 7.669341087341309, 8.758295059204102, 11.314456939697266],
+        [9.754345893859863, 13.911163330078125, 10.263371467590332, 11.84048843383789]
+      ],
+      [
+        [10.577455520629883, 9.900768280029297, 11.516613006591797, 15.822168350219727],
+        [15.123666763305664, 10.202836036682129, 9.05126953125, 11.601996421813965],
+        [9.603917121887207, 14.156310081481934, 8.39913558959961, 10.977822303771973],
+        [9.27759838104248, 8.158084869384766, 14.743959426879883, 10.91663646697998]
+      ],
+      [
+        [14.443788528442383, 8.0145902633667, 8.990398406982422, 11.846808433532715],
+        [9.6740140914917, 14.216896057128906, 9.560145378112793, 10.778034210205078],
+        [9.603175163269043, 8.955427169799805, 14.553873062133789, 11.205656051635742],
+        [8.502396583557129, 7.443776607513428, 9.570638656616211, 15.111062049865723]
+      ]
+    ],
+    "exact_full_logits_fnv1a64": [
+      ["10f473635cf72587", "b8a0d1e12489742a", "6d21730f2ca6f974", "0b46372e1247fb71"],
+      ["f1a04dd0398eb388", "94a611efe8f235a3", "616bb381cb840f1d", "688f8995f694aa88"],
+      ["b6fdcca4d55bd58e", "cf7551068ae99f8c", "bcd7f0f178ff90b7", "d898bf3801634174"],
+      ["abc1247bfdecd367", "5b2294a72e1d716b", "b74947e620927221", "907621d4ec1288f1"]
+    ],
+    "disabled_G1_argmax": ["B", "C", "D", "A"],
+    "disabled_G1_logits": [
+      [10.95201301574707, 14.271583557128906, 9.28559684753418, 11.203777313232422],
+      [9.80757999420166, 8.513265609741211, 14.800936698913574, 11.447500228881836],
+      [7.7728590965271, 6.143713474273682, 9.191092491149902, 14.32577133178711],
+      [12.79826545715332, 7.199578285217285, 8.973276138305664, 12.309904098510742]
+    ],
+    "disabled_G1_full_logits_fnv1a64": [
+      "8728c67cb82a0ee5",
+      "ac26f76b33544f47",
+      "9e515b6842edd35f",
+      "10846811c6f9f5b7"
+    ],
+    "return_G0_argmax": ["B", "C", "D", "A"],
+    "return_G0_logits": [
+      [10.950207710266113, 14.183465957641602, 9.28882884979248, 11.176839828491211],
+      [9.618501663208008, 8.399940490722656, 14.41116714477539, 11.131420135498047],
+      [7.804880142211914, 6.332448959350586, 9.21090316772461, 14.570446014404297],
+      [13.208382606506348, 7.276494026184082, 9.051426887512207, 12.16094970703125]
+    ],
+    "return_G0_full_logits_fnv1a64": [
+      "5ca2eb119defa595",
+      "b7263cd38b4da9c9",
+      "5fd154cc088e51bd",
+      "27fe4cdcf5ba5942"
+    ]
+  },
+  "promotion_boundaries": {
+    "phase_order": ["G-rotation-0", "G-rotation-1", "G-rotation-2", "G-rotation-3"],
+    "query_order": ["I", "O", "U", "V"],
+    "actual_projected_outputs": [
+      ["B", "C", "D", "A"],
+      ["B", "C", "D", "A"],
+      ["B", "C", "D", "A"],
+      ["B", "C", "D", "A"]
+    ],
+    "destination_label_indices": [0, 1, 2, 3],
+    "port_writes": 16,
+    "source_role_model_forward_tokens": 0
+  },
+  "carrier": {
+    "active_cache_backend_allocation_bytes": 610795520,
+    "retained_root_backend_allocation_bytes": 0,
+    "F_recurrent_hash_before": "58c07f2b85727b39",
+    "F_recurrent_hash_after": "58c07f2b85727b39",
+    "F_recurrent_physical_row": 0,
+    "scaffold_recurrent_hash_before": "b69656966b62a04d",
+    "scaffold_recurrent_hash_after": "b69656966b62a04d",
+    "scaffold_recurrent_physical_row": 5,
+    "semantic_carrier_action_backing_id": "c43ea9599f46ff5d",
+    "semantic_carrier_same_backing_restored": false,
+    "semantic_carrier_reader_quiescent_on_same_backing": true,
+    "semantic_port_final_hash": "5210becb4793010f",
+    "semantic_port_writes": 16,
+    "semantic_carrier_closed": true,
+    "all_sequences_closed": true,
+    "all_retained_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "resource_accounting": {
+    "candidate_source_tokens": 134,
+    "reference_source_tokens": 204,
+    "source_decode_tokens": 1118,
+    "query_decode_tokens": 1320,
+    "semantic_training_source_tokens": 780,
+    "semantic_training_query_tokens": 792,
+    "semantic_training_output_tokens": 12,
+    "all_route_input_tokens": 3258,
+    "useful_output_decode_tokens": 16,
+    "semantic_carrier_logical_bytes": 98464,
+    "semantic_carrier_training_feature_peak_bytes": 296704,
+    "semantic_carrier_training_peak_host_work_bytes": 345552,
+    "semantic_carrier_graph_input_sets": 116,
+    "semantic_carrier_host_to_backend_bytes": 7611456,
+    "semantic_carrier_writer_host_input_bytes": 131072,
+    "semantic_carrier_port_writes": 16,
+    "semantic_carrier_router_bias_token_applications": 1674,
+    "semantic_carrier_router_bias_enabled_token_applications": 20,
+    "semantic_carrier_router_bias_multiply_accumulates": 877658112,
+    "carrier_hash_d2h_bytes": 263454720,
+    "carrier_hash_peak_host_work_bytes": 1048576
+  },
+  "verdict": "reject",
+  "classification": "LAYER3_MOE_ROUTER_BIAS_CHANGES_LOGITS_WITHOUT_USEFUL_RELATIONAL_BOUNDARY",
+  "strongest_supported_claim": "The actual-output-written port was read by a frozen layer-3 MoE router on twenty enabled tokens, changed later logits, retained stable backing, preserved recurrent digests, and closed all state.",
+  "strongest_rejected_interpretation": "Carrier-derived expert-router bias is not an inference-bearing relation law here: all nonzero phases retain G0 argmaxes and the matched disabled route has the same useful G1 boundary. No fresh-compute, recurrence, catalytic, Small Wall, or unbounded claim follows.",
+  "next_boundary": "IN_PLACE_FIRST_RECURRENT_LAYER_STATE_TRANSITION_FROM_OUTPUT_WRITTEN_PORT; NO_LAYER_SCALE_FIXTURE_EVALUATOR_OR_EVIDENCE_HARNESS_VARIANTS"
+}

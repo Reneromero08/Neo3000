@@ -387,7 +387,7 @@ constructively unbounded local Agents-A1 inference.
   and all state closes. Reject the layer-3 mean residual delta as a useful
   carrier law. Do not create layer, gain, context, prompt, evaluator, or
   evidence-packet variants.
-- [ ] Make the same output-written unresolved port affect an actual dynamic
+- [x] Make the same output-written unresolved port affect an actual dynamic
   model operation rather than adding another fixed residual delta. Choose one
   predeclared recurrent-state transition, attention computation, or MoE router
   update whose later frozen computation must read the port; retain zero
@@ -405,9 +405,22 @@ constructively unbounded local Agents-A1 inference.
   selector, target row, or context-indexed operator. Router applications and
   multiply-accumulates are counted. The probe and full Release server build;
   runner tests pass `7/7`, both exact-oracle suites pass, and configured CUDA
-  closure remains `139/139`. Execute this changed model operation once; do not
-  create layer, scale, ridge, prompt, fixture, evaluator, carrier-evaluation,
-  or evidence-harness variants.
+  closure remains `139/139`. The sole execution performs `1,674` router-token
+  applications, including `20` enabled reads and `877,658,112` charged gate
+  multiply-accumulates. It changes logits but preserves only G0 (`4/16`);
+  every nonzero phase remains `B,C,D,A`, full hashes are `0/16`, and the
+  matched disabled G1 route has the same four argmaxes. Reject the fixed
+  layer-3 router-bias law. Do not create layer, scale, ridge, prompt, fixture,
+  evaluator, carrier-evaluation, or evidence-harness variants.
+- [ ] Feed the retrieved output-written port into the first recurrent
+  state transition after the full-attention boundary. Keep the original
+  residual stream unchanged; let the port alter only the recurrent operator
+  input so its Q/K/V, gates, and persistent delta-net state evolve on the
+  existing backing and later frozen computation reads that state. Freeze the
+  first recurrent layer by architecture, not search; retain the same disjoint
+  panel, zero source-role forwards, no answer/phase/context table, one matched
+  disablement, and one execution. This is a model-memory mechanism, not a
+  carrier-evaluation successor.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

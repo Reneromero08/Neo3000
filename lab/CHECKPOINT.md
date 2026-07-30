@@ -526,6 +526,22 @@ The active recurrence and acceptance boundary are
   fixtures; configured CUDA entries and objects remain `139/139`. No server
   or `0149` model contact has occurred. The next action is its sole frozen
   execution, followed by a physical-mechanism decision—not a harness version.
+- Exact pushed head `34b9d2ae8d34e342caed78964e1b41ce0d5bb19b`
+  executed `neo-exp-0149` once. The router path ran `1,674` token
+  applications, of which `20` were enabled, and charged `877,658,112`
+  expert-gate multiply-accumulates. Sixteen actual outputs wrote the same
+  port backing; all sequences and roots closed; recurrent digests and active
+  backing identities remained stable.
+- The dynamic router intervention is scientifically negative. Exact full
+  state is `16/16`; the port route is only `4/16`, by phase `4/4`, `0/4`,
+  `0/4`, `0/4`. Enabled and disabled G1 have the same `B,C,D,A` argmaxes.
+  Full hashes are `0/16` and maximum candidate-logit error is `7.3043`, so
+  the port changes numerical computation without producing the relation.
+- This closes MoE router bias without a layer, scale, fixture, or evidence
+  variant. The next physical intervention enters the first recurrent
+  delta-net transition after the full-attention boundary while leaving the
+  residual stream unchanged. That mechanism must change persisted model
+  memory and later useful inference, not merely steer one feed-forward pass.
 
 ### REJECTED
 
