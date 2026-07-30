@@ -38,11 +38,20 @@ The active recurrence and acceptance boundary are
 - At runtime, actual output rows remain CUDA-resident while one backend graph
   writes generated K/V rows into fixed source-label cells for ordinary later
   attention. No expected answer, untransformed target row, source-role
-  forward, rank sweep, or post-contact tuning is present. The probe and
-  Release server build, focused tests pass `32/32`, and CUDA closure remains
-  `139/139`. One native contact is the only next action. Failure closes this
-  writer family and moves to a dynamic model-weight adapter, not another
-  writer/evaluator/evidence version.
+  forward, rank sweep, or post-contact tuning is present. Its sole contact is
+  now executed and rejected: exact full state is `16/16`; the writer is
+  `8/16` across phases `4/4,1/4,2/4,1/4`; full-logit hashes are `0/16`,
+  maximum candidate drift is `13.5812629461`, and four updates return only
+  `1/4` of G0.
+- All 32 construction decisions pass and maximum row training error is only
+  `0.0588919025`. Four device graphs generate 320 K/V rows with zero host
+  carrier payload, while the fully charged writer retains `2,949,120` logical
+  bytes and uploads `11,796,480` parameter bytes. Stable backing, recurrent
+  digests, complete closure, probe/server builds, focused `32/32` tests, and
+  `139/139` CUDA closure pass. Numerical row fit therefore does not produce
+  the required model-semantic transition. The forward-only learned
+  attention-writer family is closed. The active physical successor is a
+  dynamic model-weight adapter, not a writer/evaluator/evidence version.
 - The exact four-link/Z4 recurrence remains the stronger compact baseline.
   No inference-bearing recurrence, fresh-compute advantage, phase-native
   resource, Small Wall crossing, catalytic recurrence, or unbounded claim is

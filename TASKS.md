@@ -573,6 +573,20 @@ constructively unbounded local Agents-A1 inference.
   contact. Failure closes the forward-only learned attention-writer family and
   moves to a dynamic model-weight adapter; it does not mint writer, evaluator,
   carrier-evaluation, fixture, or evidence-harness variants.
+  The sole contact is now executed and rejected. Exact full state remains
+  `16/16`; the kernel-writer route is `8/16`, with per-phase utility
+  `4/4,1/4,2/4,1/4`, zero full-logit hash matches, and maximum candidate-logit
+  error `13.5812629461`. Four updates return only `1/4` of G0. All 32
+  construction decisions pass and row-space training error is only
+  `0.0588919025`, proving that the failure is semantic transfer through
+  attention rather than gross numerical underfit. Four device graphs generate
+  320 K/V rows with zero host carrier payload, while uploading `11,796,480`
+  parameter bytes. Stable backing, recurrent digests, complete sequence/root
+  closure, and `139/139` CUDA closure pass. Close the entire forward-only
+  learned attention-writer family. The active successor is a dynamic
+  model-weight adapter that changes the state-transition law itself; do not
+  create writer, rank, ridge, layer, context, fixture, evaluator,
+  carrier-evaluation, or evidence-harness versions.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.
