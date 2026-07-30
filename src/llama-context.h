@@ -123,7 +123,8 @@ struct llama_context {
     bool install_neo3000_semantic_carrier(
         std::vector<float> query_map,
         const std::array<float, 4> & query_bias,
-        std::vector<float> output_map);
+        std::vector<float> output_map,
+        int32_t read_layer = -1);
     bool set_neo3000_semantic_carrier_enabled(bool enabled);
     bool set_neo3000_semantic_carrier_phase(uint32_t phase);
     bool advance_neo3000_semantic_carrier();

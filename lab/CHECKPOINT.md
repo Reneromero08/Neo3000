@@ -261,6 +261,24 @@ The active recurrence and acceptance boundary are
   decoder plus LM-head dual is therefore causal and reversible at the bounded
   action boundary, but it is not a context-independent semantic generator,
   useful recurrence, fresh-compute reduction, or catalytic inference.
+- `neo-exp-0141` moves the same carrier law to the input of frozen layer 23,
+  before seventeen remaining transformer layers. Eight structural terminal
+  layer-input features train the query decoder at `8/8`; eight matched
+  canonical-G0 features train four mean residual deltas. One carrier action is
+  applied only to the terminal query token, so layers 23–39—not an output-head
+  dual—must propagate it.
+- The mechanism rejects at `4/16` versus its terminal-split full-state
+  control's `15/16`. Every enabled G0 argmax equals the disabled structural
+  route, and the noncanonical phases remain D-dominated. The carrier changes
+  logits but does not create a useful boundary. The full-state control itself
+  loses G0-V under the prospectively frozen terminal-token split, so this
+  decode geometry also fails the complete capability gate.
+- The 65,616-byte adapter and 64-byte action still return all four G0
+  candidate logits and full-logit hashes bit-exactly after four advances.
+  Training uses 1,048 input tokens, the complete panel uses 2,702, graph input
+  traffic is 6,299,136 bytes, active backing is stable, and all sequences,
+  roots, and adapter state close. These lifecycle facts do not rescue the
+  rejected semantic mechanism.
 - The complete Release server rebuild passes after the KV action change.
   Configured CUDA closure remains `139/139` compile entries and `139/139`
   unique objects. Seventeen focused declarative-runner/oracle tests and all 19
@@ -314,6 +332,12 @@ The active recurrence and acceptance boundary are
   Gain, ridge, context, prompt, layer, fixture, or evidence-packet variants
   are not authorized. The next mechanism moves the interaction earlier so
   later nonlinear model computation must consume the carrier.
+- The one frozen earlier read site is now rejected too. Layer-23 residual
+  deltas are washed out rather than nonlinearly amplified, and terminal-token
+  split decode costs one untouched full-state boundary. There is no authority
+  for layer, gain, ridge, prompt, context, fixture, or evidence-packet
+  variants. The active path returns to dynamic pre-query attention/recurrent/
+  MoE/weight state and the measured four-token sparse-update wall.
 
 - The balanced held-out adapter produced joint/F-only/G-only accuracy
   `1/4`, `1/4`, and `2/4`; eligibility mutation failed. It is a conventional

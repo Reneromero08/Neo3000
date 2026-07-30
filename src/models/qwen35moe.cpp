@@ -240,9 +240,84 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
     ggml_tensor * inp_pos     = build_inp_pos();
     ggml_tensor * inp_out_ids = build_inp_out_ids();
 
+    const auto apply_semantic_carrier =
+            [&](ggml_tensor * hidden, int32_t read_layer) {
+        const auto & state = cparams.neo3000_semantic_carrier;
+        if (!state || state->read_layer != read_layer) {
+            return hidden;
+        }
+        auto carrier_input =
+            std::make_unique<
+                llm_graph_input_neo3000_semantic_carrier>(state);
+        carrier_input->query_map =
+            ggml_new_tensor_2d(
+                ctx0,
+                GGML_TYPE_F32,
+                n_embd,
+                4);
+        carrier_input->query_bias =
+            ggml_new_tensor_1d(
+                ctx0,
+                GGML_TYPE_F32,
+                4);
+        carrier_input->output_map =
+            ggml_new_tensor_2d(
+                ctx0,
+                GGML_TYPE_F32,
+                4,
+                n_embd);
+        carrier_input->action =
+            ggml_new_tensor_2d(
+                ctx0,
+                GGML_TYPE_F32,
+                4,
+                4);
+        ggml_set_input(carrier_input->query_map);
+        ggml_set_input(carrier_input->query_bias);
+        ggml_set_input(carrier_input->output_map);
+        ggml_set_input(carrier_input->action);
+        ggml_set_name(
+            carrier_input->query_map,
+            "neo3000_carrier_query_map");
+        ggml_set_name(
+            carrier_input->query_bias,
+            "neo3000_carrier_query_bias");
+        ggml_set_name(
+            carrier_input->output_map,
+            "neo3000_carrier_output_map");
+        ggml_set_name(
+            carrier_input->action,
+            "neo3000_carrier_action");
+
+        auto * carrier = static_cast<
+            llm_graph_input_neo3000_semantic_carrier *>(
+                res->add_input(std::move(carrier_input)));
+        ggml_tensor * carrier_code =
+            ggml_mul_mat(ctx0, carrier->query_map, hidden);
+        carrier_code =
+            ggml_add(
+                ctx0,
+                carrier_code,
+                carrier->query_bias);
+        carrier_code =
+            ggml_mul_mat(
+                ctx0,
+                carrier->action,
+                carrier_code);
+        ggml_tensor * carrier_delta =
+            ggml_mul_mat(
+                ctx0,
+                carrier->output_map,
+                carrier_code);
+        hidden = ggml_add(ctx0, hidden, carrier_delta);
+        cb(hidden, "neo3000_semantic_carrier_read", read_layer);
+        return hidden;
+    };
+
     // MTP/NextN layers are loaded as extra decoder blocks but not executed in the main pass.
     for (int il = 0; il < n_layer; ++il) {
         res->t_layer_inp[il] = inpL;
+        inpL = apply_semantic_carrier(inpL, il);
 
         ggml_tensor * inpSA = inpL;
 
@@ -302,74 +377,7 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
         cur = ggml_get_rows(ctx0, cur, inp_out_ids);
     }
 
-    if (cparams.neo3000_semantic_carrier) {
-        auto carrier_input =
-            std::make_unique<
-                llm_graph_input_neo3000_semantic_carrier>(
-                cparams.neo3000_semantic_carrier);
-        carrier_input->query_map =
-            ggml_new_tensor_2d(
-                ctx0,
-                GGML_TYPE_F32,
-                n_embd,
-                4);
-        carrier_input->query_bias =
-            ggml_new_tensor_1d(
-                ctx0,
-                GGML_TYPE_F32,
-                4);
-        carrier_input->output_map =
-            ggml_new_tensor_2d(
-                ctx0,
-                GGML_TYPE_F32,
-                4,
-                n_embd);
-        carrier_input->action =
-            ggml_new_tensor_2d(
-                ctx0,
-                GGML_TYPE_F32,
-                4,
-                4);
-        ggml_set_input(carrier_input->query_map);
-        ggml_set_input(carrier_input->query_bias);
-        ggml_set_input(carrier_input->output_map);
-        ggml_set_input(carrier_input->action);
-        ggml_set_name(
-            carrier_input->query_map,
-            "neo3000_carrier_query_map");
-        ggml_set_name(
-            carrier_input->query_bias,
-            "neo3000_carrier_query_bias");
-        ggml_set_name(
-            carrier_input->output_map,
-            "neo3000_carrier_output_map");
-        ggml_set_name(
-            carrier_input->action,
-            "neo3000_carrier_action");
-
-        auto * carrier = static_cast<
-            llm_graph_input_neo3000_semantic_carrier *>(
-                res->add_input(std::move(carrier_input)));
-        ggml_tensor * carrier_code =
-            ggml_mul_mat(ctx0, carrier->query_map, cur);
-        carrier_code =
-            ggml_add(
-                ctx0,
-                carrier_code,
-                carrier->query_bias);
-        carrier_code =
-            ggml_mul_mat(
-                ctx0,
-                carrier->action,
-                carrier_code);
-        ggml_tensor * carrier_delta =
-            ggml_mul_mat(
-                ctx0,
-                carrier->output_map,
-                carrier_code);
-        cur = ggml_add(ctx0, cur, carrier_delta);
-        cb(cur, "neo3000_semantic_carrier_read", -1);
-    }
+    cur = apply_semantic_carrier(cur, -1);
 
     cb(cur, "result_norm", -1);
     res->t_embd = cur;

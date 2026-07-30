@@ -50,6 +50,21 @@ into one frozen model-native computation boundary, where later nonlinear
 layers must read it. Evidence remains one compact result attached to that
 mechanism.
 
+The one authorized earlier interaction is also complete. `neo-exp-0141`
+freezes layer 23—the first layer of the previously localized late
+output-bearing half—and learns four mean canonical-vs-structural residual
+deltas there. Only the terminal query token receives the live action; layers
+23–39 must carry it to the head. The query decoder again fits `8/8`, and the
+same carrier backing returns bit-exactly after four turns.
+
+Useful inference does not follow. The candidate is D-dominated at `4/16`, all
+four enabled G0 argmaxes equal the carrier-disabled boundary, and the matched
+terminal-split full-state route itself drops to `15/16`. This closes
+terminal-feature and single-site mean-residual adapters as the current path.
+It does not open a layer/gain/ridge/context/prompt/fixture/evidence series.
+The next mechanism must update dynamic state before the delayed query exists
+and attack the measured four fresh label-token forwards directly.
+
 ### Executed bridge update — model-native residual carrier
 
 The first Linux contact after this synthesis moved the carrier before logits.

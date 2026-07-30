@@ -43,6 +43,7 @@ struct boundary_result {
     json record;
     std::vector<float> candidate_logits;
     std::vector<float> embedding;
+    std::vector<float> layer_embedding;
     std::string argmax;
     uint64_t full_logits_fnv1a64 = 0;
 };
@@ -72,6 +73,7 @@ struct model_weight_value_operator_build {
 
 struct semantic_carrier_training_sample {
     std::vector<float> embedding;
+    std::vector<float> target_delta;
     uint32_t vault_ordinal = 0;
 };
 
@@ -86,6 +88,7 @@ struct semantic_carrier_adapter_build {
     double ridge_lambda = 0.0;
     double training_max_abs_error = 0.0;
     double output_dual_max_abs_error = 0.0;
+    double output_delta_training_max_abs_error = 0.0;
     size_t training_correct = 0;
 };
 
@@ -461,7 +464,8 @@ build_semantic_carrier_adapter(
         const std::vector<llama_token> & candidates,
         const std::vector<semantic_carrier_training_sample> & samples,
         double ridge_fraction,
-        double output_gain) {
+        double output_gain,
+        bool layer_delta_mode) {
     if (!ctx ||
         candidates.size() != 4 ||
         samples.size() < 8 ||
@@ -498,6 +502,13 @@ build_semantic_carrier_adapter(
 
     semantic_carrier_adapter_build result;
     const size_t n_samples = samples.size();
+    const auto code_target =
+            [&](uint32_t output, uint32_t ordinal) {
+        if (layer_delta_mode) {
+            return output == ordinal ? 1.0 : 0.0;
+        }
+        return output == ordinal ? 0.75 : -0.25;
+    };
     std::vector<double> feature_mean(n_embd, 0.0);
     std::array<double, 4> target_mean = {};
     for (const auto & sample : samples) {
@@ -508,7 +519,7 @@ build_semantic_carrier_adapter(
         }
         for (uint32_t output = 0; output < 4; ++output) {
             const double target =
-                output == sample.vault_ordinal ? 0.75 : -0.25;
+                code_target(output, sample.vault_ordinal);
             target_mean[output] +=
                 target / static_cast<double>(n_samples);
         }
@@ -558,9 +569,7 @@ build_semantic_carrier_adapter(
         std::vector<double> rhs(n_samples);
         for (size_t i = 0; i < n_samples; ++i) {
             const double target =
-                output == samples[i].vault_ordinal
-                    ? 0.75
-                    : -0.25;
+                code_target(output, samples[i].vault_ordinal);
             rhs[i] = target - target_mean[output];
         }
         const std::vector<double> alpha =
@@ -605,7 +614,7 @@ build_semantic_carrier_adapter(
                     static_cast<double>(sample.embedding[j]);
             }
             const double target =
-                output == sample.vault_ordinal ? 0.75 : -0.25;
+                code_target(output, sample.vault_ordinal);
             result.training_max_abs_error = std::max(
                 result.training_max_abs_error,
                 std::abs(prediction[output] - target));
@@ -620,68 +629,109 @@ build_semantic_carrier_adapter(
             sample.vault_ordinal;
     }
 
-    std::array<std::vector<float>, 4> output_rows;
-    for (size_t token_index = 0;
-         token_index < candidates.size();
-         ++token_index) {
-        output_rows[token_index] =
-            read_model_tensor_row_f32(
-                model.output,
-                candidates[token_index],
-                result.source_tensor_read_bytes,
-                result.peak_host_work_bytes);
-        if (output_rows[token_index].size() != n_embd) {
-            throw std::runtime_error(
-                "semantic carrier output row width mismatch");
-        }
-    }
-    std::vector<double> gram(16, 0.0);
-    for (size_t i = 0; i < 4; ++i) {
-        for (size_t k = 0; k < 4; ++k) {
-            for (size_t j = 0; j < n_embd; ++j) {
-                gram[i * 4 + k] +=
-                    static_cast<double>(output_rows[i][j]) *
-                    static_cast<double>(output_rows[k][j]);
-            }
-        }
-    }
-    std::array<std::array<double, 4>, 4> gram_inverse = {};
-    for (size_t column = 0; column < 4; ++column) {
-        std::vector<double> rhs(4, 0.0);
-        rhs[column] = 1.0;
-        const auto solution =
-            solve_dense_system(gram, rhs, 4);
-        for (size_t row = 0; row < 4; ++row) {
-            gram_inverse[row][column] = solution[row];
-        }
-    }
     result.output_map.assign(n_embd * 4, 0.0f);
-    for (size_t j = 0; j < n_embd; ++j) {
-        for (size_t code = 0; code < 4; ++code) {
-            double value = 0.0;
-            for (size_t token = 0; token < 4; ++token) {
-                value +=
-                    static_cast<double>(output_rows[token][j]) *
-                    gram_inverse[token][code];
+    if (layer_delta_mode) {
+        std::array<size_t, 4> output_counts = {};
+        for (const auto & sample : samples) {
+            if (sample.target_delta.size() != n_embd) {
+                throw std::runtime_error(
+                    "semantic carrier layer delta is absent");
             }
-            result.output_map[j * 4 + code] =
-                static_cast<float>(value * output_gain);
-        }
-    }
-    for (size_t token = 0; token < 4; ++token) {
-        for (size_t code = 0; code < 4; ++code) {
-            double value = 0.0;
+            ++output_counts[sample.vault_ordinal];
             for (size_t j = 0; j < n_embd; ++j) {
-                value +=
-                    static_cast<double>(output_rows[token][j]) *
-                    static_cast<double>(
-                        result.output_map[j * 4 + code]);
+                result.output_map[
+                    j * 4 + sample.vault_ordinal] +=
+                    sample.target_delta[j];
             }
-            const double expected =
-                token == code ? output_gain : 0.0;
-            result.output_dual_max_abs_error = std::max(
-                result.output_dual_max_abs_error,
-                std::abs(value - expected));
+        }
+        for (size_t code = 0; code < 4; ++code) {
+            for (size_t j = 0; j < n_embd; ++j) {
+                result.output_map[j * 4 + code] =
+                    static_cast<float>(
+                        static_cast<double>(
+                            result.output_map[j * 4 + code]) /
+                        static_cast<double>(output_counts[code]) *
+                        output_gain);
+            }
+        }
+        for (const auto & sample : samples) {
+            for (size_t j = 0; j < n_embd; ++j) {
+                const double predicted =
+                    result.output_map[
+                        j * 4 + sample.vault_ordinal];
+                const double expected =
+                    static_cast<double>(
+                        sample.target_delta[j]) *
+                    output_gain;
+                result.output_delta_training_max_abs_error =
+                    std::max(
+                        result.output_delta_training_max_abs_error,
+                        std::abs(predicted - expected));
+            }
+        }
+    } else {
+        std::array<std::vector<float>, 4> output_rows;
+        for (size_t token_index = 0;
+             token_index < candidates.size();
+             ++token_index) {
+            output_rows[token_index] =
+                read_model_tensor_row_f32(
+                    model.output,
+                    candidates[token_index],
+                    result.source_tensor_read_bytes,
+                    result.peak_host_work_bytes);
+            if (output_rows[token_index].size() != n_embd) {
+                throw std::runtime_error(
+                    "semantic carrier output row width mismatch");
+            }
+        }
+        std::vector<double> gram(16, 0.0);
+        for (size_t i = 0; i < 4; ++i) {
+            for (size_t k = 0; k < 4; ++k) {
+                for (size_t j = 0; j < n_embd; ++j) {
+                    gram[i * 4 + k] +=
+                        static_cast<double>(output_rows[i][j]) *
+                        static_cast<double>(output_rows[k][j]);
+                }
+            }
+        }
+        std::array<std::array<double, 4>, 4> gram_inverse = {};
+        for (size_t column = 0; column < 4; ++column) {
+            std::vector<double> rhs(4, 0.0);
+            rhs[column] = 1.0;
+            const auto solution =
+                solve_dense_system(gram, rhs, 4);
+            for (size_t row = 0; row < 4; ++row) {
+                gram_inverse[row][column] = solution[row];
+            }
+        }
+        for (size_t j = 0; j < n_embd; ++j) {
+            for (size_t code = 0; code < 4; ++code) {
+                double value = 0.0;
+                for (size_t token = 0; token < 4; ++token) {
+                    value +=
+                        static_cast<double>(output_rows[token][j]) *
+                        gram_inverse[token][code];
+                }
+                result.output_map[j * 4 + code] =
+                    static_cast<float>(value * output_gain);
+            }
+        }
+        for (size_t token = 0; token < 4; ++token) {
+            for (size_t code = 0; code < 4; ++code) {
+                double value = 0.0;
+                for (size_t j = 0; j < n_embd; ++j) {
+                    value +=
+                        static_cast<double>(output_rows[token][j]) *
+                        static_cast<double>(
+                            result.output_map[j * 4 + code]);
+                }
+                const double expected =
+                    token == code ? output_gain : 0.0;
+                result.output_dual_max_abs_error = std::max(
+                    result.output_dual_max_abs_error,
+                    std::abs(value - expected));
+            }
         }
     }
 
@@ -1230,14 +1280,80 @@ static boundary_result decode_query(
         uint64_t root_backing_id,
         size_t root_gpu_bytes,
         llama_seq_id seq_id = 0,
-        bool capture_embedding = false) {
+        bool capture_embedding = false,
+        int32_t capture_layer = -1,
+        bool split_terminal_carrier = false,
+        bool enable_terminal_carrier = false) {
     const std::string text = query.at("suffix").get<std::string>();
     auto tokens = tokenize_piece(vocab, text, false, true);
+    if (tokens.empty()) {
+        throw std::runtime_error("query suffix is empty");
+    }
 
     const auto started = std::chrono::steady_clock::now();
-    decode_tokens(
-        ctx, tokens, static_cast<llama_pos>(source_tokens), true, seq_id);
-    llama_synchronize(ctx);
+    size_t layer_embedding_row = tokens.size() - 1;
+    if (split_terminal_carrier) {
+        const auto * carrier =
+            ctx->get_neo3000_semantic_carrier();
+        if (!carrier && enable_terminal_carrier) {
+            throw std::runtime_error(
+                "terminal-only carrier enable has no installed carrier");
+        }
+        const bool previous_enabled =
+            carrier ? carrier->enabled : false;
+        if (carrier &&
+            !ctx->set_neo3000_semantic_carrier_enabled(false)) {
+            throw std::runtime_error(
+                "failed to disable carrier before terminal split");
+        }
+        try {
+            if (tokens.size() > 1) {
+                decode_tokens(
+                    ctx,
+                    std::vector<llama_token>(
+                        tokens.begin(),
+                        tokens.end() - 1),
+                    static_cast<llama_pos>(source_tokens),
+                    false,
+                    seq_id);
+            }
+            if (carrier &&
+                !ctx->set_neo3000_semantic_carrier_enabled(
+                    enable_terminal_carrier)) {
+                throw std::runtime_error(
+                    "failed to select terminal carrier state");
+            }
+            decode_tokens(
+                ctx,
+                std::vector<llama_token>{tokens.back()},
+                static_cast<llama_pos>(
+                    source_tokens + tokens.size() - 1),
+                true,
+                seq_id);
+            llama_synchronize(ctx);
+        } catch (...) {
+            if (carrier) {
+                ctx->set_neo3000_semantic_carrier_enabled(
+                    previous_enabled);
+            }
+            throw;
+        }
+        if (carrier &&
+            !ctx->set_neo3000_semantic_carrier_enabled(
+                previous_enabled)) {
+            throw std::runtime_error(
+                "failed to restore carrier after terminal split");
+        }
+        layer_embedding_row = 0;
+    } else {
+        decode_tokens(
+            ctx,
+            tokens,
+            static_cast<llama_pos>(source_tokens),
+            true,
+            seq_id);
+        llama_synchronize(ctx);
+    }
     const auto finished = std::chrono::steady_clock::now();
 
     const float * logits = llama_get_logits_ith(ctx, -1);
@@ -1261,6 +1377,23 @@ static boundary_result decode_query(
         result.embedding.assign(
             embedding,
             embedding + n_embd);
+    }
+    if (capture_layer >= 0) {
+        const float * layer_embeddings =
+            llama_get_embeddings_layer_inp(
+                ctx,
+                static_cast<uint32_t>(capture_layer));
+        if (!layer_embeddings) {
+            throw std::runtime_error(
+                "query produced no requested layer input");
+        }
+        const size_t n_embd =
+            ctx->get_model().hparams.n_embd;
+        const float * layer_embedding =
+            layer_embeddings + layer_embedding_row * n_embd;
+        result.layer_embedding.assign(
+            layer_embedding,
+            layer_embedding + n_embd);
     }
 
     float max_logit = -std::numeric_limits<float>::infinity();
@@ -1303,6 +1436,9 @@ static boundary_result decode_query(
         {"root_backing_id", hex64(root_backing_id)},
         {"root_gpu_bytes", root_gpu_bytes},
         {"sequence_id", seq_id},
+        {"carrier_terminal_only", split_terminal_carrier},
+        {"carrier_enabled_for_terminal", enable_terminal_carrier},
+        {"captured_layer", capture_layer},
         {"active_recurrent_backing_id", hex64(active_recurrent_backing_id(ctx))},
         {"wall_ms", std::chrono::duration<double, std::milli>(finished - started).count()},
     };
@@ -4907,6 +5043,15 @@ static json run_sparse_g_label_refresh(
         spec.value("model_weight_value_orbit_action", false);
     const bool trained_semantic_carrier_mode =
         spec.value("trained_semantic_carrier_action", false);
+    const bool semantic_carrier_layer_delta_mode =
+        trained_semantic_carrier_mode &&
+        spec.value(
+            "semantic_carrier_layer_delta_training",
+            false);
+    const int32_t semantic_carrier_read_layer =
+        trained_semantic_carrier_mode
+            ? spec.value("semantic_carrier_read_layer", -1)
+            : -1;
     const bool subspace_include_keys =
         spec.value("subspace_include_keys", false);
     if (subspace_include_keys &&
@@ -4945,7 +5090,25 @@ static json run_sparse_g_label_refresh(
             "label orbit action modes are mutually exclusive");
     }
     if (trained_semantic_carrier_mode) {
-        ctx->set_embeddings(true);
+        if (semantic_carrier_layer_delta_mode) {
+            if (semantic_carrier_read_layer < 0 ||
+                semantic_carrier_read_layer >=
+                    static_cast<int32_t>(
+                        ctx->get_model().hparams.n_layer())) {
+                throw std::runtime_error(
+                    "semantic carrier read layer is invalid");
+            }
+            ctx->set_embeddings_layer_inp(
+                static_cast<uint32_t>(
+                    semantic_carrier_read_layer),
+                true);
+        } else {
+            if (semantic_carrier_read_layer != -1) {
+                throw std::runtime_error(
+                    "terminal semantic carrier has a layer read");
+            }
+            ctx->set_embeddings(true);
+        }
         ctx->sched_reserve();
     }
     const uint32_t actual_context_size = llama_n_ctx(ctx);
@@ -5311,6 +5474,8 @@ static json run_sparse_g_label_refresh(
                 source_boundary_pos,
                 source_boundary_pos,
                 training_id + ":training-source");
+            const size_t context_sample_begin =
+                training_samples.size();
             for (const auto & query :
                  training_context.at("queries")) {
                 const uint32_t vault_ordinal =
@@ -5335,14 +5500,20 @@ static json run_sparse_g_label_refresh(
                     active_recurrent_backing_initial,
                     active_hybrid_backend_allocation_bytes(ctx),
                     work_seq,
-                    true);
+                    !semantic_carrier_layer_delta_mode,
+                    semantic_carrier_read_layer,
+                    semantic_carrier_layer_delta_mode,
+                    false);
                 semantic_training_query_tokens +=
                     boundary.record.at("query_tokens")
                         .get<size_t>();
                 semantic_training_records.push_back(
                     boundary.record);
                 training_samples.push_back({
-                    boundary.embedding,
+                    semantic_carrier_layer_delta_mode
+                        ? boundary.layer_embedding
+                        : boundary.embedding,
+                    {},
                     vault_ordinal,
                 });
                 semantic_training_feature_peak_bytes =
@@ -5352,7 +5523,9 @@ static json run_sparse_g_label_refresh(
                             sizeof(
                                 semantic_carrier_training_sample) +
                         training_samples.size() *
-                            boundary.embedding.size() *
+                            (semantic_carrier_layer_delta_mode
+                                ? boundary.layer_embedding.size()
+                                : boundary.embedding.size()) *
                             sizeof(float));
                 close_sequence(
                     work_seq,
@@ -5361,6 +5534,105 @@ static json run_sparse_g_label_refresh(
             close_sequence(
                 f_seq,
                 training_id + ":training-source-close");
+            if (semantic_carrier_layer_delta_mode) {
+                std::vector<llama_token> target_source;
+                target_source.reserve(expected_source_tokens);
+                target_source.insert(
+                    target_source.end(),
+                    prefix_tokens.begin(),
+                    prefix_tokens.end());
+                target_source.insert(
+                    target_source.end(),
+                    training_f_tokens.begin(),
+                    training_f_tokens.end());
+                target_source.insert(
+                    target_source.end(),
+                    variant_g_tokens.at(0).begin(),
+                    variant_g_tokens.at(0).end());
+                target_source.insert(
+                    target_source.end(),
+                    closure_tokens.begin(),
+                    closure_tokens.end());
+                if (target_source.size() != expected_source_tokens) {
+                    throw std::runtime_error(
+                        "semantic carrier target token geometry mismatch");
+                }
+                timed_decode(target_source, 0, f_seq);
+                semantic_training_source_tokens +=
+                    target_source.size();
+                require_component_positions(
+                    f_seq,
+                    source_boundary_pos,
+                    source_boundary_pos,
+                    training_id + ":target-source");
+                size_t query_index = 0;
+                for (const auto & query :
+                     training_context.at("queries")) {
+                    copy_full_sequence(
+                        f_seq,
+                        work_seq,
+                        source_boundary_pos,
+                        training_id + ":target-query-copy");
+                    const auto boundary = decode_query(
+                        ctx,
+                        vocab,
+                        candidates,
+                        "semantic-carrier-training-target",
+                        training_id,
+                        query,
+                        expected_source_tokens,
+                        active_recurrent_backing_initial,
+                        active_hybrid_backend_allocation_bytes(ctx),
+                        work_seq,
+                        false,
+                        semantic_carrier_read_layer,
+                        true,
+                        false);
+                    semantic_training_query_tokens +=
+                        boundary.record.at("query_tokens")
+                            .get<size_t>();
+                    semantic_training_records.push_back(
+                        boundary.record);
+                    auto & sample =
+                        training_samples.at(
+                            context_sample_begin + query_index);
+                    if (boundary.layer_embedding.size() !=
+                            sample.embedding.size()) {
+                        throw std::runtime_error(
+                            "semantic carrier layer delta width mismatch");
+                    }
+                    sample.target_delta.resize(
+                        sample.embedding.size());
+                    for (size_t j = 0;
+                         j < sample.embedding.size();
+                         ++j) {
+                        sample.target_delta[j] =
+                            boundary.layer_embedding[j] -
+                            sample.embedding[j];
+                    }
+                    ++query_index;
+                    close_sequence(
+                        work_seq,
+                        training_id + ":target-query-close");
+                }
+                close_sequence(
+                    f_seq,
+                    training_id + ":target-source-close");
+                uint64_t sample_bytes = 0;
+                for (const auto & sample : training_samples) {
+                    sample_bytes +=
+                        (sample.embedding.capacity() +
+                         sample.target_delta.capacity()) *
+                        sizeof(float);
+                }
+                semantic_training_feature_peak_bytes =
+                    std::max<uint64_t>(
+                        semantic_training_feature_peak_bytes,
+                        training_samples.capacity() *
+                            sizeof(
+                                semantic_carrier_training_sample) +
+                        sample_bytes);
+            }
         }
         semantic_training_sample_count =
             training_samples.size();
@@ -5370,11 +5642,13 @@ static json run_sparse_g_label_refresh(
                 candidates,
                 training_samples,
                 ridge_fraction,
-                output_gain);
+                output_gain,
+                semantic_carrier_layer_delta_mode);
         if (!ctx->install_neo3000_semantic_carrier(
                 std::move(semantic_adapter_build.query_map),
                 semantic_adapter_build.query_bias,
-                std::move(semantic_adapter_build.output_map)) ||
+                std::move(semantic_adapter_build.output_map),
+                semantic_carrier_read_layer) ||
             !ctx->set_neo3000_semantic_carrier_phase(0) ||
             !ctx->set_neo3000_semantic_carrier_enabled(false)) {
             throw std::runtime_error(
@@ -5385,6 +5659,7 @@ static json run_sparse_g_label_refresh(
         if (!carrier ||
             carrier->phase != 0 ||
             carrier->enabled ||
+            carrier->read_layer != semantic_carrier_read_layer ||
             carrier->action_backing_id == 0) {
             throw std::runtime_error(
                 "semantic carrier installation invariant failed");
@@ -5573,7 +5848,8 @@ static json run_sparse_g_label_refresh(
             }
             semantic_carrier_was_enabled = carrier->enabled;
             if (!ctx->set_neo3000_semantic_carrier_enabled(
-                    enable_semantic_carrier)) {
+                    enable_semantic_carrier &&
+                    !semantic_carrier_layer_delta_mode)) {
                 throw std::runtime_error(
                     route + ": failed to select semantic carrier");
             }
@@ -5597,7 +5873,11 @@ static json run_sparse_g_label_refresh(
                 expected_source_tokens,
                 active_recurrent_backing_initial,
                 active_cache_backend_allocation_bytes,
-                scratch_seq);
+                scratch_seq,
+                false,
+                -1,
+                semantic_carrier_layer_delta_mode,
+                enable_semantic_carrier);
         } catch (...) {
             if (enable_paired_complex_read) {
                 ctx->set_neo3000_paired_complex_attention(0.0f, -1);
@@ -6718,7 +6998,9 @@ static json run_sparse_g_label_refresh(
             : fourier_value_orbit_mode
             ? "IN_PLACE_RANK3_FOURIER_LABEL_VALUE_ACTION"
             : trained_semantic_carrier_mode
-            ? "TRAINED_FIXED_CAPACITY_PRELOGIT_SEMANTIC_CARRIER"
+            ? semantic_carrier_layer_delta_mode
+                ? "TRAINED_LAYER_LOCAL_NONLINEAR_SEMANTIC_CARRIER"
+                : "TRAINED_FIXED_CAPACITY_PRELOGIT_SEMANTIC_CARRIER"
             : model_weight_value_orbit_mode
             ? "MODEL_WEIGHT_DERIVED_SEMANTIC_VALUE_CYCLE"
             : complex_phase_orbit_mode
@@ -6770,6 +7052,10 @@ static json run_sparse_g_label_refresh(
                 model_weight_value_orbit_mode},
             {"trained_semantic_carrier_action",
                 trained_semantic_carrier_mode},
+            {"semantic_carrier_layer_delta_training",
+                semantic_carrier_layer_delta_mode},
+            {"semantic_carrier_read_layer",
+                semantic_carrier_read_layer},
             {"carrier_adapter_training_contexts",
                 trained_semantic_carrier_mode
                     ? spec.at(
@@ -7005,6 +7291,9 @@ static json run_sparse_g_label_refresh(
             {"semantic_carrier_output_dual_max_abs_error",
                 semantic_adapter_build
                     .output_dual_max_abs_error},
+            {"semantic_carrier_output_delta_training_max_abs_error",
+                semantic_adapter_build
+                    .output_delta_training_max_abs_error},
             {"semantic_carrier_model_tensor_read_bytes",
                 semantic_adapter_build
                     .source_tensor_read_bytes},

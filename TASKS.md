@@ -267,12 +267,27 @@ constructively unbounded local Agents-A1 inference.
   transfer through all rotations, while O and V do not. Reject the terminal
   pre-logit adapter as a context-independent semantic carrier. Do not tune
   gain, ridge, contexts, prompts, layers, fixtures, or evidence packets.
-- [ ] Move the learned carrier interaction earlier into one prospectively
+- [x] Move the learned carrier interaction earlier into one prospectively
   frozen model-native computation boundary so later nonlinear layers, rather
   than only the LM head, must consume it. Reuse the same bounded Z4 action and
   disjoint transfer law; change the carrier read site and learned interaction,
-  not the evidence harness. Charge training, active backing, graph traffic,
-  and every fresh model forward against the compact Z4 baseline.
+  not the evidence harness. `neo-exp-0141` freezes layer 23 from the previously
+  localized late output-bearing half, trains on eight structural/canonical
+  layer-state pairs, and applies its 64-byte action only to the terminal query
+  token before layers 23–39. The decoder fits `8/8`, but the candidate remains
+  `D`-dominated at `4/16`; all four enabled G0 argmaxes equal the disabled
+  route. The matched terminal-split full-state control is only `15/16`, losing
+  G0-V, so the batching/intervention boundary itself also fails the frozen
+  capability gate. Four turns return bit-exactly and all state closes. Reject
+  the layer-23 mean-residual-delta law; no layer/gain/ridge/context/prompt/
+  fixture/evidence variant follows.
+- [ ] Replace fitted query-output adapters with one dynamic carrier update
+  applied before the delayed query exists. The next intervention must act on
+  attention, recurrent, MoE, or weight-factor state that later ordinary
+  inference reads, preserve the accepted evidence-necessity law, and attack
+  the four fresh target-token forwards of `neo-exp-0126`. It must not be
+  another terminal feature decoder, residual-gain variant, layer sweep, or
+  carrier-evaluation version.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

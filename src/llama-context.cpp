@@ -1225,10 +1225,13 @@ static void neo3000_set_semantic_carrier_action(
 bool llama_context::install_neo3000_semantic_carrier(
         std::vector<float> query_map,
         const std::array<float, 4> & query_bias,
-        std::vector<float> output_map) {
+        std::vector<float> output_map,
+        int32_t read_layer) {
     const size_t expected =
         static_cast<size_t>(model.hparams.n_embd) * 4;
     if (model.arch != LLM_ARCH_QWEN35MOE ||
+        read_layer < -1 ||
+        read_layer >= static_cast<int32_t>(model.hparams.n_layer()) ||
         query_map.size() != expected ||
         output_map.size() != expected ||
         !std::all_of(
@@ -1249,6 +1252,7 @@ bool llama_context::install_neo3000_semantic_carrier(
     auto carrier =
         std::make_shared<llama_neo3000_semantic_carrier>();
     carrier->n_embd = model.hparams.n_embd;
+    carrier->read_layer = read_layer;
     carrier->query_map = std::move(query_map);
     carrier->query_bias = query_bias;
     carrier->output_map = std::move(output_map);
