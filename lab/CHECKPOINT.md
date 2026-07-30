@@ -74,9 +74,21 @@ The active recurrence and acceptance boundary are
   graphs, four panel-atomic commits, stable `4,096`-byte active-plus-staging
   backing, exact recurrent digests, empty staging between commits, and full
   closure. The terminal discrete-output phase adapter is closed without
-  dimension, seed, gain, fixture, evaluator, or evidence variants. The active
-  physical boundary is an unresolved preprojection-distribution carrier read
-  by nonlinear model computation, not another terminal adapter.
+  dimension, seed, gain, fixture, evaluator, or evidence variants. A direct
+  soft-output-distribution successor was also falsified without model contact
+  by the frozen causal recurrence: it predicts only `4/4,3/4,2/4,2/4`.
+- `neo-exp-0156` now freezes one changed physical update law. Four actual G0
+  outputs initialize one successor-coded shared complex carrier through one
+  atomic commit. No G1, G2, or G3 projection is written back. A fixed public
+  fourth-root generator instead advances the same active CUDA backing in
+  place three times, while later frozen query computation reads each evolved
+  state before its output and the final state must reproduce the useful G0
+  boundary. The active/staging allocation stays `4,096` bytes; the generator
+  is public operator state, and the exact compact four-link/Z4 transition is
+  still smaller and exact. The probe and full Release server build, focused
+  Python tests pass `22/22` plus twelve oracle subtests, all `139/139`
+  configured CUDA objects remain present, and no `0156` model contact has
+  occurred. Its only next action is the single frozen native execution.
 - The exact four-link/Z4 recurrence remains the stronger compact baseline.
   No inference-bearing recurrence, fresh-compute advantage, phase-native
   resource, Small Wall crossing, catalytic recurrence, or unbounded claim is

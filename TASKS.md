@@ -610,9 +610,22 @@ constructively unbounded local Agents-A1 inference.
   state and propagates one error per later phase; return is only `3/4`.
   Close terminal discrete-output phase adapters, including all width, seed,
   gain, ridge, prompt, fixture, evaluator, carrier-evaluation, and
-  evidence-harness variants. The next changed substrate must retain the
-  unresolved preprojection distribution and let nonlinear model computation
-  resolve it instead of collapsing each update to one token.
+  evidence-harness variants. A compact causal simulation also rejects the
+  direct soft-output-distribution write before implementation: under the
+  frozen `0155` geometry it degrades the predicted orbit from
+  `4/4,3/4,3/4,3/4` to `4/4,3/4,2/4,2/4`.
+  `neo-exp-0156` is frozen precontact as one changed physical update law, not
+  a carrier-evaluation revision. Four actual G0 outputs initialize one
+  successor-coded `4,096`-byte active/staging complex carrier through one
+  atomic commit. G1 through G3 projections never write back. Instead, one
+  fixed public fourth-root generator advances the same active CUDA backing
+  in place after each panel, and the third advance must return the G0 useful
+  boundary. The query reader remains before the frozen LM head, the matched
+  G1 carrier-off route remains mandatory, and the exact compact four-link/Z4
+  transition remains the stronger baseline. Run this mechanism once. Passing
+  can establish only bounded same-backing native advance without
+  projection-error feedback; failure closes it without width, seed, gain,
+  prompt, fixture, evaluator, or evidence-harness variants.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

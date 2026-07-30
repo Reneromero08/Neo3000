@@ -1493,6 +1493,7 @@ bool llama_context::install_neo3000_output_phase_memory(
         std::vector<float> output_map,
         std::vector<float> phase_binding_table,
         std::vector<float> phase_reader,
+        std::vector<float> phase_generator,
         uint32_t phase_width) {
     const size_t map_size =
         static_cast<size_t>(model.hparams.n_embd) * 4;
@@ -1513,10 +1514,13 @@ bool llama_context::install_neo3000_output_phase_memory(
         output_map.size() != map_size ||
         phase_binding_table.size() != phase_table_size ||
         phase_reader.size() != phase_table_size ||
+        (!phase_generator.empty() &&
+         phase_generator.size() != phase_vector_size) ||
         !finite(query_map) ||
         !finite(output_map) ||
         !finite(phase_binding_table) ||
         !finite(phase_reader) ||
+        !finite(phase_generator) ||
         !std::all_of(
             query_bias.begin(),
             query_bias.end(),
@@ -1572,6 +1576,7 @@ bool llama_context::install_neo3000_output_phase_memory(
     carrier->phase_binding_table =
         std::move(phase_binding_table);
     carrier->phase_reader = std::move(phase_reader);
+    carrier->phase_generator = std::move(phase_generator);
     carrier->phase_width = phase_width;
     carrier->phase_active = backing->active;
     carrier->phase_staging = backing->staging;
@@ -1580,6 +1585,8 @@ bool llama_context::install_neo3000_output_phase_memory(
     carrier->phase_memory_backing = std::move(backing);
     carrier->output_written = true;
     carrier->output_phase_memory = true;
+    carrier->native_phase_orbit =
+        !carrier->phase_generator.empty();
     carrier->enabled = false;
     neo3000_set_semantic_carrier_action(*carrier);
 
@@ -1798,6 +1805,112 @@ bool llama_context::commit_neo3000_phase_memory() {
     carrier->phase_staging_writes = 0;
     carrier->phase_staging_destination_mask = 0;
     ++carrier->phase_commits;
+    ++carrier->generation;
+    return true;
+}
+
+bool llama_context::advance_neo3000_phase_memory() {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->output_phase_memory ||
+        !carrier->native_phase_orbit ||
+        carrier->phase_poisoned ||
+        !carrier->phase_active ||
+        !carrier->phase_memory_backing ||
+        carrier->phase_width == 0 ||
+        carrier->phase_generator.size() !=
+            static_cast<size_t>(carrier->phase_width) * 2 ||
+        carrier->phase_staging_writes != 0 ||
+        carrier->phase_staging_destination_mask != 0 ||
+        carrier->phase_commits != 1) {
+        return false;
+    }
+    const size_t phase_width = carrier->phase_width;
+    ggml_init_params params = {
+        /*.mem_size   =*/ 128 * 1024,
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    ggml_context * graph_ctx = ggml_init(params);
+    if (!graph_ctx) {
+        carrier->phase_poisoned = true;
+        return false;
+    }
+    ggml_tensor * generator = ggml_new_tensor_1d(
+        graph_ctx,
+        GGML_TYPE_F32,
+        phase_width * 2);
+    ggml_set_input(generator);
+    ggml_set_name(generator, "neo3000_phase_orbit_generator");
+    ggml_tensor * active_real = ggml_view_1d(
+        graph_ctx,
+        carrier->phase_active,
+        phase_width,
+        0);
+    ggml_tensor * active_imag = ggml_view_1d(
+        graph_ctx,
+        carrier->phase_active,
+        phase_width,
+        phase_width * sizeof(float));
+    ggml_tensor * generator_real = ggml_view_1d(
+        graph_ctx,
+        generator,
+        phase_width,
+        0);
+    ggml_tensor * generator_imag = ggml_view_1d(
+        graph_ctx,
+        generator,
+        phase_width,
+        phase_width * sizeof(float));
+    ggml_tensor * rotated_real = ggml_sub(
+        graph_ctx,
+        ggml_mul(graph_ctx, active_real, generator_real),
+        ggml_mul(graph_ctx, active_imag, generator_imag));
+    ggml_tensor * rotated_imag = ggml_add(
+        graph_ctx,
+        ggml_mul(graph_ctx, active_real, generator_imag),
+        ggml_mul(graph_ctx, active_imag, generator_real));
+    ggml_tensor * rotated = ggml_concat(
+        graph_ctx,
+        rotated_real,
+        rotated_imag,
+        0);
+    ggml_cgraph * graph =
+        ggml_new_graph_custom(graph_ctx, 128, false);
+    ggml_build_forward_expand(
+        graph,
+        ggml_cpy(
+            graph_ctx,
+            rotated,
+            carrier->phase_active));
+
+    invalidate_neo3000_graph_cache();
+    if (!ggml_backend_sched_alloc_graph(sched.get(), graph)) {
+        invalidate_neo3000_graph_cache();
+        ggml_free(graph_ctx);
+        carrier->phase_poisoned = true;
+        return false;
+    }
+    ggml_backend_tensor_set(
+        generator,
+        carrier->phase_generator.data(),
+        0,
+        carrier->phase_generator.size() * sizeof(float));
+    const ggml_status status = graph_compute(graph, true);
+    synchronize();
+    invalidate_neo3000_graph_cache();
+    ggml_free(graph_ctx);
+    if (status != GGML_STATUS_SUCCESS) {
+        carrier->phase_poisoned = true;
+        return false;
+    }
+
+    carrier->phase_rotation_upload_bytes +=
+        carrier->phase_generator.size() * sizeof(float);
+    carrier->phase_rotation_element_operations +=
+        static_cast<uint64_t>(phase_width) * 6;
+    ++carrier->phase_graph_applications;
+    ++carrier->phase_rotations;
     ++carrier->generation;
     return true;
 }

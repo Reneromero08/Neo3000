@@ -151,6 +151,7 @@ struct llama_context {
         std::vector<float> output_map,
         std::vector<float> phase_binding_table,
         std::vector<float> phase_reader,
+        std::vector<float> phase_generator,
         uint32_t phase_width);
     bool write_neo3000_semantic_port(
         const float * output_state,
@@ -160,6 +161,7 @@ struct llama_context {
         uint32_t actual_output,
         uint32_t public_destination);
     bool commit_neo3000_phase_memory();
+    bool advance_neo3000_phase_memory();
     bool reset_neo3000_semantic_port();
     bool set_neo3000_semantic_carrier_enabled(bool enabled);
     bool set_neo3000_semantic_carrier_phase(uint32_t phase);

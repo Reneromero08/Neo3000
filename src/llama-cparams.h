@@ -43,6 +43,7 @@ struct llama_neo3000_semantic_carrier {
     ggml_tensor * phase_staging = nullptr; // [2 * phase_width]
     std::vector<float> phase_binding_table; // [16, 2 * phase_width]
     std::vector<float> phase_reader;        // [16, 2 * phase_width]
+    std::vector<float> phase_generator;     // [2 * phase_width]
     uint32_t phase_width = 0;
     uint32_t phase_staging_writes = 0;
     uint32_t phase_staging_destination_mask = 0;
@@ -51,6 +52,7 @@ struct llama_neo3000_semantic_carrier {
     bool output_written = false;
     bool output_hidden_slots = false;
     bool output_phase_memory = false;
+    bool native_phase_orbit = false;
     bool phase_poisoned = false;
     bool output_map_trainable = false;
     bool moe_router_bias = false;
@@ -67,6 +69,9 @@ struct llama_neo3000_semantic_carrier {
     uint64_t phase_element_operations = 0;
     uint64_t phase_graph_applications = 0;
     uint64_t phase_commits = 0;
+    uint64_t phase_rotation_upload_bytes = 0;
+    uint64_t phase_rotation_element_operations = 0;
+    uint64_t phase_rotations = 0;
     uint64_t writer_host_input_bytes = 0;
     uint64_t port_writes = 0;
     uint64_t router_bias_token_applications = 0;
