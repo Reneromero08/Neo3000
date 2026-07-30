@@ -88,7 +88,21 @@ The active recurrence and acceptance boundary are
   still smaller and exact. The probe and full Release server build, focused
   Python tests pass `22/22` plus twelve oracle subtests, all `139/139`
   configured CUDA objects remain present, and no `0156` model contact has
-  occurred. Its only next action is the single frozen native execution.
+  occurred at the source checkpoint.
+- The sole `0156` contact is rejected. Exact full state is `16/16`; the
+  native phase-orbit route is `4/16`, with phase utility
+  `4/4,0/4,0/4,0/4`, zero full-logit matches, and maximum candidate drift
+  `12.0396537781`. The returned G0 boundary is only `1/4`. Matched G1
+  disablement is `0/4` and shares one enabled boundary, so the carrier remains
+  causal but semantically wrong.
+- The implementation did execute the intended physical law: four actual G0
+  writes, one commit, three in-place generator graphs, no G1/G2/G3 output
+  feedback, exact fourth-root closure, stable `4,096`-byte active/staging
+  backing, exact recurrent digests, empty staging, and declared closure. This
+  separates native state evolution from useful model-semantic evolution and
+  closes terminal phase-orbit adapters without further geometry or evidence
+  revisions. The next mechanism must alter model-native preprojection
+  continuous state or a dynamic weight transition.
 - The exact four-link/Z4 recurrence remains the stronger compact baseline.
   No inference-bearing recurrence, fresh-compute advantage, phase-native
   resource, Small Wall crossing, catalytic recurrence, or unbounded claim is

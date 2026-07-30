@@ -626,6 +626,19 @@ constructively unbounded local Agents-A1 inference.
   can establish only bounded same-backing native advance without
   projection-error feedback; failure closes it without width, seed, gain,
   prompt, fixture, evaluator, or evidence-harness variants.
+  The sole contact is now executed and rejected. Exact full state remains
+  `16/16`, while the phase-orbit carrier is only `4/16`, by phase
+  `4/4,0/4,0/4,0/4`; its outputs are `BCDA`, `DADC`, `ABCD`, and `BCDA`.
+  The G0 return preserves only `1/4` and no full-logit hash. The physical law
+  itself executed exactly as frozen: four initialization writes, one atomic
+  commit, three in-place generator graphs, no later output feedback, zero
+  four-step phase-algebra error, stable `4,096`-byte backing, exact recurrent
+  digests, and complete closure. Thus exact native phase motion is not the
+  Agents-A1 semantic transition. Close the entire terminal phase-orbit
+  family. The active successor must change a model-native preprojection
+  continuous state transition or dynamic weight law; do not mint phase,
+  dimension, seed, gain, prompt, fixture, evaluator, or evidence-harness
+  variants.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.
