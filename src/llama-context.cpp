@@ -1551,7 +1551,9 @@ int llama_context::optimize_neo3000_semantic_carrier_output_map(
         ubatch,
         mctx.get(),
         ctx_type_to_graph_type(cparams.ctx_type));
+    carrier->output_map_trainable = true;
     auto * gf = model.build_graph(gparams);
+    carrier->output_map_trainable = false;
     if (!gf) {
         res->reset();
         return -3;
@@ -1565,11 +1567,11 @@ int llama_context::optimize_neo3000_semantic_carrier_output_map(
         output_map->ne[1] !=
             static_cast<int64_t>(carrier->n_embd) ||
         ggml_nbytes(output_map) !=
-            carrier->output_map.size() * sizeof(float)) {
+            carrier->output_map.size() * sizeof(float) ||
+        !(output_map->flags & GGML_TENSOR_FLAG_PARAM)) {
         res->reset();
         return -3;
     }
-    ggml_set_param(output_map);
 
     ggml_opt_optimizer_params optimizer_params =
         ggml_opt_get_default_optimizer_params(nullptr);

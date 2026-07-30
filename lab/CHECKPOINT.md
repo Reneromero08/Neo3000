@@ -636,9 +636,14 @@ The active recurrence and acceptance boundary are
 - Static qualification passes: the recurrent-carrier probe and full Release
   server build, the focused Python suite is `32/32`, and all `139/139`
   configured CUDA objects are present and nonzero with no CUDA source change.
-  No model load, server launch, prompt evaluation, or `0152` scientific
-  contact has occurred. One compact result packet will adjudicate the changed
-  learned mechanism; evidence formatting is not a successor axis.
+  The first `0152` launch loaded the model and evaluated its construction
+  path, then stopped before the first optimizer step or candidate boundary:
+  autodiff could not see the output map as a parameter because that flag had
+  been applied after forward-graph traversal. The same pre-outcome identity
+  now binds trainable status during graph construction and rejects
+  incompatible graph reuse. No result exists from the aborted launch and no
+  server ran. One compact result packet will adjudicate the repaired learned
+  mechanism; evidence formatting is not a successor axis.
 
 ### REJECTED
 

@@ -506,10 +506,16 @@ constructively unbounded local Agents-A1 inference.
   return, stable backing, and complete charged closure. The probe and full
   Release server build, the focused Python suite passes `32/32`, and all
   `139/139` configured CUDA objects remain present and nonzero with no CUDA
-  source change. No `0152` model contact has occurred. Failure rejects this
-  learned late reader and moves to an attention-state writer or weight
-  adapter; it does not authorize layer, learning-rate, epoch, prompt, context,
-  fixture, evaluator, carrier-evaluation, or evidence-harness variants.
+  source change. The first `0152` launch loaded the model and completed the
+  construction path, then stopped before its first optimizer step or
+  scientific candidate boundary because the graph-local output map was still
+  classified as an input when autodiff traversed the graph. The same
+  pre-outcome identity now marks that tensor as a parameter during graph
+  construction and invalidates incompatible cached graphs; no result was
+  produced. Failure after this plumbing repair rejects the learned late reader
+  and moves to an attention-state writer or weight adapter; it does not
+  authorize layer, learning-rate, epoch, prompt, context, fixture, evaluator,
+  carrier-evaluation, or evidence-harness variants.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

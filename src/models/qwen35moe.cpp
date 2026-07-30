@@ -6,7 +6,9 @@ class llm_graph_input_neo3000_semantic_carrier
 public:
     explicit llm_graph_input_neo3000_semantic_carrier(
             std::shared_ptr<llama_neo3000_semantic_carrier> carrier)
-        : carrier(std::move(carrier)) {
+        : carrier(std::move(carrier)),
+          output_map_trainable(
+              this->carrier->output_map_trainable) {
     }
 
     void set_input(const llama_ubatch * ubatch) override {
@@ -79,6 +81,8 @@ public:
         const auto & candidate =
             params.cparams.neo3000_semantic_carrier;
         return candidate.get() == carrier.get() &&
+            candidate->output_map_trainable ==
+                output_map_trainable &&
             query_map &&
             query_map->ne[0] == carrier->n_embd &&
             query_map->ne[1] == 4 &&
@@ -88,6 +92,7 @@ public:
     }
 
     std::shared_ptr<llama_neo3000_semantic_carrier> carrier;
+    bool output_map_trainable = false;
     ggml_tensor * query_map = nullptr;
     ggml_tensor * query_bias = nullptr;
     ggml_tensor * output_map = nullptr;
@@ -306,7 +311,11 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
                 4);
         ggml_set_input(carrier_input->query_map);
         ggml_set_input(carrier_input->query_bias);
-        ggml_set_input(carrier_input->output_map);
+        if (state->output_map_trainable) {
+            ggml_set_param(carrier_input->output_map);
+        } else {
+            ggml_set_input(carrier_input->output_map);
+        }
         ggml_set_input(carrier_input->action);
         ggml_set_name(
             carrier_input->query_map,

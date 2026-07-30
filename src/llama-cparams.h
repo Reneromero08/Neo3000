@@ -31,6 +31,7 @@ struct llama_neo3000_semantic_carrier {
     uint32_t phase = 0;
     bool enabled = false;
     bool output_written = false;
+    bool output_map_trainable = false;
     bool moe_router_bias = false;
     bool recurrent_transition_input = false;
     uint64_t generation = 0;
