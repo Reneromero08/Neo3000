@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0107",
+  "record_type": "scientific_incident",
+  "date": "2026-07-29",
+  "baseline_commit": "d7e4c82601773ed4e65827085589e6e42c056862",
+  "mechanism": "INVALID_ZERO_FILL_HYBRID_LAYER_SUBSET_SCREEN",
+  "spec_id": "hybrid-layer-subset-screen-v1",
+  "hypothesis": "A strict subset of Agents-A1 attention and GDN layer state may preserve the delayed joint boundary.",
+  "intervention": "Prepare the frozen joint source, zero omitted layer tensors, snapshot the resulting hybrid root, and apply four delayed queries.",
+  "contact": {
+    "model_loads": 1,
+    "source_fragment_decode_calls": 4,
+    "query_boundary_decode_calls": 1,
+    "llama_decode_calls": 5,
+    "input_tokens": 163,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "observed_before_failure": {
+    "arm": "full",
+    "omitted_layers_zeroed": false,
+    "queries_completed": 1,
+    "subset_arms_contacted": 0
+  },
+  "failure": {
+    "stage": "first full-arm query record construction",
+    "exception": "[json.exception.out_of_range.403] key 'expected_mutated' not found",
+    "cause": "The screen query schema omitted expected_mutated while the shared record writer required it.",
+    "scientific_design_defect": "Zero K/V with valid attention positions is not layer absence: zero-valued positions still receive softmax mass and dilute retained values. Even without the schema failure, this screen could not support layer localization."
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/hybrid-layer-subset-screen-v1.json",
+      "bytes": 4825,
+      "sha256": "EE94CD88E198E642D652260475C0964EFDEA74B2B5DC097970C29D687AB0348E"
+    },
+    "pre_repair_probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 44943,
+      "sha256": "623D011021BF298CCF59B0828ABD6A9F9C3A5C5F3F90BDBB6C830D8B934C8DF2"
+    },
+    "pre_repair_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 397784,
+      "sha256": "6CA10353B51115D100CB440FF3E3C8F83F031EBF49D3D3198977022EB7FEDB10"
+    },
+    "raw_result": null
+  },
+  "quality_gates": {
+    "model_facing_contact_occurred": true,
+    "scientific_identity_consumed": true,
+    "subset_intervention_contact_occurred": false,
+    "valid_layer_omission_law": false,
+    "result_complete": false
+  },
+  "verdict": "inconclusive",
+  "classification": "PRE_SUBSET_CONTACT_SCHEMA_FAILURE_WITH_INVALID_ZERO_FILL_OMISSION_LAW",
+  "strongest_supported_claim": "Only the unchanged full arm reached one delayed query before a schema exception; no layer-subset intervention made scientific contact.",
+  "strongest_rejected_interpretation": "The incident provides no layer-localization, physical-reduction, restoration, catalytic, or recurrence evidence.",
+  "next_boundary": "REPAIR_THE_SAME_HYPOTHESIS_WITH_EQUAL_TOKEN_F0G0_FULL_TENSOR_SUBSTITUTION_AND_A_SCHEMA_COMPATIBLE_RECORD_WRITER"
+}

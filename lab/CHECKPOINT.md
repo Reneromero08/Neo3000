@@ -1,6 +1,6 @@
 # Checkpoint Ledger
 
-## Hybrid-memory partition discriminator [CURRENT CLAIM AUTHORITY]
+## Hybrid-layer support localization [CURRENT CLAIM AUTHORITY]
 
 The active recurrence and acceptance boundary are
 `lab/CATALYTIC_INFERENCE_NORTH_STAR.md`.
@@ -39,6 +39,16 @@ The active recurrence and acceptance boundary are
   selection, later read by real Agents-A1 inference, useful, dependent on both
   declared evidence modules, and sensitive to the declared relation rather
   than its presentation.
+- `neo-exp-0108` replaces omitted joint-source layer tensors with a complete
+  equal-token F0G0 reference at identical positions. The full control and six
+  strict subsets return `A,B,C,D` at `4/4`. The smallest tied passes are all
+  ten attention layers plus recurrent q2
+  `[10,12,13,14,16,17,18]` and all attention plus recurrent q4
+  `[30,32,33,34,36,37,38]`.
+- Each tied pass contains `18,030,592` bytes of selected source-conditioned
+  tensor values above the matched baseline, versus `68,526,080` bytes for the
+  full source. Active attention and recurrent backing identities remain
+  stable and all 23 conventional roots close.
 - The Release server rebuild succeeds, all 139 configured CUDA objects remain
   present with zero CUDA source changes, and the focused no-model Python suite
   passes 57 tests.
@@ -56,6 +66,11 @@ The active recurrence and acceptance boundary are
 - Attention-only joint, F-only, G-only, F0G0, mutation, presentation, and
   explicit-null routes also score only `1/4`; relation mutation changes `0/4`.
   The smaller attention root is not a useful carrier by itself.
+- `neo-exp-0107` is consumed but inconclusive. Only the unchanged full arm
+  completed one query before a missing `expected_mutated` field caused a
+  schema exception; no subset arm made contact. Its zero-fill omission law is
+  independently invalid for attention localization because valid zero-valued
+  positions continue to receive softmax probability.
 - The accepted 0106 carrier is still a `68,526,080`-byte conventional
   `SNAPSHOT_RELOAD` of ordinary attention KV plus recurrent state. The harness
   retains simultaneous control roots and the public source text. It is not
@@ -69,15 +84,22 @@ The active recurrence and acceptance boundary are
 - No multi-evidence necessity, unresolved composition, phase-native resource,
   fresh-compute reduction, catalytic inference, or constructive unbounded
   recurrence is supported.
+- The 0108 screen is not a physically reduced carrier. Every root still
+  serializes `68,526,080` device-tensor bytes; the matched reference occupies
+  `76,349,440` host bytes, and omitted layers require `399,769,600`
+  cumulative H2D substitution bytes across the screen. Backend allocation
+  bytes were not measured. Neither tied recurrent band has yet passed the
+  0106 F/G necessity, mutation, or presentation gates.
 
 ### ACTIVE BOUNDARY
 
-Localize the minimum set of attention and GDN layer states that preserves the
-0106 joint, mutation, and presentation boundaries under the unchanged task.
-Measure exact retained bytes and compare every subset with the complete hybrid
-root. Only a sufficient bounded subset can become the substrate for in-place
-relational modules, restoration, and recurrence. `neo-exp-0102` remains frozen
-and unconsumed.
+Refine the tied recurrent q2/q4 bands to their individual GDN layers under the
+unchanged matched F0G0 substitution law. Freeze the smallest passing
+candidate set only after the screen, then require the complete 0106 joint,
+F-only, G-only, relation-mutation, and presentation behavior. Physical
+compression follows semantic validation; it must remove the host duplicate
+and measure actual allocation, transfer, and work. `neo-exp-0102` remains
+frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

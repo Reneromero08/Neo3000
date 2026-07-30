@@ -303,7 +303,9 @@ static boundary_result decode_query(
         {"route", route},
         {"source_variant", variant},
         {"expected", query.at("expected")},
-        {"expected_mutated", query.at("expected_mutated")},
+        {"expected_mutated", query.value(
+            "expected_mutated",
+            query.at("expected").get<std::string>())},
         {"source_tokens", source_tokens},
         {"query_tokens", tokens.size()},
         {"candidate_logits", result.candidate_logits},
@@ -337,6 +339,347 @@ static json interaction_record(
     return {
         {"candidate_logit_interaction", values},
         {"l2_norm", std::sqrt(norm2)},
+    };
+}
+
+struct hybrid_tensor_reference {
+    std::map<uint32_t, std::vector<uint8_t>> attention_k;
+    std::map<uint32_t, std::vector<uint8_t>> attention_v;
+    std::map<uint32_t, std::vector<uint8_t>> recurrent_r;
+    std::map<uint32_t, std::vector<uint8_t>> recurrent_s;
+    size_t host_bytes = 0;
+};
+
+static std::vector<uint8_t> read_tensor(ggml_tensor * tensor) {
+    if (!tensor) {
+        return {};
+    }
+    std::vector<uint8_t> bytes(ggml_nbytes(tensor));
+    ggml_backend_tensor_get(tensor, bytes.data(), 0, bytes.size());
+    return bytes;
+}
+
+static void write_tensor(ggml_tensor * tensor, const std::vector<uint8_t> & bytes) {
+    if (!tensor && bytes.empty()) {
+        return;
+    }
+    if (!tensor || bytes.size() != ggml_nbytes(tensor)) {
+        throw std::runtime_error("matched tensor reference shape mismatch");
+    }
+    ggml_backend_tensor_set(tensor, bytes.data(), 0, bytes.size());
+}
+
+static hybrid_tensor_reference capture_hybrid_reference(llama_context * ctx) {
+    auto * hybrid = require_hybrid_memory(ctx);
+    auto * attention = hybrid->get_mem_attn();
+    auto * recurrent = hybrid->get_mem_recr();
+    hybrid_tensor_reference reference;
+
+    for (const uint32_t il : attention->get_layer_ids()) {
+        reference.attention_k[il] =
+            read_tensor(attention->get_k_storage(static_cast<int32_t>(il)));
+        reference.attention_v[il] =
+            read_tensor(attention->get_v_storage(static_cast<int32_t>(il)));
+        reference.host_bytes +=
+            reference.attention_k.at(il).size() +
+            reference.attention_v.at(il).size();
+    }
+    for (uint32_t il = 0; il < recurrent->r_l.size(); ++il) {
+        if (recurrent->r_l[il]) {
+            reference.recurrent_r[il] = read_tensor(recurrent->r_l[il]);
+            reference.host_bytes += reference.recurrent_r.at(il).size();
+        }
+        if (recurrent->s_l[il]) {
+            reference.recurrent_s[il] = read_tensor(recurrent->s_l[il]);
+            reference.host_bytes += reference.recurrent_s.at(il).size();
+        }
+    }
+    return reference;
+}
+
+static std::set<uint32_t> parse_layer_selection(
+        const json & arm,
+        const char * field,
+        const std::vector<uint32_t> & available) {
+    const auto & value = arm.at(field);
+    if (value.is_string() && value.get<std::string>() == "ALL") {
+        return {available.begin(), available.end()};
+    }
+    if (!value.is_array()) {
+        throw std::runtime_error(std::string(field) + " must be ALL or an array");
+    }
+
+    const std::set<uint32_t> allowed(available.begin(), available.end());
+    std::set<uint32_t> selected;
+    for (const auto & item : value) {
+        const uint32_t il = item.get<uint32_t>();
+        if (allowed.find(il) == allowed.end()) {
+            throw std::runtime_error(
+                std::string(field) + " contains unavailable layer " + std::to_string(il));
+        }
+        if (!selected.insert(il).second) {
+            throw std::runtime_error(
+                std::string(field) + " contains duplicate layer " + std::to_string(il));
+        }
+    }
+    return selected;
+}
+
+static size_t attention_source_bytes(
+        llama_kv_cache * attention,
+        const std::set<uint32_t> & selected,
+        size_t source_tokens) {
+    const size_t cache_size = attention->get_size();
+    size_t bytes = 0;
+    for (const uint32_t il : selected) {
+        for (ggml_tensor * tensor : {
+                attention->get_k_storage(static_cast<int32_t>(il)),
+                attention->get_v_storage(static_cast<int32_t>(il))}) {
+            if (!tensor || ggml_nbytes(tensor) % cache_size != 0) {
+                throw std::runtime_error("attention storage is not row-divisible");
+            }
+            bytes += ggml_nbytes(tensor) / cache_size * source_tokens;
+        }
+    }
+    return bytes;
+}
+
+static size_t recurrent_source_bytes(
+        llama_memory_recurrent * recurrent,
+        const std::set<uint32_t> & selected) {
+    size_t bytes = 0;
+    for (const uint32_t il : selected) {
+        if (recurrent->r_l[il]) {
+            bytes += ggml_nbytes(recurrent->r_l[il]);
+        }
+        if (recurrent->s_l[il]) {
+            bytes += ggml_nbytes(recurrent->s_l[il]);
+        }
+    }
+    return bytes;
+}
+
+static size_t apply_matched_layer_substitution(
+        llama_context * ctx,
+        const hybrid_tensor_reference & reference,
+        const std::set<uint32_t> & attention_selected,
+        const std::set<uint32_t> & recurrent_selected) {
+    auto * hybrid = require_hybrid_memory(ctx);
+    auto * attention = hybrid->get_mem_attn();
+    auto * recurrent = hybrid->get_mem_recr();
+    size_t transferred_bytes = 0;
+
+    for (const uint32_t il : attention->get_layer_ids()) {
+        if (attention_selected.find(il) == attention_selected.end()) {
+            write_tensor(
+                attention->get_k_storage(static_cast<int32_t>(il)),
+                reference.attention_k.at(il));
+            write_tensor(
+                attention->get_v_storage(static_cast<int32_t>(il)),
+                reference.attention_v.at(il));
+            transferred_bytes +=
+                reference.attention_k.at(il).size() +
+                reference.attention_v.at(il).size();
+        }
+    }
+    for (uint32_t il = 0; il < recurrent->r_l.size(); ++il) {
+        if ((recurrent->r_l[il] || recurrent->s_l[il]) &&
+            recurrent_selected.find(il) == recurrent_selected.end()) {
+            if (recurrent->r_l[il]) {
+                write_tensor(recurrent->r_l[il], reference.recurrent_r.at(il));
+                transferred_bytes += reference.recurrent_r.at(il).size();
+            }
+            if (recurrent->s_l[il]) {
+                write_tensor(recurrent->s_l[il], reference.recurrent_s.at(il));
+                transferred_bytes += reference.recurrent_s.at(il).size();
+            }
+        }
+    }
+    llama_synchronize(ctx);
+    return transferred_bytes;
+}
+
+static json run_layer_localization(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const std::vector<llama_token> & candidates,
+        const json & spec,
+        uint64_t active_recurrent_backing_initial,
+        uint64_t active_attention_backing_initial) {
+    auto * hybrid = require_hybrid_memory(ctx);
+    auto * attention = hybrid->get_mem_attn();
+    auto * recurrent = hybrid->get_mem_recr();
+
+    const std::vector<uint32_t> attention_layers = attention->get_layer_ids();
+    std::vector<uint32_t> recurrent_layers;
+    for (uint32_t il = 0; il < recurrent->r_l.size(); ++il) {
+        if (recurrent->r_l[il] || recurrent->s_l[il]) {
+            recurrent_layers.push_back(il);
+        }
+    }
+    if (attention_layers != spec.at("expected_attention_layers").get<std::vector<uint32_t>>() ||
+        recurrent_layers != spec.at("expected_recurrent_layers").get<std::vector<uint32_t>>()) {
+        throw std::runtime_error("model hybrid layer topology differs from frozen spec");
+    }
+
+    const auto & source = spec.at("source");
+    const auto substitution_tokens =
+        prepare_source(ctx, vocab, spec.at("substitution_source"));
+    if (attention->seq_pos_max(0) !=
+            static_cast<llama_pos>(substitution_tokens.size() - 1) ||
+        recurrent->seq_pos_max(0) !=
+            static_cast<llama_pos>(substitution_tokens.size() - 1)) {
+        throw std::runtime_error("matched substitution source position mismatch");
+    }
+    const hybrid_tensor_reference reference = capture_hybrid_reference(ctx);
+    llama_memory_clear(llama_get_memory(ctx), true);
+    llama_synchronize(ctx);
+    const auto & queries = spec.at("queries");
+    const auto & arms = spec.at("localization_arms");
+    json arm_results = json::array();
+    json records = json::array();
+    llama_seq_id key = 2000;
+    size_t common_source_tokens = 0;
+    size_t maximum_root_gpu_bytes = 0;
+    size_t cleared_root_bytes = 0;
+    size_t full_correct = 0;
+    size_t best_strict_correct = 0;
+    size_t best_strict_source_bytes = std::numeric_limits<size_t>::max();
+    std::string best_strict_arm;
+
+    for (const auto & arm : arms) {
+        const std::string arm_id = arm.at("id").get<std::string>();
+        const auto attention_selected =
+            parse_layer_selection(arm, "attention_layers", attention_layers);
+        const auto recurrent_selected =
+            parse_layer_selection(arm, "recurrent_layers", recurrent_layers);
+        const auto source_tokens = prepare_source(ctx, vocab, source);
+        if (attention->seq_pos_max(0) !=
+                static_cast<llama_pos>(source_tokens.size() - 1) ||
+            recurrent->seq_pos_max(0) !=
+                static_cast<llama_pos>(source_tokens.size() - 1)) {
+            throw std::runtime_error("joint source position mismatch");
+        }
+        if (common_source_tokens == 0) {
+            common_source_tokens = source_tokens.size();
+            if (common_source_tokens != substitution_tokens.size()) {
+                throw std::runtime_error(
+                    "matched substitution source token count differs");
+            }
+        } else if (common_source_tokens != source_tokens.size()) {
+            throw std::runtime_error("localization source token count changed");
+        }
+
+        const size_t substitution_h2d_bytes = apply_matched_layer_substitution(
+            ctx, reference, attention_selected, recurrent_selected);
+        auto root = save_root(
+            ctx, arm_id, key++, FULL_DEVICE_FLAGS, source_tokens.size());
+        maximum_root_gpu_bytes = std::max(maximum_root_gpu_bytes, root.gpu_bytes);
+
+        size_t correct = 0;
+        std::vector<std::string> answers;
+        for (const auto & query : queries) {
+            restore_root(ctx, root);
+            auto boundary = decode_query(
+                ctx, vocab, candidates, "hybrid-layer-subset-root", arm_id, query,
+                root.source_tokens, root.backing_id, root.gpu_bytes);
+            correct += boundary.argmax == query.at("expected").get<std::string>();
+            answers.push_back(boundary.argmax);
+            records.push_back(boundary.record);
+        }
+
+        const size_t attention_bytes =
+            attention_source_bytes(attention, attention_selected, source_tokens.size());
+        const size_t recurrent_bytes =
+            recurrent_source_bytes(recurrent, recurrent_selected);
+        const size_t selected_bytes = attention_bytes + recurrent_bytes;
+        const bool strict_subset =
+            attention_selected.size() < attention_layers.size() ||
+            recurrent_selected.size() < recurrent_layers.size();
+
+        arm_results.push_back({
+            {"id", arm_id},
+            {"attention_layers", attention_selected},
+            {"recurrent_layers", recurrent_selected},
+            {"attention_source_bytes", attention_bytes},
+            {"recurrent_source_bytes", recurrent_bytes},
+            {"selected_joint_source_bytes_above_matched_baseline", selected_bytes},
+            {"serialized_root_device_tensor_bytes", root.gpu_bytes},
+            {"serialized_root_metadata_bytes", root.metadata.size()},
+            {"matched_substitution_h2d_bytes", substitution_h2d_bytes},
+            {"strict_subset", strict_subset},
+            {"correct", correct},
+            {"answers", answers},
+        });
+
+        if (arm_id == "full") {
+            full_correct = correct;
+        } else if (strict_subset &&
+                   (correct > best_strict_correct ||
+                    (correct == best_strict_correct &&
+                     selected_bytes < best_strict_source_bytes))) {
+            best_strict_correct = correct;
+            best_strict_source_bytes = selected_bytes;
+            best_strict_arm = arm_id;
+        }
+
+        llama_memory_clear(llama_get_memory(ctx), true);
+        cleared_root_bytes += llama_state_seq_clear_device_data(ctx, root.key);
+        if (llama_state_seq_get_device_data_size(ctx, root.key) != 0) {
+            throw std::runtime_error("localization root did not close");
+        }
+    }
+
+    llama_memory_clear(llama_get_memory(ctx), true);
+    llama_synchronize(ctx);
+    if (llama_state_seq_get_device_root_count(ctx) != 0 ||
+        active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
+        active_attention_backing_id(ctx) != active_attention_backing_initial) {
+        throw std::runtime_error("localization close invariant failed");
+    }
+
+    const bool localized = full_correct == queries.size() &&
+        best_strict_correct == queries.size();
+    return {
+        {"schema_version", 1},
+        {"mechanism", "QUERY_SEPARATED_HYBRID_LAYER_SUBSET_SCREEN"},
+        {"spec_id", spec.at("id")},
+        {"model_arch", "qwen35moe"},
+        {"configuration", {
+            {"source_tokens", common_source_tokens},
+            {"substitution_source_tokens", substitution_tokens.size()},
+            {"query_count", queries.size()},
+            {"arm_count", arms.size()},
+            {"attention_layers", attention_layers},
+            {"recurrent_layers", recurrent_layers},
+        }},
+        {"carrier", {
+            {"maximum_serialized_root_device_tensor_bytes", maximum_root_gpu_bytes},
+            {"cleared_root_bytes", cleared_root_bytes},
+            {"all_retained_roots_closed", llama_state_seq_get_device_root_count(ctx) == 0},
+            {"active_recurrent_backing_stable",
+                active_recurrent_backing_id(ctx) == active_recurrent_backing_initial},
+            {"active_attention_backing_stable",
+                active_attention_backing_id(ctx) == active_attention_backing_initial},
+            {"restoration_class", "SNAPSHOT_RELOAD"},
+            {"physical_reduction_implemented", false},
+            {"backend_allocation_bytes_measured", false},
+            {"matched_reference_host_bytes", reference.host_bytes},
+            {"omitted_layer_law", "F0_G0 full-tensor substitution at identical source positions"},
+        }},
+        {"arms", arm_results},
+        {"records", records},
+        {"summary", {
+            {"full_correct", full_correct},
+            {"best_strict_correct", best_strict_correct},
+            {"best_strict_arm", best_strict_arm},
+            {"best_strict_selected_joint_source_bytes_above_matched_baseline",
+                best_strict_source_bytes == std::numeric_limits<size_t>::max() ?
+                    0 : best_strict_source_bytes},
+            {"strict_subset_localized", localized},
+        }},
+        {"verdict", localized ? "screen-pass" : "screen-no-sufficient-subset"},
+        {"claim_ceiling", spec.at("claim_ceiling")},
     };
 }
 
@@ -391,6 +734,22 @@ int main(int argc, char ** argv) {
         }
         if (active_attention_backing_initial == 0) {
             throw std::runtime_error("active attention backing identity is zero");
+        }
+
+        if (spec.contains("localization_arms")) {
+            const json result = run_layer_localization(
+                ctx,
+                vocab,
+                candidates,
+                spec,
+                active_backing_initial,
+                active_attention_backing_initial);
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
         }
 
         const auto & sources = spec.at("sources");

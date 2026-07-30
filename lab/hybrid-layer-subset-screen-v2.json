@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "id": "hybrid-layer-subset-screen-v2",
+  "description": "Prospective multiscale screen for a strict attention/GDN layer subset that retains the accepted 0106 joint delayed-query boundary. Omitted layer tensors are substituted from the equal-token F0G0 source rather than zeroed, and no arm is selected from model output.",
+  "expected_attention_layers": [3, 7, 11, 15, 19, 23, 27, 31, 35, 39],
+  "expected_recurrent_layers": [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26, 28, 29, 30, 32, 33, 34, 36, 37, 38],
+  "substitution_source": {
+    "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+    "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+    "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+    "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+  },
+  "source": {
+    "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+    "module_f": "F: Item W maps to vault J. Item X maps to vault K. Item Y maps to vault L. Item Z maps to vault M.\n",
+    "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+    "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+  },
+  "queries": [
+    {
+      "id": "query-W",
+      "expected": "A",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item W through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "query-X",
+      "expected": "B",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item X through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "query-Y",
+      "expected": "C",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item Y through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "query-Z",
+      "expected": "D",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item Z through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    }
+  ],
+  "localization_arms": [
+    {"id": "full", "attention_layers": "ALL", "recurrent_layers": "ALL"},
+    {"id": "attn-3-plus-recurrent", "attention_layers": [3], "recurrent_layers": "ALL"},
+    {"id": "attn-7-plus-recurrent", "attention_layers": [7], "recurrent_layers": "ALL"},
+    {"id": "attn-11-plus-recurrent", "attention_layers": [11], "recurrent_layers": "ALL"},
+    {"id": "attn-15-plus-recurrent", "attention_layers": [15], "recurrent_layers": "ALL"},
+    {"id": "attn-19-plus-recurrent", "attention_layers": [19], "recurrent_layers": "ALL"},
+    {"id": "attn-23-plus-recurrent", "attention_layers": [23], "recurrent_layers": "ALL"},
+    {"id": "attn-27-plus-recurrent", "attention_layers": [27], "recurrent_layers": "ALL"},
+    {"id": "attn-31-plus-recurrent", "attention_layers": [31], "recurrent_layers": "ALL"},
+    {"id": "attn-35-plus-recurrent", "attention_layers": [35], "recurrent_layers": "ALL"},
+    {"id": "attn-39-plus-recurrent", "attention_layers": [39], "recurrent_layers": "ALL"},
+    {"id": "attn-q1-plus-recurrent", "attention_layers": [3, 7, 11], "recurrent_layers": "ALL"},
+    {"id": "attn-q2-plus-recurrent", "attention_layers": [15, 19], "recurrent_layers": "ALL"},
+    {"id": "attn-q3-plus-recurrent", "attention_layers": [23, 27], "recurrent_layers": "ALL"},
+    {"id": "attn-q4-plus-recurrent", "attention_layers": [31, 35, 39], "recurrent_layers": "ALL"},
+    {"id": "attn-first-half-plus-recurrent", "attention_layers": [3, 7, 11, 15, 19], "recurrent_layers": "ALL"},
+    {"id": "attn-second-half-plus-recurrent", "attention_layers": [23, 27, 31, 35, 39], "recurrent_layers": "ALL"},
+    {"id": "attention-plus-recurrent-q1", "attention_layers": "ALL", "recurrent_layers": [0, 1, 2, 4, 5, 6, 8, 9]},
+    {"id": "attention-plus-recurrent-q2", "attention_layers": "ALL", "recurrent_layers": [10, 12, 13, 14, 16, 17, 18]},
+    {"id": "attention-plus-recurrent-q3", "attention_layers": "ALL", "recurrent_layers": [20, 21, 22, 24, 25, 26, 28, 29]},
+    {"id": "attention-plus-recurrent-q4", "attention_layers": "ALL", "recurrent_layers": [30, 32, 33, 34, 36, 37, 38]},
+    {"id": "attention-plus-recurrent-first-half", "attention_layers": "ALL", "recurrent_layers": [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18]},
+    {"id": "attention-plus-recurrent-second-half", "attention_layers": "ALL", "recurrent_layers": [20, 21, 22, 24, 25, 26, 28, 29, 30, 32, 33, 34, 36, 37, 38]}
+  ],
+  "claim_ceiling": "Exploratory matched layer-subset localization only. A 4/4 strict subset may select a frozen semantic-validation successor. The F0G0 reference is a complete host-side classical control, and all serialized roots still contain full baseline tensors, so no physical compression, duplicate-free custody, native restoration, catalytic leverage, or unbounded claim follows."
+}

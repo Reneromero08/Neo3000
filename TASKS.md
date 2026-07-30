@@ -40,10 +40,23 @@ constructively unbounded local Agents-A1 inference.
   joint/F-only/G-only are `4/4`, `1/4`, `1/4`; relation mutation is `4/4`
   with all four boundaries changed; presentation reordering remains `4/4`;
   restored joint full logits match untouched live `4/4` bit-exactly.
-- [ ] Localize the minimum cross-memory layer set that preserves joint,
-  mutation, and presentation boundaries. Begin with layer-subset ablations
-  against the exact 0106 full-hybrid root; do not tune the prompt or introduce
-  a phase fixture. Count retained bytes and active work for every subset.
+- [x] Begin cross-memory layer localization without changing the task fixture.
+  `neo-exp-0107` is an honestly consumed inconclusive incident: only the
+  unchanged full arm completed one query before a missing
+  `expected_mutated` field aborted the run, and no subset intervention made
+  contact. Its proposed zero-fill law is also rejected because valid
+  zero-valued attention positions still absorb softmax mass.
+- [x] Replace zero-fill with an equal-token F0G0 full-tensor reference at
+  identical positions and execute `neo-exp-0108`. All ten attention layers
+  plus either recurrent q2 or q4 preserve the joint `A,B,C,D` boundary at
+  `4/4`, narrowing selected source-conditioned tensor values from
+  `68,526,080` to `18,030,592` bytes. This is a logical-support screen only:
+  every saved root remains `68,526,080` bytes and the `76,349,440`-byte host
+  reference is an explicit classical control.
+- [ ] Refine the tied q2/q4 recurrent bands to individual GDN layers under the
+  same matched substitution law. Then freeze the smallest passing candidates
+  and re-run joint, F-only, G-only, relation-mutation, and presentation gates
+  before implementing any physically smaller carrier.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

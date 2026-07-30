@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0108",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "d7e4c82601773ed4e65827085589e6e42c056862",
+  "mechanism": "QUERY_SEPARATED_HYBRID_LAYER_SUBSET_SCREEN",
+  "spec_id": "hybrid-layer-subset-screen-v2",
+  "hypothesis": "A strict cross-memory layer subset can preserve the joint delayed-query boundary when every omitted layer is replaced by a matched equal-token F0G0 state at identical positions.",
+  "intervention": "Capture a complete equal-token F0G0 hybrid reference, replace omitted joint-source layer tensors with that reference, save one conventional full hybrid snapshot per arm, and apply the same four delayed queries.",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "source_tokens": 130,
+    "substitution_source_tokens": 130,
+    "query_count_per_arm": 4,
+    "arm_count": 23,
+    "attention_layers": [3, 7, 11, 15, 19, 23, 27, 31, 35, 39],
+    "recurrent_layers": [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26, 28, 29, 30, 32, 33, 34, 36, 37, 38],
+    "omitted_layer_law": "F0G0 full-tensor substitution at identical source positions",
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "resource_accounting": {
+    "maximum_serialized_root_device_tensor_bytes": 68526080,
+    "serialized_roots_cleared_bytes": 1576099840,
+    "matched_reference_host_bytes": 76349440,
+    "cumulative_matched_substitution_h2d_bytes": 399769600,
+    "selected_attention_source_bytes_all_ten": 2662400,
+    "selected_recurrent_source_bytes_per_layer": 2195456,
+    "minimum_passing_selected_joint_source_bytes_above_matched_baseline": 18030592,
+    "query_wall_ms_sum": 104965.39366199994,
+    "backend_allocation_bytes_measured": false,
+    "physical_reduction_implemented": false
+  },
+  "full_control": {
+    "correct": 4,
+    "answers": ["A", "B", "C", "D"],
+    "selected_joint_source_bytes_above_matched_baseline": 68526080
+  },
+  "minimum_tied_strict_passes": [
+    {
+      "id": "attention-plus-recurrent-q2",
+      "attention_layers": [3, 7, 11, 15, 19, 23, 27, 31, 35, 39],
+      "recurrent_layers": [10, 12, 13, 14, 16, 17, 18],
+      "correct": 4,
+      "answers": ["A", "B", "C", "D"],
+      "selected_joint_source_bytes_above_matched_baseline": 18030592
+    },
+    {
+      "id": "attention-plus-recurrent-q4",
+      "attention_layers": [3, 7, 11, 15, 19, 23, 27, 31, 35, 39],
+      "recurrent_layers": [30, 32, 33, 34, 36, 37, 38],
+      "correct": 4,
+      "answers": ["A", "B", "C", "D"],
+      "selected_joint_source_bytes_above_matched_baseline": 18030592
+    }
+  ],
+  "other_strict_passes": [
+    {
+      "id": "attention-plus-recurrent-q1",
+      "selected_joint_source_bytes_above_matched_baseline": 20226048
+    },
+    {
+      "id": "attention-plus-recurrent-q3",
+      "selected_joint_source_bytes_above_matched_baseline": 20226048
+    },
+    {
+      "id": "attention-plus-recurrent-first-half",
+      "selected_joint_source_bytes_above_matched_baseline": 35594240
+    },
+    {
+      "id": "attention-plus-recurrent-second-half",
+      "selected_joint_source_bytes_above_matched_baseline": 35594240
+    }
+  ],
+  "attention_ablation_observations": {
+    "each_single_attention_layer_plus_all_recurrent": {
+      "arms": 10,
+      "correct_each": 1,
+      "answers_each": ["D", "D", "D", "D"]
+    },
+    "each_attention_quartile_plus_all_recurrent": {
+      "arms": 4,
+      "correct_each": 1,
+      "answers_each": ["D", "D", "D", "D"]
+    },
+    "attention_first_half_plus_all_recurrent": {
+      "correct": 3,
+      "answers": ["A", "B", "D", "D"]
+    },
+    "attention_second_half_plus_all_recurrent": {
+      "correct": 1,
+      "answers": ["D", "D", "D", "D"]
+    }
+  },
+  "closure": {
+    "all_retained_roots_closed": true,
+    "active_attention_backing_stable": true,
+    "active_recurrent_backing_stable": true,
+    "background_processes_left_running": 0
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/hybrid-layer-subset-screen-v2.json",
+      "bytes": 5609,
+      "sha256": "00932E2760A8D34F7D7A3B343413E956C0637AD466574B3C69A67FB1D6758585"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 49162,
+      "sha256": "CB647901459E1CC5275BE1B95ABF4DC077759E12E82AD530E93E677C3B296677"
+    },
+    "probe_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "sha256": "3E12F708601F185F26D66C20589C058F6A9B6F34282C0523B9B5A6126F9AEAB9"
+    },
+    "raw_result": {
+      "committed": false,
+      "bytes": 95165,
+      "sha256": "A7DD1A452444AE662D740D2ED49B7735DABD4F1574F95DB7572C5EDC457A4EAB"
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 188,
+    "input_tokens": 6156,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "quality_gates": {
+    "matched_equal_token_reference": true,
+    "identical_source_positions": true,
+    "full_control_correct": true,
+    "strict_subset_joint_correct": true,
+    "unique_minimum_identified": false,
+    "F_G_necessity_revalidated_for_subset": false,
+    "relation_mutation_revalidated_for_subset": false,
+    "presentation_invariance_revalidated_for_subset": false,
+    "physical_carrier_reduction": false,
+    "duplicate_free_custody": false,
+    "native_inverse_restoration": false,
+    "fresh_compute_reduction": false,
+    "unbounded_recurrence": false
+  },
+  "verdict": "screen-pass",
+  "classification": "MATCHED_HYBRID_LAYER_SUPPORT_SCREEN_LOCALIZES_ATTENTION_PLUS_RECURRENT_BANDS",
+  "strongest_supported_claim": "With every omitted layer replaced by an equal-token F0G0 tensor at identical positions, either all ten attention layers plus recurrent band q2 or all ten attention layers plus recurrent band q4 preserves the four joint delayed-query boundaries while reducing selected source-conditioned tensor values from 68,526,080 to 18,030,592 bytes.",
+  "strongest_rejected_interpretation": "All saved roots remain 68,526,080-byte conventional snapshots and a 76,349,440-byte host reference classically duplicates baseline state. The screen does not establish a physically smaller carrier, unique sufficient subset, semantic necessity for either band, native restoration, catalytic leverage, or recurrence.",
+  "next_boundary": "REFINE_Q2_AND_Q4_TO_SINGLE_GDN_LAYERS_UNDER_THE_SAME_MATCHED_SUBSTITUTION_LAW_BEFORE_FREEZING_FULL_SEMANTIC_VALIDATION"
+}

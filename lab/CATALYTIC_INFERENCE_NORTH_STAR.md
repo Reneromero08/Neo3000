@@ -104,6 +104,23 @@ coordinate descent reduces retained payload but leaves scaling search,
 materialization, and inverse costs. None is yet a bounded-residency,
 vanishing-fresh-compute recurrence.
 
+The first layer-support screen is also complete. An initial zero-fill run is
+preserved as consumed `neo-exp-0107`, but it is scientifically inconclusive:
+one unchanged full-arm query completed before a schema exception, no subset
+intervention made contact, and zero-valued attention positions would not have
+represented layer absence anyway. The repaired `neo-exp-0108` substituted
+each omitted layer from an equal-token F0G0 source at identical positions.
+All ten attention layers plus either seven-layer recurrent band q2 or q4
+preserved the joint `A,B,C,D` boundary, reducing selected
+source-conditioned values from `68,526,080` to `18,030,592` bytes.
+
+That number is logical support, not physical residency. Each saved root still
+contains the full `68,526,080`-byte tensor payload, and the matched control
+keeps `76,349,440` host bytes. The next lawful step is to refine q2/q4 to
+individual recurrent layers, freeze the smallest passing candidates, and
+re-run the full evidence-necessity and relation controls. Only then should the
+runtime allocate or transport a compact carrier.
+
 ## 1. Executive conclusion
 
 The strongest coherent route to catalytic Agents-A1 inference is:
