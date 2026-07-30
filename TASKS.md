@@ -28,11 +28,17 @@ constructively unbounded local Agents-A1 inference.
   matched untouched live hybrid inference bit-exactly across all four complete
   logit rows. This localizes the missing useful state to the ten full-attention
   layers or their interaction with GDN, rather than to query separation.
-- [ ] Isolate the attention-KV complement under the same equal-token
+- [x] Isolate the attention-KV complement under the same equal-token
   F0G0/F1G0/F0G1/F1G1, relation-mutation, presentation, explicit-null, full
-  hybrid, and untouched-live controls. Do not tune the prompt fixture; measure
-  whether attention alone carries the useful delayed boundary and count its
-  exact physical footprint.
+  hybrid, and untouched-live controls. `neo-exp-0105` finds a
+  `2,662,400`-byte attention-only root, but it also returns null-equivalent
+  `A,A,A,A`; relation mutation changes `0/4`. The complete
+  `68,526,080`-byte hybrid union remains `4/4` and bit-exact to untouched live.
+- [ ] Test full-hybrid F-only, G-only, joint, relation-mutation, presentation,
+  and null routes. The current contact proves that useful state requires the
+  hybrid memory union, but not yet that both evidence modules are necessary
+  within that union. Only after that gate passes should layerwise
+  attention-GDN subspace localization begin.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

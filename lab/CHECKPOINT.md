@@ -1,6 +1,6 @@
 # Checkpoint Ledger
 
-## Query-separated hybrid-state discriminator [CURRENT CLAIM AUTHORITY]
+## Hybrid-memory partition discriminator [CURRENT CLAIM AUTHORITY]
 
 The active recurrence and acceptance boundary are
 `lab/CATALYTIC_INFERENCE_NORTH_STAR.md`.
@@ -23,6 +23,12 @@ The active recurrence and acceptance boundary are
   boundary and matches untouched live hybrid inference bit-exactly across all
   four tested full-logit rows. The active recurrent allocation stayed on one
   process-local backing; every retained root was explicitly cleared.
+- `neo-exp-0105` removes only source GDN state and retains the ten
+  full-attention layers as a `2,662,400`-byte on-device root with 3,596 bytes
+  of host metadata. Attention-only and recurrent-only each return the
+  null-equivalent `A,A,A,A` boundary, while their exact byte-sum union returns
+  `A,B,C,D`. The useful delayed boundary is functionally distributed across
+  hybrid memory rather than output-sufficient in either isolated partition.
 - The Release server rebuild succeeds, all 139 configured CUDA objects remain
   present with zero CUDA source changes, and the focused no-model Python suite
   passes 57 tests.
@@ -37,6 +43,12 @@ The active recurrence and acceptance boundary are
   `A,A,A,A`, and relation mutation changes `0/4` boundaries. GDN recurrent
   state alone is therefore rejected as a useful carrier for this delayed
   two-link task.
+- Attention-only joint, F-only, G-only, F0G0, mutation, presentation, and
+  explicit-null routes also score only `1/4`; relation mutation changes `0/4`.
+  The smaller attention root is not a useful carrier by itself.
+- Full-hybrid marginal and relation-mutation roots were not executed in 0105.
+  The result proves memory-partition necessity for this useful boundary, not
+  yet two-evidence necessity within the hybrid union.
 - The retained roots use `SNAPSHOT_RELOAD`. Root backing identity and closure
   do not establish inverse restoration, complete object restoration, or
   catalytic reuse. The test also retains a full-hybrid control root alongside
@@ -48,12 +60,11 @@ The active recurrence and acceptance boundary are
 
 ### ACTIVE BOUNDARY
 
-Isolate attention KV with the unchanged query-separated geometry and controls.
-The accepted conventional full-hybrid route and rejected recurrent-only route
-make this a state-partition discriminator, not another prompt experiment. If
-attention alone is useful, measure its exact footprint before selecting a
-bounded model-native subspace. If it is not, test the attention-GDN interaction
-rather than tuning labels. `neo-exp-0102` remains frozen and unconsumed.
+Execute full-hybrid roots for every unchanged F/G marginal, joint, mutation,
+and presentation source. If the joint and mutation necessity gates pass,
+localize the minimum cross-memory layer/subspace that retains them. Do not tune
+labels or introduce a phase program before the ordinary learned hybrid
+interaction is measured. `neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

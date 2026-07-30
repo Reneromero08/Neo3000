@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0105",
+  "artifact_id": "attention-carrier-query-separated-v1",
+  "date": "2026-07-29",
+  "starting_head": "02919ad73649b1e4a00a9de641e3520435fa2452",
+  "classification": "HYBRID_MEMORY_PARTITION_NECESSITY_SUPPORTED_ATTENTION_ONLY_REJECTED_AS_USEFUL_TASK_STATE",
+  "hypothesis": "The attention-KV complement of Agents-A1 hybrid memory can retain the useful two-link source after source GDN state is erased and before the delayed query is selected.",
+  "intervention": "Preserve the exact neo-exp-0104 source and query geometry, clear only GDN recurrent state after each closed source, save the remaining attention KV as an on-device root, and compare attention-only, recurrent-only, full-hybrid, untouched-live, relation-mutation, presentation, marginal, and null routes.",
+  "model": {
+    "name": "Agents-A1-Q4_K_M.gguf",
+    "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+    "architecture": "qwen35moe",
+    "hybrid_layers": {
+      "gdn_recurrent": 30,
+      "full_attention": 10
+    }
+  },
+  "state_partition": {
+    "source_tokens": 130,
+    "query_tokens_each": 33,
+    "recurrent_only": {
+      "gpu_bytes": 65863680,
+      "host_metadata_bytes": 748,
+      "useful_joint_boundary": [
+        "A",
+        "A",
+        "A",
+        "A"
+      ]
+    },
+    "attention_only": {
+      "gpu_bytes": 2662400,
+      "host_metadata_bytes": 3596,
+      "source_recurrent_state_cleared_before_capture": true,
+      "attention_source_position_after_recurrent_clear": 129,
+      "useful_joint_boundary": [
+        "A",
+        "A",
+        "A",
+        "A"
+      ]
+    },
+    "full_hybrid": {
+      "gpu_bytes": 68526080,
+      "host_metadata_bytes": 3604,
+      "equals_partition_byte_sum": true,
+      "useful_joint_boundary": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    "explicit_null_boundary": [
+      "A",
+      "A",
+      "A",
+      "A"
+    ],
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "causal_evidence": {
+    "source_closed_before_query_selection": true,
+    "recurrent_only_joint_changes_from_null": 0,
+    "attention_only_joint_changes_from_null": 0,
+    "full_hybrid_matches_live_argmax": "4/4",
+    "full_hybrid_matches_live_full_logits_bit_exact": "4/4",
+    "recurrent_inclusion_exclusion_l2_norms": [
+      2.747878307717737,
+      0.8364660559114666,
+      0.6867558521761116,
+      0.6805918315119283
+    ],
+    "attention_inclusion_exclusion_l2_norms": [
+      0.17568531368798657,
+      1.8722653881682563,
+      1.3477491426294772,
+      0.5910318198688915
+    ],
+    "interpretation": "Both isolated memory partitions causally perturb later logits but neither is output-sufficient. The useful delayed boundary requires the source-state union or an interaction that the two isolated routes destroy."
+  },
+  "metrics": {
+    "query_count": 4,
+    "recurrent_joint_correct": 1,
+    "recurrent_f_only_correct": 1,
+    "recurrent_g_only_correct": 1,
+    "attention_joint_correct": 1,
+    "attention_f_only_correct": 1,
+    "attention_g_only_correct": 1,
+    "attention_null_source_correct": 1,
+    "explicit_null_correct": 1,
+    "attention_mutated_correct": 1,
+    "attention_presentation_correct": 1,
+    "attention_relation_mutation_changes": 0,
+    "attention_joint_changes_from_null": 0,
+    "full_hybrid_joint_correct": 4,
+    "untouched_live_hybrid_joint_correct": 4,
+    "attention_matches_full_hybrid": 1,
+    "recurrent_matches_full_hybrid": 1,
+    "full_hybrid_matches_live_full_logits_bit_exact": 4,
+    "recorded_query_decode_wall_ms": 80359.74629999998
+  },
+  "quality_gates": {
+    "single_state_partition_intervention": true,
+    "source_closed_before_query_selection": true,
+    "attention_only_physically_isolated": true,
+    "same_active_attention_backing": true,
+    "same_active_recurrent_backing": true,
+    "all_retained_roots_closed": true,
+    "full_hybrid_control_useful": true,
+    "attention_only_useful": false,
+    "recurrent_only_useful": false,
+    "memory_partition_necessity_at_useful_boundary": true,
+    "full_hybrid_evidence_F_necessity_tested": false,
+    "full_hybrid_evidence_G_necessity_tested": false,
+    "full_hybrid_relation_mutation_tested": false,
+    "bounded_sufficient_subspace": false,
+    "native_inverse_restoration": false,
+    "fresh_compute_reduction": false,
+    "constructively_unbounded_recurrence": false
+  },
+  "resource_accounting": {
+    "model_loads": 1,
+    "source_preparations": 10,
+    "source_fragment_decode_calls": 40,
+    "query_boundary_decode_calls": 60,
+    "total_llama_decode_calls": 100,
+    "source_input_tokens": 1300,
+    "query_input_tokens": 1980,
+    "total_input_tokens": 3280,
+    "completion_tokens": 0,
+    "candidate_attention_root_gpu_bytes": 2662400,
+    "maximum_simultaneously_retained_root_gpu_bytes": 137052160,
+    "cumulative_retained_root_bytes_cleared": 479682560,
+    "server_launches": 0,
+    "background_processes_left_running": 0
+  },
+  "build_and_test": {
+    "build_type": "Release",
+    "probe_build": "passed",
+    "configured_cuda_objects": 139,
+    "cuda_sources_changed": 0,
+    "cuda_object_identity_aggregate_sha256": "066F235A4442C4545B9E31205D4627257E3B41B2984176AB9629B9BCA0614356",
+    "json_validation": "passed",
+    "full_hybrid_vs_live_full_logit_comparison": "4/4 bit-exact"
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/attention-carrier-query-separated-v1.json",
+      "bytes": 5978,
+      "sha256": "B68C6DE93D02C718EE44DF423A06B088D49EEDEADAC0B64127BB93F0AADEF994"
+    },
+    "raw_result": {
+      "committed": false,
+      "local_path": "build/attention-carrier-query-separated-v1-result.json",
+      "bytes": 53547,
+      "sha256": "1490329E67FEEA98BA9652B4A4ABA3A4E1199C267F5700A8F9B32A34050BD01F"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "sha256": "16DCACEFF0A9C311ADE6855F51EDC74275EF3584ECD39CCA27A5274F4CC803FE"
+    },
+    "probe_binary": {
+      "committed": false,
+      "local_path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "sha256": "F3D269E7124CFF15FD9C1B13B9BCBAD690A2A246CC84C2E4FBC8BA42F3573CA5"
+    }
+  },
+  "contact": {
+    "scientific_contact": true,
+    "server_contact": false,
+    "model_facing_probe": true,
+    "completion_generation": false,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "reject",
+  "strongest_supported_claim": "For this delayed query boundary, neither the 65,863,680-byte source GDN state nor the 2,662,400-byte source attention KV is output-sufficient alone, while their exact 68,526,080-byte union reproduces untouched live inference bit-for-bit. Useful source state is therefore functionally distributed across the Agents-A1 hybrid memory boundary.",
+  "strongest_rejected_interpretation": "The attention-only root is not a useful inference-bearing carrier for this task, and the experiment does not yet prove that both evidence modules F and G are necessary within the full hybrid route. It establishes no bounded sufficient subspace, native restoration, phase-native resource, fresh-compute reduction, catalysis, or unbounded recurrence.",
+  "next_boundary": "RUN_FULL_HYBRID_F0G0_F1G0_F0G1_F1G1_MUTATION_AND_PRESENTATION_CONTROLS_THEN_LOCALIZE_THE_CROSS_MEMORY_SUFFICIENT_SUBSPACE_ONLY_IF_EVIDENCE_NECESSITY_PASSES"
+}

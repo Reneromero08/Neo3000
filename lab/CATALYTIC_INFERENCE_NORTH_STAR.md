@@ -64,6 +64,21 @@ interaction with GDN. The retained roots are conventional `SNAPSHOT_RELOAD`
 objects, not native inverse restoration. The evidence selects an attention-KV
 complement test before any new operator, prompt fixture, or phase construction.
 
+That complement test is now executed. After source closure, the probe cleared
+only GDN state and retained the ten attention layers in a `2,662,400`-byte
+root. Attention-only again produced null-equivalent `A,A,A,A`; relation
+mutation changed zero boundaries. The full hybrid root size is exactly the
+sum of the recurrent and attention roots, yet only the union produces the
+useful `A,B,C,D` boundary. This is the first direct localization of a
+functionally distributed Agents-A1 carrier boundary: neither memory partition
+is output-sufficient alone.
+
+That finding is not yet catalytic. It uses snapshot reload, the union is
+ordinary hybrid cache state, and 0105 did not save full-hybrid F-only, G-only,
+or mutation roots. The next discriminator must establish evidence-module
+necessity inside the union. Only then is layerwise cross-memory subspace
+localization justified.
+
 The refreshed AGS frontier adds three useful constraints without closing the
 Neo recurrence. First, source closure before query selection tightens the
 no-smuggle test, although a finite query family remains cache-equivalent.

@@ -110,6 +110,24 @@ static uint64_t active_recurrent_backing_id(llama_context * ctx) {
     return hash;
 }
 
+static uint64_t active_attention_backing_id(llama_context * ctx) {
+    auto * attention = require_hybrid_memory(ctx)->get_mem_attn();
+    std::set<ggml_backend_buffer_t> unique;
+    for (const uint32_t il : attention->get_layer_ids()) {
+        ggml_tensor * tensor = attention->get_k_storage(static_cast<int32_t>(il));
+        if (tensor && tensor->buffer) {
+            unique.insert(tensor->buffer);
+        }
+    }
+
+    uint64_t hash = UINT64_C(1469598103934665603);
+    for (ggml_backend_buffer_t buffer : unique) {
+        fnv_mix_u64(hash, reinterpret_cast<uintptr_t>(buffer));
+        fnv_mix_u64(hash, ggml_backend_buffer_get_size(buffer));
+    }
+    return hash;
+}
+
 static uint64_t retained_root_backing_id(llama_context * ctx, llama_seq_id key) {
     return llama_state_seq_get_device_backing_id(ctx, key);
 }
@@ -367,8 +385,12 @@ int main(int argc, char ** argv) {
         const llama_vocab * vocab = llama_model_get_vocab(model);
         const auto candidates = candidate_tokens(vocab);
         const uint64_t active_backing_initial = active_recurrent_backing_id(ctx);
+        const uint64_t active_attention_backing_initial = active_attention_backing_id(ctx);
         if (active_backing_initial == 0) {
             throw std::runtime_error("active recurrent backing identity is zero");
+        }
+        if (active_attention_backing_initial == 0) {
+            throw std::runtime_error("active attention backing identity is zero");
         }
 
         const auto & sources = spec.at("sources");
@@ -385,6 +407,7 @@ int main(int argc, char ** argv) {
         json records = json::array();
         json roots = json::array();
         std::map<std::string, std::vector<boundary_result>> recurrent_results;
+        std::map<std::string, std::vector<boundary_result>> attention_results;
         std::vector<boundary_result> full_root_results;
         std::vector<boundary_result> direct_results;
         std::vector<boundary_result> null_results;
@@ -411,13 +434,27 @@ int main(int argc, char ** argv) {
             if (save_full) {
                 full_root = save_root(
                     ctx, variant + ":full", key++, FULL_DEVICE_FLAGS, source_tokens.size());
-                maximum_simultaneous_root_gpu_bytes = std::max(
-                    maximum_simultaneous_root_gpu_bytes,
-                    recurrent_root.gpu_bytes + full_root.gpu_bytes);
-            } else {
-                maximum_simultaneous_root_gpu_bytes = std::max(
-                    maximum_simultaneous_root_gpu_bytes, recurrent_root.gpu_bytes);
             }
+
+            hybrid->get_mem_recr()->clear(true);
+            llama_synchronize(ctx);
+            if (hybrid->get_mem_recr()->used != 0 ||
+                hybrid->get_mem_recr()->seq_pos_max(0) != -1 ||
+                hybrid->get_mem_attn()->seq_pos_max(0) !=
+                    static_cast<llama_pos>(source_tokens.size() - 1)) {
+                throw std::runtime_error(
+                    "failed to isolate attention KV for " + variant);
+            }
+            auto attention_root = save_root(
+                ctx, variant + ":attention", key++, FULL_DEVICE_FLAGS, source_tokens.size());
+
+            size_t simultaneous_gpu_bytes =
+                recurrent_root.gpu_bytes + attention_root.gpu_bytes;
+            if (save_full) {
+                simultaneous_gpu_bytes += full_root.gpu_bytes;
+            }
+            maximum_simultaneous_root_gpu_bytes = std::max(
+                maximum_simultaneous_root_gpu_bytes, simultaneous_gpu_bytes);
 
             roots.push_back({
                 {"variant", variant},
@@ -428,6 +465,16 @@ int main(int argc, char ** argv) {
                 {"gpu_bytes", recurrent_root.gpu_bytes},
                 {"backing_id", hex64(recurrent_root.backing_id)},
                 {"source_tokens", recurrent_root.source_tokens},
+            });
+            roots.push_back({
+                {"variant", variant},
+                {"kind", "attention-only"},
+                {"storage_key", attention_root.key},
+                {"metadata_bytes", attention_root.metadata.size()},
+                {"resident_bytes", attention_root.resident_bytes},
+                {"gpu_bytes", attention_root.gpu_bytes},
+                {"backing_id", hex64(attention_root.backing_id)},
+                {"source_tokens", attention_root.source_tokens},
             });
             if (save_full) {
                 roots.push_back({
@@ -453,6 +500,16 @@ int main(int argc, char ** argv) {
                 records.push_back(recurrent.record);
                 recurrent_results[variant].push_back(std::move(recurrent));
 
+                restore_root(ctx, attention_root);
+                auto attention = decode_query(
+                    ctx, vocab, candidates, "attention-only-root", variant, query,
+                    attention_root.source_tokens, attention_root.backing_id, attention_root.gpu_bytes);
+                if (active_attention_backing_id(ctx) != active_attention_backing_initial) {
+                    throw std::runtime_error("active attention cache backing changed");
+                }
+                records.push_back(attention.record);
+                attention_results[variant].push_back(std::move(attention));
+
                 if (save_full) {
                     restore_root(ctx, full_root);
                     auto full = decode_query(
@@ -467,6 +524,10 @@ int main(int argc, char ** argv) {
             cleared_root_bytes += llama_state_seq_clear_device_data(ctx, recurrent_root.key);
             if (llama_state_seq_get_device_data_size(ctx, recurrent_root.key) != 0) {
                 throw std::runtime_error("recurrent root did not close");
+            }
+            cleared_root_bytes += llama_state_seq_clear_device_data(ctx, attention_root.key);
+            if (llama_state_seq_get_device_data_size(ctx, attention_root.key) != 0) {
+                throw std::runtime_error("attention root did not close");
             }
             if (save_full) {
                 cleared_root_bytes += llama_state_seq_clear_device_data(ctx, full_root.key);
@@ -520,6 +581,12 @@ int main(int argc, char ** argv) {
         const size_t explicit_null = accuracy(null_results, "expected");
         const size_t recurrent_mutated = accuracy(recurrent_results.at("F1_G_MUT"), "expected_mutated");
         const size_t recurrent_presentation = accuracy(recurrent_results.at("F1_G_PRESENTATION"), "expected");
+        const size_t attention_joint = accuracy(attention_results.at("F1_G1"), "expected");
+        const size_t attention_f_only = accuracy(attention_results.at("F1_G0"), "expected");
+        const size_t attention_g_only = accuracy(attention_results.at("F0_G1"), "expected");
+        const size_t attention_null = accuracy(attention_results.at("F0_G0"), "expected");
+        const size_t attention_mutated = accuracy(attention_results.at("F1_G_MUT"), "expected_mutated");
+        const size_t attention_presentation = accuracy(attention_results.at("F1_G_PRESENTATION"), "expected");
         const size_t full_joint = accuracy(full_root_results, "expected");
         const size_t direct_joint = accuracy(direct_results, "expected");
         const size_t mutation_changes = differences(
@@ -528,30 +595,45 @@ int main(int argc, char ** argv) {
             recurrent_results.at("F1_G1"), null_results);
         const size_t recurrent_matches_full =
             queries.size() - differences(recurrent_results.at("F1_G1"), full_root_results);
+        const size_t attention_mutation_changes = differences(
+            attention_results.at("F1_G1"), attention_results.at("F1_G_MUT"));
+        const size_t attention_joint_changes_from_null = differences(
+            attention_results.at("F1_G1"), null_results);
+        const size_t attention_matches_full =
+            queries.size() - differences(attention_results.at("F1_G1"), full_root_results);
         const size_t full_matches_direct =
             queries.size() - differences(full_root_results, direct_results);
 
-        json interactions = json::array();
+        json recurrent_interactions = json::array();
+        json attention_interactions = json::array();
         for (size_t i = 0; i < queries.size(); ++i) {
-            auto interaction = interaction_record(
+            auto recurrent_interaction = interaction_record(
                 recurrent_results.at("F0_G0")[i],
                 recurrent_results.at("F1_G0")[i],
                 recurrent_results.at("F0_G1")[i],
                 recurrent_results.at("F1_G1")[i]);
-            interaction["query_id"] = queries.at(i).at("id");
-            interactions.push_back(std::move(interaction));
+            recurrent_interaction["query_id"] = queries.at(i).at("id");
+            recurrent_interactions.push_back(std::move(recurrent_interaction));
+
+            auto attention_interaction = interaction_record(
+                attention_results.at("F0_G0")[i],
+                attention_results.at("F1_G0")[i],
+                attention_results.at("F0_G1")[i],
+                attention_results.at("F1_G1")[i]);
+            attention_interaction["query_id"] = queries.at(i).at("id");
+            attention_interactions.push_back(std::move(attention_interaction));
         }
 
         const auto & acceptance = spec.at("acceptance_law");
         const bool accepted =
-            recurrent_joint >= acceptance.at("recurrent_joint_correct_minimum").get<size_t>() &&
-            recurrent_joint > recurrent_f_only &&
-            recurrent_joint > recurrent_g_only &&
-            recurrent_joint > explicit_null &&
-            recurrent_mutated >= acceptance.at("mutated_correct_minimum").get<size_t>() &&
-            recurrent_presentation >= acceptance.at("presentation_correct_minimum").get<size_t>() &&
-            mutation_changes >= acceptance.at("mutation_changes_minimum").get<size_t>() &&
-            joint_changes_from_null >= acceptance.at("joint_changes_from_null_minimum").get<size_t>() &&
+            attention_joint >= acceptance.at("attention_joint_correct_minimum").get<size_t>() &&
+            attention_joint > attention_f_only &&
+            attention_joint > attention_g_only &&
+            attention_joint > explicit_null &&
+            attention_mutated >= acceptance.at("mutated_correct_minimum").get<size_t>() &&
+            attention_presentation >= acceptance.at("presentation_correct_minimum").get<size_t>() &&
+            attention_mutation_changes >= acceptance.at("mutation_changes_minimum").get<size_t>() &&
+            attention_joint_changes_from_null >= acceptance.at("joint_changes_from_null_minimum").get<size_t>() &&
             full_joint >= acceptance.at("full_joint_correct_minimum").get<size_t>() &&
             direct_joint >= acceptance.at("direct_joint_correct_minimum").get<size_t>() &&
             full_matches_direct >= acceptance.at("full_matches_direct_minimum").get<size_t>();
@@ -564,10 +646,13 @@ int main(int argc, char ** argv) {
         if (active_recurrent_backing_id(ctx) != active_backing_initial) {
             throw std::runtime_error("active recurrent backing changed at close");
         }
+        if (active_attention_backing_id(ctx) != active_attention_backing_initial) {
+            throw std::runtime_error("active attention backing changed at close");
+        }
 
         json result = {
             {"schema_version", 1},
-            {"mechanism", "QUERY_SEPARATED_GDN_RECURRENT_ONLY_DEVICE_ROOT"},
+            {"mechanism", "QUERY_SEPARATED_ATTENTION_ONLY_DEVICE_ROOT"},
             {"spec_id", spec.at("id")},
             {"model_arch", "qwen35moe"},
             {"configuration", {
@@ -581,16 +666,20 @@ int main(int argc, char ** argv) {
             {"carrier", {
                 {"recurrent_layers", 30},
                 {"active_recurrent_backing_id", hex64(active_backing_initial)},
+                {"active_attention_backing_id", hex64(active_attention_backing_initial)},
                 {"active_recurrent_logical_bytes", 65863680},
                 {"maximum_simultaneous_root_gpu_bytes", maximum_simultaneous_root_gpu_bytes},
                 {"cleared_root_bytes", cleared_root_bytes},
                 {"all_retained_roots_closed", llama_state_seq_get_device_root_count(ctx) == 0},
                 {"active_backing_stable", active_recurrent_backing_id(ctx) == active_backing_initial},
+                {"active_attention_backing_stable",
+                    active_attention_backing_id(ctx) == active_attention_backing_initial},
                 {"restoration_class", "SNAPSHOT_RELOAD"},
             }},
             {"roots", roots},
             {"records", records},
-            {"interactions", interactions},
+            {"recurrent_interactions", recurrent_interactions},
+            {"attention_interactions", attention_interactions},
             {"summary", {
                 {"query_count", queries.size()},
                 {"recurrent_joint_correct", recurrent_joint},
@@ -600,21 +689,30 @@ int main(int argc, char ** argv) {
                 {"explicit_null_correct", explicit_null},
                 {"recurrent_mutated_correct", recurrent_mutated},
                 {"recurrent_presentation_correct", recurrent_presentation},
+                {"attention_joint_correct", attention_joint},
+                {"attention_f_only_correct", attention_f_only},
+                {"attention_g_only_correct", attention_g_only},
+                {"attention_null_source_correct", attention_null},
+                {"attention_mutated_correct", attention_mutated},
+                {"attention_presentation_correct", attention_presentation},
                 {"full_joint_correct", full_joint},
                 {"direct_joint_correct", direct_joint},
                 {"mutation_changes", mutation_changes},
                 {"joint_changes_from_null", joint_changes_from_null},
+                {"attention_mutation_changes", attention_mutation_changes},
+                {"attention_joint_changes_from_null", attention_joint_changes_from_null},
                 {"recurrent_matches_full", recurrent_matches_full},
+                {"attention_matches_full", attention_matches_full},
                 {"full_matches_direct", full_matches_direct},
             }},
             {"verdict", accepted ? "accept" : "reject"},
             {"claim_ceiling",
              "Acceptance can establish only that source evidence encoded before query selection survives as "
-             "device-resident Qwen3.5 GDN recurrent state without attention KV, is causally read by later "
-             "Agents-A1 inference, and carries a useful two-link relation under matched controls. The root "
-             "operation is snapshot reload. This does not establish native inverse restoration, phase-native "
-             "advantage, lower fresh compute than the strongest compact recurrent/cache route, or constructively "
-             "unbounded catalytic inference."},
+             "device-resident attention KV without source GDN state, is causally read by later Agents-A1 "
+             "inference, and carries a useful two-link relation under matched controls. The root operation is "
+             "snapshot reload. This does not establish a bounded sufficient attention subspace, native inverse "
+             "restoration, phase-native advantage, lower fresh compute than the strongest compact cache route, "
+             "or constructively unbounded catalytic inference."},
         };
 
         std::ofstream result_stream(params.out_file);

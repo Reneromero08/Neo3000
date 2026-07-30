@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "id": "attention-carrier-query-separated-v1",
+  "description": "Two-link evidence is decoded before query selection. Qwen3.5 source attention KV is retained for the primary route while source GDN recurrent state is explicitly cleared before capture.",
+  "sources": {
+    "F0_G0": {
+      "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+      "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+      "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+      "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+    },
+    "F1_G0": {
+      "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+      "module_f": "F: Item W maps to vault J. Item X maps to vault K. Item Y maps to vault L. Item Z maps to vault M.\n",
+      "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+      "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+    },
+    "F0_G1": {
+      "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+      "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+      "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+      "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+    },
+    "F1_G1": {
+      "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+      "module_f": "F: Item W maps to vault J. Item X maps to vault K. Item Y maps to vault L. Item Z maps to vault M.\n",
+      "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+      "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+    },
+    "F1_G_MUT": {
+      "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+      "module_f": "F: Item W maps to vault J. Item X maps to vault K. Item Y maps to vault L. Item Z maps to vault M.\n",
+      "module_g": "G: Vault J has code B. Vault K has code C. Vault L has code D. Vault M has code A.\n",
+      "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+    },
+    "F1_G_PRESENTATION": {
+      "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+      "module_f": "F: Item Z maps to vault M. Item Y maps to vault L. Item X maps to vault K. Item W maps to vault J.\n",
+      "module_g": "G: Vault M has code D. Vault L has code C. Vault K has code B. Vault J has code A.\n",
+      "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+    }
+  },
+  "queries": [
+    {
+      "id": "query-W",
+      "expected": "A",
+      "expected_mutated": "B",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item W through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "query-X",
+      "expected": "B",
+      "expected_mutated": "C",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item X through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "query-Y",
+      "expected": "C",
+      "expected_mutated": "D",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item Y through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "query-Z",
+      "expected": "D",
+      "expected_mutated": "A",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item Z through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    }
+  ],
+  "acceptance_law": {
+    "attention_joint_correct_minimum": 3,
+    "mutated_correct_minimum": 3,
+    "presentation_correct_minimum": 3,
+    "mutation_changes_minimum": 3,
+    "joint_changes_from_null_minimum": 3,
+    "full_joint_correct_minimum": 3,
+    "direct_joint_correct_minimum": 3,
+    "full_matches_direct_minimum": 4
+  },
+  "claim_ceiling": "Useful query-separated attention-KV carrier only. The on-device operation is snapshot reload and ordinary full-hybrid caching remains the strongest compact baseline. No bounded sufficient subspace, phase-native resource, native inverse-restoration, fresh-compute advantage, catalytic, or unbounded claim follows."
+}
