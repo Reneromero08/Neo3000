@@ -52,6 +52,18 @@ The active recurrence and acceptance boundary are
   the required model-semantic transition. The forward-only learned
   attention-writer family is closed. The active physical successor is a
   dynamic model-weight adapter, not a writer/evaluator/evidence version.
+- `neo-exp-0155` is frozen precontact as one shared complex fast-weight
+  memory before the LM head. It retains separate CUDA active and staging
+  vectors on one fixed backing. Each actual output adds one public
+  destination/value binding to staging through a backend graph; the complete
+  four-output panel alone commits staging to active. Later query computation
+  reads the prior active vector, performs all sixteen phase correlations,
+  selects through the fitted public destination decoder, and injects the
+  retrieved candidate code before the frozen output weights. The fixed
+  geometry is width `256`, seed `155`, one IOUV four-phase recurrence, one
+  matched carrier-off route, and one return boundary. This bypasses failed
+  attention-row reconstruction but remains dominated by the exact compact
+  four-link/Z4 table. It has no model-facing result yet.
 - The exact four-link/Z4 recurrence remains the stronger compact baseline.
   No inference-bearing recurrence, fresh-compute advantage, phase-native
   resource, Small Wall crossing, catalytic recurrence, or unbounded claim is

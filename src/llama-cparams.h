@@ -13,8 +13,6 @@ struct ggml_tensor;
 
 // Experimental fixed-capacity semantic carrier used only by the Neo3000
 // frontier probe. The query/output maps are immutable after installation.
-// The 4x4 carrier action is updated in place on the same host backing and
-// supplied to the model graph as a live input.
 struct llama_neo3000_semantic_carrier {
     uint32_t n_embd = 0;
     uint32_t n_expert = 0;
@@ -35,10 +33,25 @@ struct llama_neo3000_semantic_carrier {
     // device-to-device; no retained host mirror of the slot payload exists.
     std::shared_ptr<void> hidden_slot_backing;
     ggml_tensor * hidden_slots = nullptr; // [n_embd, 4]
+    // Phase-memory mode retains one shared complex fast-weight vector and a
+    // separate staging vector in one backend allocation. Actual projected
+    // outputs add public destination/value bindings to staging. A phase
+    // commit copies staging to active only after the complete causal panel,
+    // so an in-flight panel cannot observe its own partial successor.
+    std::shared_ptr<void> phase_memory_backing;
+    ggml_tensor * phase_active = nullptr;  // [2 * phase_width]
+    ggml_tensor * phase_staging = nullptr; // [2 * phase_width]
+    std::vector<float> phase_binding_table; // [16, 2 * phase_width]
+    std::vector<float> phase_reader;        // [16, 2 * phase_width]
+    uint32_t phase_width = 0;
+    uint32_t phase_staging_writes = 0;
+    uint32_t phase_staging_destination_mask = 0;
     uint32_t phase = 0;
     bool enabled = false;
     bool output_written = false;
     bool output_hidden_slots = false;
+    bool output_phase_memory = false;
+    bool phase_poisoned = false;
     bool output_map_trainable = false;
     bool moe_router_bias = false;
     bool recurrent_transition_input = false;
@@ -48,6 +61,12 @@ struct llama_neo3000_semantic_carrier {
     uint64_t host_to_backend_bytes = 0;
     uint64_t backend_to_graph_bytes = 0;
     uint64_t hidden_slot_backend_bytes = 0;
+    uint64_t phase_memory_backend_bytes = 0;
+    uint64_t phase_binding_upload_bytes = 0;
+    uint64_t phase_backend_copy_bytes = 0;
+    uint64_t phase_element_operations = 0;
+    uint64_t phase_graph_applications = 0;
+    uint64_t phase_commits = 0;
     uint64_t writer_host_input_bytes = 0;
     uint64_t port_writes = 0;
     uint64_t router_bias_token_applications = 0;

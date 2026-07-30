@@ -1223,7 +1223,8 @@ static void neo3000_set_semantic_carrier_action(
         return;
     }
     if (carrier.output_written) {
-        if (carrier.output_hidden_slots) {
+        if (carrier.output_hidden_slots ||
+            carrier.output_phase_memory) {
             for (uint32_t index = 0; index < 4; ++index) {
                 carrier.action[
                     static_cast<size_t>(index) * 4 + index] = 1.0f;
@@ -1243,6 +1244,13 @@ struct neo3000_hidden_slot_backing {
     ggml_context_ptr ctx;
     ggml_backend_buffer_ptr buffer;
     ggml_tensor * slots = nullptr;
+};
+
+struct neo3000_phase_memory_backing {
+    ggml_context_ptr ctx;
+    ggml_backend_buffer_ptr buffer;
+    ggml_tensor * active = nullptr;
+    ggml_tensor * staging = nullptr;
 };
 
 bool llama_context::install_neo3000_semantic_carrier(
@@ -1479,6 +1487,124 @@ bool llama_context::install_neo3000_output_written_hidden_slots(
     return true;
 }
 
+bool llama_context::install_neo3000_output_phase_memory(
+        std::vector<float> query_map,
+        const std::array<float, 4> & query_bias,
+        std::vector<float> output_map,
+        std::vector<float> phase_binding_table,
+        std::vector<float> phase_reader,
+        uint32_t phase_width) {
+    const size_t map_size =
+        static_cast<size_t>(model.hparams.n_embd) * 4;
+    const size_t phase_vector_size =
+        static_cast<size_t>(phase_width) * 2;
+    const size_t phase_table_size = phase_vector_size * 16;
+    const auto finite =
+            [](const std::vector<float> & values) {
+        return std::all_of(
+            values.begin(),
+            values.end(),
+            [](float value) { return std::isfinite(value); });
+    };
+    if (model.arch != LLM_ARCH_QWEN35MOE ||
+        phase_width < 16 ||
+        phase_width > 4096 ||
+        query_map.size() != map_size ||
+        output_map.size() != map_size ||
+        phase_binding_table.size() != phase_table_size ||
+        phase_reader.size() != phase_table_size ||
+        !finite(query_map) ||
+        !finite(output_map) ||
+        !finite(phase_binding_table) ||
+        !finite(phase_reader) ||
+        !std::all_of(
+            query_bias.begin(),
+            query_bias.end(),
+            [](float value) { return std::isfinite(value); })) {
+        return false;
+    }
+
+    ggml_init_params params = {
+        /*.mem_size   =*/ 2 * ggml_tensor_overhead(),
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    auto backing = std::make_shared<neo3000_phase_memory_backing>();
+    backing->ctx.reset(ggml_init(params));
+    if (!backing->ctx) {
+        return false;
+    }
+    backing->active = ggml_new_tensor_1d(
+        backing->ctx.get(),
+        GGML_TYPE_F32,
+        phase_vector_size);
+    backing->staging = ggml_new_tensor_1d(
+        backing->ctx.get(),
+        GGML_TYPE_F32,
+        phase_vector_size);
+    ggml_set_name(
+        backing->active,
+        "neo3000_phase_memory_active_resident");
+    ggml_set_name(
+        backing->staging,
+        "neo3000_phase_memory_staging_resident");
+    if (!model.output || !model.output->buffer) {
+        return false;
+    }
+    const auto buft =
+        ggml_backend_buffer_get_type(model.output->buffer);
+    backing->buffer.reset(
+        ggml_backend_alloc_ctx_tensors_from_buft(
+            backing->ctx.get(),
+            buft));
+    if (!backing->buffer) {
+        return false;
+    }
+    ggml_backend_buffer_clear(backing->buffer.get(), 0);
+
+    auto carrier =
+        std::make_shared<llama_neo3000_semantic_carrier>();
+    carrier->n_embd = model.hparams.n_embd;
+    carrier->read_layer = -1;
+    carrier->query_map = std::move(query_map);
+    carrier->query_bias = query_bias;
+    carrier->output_map = std::move(output_map);
+    carrier->phase_binding_table =
+        std::move(phase_binding_table);
+    carrier->phase_reader = std::move(phase_reader);
+    carrier->phase_width = phase_width;
+    carrier->phase_active = backing->active;
+    carrier->phase_staging = backing->staging;
+    carrier->phase_memory_backend_bytes =
+        ggml_backend_buffer_get_size(backing->buffer.get());
+    carrier->phase_memory_backing = std::move(backing);
+    carrier->output_written = true;
+    carrier->output_phase_memory = true;
+    carrier->enabled = false;
+    neo3000_set_semantic_carrier_action(*carrier);
+
+    uint64_t backing_id = 1469598103934665603ULL;
+    const auto mix_pointer = [&](const void * pointer) {
+        uintptr_t value = reinterpret_cast<uintptr_t>(pointer);
+        for (size_t i = 0; i < sizeof(value); ++i) {
+            backing_id ^=
+                static_cast<uint8_t>((value >> (8 * i)) & 0xffu);
+            backing_id *= 1099511628211ULL;
+        }
+    };
+    mix_pointer(carrier.get());
+    mix_pointer(carrier->phase_active);
+    mix_pointer(carrier->phase_active->data);
+    mix_pointer(carrier->phase_staging);
+    mix_pointer(carrier->phase_staging->data);
+    mix_pointer(carrier->phase_memory_backing.get());
+    carrier->action_backing_id = backing_id == 0 ? 1 : backing_id;
+
+    cparams.neo3000_semantic_carrier = std::move(carrier);
+    sched_need_reserve = true;
+    return true;
+}
+
 bool llama_context::write_neo3000_semantic_port(
         const float * output_state,
         size_t output_state_count,
@@ -1548,6 +1674,134 @@ bool llama_context::write_neo3000_semantic_port(
     return true;
 }
 
+bool llama_context::stage_neo3000_phase_binding(
+        uint32_t actual_output,
+        uint32_t public_destination) {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->output_phase_memory ||
+        carrier->phase_poisoned ||
+        !carrier->phase_staging ||
+        !carrier->phase_memory_backing ||
+        carrier->phase_width == 0 ||
+        actual_output >= 4 ||
+        public_destination >= 4 ||
+        carrier->phase_staging_writes >= 4 ||
+        (carrier->phase_staging_destination_mask &
+            (1u << public_destination)) != 0) {
+        return false;
+    }
+    const size_t phase_vector_size =
+        static_cast<size_t>(carrier->phase_width) * 2;
+    const size_t binding_index =
+        static_cast<size_t>(actual_output) * 4 +
+        public_destination;
+    if (carrier->phase_binding_table.size() !=
+            phase_vector_size * 16 ||
+        ggml_nbytes(carrier->phase_staging) !=
+            phase_vector_size * sizeof(float)) {
+        carrier->phase_poisoned = true;
+        return false;
+    }
+
+    ggml_init_params params = {
+        /*.mem_size   =*/ 64 * 1024,
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    ggml_context * graph_ctx = ggml_init(params);
+    if (!graph_ctx) {
+        carrier->phase_poisoned = true;
+        return false;
+    }
+    ggml_tensor * binding = ggml_new_tensor_1d(
+        graph_ctx,
+        GGML_TYPE_F32,
+        phase_vector_size);
+    ggml_set_input(binding);
+    ggml_set_name(binding, "neo3000_phase_binding_input");
+    ggml_tensor * accumulated = ggml_add(
+        graph_ctx,
+        carrier->phase_staging,
+        binding);
+    ggml_cgraph * graph =
+        ggml_new_graph_custom(graph_ctx, 64, false);
+    ggml_build_forward_expand(
+        graph,
+        ggml_cpy(
+            graph_ctx,
+            accumulated,
+            carrier->phase_staging));
+
+    invalidate_neo3000_graph_cache();
+    if (!ggml_backend_sched_alloc_graph(sched.get(), graph)) {
+        invalidate_neo3000_graph_cache();
+        ggml_free(graph_ctx);
+        carrier->phase_poisoned = true;
+        return false;
+    }
+    ggml_backend_tensor_set(
+        binding,
+        carrier->phase_binding_table.data() +
+            binding_index * phase_vector_size,
+        0,
+        phase_vector_size * sizeof(float));
+    const ggml_status status = graph_compute(graph, true);
+    synchronize();
+    invalidate_neo3000_graph_cache();
+    ggml_free(graph_ctx);
+    if (status != GGML_STATUS_SUCCESS) {
+        carrier->phase_poisoned = true;
+        return false;
+    }
+
+    carrier->phase_binding_upload_bytes +=
+        phase_vector_size * sizeof(float);
+    carrier->phase_element_operations += phase_vector_size;
+    ++carrier->phase_graph_applications;
+    ++carrier->phase_staging_writes;
+    carrier->phase_staging_destination_mask |=
+        1u << public_destination;
+    ++carrier->port_writes;
+    ++carrier->generation;
+    return true;
+}
+
+bool llama_context::commit_neo3000_phase_memory() {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->output_phase_memory ||
+        carrier->phase_poisoned ||
+        !carrier->phase_active ||
+        !carrier->phase_staging ||
+        carrier->phase_staging_writes != 4 ||
+        carrier->phase_staging_destination_mask != 0x0fu ||
+        ggml_nbytes(carrier->phase_active) !=
+            ggml_nbytes(carrier->phase_staging)) {
+        return false;
+    }
+    ggml_backend_tensor_copy(
+        carrier->phase_staging,
+        carrier->phase_active);
+    std::vector<float> zero(
+        static_cast<size_t>(carrier->phase_width) * 2,
+        0.0f);
+    ggml_backend_tensor_set(
+        carrier->phase_staging,
+        zero.data(),
+        0,
+        zero.size() * sizeof(float));
+    synchronize();
+    carrier->phase_backend_copy_bytes +=
+        ggml_nbytes(carrier->phase_active) +
+        ggml_nbytes(carrier->phase_staging);
+    carrier->phase_staging_writes = 0;
+    carrier->phase_staging_destination_mask = 0;
+    ++carrier->phase_commits;
+    ++carrier->generation;
+    return true;
+}
+
 bool llama_context::reset_neo3000_semantic_port() {
     auto & carrier = cparams.neo3000_semantic_carrier;
     if (!carrier || !carrier->output_written) {
@@ -1565,6 +1819,32 @@ bool llama_context::reset_neo3000_semantic_port() {
             zero.data(),
             0,
             zero.size() * sizeof(float));
+    }
+    if (carrier->output_phase_memory) {
+        if (!carrier->phase_active ||
+            !carrier->phase_staging ||
+            carrier->phase_width == 0) {
+            return false;
+        }
+        std::vector<float> zero(
+            static_cast<size_t>(carrier->phase_width) * 2,
+            0.0f);
+        ggml_backend_tensor_set(
+            carrier->phase_active,
+            zero.data(),
+            0,
+            zero.size() * sizeof(float));
+        ggml_backend_tensor_set(
+            carrier->phase_staging,
+            zero.data(),
+            0,
+            zero.size() * sizeof(float));
+        synchronize();
+        carrier->phase_staging_writes = 0;
+        carrier->phase_staging_destination_mask = 0;
+        carrier->phase_poisoned = false;
+        carrier->phase_backend_copy_bytes +=
+            zero.size() * sizeof(float) * 2;
     }
     carrier->port.fill(0.0f);
     neo3000_set_semantic_carrier_action(*carrier);
@@ -1808,6 +2088,29 @@ int llama_context::optimize_neo3000_semantic_carrier_output_map(
 void llama_context::clear_neo3000_semantic_carrier() {
     if (!cparams.neo3000_semantic_carrier) {
         return;
+    }
+    if (cparams.neo3000_semantic_carrier->output_phase_memory &&
+        cparams.neo3000_semantic_carrier->phase_active &&
+        cparams.neo3000_semantic_carrier->phase_staging) {
+        std::vector<float> zero(
+            static_cast<size_t>(
+                cparams.neo3000_semantic_carrier->phase_width) * 2,
+            0.0f);
+        ggml_backend_tensor_set(
+            cparams.neo3000_semantic_carrier->phase_active,
+            zero.data(),
+            0,
+            zero.size() * sizeof(float));
+        ggml_backend_tensor_set(
+            cparams.neo3000_semantic_carrier->phase_staging,
+            zero.data(),
+            0,
+            zero.size() * sizeof(float));
+        synchronize();
+        cparams.neo3000_semantic_carrier->phase_staging_writes = 0;
+        cparams.neo3000_semantic_carrier
+            ->phase_staging_destination_mask = 0;
+        cparams.neo3000_semantic_carrier->phase_poisoned = true;
     }
     cparams.neo3000_semantic_carrier->enabled = false;
     cparams.neo3000_semantic_carrier->port.fill(0.0f);

@@ -587,6 +587,19 @@ constructively unbounded local Agents-A1 inference.
   model-weight adapter that changes the state-transition law itself; do not
   create writer, rank, ridge, layer, context, fixture, evaluator,
   carrier-evaluation, or evidence-harness versions.
+  `neo-exp-0155` is frozen precontact as one changed shared fast-weight
+  substrate, not an evidence-harness revision. Actual projected outputs bind
+  public destination/value phasors into a CUDA-resident staging vector; only a
+  complete four-output panel commits to the separate active vector, preventing
+  a phase from reading a partial successor. Later query computation decodes a
+  destination, correlates the same shared active memory against all candidate
+  bindings, and applies the retrieved code before the frozen LM head. Width
+  `256`, seed `155`, construction contexts, output-dual gain law, IOUV
+  recurrence, carrier-off control, and return gate are prospectively fixed.
+  The exact four-link/Z4 table remains the stronger compact baseline. Execute
+  this mechanism once; an adjudicable result must select a new physical
+  substrate, never an evaluator, carrier-evaluation, or evidence-harness
+  successor.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

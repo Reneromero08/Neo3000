@@ -26,7 +26,35 @@ public:
             carrier->query_bias.data(),
             0,
             carrier->query_bias.size() * sizeof(float));
-        if (carrier->output_hidden_slots) {
+        if (carrier->output_phase_memory) {
+            GGML_ASSERT(
+                output_map &&
+                action &&
+                phase_memory &&
+                phase_reader &&
+                carrier->phase_active &&
+                carrier->phase_memory_backing);
+            ggml_backend_tensor_set(
+                output_map,
+                carrier->output_map.data(),
+                0,
+                carrier->output_map.size() * sizeof(float));
+            ggml_backend_tensor_set(
+                action,
+                carrier->action.data(),
+                0,
+                carrier->action.size() * sizeof(float));
+            ggml_backend_tensor_copy(
+                carrier->phase_active,
+                phase_memory);
+            ggml_backend_tensor_set(
+                phase_reader,
+                carrier->phase_reader.data(),
+                0,
+                carrier->phase_reader.size() * sizeof(float));
+            carrier->backend_to_graph_bytes +=
+                ggml_nbytes(carrier->phase_active);
+        } else if (carrier->output_hidden_slots) {
             GGML_ASSERT(
                 hidden_slots &&
                 action &&
@@ -50,7 +78,9 @@ public:
                 0,
                 carrier->output_map.size() * sizeof(float));
             const float * action_data =
-                carrier->output_written && carrier->enabled
+                carrier->output_written &&
+                    !carrier->output_phase_memory &&
+                    carrier->enabled
                     ? carrier->port.data()
                     : carrier->action.data();
             ggml_backend_tensor_set(
@@ -63,7 +93,11 @@ public:
         carrier->host_to_backend_bytes +=
             (carrier->query_map.size() +
              carrier->query_bias.size() +
-             (carrier->output_hidden_slots
+             (carrier->output_phase_memory
+                ? carrier->output_map.size() +
+                    carrier->action.size() +
+                    carrier->phase_reader.size()
+              : carrier->output_hidden_slots
                 ? carrier->action.size()
                 : carrier->output_map.size() +
                     carrier->action.size())) *
@@ -92,7 +126,12 @@ public:
             }
         }
         carrier->carrier_map_multiply_accumulates +=
-            (static_cast<uint64_t>(carrier->n_embd) * 8 + 16) *
+            (static_cast<uint64_t>(carrier->n_embd) * 8 +
+             16 +
+             (carrier->output_phase_memory
+                ? static_cast<uint64_t>(
+                    carrier->phase_width) * 2 * 16 + 16
+                : 0)) *
             ubatch->n_tokens;
     }
 
@@ -104,10 +143,28 @@ public:
                 output_map_trainable &&
             candidate->output_hidden_slots ==
                 carrier->output_hidden_slots &&
+            candidate->output_phase_memory ==
+                carrier->output_phase_memory &&
             query_map &&
             query_map->ne[0] == carrier->n_embd &&
             query_map->ne[1] == 4 &&
-            (carrier->output_hidden_slots
+            (carrier->output_phase_memory
+                ? output_map &&
+                    action &&
+                    phase_memory &&
+                    phase_reader &&
+                    output_map->ne[0] == 4 &&
+                    output_map->ne[1] == carrier->n_embd &&
+                    action->ne[0] == 4 &&
+                    action->ne[1] == 4 &&
+                    phase_memory->ne[0] ==
+                        static_cast<int64_t>(
+                            carrier->phase_width) * 2 &&
+                    phase_reader->ne[0] ==
+                        static_cast<int64_t>(
+                            carrier->phase_width) * 2 &&
+                    phase_reader->ne[1] == 16
+              : carrier->output_hidden_slots
                 ? hidden_slots &&
                     action &&
                     hidden_slots->ne[0] == carrier->n_embd &&
@@ -126,6 +183,8 @@ public:
     ggml_tensor * output_map = nullptr;
     ggml_tensor * action = nullptr;
     ggml_tensor * hidden_slots = nullptr;
+    ggml_tensor * phase_memory = nullptr;
+    ggml_tensor * phase_reader = nullptr;
 };
 
 void llama_model_qwen35moe::load_arch_hparams(llama_model_loader & ml) {
@@ -328,7 +387,49 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
                 4);
         ggml_set_input(carrier_input->query_map);
         ggml_set_input(carrier_input->query_bias);
-        if (state->output_hidden_slots) {
+        if (state->output_phase_memory) {
+            carrier_input->output_map =
+                ggml_new_tensor_2d(
+                    ctx0,
+                    GGML_TYPE_F32,
+                    4,
+                    n_embd);
+            carrier_input->action =
+                ggml_new_tensor_2d(
+                    ctx0,
+                    GGML_TYPE_F32,
+                    4,
+                    4);
+            carrier_input->phase_memory =
+                ggml_new_tensor_1d(
+                    ctx0,
+                    GGML_TYPE_F32,
+                    static_cast<int64_t>(
+                        state->phase_width) * 2);
+            carrier_input->phase_reader =
+                ggml_new_tensor_2d(
+                    ctx0,
+                    GGML_TYPE_F32,
+                    static_cast<int64_t>(
+                        state->phase_width) * 2,
+                    16);
+            ggml_set_input(carrier_input->output_map);
+            ggml_set_input(carrier_input->action);
+            ggml_set_input(carrier_input->phase_memory);
+            ggml_set_input(carrier_input->phase_reader);
+            ggml_set_name(
+                carrier_input->output_map,
+                "neo3000_phase_memory_output_map");
+            ggml_set_name(
+                carrier_input->action,
+                "neo3000_phase_memory_query_gate");
+            ggml_set_name(
+                carrier_input->phase_memory,
+                "neo3000_phase_memory_active");
+            ggml_set_name(
+                carrier_input->phase_reader,
+                "neo3000_phase_memory_reader");
+        } else if (state->output_hidden_slots) {
             carrier_input->hidden_slots =
                 ggml_new_tensor_2d(
                     ctx0,
@@ -392,7 +493,33 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
                 carrier_code,
                 carrier->query_bias);
         ggml_tensor * carrier_delta = nullptr;
-        if (state->output_hidden_slots) {
+        if (state->output_phase_memory) {
+            carrier_code =
+                ggml_mul_mat(
+                    ctx0,
+                    carrier->action,
+                    carrier_code);
+            ggml_tensor * relation =
+                ggml_mul_mat(
+                    ctx0,
+                    carrier->phase_reader,
+                    carrier->phase_memory);
+            relation = ggml_reshape_2d(
+                ctx0,
+                relation,
+                4,
+                4);
+            carrier_code =
+                ggml_mul_mat(
+                    ctx0,
+                    relation,
+                    carrier_code);
+            carrier_delta =
+                ggml_mul_mat(
+                    ctx0,
+                    carrier->output_map,
+                    carrier_code);
+        } else if (state->output_hidden_slots) {
             carrier_code =
                 ggml_mul_mat(
                     ctx0,

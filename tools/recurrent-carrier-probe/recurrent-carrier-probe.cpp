@@ -101,6 +101,10 @@ struct semantic_carrier_adapter_build {
     std::vector<float> writer_map;
     std::array<float, 4> writer_bias = {};
     std::vector<float> output_map;
+    std::vector<float> phase_binding_table;
+    std::vector<float> phase_reader;
+    uint32_t phase_width = 0;
+    uint64_t phase_seed = 0;
     uint64_t source_tensor_read_bytes = 0;
     uint64_t peak_host_work_bytes = 0;
     uint64_t logical_bytes = 0;
@@ -113,6 +117,9 @@ struct semantic_carrier_adapter_build {
     double writer_training_max_abs_error = 0.0;
     double coupled_output_gain = 0.0;
     double coupled_training_minimum_margin = 0.0;
+    double phase_self_score_max_abs_error = 0.0;
+    double phase_cross_score_max_abs = 0.0;
+    double phase_training_retrieval_minimum_margin = 0.0;
     size_t training_correct = 0;
     size_t writer_training_correct = 0;
     size_t coupled_training_correct = 0;
@@ -1278,6 +1285,389 @@ static void complete_output_written_semantic_port(
         adapter->output_map.data(),
         adapter->output_map.size() * sizeof(float));
     adapter->hash = hash;
+}
+
+static uint64_t neo3000_splitmix64(uint64_t value) {
+    value += UINT64_C(0x9e3779b97f4a7c15);
+    value =
+        (value ^ (value >> 30)) *
+        UINT64_C(0xbf58476d1ce4e5b9);
+    value =
+        (value ^ (value >> 27)) *
+        UINT64_C(0x94d049bb133111eb);
+    return value ^ (value >> 31);
+}
+
+static void complete_output_phase_memory(
+        llama_context * ctx,
+        const std::vector<llama_token> & candidates,
+        const std::vector<semantic_carrier_training_sample> & query_samples,
+        const std::vector<semantic_carrier_writer_sample> & writer_samples,
+        uint32_t phase_width,
+        uint64_t phase_seed,
+        double training_margin,
+        double maximum_output_gain,
+        semantic_carrier_adapter_build * adapter) {
+    if (!ctx ||
+        !adapter ||
+        candidates.size() != 4 ||
+        query_samples.size() < 8 ||
+        query_samples.size() != writer_samples.size() ||
+        query_samples.size() % 4 != 0 ||
+        phase_width < 16 ||
+        phase_width > 4096 ||
+        !std::isfinite(training_margin) ||
+        training_margin <= 0.0 ||
+        !std::isfinite(maximum_output_gain) ||
+        maximum_output_gain <= 0.0) {
+        throw std::runtime_error(
+            "phase-memory construction law is invalid");
+    }
+    const size_t n_embd =
+        ctx->get_model().hparams.n_embd_out();
+    const size_t vector_size =
+        static_cast<size_t>(phase_width) * 2;
+    adapter->phase_width = phase_width;
+    adapter->phase_seed = phase_seed;
+    adapter->phase_binding_table.assign(
+        vector_size * 16,
+        0.0f);
+    adapter->phase_reader.assign(
+        vector_size * 16,
+        0.0f);
+
+    std::array<std::vector<double>, 4> key_real;
+    std::array<std::vector<double>, 4> key_imag;
+    std::array<std::vector<double>, 4> value_real;
+    std::array<std::vector<double>, 4> value_imag;
+    for (uint32_t ordinal = 0; ordinal < 4; ++ordinal) {
+        key_real[ordinal].resize(phase_width);
+        key_imag[ordinal].resize(phase_width);
+        value_real[ordinal].resize(phase_width);
+        value_imag[ordinal].resize(phase_width);
+        for (uint32_t j = 0; j < phase_width; ++j) {
+            const auto phase_component =
+                    [&](uint64_t domain) {
+                const uint64_t bits = neo3000_splitmix64(
+                    phase_seed ^
+                    (domain << 56) ^
+                    (static_cast<uint64_t>(ordinal) << 32) ^
+                    j);
+                const double unit =
+                    static_cast<double>(bits >> 11) /
+                    static_cast<double>(UINT64_C(1) << 53);
+                return 2.0 * M_PI * unit;
+            };
+            const double key_phase = phase_component(1);
+            const double value_phase = phase_component(2);
+            key_real[ordinal][j] = std::cos(key_phase);
+            key_imag[ordinal][j] = std::sin(key_phase);
+            value_real[ordinal][j] = std::cos(value_phase);
+            value_imag[ordinal][j] = std::sin(value_phase);
+        }
+    }
+    for (uint32_t output = 0; output < 4; ++output) {
+        for (uint32_t destination = 0;
+             destination < 4;
+             ++destination) {
+            const size_t relation =
+                static_cast<size_t>(output) * 4 +
+                destination;
+            for (uint32_t j = 0; j < phase_width; ++j) {
+                const double real =
+                    key_real[destination][j] *
+                        value_real[output][j] -
+                    key_imag[destination][j] *
+                        value_imag[output][j];
+                const double imag =
+                    key_real[destination][j] *
+                        value_imag[output][j] +
+                    key_imag[destination][j] *
+                        value_real[output][j];
+                adapter->phase_binding_table[
+                    relation * vector_size + j] =
+                    static_cast<float>(real);
+                adapter->phase_binding_table[
+                    relation * vector_size +
+                    phase_width + j] =
+                    static_cast<float>(imag);
+                adapter->phase_reader[
+                    relation * vector_size + j] =
+                    static_cast<float>(
+                        real / static_cast<double>(phase_width));
+                adapter->phase_reader[
+                    relation * vector_size +
+                    phase_width + j] =
+                    static_cast<float>(
+                        imag / static_cast<double>(phase_width));
+            }
+        }
+    }
+    for (size_t left = 0; left < 16; ++left) {
+        for (size_t right = 0; right < 16; ++right) {
+            double score = 0.0;
+            for (size_t j = 0; j < vector_size; ++j) {
+                score +=
+                    static_cast<double>(
+                        adapter->phase_reader[
+                            left * vector_size + j]) *
+                    static_cast<double>(
+                        adapter->phase_binding_table[
+                            right * vector_size + j]);
+            }
+            if (left == right) {
+                adapter->phase_self_score_max_abs_error =
+                    std::max(
+                        adapter->phase_self_score_max_abs_error,
+                        std::abs(score - 1.0));
+            } else {
+                adapter->phase_cross_score_max_abs =
+                    std::max(
+                        adapter->phase_cross_score_max_abs,
+                        std::abs(score));
+            }
+        }
+    }
+    if (adapter->phase_self_score_max_abs_error > 1e-5 ||
+        adapter->phase_cross_score_max_abs > 0.25) {
+        throw std::runtime_error(
+            "frozen phase-memory geometry is not separable");
+    }
+
+    std::array<std::array<double, 4>, 4>
+        unit_candidate_response = {};
+    for (size_t token = 0; token < candidates.size(); ++token) {
+        uint64_t read_bytes = 0;
+        uint64_t peak_bytes = 0;
+        const auto row = read_model_tensor_row_f32(
+            ctx->get_model().output,
+            candidates[token],
+            read_bytes,
+            peak_bytes);
+        adapter->source_tensor_read_bytes += read_bytes;
+        adapter->peak_host_work_bytes = std::max(
+            adapter->peak_host_work_bytes,
+            peak_bytes);
+        for (size_t code = 0; code < 4; ++code) {
+            for (size_t j = 0; j < n_embd; ++j) {
+                unit_candidate_response[token][code] +=
+                    static_cast<double>(row[j]) *
+                    static_cast<double>(
+                        adapter->output_map[j * 4 + code]);
+            }
+        }
+    }
+
+    struct coupled_sample {
+        std::array<double, 4> base = {};
+        std::array<double, 4> unit_delta = {};
+        uint32_t target = 0;
+    };
+    std::vector<coupled_sample> coupled;
+    coupled.reserve(query_samples.size());
+    double required_gain = 1.0;
+    adapter->phase_training_retrieval_minimum_margin =
+        std::numeric_limits<double>::infinity();
+    const auto decode_query_code =
+            [&](const semantic_carrier_training_sample & sample) {
+        std::array<double, 4> code = {};
+        for (uint32_t output = 0; output < 4; ++output) {
+            code[output] = adapter->query_bias[output];
+            for (size_t j = 0; j < n_embd; ++j) {
+                code[output] +=
+                    static_cast<double>(
+                        adapter->query_map[
+                            static_cast<size_t>(output) *
+                                n_embd + j]) *
+                    static_cast<double>(sample.embedding[j]);
+            }
+        }
+        return code;
+    };
+    for (size_t group = 0;
+         group < query_samples.size();
+         group += 4) {
+        std::vector<double> memory(vector_size, 0.0);
+        for (size_t i = 0; i < 4; ++i) {
+            const auto & query = query_samples[group + i];
+            const uint32_t output =
+                writer_samples[group + i].output_ordinal;
+            if (query.port_destination >= 4 ||
+                output >= 4) {
+                throw std::runtime_error(
+                    "phase-memory construction topology is invalid");
+            }
+            const size_t relation =
+                static_cast<size_t>(output) * 4 +
+                query.port_destination;
+            for (size_t j = 0; j < vector_size; ++j) {
+                memory[j] +=
+                    adapter->phase_binding_table[
+                        relation * vector_size + j];
+            }
+        }
+        for (size_t i = 0; i < 4; ++i) {
+            const auto & query = query_samples[group + i];
+            const auto query_code = decode_query_code(query);
+            std::array<double, 4> retrieved = {};
+            for (uint32_t output = 0; output < 4; ++output) {
+                for (uint32_t destination = 0;
+                     destination < 4;
+                     ++destination) {
+                    const size_t relation =
+                        static_cast<size_t>(output) * 4 +
+                        destination;
+                    double relation_score = 0.0;
+                    for (size_t j = 0; j < vector_size; ++j) {
+                        relation_score +=
+                            static_cast<double>(
+                                adapter->phase_reader[
+                                    relation * vector_size + j]) *
+                            memory[j];
+                    }
+                    retrieved[output] +=
+                        relation_score *
+                        query_code[destination];
+                }
+            }
+            const uint32_t target =
+                query.next_output_ordinal;
+            if (target >= 4) {
+                throw std::runtime_error(
+                    "phase-memory target is invalid");
+            }
+            for (size_t competitor = 0;
+                 competitor < 4;
+                 ++competitor) {
+                if (competitor != target) {
+                    adapter
+                        ->phase_training_retrieval_minimum_margin =
+                        std::min(
+                            adapter
+                                ->phase_training_retrieval_minimum_margin,
+                            retrieved[target] -
+                                retrieved[competitor]);
+                }
+            }
+            coupled_sample sample;
+            sample.target = target;
+            for (size_t token = 0; token < 4; ++token) {
+                sample.base[token] =
+                    query.candidate_logits[token];
+                for (size_t code = 0; code < 4; ++code) {
+                    sample.unit_delta[token] +=
+                        unit_candidate_response[token][code] *
+                        retrieved[code];
+                }
+            }
+            for (size_t competitor = 0;
+                 competitor < 4;
+                 ++competitor) {
+                if (competitor == target) {
+                    continue;
+                }
+                const double denominator =
+                    sample.unit_delta[target] -
+                    sample.unit_delta[competitor];
+                if (!std::isfinite(denominator) ||
+                    denominator <= 1e-9) {
+                    throw std::runtime_error(
+                        "phase memory cannot separate a construction target");
+                }
+                required_gain = std::max(
+                    required_gain,
+                    (sample.base[competitor] -
+                     sample.base[target] +
+                     training_margin) /
+                        denominator);
+            }
+            coupled.push_back(sample);
+        }
+    }
+    if (!std::isfinite(required_gain) ||
+        !std::isfinite(
+            adapter->phase_training_retrieval_minimum_margin) ||
+        adapter->phase_training_retrieval_minimum_margin <= 0.0 ||
+        required_gain > maximum_output_gain) {
+        throw std::runtime_error(
+            "phase-memory utility gain exceeds the frozen bound");
+    }
+    adapter->coupled_output_gain = required_gain;
+    for (float & value : adapter->output_map) {
+        value = static_cast<float>(
+            static_cast<double>(value) * required_gain);
+    }
+    adapter->output_dual_max_abs_error *= required_gain;
+    adapter->coupled_training_correct = 0;
+    adapter->coupled_training_minimum_margin =
+        std::numeric_limits<double>::infinity();
+    for (const auto & sample : coupled) {
+        std::array<double, 4> logits = {};
+        for (size_t token = 0; token < 4; ++token) {
+            logits[token] =
+                sample.base[token] +
+                required_gain * sample.unit_delta[token];
+        }
+        const size_t predicted = static_cast<size_t>(
+            std::distance(
+                logits.begin(),
+                std::max_element(
+                    logits.begin(),
+                    logits.end())));
+        adapter->coupled_training_correct +=
+            predicted == sample.target;
+        for (size_t competitor = 0;
+             competitor < 4;
+             ++competitor) {
+            if (competitor != sample.target) {
+                adapter->coupled_training_minimum_margin =
+                    std::min(
+                        adapter->coupled_training_minimum_margin,
+                        logits[sample.target] -
+                            logits[competitor]);
+            }
+        }
+    }
+
+    adapter->writer_map.clear();
+    adapter->writer_bias.fill(0.0f);
+    adapter->logical_bytes =
+        (adapter->query_map.size() +
+         adapter->query_bias.size() +
+         adapter->output_map.size() +
+         adapter->phase_binding_table.size() +
+         adapter->phase_reader.size() +
+         16) * sizeof(float);
+    uint64_t hash = UINT64_C(1469598103934665603);
+    fnv1a64_update(
+        hash,
+        adapter->query_map.data(),
+        adapter->query_map.size() * sizeof(float));
+    fnv1a64_update(
+        hash,
+        adapter->query_bias.data(),
+        adapter->query_bias.size() * sizeof(float));
+    fnv1a64_update(
+        hash,
+        adapter->output_map.data(),
+        adapter->output_map.size() * sizeof(float));
+    fnv1a64_update(
+        hash,
+        adapter->phase_binding_table.data(),
+        adapter->phase_binding_table.size() * sizeof(float));
+    fnv1a64_update(
+        hash,
+        adapter->phase_reader.data(),
+        adapter->phase_reader.size() * sizeof(float));
+    fnv1a64_update(hash, &phase_width, sizeof(phase_width));
+    fnv1a64_update(hash, &phase_seed, sizeof(phase_seed));
+    adapter->hash = hash;
+    adapter->peak_host_work_bytes = std::max<uint64_t>(
+        adapter->peak_host_work_bytes,
+        (adapter->phase_binding_table.capacity() +
+         adapter->phase_reader.capacity()) *
+            sizeof(float) +
+        vector_size * sizeof(double));
 }
 
 static uint64_t refresh_value_subspace_operator_backing(
@@ -5578,9 +5968,14 @@ static json run_sparse_g_label_refresh(
         spec.value(
             "output_written_hidden_slot_action",
             false);
+    const bool output_phase_memory_mode =
+        spec.value(
+            "output_phase_memory_action",
+            false);
     const bool output_written_carrier_mode =
         output_written_semantic_port_mode ||
-        output_written_hidden_slot_mode;
+        output_written_hidden_slot_mode ||
+        output_phase_memory_mode;
     const bool end_to_end_semantic_carrier_training =
         spec.value(
             "end_to_end_semantic_carrier_training",
@@ -5671,6 +6066,8 @@ static json run_sparse_g_label_refresh(
             static_cast<int>(
                 output_written_hidden_slot_mode) +
             static_cast<int>(
+                output_phase_memory_mode) +
+            static_cast<int>(
                 output_recurrent_delta_advance_mode) > 1) {
         throw std::runtime_error(
             "label orbit action modes are mutually exclusive");
@@ -5712,6 +6109,14 @@ static json run_sparse_g_label_refresh(
                     "terminal semantic carrier has a layer read");
             }
             ctx->set_embeddings(true);
+        }
+        if (output_phase_memory_mode &&
+            (semantic_carrier_layer_delta_mode ||
+             semantic_carrier_read_layer != -1 ||
+             spec.at("phase_memory_width").get<uint32_t>() < 16 ||
+             spec.at("phase_memory_width").get<uint32_t>() > 4096)) {
+            throw std::runtime_error(
+                "phase memory requires one bounded terminal reader");
         }
         ctx->sched_reserve();
     }
@@ -6219,35 +6624,37 @@ static json run_sparse_g_label_refresh(
                     const uint32_t output_ordinal =
                         static_cast<uint32_t>(
                             boundary.argmax[0] - 'A');
-                    const llama_pos output_position =
-                        static_cast<llama_pos>(
-                            expected_source_tokens +
-                            boundary.record.at("query_tokens")
-                                .get<size_t>());
-                    timed_decode_terminal(
-                        std::vector<llama_token>{
-                            candidates.at(output_ordinal)},
-                        output_position,
-                        work_seq);
-                    ++semantic_training_output_tokens;
-                    const float * output_embedding =
-                        semantic_carrier_layer_delta_mode
-                            ? llama_get_embeddings_layer_inp(
-                                ctx,
-                                static_cast<uint32_t>(
-                                    semantic_carrier_read_layer))
-                            : llama_get_embeddings_ith(ctx, -1);
-                    if (!output_embedding) {
-                        throw std::runtime_error(
-                            "semantic port writer state is absent");
-                    }
                     semantic_carrier_writer_sample writer_sample;
-                    writer_sample.embedding.assign(
-                        output_embedding,
-                        output_embedding +
-                            ctx->get_model().hparams.n_embd_out());
                     writer_sample.output_ordinal =
                         output_ordinal;
+                    if (!output_phase_memory_mode) {
+                        const llama_pos output_position =
+                            static_cast<llama_pos>(
+                                expected_source_tokens +
+                                boundary.record.at("query_tokens")
+                                    .get<size_t>());
+                        timed_decode_terminal(
+                            std::vector<llama_token>{
+                                candidates.at(output_ordinal)},
+                            output_position,
+                            work_seq);
+                        ++semantic_training_output_tokens;
+                        const float * output_embedding =
+                            semantic_carrier_layer_delta_mode
+                                ? llama_get_embeddings_layer_inp(
+                                    ctx,
+                                    static_cast<uint32_t>(
+                                        semantic_carrier_read_layer))
+                                : llama_get_embeddings_ith(ctx, -1);
+                        if (!output_embedding) {
+                            throw std::runtime_error(
+                                "semantic port writer state is absent");
+                        }
+                        writer_sample.embedding.assign(
+                            output_embedding,
+                            output_embedding +
+                                ctx->get_model().hparams.n_embd_out());
+                    }
                     writer_samples.push_back(
                         std::move(writer_sample));
                 }
@@ -6484,6 +6891,24 @@ static json run_sparse_g_label_refresh(
                         .get<double>(),
                 &semantic_adapter_build);
         }
+        if (output_phase_memory_mode) {
+            complete_output_phase_memory(
+                ctx,
+                candidates,
+                training_samples,
+                writer_samples,
+                spec.at("phase_memory_width")
+                    .get<uint32_t>(),
+                spec.at("phase_memory_seed")
+                    .get<uint64_t>(),
+                spec.at(
+                    "output_written_port_training_margin")
+                    .get<double>(),
+                spec.at(
+                    "output_written_port_maximum_gain")
+                    .get<double>(),
+                &semantic_adapter_build);
+        }
         if (output_written_hidden_slot_mode) {
             semantic_adapter_build.writer_map.clear();
             semantic_adapter_build.writer_map.shrink_to_fit();
@@ -6509,7 +6934,17 @@ static json run_sparse_g_label_refresh(
             semantic_adapter_build.hash = hidden_slot_hash;
         }
         const bool installed =
-            output_written_hidden_slot_mode
+            output_phase_memory_mode
+                ? ctx->install_neo3000_output_phase_memory(
+                    std::move(semantic_adapter_build.query_map),
+                    semantic_adapter_build.query_bias,
+                    std::move(semantic_adapter_build.output_map),
+                    std::move(
+                        semantic_adapter_build.phase_binding_table),
+                    std::move(
+                        semantic_adapter_build.phase_reader),
+                    semantic_adapter_build.phase_width)
+            : output_written_hidden_slot_mode
                 ? ctx->install_neo3000_output_written_hidden_slots(
                     std::move(semantic_adapter_build.query_map),
                     semantic_adapter_build.query_bias,
@@ -6545,6 +6980,8 @@ static json run_sparse_g_label_refresh(
                 output_written_carrier_mode ||
             carrier->output_hidden_slots !=
                 output_written_hidden_slot_mode ||
+            carrier->output_phase_memory !=
+                output_phase_memory_mode ||
             carrier->moe_router_bias !=
                 semantic_carrier_moe_router_bias_mode ||
             carrier->recurrent_transition_input !=
@@ -7464,6 +7901,8 @@ static json run_sparse_g_label_refresh(
         output_driven_carrier_mode
             ? output_recurrent_delta_advance_mode
                 ? "actual_output_recurrent_delta_carrier"
+            : output_phase_memory_mode
+                ? "output_phase_memory_carrier"
             : output_written_hidden_slot_mode
                 ? "output_written_hidden_slot_carrier"
             : output_written_semantic_port_mode
@@ -7486,6 +7925,8 @@ static json run_sparse_g_label_refresh(
         output_driven_carrier_mode
             ? output_recurrent_delta_advance_mode
                 ? "actual_output_recurrent_delta_carrier_return_G0"
+            : output_phase_memory_mode
+                ? "output_phase_memory_carrier_return_G0"
             : output_written_hidden_slot_mode
                 ? "output_written_hidden_slot_carrier_return_G0"
             : output_written_semantic_port_mode
@@ -8566,19 +9007,32 @@ static json run_sparse_g_label_refresh(
                         : output_promotion_label_indices.at(
                             query_index);
                 if (output_written_carrier_mode) {
-                    const float * output_state =
-                        semantic_carrier_layer_delta_mode
-                            ? llama_get_embeddings_layer_inp(
-                                ctx,
+                    const bool wrote =
+                        output_phase_memory_mode
+                            ? ctx->stage_neo3000_phase_binding(
                                 static_cast<uint32_t>(
-                                    semantic_carrier_read_layer))
-                            : llama_get_embeddings_ith(ctx, -1);
-                    if (!output_state ||
-                        !ctx->write_neo3000_semantic_port(
-                            output_state,
-                            ctx->get_model().hparams.n_embd_out(),
-                            static_cast<uint32_t>(
-                                destination_label_index))) {
+                                    candidate_index),
+                                static_cast<uint32_t>(
+                                    destination_label_index))
+                            : [&]() {
+                                const float * output_state =
+                                    semantic_carrier_layer_delta_mode
+                                        ? llama_get_embeddings_layer_inp(
+                                            ctx,
+                                            static_cast<uint32_t>(
+                                                semantic_carrier_read_layer))
+                                        : llama_get_embeddings_ith(
+                                            ctx,
+                                            -1);
+                                return output_state &&
+                                    ctx->write_neo3000_semantic_port(
+                                        output_state,
+                                        ctx->get_model()
+                                            .hparams.n_embd_out(),
+                                        static_cast<uint32_t>(
+                                            destination_label_index));
+                            }();
+                    if (!wrote) {
                         throw std::runtime_error(
                             id +
                             ": actual output failed to write semantic port");
@@ -8628,6 +9082,8 @@ static json run_sparse_g_label_refresh(
                             output_written_semantic_port_mode},
                         {"output_written_hidden_slot",
                             output_written_hidden_slot_mode},
+                        {"output_phase_memory",
+                            output_phase_memory_mode},
                         {"source_role_model_forward_tokens", 0},
                     });
                 }
@@ -8639,6 +9095,12 @@ static json run_sparse_g_label_refresh(
                     ++sequence_close_count;
                 }
                 ++query_index;
+            }
+            if (output_phase_memory_mode &&
+                !ctx->commit_neo3000_phase_memory()) {
+                throw std::runtime_error(
+                    id +
+                    ": complete output panel failed to commit phase memory");
             }
             if (output_recurrent_delta_advance_mode) {
                 llama_memory_recurrent::neo3000_output_delta_metrics
@@ -9325,6 +9787,12 @@ static json run_sparse_g_label_refresh(
     uint64_t semantic_carrier_host_to_backend_bytes = 0;
     uint64_t semantic_carrier_backend_to_graph_bytes = 0;
     uint64_t semantic_carrier_hidden_slot_backend_bytes = 0;
+    uint64_t semantic_carrier_phase_memory_backend_bytes = 0;
+    uint64_t semantic_carrier_phase_binding_upload_bytes = 0;
+    uint64_t semantic_carrier_phase_backend_copy_bytes = 0;
+    uint64_t semantic_carrier_phase_element_operations = 0;
+    uint64_t semantic_carrier_phase_graph_applications = 0;
+    uint64_t semantic_carrier_phase_commits = 0;
     uint64_t semantic_carrier_writer_host_input_bytes = 0;
     uint64_t semantic_carrier_port_writes = 0;
     uint64_t semantic_carrier_router_bias_token_applications = 0;
@@ -9351,7 +9819,11 @@ static json run_sparse_g_label_refresh(
             std::all_of(
                 carrier->action.begin(),
                 carrier->action.end(),
-                [](float value) { return value == 0.0f; });
+                [](float value) { return value == 0.0f; }) &&
+            (!carrier->output_phase_memory ||
+                (!carrier->phase_poisoned &&
+                 carrier->phase_staging_writes == 0 &&
+                 carrier->phase_staging_destination_mask == 0));
         semantic_carrier_restored =
             semantic_carrier_quiescent &&
             !output_written_carrier_mode;
@@ -9364,6 +9836,18 @@ static json run_sparse_g_label_refresh(
                 carrier->backend_to_graph_bytes;
             semantic_carrier_hidden_slot_backend_bytes =
                 carrier->hidden_slot_backend_bytes;
+            semantic_carrier_phase_memory_backend_bytes =
+                carrier->phase_memory_backend_bytes;
+            semantic_carrier_phase_binding_upload_bytes =
+                carrier->phase_binding_upload_bytes;
+            semantic_carrier_phase_backend_copy_bytes =
+                carrier->phase_backend_copy_bytes;
+            semantic_carrier_phase_element_operations =
+                carrier->phase_element_operations;
+            semantic_carrier_phase_graph_applications =
+                carrier->phase_graph_applications;
+            semantic_carrier_phase_commits =
+                carrier->phase_commits;
             semantic_carrier_writer_host_input_bytes =
                 carrier->writer_host_input_bytes;
             semantic_carrier_port_writes =
@@ -9421,6 +9905,14 @@ static json run_sparse_g_label_refresh(
                              : 0))) &&
              (!output_written_hidden_slot_mode ||
                  semantic_carrier_port_writes == comparisons) &&
+             (!output_phase_memory_mode ||
+                 (semantic_adapter_build.coupled_training_correct ==
+                      semantic_training_sample_count &&
+                  semantic_carrier_port_writes == comparisons &&
+                  semantic_carrier_phase_graph_applications ==
+                      comparisons &&
+                  semantic_carrier_phase_commits ==
+                      variants.size())) &&
              carrier_disabled_boundary_matches <=
                  acceptance.at(
                      "carrier_disabled_boundary_matches_maximum")
@@ -9587,6 +10079,8 @@ static json run_sparse_g_label_refresh(
         {"schema_version", 1},
         {"mechanism", output_recurrent_delta_advance_mode
             ? "ACTUAL_OUTPUT_RECURRENT_DELTA_COMPOSITION"
+            : output_phase_memory_mode
+            ? "ACTUAL_OUTPUT_SHARED_PHASE_FAST_WEIGHT_MEMORY"
             : output_written_hidden_slot_mode
             ? "ACTUAL_OUTPUT_WRITTEN_RESIDENT_HIDDEN_SLOT_CARRIER"
             : output_written_semantic_port_mode
@@ -9690,6 +10184,16 @@ static json run_sparse_g_label_refresh(
                 output_written_semantic_port_mode},
             {"output_written_hidden_slot_action",
                 output_written_hidden_slot_mode},
+            {"output_phase_memory_action",
+                output_phase_memory_mode},
+            {"phase_memory_width",
+                output_phase_memory_mode
+                    ? spec.at("phase_memory_width")
+                    : json(0)},
+            {"phase_memory_seed",
+                output_phase_memory_mode
+                    ? spec.at("phase_memory_seed")
+                    : json(0)},
             {"end_to_end_semantic_carrier_training",
                 end_to_end_semantic_carrier_training},
             {"semantic_carrier_optimizer_epochs",
@@ -9785,12 +10289,14 @@ static json run_sparse_g_label_refresh(
                         "carrier_adapter_output_gain")
                     : json(0.0)},
             {"output_written_port_training_margin",
-                output_written_semantic_port_mode
+                (output_written_semantic_port_mode ||
+                 output_phase_memory_mode)
                     ? spec.at(
                         "output_written_port_training_margin")
                     : json(0.0)},
             {"output_written_port_maximum_gain",
-                output_written_semantic_port_mode
+                (output_written_semantic_port_mode ||
+                 output_phase_memory_mode)
                     ? spec.at(
                         "output_written_port_maximum_gain")
                     : json(0.0)},
@@ -9853,6 +10359,15 @@ static json run_sparse_g_label_refresh(
             {"semantic_coupled_training_minimum_margin",
                 semantic_adapter_build
                     .coupled_training_minimum_margin},
+            {"phase_self_score_max_abs_error",
+                semantic_adapter_build
+                    .phase_self_score_max_abs_error},
+            {"phase_cross_score_max_abs",
+                semantic_adapter_build
+                    .phase_cross_score_max_abs},
+            {"phase_training_retrieval_minimum_margin",
+                semantic_adapter_build
+                    .phase_training_retrieval_minimum_margin},
             {"semantic_optimizer_steps",
                 semantic_optimizer_steps},
             {"semantic_optimizer_loss_first",
@@ -9945,6 +10460,10 @@ static json run_sparse_g_label_refresh(
                     : ""},
             {"semantic_port_writes",
                 semantic_carrier_port_writes},
+            {"phase_memory_backend_bytes",
+                semantic_carrier_phase_memory_backend_bytes},
+            {"phase_memory_commits",
+                semantic_carrier_phase_commits},
             {"semantic_carrier_closed",
                 semantic_carrier_closed},
             {"recurrent_output_delta_candidate_physical_row_initial",
@@ -10261,7 +10780,8 @@ static json run_sparse_g_label_refresh(
                     .source_tensor_read_bytes},
             {"semantic_carrier_logical_bytes",
                 semantic_adapter_build.logical_bytes +
-                    semantic_carrier_hidden_slot_backend_bytes},
+                    semantic_carrier_hidden_slot_backend_bytes +
+                    semantic_carrier_phase_memory_backend_bytes},
             {"semantic_carrier_hash",
                 trained_semantic_carrier_mode
                     ? hex64(semantic_adapter_build.hash)
@@ -10307,6 +10827,18 @@ static json run_sparse_g_label_refresh(
                 semantic_carrier_backend_to_graph_bytes},
             {"semantic_carrier_hidden_slot_backend_bytes",
                 semantic_carrier_hidden_slot_backend_bytes},
+            {"semantic_carrier_phase_memory_backend_bytes",
+                semantic_carrier_phase_memory_backend_bytes},
+            {"semantic_carrier_phase_binding_upload_bytes",
+                semantic_carrier_phase_binding_upload_bytes},
+            {"semantic_carrier_phase_backend_copy_bytes",
+                semantic_carrier_phase_backend_copy_bytes},
+            {"semantic_carrier_phase_element_operations",
+                semantic_carrier_phase_element_operations},
+            {"semantic_carrier_phase_graph_applications",
+                semantic_carrier_phase_graph_applications},
+            {"semantic_carrier_phase_commits",
+                semantic_carrier_phase_commits},
             {"semantic_carrier_writer_host_input_bytes",
                 semantic_carrier_writer_host_input_bytes},
             {"semantic_carrier_port_writes",
