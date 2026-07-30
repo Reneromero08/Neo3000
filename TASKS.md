@@ -600,6 +600,19 @@ constructively unbounded local Agents-A1 inference.
   this mechanism once; an adjudicable result must select a new physical
   substrate, never an evaluator, carrier-evaluation, or evidence-harness
   successor.
+  The sole result is now executed and rejected at the strict recurrence gate.
+  Exact full state is `16/16`; the shared phase memory reaches `13/16` across
+  phases `4/4,3/4,3/4,3/4`. Matched G1 carrier-off utility is `0/4` and only
+  one boundary matches the enabled route, so the carrier is genuinely causal.
+  Sixteen actual outputs, sixteen backend accumulation graphs, four atomic
+  commits, stable `4,096`-byte active-plus-staging backing, exact recurrent
+  digests, and complete closure pass. One wrong G1 projection becomes carrier
+  state and propagates one error per later phase; return is only `3/4`.
+  Close terminal discrete-output phase adapters, including all width, seed,
+  gain, ridge, prompt, fixture, evaluator, carrier-evaluation, and
+  evidence-harness variants. The next changed substrate must retain the
+  unresolved preprojection distribution and let nonlinear model computation
+  resolve it instead of collapsing each update to one token.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

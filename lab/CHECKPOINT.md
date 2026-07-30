@@ -63,7 +63,20 @@ The active recurrence and acceptance boundary are
   geometry is width `256`, seed `155`, one IOUV four-phase recurrence, one
   matched carrier-off route, and one return boundary. This bypasses failed
   attention-row reconstruction but remains dominated by the exact compact
-  four-link/Z4 table. It has no model-facing result yet.
+  four-link/Z4 table.
+- The sole `0155` result is rejected at `13/16`, with phase utility
+  `4/4,3/4,3/4,3/4`, zero full-logit hash matches, and maximum candidate drift
+  `7.3611316681`. Carrier-off G1 is `0/4` and shares only one enabled
+  boundary, establishing causal use. One wrong G1 output is written into the
+  next carrier and propagates one error through each remaining phase; G0
+  return is `3/4`, not restoration or robust recurrence.
+- The runtime completed sixteen output writes, sixteen CUDA accumulation
+  graphs, four panel-atomic commits, stable `4,096`-byte active-plus-staging
+  backing, exact recurrent digests, empty staging between commits, and full
+  closure. The terminal discrete-output phase adapter is closed without
+  dimension, seed, gain, fixture, evaluator, or evidence variants. The active
+  physical boundary is an unresolved preprojection-distribution carrier read
+  by nonlinear model computation, not another terminal adapter.
 - The exact four-link/Z4 recurrence remains the stronger compact baseline.
   No inference-bearing recurrence, fresh-compute advantage, phase-native
   resource, Small Wall crossing, catalytic recurrence, or unbounded claim is
