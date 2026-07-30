@@ -141,12 +141,24 @@ constructively unbounded local Agents-A1 inference.
   tokens, versus 520 full replays and 376 prefix-DAG tokens. This is the first
   exact nonlinear model-native `G(F)` composition boundary, but it reloads the
   open-F snapshot seven times and constructed roots 52 times.
-- [ ] Keep that F boundary active on one sequence while a bounded working
+- [x] Keep that F boundary active on one sequence while a bounded working
   sequence branches each G-plus-closure/query transaction and closes. Require
   the same 16 exact full-logit rows, unchanged F tensor state and backing,
   zero F-root reloads between branches, bounded active residency, and explicit
   working-sequence closure. This attacks the measured multi-gigabyte snapshot
-  wall; it is not another evidence-harness revision.
+  wall; it is not another evidence-harness revision. `neo-exp-0122` passes:
+  three native sequences keep F live, branch G, and project queries with
+  copy-on-write closure. All `16/16` replay rows and `4/4` late-repeat rows are
+  bit-identical; F remains at recurrent row 0 with hash
+  `cf7de9d446bbe457`; all 63 sequence closures pass; retained-root traffic is
+  zero. Active allocation is `229,048,320` bytes, `50,790,400` below 0121's
+  measured active-plus-retained total.
+- [ ] Replace the remaining fresh 51-token G-plus-closure forward with a
+  bounded model-state transform or lawful advance on that same active F
+  carrier. Measure the actual G-forward layer/time/traffic decomposition first,
+  then intervene at the smallest causal layer boundary. Require exact useful
+  output, no prebuilt target root, and a decreasing fresh-work recurrence—not
+  more task fixtures or evidence-harness versions.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

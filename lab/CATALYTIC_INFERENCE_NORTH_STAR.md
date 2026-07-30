@@ -1089,3 +1089,15 @@ restore traffic. The immediate successor therefore keeps F live on one active
 sequence and uses one bounded working sequence for branch, projection, and
 closure. Evidence remains one compact record attached to that mechanism; it is
 not a versioned research lane.
+
+`neo-exp-0122` closes that physical wall. Three native llama.cpp sequences form
+a bounded copy-on-write machine: sequence 0 retains F, sequence 1 advances G,
+and sequence 2 projects then closes. All 16 full-replay rows and a late
+four-query reuse sentinel are bit-identical; F remains at the same physical
+recurrent row with the same streamed hash; root save/restore traffic is zero.
+
+This is the first active same-backing model-native carrier fanout in the renewed
+trajectory. It is not the terminal recurrence: each branch still spends a
+fresh 51-token nonlinear G-plus-closure forward, so source work approaches
+`51/130` rather than zero. The next mechanism must replace that forward with a
+bounded state transform or lawful advance—not expand the evidence harness.

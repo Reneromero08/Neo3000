@@ -128,6 +128,16 @@ The active recurrence and acceptance boundary are
 - Candidate source work is 283 tokens, versus 520 for full replay and 376 for
   the exact prefix-DAG baseline. This localizes the required nonlinear
   operation to causal G-plus-closure forward on F-conditioned state.
+- `neo-exp-0122` removes the snapshot transaction from that candidate path.
+  Sequence 0 keeps the 79-token F state active; sequence 1 copy-on-write
+  advances each G-plus-closure branch; sequence 2 projects one later query and
+  closes. All `16/16` full-replay comparisons and a `4/4` late G0 repeat are
+  bit-identical with zero candidate-logit error.
+- The F recurrent payload remains hash `cf7de9d446bbe457` at physical row 0
+  before and after all branches. All working sequences close, active attention
+  and recurrent backing identities remain stable, and no retained device root
+  is created. Root save/restore traffic falls from 0121's more than 4.3 GB to
+  zero; active allocation is `229,048,320` bytes.
 
 ### REJECTED
 
@@ -165,6 +175,12 @@ The active recurrence and acceptance boundary are
   the fresh suffix ratio remains `51/130`, and the same active F state does
   not survive each branch transaction. Exact nonlinear composition is
   supported; active-carrier restoration and catalytic recurrence are not.
+- The accepted 0122 route is active copy-on-write fanout with
+  `DECLARED_CLOSURE`, not inverse restoration. It preallocates three recurrent
+  rows and still decodes every 51-token G-plus-closure module and every query.
+  Its asymptotic source-work ratio remains `51/130`; unrelated task-family
+  reuse, a vanishing fresh-work recurrence, and unbounded catalysis remain
+  unsupported.
 - The 0108 screen is not a physically reduced carrier. Every root still
   serializes `68,526,080` device-tensor bytes; the matched reference occupies
   `76,349,440` host bytes, and omitted layers require `399,769,600`
@@ -229,13 +245,11 @@ The active recurrence and acceptance boundary are
 
 ### ACTIVE BOUNDARY
 
-Use the model causal forward as the first exact nonlinear `G(F)` operator.
-Retain an open prefix-plus-F carrier before G exists, then apply only the public
-G-plus-closure suffix and project delayed queries. No prebuilt joint source
-state, target root, target logits, or answer-conditioned selection may exist.
-Compare exactness and fully charged work with full replay and the 82-token
-prefix-DAG suffix, then localize the minimum context-conditioned update needed
-to replace fresh G decoding. `neo-exp-0102` remains frozen and unconsumed.
+Keep the accepted active F sequence and replace the remaining fresh 51-token
+G-plus-closure forward with the smallest bounded state transform or lawful
+advance that preserves exact useful output. First measure which layers,
+traffic, and wall time dominate G(F); do not grow the task fixture or evidence
+harness. `neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

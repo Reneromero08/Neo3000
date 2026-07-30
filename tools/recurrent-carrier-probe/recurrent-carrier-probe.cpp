@@ -192,7 +192,8 @@ static void decode_tokens(
         llama_context * ctx,
         const std::vector<llama_token> & tokens,
         llama_pos start_pos,
-        bool terminal_logits) {
+        bool terminal_logits,
+        llama_seq_id seq_id = 0) {
     if (tokens.empty()) {
         return;
     }
@@ -202,7 +203,7 @@ static void decode_tokens(
             batch,
             tokens[i],
             start_pos + static_cast<llama_pos>(i),
-            {0},
+            {seq_id},
             terminal_logits && i + 1 == tokens.size());
     }
     const int status = llama_decode(ctx, batch);
@@ -386,12 +387,14 @@ static boundary_result decode_query(
         const json & query,
         size_t source_tokens,
         uint64_t root_backing_id,
-        size_t root_gpu_bytes) {
+        size_t root_gpu_bytes,
+        llama_seq_id seq_id = 0) {
     const std::string text = query.at("suffix").get<std::string>();
     auto tokens = tokenize_piece(vocab, text, false, true);
 
     const auto started = std::chrono::steady_clock::now();
-    decode_tokens(ctx, tokens, static_cast<llama_pos>(source_tokens), true);
+    decode_tokens(
+        ctx, tokens, static_cast<llama_pos>(source_tokens), true, seq_id);
     llama_synchronize(ctx);
     const auto finished = std::chrono::steady_clock::now();
 
@@ -444,6 +447,7 @@ static boundary_result decode_query(
         {"full_logits_fnv1a64", hex64(result.full_logits_fnv1a64)},
         {"root_backing_id", hex64(root_backing_id)},
         {"root_gpu_bytes", root_gpu_bytes},
+        {"sequence_id", seq_id},
         {"active_recurrent_backing_id", hex64(active_recurrent_backing_id(ctx))},
         {"wall_ms", std::chrono::duration<double, std::milli>(finished - started).count()},
     };
@@ -567,6 +571,86 @@ static streamed_tensor_hash hash_recurrent_state_streamed(llama_context * ctx) {
         hash_tensor_streamed(hash, recurrent->s_l[il], il, 1);
     }
     return hash;
+}
+
+struct streamed_sequence_hash {
+    streamed_tensor_hash tensor;
+    int32_t physical_row = -1;
+    llama_pos position = -1;
+};
+
+static void hash_tensor_row_streamed(
+        streamed_tensor_hash & hash,
+        ggml_tensor * tensor,
+        uint64_t layer,
+        uint64_t kind,
+        uint32_t row,
+        uint32_t row_count) {
+    if (!tensor) {
+        return;
+    }
+    if (row_count == 0 || row >= row_count ||
+        ggml_nbytes(tensor) % row_count != 0) {
+        throw std::runtime_error(
+            "recurrent sequence tensor is not row-divisible");
+    }
+    const size_t row_bytes = ggml_nbytes(tensor) / row_count;
+    const size_t chunk_capacity = 1024 * 1024;
+    std::vector<uint8_t> work(std::min(chunk_capacity, row_bytes));
+    fnv_mix_u64(hash.value, layer);
+    fnv_mix_u64(hash.value, kind);
+    fnv_mix_u64(hash.value, row_bytes);
+    for (size_t offset = 0; offset < row_bytes; offset += work.size()) {
+        const size_t size = std::min(work.size(), row_bytes - offset);
+        ggml_backend_tensor_get(
+            tensor,
+            work.data(),
+            static_cast<size_t>(row) * row_bytes + offset,
+            size);
+        fnv1a64_update(hash.value, work.data(), size);
+        hash.transferred_bytes += size;
+    }
+    hash.peak_host_work_bytes =
+        std::max(hash.peak_host_work_bytes, work.size());
+}
+
+static streamed_sequence_hash hash_recurrent_sequence_streamed(
+        llama_context * ctx,
+        llama_seq_id seq_id) {
+    llama_synchronize(ctx);
+    auto * recurrent = require_hybrid_memory(ctx)->get_mem_recr();
+    if (seq_id < 0 ||
+        static_cast<size_t>(seq_id) >= recurrent->cells.size()) {
+        throw std::runtime_error("recurrent sequence hash id is invalid");
+    }
+    const int32_t tail = recurrent->cells.at(seq_id).tail;
+    if (tail < 0 ||
+        static_cast<size_t>(tail) >= recurrent->cells.size() ||
+        !recurrent->cells.at(tail).has_seq_id(seq_id)) {
+        throw std::runtime_error("recurrent sequence has no live tail");
+    }
+    const auto & cell = recurrent->cells.at(tail);
+    const int32_t physical_row = cell.src >= 0 ? cell.src : tail;
+    const uint32_t row_count =
+        recurrent->size * (1 + recurrent->n_rs_seq);
+    if (physical_row < 0 ||
+        static_cast<uint32_t>(physical_row) >= row_count) {
+        throw std::runtime_error("recurrent sequence physical row is invalid");
+    }
+
+    streamed_sequence_hash result;
+    result.physical_row = physical_row;
+    result.position = cell.pos;
+    fnv_mix_u64(result.tensor.value, static_cast<uint64_t>(cell.pos));
+    for (uint32_t il = 0; il < recurrent->r_l.size(); ++il) {
+        hash_tensor_row_streamed(
+            result.tensor, recurrent->r_l[il], il, 0,
+            static_cast<uint32_t>(physical_row), row_count);
+        hash_tensor_row_streamed(
+            result.tensor, recurrent->s_l[il], il, 1,
+            static_cast<uint32_t>(physical_row), row_count);
+    }
+    return result;
 }
 
 static std::set<uint32_t> parse_layer_selection(
@@ -2630,6 +2714,629 @@ static json run_attention_operator_composition(
     };
 }
 
+static json run_active_f_sequence_branching(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const std::vector<llama_token> & candidates,
+        const json & spec,
+        uint64_t active_recurrent_backing_initial,
+        uint64_t active_attention_backing_initial) {
+    const uint32_t actual_context_size = llama_n_ctx(ctx);
+    const uint32_t actual_n_seq_max = llama_n_seq_max(ctx);
+    const uint32_t actual_context_per_sequence =
+        actual_context_size / actual_n_seq_max;
+    if (actual_context_size !=
+            spec.at("expected_context_size").get<uint32_t>() ||
+        actual_n_seq_max !=
+            spec.at("expected_n_seq_max").get<uint32_t>() ||
+        actual_context_per_sequence !=
+            spec.at("expected_context_per_sequence").get<uint32_t>()) {
+        throw std::runtime_error(
+            "active-F sequence geometry mismatch: ctx=" +
+            std::to_string(actual_context_size) + " seqs=" +
+            std::to_string(actual_n_seq_max) + " per-seq=" +
+            std::to_string(actual_context_per_sequence));
+    }
+
+    const size_t expected_source_tokens =
+        spec.at("expected_source_tokens").get<size_t>();
+    const auto prefix_tokens = tokenize_piece(
+        vocab, spec.at("prefix").get<std::string>(), true, true);
+    const auto f_tokens = tokenize_piece(
+        vocab, spec.at("module_f").get<std::string>(), false, true);
+    const auto neutral_f_tokens = tokenize_piece(
+        vocab, spec.at("neutral_module_f").get<std::string>(), false, true);
+    const auto neutral_g_tokens = tokenize_piece(
+        vocab, spec.at("neutral_module_g").get<std::string>(), false, true);
+    const auto closure_tokens = tokenize_piece(
+        vocab, spec.at("closure").get<std::string>(), false, true);
+    const size_t f_boundary_tokens =
+        prefix_tokens.size() + f_tokens.size();
+    if (prefix_tokens.size() !=
+            spec.at("expected_prefix_tokens").get<size_t>() ||
+        f_tokens.size() != spec.at("expected_f_tokens").get<size_t>() ||
+        neutral_f_tokens.size() != f_tokens.size() ||
+        neutral_g_tokens.size() !=
+            spec.at("expected_g_tokens").get<size_t>() ||
+        closure_tokens.size() !=
+            spec.at("expected_closure_tokens").get<size_t>() ||
+        f_boundary_tokens + neutral_g_tokens.size() +
+            closure_tokens.size() != expected_source_tokens) {
+        throw std::runtime_error(
+            "active-F public token geometry mismatch");
+    }
+
+    const auto & variants = spec.at("g_variants");
+    if (!variants.is_array() || variants.empty()) {
+        throw std::runtime_error("active-F sequence branch has no G variants");
+    }
+    std::set<std::string> variant_ids;
+    for (const auto & variant : variants) {
+        const std::string id = variant.at("id");
+        const auto g_tokens = tokenize_piece(
+            vocab, variant.at("module_g").get<std::string>(), false, true);
+        if (!variant_ids.insert(id).second ||
+            g_tokens.size() != neutral_g_tokens.size() ||
+            variant.at("queries").size() !=
+                spec.at("queries_per_variant").get<size_t>()) {
+            throw std::runtime_error(
+                "active-F G variant geometry mismatch for " + id);
+        }
+    }
+
+    auto * hybrid = require_hybrid_memory(ctx);
+    llama_memory_t memory = llama_get_memory(ctx);
+    const size_t active_cache_backend_allocation_bytes =
+        active_hybrid_backend_allocation_bytes(ctx);
+    const uint64_t active_recurrent_backing =
+        active_recurrent_backing_id(ctx);
+    const uint64_t active_attention_backing =
+        active_attention_backing_id(ctx);
+    const llama_seq_id carrier_seq = 0;
+    const llama_seq_id branch_seq = 1;
+    const llama_seq_id query_seq = 2;
+    const llama_pos f_boundary_pos =
+        static_cast<llama_pos>(f_boundary_tokens - 1);
+    const llama_pos source_boundary_pos =
+        static_cast<llama_pos>(expected_source_tokens - 1);
+
+    const auto require_sequence_position =
+            [&](llama_seq_id seq_id,
+                llama_pos expected,
+                const std::string & stage) {
+        const llama_pos attention_pos =
+            hybrid->get_mem_attn()->seq_pos_max(seq_id);
+        const llama_pos recurrent_pos =
+            hybrid->get_mem_recr()->seq_pos_max(seq_id);
+        if (attention_pos != expected || recurrent_pos != expected) {
+            throw std::runtime_error(
+                stage + " sequence " + std::to_string(seq_id) +
+                " position mismatch: attention=" +
+                std::to_string(attention_pos) + " recurrent=" +
+                std::to_string(recurrent_pos) + " expected=" +
+                std::to_string(expected));
+        }
+    };
+    const auto close_sequence =
+            [&](llama_seq_id seq_id, const std::string & stage) {
+        if (!llama_memory_seq_rm(memory, seq_id, -1, -1)) {
+            throw std::runtime_error(
+                stage + " failed to close sequence " +
+                std::to_string(seq_id));
+        }
+        llama_synchronize(ctx);
+        require_sequence_position(seq_id, -1, stage + ":closed");
+    };
+    const auto copy_sequence =
+            [&](llama_seq_id src,
+                llama_seq_id dst,
+                llama_pos expected,
+                const std::string & stage) {
+        require_sequence_position(dst, -1, stage + ":destination-empty");
+        llama_memory_seq_cp(memory, src, dst, -1, -1);
+        llama_synchronize(ctx);
+        require_sequence_position(dst, expected, stage + ":copied");
+    };
+
+    json records = json::array();
+    std::map<std::string, std::vector<boundary_result>> candidate_results;
+    std::map<std::string, std::vector<boundary_result>> reference_results;
+    std::map<std::string, std::vector<boundary_result>> g_only_results;
+    size_t query_decode_tokens = 0;
+    size_t sequence_copy_count = 0;
+    size_t sequence_close_count = 0;
+    const auto query_from_anchor =
+            [&](llama_seq_id anchor,
+                llama_seq_id scratch,
+                const std::string & route,
+                const std::string & variant_id,
+                const json & queries,
+                std::vector<boundary_result> & outputs) {
+        for (const auto & query : queries) {
+            copy_sequence(
+                anchor, scratch, source_boundary_pos,
+                route + ":query-copy");
+            ++sequence_copy_count;
+            auto boundary = decode_query(
+                ctx,
+                vocab,
+                candidates,
+                route,
+                variant_id,
+                query,
+                expected_source_tokens,
+                active_recurrent_backing,
+                active_cache_backend_allocation_bytes,
+                scratch);
+            query_decode_tokens +=
+                boundary.record.at("query_tokens").get<size_t>();
+            records.push_back(boundary.record);
+            outputs.push_back(std::move(boundary));
+            close_sequence(scratch, route + ":query-close");
+            ++sequence_close_count;
+            require_sequence_position(
+                anchor, source_boundary_pos,
+                route + ":anchor-survives-query");
+        }
+    };
+
+    llama_memory_clear(memory, true);
+    decode_tokens(ctx, prefix_tokens, 0, false, carrier_seq);
+    decode_tokens(
+        ctx, f_tokens,
+        static_cast<llama_pos>(prefix_tokens.size()),
+        false, carrier_seq);
+    llama_synchronize(ctx);
+    require_sequence_position(
+        carrier_seq, f_boundary_pos, "active-F-created");
+    require_sequence_position(branch_seq, -1, "active-F-branch-empty");
+    require_sequence_position(query_seq, -1, "active-F-query-empty");
+    if (llama_state_seq_get_device_root_count(ctx) != 0) {
+        throw std::runtime_error(
+            "active-F candidate unexpectedly has retained roots");
+    }
+
+    const auto f_recurrent_before =
+        hash_recurrent_sequence_streamed(ctx, carrier_seq);
+    const size_t candidate_primary_source_tokens =
+        prefix_tokens.size() + f_tokens.size() +
+        variants.size() *
+            (neutral_g_tokens.size() + closure_tokens.size());
+    size_t candidate_suffix_decode_tokens = 0;
+    size_t repeat_sentinel_source_tokens = 0;
+    size_t f_only_source_tokens =
+        prefix_tokens.size() + f_tokens.size();
+
+    for (const auto & variant : variants) {
+        const std::string id = variant.at("id");
+        const auto g_tokens = tokenize_piece(
+            vocab, variant.at("module_g").get<std::string>(), false, true);
+        copy_sequence(
+            carrier_seq, branch_seq, f_boundary_pos,
+            id + ":F-to-G-branch");
+        ++sequence_copy_count;
+        decode_tokens(
+            ctx, g_tokens,
+            static_cast<llama_pos>(f_boundary_tokens),
+            false, branch_seq);
+        decode_tokens(
+            ctx, closure_tokens,
+            static_cast<llama_pos>(
+                f_boundary_tokens + g_tokens.size()),
+            false, branch_seq);
+        llama_synchronize(ctx);
+        candidate_suffix_decode_tokens +=
+            g_tokens.size() + closure_tokens.size();
+        require_sequence_position(
+            carrier_seq, f_boundary_pos,
+            id + ":F-survives-G-forward");
+        require_sequence_position(
+            branch_seq, source_boundary_pos,
+            id + ":G-forward-complete");
+        query_from_anchor(
+            branch_seq,
+            query_seq,
+            "active-F-copy-on-write-branch",
+            id + ":candidate",
+            variant.at("queries"),
+            candidate_results[id]);
+        close_sequence(branch_seq, id + ":G-branch-close");
+        ++sequence_close_count;
+        require_sequence_position(
+            carrier_seq, f_boundary_pos,
+            id + ":F-survives-branch-close");
+    }
+
+    const auto & repeat_variant = variants.at(0);
+    const std::string repeat_id = repeat_variant.at("id");
+    const auto repeat_g_tokens = tokenize_piece(
+        vocab,
+        repeat_variant.at("module_g").get<std::string>(),
+        false,
+        true);
+    copy_sequence(
+        carrier_seq, branch_seq, f_boundary_pos,
+        "repeat-sentinel:F-to-G-branch");
+    ++sequence_copy_count;
+    decode_tokens(
+        ctx, repeat_g_tokens,
+        static_cast<llama_pos>(f_boundary_tokens),
+        false, branch_seq);
+    decode_tokens(
+        ctx, closure_tokens,
+        static_cast<llama_pos>(
+            f_boundary_tokens + repeat_g_tokens.size()),
+        false, branch_seq);
+    llama_synchronize(ctx);
+    repeat_sentinel_source_tokens =
+        repeat_g_tokens.size() + closure_tokens.size();
+    std::vector<boundary_result> repeat_results;
+    query_from_anchor(
+        branch_seq,
+        query_seq,
+        "active-F-repeat-reuse-sentinel",
+        repeat_id + ":repeat",
+        repeat_variant.at("queries"),
+        repeat_results);
+    close_sequence(branch_seq, "repeat-sentinel:G-branch-close");
+    ++sequence_close_count;
+
+    copy_sequence(
+        carrier_seq, branch_seq, f_boundary_pos,
+        "F-only:F-to-neutral-G-branch");
+    ++sequence_copy_count;
+    decode_tokens(
+        ctx, neutral_g_tokens,
+        static_cast<llama_pos>(f_boundary_tokens),
+        false, branch_seq);
+    decode_tokens(
+        ctx, closure_tokens,
+        static_cast<llama_pos>(
+            f_boundary_tokens + neutral_g_tokens.size()),
+        false, branch_seq);
+    llama_synchronize(ctx);
+    f_only_source_tokens +=
+        neutral_g_tokens.size() + closure_tokens.size();
+    std::vector<boundary_result> f_only_results;
+    query_from_anchor(
+        branch_seq,
+        query_seq,
+        "active-F-F-only-control",
+        "F_only",
+        spec.at("f_only_queries"),
+        f_only_results);
+    close_sequence(branch_seq, "F-only:branch-close");
+    ++sequence_close_count;
+
+    const auto f_recurrent_after =
+        hash_recurrent_sequence_streamed(ctx, carrier_seq);
+    const bool f_recurrent_content_exact =
+        f_recurrent_before.tensor.value ==
+            f_recurrent_after.tensor.value &&
+        f_recurrent_before.tensor.transferred_bytes ==
+            f_recurrent_after.tensor.transferred_bytes &&
+        f_recurrent_before.position == f_recurrent_after.position;
+    const bool f_recurrent_physical_row_stable =
+        f_recurrent_before.physical_row ==
+            f_recurrent_after.physical_row;
+    require_sequence_position(
+        carrier_seq, f_boundary_pos,
+        "active-F-before-reference-close");
+    close_sequence(carrier_seq, "active-F-final-close");
+    ++sequence_close_count;
+
+    size_t reference_full_source_tokens = 0;
+    size_t g_only_full_source_tokens = 0;
+    for (const auto & variant : variants) {
+        const std::string id = variant.at("id");
+        const auto g_tokens = tokenize_piece(
+            vocab, variant.at("module_g").get<std::string>(), false, true);
+
+        llama_memory_clear(memory, true);
+        decode_tokens(ctx, prefix_tokens, 0, false, carrier_seq);
+        decode_tokens(
+            ctx, f_tokens,
+            static_cast<llama_pos>(prefix_tokens.size()),
+            false, carrier_seq);
+        decode_tokens(
+            ctx, g_tokens,
+            static_cast<llama_pos>(f_boundary_tokens),
+            false, carrier_seq);
+        decode_tokens(
+            ctx, closure_tokens,
+            static_cast<llama_pos>(
+                f_boundary_tokens + g_tokens.size()),
+            false, carrier_seq);
+        llama_synchronize(ctx);
+        reference_full_source_tokens += expected_source_tokens;
+        require_sequence_position(
+            carrier_seq, source_boundary_pos,
+            id + ":reference-source");
+        query_from_anchor(
+            carrier_seq,
+            branch_seq,
+            "isolated-full-replay-active-sequence-control",
+            id + ":reference",
+            variant.at("queries"),
+            reference_results[id]);
+
+        llama_memory_clear(memory, true);
+        decode_tokens(ctx, prefix_tokens, 0, false, carrier_seq);
+        decode_tokens(
+            ctx, neutral_f_tokens,
+            static_cast<llama_pos>(prefix_tokens.size()),
+            false, carrier_seq);
+        decode_tokens(
+            ctx, g_tokens,
+            static_cast<llama_pos>(f_boundary_tokens),
+            false, carrier_seq);
+        decode_tokens(
+            ctx, closure_tokens,
+            static_cast<llama_pos>(
+                f_boundary_tokens + g_tokens.size()),
+            false, carrier_seq);
+        llama_synchronize(ctx);
+        g_only_full_source_tokens += expected_source_tokens;
+        require_sequence_position(
+            carrier_seq, source_boundary_pos,
+            id + ":G-only-source");
+        query_from_anchor(
+            carrier_seq,
+            branch_seq,
+            "isolated-G-only-active-sequence-control",
+            id + ":G_only",
+            variant.at("queries"),
+            g_only_results[id]);
+    }
+
+    size_t variant_passes = 0;
+    size_t full_logit_hash_matches = 0;
+    size_t boundary_matches = 0;
+    size_t comparisons = 0;
+    double maximum_candidate_logit_absolute_difference = 0.0;
+    json variant_summary = json::object();
+    for (const auto & variant : variants) {
+        const std::string id = variant.at("id");
+        const auto & candidate = candidate_results.at(id);
+        const auto & reference = reference_results.at(id);
+        const auto & g_only = g_only_results.at(id);
+        const size_t candidate_correct =
+            semantic_correct_count(candidate, variant.at("queries"), false);
+        const size_t reference_correct =
+            semantic_correct_count(reference, variant.at("queries"), false);
+        const size_t g_only_correct =
+            semantic_correct_count(g_only, variant.at("queries"), false);
+        size_t variant_hash_matches = 0;
+        size_t variant_boundary_matches = 0;
+        double variant_maximum_difference = 0.0;
+        std::vector<std::string> candidate_answers;
+        std::vector<std::string> reference_answers;
+        std::vector<std::string> g_only_answers;
+        for (size_t i = 0; i < candidate.size(); ++i) {
+            candidate_answers.push_back(candidate.at(i).argmax);
+            reference_answers.push_back(reference.at(i).argmax);
+            g_only_answers.push_back(g_only.at(i).argmax);
+            variant_hash_matches +=
+                candidate.at(i).full_logits_fnv1a64 ==
+                reference.at(i).full_logits_fnv1a64;
+            variant_boundary_matches +=
+                candidate.at(i).argmax == reference.at(i).argmax;
+            for (size_t c = 0;
+                 c < candidate.at(i).candidate_logits.size();
+                 ++c) {
+                variant_maximum_difference = std::max(
+                    variant_maximum_difference,
+                    std::abs(
+                        static_cast<double>(
+                            candidate.at(i).candidate_logits.at(c)) -
+                        static_cast<double>(
+                            reference.at(i).candidate_logits.at(c))));
+            }
+        }
+        const bool passed =
+            candidate_correct >=
+                variant.at("joint_correct_minimum").get<size_t>() &&
+            reference_correct >=
+                variant.at("joint_correct_minimum").get<size_t>() &&
+            g_only_correct <=
+                variant.at("g_only_correct_maximum").get<size_t>() &&
+            variant_hash_matches == candidate.size() &&
+            variant_maximum_difference == 0.0;
+        variant_passes += passed;
+        full_logit_hash_matches += variant_hash_matches;
+        boundary_matches += variant_boundary_matches;
+        comparisons += candidate.size();
+        maximum_candidate_logit_absolute_difference = std::max(
+            maximum_candidate_logit_absolute_difference,
+            variant_maximum_difference);
+        variant_summary[id] = {
+            {"candidate_answers", candidate_answers},
+            {"reference_answers", reference_answers},
+            {"G_only_answers", g_only_answers},
+            {"candidate_correct", candidate_correct},
+            {"reference_correct", reference_correct},
+            {"G_only_correct", g_only_correct},
+            {"full_logit_hash_matches", variant_hash_matches},
+            {"boundary_matches", variant_boundary_matches},
+            {"maximum_candidate_logit_absolute_difference",
+                variant_maximum_difference},
+            {"passed", passed},
+        };
+    }
+
+    size_t repeat_full_logit_hash_matches = 0;
+    size_t repeat_boundary_matches = 0;
+    double repeat_maximum_candidate_logit_absolute_difference = 0.0;
+    const auto & first_results = candidate_results.at(repeat_id);
+    for (size_t i = 0; i < repeat_results.size(); ++i) {
+        repeat_full_logit_hash_matches +=
+            repeat_results.at(i).full_logits_fnv1a64 ==
+            first_results.at(i).full_logits_fnv1a64;
+        repeat_boundary_matches +=
+            repeat_results.at(i).argmax == first_results.at(i).argmax;
+        for (size_t c = 0;
+             c < repeat_results.at(i).candidate_logits.size();
+             ++c) {
+            repeat_maximum_candidate_logit_absolute_difference = std::max(
+                repeat_maximum_candidate_logit_absolute_difference,
+                std::abs(
+                    static_cast<double>(
+                        repeat_results.at(i).candidate_logits.at(c)) -
+                    static_cast<double>(
+                        first_results.at(i).candidate_logits.at(c))));
+        }
+    }
+    const size_t f_only_correct = semantic_correct_count(
+        f_only_results, spec.at("f_only_queries"), false);
+
+    llama_memory_clear(memory, true);
+    llama_synchronize(ctx);
+    require_sequence_position(carrier_seq, -1, "final-carrier-close");
+    require_sequence_position(branch_seq, -1, "final-branch-close");
+    require_sequence_position(query_seq, -1, "final-query-close");
+    const bool no_retained_roots =
+        llama_state_seq_get_device_root_count(ctx) == 0;
+    const bool active_backings_stable =
+        active_recurrent_backing_id(ctx) ==
+            active_recurrent_backing_initial &&
+        active_attention_backing_id(ctx) ==
+            active_attention_backing_initial;
+
+    const auto & acceptance = spec.at("acceptance_law");
+    const bool accepted =
+        variant_passes >=
+            acceptance.at("variant_passes_minimum").get<size_t>() &&
+        f_only_correct <=
+            acceptance.at("f_only_correct_maximum").get<size_t>() &&
+        comparisons == acceptance.at("comparisons").get<size_t>() &&
+        full_logit_hash_matches ==
+            acceptance.at("full_logit_hash_matches").get<size_t>() &&
+        boundary_matches ==
+            acceptance.at("boundary_matches").get<size_t>() &&
+        maximum_candidate_logit_absolute_difference <=
+            acceptance.at(
+                "maximum_candidate_logit_absolute_difference").get<double>() &&
+        repeat_full_logit_hash_matches ==
+            acceptance.at(
+                "repeat_full_logit_hash_matches").get<size_t>() &&
+        repeat_boundary_matches ==
+            acceptance.at("repeat_boundary_matches").get<size_t>() &&
+        repeat_maximum_candidate_logit_absolute_difference <=
+            acceptance.at(
+                "repeat_maximum_candidate_logit_absolute_difference").get<double>() &&
+        f_recurrent_content_exact &&
+        f_recurrent_physical_row_stable &&
+        no_retained_roots &&
+        active_backings_stable;
+
+    return {
+        {"schema_version", 1},
+        {"mechanism", "ACTIVE_F_SEQUENCE_COPY_ON_WRITE_BRANCHING"},
+        {"spec_id", spec.at("id")},
+        {"model_arch", "qwen35moe"},
+        {"configuration", {
+            {"context_size", actual_context_size},
+            {"context_per_sequence", actual_context_per_sequence},
+            {"n_seq_max", actual_n_seq_max},
+            {"source_tokens", expected_source_tokens},
+            {"prefix_tokens", prefix_tokens.size()},
+            {"F_tokens", f_tokens.size()},
+            {"G_tokens", neutral_g_tokens.size()},
+            {"closure_tokens", closure_tokens.size()},
+            {"carrier_sequence", carrier_seq},
+            {"branch_sequence", branch_seq},
+            {"query_sequence", query_seq},
+            {"retained_device_roots_used", false},
+            {"restoration_class", "DECLARED_CLOSURE"},
+        }},
+        {"summary", {
+            {"variant_passes", variant_passes},
+            {"variant_count", variants.size()},
+            {"F_only_correct", f_only_correct},
+            {"full_logit_hash_matches", full_logit_hash_matches},
+            {"boundary_matches", boundary_matches},
+            {"comparisons", comparisons},
+            {"maximum_candidate_logit_absolute_difference",
+                maximum_candidate_logit_absolute_difference},
+            {"repeat_full_logit_hash_matches",
+                repeat_full_logit_hash_matches},
+            {"repeat_boundary_matches", repeat_boundary_matches},
+            {"repeat_maximum_candidate_logit_absolute_difference",
+                repeat_maximum_candidate_logit_absolute_difference},
+            {"F_recurrent_content_exact", f_recurrent_content_exact},
+            {"F_recurrent_physical_row_stable",
+                f_recurrent_physical_row_stable},
+            {"accepted", accepted},
+        }},
+        {"variant_summary", variant_summary},
+        {"carrier", {
+            {"active_cache_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes},
+            {"maximum_retained_root_backend_allocation_bytes", 0},
+            {"active_plus_retained_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes},
+            {"active_recurrent_backing_id",
+                hex64(active_recurrent_backing)},
+            {"active_attention_backing_id",
+                hex64(active_attention_backing)},
+            {"F_recurrent_hash_before",
+                hex64(f_recurrent_before.tensor.value)},
+            {"F_recurrent_hash_after",
+                hex64(f_recurrent_after.tensor.value)},
+            {"F_recurrent_physical_row_before",
+                f_recurrent_before.physical_row},
+            {"F_recurrent_physical_row_after",
+                f_recurrent_after.physical_row},
+            {"F_position_before", f_recurrent_before.position},
+            {"F_position_after", f_recurrent_after.position},
+            {"complete_host_state_copy_retained", false},
+            {"all_sequences_closed", true},
+            {"all_retained_roots_closed", no_retained_roots},
+            {"active_backings_stable", active_backings_stable},
+        }},
+        {"resource_accounting", {
+            {"candidate_primary_source_decode_tokens",
+                candidate_primary_source_tokens},
+            {"candidate_suffix_decode_tokens",
+                candidate_suffix_decode_tokens},
+            {"repeat_sentinel_source_decode_tokens",
+                repeat_sentinel_source_tokens},
+            {"F_only_source_decode_tokens", f_only_source_tokens},
+            {"reference_full_source_decode_tokens",
+                reference_full_source_tokens},
+            {"G_only_full_source_decode_tokens",
+                g_only_full_source_tokens},
+            {"all_route_source_decode_tokens",
+                candidate_primary_source_tokens +
+                repeat_sentinel_source_tokens +
+                f_only_source_tokens +
+                reference_full_source_tokens +
+                g_only_full_source_tokens},
+            {"query_decode_tokens", query_decode_tokens},
+            {"all_route_input_tokens",
+                candidate_primary_source_tokens +
+                repeat_sentinel_source_tokens +
+                f_only_source_tokens +
+                reference_full_source_tokens +
+                g_only_full_source_tokens +
+                query_decode_tokens},
+            {"sequence_copy_count", sequence_copy_count},
+            {"sequence_close_count", sequence_close_count},
+            {"snapshot_root_save_device_copy_bytes", 0},
+            {"snapshot_root_restore_device_copy_bytes", 0},
+            {"F_hash_d2h_bytes",
+                f_recurrent_before.tensor.transferred_bytes +
+                f_recurrent_after.tensor.transferred_bytes},
+            {"F_hash_peak_host_work_bytes", std::max(
+                f_recurrent_before.tensor.peak_host_work_bytes,
+                f_recurrent_after.tensor.peak_host_work_bytes)},
+        }},
+        {"records", records},
+        {"verdict", accepted ? "accept" : "reject"},
+        {"claim_ceiling", spec.at("claim_ceiling")},
+    };
+}
+
 static json run_open_f_prefix_nonlinear_composition(
         llama_context * ctx,
         const llama_vocab * vocab,
@@ -3607,6 +4314,22 @@ int main(int argc, char ** argv) {
 
         if (spec.value("open_f_prefix_nonlinear_composition", false)) {
             const json result = run_open_f_prefix_nonlinear_composition(
+                ctx,
+                vocab,
+                candidates,
+                spec,
+                active_backing_initial,
+                active_attention_backing_initial);
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
+        }
+
+        if (spec.value("active_f_sequence_branching", false)) {
+            const json result = run_active_f_sequence_branching(
                 ctx,
                 vocab,
                 candidates,
