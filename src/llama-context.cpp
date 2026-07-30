@@ -1424,6 +1424,17 @@ bool llama_context::write_neo3000_semantic_port(
     return true;
 }
 
+bool llama_context::reset_neo3000_semantic_port() {
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier || !carrier->output_written) {
+        return false;
+    }
+    carrier->port.fill(0.0f);
+    neo3000_set_semantic_carrier_action(*carrier);
+    ++carrier->generation;
+    return true;
+}
+
 bool llama_context::set_neo3000_semantic_carrier_enabled(bool enabled) {
     auto & carrier = cparams.neo3000_semantic_carrier;
     if (!carrier) {
@@ -1461,6 +1472,195 @@ bool llama_context::advance_neo3000_semantic_carrier() {
     neo3000_set_semantic_carrier_action(*carrier);
     ++carrier->generation;
     return true;
+}
+
+int llama_context::optimize_neo3000_semantic_carrier_output_map(
+        const llama_batch & batch_inp,
+        llama_token target,
+        float learning_rate,
+        llama_neo3000_semantic_optimizer_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+
+    auto & carrier = cparams.neo3000_semantic_carrier;
+    if (!carrier ||
+        !carrier->output_written ||
+        !carrier->enabled ||
+        carrier->output_map.size() !=
+            static_cast<size_t>(model.hparams.n_embd) * 4 ||
+        batch_inp.n_tokens != 1 ||
+        !batch_inp.token ||
+        !batch_inp.logits ||
+        !batch_inp.logits[0] ||
+        target < 0 ||
+        static_cast<uint32_t>(target) >= model.vocab.n_tokens() ||
+        !std::isfinite(learning_rate) ||
+        learning_rate <= 0.0f ||
+        !memory ||
+        !sampling.samplers.empty()) {
+        return -1;
+    }
+
+    const auto scheduler_bytes = [&]() {
+        uint64_t bytes = 0;
+        for (const auto & backend : backends) {
+            bytes += ggml_backend_sched_get_buffer_size(
+                sched.get(), backend.get());
+        }
+        return bytes;
+    };
+    const uint64_t scheduler_before = scheduler_bytes();
+
+    if (!balloc->init(
+            batch_inp,
+            model.vocab,
+            memory.get(),
+            model.hparams.n_embd_inp(),
+            cparams.kv_unified ? LLAMA_MAX_SEQ : cparams.n_seq_max,
+            false)) {
+        return -1;
+    }
+    if (balloc->get_n_tokens() != 1 ||
+        balloc->get_n_outputs() != 1) {
+        return -1;
+    }
+
+    memory_update(false);
+    auto mctx = memory->init_batch(*balloc, 1, false);
+    if (!mctx ||
+        mctx->get_status() != LLAMA_MEMORY_STATUS_SUCCESS ||
+        !mctx->apply()) {
+        return -2;
+    }
+    const auto & ubatch = mctx->get_ubatch();
+    if (ubatch.n_tokens != 1 ||
+        ubatch.n_seqs != 1 ||
+        !ubatch.output[0]) {
+        return -1;
+    }
+
+    n_outputs = 1;
+    auto * res = gf_res_prev.get();
+    res->reset();
+    ggml_backend_sched_reset(sched.get());
+    ggml_backend_sched_set_eval_callback(
+        sched.get(), cparams.cb_eval, cparams.cb_eval_user_data);
+    const auto gparams = graph_params(
+        res,
+        ubatch,
+        mctx.get(),
+        ctx_type_to_graph_type(cparams.ctx_type));
+    auto * gf = model.build_graph(gparams);
+    if (!gf) {
+        res->reset();
+        return -3;
+    }
+
+    auto * output_map = ggml_graph_get_tensor(
+        gf, "neo3000_carrier_output_map");
+    if (!output_map ||
+        output_map->type != GGML_TYPE_F32 ||
+        output_map->ne[0] != 4 ||
+        output_map->ne[1] !=
+            static_cast<int64_t>(carrier->n_embd) ||
+        ggml_nbytes(output_map) !=
+            carrier->output_map.size() * sizeof(float)) {
+        res->reset();
+        return -3;
+    }
+    ggml_set_param(output_map);
+
+    ggml_opt_optimizer_params optimizer_params =
+        ggml_opt_get_default_optimizer_params(nullptr);
+    optimizer_params.sgd.alpha = learning_rate;
+    optimizer_params.sgd.wd = 0.0f;
+    ggml_opt_params opt_params = ggml_opt_default_params(
+        sched.get(), GGML_OPT_LOSS_TYPE_CROSS_ENTROPY);
+    opt_params.optimizer = GGML_OPT_OPTIMIZER_TYPE_SGD;
+    opt_params.get_opt_pars =
+        ggml_opt_get_constant_optimizer_params;
+    opt_params.get_opt_pars_ud = &optimizer_params;
+    ggml_opt_context_t opt_ctx = ggml_opt_init(opt_params);
+    ggml_opt_result_t opt_result = ggml_opt_result_init();
+
+    const size_t size_gf = ggml_graph_size(gf);
+    const size_t size_meta =
+        4 * size_gf * ggml_tensor_overhead() +
+        2 * ggml_graph_overhead_custom(size_gf, true);
+    ggml_init_params compute_params = {
+        /*.mem_size   =*/ size_meta,
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    ggml_context * ctx_compute_opt = ggml_init(compute_params);
+    if (!ctx_compute_opt) {
+        ggml_opt_result_free(opt_result);
+        ggml_opt_free(opt_ctx);
+        res->reset();
+        return -3;
+    }
+
+    ggml_opt_prepare_alloc(
+        opt_ctx,
+        ctx_compute_opt,
+        gf,
+        res->get_inp_tokens(),
+        res->get_logits());
+    ggml_opt_alloc(opt_ctx, true);
+    res->set_inputs(&ubatch);
+
+    ggml_tensor * labels = ggml_opt_labels(opt_ctx);
+    if (!labels ||
+        labels->type != GGML_TYPE_F32 ||
+        labels->ne[0] != model.vocab.n_tokens() ||
+        labels->ne[1] != 1) {
+        ggml_opt_result_free(opt_result);
+        ggml_opt_free(opt_ctx);
+        ggml_free(ctx_compute_opt);
+        res->reset();
+        return -3;
+    }
+    ggml_set_zero(labels);
+    const float one = 1.0f;
+    ggml_backend_tensor_set(
+        labels,
+        &one,
+        static_cast<size_t>(target) * sizeof(float),
+        sizeof(float));
+
+    ggml_opt_eval(opt_ctx, opt_result);
+    ggml_backend_sched_synchronize(sched.get());
+    ggml_backend_tensor_get(
+        output_map,
+        carrier->output_map.data(),
+        0,
+        carrier->output_map.size() * sizeof(float));
+
+    double loss = 0.0;
+    ggml_opt_result_loss(opt_result, &loss, nullptr);
+    int32_t predicted = LLAMA_TOKEN_NULL;
+    ggml_opt_result_pred(opt_result, &predicted);
+
+    const uint64_t parameter_bytes = ggml_nbytes(output_map);
+    ++carrier->optimizer_steps;
+    carrier->optimizer_parameter_read_bytes += parameter_bytes;
+    carrier->optimizer_parameter_write_bytes += parameter_bytes;
+    ++carrier->generation;
+    if (metrics) {
+        metrics->loss = loss;
+        metrics->predicted_token = predicted;
+        metrics->parameter_bytes = parameter_bytes;
+        metrics->scheduler_compute_bytes_before = scheduler_before;
+        metrics->scheduler_compute_bytes_after = scheduler_bytes();
+    }
+
+    ggml_opt_result_free(opt_result);
+    ggml_opt_free(opt_ctx);
+    ggml_free(ctx_compute_opt);
+    res->reset();
+    sched_need_reserve = true;
+    return 0;
 }
 
 void llama_context::clear_neo3000_semantic_carrier() {

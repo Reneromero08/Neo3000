@@ -45,6 +45,17 @@ struct llama_neo3000_semantic_carrier {
     uint64_t recurrent_transition_token_applications = 0;
     uint64_t recurrent_transition_enabled_token_applications = 0;
     uint64_t carrier_map_multiply_accumulates = 0;
+    uint64_t optimizer_steps = 0;
+    uint64_t optimizer_parameter_read_bytes = 0;
+    uint64_t optimizer_parameter_write_bytes = 0;
+};
+
+struct llama_neo3000_semantic_optimizer_metrics {
+    double loss = 0.0;
+    int32_t predicted_token = LLAMA_TOKEN_NULL;
+    uint64_t parameter_bytes = 0;
+    uint64_t scheduler_compute_bytes_before = 0;
+    uint64_t scheduler_compute_bytes_after = 0;
 };
 
 struct llama_cparams {

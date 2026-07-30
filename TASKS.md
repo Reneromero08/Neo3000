@@ -490,6 +490,26 @@ constructively unbounded local Agents-A1 inference.
   parameters, active state, update work, inference, validation, and closure.
   This is a changed learned inference substrate; do not turn adapter
   qualification into a panel or evidence-harness series.
+  `neo-exp-0152` is frozen precontact as one end-to-end learned carrier
+  reader, not an adapter-qualification series. Two construction relation
+  instances fit only the unchanged actual-output writer and query decoder.
+  The `65,536`-byte F32 output map starts at zero, receives no target-context
+  hidden delta, and thirty-two online SGD steps update only that map through
+  the frozen model's next-token cross-entropy graph. The retained
+  state remains one `64`-byte four-slot port written from actual G0 output
+  states. It is enabled only for each terminal query token before layer 39,
+  so the final full-attention block, MoE, and LM head must consume it.
+  The disjoint IOUV instance then advances only from its own actual outputs.
+  Runtime receives no expected answer, target row, context-indexed operator,
+  answer table, source-role forward, or evaluator-selected action. The frozen
+  execution requires `16/16`, changed matched G1 disablement, four-step G0
+  return, stable backing, and complete charged closure. The probe and full
+  Release server build, the focused Python suite passes `32/32`, and all
+  `139/139` configured CUDA objects remain present and nonzero with no CUDA
+  source change. No `0152` model contact has occurred. Failure rejects this
+  learned late reader and moves to an attention-state writer or weight
+  adapter; it does not authorize layer, learning-rate, epoch, prompt, context,
+  fixture, evaluator, carrier-evaluation, or evidence-harness variants.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

@@ -615,6 +615,30 @@ The active recurrence and acceptance boundary are
   rejects query-local nuisance state and makes a fixed latent causally useful.
   No state subset, scale, layer, fixture, evaluator, or evidence-harness
   successor follows.
+- `neo-exp-0152` is the frozen learned-substrate successor. It retains the
+  existing actual-output writer and `64`-byte four-slot port but replaces the
+  fitted mean-delta reader with one output map updated by the model's own
+  next-token loss. Only that `65,536`-byte F32 map is trainable; it starts at
+  zero and receives no target-context hidden delta. The Agents-A1 weights,
+  writer, query decoder, prompts, public destinations, and carrier topology
+  remain fixed. Two construction relation instances provide thirty-two
+  prospectively scheduled online SGD steps. The port is read only on the
+  terminal token before full-attention layer 39; later ordinary model
+  computation must produce the boundary.
+- The main IOUV relation instance is disjoint from construction items and is
+  never used for optimization. Its candidate recurrence may advance only from
+  its own actual outputs. The matched disabled G1 route, exact full-state
+  route, four-step functional return, same backing, complete closure, compact
+  four-link recurrence, and all training/parameter/token/graph costs remain
+  frozen. No expected answer, target tensor, runtime phase table,
+  context-indexed operator, source-role forward, or controller-selected
+  action reaches the candidate.
+- Static qualification passes: the recurrent-carrier probe and full Release
+  server build, the focused Python suite is `32/32`, and all `139/139`
+  configured CUDA objects are present and nonzero with no CUDA source change.
+  No model load, server launch, prompt evaluation, or `0152` scientific
+  contact has occurred. One compact result packet will adjudicate the changed
+  learned mechanism; evidence formatting is not a successor axis.
 
 ### REJECTED
 

@@ -145,9 +145,15 @@ struct llama_context {
         const float * output_state,
         size_t output_state_count,
         uint32_t public_destination);
+    bool reset_neo3000_semantic_port();
     bool set_neo3000_semantic_carrier_enabled(bool enabled);
     bool set_neo3000_semantic_carrier_phase(uint32_t phase);
     bool advance_neo3000_semantic_carrier();
+    int optimize_neo3000_semantic_carrier_output_map(
+        const llama_batch & batch,
+        llama_token target,
+        float learning_rate,
+        llama_neo3000_semantic_optimizer_metrics * metrics);
     void clear_neo3000_semantic_carrier();
     const llama_neo3000_semantic_carrier *
         get_neo3000_semantic_carrier() const;

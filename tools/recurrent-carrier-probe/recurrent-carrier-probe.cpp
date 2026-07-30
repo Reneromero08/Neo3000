@@ -5570,6 +5570,10 @@ static json run_sparse_g_label_refresh(
         spec.value(
             "output_written_semantic_port_action",
             false);
+    const bool end_to_end_semantic_carrier_training =
+        spec.value(
+            "end_to_end_semantic_carrier_training",
+            false);
     const bool output_recurrent_delta_advance_mode =
         spec.value(
             "output_recurrent_delta_advance_action",
@@ -5656,6 +5660,12 @@ static json run_sparse_g_label_refresh(
             "label orbit action modes are mutually exclusive");
     }
     if (trained_semantic_carrier_mode) {
+        if (end_to_end_semantic_carrier_training &&
+            !output_written_semantic_port_mode) {
+            throw std::runtime_error(
+                "end-to-end carrier training requires the "
+                "output-written port");
+        }
         if ((semantic_carrier_moe_router_bias_mode ||
              semantic_carrier_recurrent_transition_mode) &&
             !output_written_semantic_port_mode) {
@@ -6029,6 +6039,19 @@ static json run_sparse_g_label_refresh(
     size_t semantic_training_output_tokens = 0;
     uint64_t semantic_training_feature_peak_bytes = 0;
     uint64_t semantic_carrier_backing_initial = 0;
+    json semantic_optimizer_records = json::array();
+    uint64_t semantic_optimizer_steps = 0;
+    uint64_t semantic_optimizer_parameter_bytes = 0;
+    uint64_t semantic_optimizer_scheduler_compute_bytes_initial = 0;
+    uint64_t semantic_optimizer_scheduler_compute_bytes_peak = 0;
+    double semantic_optimizer_loss_first = 0.0;
+    double semantic_optimizer_loss_last = 0.0;
+    size_t semantic_optimizer_predicted_target_count = 0;
+    size_t semantic_optimizer_source_tokens = 0;
+    size_t semantic_optimizer_query_tokens = 0;
+    size_t semantic_optimizer_output_tokens = 0;
+    uint64_t semantic_optimizer_output_map_initial_hash = 0;
+    uint64_t semantic_optimizer_output_map_hash = 0;
     if (trained_semantic_carrier_mode) {
         const auto & training_contexts =
             spec.at(
@@ -6275,7 +6298,17 @@ static json run_sparse_g_label_refresh(
             close_sequence(
                 f_seq,
                 training_id + ":training-source-close");
-            if (semantic_carrier_layer_delta_mode) {
+            if (semantic_carrier_layer_delta_mode &&
+                end_to_end_semantic_carrier_training) {
+                for (size_t i = 0; i < 4; ++i) {
+                    auto & sample =
+                        training_samples.at(
+                            context_sample_begin + i);
+                    sample.target_delta.assign(
+                        sample.embedding.size(),
+                        0.0f);
+                }
+            } else if (semantic_carrier_layer_delta_mode) {
                 std::vector<llama_token> target_source;
                 target_source.reserve(expected_source_tokens);
                 target_source.insert(
@@ -6475,6 +6508,349 @@ static json run_sparse_g_label_refresh(
         }
         semantic_carrier_backing_initial =
             carrier->action_backing_id;
+        semantic_optimizer_output_map_initial_hash =
+            fnv1a64(
+                carrier->output_map.data(),
+                carrier->output_map.size() * sizeof(float));
+        if (end_to_end_semantic_carrier_training) {
+            const uint32_t epochs =
+                spec.at("semantic_carrier_optimizer_epochs")
+                    .get<uint32_t>();
+            const float learning_rate =
+                spec.at("semantic_carrier_optimizer_learning_rate")
+                    .get<float>();
+            const uint32_t target_variant =
+                spec.at(
+                    "semantic_carrier_optimizer_target_variant")
+                    .get<uint32_t>();
+            if (epochs == 0 ||
+                epochs > 16 ||
+                !std::isfinite(learning_rate) ||
+                learning_rate <= 0.0f ||
+                target_variant == 0 ||
+                target_variant >= variants.size()) {
+                throw std::runtime_error(
+                    "semantic carrier optimizer schedule is invalid");
+            }
+
+            const auto & optimizer_contexts =
+                spec.at("output_written_port_training_contexts");
+            for (uint32_t epoch = 0; epoch < epochs; ++epoch) {
+                size_t context_index = 0;
+                for (const auto & training_context :
+                     optimizer_contexts) {
+                    llama_memory_clear(memory, true);
+                    llama_synchronize(ctx);
+                    if (!ctx->set_neo3000_semantic_carrier_enabled(
+                            false) ||
+                        !ctx->reset_neo3000_semantic_port()) {
+                        throw std::runtime_error(
+                            "semantic carrier optimizer reset failed");
+                    }
+                    const std::string training_id =
+                        training_context.at("id")
+                            .get<std::string>();
+                    const auto training_f_tokens = tokenize_piece(
+                        vocab,
+                        training_context.at("module_f")
+                            .get<std::string>(),
+                        false,
+                        true);
+                    std::vector<llama_token> training_source;
+                    training_source.reserve(expected_source_tokens);
+                    training_source.insert(
+                        training_source.end(),
+                        prefix_tokens.begin(),
+                        prefix_tokens.end());
+                    training_source.insert(
+                        training_source.end(),
+                        training_f_tokens.begin(),
+                        training_f_tokens.end());
+                    training_source.insert(
+                        training_source.end(),
+                        variant_g_tokens.at(0).begin(),
+                        variant_g_tokens.at(0).end());
+                    training_source.insert(
+                        training_source.end(),
+                        closure_tokens.begin(),
+                        closure_tokens.end());
+                    if (training_source.size() !=
+                        expected_source_tokens) {
+                        throw std::runtime_error(
+                            training_id +
+                            ": optimizer source geometry mismatch");
+                    }
+                    timed_decode(training_source, 0, f_seq);
+                    semantic_optimizer_source_tokens +=
+                        training_source.size();
+                    require_component_positions(
+                        f_seq,
+                        source_boundary_pos,
+                        source_boundary_pos,
+                        training_id +
+                            ":optimizer-source");
+
+                    const auto destinations =
+                        training_context.at(
+                            "output_promotion_label_indices")
+                            .get<std::vector<uint32_t>>();
+                    const auto & queries =
+                        training_context.at("queries");
+                    if (destinations.size() != queries.size() ||
+                        queries.size() != 4) {
+                        throw std::runtime_error(
+                            training_id +
+                            ": optimizer topology mismatch");
+                    }
+                    size_t query_index = 0;
+                    for (const auto & query : queries) {
+                        copy_full_sequence(
+                            f_seq,
+                            work_seq,
+                            source_boundary_pos,
+                            training_id +
+                                ":optimizer-writer-copy");
+                        const auto boundary = decode_query(
+                            ctx,
+                            vocab,
+                            candidates,
+                            "semantic-carrier-optimizer-writer",
+                            training_id,
+                            query,
+                            expected_source_tokens,
+                            active_recurrent_backing_initial,
+                            active_hybrid_backend_allocation_bytes(ctx),
+                            work_seq,
+                            false,
+                            semantic_carrier_read_layer,
+                            true,
+                            false);
+                        const std::string expected =
+                            query.at("expected")
+                                .get<std::string>();
+                        if (boundary.argmax != expected ||
+                            destinations.at(query_index) >= 4) {
+                            throw std::runtime_error(
+                                training_id +
+                                ": optimizer writer capability failed");
+                        }
+                        semantic_optimizer_query_tokens +=
+                            boundary.record.at("query_tokens")
+                                .get<size_t>();
+                        const size_t output_ordinal =
+                            static_cast<size_t>(
+                                boundary.argmax[0] - 'A');
+                        const llama_pos output_position =
+                            static_cast<llama_pos>(
+                                expected_source_tokens +
+                                boundary.record.at("query_tokens")
+                                    .get<size_t>());
+                        timed_decode_terminal(
+                            std::vector<llama_token>{
+                                candidates.at(output_ordinal)},
+                            output_position,
+                            work_seq);
+                        ++semantic_optimizer_output_tokens;
+                        const float * output_state =
+                            llama_get_embeddings_layer_inp(
+                                ctx,
+                                static_cast<uint32_t>(
+                                    semantic_carrier_read_layer));
+                        if (!output_state ||
+                            !ctx->write_neo3000_semantic_port(
+                                output_state,
+                                ctx->get_model().hparams.n_embd_out(),
+                                destinations.at(query_index))) {
+                            throw std::runtime_error(
+                                training_id +
+                                ": optimizer writer state failed");
+                        }
+                        close_sequence(
+                            work_seq,
+                            training_id +
+                                ":optimizer-writer-close");
+                        ++query_index;
+                    }
+                    query_index = 0;
+                    for (const auto & query : queries) {
+                        copy_full_sequence(
+                            f_seq,
+                            work_seq,
+                            source_boundary_pos,
+                            training_id +
+                                ":optimizer-reader-copy");
+                        const auto suffix_tokens = tokenize_piece(
+                            vocab,
+                            query.at("suffix")
+                                .get<std::string>(),
+                            false,
+                            true);
+                        if (suffix_tokens.empty()) {
+                            throw std::runtime_error(
+                                training_id +
+                                ": optimizer query is empty");
+                        }
+                        if (suffix_tokens.size() > 1) {
+                            timed_decode(
+                                token_slice(
+                                    suffix_tokens,
+                                    0,
+                                    suffix_tokens.size() - 1),
+                                static_cast<llama_pos>(
+                                    expected_source_tokens),
+                                work_seq);
+                        }
+                        semantic_optimizer_query_tokens +=
+                            suffix_tokens.size();
+                        const std::string expected_g0 =
+                            query.at("expected")
+                                .get<std::string>();
+                        if (expected_g0.size() != 1 ||
+                            expected_g0[0] < 'A' ||
+                            expected_g0[0] > 'D') {
+                            throw std::runtime_error(
+                                training_id +
+                                ": optimizer target is invalid");
+                        }
+                        const size_t target_ordinal =
+                            (static_cast<size_t>(
+                                 expected_g0[0] - 'A') +
+                             target_variant) %
+                            candidates.size();
+                        auto batch = llama_batch_init(1, 0, 1);
+                        common_batch_add(
+                            batch,
+                            suffix_tokens.back(),
+                            static_cast<llama_pos>(
+                                expected_source_tokens +
+                                suffix_tokens.size() - 1),
+                            {work_seq},
+                            true);
+                        if (!ctx->set_neo3000_semantic_carrier_enabled(
+                                true)) {
+                            llama_batch_free(batch);
+                            throw std::runtime_error(
+                                training_id +
+                                ": optimizer carrier enable failed");
+                        }
+                        llama_neo3000_semantic_optimizer_metrics
+                            metrics = {};
+                        const auto step_started =
+                            std::chrono::steady_clock::now();
+                        const int status =
+                            ctx
+                                ->optimize_neo3000_semantic_carrier_output_map(
+                                    batch,
+                                    candidates.at(target_ordinal),
+                                    learning_rate,
+                                    &metrics);
+                        llama_batch_free(batch);
+                        if (!ctx->set_neo3000_semantic_carrier_enabled(
+                                false)) {
+                            throw std::runtime_error(
+                                training_id +
+                                ": optimizer carrier disable failed");
+                        }
+                        const double wall_ms =
+                            std::chrono::duration<double, std::milli>(
+                                std::chrono::steady_clock::now() -
+                                step_started).count();
+                        if (status != 0 ||
+                            !std::isfinite(metrics.loss) ||
+                            metrics.parameter_bytes == 0) {
+                            throw std::runtime_error(
+                                training_id +
+                                ": semantic carrier optimizer failed "
+                                "with status " +
+                                std::to_string(status));
+                        }
+                        if (semantic_optimizer_steps == 0) {
+                            semantic_optimizer_loss_first =
+                                metrics.loss;
+                            semantic_optimizer_parameter_bytes =
+                                metrics.parameter_bytes;
+                            semantic_optimizer_scheduler_compute_bytes_initial =
+                                metrics
+                                    .scheduler_compute_bytes_before;
+                        } else if (
+                            semantic_optimizer_parameter_bytes !=
+                                metrics.parameter_bytes) {
+                            throw std::runtime_error(
+                                "semantic carrier optimizer parameter "
+                                "size changed");
+                        }
+                        semantic_optimizer_loss_last = metrics.loss;
+                        semantic_optimizer_scheduler_compute_bytes_peak =
+                            std::max(
+                                semantic_optimizer_scheduler_compute_bytes_peak,
+                                metrics
+                                    .scheduler_compute_bytes_after);
+                        semantic_optimizer_predicted_target_count +=
+                            metrics.predicted_token ==
+                                candidates.at(target_ordinal);
+                        ++semantic_optimizer_steps;
+                        semantic_optimizer_records.push_back({
+                            {"epoch", epoch},
+                            {"training_context", training_id},
+                            {"context_index", context_index},
+                            {"query_id", query.at("id")},
+                            {"query_index", query_index},
+                            {"target_variant", target_variant},
+                            {"target",
+                                std::string(
+                                    1,
+                                    static_cast<char>(
+                                        'A' + target_ordinal))},
+                            {"predicted_token",
+                                metrics.predicted_token},
+                            {"target_token",
+                                candidates.at(target_ordinal)},
+                            {"loss", metrics.loss},
+                            {"learning_rate", learning_rate},
+                            {"parameter_bytes",
+                                metrics.parameter_bytes},
+                            {"scheduler_compute_bytes_before",
+                                metrics
+                                    .scheduler_compute_bytes_before},
+                            {"scheduler_compute_bytes_after",
+                                metrics
+                                    .scheduler_compute_bytes_after},
+                            {"wall_ms", wall_ms},
+                        });
+                        close_sequence(
+                            work_seq,
+                            training_id +
+                                ":optimizer-reader-close");
+                        ++query_index;
+                    }
+                    if (!ctx->set_neo3000_semantic_carrier_enabled(
+                            false) ||
+                        !ctx->reset_neo3000_semantic_port()) {
+                        throw std::runtime_error(
+                            training_id +
+                            ": optimizer close failed");
+                    }
+                    close_sequence(
+                        f_seq,
+                        training_id +
+                            ":optimizer-source-close");
+                    ++context_index;
+                }
+            }
+            const auto * optimized =
+                ctx->get_neo3000_semantic_carrier();
+            if (!optimized ||
+                optimized->optimizer_steps !=
+                    semantic_optimizer_steps) {
+                throw std::runtime_error(
+                    "semantic carrier optimizer accounting mismatch");
+            }
+            semantic_optimizer_output_map_hash =
+                fnv1a64(
+                    optimized->output_map.data(),
+                    optimized->output_map.size() *
+                        sizeof(float));
+        }
         training_samples.clear();
         training_samples.shrink_to_fit();
         llama_memory_clear(memory, true);
@@ -8819,6 +9195,8 @@ static json run_sparse_g_label_refresh(
     uint64_t semantic_carrier_recurrent_transition_token_applications = 0;
     uint64_t semantic_carrier_recurrent_transition_enabled_token_applications = 0;
     uint64_t semantic_carrier_map_multiply_accumulates = 0;
+    uint64_t semantic_carrier_optimizer_parameter_read_bytes = 0;
+    uint64_t semantic_carrier_optimizer_parameter_write_bytes = 0;
     uint64_t semantic_carrier_port_hash = 0;
     uint64_t semantic_carrier_generation = 0;
     bool semantic_carrier_quiescent = true;
@@ -8861,6 +9239,10 @@ static json run_sparse_g_label_refresh(
                     ->recurrent_transition_enabled_token_applications;
             semantic_carrier_map_multiply_accumulates =
                 carrier->carrier_map_multiply_accumulates;
+            semantic_carrier_optimizer_parameter_read_bytes =
+                carrier->optimizer_parameter_read_bytes;
+            semantic_carrier_optimizer_parameter_write_bytes =
+                carrier->optimizer_parameter_write_bytes;
             semantic_carrier_port_hash =
                 fnv1a64(
                     carrier->port.data(),
@@ -8886,16 +9268,32 @@ static json run_sparse_g_label_refresh(
             (semantic_adapter_build.training_correct ==
                  semantic_training_sample_count &&
              (!output_written_semantic_port_mode ||
-                (semantic_adapter_build.writer_training_correct ==
+                 (semantic_adapter_build.writer_training_correct ==
                      semantic_training_sample_count &&
                  semantic_adapter_build.coupled_training_correct ==
                      semantic_training_sample_count &&
                  semantic_carrier_port_writes ==
-                     comparisons)) &&
+                     comparisons +
+                         (end_to_end_semantic_carrier_training
+                             ? semantic_optimizer_steps
+                             : 0))) &&
              carrier_disabled_boundary_matches <=
                  acceptance.at(
                      "carrier_disabled_boundary_matches_maximum")
                      .get<size_t>() &&
+             (!end_to_end_semantic_carrier_training ||
+                (semantic_optimizer_steps ==
+                     static_cast<uint64_t>(
+                         spec.at(
+                             "semantic_carrier_optimizer_epochs")
+                             .get<uint32_t>()) *
+                         spec.at(
+                             "output_written_port_training_contexts")
+                             .size() *
+                         spec.at("queries_per_variant")
+                             .get<size_t>() &&
+                 semantic_optimizer_output_map_hash !=
+                     semantic_optimizer_output_map_initial_hash)) &&
              (output_written_semantic_port_mode
                 ? semantic_carrier_quiescent
                 : semantic_carrier_restored))) &&
@@ -9028,13 +9426,16 @@ static json run_sparse_g_label_refresh(
         candidate_source_tokens +
         reference_source_tokens +
         semantic_training_source_tokens +
+        semantic_optimizer_source_tokens +
         role_transport_training_source_tokens;
     return {
         {"schema_version", 1},
         {"mechanism", output_recurrent_delta_advance_mode
             ? "ACTUAL_OUTPUT_RECURRENT_DELTA_COMPOSITION"
             : output_written_semantic_port_mode
-            ? semantic_carrier_layer_delta_mode
+            ? end_to_end_semantic_carrier_training
+                ? "END_TO_END_LEARNED_OUTPUT_WRITTEN_MODEL_NATIVE_CARRIER_READER"
+            : semantic_carrier_layer_delta_mode
                 ? semantic_carrier_recurrent_transition_mode
                     ? "ACTUAL_OUTPUT_WRITTEN_RECURRENT_STATE_TRANSITION"
                     : semantic_carrier_moe_router_bias_mode
@@ -9126,6 +9527,23 @@ static json run_sparse_g_label_refresh(
                 output_source_fixed_cell_rematerialization_mode},
             {"output_written_semantic_port_action",
                 output_written_semantic_port_mode},
+            {"end_to_end_semantic_carrier_training",
+                end_to_end_semantic_carrier_training},
+            {"semantic_carrier_optimizer_epochs",
+                end_to_end_semantic_carrier_training
+                    ? spec.at(
+                        "semantic_carrier_optimizer_epochs")
+                    : json(0)},
+            {"semantic_carrier_optimizer_learning_rate",
+                end_to_end_semantic_carrier_training
+                    ? spec.at(
+                        "semantic_carrier_optimizer_learning_rate")
+                    : json(0.0)},
+            {"semantic_carrier_optimizer_target_variant",
+                end_to_end_semantic_carrier_training
+                    ? spec.at(
+                        "semantic_carrier_optimizer_target_variant")
+                    : json(0)},
             {"output_recurrent_delta_advance_action",
                 output_recurrent_delta_advance_mode},
             {"output_promotion_label_indices",
@@ -9258,6 +9676,17 @@ static json run_sparse_g_label_refresh(
             {"semantic_coupled_training_minimum_margin",
                 semantic_adapter_build
                     .coupled_training_minimum_margin},
+            {"semantic_optimizer_steps",
+                semantic_optimizer_steps},
+            {"semantic_optimizer_loss_first",
+                semantic_optimizer_loss_first},
+            {"semantic_optimizer_loss_last",
+                semantic_optimizer_loss_last},
+            {"semantic_optimizer_predicted_target_count",
+                semantic_optimizer_predicted_target_count},
+            {"semantic_optimizer_output_map_changed",
+                semantic_optimizer_output_map_hash !=
+                    semantic_optimizer_output_map_initial_hash},
             {"carrier_disabled_correct",
                 carrier_disabled_correct},
             {"carrier_disabled_boundary_matches",
@@ -9394,11 +9823,19 @@ static json run_sparse_g_label_refresh(
                 semantic_training_query_tokens},
             {"semantic_training_output_tokens",
                 semantic_training_output_tokens},
+            {"semantic_optimizer_source_tokens",
+                semantic_optimizer_source_tokens},
+            {"semantic_optimizer_query_tokens",
+                semantic_optimizer_query_tokens},
+            {"semantic_optimizer_output_tokens",
+                semantic_optimizer_output_tokens},
             {"all_route_input_tokens",
                 source_decode_tokens +
                 query_decode_tokens +
                 semantic_training_query_tokens +
                 semantic_training_output_tokens +
+                semantic_optimizer_query_tokens +
+                semantic_optimizer_output_tokens +
                 useful_output_decode_tokens +
                 role_transport_training_query_tokens +
                 role_transport_training_output_tokens},
@@ -9617,6 +10054,34 @@ static json run_sparse_g_label_refresh(
             {"semantic_carrier_training_peak_host_work_bytes",
                 semantic_adapter_build
                     .peak_host_work_bytes},
+            {"semantic_carrier_optimizer_steps",
+                semantic_optimizer_steps},
+            {"semantic_carrier_optimizer_parameter_bytes",
+                semantic_optimizer_parameter_bytes},
+            {"semantic_carrier_optimizer_parameter_read_bytes",
+                semantic_carrier_optimizer_parameter_read_bytes},
+            {"semantic_carrier_optimizer_parameter_write_bytes",
+                semantic_carrier_optimizer_parameter_write_bytes},
+            {"semantic_carrier_optimizer_scheduler_compute_bytes_initial",
+                semantic_optimizer_scheduler_compute_bytes_initial},
+            {"semantic_carrier_optimizer_scheduler_compute_bytes_peak",
+                semantic_optimizer_scheduler_compute_bytes_peak},
+            {"semantic_carrier_optimizer_loss_first",
+                semantic_optimizer_loss_first},
+            {"semantic_carrier_optimizer_loss_last",
+                semantic_optimizer_loss_last},
+            {"semantic_carrier_optimizer_predicted_target_count",
+                semantic_optimizer_predicted_target_count},
+            {"semantic_carrier_optimizer_output_map_initial_hash",
+                end_to_end_semantic_carrier_training
+                    ? hex64(
+                        semantic_optimizer_output_map_initial_hash)
+                    : ""},
+            {"semantic_carrier_optimizer_output_map_final_hash",
+                end_to_end_semantic_carrier_training
+                    ? hex64(
+                        semantic_optimizer_output_map_hash)
+                    : ""},
             {"semantic_carrier_graph_input_sets",
                 semantic_carrier_graph_input_sets},
             {"semantic_carrier_host_to_backend_bytes",
@@ -9662,6 +10127,8 @@ static json run_sparse_g_label_refresh(
                         static_cast<double>(expected_source_tokens)},
         }},
         {"training_records", semantic_training_records},
+        {"semantic_optimizer_records",
+            semantic_optimizer_records},
         {"role_transport_training_records",
             role_transport_training_records},
         {"output_promotion_records",
