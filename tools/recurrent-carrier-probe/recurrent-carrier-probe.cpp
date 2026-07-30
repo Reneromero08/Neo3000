@@ -5,6 +5,7 @@
 #include "llama-memory-hybrid.h"
 #include "llama-model.h"
 #include "log.h"
+#include "recurrent-carrier-evidence.h"
 
 #include "ggml-backend.h"
 
@@ -17,6 +18,7 @@
 #include <cstdint>
 #include <cstring>
 #include <fstream>
+#include <filesystem>
 #include <iomanip>
 #include <limits>
 #include <map>
@@ -47,6 +49,34 @@ struct boundary_result {
     std::string argmax;
     uint64_t full_logits_fnv1a64 = 0;
 };
+
+class terminal_numeric_error : public std::runtime_error {
+public:
+    explicit terminal_numeric_error(json diagnostic)
+        : std::runtime_error("terminal logits are not finite"),
+          diagnostic_(std::move(diagnostic)) {
+    }
+
+    const json & diagnostic() const {
+        return diagnostic_;
+    }
+
+private:
+    json diagnostic_;
+};
+
+static neo3000::evidence::atomic_write_receipt write_result_atomic(
+        const std::filesystem::path & path,
+        const json & result) {
+    const auto receipt = neo3000::evidence::atomic_write_text(
+        path, result.dump(2) + '\n');
+    LOG_INF(
+        "atomically wrote %s (%zu bytes, sha256=%s)\n",
+        receipt.path.c_str(),
+        receipt.bytes,
+        receipt.sha256.c_str());
+    return receipt;
+}
 
 struct device_root {
     std::string variant;
@@ -2352,9 +2382,49 @@ static boundary_result decode_query(
     }
 
     const int32_t n_vocab = llama_vocab_n_tokens(vocab);
+    const auto numeric =
+        neo3000::evidence::analyze_terminal_logits(
+            logits,
+            static_cast<size_t>(n_vocab),
+            candidates);
+    if (!numeric.valid()) {
+        json safe_candidates = json::array();
+        for (float value : numeric.candidate_logits) {
+            safe_candidates.push_back(
+                std::isfinite(value) ? json(value) : json(nullptr));
+        }
+        throw terminal_numeric_error({
+            {"record_type", "terminal_numeric_failure"},
+            {"query_id", query.at("id")},
+            {"route", route},
+            {"source_variant", variant},
+            {"source_tokens", source_tokens},
+            {"query_tokens", tokens.size()},
+            {"sequence_id", seq_id},
+            {"terminal_numeric_state", numeric.state},
+            {"nonfinite_count", numeric.nonfinite_count},
+            {"first_nonfinite_position",
+                numeric.first_nonfinite_position.has_value()
+                    ? json(*numeric.first_nonfinite_position)
+                    : json(nullptr)},
+            {"candidate_nonfinite_count",
+                numeric.candidate_nonfinite_count},
+            {"candidate_logits", safe_candidates},
+            {"candidate_softmax", nullptr},
+            {"candidate_argmax", nullptr},
+            {"full_logits_fnv1a64", nullptr},
+            {"full_logits_hashed", false},
+            {"route_valid", false},
+        });
+    }
+
     boundary_result result;
-    result.full_logits_fnv1a64 = fnv1a64(logits, static_cast<size_t>(n_vocab) * sizeof(float));
-    result.candidate_logits.reserve(candidates.size());
+    result.full_logits_fnv1a64 = fnv1a64(
+        logits, static_cast<size_t>(n_vocab) * sizeof(float));
+    result.candidate_logits = numeric.candidate_logits;
+    result.argmax = std::string(
+        1,
+        static_cast<char>('A' + *numeric.argmax_index));
     if (capture_embedding) {
         const float * embedding =
             llama_get_embeddings_ith(ctx, -1);
@@ -2386,29 +2456,6 @@ static boundary_result decode_query(
             layer_embedding + n_embd);
     }
 
-    float max_logit = -std::numeric_limits<float>::infinity();
-    size_t max_index = 0;
-    for (size_t i = 0; i < candidates.size(); ++i) {
-        const float value = logits[candidates[i]];
-        result.candidate_logits.push_back(value);
-        if (value > max_logit) {
-            max_logit = value;
-            max_index = i;
-        }
-    }
-    result.argmax = std::string(1, static_cast<char>('A' + max_index));
-
-    double probability_sum = 0.0;
-    std::vector<double> probabilities;
-    for (float value : result.candidate_logits) {
-        const double probability = std::exp(static_cast<double>(value - max_logit));
-        probabilities.push_back(probability);
-        probability_sum += probability;
-    }
-    for (double & value : probabilities) {
-        value /= probability_sum;
-    }
-
     result.record = {
         {"query_id", query.at("id")},
         {"route", route},
@@ -2420,9 +2467,15 @@ static boundary_result decode_query(
         {"source_tokens", source_tokens},
         {"query_tokens", tokens.size()},
         {"candidate_logits", result.candidate_logits},
-        {"candidate_softmax", probabilities},
+        {"candidate_softmax", numeric.candidate_softmax},
         {"candidate_argmax", result.argmax},
         {"full_logits_fnv1a64", hex64(result.full_logits_fnv1a64)},
+        {"terminal_numeric_state", numeric.state},
+        {"nonfinite_count", 0},
+        {"first_nonfinite_position", nullptr},
+        {"candidate_nonfinite_count", 0},
+        {"full_logits_hashed", true},
+        {"route_valid", true},
         {"root_backing_id", hex64(root_backing_id)},
         {"root_gpu_bytes", root_gpu_bytes},
         {"sequence_id", seq_id},
@@ -2472,6 +2525,57 @@ static std::vector<uint8_t> read_tensor(ggml_tensor * tensor) {
     std::vector<uint8_t> bytes(ggml_nbytes(tensor));
     ggml_backend_tensor_get(tensor, bytes.data(), 0, bytes.size());
     return bytes;
+}
+
+struct factor_custody_digest {
+    uint64_t fnv1a64 = UINT64_C(1469598103934665603);
+    size_t transferred_bytes = 0;
+    size_t nonzero_bytes = 0;
+    size_t peak_host_work_bytes = 0;
+    double wall_ms = 0.0;
+};
+
+static factor_custody_digest digest_factor_panels(
+        llama_context * ctx,
+        const std::vector<std::pair<uint64_t, ggml_tensor *>> & panels) {
+    llama_synchronize(ctx);
+    const auto started = std::chrono::steady_clock::now();
+    neo3000::evidence::factor_payload_digest digest;
+    factor_custody_digest result;
+    for (const auto & [tag, tensor] : panels) {
+        if (!tensor) {
+            throw std::runtime_error(
+                "factor custody digest received a null panel");
+        }
+        auto bytes = read_tensor(tensor);
+        neo3000::evidence::factor_digest_update(
+            digest, bytes.data(), bytes.size(), tag);
+        result.peak_host_work_bytes =
+            std::max(result.peak_host_work_bytes, bytes.size());
+    }
+    result.fnv1a64 = digest.fnv1a64;
+    result.transferred_bytes = digest.bytes;
+    result.nonzero_bytes = digest.nonzero_bytes;
+    result.wall_ms =
+        std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - started).count();
+    return result;
+}
+
+static json factor_custody_record(
+        const std::string & stage,
+        const std::string & variant,
+        const factor_custody_digest & digest) {
+    return {
+        {"stage", stage},
+        {"variant", variant},
+        {"fnv1a64", hex64(digest.fnv1a64)},
+        {"transferred_bytes", digest.transferred_bytes},
+        {"nonzero_bytes", digest.nonzero_bytes},
+        {"all_zero", digest.nonzero_bytes == 0},
+        {"peak_host_work_bytes", digest.peak_host_work_bytes},
+        {"wall_ms", digest.wall_ms},
+    };
 }
 
 static void write_tensor(ggml_tensor * tensor, const std::vector<uint8_t> & bytes) {
@@ -6275,6 +6379,71 @@ static json run_source_conditioned_lifting(
     }
     const uint64_t backing_id_initial =
         installed->action_backing_id;
+    json factor_custody_receipts = json::array();
+    uint64_t factor_digest_d2h_bytes = 0;
+    uint64_t factor_digest_peak_host_work_bytes = 0;
+    double factor_digest_wall_ms = 0.0;
+    const auto active_factor_panels =
+            [](const llama_neo3000_semantic_carrier * carrier) {
+        return std::vector<std::pair<uint64_t, ggml_tensor *>>{
+            {1, carrier->lifting_f_key_active},
+            {2, carrier->lifting_f_value_active},
+            {3, carrier->lifting_g_key_active},
+            {4, carrier->lifting_g_value_active},
+        };
+    };
+    const auto staging_factor_panels =
+            [](const llama_neo3000_semantic_carrier * carrier) {
+        return std::vector<std::pair<uint64_t, ggml_tensor *>>{
+            {5, carrier->lifting_f_key_staging},
+            {6, carrier->lifting_f_value_staging},
+            {7, carrier->lifting_g_key_staging},
+            {8, carrier->lifting_g_value_staging},
+        };
+    };
+    const auto factor_capacity_bytes =
+            [](const std::vector<
+                std::pair<uint64_t, ggml_tensor *>> & panels) {
+        uint64_t bytes = 0;
+        for (const auto & [tag, tensor] : panels) {
+            (void) tag;
+            if (!tensor) {
+                throw std::runtime_error(
+                    "factor capacity contains a null panel");
+            }
+            bytes += ggml_nbytes(tensor);
+        }
+        return bytes;
+    };
+    const uint64_t active_factor_capacity_bytes =
+        factor_capacity_bytes(active_factor_panels(installed));
+    const uint64_t staging_factor_capacity_bytes =
+        factor_capacity_bytes(staging_factor_panels(installed));
+    if (active_factor_capacity_bytes +
+            staging_factor_capacity_bytes >
+        installed->lifting_backend_bytes) {
+        throw std::runtime_error(
+            "factor logical capacity exceeds backend allocation");
+    }
+    const auto record_factor_digest =
+            [&](const std::string & stage,
+                const std::string & variant,
+                const std::vector<
+                    std::pair<uint64_t, ggml_tensor *>> & panels) {
+        const auto digest =
+            digest_factor_panels(ctx, panels);
+        factor_digest_d2h_bytes +=
+            digest.transferred_bytes;
+        factor_digest_peak_host_work_bytes =
+            std::max(
+                factor_digest_peak_host_work_bytes,
+                static_cast<uint64_t>(
+                    digest.peak_host_work_bytes));
+        factor_digest_wall_ms += digest.wall_ms;
+        factor_custody_receipts.push_back(
+            factor_custody_record(stage, variant, digest));
+        return digest;
+    };
     ctx->sched_reserve();
 
     try {
@@ -6433,6 +6602,23 @@ static json run_source_conditioned_lifting(
                 factor_source_seq,
                 variant_id + ":factor-source");
             ++sequence_closes;
+            const auto * precommit =
+                ctx->get_neo3000_semantic_carrier();
+            if (!precommit) {
+                throw std::runtime_error(
+                    variant_id +
+                    ": factor carrier absent before commit");
+            }
+            const auto precommit_digest =
+                record_factor_digest(
+                    "precommit_staging",
+                    variant_id,
+                    staging_factor_panels(precommit));
+            if (precommit_digest.nonzero_bytes == 0) {
+                throw std::runtime_error(
+                    variant_id +
+                    ": precommit factor staging is all zero");
+            }
             if (!ctx->commit_neo3000_source_conditioned_lifting()) {
                 throw std::runtime_error(
                     variant_id +
@@ -6448,6 +6634,22 @@ static json run_source_conditioned_lifting(
                 throw std::runtime_error(
                     variant_id +
                     ": committed factor backing changed");
+            }
+            const auto active_digest =
+                record_factor_digest(
+                    "postcommit_active",
+                    variant_id,
+                    active_factor_panels(committed));
+            const auto staging_digest =
+                record_factor_digest(
+                    "postcommit_zeroed_staging",
+                    variant_id,
+                    staging_factor_panels(committed));
+            if (active_digest.nonzero_bytes == 0 ||
+                staging_digest.nonzero_bytes != 0) {
+                throw std::runtime_error(
+                    variant_id +
+                    ": committed factor custody digest failed");
             }
 
             std::vector<llama_token> exact_source;
@@ -6577,10 +6779,10 @@ static json run_source_conditioned_lifting(
             before_close->lifting_captures;
         const uint64_t lifting_commits =
             before_close->lifting_commits;
-        const double restoration_error_max =
-            before_close->lifting_restoration_error_max;
-        const double restoration_error_sum =
-            before_close->lifting_restoration_error_sum;
+        const double reverse_branch_residual_max =
+            before_close->lifting_reverse_branch_residual_max;
+        const double reverse_branch_residual_sum =
+            before_close->lifting_reverse_branch_residual_sum;
 
         if (!ctx->reset_neo3000_semantic_port()) {
             throw std::runtime_error(
@@ -6598,6 +6800,23 @@ static json run_source_conditioned_lifting(
         }
         const uint64_t closure_zero_bytes =
             closed->lifting_closure_device_zero_bytes;
+        auto all_closed_panels =
+            active_factor_panels(closed);
+        const auto closed_staging =
+            staging_factor_panels(closed);
+        all_closed_panels.insert(
+            all_closed_panels.end(),
+            closed_staging.begin(),
+            closed_staging.end());
+        const auto reset_digest =
+            record_factor_digest(
+                "post_reset_all_active_and_staging",
+                "all",
+                all_closed_panels);
+        if (reset_digest.nonzero_bytes != 0) {
+            throw std::runtime_error(
+                "source-conditioned lifting reset left nonzero factors");
+        }
 
         const auto unrelated_source_tokens = tokenize_piece(
             vocab,
@@ -6653,8 +6872,10 @@ static json run_source_conditioned_lifting(
                 acceptance.at("joint_correct")
                     .get<size_t>() &&
             control_gate &&
-            restoration_error_max <=
+            reverse_branch_residual_max <=
                 acceptance.at(
+                    // Frozen consumed specs use the historical key name.
+                    // The executable result and claim use reverse residual.
                     "restoration_error_maximum")
                     .get<double>() &&
             unrelated_useful;
@@ -6666,6 +6887,12 @@ static json run_source_conditioned_lifting(
             throw std::runtime_error(
                 "source-conditioned lifting backing release failed");
         }
+        factor_custody_receipts.push_back({
+            {"stage", "post_release_absence"},
+            {"variant", "all"},
+            {"carrier_present", false},
+            {"backing_released", true},
+        });
         llama_memory_clear(memory, true);
         llama_synchronize(ctx);
 
@@ -6678,7 +6905,7 @@ static json run_source_conditioned_lifting(
                     "xF=x+(VF-KF)*cF; "
                     "cG=(KG^T*xF)/rowsum(KG^2); "
                     "xFG=xF+(VG-KG)*cG"},
-                {"reverse_check",
+                {"out_of_place_reverse_residual_law",
                     "xF'=xFG-(VG-KG)*cG; "
                     "x'=xF'-(VF-KF)*cF; "
                     "compare x' with x and recomputed cF,cG "
@@ -6686,8 +6913,11 @@ static json run_source_conditioned_lifting(
                 {"effective_transition",
                     "frozen Q/K/V consume transformed x before inverse"},
                 {"factor_source_separated", true},
-                {"second_complete_factor_panel_retained", false},
-                {"reverse_check_out_of_place", true},
+                {"second_complete_nonzero_factor_payload_retained",
+                    false},
+                {"active_and_staging_capacity_both_allocated",
+                    true},
+                {"out_of_place_reverse_residual_check", true},
                 {"restoration_class",
                     "NO_RESTORATION_CLAIM"},
                 {"factor_disposition",
@@ -6699,10 +6929,10 @@ static json run_source_conditioned_lifting(
                 {"control_correct", control_correct},
                 {"control_joint_matches",
                     control_joint_matches},
-                {"restoration_error_max",
-                    restoration_error_max},
-                {"restoration_error_sum",
-                    restoration_error_sum},
+                {"reverse_branch_residual_max",
+                    reverse_branch_residual_max},
+                {"reverse_branch_residual_sum",
+                    reverse_branch_residual_sum},
                 {"unrelated_useful_after_close",
                     unrelated_useful},
                 {"same_backing_before_close",
@@ -6723,7 +6953,20 @@ static json run_source_conditioned_lifting(
                 {"closure_device_zero_bytes",
                     closure_zero_bytes},
                 {"partial_update_resident_after_close", false},
-                {"second_complete_factor_panel_retained", false},
+                {"second_complete_nonzero_factor_payload_retained",
+                    false},
+                {"active_factor_capacity_bytes",
+                    active_factor_capacity_bytes},
+                {"zeroed_staging_capacity_bytes",
+                    staging_factor_capacity_bytes},
+                {"backend_padding_bytes",
+                    lifting_backend_bytes -
+                        active_factor_capacity_bytes -
+                        staging_factor_capacity_bytes},
+                {"active_and_staging_capacity_both_counted",
+                    true},
+                {"factor_custody_receipts",
+                    factor_custody_receipts},
             }},
             {"resource_accounting", {
                 {"source_decode_tokens", source_decode_tokens},
@@ -6738,6 +6981,12 @@ static json run_source_conditioned_lifting(
                     lifting_token_applications},
                 {"lifting_multiply_accumulates",
                     lifting_multiply_accumulates},
+                {"factor_digest_d2h_bytes",
+                    factor_digest_d2h_bytes},
+                {"factor_digest_peak_host_work_bytes",
+                    factor_digest_peak_host_work_bytes},
+                {"factor_digest_wall_ms",
+                    factor_digest_wall_ms},
                 {"active_cache_backend_allocation_bytes",
                     active_cache_backend_allocation_bytes},
             }},
@@ -13242,6 +13491,39 @@ int main(int argc, char ** argv) {
     }
     json spec;
     spec_stream >> spec;
+    neo3000::evidence::mechanism_selection mechanism_selection;
+    neo3000::evidence::predecessor_receipt predecessor_receipt;
+    try {
+        if (std::filesystem::exists(params.out_file)) {
+            throw std::runtime_error(
+                "terminal result already exists; model contact refused: " +
+                params.out_file);
+        }
+        mechanism_selection =
+            neo3000::evidence::select_exactly_one_mechanism(spec);
+        predecessor_receipt =
+            neo3000::evidence::verify_declared_predecessor(
+                spec,
+                std::filesystem::path(params.prompt_file)
+                    .parent_path() /
+                    "predecessor-evidence-locks.json");
+    } catch (const std::exception & error) {
+        LOG_ERR(
+            "scientific precontact admission failed: %s\n",
+            error.what());
+        return 1;
+    }
+    LOG_INF(
+        "selected mechanism: %s\n",
+        mechanism_selection.mechanism.c_str());
+    if (predecessor_receipt.bytes != 0) {
+        LOG_INF(
+            "verified predecessor: %s (%zu bytes, sha256=%s, class=%s)\n",
+            predecessor_receipt.path.c_str(),
+            predecessor_receipt.bytes,
+            predecessor_receipt.sha256.c_str(),
+            predecessor_receipt.classification.c_str());
+    }
     if (spec.value("require_unified_kv", false)) {
         params.kv_unified = true;
     }
@@ -13283,9 +13565,7 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -13300,9 +13580,7 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -13316,9 +13594,7 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -13332,9 +13608,7 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -13584,9 +13858,7 @@ int main(int argc, char ** argv) {
                 {"verdict", accepted ? "accept" : "reject"},
                 {"claim_ceiling", spec.at("claim_ceiling")},
             };
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF(
                 "wrote %s\n",
                 params.out_file.c_str());
@@ -13697,9 +13969,7 @@ int main(int argc, char ** argv) {
                 {"verdict", accepted ? "accept" : "reject"},
                 {"claim_ceiling", spec.at("claim_ceiling")},
             };
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -13713,9 +13983,7 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -13729,9 +13997,7 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -13745,9 +14011,7 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -13761,9 +14025,7 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -13777,9 +14039,7 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -13793,9 +14053,7 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -13809,9 +14067,7 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -13825,9 +14081,7 @@ int main(int argc, char ** argv) {
                 spec,
                 active_backing_initial,
                 active_attention_backing_initial);
-            std::ofstream result_stream(params.out_file);
-            result_stream << result.dump(2) << '\n';
-            result_stream.close();
+            write_result_atomic(params.out_file, result);
             LOG_INF("wrote %s\n", params.out_file.c_str());
             llama_backend_free();
             return 0;
@@ -14198,10 +14452,36 @@ int main(int argc, char ** argv) {
              spec.at("claim_ceiling")},
         };
 
-        std::ofstream result_stream(params.out_file);
-        result_stream << result.dump(2) << '\n';
-        result_stream.close();
+        write_result_atomic(params.out_file, result);
         LOG_INF("wrote %s\n", params.out_file.c_str());
+    } catch (const terminal_numeric_error & error) {
+        const json invalid_result = {
+            {"schema_version", 1},
+            {"record_type", "terminal_numeric_route_invalidation"},
+            {"spec_id", spec.at("id")},
+            {"mechanism", mechanism_selection.mechanism},
+            {"terminal_numeric_state",
+                error.diagnostic().at("terminal_numeric_state")},
+            {"required_route_invalid", true},
+            {"invalid_record", error.diagnostic()},
+            {"parity_records_admitted", 0},
+            {"utility_records_admitted", 0},
+            {"verdict", "invalid"},
+            {"classification",
+                "NONFINITE_TERMINAL_LOGITS_FAIL_CLOSED"},
+        };
+        try {
+            write_result_atomic(params.out_file, invalid_result);
+        } catch (const std::exception & persistence_error) {
+            LOG_ERR(
+                "failed to persist numeric invalidation: %s\n",
+                persistence_error.what());
+        }
+        LOG_ERR(
+            "recurrent carrier probe invalidated route: %s\n",
+            error.what());
+        llama_backend_free();
+        return 1;
     } catch (const std::exception & error) {
         LOG_ERR("recurrent carrier probe failed: %s\n", error.what());
         llama_backend_free();

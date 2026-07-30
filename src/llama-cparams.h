@@ -85,8 +85,9 @@ struct llama_neo3000_semantic_carrier {
     // state toward code state. The graph applies each as a rank-four coupling
     // before frozen Q/K/V projections, lets Q/K/V consume the transformed
     // state, then executes an out-of-place reverse computation and reports its
-    // joint hidden/ancilla residual. Factors are direct external graph leaves;
-    // the implementation retains no second complete factor panel.
+    // joint hidden/ancilla residual. Factors are direct external graph leaves.
+    // Active and staging each retain full capacity; after commit, staging is
+    // measured zero so no second complete nonzero payload remains.
     std::shared_ptr<void> lifting_backing;
     std::vector<int32_t> lifting_layers;
     ggml_tensor * lifting_f_key_active = nullptr;
@@ -172,8 +173,8 @@ struct llama_neo3000_semantic_carrier {
     uint64_t lifting_captures = 0;
     uint64_t lifting_commits = 0;
     uint64_t lifting_reads = 0;
-    double lifting_restoration_error_sum = 0.0;
-    double lifting_restoration_error_max = 0.0;
+    double lifting_reverse_branch_residual_sum = 0.0;
+    double lifting_reverse_branch_residual_max = 0.0;
     uint64_t writer_host_input_bytes = 0;
     uint64_t port_writes = 0;
     uint64_t router_bias_token_applications = 0;

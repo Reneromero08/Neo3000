@@ -1,4 +1,5 @@
 #include "llama-context.h"
+#include "neo3000-lifting-lifecycle.h"
 
 #include "ggml.h"
 #include "llama-arch.h"
@@ -2706,31 +2707,11 @@ bool llama_context::set_neo3000_lifting_capture(
         int32_t public_slot) {
     auto & carrier = cparams.neo3000_semantic_carrier;
     if (!carrier ||
-        !carrier->source_conditioned_lifting ||
-        carrier->lifting_poisoned ||
-        capture_kind < 1 ||
-        capture_kind > 4 ||
-        public_slot < 0 ||
-        public_slot >= 4 ||
-        carrier->lifting_capture_kind != 0 ||
-        carrier->lifting_capture_slot != -1) {
+        !carrier->source_conditioned_lifting) {
         return false;
     }
-    uint32_t * mask = nullptr;
-    switch (capture_kind) {
-        case 1: mask = &carrier->lifting_f_key_mask; break;
-        case 2: mask = &carrier->lifting_f_value_mask; break;
-        case 3: mask = &carrier->lifting_g_key_mask; break;
-        case 4: mask = &carrier->lifting_g_value_mask; break;
-        default: return false;
-    }
-    if ((*mask & (1u << public_slot)) != 0) {
-        return false;
-    }
-    carrier->lifting_update_resident = true;
-    carrier->lifting_capture_kind = capture_kind;
-    carrier->lifting_capture_slot = public_slot;
-    return true;
+    return neo3000::lifting_try_arm_capture(
+        *carrier, capture_kind, public_slot);
 }
 
 void llama_context::poison_neo3000_source_conditioned_lifting() {
@@ -2738,11 +2719,7 @@ void llama_context::poison_neo3000_source_conditioned_lifting() {
     if (!carrier || !carrier->source_conditioned_lifting) {
         return;
     }
-    carrier->enabled = false;
-    carrier->lifting_poisoned = true;
-    carrier->lifting_update_resident = false;
-    carrier->lifting_capture_kind = 0;
-    carrier->lifting_capture_slot = -1;
+    neo3000::lifting_mark_poisoned(*carrier);
     cparams.neo3000_lifting_control = 0;
     for (ggml_tensor * tensor : {
              carrier->lifting_f_key_active,
@@ -2760,10 +2737,6 @@ void llama_context::poison_neo3000_source_conditioned_lifting() {
                 ggml_nbytes(tensor);
         }
     }
-    carrier->lifting_f_key_mask = 0;
-    carrier->lifting_f_value_mask = 0;
-    carrier->lifting_g_key_mask = 0;
-    carrier->lifting_g_value_mask = 0;
     ++carrier->generation;
     synchronize();
     sched_need_reserve = true;
@@ -2856,9 +2829,10 @@ bool llama_context::capture_neo3000_lifting_output(
     synchronize();
     carrier->lifting_capture_device_copy_bytes +=
         expected_bytes * sources.size();
-    *mask |= 1u << slot;
-    carrier->lifting_capture_kind = 0;
-    carrier->lifting_capture_slot = -1;
+    if (!neo3000::lifting_mark_capture_complete(*carrier)) {
+        poison_neo3000_source_conditioned_lifting();
+        return false;
+    }
     ++carrier->lifting_captures;
     ++carrier->port_writes;
     ++carrier->generation;
@@ -2869,12 +2843,8 @@ bool llama_context::begin_neo3000_lifting_g_update() {
     auto & carrier = cparams.neo3000_semantic_carrier;
     if (!carrier ||
         !carrier->source_conditioned_lifting ||
-        carrier->lifting_poisoned ||
-        carrier->lifting_update_resident ||
-        carrier->lifting_commits == 0 ||
-        carrier->lifting_capture_kind != 0 ||
-        carrier->lifting_capture_slot != -1 ||
-        cparams.neo3000_lifting_control != 0) {
+        !neo3000::lifting_can_begin_g_update(
+            *carrier, cparams.neo3000_lifting_control)) {
         return false;
     }
     const std::array<std::pair<ggml_tensor *, ggml_tensor *>, 2>
@@ -2910,11 +2880,7 @@ bool llama_context::begin_neo3000_lifting_g_update() {
             ggml_nbytes(tensor);
     }
     synchronize();
-    carrier->lifting_f_key_mask = 0x0fu;
-    carrier->lifting_f_value_mask = 0x0fu;
-    carrier->lifting_g_key_mask = 0;
-    carrier->lifting_g_value_mask = 0;
-    carrier->lifting_update_resident = true;
+    neo3000::lifting_mark_g_update_started(*carrier);
     return true;
 }
 
@@ -2922,15 +2888,8 @@ bool llama_context::commit_neo3000_source_conditioned_lifting() {
     auto & carrier = cparams.neo3000_semantic_carrier;
     if (!carrier ||
         !carrier->source_conditioned_lifting ||
-        carrier->lifting_poisoned ||
-        !carrier->lifting_update_resident ||
-        carrier->lifting_capture_kind != 0 ||
-        carrier->lifting_capture_slot != -1 ||
-        carrier->lifting_f_key_mask != 0x0fu ||
-        carrier->lifting_f_value_mask != 0x0fu ||
-        carrier->lifting_g_key_mask != 0x0fu ||
-        carrier->lifting_g_value_mask != 0x0fu ||
-        cparams.neo3000_lifting_control != 0) {
+        !neo3000::lifting_can_commit(
+            *carrier, cparams.neo3000_lifting_control)) {
         return false;
     }
     const std::array<std::pair<ggml_tensor *, ggml_tensor *>, 4>
@@ -2963,12 +2922,7 @@ bool llama_context::commit_neo3000_source_conditioned_lifting() {
             ggml_nbytes(pair.first) * 2;
     }
     synchronize();
-    carrier->lifting_f_key_mask = 0;
-    carrier->lifting_f_value_mask = 0;
-    carrier->lifting_g_key_mask = 0;
-    carrier->lifting_g_value_mask = 0;
-    carrier->lifting_update_resident = false;
-    ++carrier->lifting_commits;
+    neo3000::lifting_mark_committed(*carrier);
     ++carrier->generation;
     return true;
 }
@@ -3091,14 +3045,7 @@ bool llama_context::reset_neo3000_semantic_port() {
                 ggml_nbytes(tensor);
         }
         synchronize();
-        carrier->lifting_capture_kind = 0;
-        carrier->lifting_capture_slot = -1;
-        carrier->lifting_f_key_mask = 0;
-        carrier->lifting_f_value_mask = 0;
-        carrier->lifting_g_key_mask = 0;
-        carrier->lifting_g_value_mask = 0;
-        carrier->lifting_update_resident = false;
-        carrier->lifting_poisoned = false;
+        neo3000::lifting_mark_reset(*carrier);
         cparams.neo3000_lifting_control = 0;
         sched_need_reserve = true;
     }
@@ -4285,20 +4232,20 @@ int llama_context::decode(const llama_batch & batch_inp) {
             carrier &&
             carrier->source_conditioned_lifting &&
             cparams.neo3000_lifting_control != 0) {
-            ggml_tensor * restoration_error =
-                res->get_neo3000_lifting_restoration_error();
-            if (!restoration_error ||
-                ggml_nelements(restoration_error) != 1 ||
-                restoration_error->type != GGML_TYPE_F32) {
+            ggml_tensor * reverse_branch_residual =
+                res->get_neo3000_lifting_reverse_branch_residual();
+            if (!reverse_branch_residual ||
+                ggml_nelements(reverse_branch_residual) != 1 ||
+                reverse_branch_residual->type != GGML_TYPE_F32) {
                 poison_neo3000_source_conditioned_lifting();
                 LLAMA_LOG_ERROR(
-                    "%s: missing Neo3000 lifting restoration scalar\n",
+                    "%s: missing Neo3000 lifting reverse residual scalar\n",
                     __func__);
                 return -3;
             }
             float error = 0.0f;
             ggml_backend_tensor_get(
-                restoration_error,
+                reverse_branch_residual,
                 &error,
                 0,
                 sizeof(error));
@@ -4309,10 +4256,10 @@ int llama_context::decode(const llama_batch & batch_inp) {
                     __func__);
                 return -3;
             }
-            carrier->lifting_restoration_error_sum += error;
-            carrier->lifting_restoration_error_max =
+            carrier->lifting_reverse_branch_residual_sum += error;
+            carrier->lifting_reverse_branch_residual_max =
                 std::max(
-                    carrier->lifting_restoration_error_max,
+                    carrier->lifting_reverse_branch_residual_max,
                     static_cast<double>(error));
             const uint64_t modules =
                 cparams.neo3000_lifting_control == 2 ||

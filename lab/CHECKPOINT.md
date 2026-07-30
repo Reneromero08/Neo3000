@@ -267,6 +267,35 @@ The active recurrence and acceptance boundary are
   controller, evaluator, carrier-evaluation, or evidence-harness successor
   is authorized. The next substrate is active bounded recurrent advance with
   fixed attention residency and actual output feedback.
+- Append-only evidence-boundary correction: `0162` was already consumed before
+  the July 30 audit request and cannot truthfully be restored to precontact
+  status. Its immutable raw file contains 53 records, 212 finite candidate
+  logits, and 212 finite candidate-softmax values, so its candidate-level
+  `4/16`, F-dominance, order-insensitivity, and relation-mutation rejection
+  remain supported. The old engine did not scan the complete logit row before
+  hashing, so whole-row numerical validity and full-logit hash comparisons are
+  not promoted from that file. Likewise, old factor closure recorded issued
+  zero operations and carrier release, not an independent zero readback.
+- The repaired shared boundary now scans the whole terminal row before any
+  hash, candidate decision, softmax, parity, or utility arithmetic. A required
+  invalid record has `candidate_argmax = null`, records numeric state/count and
+  first position, invalidates the complete route, and returns failure. Every
+  result route uses a checked temporary write, flush/close, reread/SHA-256,
+  no-replace atomic rename, and committed-byte verification. Mechanism
+  exclusivity and the exact `0161` predecessor byte/hash/classification are
+  checked before model initialization.
+- Future lifting execution would additionally bind precommit staging,
+  postcommit active, zeroed postcommit staging, all-zero post-reset, and
+  post-release receipts. Digest D2H bytes, peak host work, and wall time are
+  charged separately. Both active and staging capacity remain allocated and
+  counted; the supported statement is only that no second complete nonzero
+  payload remains after commit. The graph check is named an out-of-place
+  reverse-branch residual and retains `NO_RESTORATION_CLAIM`.
+- This repair made zero model requests, loaded no model, launched no server,
+  evaluated no prompt, and did not rerun `0162`. It removed the unused global
+  `SET_ROWS` and `CLAMP` autodiff/view admissions left by the closed learned
+  writer path. Behavioral self-tests, exact oracle, probe build, full Release
+  server build, and `139/139` CUDA object closure pass.
 
 ### SUPPORTED
 

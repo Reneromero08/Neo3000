@@ -182,6 +182,15 @@ claim-bearing execution.
     terminology exceeds authority/restoration; central source-shape tests
     outnumber behavioral tests; the next successor only adds a trivial prompt;
     or the mechanism has no plausible path to the north-star recurrence.
+13. **Terminal evidence boundary.** Scan the complete terminal-logit buffer
+    for finite values before hashing, argmax, softmax, parity, or utility
+    arithmetic. A required non-finite record emits no argmax and invalidates
+    its route. Commit terminal result bytes through checked temporary write,
+    flush, close, reread/hash, atomic rename, and committed-byte verification.
+14. **One mechanism per contact.** Select one top-level mechanism before model
+    initialization. Reject incompatible enabled modes, unknown
+    mechanism-specific fields, or unverified predecessor evidence before
+    scientific contact.
 
 ## Holographic relational carrier boundary [PAUSED HISTORICAL CONTEXT]
 

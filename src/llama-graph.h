@@ -800,8 +800,8 @@ public:
     ggml_tensor * get_neo3000_lifting_state(int il) const {
         return t_neo3000_lifting_state[il];
     }
-    ggml_tensor * get_neo3000_lifting_restoration_error() const {
-        return t_neo3000_lifting_restoration_error;
+    ggml_tensor * get_neo3000_lifting_reverse_branch_residual() const {
+        return t_neo3000_lifting_reverse_branch_residual;
     }
 
     ggml_tensor * get_layer_inp(int il) const { return t_layer_inp[il]; }
@@ -835,7 +835,7 @@ public:
     ggml_tensor * t_embd_pooled = nullptr;
     ggml_tensor * t_h_nextn     = nullptr; // [n_embd, n_outputs] hidden state before final output norm
     ggml_tensor * t_neo3000_soft_role_output = nullptr; // [n_embd, n_outputs]
-    ggml_tensor * t_neo3000_lifting_restoration_error = nullptr; // scalar
+    ggml_tensor * t_neo3000_lifting_reverse_branch_residual = nullptr; // scalar
 
     std::vector<ggml_tensor *> t_layer_inp;
     std::vector<ggml_tensor *> t_neo3000_lifting_state;

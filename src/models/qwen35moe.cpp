@@ -835,7 +835,7 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
 
     size_t depth_memory_layer_index = 0;
     size_t lifting_layer_index = 0;
-    ggml_tensor * lifting_restoration_error = nullptr;
+    ggml_tensor * lifting_reverse_branch_residual = nullptr;
 
     struct lifting_step {
         ggml_tensor * key = nullptr;
@@ -1024,7 +1024,7 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
             ? ggml_add(ctx0, error, hidden_error)
             : hidden_error;
         cb(restored, "neo3000_lifting_restored_hidden", il);
-        cb(error, "neo3000_lifting_restoration_error", il);
+        cb(error, "neo3000_lifting_reverse_branch_residual", il);
         return std::make_pair(transformed, error);
     };
 
@@ -1076,11 +1076,11 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
                 auto lifting = apply_lifting(
                     cur, lifting_layer_index, il);
                 cur = lifting.first;
-                lifting_restoration_error =
-                    lifting_restoration_error
+                lifting_reverse_branch_residual =
+                    lifting_reverse_branch_residual
                         ? ggml_add(
                             ctx0,
-                            lifting_restoration_error,
+                            lifting_reverse_branch_residual,
                             lifting.second)
                         : lifting.second;
             }
@@ -1157,13 +1157,13 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
         inpL = cur;
     }
     if (cparams.neo3000_lifting_control != 0) {
-        GGML_ASSERT(lifting_restoration_error);
+        GGML_ASSERT(lifting_reverse_branch_residual);
         // This branch is not a dependency of the transformed Q/K/V path.
         // Expand it explicitly so the reverse computation and residual are
         // executed rather than merely marked as an output after graph build.
-        ggml_build_forward_expand(gf, lifting_restoration_error);
-        res->t_neo3000_lifting_restoration_error =
-            lifting_restoration_error;
+        ggml_build_forward_expand(gf, lifting_reverse_branch_residual);
+        res->t_neo3000_lifting_reverse_branch_residual =
+            lifting_reverse_branch_residual;
     }
     cur = inpL;
 

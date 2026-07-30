@@ -6534,35 +6534,6 @@ static void ggml_compute_backward(
                 ggml_add_or_set(ctx, cgraph, isrc0, ggml_repeat(ctx, grad, src0));
             }
         } break;
-        case GGML_OP_CLAMP: {
-            if (src0_needs_grads) {
-                float min;
-                float max;
-                memcpy(&min, (const float *) tensor->op_params + 0, sizeof(float));
-                memcpy(&max, (const float *) tensor->op_params + 1, sizeof(float));
-                struct ggml_tensor * mask = ggml_step(
-                    ctx,
-                    ggml_scale_impl(ctx, src0, 1.0f, -min, false));
-                if (isfinite(max)) {
-                    mask = ggml_mul(
-                        ctx,
-                        mask,
-                        ggml_step(
-                            ctx,
-                            ggml_scale_impl(
-                                ctx,
-                                src0,
-                                -1.0f,
-                                max,
-                                false)));
-                }
-                ggml_add_or_set(
-                    ctx,
-                    cgraph,
-                    isrc0,
-                    ggml_mul(ctx, grad, mask));
-            }
-        } break;
         case GGML_OP_MEAN: {
             if (src0_needs_grads) {
                 ggml_add1_or_set(ctx, cgraph, isrc0, ggml_scale_impl(ctx, grad, 1.0f/src0->ne[0], 0.0, false));
@@ -6754,22 +6725,6 @@ static void ggml_compute_backward(
             if (src1_needs_grads) {
                 // noop
             }
-        } break;
-        case GGML_OP_SET_ROWS: {
-            // set_rows overwrites rows in src2 with src0 at indices src1.
-            // The old destination cache is constant for the trainable
-            // current-token path; gather only the overwritten-row gradient
-            // back to the new row payload.
-            if (src0_needs_grads) {
-                GGML_ASSERT(src1->type == GGML_TYPE_I32);
-                ggml_add_or_set(
-                    ctx,
-                    cgraph,
-                    isrc0,
-                    ggml_get_rows(ctx, grad, src1));
-            }
-            GGML_ASSERT(!src1_needs_grads);
-            GGML_ASSERT(!src2_needs_grads);
         } break;
         case GGML_OP_DIAG_MASK_INF: {
             if (src0_needs_grads) {
@@ -7116,14 +7071,8 @@ void ggml_build_backward_expand(
         }
 
         // inplace operations are currently not supported
-        GGML_ASSERT(!node->view_src ||
-            node->op == GGML_OP_CPY ||
-            node->op == GGML_OP_VIEW ||
-            node->op == GGML_OP_RESHAPE ||
-            node->op == GGML_OP_PERMUTE ||
-            node->op == GGML_OP_TRANSPOSE ||
-            node->op == GGML_OP_SET_ROWS ||
-            node->op == GGML_OP_CLAMP);
+        GGML_ASSERT(!node->view_src || node->op == GGML_OP_CPY || node->op == GGML_OP_VIEW ||
+            node->op == GGML_OP_RESHAPE || node->op == GGML_OP_PERMUTE || node->op == GGML_OP_TRANSPOSE);
 
         const size_t ihash = ggml_hash_find(&cgraph->visited_hash_set, node);
         GGML_ASSERT(ihash != GGML_HASHSET_FULL);

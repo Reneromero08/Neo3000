@@ -786,6 +786,29 @@ constructively unbounded local Agents-A1 inference.
   ceilings remain fixed. The probe and Release server build, CUDA closure is
   `139/139`, and no CUDA source changed. Commit this mechanism, execute it
   once, and close the line on another graph/operator integration failure.
+- [x] Repair the shared evidence/execution boundary without model contact or a
+  new experiment identity. Complete terminal logits are now checked for
+  finiteness before hashing, argmax, softmax, parity, or utility accounting;
+  invalid required records emit no argmax and terminally invalidate the route.
+  All probe result exits use checked temporary write, flush/close,
+  reread/SHA-256, no-replace atomic rename, and committed-byte verification.
+  One mechanism is selected before model initialization, incompatible or
+  unknown lifting fields reject, and the exact 2,964-byte `0161` predecessor
+  is hash/classification-gated. The lifting path now measures precommit,
+  postcommit-active, zeroed-staging, post-reset-zero, and release custody
+  receipts with digest cost charged separately. Active and staging capacity
+  both remain counted; only a second nonzero payload is absent after commit.
+  The reverse branch is explicitly an out-of-place residual check under
+  `NO_RESTORATION_CLAIM`. Committed behavioral self-tests cover all finite and
+  non-finite cases, atomic success/failure, mechanism/predecessor gates,
+  partial poisoning, complete commit, factor zeroing, and twelve native
+  `OUT_PROD` values. The full Release server builds and CUDA closure remains
+  `139/139`.
+  Historical integrity correction: `neo-exp-0162` was already consumed before
+  this audit request. Its 212 stored candidate logits and softmax values are
+  finite, so the candidate-level `4/16` rejection remains supported; complete
+  full-logit finiteness and zero-readback factor closure were not recorded and
+  are not retroactively claimed. No model contact occurred during this repair.
 - [ ] Build one bounded rolling Agents-A1 recurrent carrier that lawfully
   advances the actual recurrent backing while keeping a fixed maximum
   attention window. Use a prospectively fixed stream of useful state-update

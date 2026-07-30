@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "source-conditioned-low-rank-out-product-fast-weight-v1": {
+    "path": "lab/source-conditioned-reversible-low-rank-lifting-v1-result.json",
+    "bytes": 2964,
+    "sha256": "71c906be8f25a8f29525be1f7fadae8e73879287f5ced4b4c397a92132eac573",
+    "classification": "GGML_TRANSPOSED_LEFT_MUL_MAT_ASSERT_BEFORE_ENABLED_LIFTING_COMPUTE",
+    "classification_pointer": "/terminal_failure/classification"
+  }
+}

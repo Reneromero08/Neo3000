@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "record_type": "engineering_scientific_evidence_boundary_repair",
+  "date": "2026-07-30",
+  "branch": "codex/catalytic-frontier",
+  "starting_head": "2d3295f6d613c8fecac1abe13f1e7f5822ada5d7",
+  "experiment_identity_created": false,
+  "model_contact": {
+    "model_loads": 0,
+    "prompt_evaluations": 0,
+    "model_callbacks": 0,
+    "server_launches": 0,
+    "scientific_cuda_kernel_launches": 0
+  },
+  "historical_state": {
+    "neo_exp_0161_consumed": true,
+    "neo_exp_0161_result_bytes": 2964,
+    "neo_exp_0161_result_sha256": "71c906be8f25a8f29525be1f7fadae8e73879287f5ced4b4c397a92132eac573",
+    "neo_exp_0162_consumed_before_repair": true,
+    "neo_exp_0162_rerun": false,
+    "neo_exp_0162_result_bytes": 57363,
+    "neo_exp_0162_result_sha256": "471481797dc68996431D5113B8350E55291157210CA5847953CFED6F4DC9281F",
+    "neo_exp_0162_stored_candidate_values": 212,
+    "neo_exp_0162_nonfinite_stored_candidate_values": 0,
+    "neo_exp_0162_complete_logit_finiteness_retroactively_proven": false,
+    "neo_exp_0162_factor_zero_readback_retroactively_proven": false
+  },
+  "repairs": {
+    "terminal_numeric_fail_closed_before_hash_argmax_softmax": true,
+    "invalid_record_has_no_argmax": true,
+    "invalid_required_record_terminally_invalidates_route": true,
+    "invalid_records_excluded_from_parity_and_utility": true,
+    "atomic_checked_terminal_result_commit": true,
+    "exactly_one_mechanism_selected_before_model_init": true,
+    "unknown_lifting_fields_rejected": true,
+    "predecessor_bytes_hash_and_classification_verified": true,
+    "factor_precommit_digest_bound": true,
+    "factor_postcommit_active_digest_bound": true,
+    "factor_postcommit_zeroed_staging_digest_bound": true,
+    "factor_postreset_all_zero_digest_bound": true,
+    "factor_postrelease_absence_bound": true,
+    "factor_digest_cost_separately_accounted": true,
+    "active_and_staging_capacity_both_counted": true,
+    "reverse_check_named_out_of_place_residual": true,
+    "restoration_class": "NO_RESTORATION_CLAIM",
+    "dead_set_rows_and_clamp_autodiff_extensions_removed": true
+  },
+  "tests": {
+    "native_behavioral_selftest": {
+      "passed": true,
+      "terminal_numeric_cases": 6,
+      "atomic_result_cases": 3,
+      "mechanism_exclusivity_cases": 4,
+      "lifting_lifecycle_cases": 2,
+      "factor_digest_cases": 2,
+      "out_prod_shape_cases": 1,
+      "out_prod_value_cases": 12,
+      "predecessor_cases": 2
+    },
+    "twin_rail_exact_oracle_unittest": "10/10",
+    "integrated_two_evidence_exact_oracle": "19/19",
+    "existing_result_precontact_refusal": true,
+    "probe_build": true,
+    "release_server_build": true,
+    "configured_cuda_objects_present_nonzero": "139/139",
+    "cuda_source_units_changed": 0
+  },
+  "classification": "EVIDENCE_BOUNDARY_REPAIRED_0162_ALREADY_CONSUMED",
+  "requested_but_impossible_historical_state": "EVIDENCE_BOUNDARY_REPAIRED_0162_STILL_PRECONTACT",
+  "pause_boundary": true
+}
