@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "id": "hybrid-layer-singleton-screen-v1",
+  "description": "Prospective refinement of the two minimum tied recurrent bands found by neo-exp-0108. Every arm retains all ten attention layers. The full recurrent control, attention-only baseline, q2/q4 parents, and all fourteen individual q2/q4 GDN layers are frozen before model contact. Omitted tensors come from the same equal-token F0G0 source at identical positions.",
+  "expected_attention_layers": [3, 7, 11, 15, 19, 23, 27, 31, 35, 39],
+  "expected_recurrent_layers": [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26, 28, 29, 30, 32, 33, 34, 36, 37, 38],
+  "substitution_source": {
+    "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+    "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+    "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+    "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+  },
+  "source": {
+    "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+    "module_f": "F: Item W maps to vault J. Item X maps to vault K. Item Y maps to vault L. Item Z maps to vault M.\n",
+    "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+    "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+  },
+  "queries": [
+    {
+      "id": "query-W",
+      "expected": "A",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item W through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "query-X",
+      "expected": "B",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item X through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "query-Y",
+      "expected": "C",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item Y through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "query-Z",
+      "expected": "D",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item Z through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    }
+  ],
+  "localization_arms": [
+    {"id": "full", "attention_layers": "ALL", "recurrent_layers": "ALL"},
+    {"id": "attention-only", "attention_layers": "ALL", "recurrent_layers": []},
+    {"id": "recurrent-q2-parent", "attention_layers": "ALL", "recurrent_layers": [10, 12, 13, 14, 16, 17, 18]},
+    {"id": "recurrent-q4-parent", "attention_layers": "ALL", "recurrent_layers": [30, 32, 33, 34, 36, 37, 38]},
+    {"id": "recurrent-10", "attention_layers": "ALL", "recurrent_layers": [10]},
+    {"id": "recurrent-12", "attention_layers": "ALL", "recurrent_layers": [12]},
+    {"id": "recurrent-13", "attention_layers": "ALL", "recurrent_layers": [13]},
+    {"id": "recurrent-14", "attention_layers": "ALL", "recurrent_layers": [14]},
+    {"id": "recurrent-16", "attention_layers": "ALL", "recurrent_layers": [16]},
+    {"id": "recurrent-17", "attention_layers": "ALL", "recurrent_layers": [17]},
+    {"id": "recurrent-18", "attention_layers": "ALL", "recurrent_layers": [18]},
+    {"id": "recurrent-30", "attention_layers": "ALL", "recurrent_layers": [30]},
+    {"id": "recurrent-32", "attention_layers": "ALL", "recurrent_layers": [32]},
+    {"id": "recurrent-33", "attention_layers": "ALL", "recurrent_layers": [33]},
+    {"id": "recurrent-34", "attention_layers": "ALL", "recurrent_layers": [34]},
+    {"id": "recurrent-36", "attention_layers": "ALL", "recurrent_layers": [36]},
+    {"id": "recurrent-37", "attention_layers": "ALL", "recurrent_layers": [37]},
+    {"id": "recurrent-38", "attention_layers": "ALL", "recurrent_layers": [38]}
+  ],
+  "claim_ceiling": "Exploratory matched singleton localization only. A passing singleton can select a prospectively frozen semantic-validation successor. All serialized roots remain full-size snapshots and the F0G0 reference is a complete host-side classical control. No physical compression, duplicate-free custody, native restoration, catalytic leverage, or recurrence claim follows."
+}

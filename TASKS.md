@@ -53,10 +53,19 @@ constructively unbounded local Agents-A1 inference.
   `68,526,080` to `18,030,592` bytes. This is a logical-support screen only:
   every saved root remains `68,526,080` bytes and the `76,349,440`-byte host
   reference is an explicit classical control.
-- [ ] Refine the tied q2/q4 recurrent bands to individual GDN layers under the
-  same matched substitution law. Then freeze the smallest passing candidates
-  and re-run joint, F-only, G-only, relation-mutation, and presentation gates
-  before implementing any physically smaller carrier.
+- [x] Refine q2/q4 to fourteen singleton GDN arms under the same matched law.
+  `neo-exp-0109` finds that every singleton passes—but the prospectively frozen
+  attention-only arm also returns `A,B,C,D` at `4/4` when omitted recurrent
+  tensors come from the equal-token F0G0 background. Thus no
+  source-conditioned recurrent difference is needed for this joint boundary;
+  logical variable support is the ten attention layers (`2,662,400` bytes).
+  This does not contradict 0105, which erased recurrent state rather than
+  supplying a fixed recurrent scaffold.
+- [ ] Validate attention KV as the source-conditioned delta on the fixed F0G0
+  recurrent background across joint, F-only, G-only, relation-mutation, and
+  presentation routes. Include the matched recurrent-delta complement and
+  full-state controls. Only after those gates pass may physical allocation
+  shrink below a full hybrid root.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

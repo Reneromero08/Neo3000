@@ -49,6 +49,13 @@ The active recurrence and acceptance boundary are
   tensor values above the matched baseline, versus `68,526,080` bytes for the
   full source. Active attention and recurrent backing identities remain
   stable and all 23 conventional roots close.
+- `neo-exp-0109` prospectively includes an attention-only matched-background
+  arm before refining the q2/q4 tie. That arm and every one of the fourteen
+  singleton-GDN arms return `A,B,C,D` at `4/4`. Therefore the tested joint
+  boundary needs no source-conditioned recurrent tensor difference when the
+  complete equal-token F0G0 recurrent trajectory remains as a fixed scaffold.
+  The logical variable support is all ten attention layers: `2,662,400`
+  source-conditioned bytes, 3.89% of the full source state.
 - The Release server rebuild succeeds, all 139 configured CUDA objects remain
   present with zero CUDA source changes, and the focused no-model Python suite
   passes 57 tests.
@@ -90,16 +97,21 @@ The active recurrence and acceptance boundary are
   cumulative H2D substitution bytes across the screen. Backend allocation
   bytes were not measured. Neither tied recurrent band has yet passed the
   0106 F/G necessity, mutation, or presentation gates.
+- The 0109 attention delta is not a standalone attention carrier. Its matched
+  recurrent background is `65,863,680` bytes, copied from the host reference,
+  and earlier complete recurrent erasure made attention-only inference fail.
+  All 18 saved roots still serialize the full `68,526,080` bytes. The result
+  localizes source-conditioned difference, not total physical state.
 
 ### ACTIVE BOUNDARY
 
-Refine the tied recurrent q2/q4 bands to their individual GDN layers under the
-unchanged matched F0G0 substitution law. Freeze the smallest passing
-candidate set only after the screen, then require the complete 0106 joint,
-F-only, G-only, relation-mutation, and presentation behavior. Physical
-compression follows semantic validation; it must remove the host duplicate
-and measure actual allocation, transfer, and work. `neo-exp-0102` remains
-frozen and unconsumed.
+Validate all ten source-conditioned attention layers on the fixed F0G0
+recurrent background against the complete 0106 joint, F-only, G-only,
+relation-mutation, and presentation law. Include the matched
+recurrent-difference complement and full-state controls. Physical compression
+follows only if the attention-delta route passes; it must make the recurrent
+scaffold reusable without a host duplicate and measure actual allocation,
+transfer, and work. `neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

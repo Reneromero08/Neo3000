@@ -121,6 +121,30 @@ individual recurrent layers, freeze the smallest passing candidates, and
 re-run the full evidence-necessity and relation controls. Only then should the
 runtime allocate or transport a compact carrier.
 
+The q2/q4 singleton refinement changes the decomposition. Every tested
+singleton GDN layer passes, but so does the prospectively frozen arm with no
+source-conditioned GDN layer at all. With the complete equal-token F0G0
+recurrent trajectory held fixed, all ten source-conditioned attention layers
+alone recover `A,B,C,D`. The variable logical payload is therefore
+`2,662,400` bytes, not `18,030,592`.
+
+This is a baseline-plus-delta hypothesis, not permission to erase GDN. The
+earlier attention-only route failed when recurrent state was cleared; the new
+route relies on a `65,863,680`-byte fixed recurrent scaffold copied from the
+matched control. The important possible recurrence is now:
+
+```text
+one reusable recurrent scaffold K0
+    + bounded source-conditioned attention delta A_t
+    -> useful delayed inference
+    -> close A_t
+    -> reuse the same K0 for unrelated A_(t+1)
+```
+
+Before implementing that physical form, the attention delta must reproduce
+the full F-only, G-only, joint, relation-mutation, and presentation law while
+the matched recurrent-delta complement fails appropriately.
+
 ## 1. Executive conclusion
 
 The strongest coherent route to catalytic Agents-A1 inference is:

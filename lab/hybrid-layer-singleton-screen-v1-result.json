@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0109",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "e30cbfee195e60f551227abf8fa82c6c3a994b9d",
+  "mechanism": "MATCHED_BACKGROUND_SOURCE_CONDITIONED_LAYER_SUPPORT_SCREEN",
+  "spec_id": "hybrid-layer-singleton-screen-v1",
+  "hypothesis": "One GDN layer from either minimum recurrent band found by neo-exp-0108 may be sufficient alongside all ten source-conditioned attention layers.",
+  "intervention": "Freeze full, attention-only, q2, q4, and fourteen singleton-GDN arms; replace every omitted tensor with the equal-token F0G0 tensor at identical positions; and apply the same four delayed joint queries.",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "source_tokens": 130,
+    "substitution_source_tokens": 130,
+    "query_count_per_arm": 4,
+    "arm_count": 18,
+    "attention_layers": [3, 7, 11, 15, 19, 23, 27, 31, 35, 39],
+    "screened_recurrent_layers": [10, 12, 13, 14, 16, 17, 18, 30, 32, 33, 34, 36, 37, 38],
+    "omitted_layer_law": "F0G0 full-tensor substitution at identical source positions",
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "results": {
+    "full": {
+      "correct": 4,
+      "answers": ["A", "B", "C", "D"],
+      "selected_source_conditioned_bytes": 68526080
+    },
+    "attention_only_on_fixed_recurrent_background": {
+      "correct": 4,
+      "answers": ["A", "B", "C", "D"],
+      "selected_source_conditioned_bytes": 2662400,
+      "matched_recurrent_substitution_h2d_bytes": 65863680
+    },
+    "q2_parent": {
+      "correct": 4,
+      "answers": ["A", "B", "C", "D"],
+      "selected_source_conditioned_bytes": 18030592
+    },
+    "q4_parent": {
+      "correct": 4,
+      "answers": ["A", "B", "C", "D"],
+      "selected_source_conditioned_bytes": 18030592
+    },
+    "fourteen_singleton_gdn_arms": {
+      "passing": 14,
+      "tested": 14,
+      "correct_each": 4,
+      "answers_each": ["A", "B", "C", "D"],
+      "selected_source_conditioned_bytes_each": 4857856
+    }
+  },
+  "interpretation": {
+    "source_conditioned_recurrent_difference_required_for_joint_boundary": false,
+    "fixed_recurrent_background_required_by_this_screen": "not ablated here; earlier zero-recurrent attention-only route failed",
+    "logical_source_conditioned_support_bytes": 2662400,
+    "logical_source_conditioned_support_fraction_of_full": 0.03885003890497582,
+    "semantic_controls_pending": ["F-only", "G-only", "relation mutation", "presentation mutation"],
+    "reason_0105_is_not_contradicted": "neo-exp-0105 erased recurrent state; neo-exp-0109 supplies a complete matched F0G0 recurrent background"
+  },
+  "resource_accounting": {
+    "maximum_serialized_root_device_tensor_bytes": 68526080,
+    "serialized_roots_cleared_bytes": 1233469440,
+    "matched_reference_host_bytes": 76349440,
+    "cumulative_matched_substitution_h2d_bytes": 1058209792,
+    "query_wall_ms_sum": 95524.50896099996,
+    "backend_allocation_bytes_measured": false,
+    "physical_reduction_implemented": false
+  },
+  "closure": {
+    "all_retained_roots_closed": true,
+    "active_attention_backing_stable": true,
+    "active_recurrent_backing_stable": true,
+    "background_processes_left_running": 0
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/hybrid-layer-singleton-screen-v1.json",
+      "bytes": 4831,
+      "sha256": "D2FAE76FE491740D040FBA51E1451D1ECA590760B5B6364D7DCDC587F4970786"
+    },
+    "probe_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "sha256": "3E12F708601F185F26D66C20589C058F6A9B6F34282C0523B9B5A6126F9AEAB9"
+    },
+    "raw_result": {
+      "committed": false,
+      "bytes": 70556,
+      "sha256": "58CA6DFD5EB1129B80264201B2B7DD66D6F27C6445C95AC108FF9D5C6EEF4D38"
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 148,
+    "input_tokens": 4846,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "quality_gates": {
+    "matched_equal_token_reference": true,
+    "identical_source_positions": true,
+    "full_control_correct": true,
+    "attention_only_on_matched_background_joint_correct": true,
+    "source_conditioned_recurrent_difference_necessary": false,
+    "F_G_necessity_revalidated": false,
+    "relation_mutation_revalidated": false,
+    "presentation_invariance_revalidated": false,
+    "physical_carrier_reduction": false,
+    "duplicate_free_custody": false,
+    "native_inverse_restoration": false,
+    "fresh_compute_reduction": false,
+    "unbounded_recurrence": false
+  },
+  "verdict": "accept",
+  "classification": "JOINT_SOURCE_CONDITIONED_SUPPORT_LOCALIZED_TO_ATTENTION_KV_ON_FIXED_RECURRENT_BACKGROUND",
+  "strongest_supported_claim": "For the frozen joint task, all ten source-conditioned attention layers plus a complete fixed F0G0 recurrent background preserve A,B,C,D without any source-conditioned recurrent tensor differences. The logical variable support is 2,662,400 bytes.",
+  "strongest_rejected_interpretation": "The fixed recurrent background is a 65,863,680-byte matched classical state, every saved root remains 68,526,080 bytes, and semantic necessity has not been revalidated. This is not a physically compact carrier, proof that recurrent state is dispensable, native restoration, catalytic leverage, or recurrence.",
+  "next_boundary": "VALIDATE_ATTENTION_DELTA_ON_FIXED_RECURRENT_BACKGROUND_ACROSS_F_ONLY_G_ONLY_JOINT_RELATION_MUTATION_AND_PRESENTATION_CONTROLS"
+}
