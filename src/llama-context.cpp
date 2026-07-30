@@ -1297,12 +1297,15 @@ bool llama_context::install_neo3000_output_written_semantic_port(
         std::vector<float> writer_map,
         const std::array<float, 4> & writer_bias,
         std::vector<float> output_map,
-        int32_t read_layer) {
+        int32_t read_layer,
+        bool moe_router_bias) {
     const size_t expected =
         static_cast<size_t>(model.hparams.n_embd) * 4;
     if (model.arch != LLM_ARCH_QWEN35MOE ||
         read_layer < -1 ||
         read_layer >= static_cast<int32_t>(model.hparams.n_layer()) ||
+        (moe_router_bias &&
+         (read_layer < 0 || model.hparams.n_expert == 0)) ||
         query_map.size() != expected ||
         writer_map.size() != expected ||
         output_map.size() != expected ||
@@ -1332,6 +1335,7 @@ bool llama_context::install_neo3000_output_written_semantic_port(
     auto carrier =
         std::make_shared<llama_neo3000_semantic_carrier>();
     carrier->n_embd = model.hparams.n_embd;
+    carrier->n_expert = model.hparams.n_expert;
     carrier->read_layer = read_layer;
     carrier->query_map = std::move(query_map);
     carrier->query_bias = query_bias;
@@ -1339,6 +1343,7 @@ bool llama_context::install_neo3000_output_written_semantic_port(
     carrier->writer_bias = writer_bias;
     carrier->output_map = std::move(output_map);
     carrier->output_written = true;
+    carrier->moe_router_bias = moe_router_bias;
     carrier->enabled = false;
     carrier->phase = 0;
     carrier->port.fill(0.0f);

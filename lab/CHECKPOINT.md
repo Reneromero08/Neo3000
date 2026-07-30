@@ -509,6 +509,23 @@ The active recurrence and acceptance boundary are
   successor must change inference dynamics through a predeclared recurrent,
   attention, or MoE operation—not a layer, gain, prompt, fixture, evaluator,
   or evidence-harness version.
+- `neo-exp-0149` is frozen precontact as one changed MoE operation, not another
+  evaluator. The same retrieved port code no longer adds a residual vector.
+  At layer 3 it is projected through the frozen expert-gate weights and added
+  only to router logits before top-k expert selection; routed and shared
+  experts consume the unmodified post-attention hidden state. This makes
+  expert choice and mixture weights—not a terminal dual—the causal target.
+- All prompts, construction contexts, IOUV queries, target variant, fixed
+  ridge, output gain, port topology, and compact Z4 baseline remain unchanged.
+  Runtime has zero source-role forwards and receives no expected answer,
+  target row, phase selector, or context-indexed action. Total and enabled
+  router-token applications plus gate multiply-accumulates are charged.
+- The changed probe and full Release server build. Declarative-runner tests
+  pass `7/7`; the twin-rail exact oracle passes `10/10` plus twelve subtests;
+  the integrated two-evidence oracle passes all nineteen gates and three valid
+  fixtures; configured CUDA entries and objects remain `139/139`. No server
+  or `0149` model contact has occurred. The next action is its sole frozen
+  execution, followed by a physical-mechanism decision—not a harness version.
 
 ### REJECTED
 

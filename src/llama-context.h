@@ -138,7 +138,8 @@ struct llama_context {
         std::vector<float> writer_map,
         const std::array<float, 4> & writer_bias,
         std::vector<float> output_map,
-        int32_t read_layer = -1);
+        int32_t read_layer = -1,
+        bool moe_router_bias = false);
     bool write_neo3000_semantic_port(
         const float * output_state,
         size_t output_state_count,

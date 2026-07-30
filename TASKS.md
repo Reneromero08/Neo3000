@@ -395,6 +395,19 @@ constructively unbounded local Agents-A1 inference.
   changed inference mechanism, not carrier-evaluation or evidence-harness
   versioning. Execute one bounded discriminator, then advance from its
   physical result.
+  `neo-exp-0149` is frozen precontact as one MoE-router transition at layer 3.
+  The retrieved four-channel port state is projected through the frozen
+  layer-3 expert-gate weights and added only to router logits before top-k
+  expert selection; experts consume the unmodified post-attention hidden
+  state. The training contexts, disjoint IOUV panel, target variant, query and
+  writer maps, closure law, and strongest compact baseline remain unchanged.
+  Runtime still has zero source-role forwards and no expected answer, phase
+  selector, target row, or context-indexed operator. Router applications and
+  multiply-accumulates are counted. The probe and full Release server build;
+  runner tests pass `7/7`, both exact-oracle suites pass, and configured CUDA
+  closure remains `139/139`. Execute this changed model operation once; do not
+  create layer, scale, ridge, prompt, fixture, evaluator, carrier-evaluation,
+  or evidence-harness variants.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

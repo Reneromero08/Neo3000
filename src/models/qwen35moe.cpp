@@ -9,7 +9,7 @@ public:
         : carrier(std::move(carrier)) {
     }
 
-    void set_input(const llama_ubatch *) override {
+    void set_input(const llama_ubatch * ubatch) override {
         GGML_ASSERT(carrier);
         GGML_ASSERT(
             query_map &&
@@ -47,6 +47,19 @@ public:
              carrier->output_map.size() +
              carrier->action.size()) *
             sizeof(float);
+        if (carrier->moe_router_bias) {
+            GGML_ASSERT(ubatch);
+            carrier->router_bias_token_applications +=
+                ubatch->n_tokens;
+            if (carrier->enabled) {
+                carrier->router_bias_enabled_token_applications +=
+                    ubatch->n_tokens;
+            }
+            carrier->router_bias_multiply_accumulates +=
+                static_cast<uint64_t>(carrier->n_embd) *
+                carrier->n_expert *
+                ubatch->n_tokens;
+        }
     }
 
     bool can_reuse(const llm_graph_params & params) override {
@@ -248,7 +261,9 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
             [&](ggml_tensor * hidden, int32_t read_layer) {
         const auto & state = cparams.neo3000_semantic_carrier;
         if (!state || state->read_layer != read_layer) {
-            return hidden;
+            return std::make_pair(
+                hidden,
+                static_cast<ggml_tensor *>(nullptr));
         }
         auto carrier_input =
             std::make_unique<
@@ -313,15 +328,26 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
                 ctx0,
                 carrier->output_map,
                 carrier_code);
+        if (state->moe_router_bias) {
+            cb(
+                carrier_delta,
+                "neo3000_semantic_carrier_router_delta",
+                read_layer);
+            return std::make_pair(hidden, carrier_delta);
+        }
         hidden = ggml_add(ctx0, hidden, carrier_delta);
         cb(hidden, "neo3000_semantic_carrier_read", read_layer);
-        return hidden;
+        return std::make_pair(
+            hidden,
+            static_cast<ggml_tensor *>(nullptr));
     };
 
     // MTP/NextN layers are loaded as extra decoder blocks but not executed in the main pass.
     for (int il = 0; il < n_layer; ++il) {
         res->t_layer_inp[il] = inpL;
-        inpL = apply_semantic_carrier(inpL, il);
+        auto carrier_read = apply_semantic_carrier(inpL, il);
+        inpL = carrier_read.first;
+        ggml_tensor * carrier_router_delta = carrier_read.second;
 
         ggml_tensor * inpSA = inpL;
 
@@ -356,7 +382,10 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
         cb(attn_post_norm, "attn_post_norm", il);
 
         // MOE FFN layer
-        cur = build_layer_ffn(attn_post_norm, il);
+        cur = build_layer_ffn(
+            attn_post_norm,
+            carrier_router_delta,
+            il);
         cb(cur, "ffn_out", il);
 
         // Residual connection for FFN - add to the tensor from before post_attention_layernorm
@@ -381,7 +410,7 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
         cur = ggml_get_rows(ctx0, cur, inp_out_ids);
     }
 
-    cur = apply_semantic_carrier(cur, -1);
+    cur = apply_semantic_carrier(cur, -1).first;
 
     cb(cur, "result_norm", -1);
     res->t_embd = cur;
@@ -637,22 +666,42 @@ ggml_tensor * llama_model_qwen35moe::graph::build_layer_attn_linear(
     return cur;
 }
 
-ggml_tensor * llama_model_qwen35moe::graph::build_layer_ffn(ggml_tensor * cur, const int il) {
+ggml_tensor * llama_model_qwen35moe::graph::build_layer_ffn(
+        ggml_tensor * cur,
+        ggml_tensor * carrier_router_delta,
+        const int il) {
     // Check if this is an MoE layer
     GGML_ASSERT(model.layers[il].ffn_gate_inp != nullptr);
+
+    ggml_tensor * carrier_router_bias = nullptr;
+    if (carrier_router_delta) {
+        carrier_router_bias =
+            build_lora_mm(
+                model.layers[il].ffn_gate_inp,
+                carrier_router_delta);
+        cb(
+            carrier_router_bias,
+            "neo3000_semantic_carrier_router_bias",
+            il);
+    }
 
     ggml_tensor * moe_out =
         build_moe_ffn(cur,
             model.layers[il].ffn_gate_inp,
+            carrier_router_bias,
             model.layers[il].ffn_up_exps,
+            nullptr,
             model.layers[il].ffn_gate_exps,
+            nullptr,
             model.layers[il].ffn_down_exps,
+            nullptr,
             nullptr,
             n_expert, n_expert_used,
             LLM_FFN_SILU, true,
             hparams.expert_weights_scale,
             LLAMA_EXPERT_GATING_FUNC_TYPE_SOFTMAX, il,
             nullptr, model.layers[il].ffn_gate_up_exps,
+            nullptr,
             model.layers[il].ffn_up_exps_s,
             model.layers[il].ffn_gate_exps_s,
             model.layers[il].ffn_down_exps_s);

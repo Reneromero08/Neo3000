@@ -15,6 +15,7 @@
 // supplied to the model graph as a live input.
 struct llama_neo3000_semantic_carrier {
     uint32_t n_embd = 0;
+    uint32_t n_expert = 0;
     int32_t read_layer = -1;        // -1: post-norm pre-LM-head
     std::vector<float> query_map;   // [4, n_embd] GGML layout [n_embd, 4]
     std::array<float, 4> query_bias = {};
@@ -30,12 +31,16 @@ struct llama_neo3000_semantic_carrier {
     uint32_t phase = 0;
     bool enabled = false;
     bool output_written = false;
+    bool moe_router_bias = false;
     uint64_t generation = 0;
     uint64_t action_backing_id = 0;
     uint64_t graph_input_sets = 0;
     uint64_t host_to_backend_bytes = 0;
     uint64_t writer_host_input_bytes = 0;
     uint64_t port_writes = 0;
+    uint64_t router_bias_token_applications = 0;
+    uint64_t router_bias_enabled_token_applications = 0;
+    uint64_t router_bias_multiply_accumulates = 0;
 };
 
 struct llama_cparams {

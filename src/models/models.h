@@ -2006,6 +2006,7 @@ struct llama_model_qwen35moe : public llama_model_base {
 
         ggml_tensor * build_layer_ffn(
                     ggml_tensor * cur,
+                    ggml_tensor * carrier_router_delta,
                             int   il);
 
         ggml_tensor * build_norm_gated(
