@@ -1,23 +1,25 @@
 # Neo3000 Roadmap
 
-## Current navigation override: scientific realignment
+## Current navigation override: scientific realignment [COMPLETE / PAUSED]
 
-The long-term catalytic frontier is paused while the July 29 audio/CATVM
-integration drift is repaired. `neo-exp-0102` is unconsumed and must not be
-executed during this repair.
+The July 29 audio/CATVM integration drift repair is complete. The long-term
+catalytic frontier remains paused at the readiness boundary. `neo-exp-0102` is
+unconsumed and must not be executed unless a new user-authorized catalytic goal
+establishes a scientifically repaired successor.
 
 The accepted live-terminal and split-decode interfaces remain valuable. The
 `0094–0101` twin-rail line is now a reversible numerical calibration line, not
 evidence of an inference-bearing phase carrier. The immediate roadmap is one
-foundation repair: behavioral lifecycle custody, replay resistance, metadata
-atomicity, real numerical decoherence, valid integrated oracle fixtures,
+completed foundation repair covering behavioral lifecycle custody, replay resistance,
+metadata atomicity, numerical decoherence, valid integrated oracle fixtures,
 enforced timeouts, native build binding, and one declarative controller path.
-After that repair is independently audited and pushed, stop and wait for a new
-user-authorized catalytic-inference goal.
+The repository must now stop and wait for a new user-authorized
+catalytic-inference goal.
 
 Current claim and task authority lives in the top sections of
 `lab/CHECKPOINT.md` and `TASKS.md`; the append-only incident is
-`lab/incidents/2026-07-29-audio-catvm-inference-drift.md`.
+`lab/incidents/2026-07-29-audio-catvm-inference-drift.md`, and the compact
+verification binding is `lab/realignment-2026-07-29-verification.json`.
 
 ## Purpose
 

@@ -1,15 +1,17 @@
 # Active Goal
 
-## Scientific realignment override [ACTIVE]
+## Scientific realignment override [COMPLETE / PAUSED]
 
 This repository is not currently executing the long-term catalytic-inference
-goal. The active bounded mission is to remove scientific drift, preserve
-historical evidence, repair lifecycle and controller foundations, validate the
-native Linux/CUDA build without model-facing contact, push the audited
-foundation, and stop at the renewed-goal readiness boundary.
+goal. The bounded realignment mission removed the active scientific drift,
+preserved historical evidence, repaired lifecycle and controller foundations,
+validated the native Linux/CUDA build without model-facing contact, and reached
+the renewed-goal readiness boundary.
 
 `neo-exp-0102` remains unconsumed and frozen. Do not select or execute a
 scientific successor from this document until a new user-authorized goal begins.
+The verification authority is
+`lab/realignment-2026-07-29-verification.json`.
 
 ## Catalytic frontier north star [PAUSED]
 
@@ -40,7 +42,7 @@ The unbounded endpoint requires:
 
 Current results remain bounded evidence. N=8 is the accepted fanout waypoint; N=16 positive amortization did not pass strict utility; no unbounded bridge has been established.
 
-## Holographic relational carrier realignment [ACTIVE]
+## Holographic relational carrier realignment [PAUSED NORTH-STAR CONTEXT]
 
 The current scientific boundary is `BOUNDED_FIXED_SIZE_EXECUTABLE_FINITE_STATE_RECURSION`. `neo-exp-0078` additionally supports `PROCESS_LOCAL_REUSE_OF_A_FINITE_Z4_EXECUTABLE_CARRIER_ORBIT`: four exact checksum-addressed CUDA phase roots closed the bounded R16 speed gates. Every edge still projected an explicit A/B/C/D JSON answer before the next edge. This is finite-state root selection, not open holographic computation.
 

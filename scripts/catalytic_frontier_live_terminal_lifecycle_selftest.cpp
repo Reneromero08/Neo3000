@@ -37,10 +37,18 @@ int main() {
         assert(lifecycle.begin_capture(3, 30));
         assert(lifecycle.complete_capture(30));
         assert(!lifecycle.admit_for_use(3));
+        lifecycle.poison(); // malformed immediate consumer
+        assert(lifecycle.state() == live_terminal_state::POISONED);
+    }
+
+    {
+        live_terminal_lifecycle lifecycle;
+        assert(lifecycle.begin_capture(3, 30));
+        assert(lifecycle.complete_capture(30));
         assert(lifecycle.admit_for_use(4));
         assert(lifecycle.admitted_for_use());
         assert(lifecycle.must_poison_on_release(31));
-        lifecycle.poison();
+        lifecycle.poison(); // decode exception after admission
         assert(lifecycle.state() == live_terminal_state::POISONED);
     }
 
@@ -77,6 +85,7 @@ int main() {
     std::cout
             << "live terminal lifecycle behavioral selftest pass: "
             << "cancel-before-receipt, cancel-after-receipt, admitted-release, "
+            << "malformed-immediate-consumer, decode-exception, "
             << "close-and-recapture, sleep-resident, shutdown-resident\n";
     return 0;
 }

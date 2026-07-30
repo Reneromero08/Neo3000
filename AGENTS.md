@@ -169,13 +169,18 @@ claim-bearing execution.
     outnumber behavioral tests; the next successor only adds a trivial prompt;
     or the mechanism has no plausible path to the north-star recurrence.
 
-## Holographic relational carrier boundary
+## Holographic relational carrier boundary [PAUSED HISTORICAL CONTEXT]
+
+This section preserves the pre-realignment north-star context. It is not an
+active task cursor. `TASKS.md` and `lab/GOAL.md` prohibit successor execution
+until a new user-authorized catalytic-inference goal begins.
 
 The current frontier establishes `BOUNDED_FIXED_SIZE_EXECUTABLE_FINITE_STATE_RECURSION`, including process-local reuse of one finite Z4 executable carrier orbit. It does not establish `OPEN_HOLOGRAPHIC_RELATIONAL_COMPOSITION`.
 
 Finite root selection, memoization, prefix reuse, and explicit output-derived state remain valuable calibrations. They are not the long-term primitive when every edge first collapses to a classical token, JSON answer, host-side symbol, answer-conditioned root, or explicit candidate list.
 
-The active architectural target after `neo-exp-0078` is `OPEN_RELATIONAL_CARRIER_COMPOSITION_V1`:
+The historical architectural target after `neo-exp-0078` was
+`OPEN_RELATIONAL_CARRIER_COMPOSITION_V1`:
 
 - bind typed executable morphisms `F: X -> Y` and `G: Y -> Z`
 - require `cod(F) = dom(G)` before model contact

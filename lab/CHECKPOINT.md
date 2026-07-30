@@ -43,18 +43,60 @@
 - The unexecuted `0102` carrier does not drive suffix model computation and
   retains a duplicate 16-byte classical first-evidence row.
 
-### CURRENT PRECONTACT REPAIR BOUNDARY
+### REPAIRED FOUNDATION
+
+- The live terminal boundary has an executed lifecycle state machine for
+  capture, cancellation before and after receipt, admission, closure, sleep,
+  and shutdown. Server release and destruction paths are statically bound to
+  that lifecycle and no longer rely on `terminal_logits_pending_use` to detect
+  resident state.
+- Twin-rail calibration uses a bounded fixed-capacity retired-identity registry
+  and monotonically advancing server epoch. Executed controls reject identity,
+  lease, and generation replay.
+- Contract metadata is staged and commits only after restoration and acceptance;
+  failure rolls it back or poisons the numerical state.
+- Active numerical decoherence zeroes density-matrix off-diagonal terms and
+  uses the ordinary measurement function. This does not retroactively turn
+  historical forced-equal-score controls into dephasing evidence.
+- The exact `0102` calibration oracle now uses three realizable normalized
+  four-way fixtures and rejects the old detached tuple. This repairs the oracle,
+  not the absent carrier causality.
+- The split-decode seam remains separate from the `p*q` fixture. The first-row
+  seed remains a declared 16-byte duplicate classical intermediate.
+- The active controller path is one immutable declarative runner. Historical
+  wrappers remain only for provenance and are not imported.
+- Evidence classes are explicit in
+  `scripts/TEST_EVIDENCE_CLASSIFICATION.md`; source-shape checks do not count as
+  behavioral proof.
+
+### BUILD AND TEST BINDING
+
+- Implementation head
+  `9a1aaaf79d0ef3d23ae971ca2247afaee67edf54` configures and links as server
+  version `331 (9a1aaaf)` with CUDA architecture `86-real`.
+- All 139 configured CUDA compile entries and 139 unique CUDA objects are
+  present. Zero configured units are missing. The 45 optional repository
+  translation units remain excluded by unchanged
+  `GGML_CUDA_FA_ALL_QUANTS=OFF`.
+- Three native tests pass with assertions forced on under ASan/UBSan; the
+  focused Python suite passes 118 with five provenance-only skips; the
+  declarative runner passes 7/7; the integrated exact oracle passes all 19
+  gates on three valid fixtures.
+- Exact hashes, commands, link inputs, outputs, evidence levels, and zero-contact
+  counts are in `lab/realignment-2026-07-29-verification.json`.
+
+### PAUSED PRECONTACT SCIENTIFIC BOUNDARY
 
 `neo-exp-0102` has zero completion requests, prompt evaluations, model
 callbacks, or scientific contact. It is frozen as
 `PRECONTACT_TWO_ROW_REVERSIBLE_SCORE_COMPOSITION_CALIBRATION`; no model-facing
-execution is authorized during realignment.
+execution occurred during realignment.
 
-Active work is limited to lifecycle/custody repairs, replay and metadata
-atomicity, a real state-level decoherence control, a valid integrated exact
-oracle, enforced sidecar timeout, native test binding, and replacement of the
-pelletized controller stack with one declarative runner. The append-only
-incident is
+The realignment mission is complete. Scientific successor selection remains
+paused until a new user-authorized catalytic-inference goal. A future successor
+must make a useful downstream inference operation causally depend on carrier
+state and pass prospectively frozen F-only, G-only, and true-carrier-mutation
+ablations. The append-only incident is
 `lab/incidents/2026-07-29-audio-catvm-inference-drift.md`.
 
 ## Goal/evidence boundary [ALIGNED]

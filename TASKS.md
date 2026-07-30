@@ -2,7 +2,8 @@
 
 ## Scientific realignment dashboard [CURRENT]
 
-**Mode:** foundation repair with zero model-facing scientific contact.
+**Mode:** foundation repair complete; paused with zero model-facing scientific
+contact.
 
 **SUPPORTED**
 
@@ -37,15 +38,41 @@
 - Source-text checks as lifecycle, cancellation, custody, restoration, or
   causal proof.
 
-**BLOCKED**
+**REPAIRED**
+
+- Live terminal capture now has explicit capture/resident/admitted/closed/
+  poisoned states. Release, cancellation, malformed use, sleep, shutdown, and
+  destruction clear or poison resident state independently of the old pending
+  Boolean.
+- Calibration transitions now use a server-owned monotonic epoch and a bounded
+  retired-identity registry. `A1 -> B1 -> A1`, same-lease, old-generation, and
+  retired-ID replay are behaviorally rejected.
+- Contract metadata is staged and committed only after numerical restoration
+  and acceptance. Failed transactions roll back staged metadata or poison the
+  numerical state without advancing prior committed metadata.
+- Active variant 1 performs state-level numerical decoherence by zeroing
+  off-diagonal density terms, then invokes the same measurement law. Historical
+  direct equal-score assignment remains only as a named legacy sham.
+- The `0102` exact oracle now derives products from three valid pairs of
+  normalized nonnegative four-way probability vectors, including near-tie and
+  peaked fixtures. It explicitly rejects the old detached fixture because
+  `sum(sqrt(p_i*q_i)) = 1.7637929... > 1`.
+- `LinuxSidecar.guarded(timeout=...)` enforces the requested timeout.
+- Native assertions are forced on and bound with compiler/source/binary/link
+  hashes plus ASan/UBSan execution.
+- `scripts/catalytic_runner.py` validates immutable `0101` and precontact
+  `0102` specifications without importing the retired controller chain and
+  without providing a model-execution command.
+
+**FROZEN SCIENTIFIC FRONTIER**
 
 - `neo-exp-0102` model-facing execution is frozen. It has zero completion
   requests, zero prompt evaluations, zero model callbacks, and zero scientific
   contact.
 - Its current design duplicates the first evidence in a 16-byte classical
   seed, reconstructs `p*q` classically, does not make suffix inference depend
-  on carrier state, lacks live F/G necessity ablations, and used an invalid
-  detached four-lane exact-oracle fixture.
+  on carrier state, and lacks live F/G necessity ablations. Repairing the
+  calibration oracle does not repair these scientific causality gaps.
 
 **CURRENT REALIGNMENT QUEUE**
 
@@ -53,19 +80,36 @@
   `0102` contact status at clean head
   `ffcb9719d97cf6ec7280026097bfae32fbed7857`.
 - [x] Record the append-only drift incident and interpretation supersession.
-- [ ] Repair live cancellation, sleep/shutdown custody, replay/ABA, metadata
+- [x] Repair live cancellation, sleep/shutdown custody, replay/ABA, metadata
   atomicity, state-level decoherence, exact oracle validity, native-test
   binding, and sidecar timeout behavior with executed behavioral tests.
-- [ ] Install one immutable declarative runner/specification path for accepted
+- [x] Install one immutable declarative runner/specification path for accepted
   `0101` calibration and precontact `0102` calibration; prove it imports no
   legacy wrapper.
-- [ ] Build and audit the server/CUDA closure, append final realignment
+- [x] Build and audit the server/CUDA closure, append final realignment
   evidence, update this dashboard to a paused ready state, commit, push, and
   stop without executing a frontier experiment.
+
+**READY FOR LONG-TERM GOAL**
+
+- The repaired implementation is bound at
+  `9a1aaaf79d0ef3d23ae971ca2247afaee67edf54`.
+- Release CUDA server version `331 (9a1aaaf)` linked with 139/139 configured
+  CUDA objects; zero configured units are missing.
+- Native ASan/UBSan behavioral tests pass, the focused Python suite passes
+  118 with five explicitly classified legacy provenance skips, the declarative
+  runner passes 7/7, and the corrected exact oracle passes 19/19 gates across
+  three valid integrated fixtures.
+- Durable verification is
+  `lab/realignment-2026-07-29-verification.json`.
+- Do not resume a scientific successor from this board. Wait for a new
+  user-authorized catalytic-inference goal.
 
 The incident authority is
 `lab/incidents/2026-07-29-audio-catvm-inference-drift.md`. This section
 supersedes every historical “current” or “next action” statement below.
+
+## Historical frontier snapshot [SUPERSEDED BY CURRENT DASHBOARD]
 
 **Active checkpoint:** Checkpoint 2, First catalytic compute intervention
 **Current RSI level:** Level 1, supervised bounded RSI available

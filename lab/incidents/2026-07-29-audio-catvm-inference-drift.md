@@ -100,19 +100,30 @@ These aliases govern current interpretation and future active code.
 
 | Finding | Prevention or repair authority |
 |---|---|
-| Captured live boundary could survive cancellation/release while `terminal_logits_pending_use == false` | explicit live lifecycle plus behavioral cancellation tests; `AGENTS.md` behavioral-evidence law |
-| Sleep destroyed model/context without first poisoning resident custody | sleep/shutdown lifecycle test and mandatory poison-before-destroy path |
-| `A1 -> B1 -> A1` identity replay remained admissible | server-owned monotonic epoch and retired-identity replay tests |
-| ownership metadata advanced before transaction success | staged metadata and rollback/poison tests |
-| equal-score assignment mislabeled as dephasing | state-level decoherence operation using the same measurement function |
-| invalid detached four-lane oracle products | normalized-vector integrated fixtures, including near-tie and peaked cases |
-| ignored sidecar `guarded(timeout=...)` argument | enforced timeout and behavioral timeout test |
-| nested controller inheritance and monkey-patching | one declarative runner with immutable specs and an import-isolation test |
-| source checks counted as lifecycle proof | evidence categories in `AGENTS.md` and behavioral lifecycle suite |
-| missing carrier necessity gates | carrier-causality and necessity-ablation laws in `AGENTS.md` |
+| Captured live boundary could survive cancellation/release while `terminal_logits_pending_use == false` | `tools/server/neo3000-live-terminal-lifecycle.h`, `scripts/catalytic_frontier_live_terminal_lifecycle_selftest.cpp`, and the `AGENTS.md` behavioral-evidence law |
+| Sleep destroyed model/context without first poisoning resident custody | `tools/server/server-context.cpp` poison-before-destroy paths plus the live lifecycle selftest |
+| `A1 -> B1 -> A1` identity replay remained admissible | `tools/server/neo3000-twin-rail-fiber.*` server epoch/tombstones plus `scripts/catalytic_frontier_twin_rail_runtime_selftest.cpp` |
+| ownership metadata advanced before transaction success | staged metadata implementation and rollback tests in both native twin-rail selftests |
+| equal-score assignment mislabeled as dephasing | density-level numerical decoherence in `neo3000-twin-rail-fiber.cpp` and native/oracle controls |
+| invalid detached four-lane oracle products | `scripts/catalytic_frontier_two_evidence_exact_oracle.py` normalized near-tie, peaked, and order-sensitive fixtures |
+| ignored sidecar `guarded(timeout=...)` argument | `scripts/catalytic_frontier_linux_sidecar.py` and `scripts/test_catalytic_frontier_linux_sidecar.py` |
+| nested controller inheritance and monkey-patching | `scripts/catalytic_runner.py`, immutable `scripts/experiment_specs/*.json`, and `scripts/test_catalytic_runner.py` |
+| source checks counted as lifecycle proof | `AGENTS.md` plus `scripts/TEST_EVIDENCE_CLASSIFICATION.md` |
+| missing carrier necessity gates | carrier-causality and necessity-ablation laws in `AGENTS.md`, represented as blocking controls in the `0102` declarative spec |
 
 ## 7. Historical integrity law
 
 No consumed experiment, raw result, attempt record or commit is deleted or
 rewritten to conceal the drift. Corrections are append-only and supersede
 interpretation, not history.
+
+## 8. Resolution
+
+The realignment implementation is verified at
+`9a1aaaf79d0ef3d23ae971ca2247afaee67edf54`. The native/CUDA build,
+behavioral tests, exact oracle, declarative specs, and zero model-contact counts
+are bound in `lab/realignment-2026-07-29-verification.json`.
+
+This closes the incident’s active repair phase. It does not close the
+scientific frontier: no inference-bearing phase carrier or catalytic inference
+claim was produced. The repository is paused for a new user-authorized goal.

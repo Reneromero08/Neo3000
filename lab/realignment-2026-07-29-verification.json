@@ -1,0 +1,235 @@
+{
+  "id": "frontier-realignment-2026-07-29-verification",
+  "record_type": "engineering_scientific_governance_verification",
+  "date": "2026-07-29",
+  "branch": "codex/catalytic-frontier",
+  "starting_head": "ffcb9719d97cf6ec7280026097bfae32fbed7857",
+  "verified_implementation_head": "9a1aaaf79d0ef3d23ae971ca2247afaee67edf54",
+  "commits": [
+    "4d30d7ee1edd1b1e4806d3e324d0eca529b33db9",
+    "c9d8c39b0daf62f64534a46d29d58894d56d582d",
+    "9a1aaaf79d0ef3d23ae971ca2247afaee67edf54"
+  ],
+  "evidence_levels": {
+    "source_verified": true,
+    "unit_tested": true,
+    "component_behavior_tested": true,
+    "server_integration_tested": false,
+    "server_built": true,
+    "runtime_binary_bound": true,
+    "server_launched": false,
+    "model_facing_executed": false,
+    "server_integration_note": "The mission forbade 0102 model-facing contact. Native state machines were executed behaviorally and their server integration was statically bound in the fully linked binary."
+  },
+  "native_test_binding": {
+    "compiler": {
+      "logical_path": "/usr/bin/x86_64-linux-gnu-g++-15",
+      "version": "x86_64-linux-gnu-g++-15 (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "size_bytes": 1305304,
+      "sha256": "E6718F7E0C7D057C3FF77B550C603DA9BC4030E3EDE3C053705ACCE1293DBE4D"
+    },
+    "common_compile_flags": [
+      "-std=c++17",
+      "-O0",
+      "-g",
+      "-UNDEBUG",
+      "-fno-omit-frame-pointer",
+      "-fsanitize=address,undefined"
+    ],
+    "assertion_mode": {
+      "enabled": true,
+      "compile_flag": "-UNDEBUG",
+      "source_guard": "#ifdef NDEBUG -> #error"
+    },
+    "sanitizers": [
+      "AddressSanitizer",
+      "UndefinedBehaviorSanitizer"
+    ],
+    "dynamic_link_inputs": [
+      {
+        "soname": "ld-linux-x86-64.so.2",
+        "size_bytes": 254864,
+        "sha256": "C5E80A563850D6AB5C2F2482E4202D9C1B71FBF44854B8C399E63527202C64E1"
+      },
+      {
+        "soname": "libasan.so.8.0.0",
+        "size_bytes": 11576096,
+        "sha256": "B49A5EC136D444F8B40CF24964C20EF01434FC4E6DCF68DC272F5028D65B5496"
+      },
+      {
+        "soname": "libc.so.6",
+        "size_bytes": 2186512,
+        "sha256": "A3947513A02831EC692EBF13053C07614882AB54A2101FB91A1B15724062ED0C"
+      },
+      {
+        "soname": "libgcc_s.so.1",
+        "size_bytes": 187120,
+        "sha256": "9D339ECB409578D6A5D587E6C537A8F9589B8A13FEFBA30D167433A4B5758BEE"
+      },
+      {
+        "soname": "libm.so.6",
+        "size_bytes": 1198376,
+        "sha256": "BEEA4EEACFCFA2CD96011B959A826C97CF4A774017E214F6A34D7EEA3D49CD88"
+      },
+      {
+        "soname": "libstdc++.so.6.0.35",
+        "size_bytes": 2735712,
+        "sha256": "5BB0D21308F123B6AD46C6F35B42CEDFCB8D6D439A53AA3DAE04D880AAFFDDE3"
+      },
+      {
+        "soname": "libubsan.so.1.0.0",
+        "size_bytes": 3590968,
+        "sha256": "1BDB7EAE5853277E4D5DFA17431A63944FEB16289FA707D8E4D1D8D3825DE68E"
+      }
+    ],
+    "tests": [
+      {
+        "name": "twin-rail-calibration-selftest-asan-ubsan",
+        "compile_command": "c++ <common flags> -DNEO3000_TWIN_RAIL_TESTING scripts/catalytic_frontier_twin_rail_runtime_selftest.cpp tools/server/neo3000-twin-rail-fiber.cpp -o build/realignment/native-bound/twin-rail-calibration-selftest-asan-ubsan",
+        "sources": {
+          "scripts/catalytic_frontier_twin_rail_runtime_selftest.cpp": "60C6730D25F7F0A7B44F9E1A13963111FC1BF785FA56718A8249C9D4FFD3A1F5",
+          "tools/server/neo3000-twin-rail-fiber.cpp": "91FECB795868EB3DD41D9D12D5BC304B847718BAF0D7ABC8DA72B1AD1722D82D",
+          "tools/server/neo3000-twin-rail-fiber.h": "5EF352287FADEDC23B206C780A03DB805A1AC62170D1468D45BAD84A32593648"
+        },
+        "binary_size_bytes": 1598544,
+        "binary_sha256": "6956F2C8397B47129ACDB2C9E78B4BE5180CABC97B415FA0F3B95768BA8E61CB",
+        "returncode": 0,
+        "execution_output": "8 cells; 128 cell bytes; 1032 object bytes; primary-primary-B-D-numerical-decoherence-reordered; two post-success inverse-fault recoveries; 1024 restorations; maximum error 1.10938e-13"
+      },
+      {
+        "name": "two-row-calibration-selftest-asan-ubsan",
+        "compile_command": "c++ <common flags> -DNEO3000_TWIN_RAIL_TESTING scripts/catalytic_frontier_two_evidence_twin_rail_selftest.cpp tools/server/neo3000-twin-rail-fiber.cpp -o build/realignment/native-bound/two-row-calibration-selftest-asan-ubsan",
+        "sources": {
+          "scripts/catalytic_frontier_two_evidence_twin_rail_selftest.cpp": "A9003200598ED627FA92073B046A5B6EF84BA5A55C4D30F2D76513EE9A4EB911",
+          "tools/server/neo3000-twin-rail-fiber.cpp": "91FECB795868EB3DD41D9D12D5BC304B847718BAF0D7ABC8DA72B1AD1722D82D",
+          "tools/server/neo3000-twin-rail-fiber.h": "5EF352287FADEDC23B206C780A03DB805A1AC62170D1468D45BAD84A32593648"
+        },
+        "binary_size_bytes": 1542440,
+        "binary_sha256": "DF85E0E46C2275A681D03C15A888FF8F5A5AAEE3285921ECC3C56648D7CA6181",
+        "returncode": 0,
+        "execution_output": "8 cells; 128 cell bytes; 16 retained evidence bytes; 1032 object bytes; 280 contract bytes; 144 receipt bytes"
+      },
+      {
+        "name": "live-terminal-lifecycle-selftest-asan-ubsan",
+        "compile_command": "c++ <common flags> scripts/catalytic_frontier_live_terminal_lifecycle_selftest.cpp -o build/realignment/native-bound/live-terminal-lifecycle-selftest-asan-ubsan",
+        "sources": {
+          "scripts/catalytic_frontier_live_terminal_lifecycle_selftest.cpp": "47ECE07119D9C4C6FACF241ABC2A9C05765309F108A4EE21EEDE8B4A9A1A04D9",
+          "tools/server/neo3000-live-terminal-lifecycle.h": "1749A76211AD0C7BA37415AADCEDEF452741821C9AC08F939819083944372E58"
+        },
+        "binary_size_bytes": 75256,
+        "binary_sha256": "BEC82AC1E10265C572825B4AA21D933091F198AFEDF6527D65B6E89151031752",
+        "returncode": 0,
+        "execution_output": "cancel-before-receipt; cancel-after-receipt; admitted-release; malformed-immediate-consumer; decode-exception; close-and-recapture; sleep-resident; shutdown-resident"
+      }
+    ],
+    "generated_binding_sha256": "998B4F01F9D9D38F9087BB0AEF18DF6CB844BFBE9D14056435428238462A4B2C",
+    "all_passed": true
+  },
+  "python_and_oracle_tests": {
+    "focused_source_unit_suite": {
+      "tests_run": 123,
+      "passed": 118,
+      "skipped_legacy_provenance_checks": 5,
+      "failed": 0
+    },
+    "declarative_runner_suite": {
+      "tests_run": 7,
+      "passed": 7,
+      "failed": 0,
+      "legacy_controllers_imported": false,
+      "model_contact_allowed": false
+    },
+    "sidecar_timeout_included_in_focused_suite": true,
+    "exact_oracle": {
+      "source_sha256": "8E957CDA7F8954DF606FEB90C4530A5DA745E6DFCAD6871AD5CF56AB47759B32",
+      "execution_output_sha256": "F9C39BA89A8ADE6E9F550154F7FD428743B9F235C136A1D64826CBA064663453",
+      "valid_normalized_fixtures": 3,
+      "gates_passed": 19,
+      "old_detached_fixture_factor_sum": "1.7637929249216341393369052870798269273921248897215055375827891295120786182157192",
+      "old_detached_fixture_rejected": true
+    },
+    "specs": {
+      "neo-exp-0101": {
+        "file_sha256": "4FB81E51186A8C25C43EE1ED800447391C81F6BD73F36B1DFE0997CA17FD4BC2",
+        "canonical_spec_sha256": "BCA66CF52ADD486656313C160FE62BA9B2117520701DC80D7D0BDD62B5387A56",
+        "callbacks": 48,
+        "direct_actions": 29,
+        "valid": true
+      },
+      "neo-exp-0102": {
+        "file_sha256": "9021D030D33D53DC3B218363D1884B6E566249B58197463DA6E2D076CCB211F7",
+        "canonical_spec_sha256": "9610AA9A11D2A5488FD522E6393A3A113D41A473CDE7967D48EDFFFA5267ED62",
+        "callbacks": 16,
+        "direct_actions": 28,
+        "valid": true,
+        "scientific_status": "PRECONTACT_FROZEN"
+      }
+    }
+  },
+  "cuda_server_build": {
+    "configure_command": "cmake -S . -B build/linux-cuda-0091-custody",
+    "build_command": "cmake --build build/linux-cuda-0091-custody --target llama-server -j4",
+    "build_type": "Release",
+    "ggml_cuda": true,
+    "cuda_architectures": "86-real",
+    "server_version": "331 (9a1aaaf)",
+    "server_binary_size_bytes": 17904,
+    "server_binary_sha256": "6F2778111377B46E4B97C242B6065D286E4C2A292584FA436BE9433B551D2D9B",
+    "server_impl_size_bytes": 4457296,
+    "server_impl_sha256": "F98D950CEDFE384B6B6880A157531797C93849EA05386CBF868DE75E01187140",
+    "ggml_cuda_size_bytes": 154274432,
+    "ggml_cuda_sha256": "1D99B4CF90CDB7DE50183A09122DAE59B2221B4A322E10772F64FBDAE8E237A4",
+    "cmake_cache_sha256": "AE85C4B1462ADD6C227263DFECE1591171647D54AD780AD1E391CA9100CB9465",
+    "compile_commands_sha256": "54241FCFA75E30E69462B0AAF02EE8C37DE3583A2E10BDF97EBF7D222C36F850",
+    "server_link_receipt_sha256": "93358119B7A9D3CC5FC1184C51BA57A8397346752BF0A3F1EB80E0DBDC05212F",
+    "server_impl_link_receipt_sha256": "EA3E33428E4C4A8DD536179158AD7275BC6BD7BF7B18D67E889E8F9A591ABE92",
+    "cuda_link_receipt_sha256": "6F27C3654CDE56B0F0C899304A7819E41A3D1374A2E93D35E4DEAAAC2AAA04C3",
+    "configured_cuda_compile_entries": 139,
+    "configured_cuda_objects": 139,
+    "unique_configured_cuda_objects": 139,
+    "configured_cuda_object_identity_aggregate_sha256": "61B268F65C692CBB88F17C9FEB0238D9943810432ACCFAF47547F699027F3910",
+    "configured_cuda_units_missing": 0,
+    "configured_cuda_units_changed_by_realignment": 0,
+    "optional_repository_cuda_units_excluded": 45,
+    "optional_exclusion": "GGML_CUDA_FA_ALL_QUANTS=OFF",
+    "link_sonames": [
+      "libllama-server-impl.so",
+      "libllama-common.so.0",
+      "libmtmd.so.0",
+      "libllama.so.0",
+      "libggml.so.0",
+      "libggml-base.so.0",
+      "libggml-cpu.so.0",
+      "libggml-cuda.so.0",
+      "libstdc++.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6",
+      "libm.so.6",
+      "libgomp.so.1",
+      "libcudart.so.13",
+      "libcublas.so.13",
+      "libcublasLt.so.13"
+    ],
+    "linked": true
+  },
+  "contact": {
+    "server_launches": 0,
+    "completion_requests": 0,
+    "prompt_evaluations": 0,
+    "model_callbacks": 0,
+    "cuda_kernel_launches": 0,
+    "neo_exp_0102_scientific_contact": false
+  },
+  "corrected_strongest_claim": "The Linux runtime has a built live-boundary and split-decode seam, executed component lifecycle laws, and a reversible twin-rail calibration backend that numerically restores only eight complex<double> cells. Consumed 0094-0101 evidence remains bounded numerical calibration and same-workspace reuse; precontact 0102 remains a two-row reversible score-composition calibration.",
+  "unsupported": [
+    "inference-bearing twin-rail carrier",
+    "authenticated owner-bound authority",
+    "phase-native or relational inference resource",
+    "complete carrier, metadata, allocator, model, host-logit, or CUDA/KV restoration",
+    "fresh-compute reduction from the twin-rail line",
+    "multi-evidence catalytic inference",
+    "Small Wall crossing",
+    "general, recursive, arbitrary-breadth, or unbounded catalytic inference"
+  ],
+  "verdict": "REALIGNMENT_IMPLEMENTATION_AND_BUILD_VERIFIED_WITHOUT_MODEL_CONTACT"
+}
