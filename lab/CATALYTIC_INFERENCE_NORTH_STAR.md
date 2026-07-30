@@ -79,6 +79,21 @@ or mutation roots. The next discriminator must establish evidence-module
 necessity inside the union. Only then is layerwise cross-memory subspace
 localization justified.
 
+The full-union discriminator now passes. On the unchanged delayed-query task,
+full-hybrid joint/F-only/G-only accuracy is `4/4`, `1/4`, and `1/4`. A true
+relation mutation shifts the complete boundary from `A,B,C,D` to `B,C,D,A`;
+presentation-only reordering preserves `A,B,C,D`; restored joint full logits
+remain bit-exact to untouched live inference. The `68,526,080`-byte hybrid
+snapshot is therefore a real inference-bearing carrier whose useful boundary
+depends on both evidence modules and both memory partitions.
+
+This is the correct scientific substrate but not the destination. It is a
+conventional cache snapshot, retains full source memory, uses duplicate
+control roots, and has no native inverse or recurrence advantage. The next
+mechanism is no longer speculative phase injection: it is empirical
+localization of the smallest cross-memory layer/subspace that preserves the
+already executed necessity and mutation laws.
+
 The refreshed AGS frontier adds three useful constraints without closing the
 Neo recurrence. First, source closure before query selection tightens the
 no-smuggle test, although a finite query family remains cache-equivalent.

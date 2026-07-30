@@ -29,6 +29,16 @@ The active recurrence and acceptance boundary are
   null-equivalent `A,A,A,A` boundary, while their exact byte-sum union returns
   `A,B,C,D`. The useful delayed boundary is functionally distributed across
   hybrid memory rather than output-sufficient in either isolated partition.
+- `neo-exp-0106` closes semantic carrier necessity inside the union.
+  Full-hybrid joint/F-only/G-only accuracy is `4/4`, `1/4`, and `1/4`;
+  relation mutation returns the prospectively shifted `B,C,D,A` and changes
+  all four joint boundaries; presentation-only reordering preserves
+  `A,B,C,D`. The restored joint root matches untouched live full logits
+  bit-exactly on all four queries.
+- This is the first renewed-frontier carrier that is created before query
+  selection, later read by real Agents-A1 inference, useful, dependent on both
+  declared evidence modules, and sensitive to the declared relation rather
+  than its presentation.
 - The Release server rebuild succeeds, all 139 configured CUDA objects remain
   present with zero CUDA source changes, and the focused no-model Python suite
   passes 57 tests.
@@ -46,9 +56,11 @@ The active recurrence and acceptance boundary are
 - Attention-only joint, F-only, G-only, F0G0, mutation, presentation, and
   explicit-null routes also score only `1/4`; relation mutation changes `0/4`.
   The smaller attention root is not a useful carrier by itself.
-- Full-hybrid marginal and relation-mutation roots were not executed in 0105.
-  The result proves memory-partition necessity for this useful boundary, not
-  yet two-evidence necessity within the hybrid union.
+- The accepted 0106 carrier is still a `68,526,080`-byte conventional
+  `SNAPSHOT_RELOAD` of ordinary attention KV plus recurrent state. The harness
+  retains simultaneous control roots and the public source text. It is not
+  duplicate-free unresolved custody, native inverse restoration, or a bounded
+  catalytic state.
 - The retained roots use `SNAPSHOT_RELOAD`. Root backing identity and closure
   do not establish inverse restoration, complete object restoration, or
   catalytic reuse. The test also retains a full-hybrid control root alongside
@@ -60,11 +72,12 @@ The active recurrence and acceptance boundary are
 
 ### ACTIVE BOUNDARY
 
-Execute full-hybrid roots for every unchanged F/G marginal, joint, mutation,
-and presentation source. If the joint and mutation necessity gates pass,
-localize the minimum cross-memory layer/subspace that retains them. Do not tune
-labels or introduce a phase program before the ordinary learned hybrid
-interaction is measured. `neo-exp-0102` remains frozen and unconsumed.
+Localize the minimum set of attention and GDN layer states that preserves the
+0106 joint, mutation, and presentation boundaries under the unchanged task.
+Measure exact retained bytes and compare every subset with the complete hybrid
+root. Only a sufficient bounded subset can become the substrate for in-place
+relational modules, restoration, and recurrence. `neo-exp-0102` remains frozen
+and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

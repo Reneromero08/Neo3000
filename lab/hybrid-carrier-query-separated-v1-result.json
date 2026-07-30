@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0106",
+  "artifact_id": "hybrid-carrier-query-separated-v1",
+  "date": "2026-07-29",
+  "starting_head": "fe336ba7fcefa05c9da38f49eebb4678bdc3317b",
+  "classification": "BOUNDED_QUERY_SEPARATED_INFERENCE_BEARING_FULL_HYBRID_CARRIER_WITH_EVIDENCE_NECESSITY",
+  "hypothesis": "Complete Agents-A1 hybrid memory captured after source closure can retain a useful two-link relation before query selection, require both evidence modules, respond to a true relation mutation, and ignore a presentation-only mutation.",
+  "intervention": "Preserve the exact 0104/0105 source and query geometry, retain complete on-device hybrid roots for every F0G0, F1G0, F0G1, F1G1, relation-mutation, and presentation source, and apply the same four delayed queries to every route.",
+  "model": {
+    "name": "Agents-A1-Q4_K_M.gguf",
+    "sha256": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+    "architecture": "qwen35moe",
+    "hybrid_layers": {
+      "gdn_recurrent": 30,
+      "full_attention": 10
+    }
+  },
+  "carrier": {
+    "state": "complete Qwen3.5 hybrid attention KV plus GDN recurrent sequence state",
+    "source_tokens": 130,
+    "query_tokens_each": 33,
+    "state_flags": [
+      "ON_DEVICE"
+    ],
+    "gpu_bytes_per_root": 68526080,
+    "host_metadata_bytes_per_root": 3604,
+    "component_bytes": {
+      "gdn_recurrent": 65863680,
+      "attention_kv": 2662400,
+      "sum_matches_full_root": true
+    },
+    "active_recurrent_backing_stable": true,
+    "active_attention_backing_stable": true,
+    "retained_root_count_at_close": 0,
+    "restoration_class": "SNAPSHOT_RELOAD",
+    "restoration_scope": {
+      "attention_kv_tensor_values": "reloaded from retained on-device root",
+      "gdn_recurrent_tensor_values": "reloaded from retained on-device root",
+      "active_cache_allocations": "same process-local attention and recurrent backings across the run",
+      "root_allocations": "retained per source variant and explicitly cleared",
+      "model_weights": "unchanged",
+      "allocator_state": "not restored",
+      "complete_process_or_cuda_state": "NO_RESTORATION_CLAIM"
+    }
+  },
+  "semantic_boundaries": {
+    "F0_G0": [
+      "D",
+      "D",
+      "D",
+      "D"
+    ],
+    "F1_G0": [
+      "D",
+      "D",
+      "D",
+      "D"
+    ],
+    "F0_G1": [
+      "D",
+      "D",
+      "D",
+      "D"
+    ],
+    "F1_G1": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "F1_G_MUT": [
+      "B",
+      "C",
+      "D",
+      "A"
+    ],
+    "F1_G_PRESENTATION": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explicit_null": [
+      "A",
+      "A",
+      "A",
+      "A"
+    ],
+    "untouched_live_F1_G1": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ]
+  },
+  "metrics": {
+    "query_count": 4,
+    "full_joint_correct": 4,
+    "full_f_only_correct": 1,
+    "full_g_only_correct": 1,
+    "full_null_source_correct": 1,
+    "explicit_null_correct": 1,
+    "full_mutated_correct": 4,
+    "full_presentation_correct": 4,
+    "full_mutation_changes": 4,
+    "full_joint_changes_from_source_null": 3,
+    "full_joint_matches_untouched_live_argmax": 4,
+    "full_joint_matches_untouched_live_full_logits_bit_exact": 4,
+    "recurrent_joint_correct": 1,
+    "attention_joint_correct": 1,
+    "recorded_query_decode_wall_ms": 97309.36749899999
+  },
+  "quality_gates": {
+    "source_closed_before_query_selection": true,
+    "query_selected_after_root_creation": true,
+    "full_hybrid_joint_useful": true,
+    "F_alone_insufficient": true,
+    "G_alone_insufficient": true,
+    "joint_beats_explicit_null": true,
+    "true_relation_mutation_changes_all_boundaries": true,
+    "relation_mutation_useful": true,
+    "presentation_mutation_invariant": true,
+    "full_hybrid_root_exact_to_untouched_live": true,
+    "both_memory_partitions_required_for_tested_useful_boundary": true,
+    "both_evidence_modules_required_for_tested_useful_boundary": true,
+    "inference_bearing_carrier": true,
+    "complete_duplicate_intermediate_absent": false,
+    "bounded_sufficient_subspace": false,
+    "native_inverse_restoration": false,
+    "same_root_backing_advance": false,
+    "fresh_compute_reduction": false,
+    "constructively_unbounded_recurrence": false
+  },
+  "resource_accounting": {
+    "model_loads": 1,
+    "source_preparations": 10,
+    "source_fragment_decode_calls": 40,
+    "query_boundary_decode_calls": 80,
+    "total_llama_decode_calls": 120,
+    "source_input_tokens": 1300,
+    "query_input_tokens": 2640,
+    "total_input_tokens": 3940,
+    "completion_tokens": 0,
+    "maximum_simultaneously_retained_root_gpu_bytes": 137052160,
+    "cumulative_retained_root_bytes_cleared": 822312960,
+    "server_launches": 0,
+    "background_processes_left_running": 0
+  },
+  "build_and_test": {
+    "build_type": "Release",
+    "probe_build": "passed after one precontact C++ compatibility repair",
+    "precontact_compile_failures": 1,
+    "configured_cuda_objects": 139,
+    "cuda_sources_changed": 0,
+    "cuda_object_identity_aggregate_sha256": "066F235A4442C4545B9E31205D4627257E3B41B2984176AB9629B9BCA0614356",
+    "json_validation": "passed",
+    "full_hybrid_vs_live_full_logit_comparison": "4/4 bit-exact"
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/hybrid-carrier-query-separated-v1.json",
+      "bytes": 6032,
+      "sha256": "145EAA99C9AA7540EFA71A35EF8285184E4DF9BCD1FAEFBC50E32CA2D0EE0B20"
+    },
+    "raw_result": {
+      "committed": false,
+      "local_path": "build/hybrid-carrier-query-separated-v1-result.json",
+      "bytes": 70196,
+      "sha256": "AB4A742C8687D23A06A2B5F0DB8329DCA6F22C544C35DC8388B1DACB221CB64E"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 34029,
+      "sha256": "48491972D433069E1A94985D25FAA8FBD9541838450223E0998D7A981A0D5AE3"
+    },
+    "probe_binary": {
+      "committed": false,
+      "local_path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "sha256": "940938B689F57E30632896558A1673C670B9CEB2BC05D1EC2AE71E9AEB2F863B"
+    }
+  },
+  "contact": {
+    "scientific_contact": true,
+    "server_contact": false,
+    "model_facing_probe": true,
+    "completion_generation": false,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "accept",
+  "strongest_supported_claim": "A complete 68,526,080-byte Agents-A1 hybrid root created before query selection is an inference-bearing carrier for the tested delayed two-link task: F and G are each insufficient alone, joint state returns A,B,C,D, a true relation mutation returns B,C,D,A, presentation reordering preserves A,B,C,D, and restored joint full logits match untouched live inference bit-exactly.",
+  "strongest_rejected_interpretation": "This is ordinary on-device model-cache snapshot reuse with simultaneous control roots and public source text, not a bounded unresolved subspace, duplicate-free custody, native inverse restoration, phase-native resource, fresh-compute reduction, catalytic recurrence, Small Wall crossing, or unbounded inference.",
+  "next_boundary": "LOCALIZE_THE_MINIMUM_CROSS_MEMORY_LAYER_SET_THAT_PRESERVES_JOINT_MUTATION_AND_PRESENTATION_BOUNDARIES_WITHOUT_TUNING_THE_TASK_FIXTURE"
+}

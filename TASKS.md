@@ -34,11 +34,16 @@ constructively unbounded local Agents-A1 inference.
   `2,662,400`-byte attention-only root, but it also returns null-equivalent
   `A,A,A,A`; relation mutation changes `0/4`. The complete
   `68,526,080`-byte hybrid union remains `4/4` and bit-exact to untouched live.
-- [ ] Test full-hybrid F-only, G-only, joint, relation-mutation, presentation,
+- [x] Test full-hybrid F-only, G-only, joint, relation-mutation, presentation,
   and null routes. The current contact proves that useful state requires the
-  hybrid memory union, but not yet that both evidence modules are necessary
-  within that union. Only after that gate passes should layerwise
-  attention-GDN subspace localization begin.
+  hybrid memory union. `neo-exp-0106` closes evidence necessity:
+  joint/F-only/G-only are `4/4`, `1/4`, `1/4`; relation mutation is `4/4`
+  with all four boundaries changed; presentation reordering remains `4/4`;
+  restored joint full logits match untouched live `4/4` bit-exactly.
+- [ ] Localize the minimum cross-memory layer set that preserves joint,
+  mutation, and presentation boundaries. Begin with layer-subset ablations
+  against the exact 0106 full-hybrid root; do not tune the prompt or introduce
+  a phase fixture. Count retained bytes and active work for every subset.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

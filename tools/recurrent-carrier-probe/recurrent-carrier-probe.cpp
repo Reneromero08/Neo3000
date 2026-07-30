@@ -408,7 +408,7 @@ int main(int argc, char ** argv) {
         json roots = json::array();
         std::map<std::string, std::vector<boundary_result>> recurrent_results;
         std::map<std::string, std::vector<boundary_result>> attention_results;
-        std::vector<boundary_result> full_root_results;
+        std::map<std::string, std::vector<boundary_result>> full_root_results;
         std::vector<boundary_result> direct_results;
         std::vector<boundary_result> null_results;
         size_t common_source_tokens = 0;
@@ -430,7 +430,9 @@ int main(int argc, char ** argv) {
             auto recurrent_root = save_root(
                 ctx, variant + ":recurrent", key++, RECURRENT_DEVICE_FLAGS, source_tokens.size());
             device_root full_root;
-            const bool save_full = variant == "F1_G1";
+            const bool save_full =
+                spec.value("full_hybrid_all_variants", false) ||
+                variant == "F1_G1";
             if (save_full) {
                 full_root = save_root(
                     ctx, variant + ":full", key++, FULL_DEVICE_FLAGS, source_tokens.size());
@@ -516,7 +518,7 @@ int main(int argc, char ** argv) {
                         ctx, vocab, candidates, "full-hybrid-root", variant, query,
                         full_root.source_tokens, full_root.backing_id, full_root.gpu_bytes);
                     records.push_back(full.record);
-                    full_root_results.push_back(std::move(full));
+                    full_root_results[variant].push_back(std::move(full));
                 }
             }
 
@@ -587,22 +589,49 @@ int main(int argc, char ** argv) {
         const size_t attention_null = accuracy(attention_results.at("F0_G0"), "expected");
         const size_t attention_mutated = accuracy(attention_results.at("F1_G_MUT"), "expected_mutated");
         const size_t attention_presentation = accuracy(attention_results.at("F1_G_PRESENTATION"), "expected");
-        const size_t full_joint = accuracy(full_root_results, "expected");
+        const size_t full_joint = accuracy(full_root_results.at("F1_G1"), "expected");
+        const size_t full_f_only =
+            full_root_results.find("F1_G0") != full_root_results.end() ?
+                accuracy(full_root_results.at("F1_G0"), "expected") : 0;
+        const size_t full_g_only =
+            full_root_results.find("F0_G1") != full_root_results.end() ?
+                accuracy(full_root_results.at("F0_G1"), "expected") : 0;
+        const size_t full_null =
+            full_root_results.find("F0_G0") != full_root_results.end() ?
+                accuracy(full_root_results.at("F0_G0"), "expected") : 0;
+        const size_t full_mutated =
+            full_root_results.find("F1_G_MUT") != full_root_results.end() ?
+                accuracy(full_root_results.at("F1_G_MUT"), "expected_mutated") : 0;
+        const size_t full_presentation =
+            full_root_results.find("F1_G_PRESENTATION") != full_root_results.end() ?
+                accuracy(full_root_results.at("F1_G_PRESENTATION"), "expected") : 0;
         const size_t direct_joint = accuracy(direct_results, "expected");
         const size_t mutation_changes = differences(
             recurrent_results.at("F1_G1"), recurrent_results.at("F1_G_MUT"));
         const size_t joint_changes_from_null = differences(
             recurrent_results.at("F1_G1"), null_results);
         const size_t recurrent_matches_full =
-            queries.size() - differences(recurrent_results.at("F1_G1"), full_root_results);
+            queries.size() - differences(
+                recurrent_results.at("F1_G1"), full_root_results.at("F1_G1"));
         const size_t attention_mutation_changes = differences(
             attention_results.at("F1_G1"), attention_results.at("F1_G_MUT"));
         const size_t attention_joint_changes_from_null = differences(
             attention_results.at("F1_G1"), null_results);
         const size_t attention_matches_full =
-            queries.size() - differences(attention_results.at("F1_G1"), full_root_results);
+            queries.size() - differences(
+                attention_results.at("F1_G1"), full_root_results.at("F1_G1"));
+        const size_t full_mutation_changes =
+            full_root_results.find("F1_G_MUT") != full_root_results.end() ?
+                differences(
+                    full_root_results.at("F1_G1"),
+                    full_root_results.at("F1_G_MUT")) : 0;
+        const size_t full_joint_changes_from_null =
+            full_root_results.find("F0_G0") != full_root_results.end() ?
+                differences(
+                    full_root_results.at("F1_G1"),
+                    full_root_results.at("F0_G0")) : 0;
         const size_t full_matches_direct =
-            queries.size() - differences(full_root_results, direct_results);
+            queries.size() - differences(full_root_results.at("F1_G1"), direct_results);
 
         json recurrent_interactions = json::array();
         json attention_interactions = json::array();
@@ -625,15 +654,25 @@ int main(int argc, char ** argv) {
         }
 
         const auto & acceptance = spec.at("acceptance_law");
+        const bool full_hybrid_gate = spec.value("full_hybrid_all_variants", false);
         const bool accepted =
-            attention_joint >= acceptance.at("attention_joint_correct_minimum").get<size_t>() &&
-            attention_joint > attention_f_only &&
-            attention_joint > attention_g_only &&
-            attention_joint > explicit_null &&
-            attention_mutated >= acceptance.at("mutated_correct_minimum").get<size_t>() &&
-            attention_presentation >= acceptance.at("presentation_correct_minimum").get<size_t>() &&
-            attention_mutation_changes >= acceptance.at("mutation_changes_minimum").get<size_t>() &&
-            attention_joint_changes_from_null >= acceptance.at("joint_changes_from_null_minimum").get<size_t>() &&
+            (full_hybrid_gate ?
+                (full_joint >= acceptance.at("full_joint_correct_minimum").get<size_t>() &&
+                 full_joint > full_f_only &&
+                 full_joint > full_g_only &&
+                 full_joint > explicit_null &&
+                 full_mutated >= acceptance.at("mutated_correct_minimum").get<size_t>() &&
+                 full_presentation >= acceptance.at("presentation_correct_minimum").get<size_t>() &&
+                 full_mutation_changes >= acceptance.at("mutation_changes_minimum").get<size_t>() &&
+                 full_joint_changes_from_null >= acceptance.at("joint_changes_from_null_minimum").get<size_t>()) :
+                (attention_joint >= acceptance.at("attention_joint_correct_minimum").get<size_t>() &&
+                 attention_joint > attention_f_only &&
+                 attention_joint > attention_g_only &&
+                 attention_joint > explicit_null &&
+                 attention_mutated >= acceptance.at("mutated_correct_minimum").get<size_t>() &&
+                 attention_presentation >= acceptance.at("presentation_correct_minimum").get<size_t>() &&
+                 attention_mutation_changes >= acceptance.at("mutation_changes_minimum").get<size_t>() &&
+                 attention_joint_changes_from_null >= acceptance.at("joint_changes_from_null_minimum").get<size_t>())) &&
             full_joint >= acceptance.at("full_joint_correct_minimum").get<size_t>() &&
             direct_joint >= acceptance.at("direct_joint_correct_minimum").get<size_t>() &&
             full_matches_direct >= acceptance.at("full_matches_direct_minimum").get<size_t>();
@@ -652,7 +691,9 @@ int main(int argc, char ** argv) {
 
         json result = {
             {"schema_version", 1},
-            {"mechanism", "QUERY_SEPARATED_ATTENTION_ONLY_DEVICE_ROOT"},
+            {"mechanism", spec.value(
+                "mechanism",
+                std::string("QUERY_SEPARATED_ATTENTION_ONLY_DEVICE_ROOT"))},
             {"spec_id", spec.at("id")},
             {"model_arch", "qwen35moe"},
             {"configuration", {
@@ -696,23 +737,25 @@ int main(int argc, char ** argv) {
                 {"attention_mutated_correct", attention_mutated},
                 {"attention_presentation_correct", attention_presentation},
                 {"full_joint_correct", full_joint},
+                {"full_f_only_correct", full_f_only},
+                {"full_g_only_correct", full_g_only},
+                {"full_null_source_correct", full_null},
+                {"full_mutated_correct", full_mutated},
+                {"full_presentation_correct", full_presentation},
                 {"direct_joint_correct", direct_joint},
                 {"mutation_changes", mutation_changes},
                 {"joint_changes_from_null", joint_changes_from_null},
                 {"attention_mutation_changes", attention_mutation_changes},
                 {"attention_joint_changes_from_null", attention_joint_changes_from_null},
+                {"full_mutation_changes", full_mutation_changes},
+                {"full_joint_changes_from_null", full_joint_changes_from_null},
                 {"recurrent_matches_full", recurrent_matches_full},
                 {"attention_matches_full", attention_matches_full},
                 {"full_matches_direct", full_matches_direct},
             }},
             {"verdict", accepted ? "accept" : "reject"},
             {"claim_ceiling",
-             "Acceptance can establish only that source evidence encoded before query selection survives as "
-             "device-resident attention KV without source GDN state, is causally read by later Agents-A1 "
-             "inference, and carries a useful two-link relation under matched controls. The root operation is "
-             "snapshot reload. This does not establish a bounded sufficient attention subspace, native inverse "
-             "restoration, phase-native advantage, lower fresh compute than the strongest compact cache route, "
-             "or constructively unbounded catalytic inference."},
+             spec.at("claim_ceiling")},
         };
 
         std::ofstream result_stream(params.out_file);
