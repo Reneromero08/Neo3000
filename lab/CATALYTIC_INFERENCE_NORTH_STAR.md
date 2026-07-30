@@ -123,7 +123,22 @@ That carrier-law implementation is now frozen as `neo-exp-0146`. It adds no
 new semantic fixture: it changes only physical state advance from cell
 replacement to complete K/V overwrite of the same four destination cells.
 The precontact build binds their IDs across every update and accounts for all
-backend-copy traffic. Its one frozen run is the next discriminator.
+backend-copy traffic.
+
+The run rejects same-cell advance as the missing law. All four destination
+IDs remain invariant and all 327,680 K/V bytes move on device, but phase
+utility falls to `11/16` and return to `2/4`. Together, 0145 and 0146 show
+that sparse logical K/V content plus allocation identity is not a robust
+semantic recurrence: cell topology affects the approximate boundary, while
+sixteen source-role forwards remain unavoidable.
+
+The frontier now stops cache-placement closure variants and attacks the
+conversion itself. The next mechanism is a fixed-capacity role-invariant
+latent port whose writer consumes actual output state and whose reader feeds
+later model computation. Writer and reader are trained jointly on useful
+recurrence, not row reconstruction; runtime performs no source-position
+rematerialization forward and retains no target-row or context-indexed table.
+That changes the model/carrier law, not the evaluator.
 
 ### Executed bridge update — model-native residual carrier
 

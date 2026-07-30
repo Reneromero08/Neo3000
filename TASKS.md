@@ -330,18 +330,26 @@ constructively unbounded local Agents-A1 inference.
   allocated attention cells rather than overwriting the original physical
   cells. Reject complete cyclic recurrence; retain the model-native role
   rematerialization seam.
-- [ ] Preserve the candidate label cells themselves while applying the
+- [x] Preserve the candidate label cells themselves while applying the
   rematerialized source-role row. Copy complete K/V payload device-to-device
   from each one-token scratch result into the existing fixed destination cell;
   do not remove/relink its metadata. Record destination cell identities before,
   during, and after the cycle, charge every copied byte, and run the unchanged
-  recurrence once. This changes the physical carrier advance law; it is not
-  role-rematerialization-v2, a fixture change, or an evidence-harness revision.
-  **Precontact implementation frozen:** `neo-exp-0146` resolves the four
-  initial physical cell IDs, performs complete ten-layer K/V backend copies
-  into those cells without metadata mutation, checks the same IDs after every
-  update and at final return, and records exact copy traffic. The fixed
-  recurrence remains unexecuted at this source checkpoint.
+  recurrence once. `neo-exp-0146` keeps cell IDs `[130,131,132,133]` exact
+  through all sixteen complete K/V overwrites, moves `327,680` backend bytes,
+  and transfers zero tensor payload through the host. Semantic recurrence
+  degrades to `11/16` (`4/4`, `3/4`, `2/4`, `2/4`) and returns `2/4` G0.
+  Same-cell identity is therefore not the missing law. Stop cell-placement,
+  allocator, K/V-subset, fixture, evaluator, and evidence-harness variants.
+- [ ] Eliminate the output-role/source-role conversion rather than repeatedly
+  repairing cache coordinates. Introduce one fixed-capacity role-invariant
+  latent port that actual useful output state writes directly and later model
+  computation reads before the answer exists. Train the writer and reader
+  jointly against useful recurrence, not K/V row reconstruction; retain no
+  target cache rows, answer table, context-indexed operator, or source-position
+  model forward at runtime. Freeze multiple construction contexts and one
+  disjoint transfer context prospectively, charge training and runtime against
+  the compact recurrence, and test one mechanism once.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

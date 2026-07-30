@@ -417,6 +417,29 @@ The active recurrence and acceptance boundary are
   objects. No `neo-exp-0146` model contact has occurred. The next action is one
   execution of `lab/actual-output-fixed-cell-kv-advance-v1.json`, not a K/V
   subset, prompt, position, layer, evaluator, or evidence-packet variant.
+- Exact clean pushed head `3b32f94185ddd5881cc5a2633a7a2a6784ed41e4`
+  executed `neo-exp-0146` once. All four physical destination IDs remain
+  exactly `[130,131,132,133]` before, across sixteen updates, and after the
+  cycle. Complete K/V rows move `327,680` bytes device-to-device across 320
+  tensor visits with zero host tensor reads or writes. Active backing stays
+  fixed, recurrent digests match, and every sequence and root closes.
+- Stronger physical identity does not preserve the useful boundary. Exact full
+  state remains `16/16`; the fixed-cell route is `11/16`, by phase `4/4`,
+  `3/4`, `2/4`, `2/4`, with zero full-logit hashes and `5.4129` maximum
+  candidate error. Wrong actual outputs lawfully feed later updates. Return is
+  only `2/4`, zero hashes, with `3.6137` maximum candidate error.
+- The paired result localizes physical cache topology as part of the effective
+  sparse-attention computation: metadata relinking in 0145 reached `16/16`
+  but failed `3/4` cyclic closure, while fixed-cell payload overwrite in 0146
+  preserves the cells but loses phase utility. Neither route is a robust,
+  closed recurrence; neither reduces fresh work; the compact Z4 law remains
+  smaller and exact.
+- Stop cache-placement and closure variants. The next generator removes the
+  role mismatch itself: a fixed-capacity jointly trained latent port written
+  directly by actual output state and read by later model computation, with
+  zero source-position rematerialization forwards and no target-row or
+  context-indexed table. Evidence remains one packet for that changed
+  mechanism.
 
 ### REJECTED
 
