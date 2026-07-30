@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "identity": "neo-exp-0101",
+  "scientific_status": "CONSUMED_HISTORICAL",
+  "classification": "REVERSIBLE_TWIN_RAIL_CALIBRATION_BACKEND",
+  "model_contact_allowed": false,
+  "prompt_boundaries": [
+    {"id": "dependent-C-D-B", "kind": "historical-live-terminal"},
+    {"id": "fnv1a64:1fd89d3051f37e58", "kind": "frozen-four-choice-smallest-prime"},
+    {"id": "fnv1a64:4c0d82dcecacca31", "kind": "frozen-four-choice-largest-even"}
+  ],
+  "route_graph": [
+    {"id": "dependent-calibration", "depends_on": [], "carrier_dependency": "output parity only"},
+    {"id": "smallest-prime-calibration", "depends_on": ["dependent-calibration"], "carrier_dependency": "same restored numerical backing"},
+    {"id": "largest-even-calibration", "depends_on": ["smallest-prime-calibration"], "carrier_dependency": "same restored numerical backing"},
+    {"id": "matched-controls", "depends_on": ["largest-even-calibration"], "carrier_dependency": "none"}
+  ],
+  "expected_model_callbacks": 48,
+  "callback_schedule": [
+    {"label": "dependent-calibration-routes", "count": 8, "route": "dependent-calibration"},
+    {"label": "smallest-prime-routes", "count": 5, "route": "smallest-prime-calibration"},
+    {"label": "largest-even-routes", "count": 5, "route": "largest-even-calibration"},
+    {"label": "historical-forced-equal-and-order-controls", "count": 4, "route": "matched-controls"},
+    {"label": "remaining-inherited-runtime-controls", "count": 26, "route": "matched-controls"}
+  ],
+  "expected_direct_actions": 29,
+  "direct_action_schedule": [
+    {"label": "structural-contract-field-rejections", "count": 12, "route": "matched-controls"},
+    {"label": "inverse-null-and-projection-faults", "count": 5, "route": "matched-controls"},
+    {"label": "root-lifecycle-and-closure-actions", "count": 12, "route": "matched-controls"}
+  ],
+  "controls": [
+    "compact_classical_recurrence",
+    "forced_equal_score_sham",
+    "fresh_calibration_backing",
+    "fully_materialized_inference",
+    "null_calibration_state",
+    "wrong_structural_contract",
+    "missing_inverse",
+    "wrong_inverse",
+    "reordered_inverse",
+    "premature_projection",
+    "resident_cancellation",
+    "resident_shutdown"
+  ],
+  "restoration_scope": {
+    "cells": "eight complex<double> cells numerically restored within 1e-12",
+    "metadata": "not restored; committed metadata advances after successful transactions",
+    "allocator": "not restored",
+    "model": "not restored",
+    "host_evidence": "fresh logits captured for every task and then closed",
+    "cuda_kv": "live sources declared closed; no restoration claim",
+    "closed_or_discarded": "buffered projection, live source, and faulted numerical state"
+  },
+  "resource_gates": {
+    "cell_array_bytes": 128,
+    "strongest_compact_baseline_required": true,
+    "fresh_compute_reduction_claimed": false,
+    "historical_callbacks": 48,
+    "historical_direct_actions": 29
+  },
+  "acceptance_laws": [
+    "historical outputs and hashes remain immutable",
+    "compact recurrence parity is calibration only",
+    "same backing means numerical workspace address continuity only",
+    "forced equal scores do not satisfy a dephasing claim"
+  ],
+  "claim_ceiling": "Historical bounded reversible scalar-score calibration, 128-byte cell-array numerical restoration, response withholding, and same numerical-backing reuse across two closely related frozen four-choice instances. No inference-bearing carrier, phase resource, complete-object restoration, fresh-compute reduction, Small Wall crossing, or catalytic inference.",
+  "legacy_controller_status": "RETIRED_NOT_IMPORTED"
+}

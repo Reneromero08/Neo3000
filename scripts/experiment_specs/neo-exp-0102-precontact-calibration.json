@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "identity": "neo-exp-0102",
+  "scientific_status": "PRECONTACT_FROZEN",
+  "classification": "PRECONTACT_TWO_ROW_REVERSIBLE_SCORE_COMPOSITION_CALIBRATION",
+  "model_contact_allowed": false,
+  "prompt_boundaries": [
+    {"id": "fnv1a64:4c0d82dcecacca31", "kind": "exact-first-row-at-token-91"},
+    {"id": "fnv1a64:007c44f04d25fd72", "kind": "exact-second-row-at-token-142"}
+  ],
+  "route_graph": [
+    {"id": "first-row-stage", "depends_on": [], "carrier_dependency": "duplicate 16-byte classical evidence retained"},
+    {"id": "suffix-decode", "depends_on": ["first-row-stage"], "carrier_dependency": "carrier resident but model computation independent"},
+    {"id": "second-row-calibration", "depends_on": ["suffix-decode"], "carrier_dependency": "reversible p-times-q score calibration"},
+    {"id": "restoration-and-release", "depends_on": ["second-row-calibration"], "carrier_dependency": "eight-cell numerical restoration before projection"}
+  ],
+  "expected_model_callbacks": 16,
+  "callback_schedule": [
+    {"label": "primary-two-row-calibration", "count": 1, "route": "second-row-calibration"},
+    {"label": "post-restore-unrelated-B-routes", "count": 5, "route": "restoration-and-release"},
+    {"label": "compact-two-row-control", "count": 1, "route": "second-row-calibration"},
+    {"label": "fully-materialized-two-row-control", "count": 1, "route": "second-row-calibration"},
+    {"label": "numerical-decoherence-control", "count": 1, "route": "second-row-calibration"},
+    {"label": "reordered-forward-control", "count": 1, "route": "second-row-calibration"},
+    {"label": "inverse-fault-controls", "count": 3, "route": "restoration-and-release"},
+    {"label": "resident-cancellation-control", "count": 1, "route": "first-row-stage"},
+    {"label": "ordinary-Pi-tool-canary", "count": 1, "route": "restoration-and-release"},
+    {"label": "shutdown-resident-capture", "count": 1, "route": "first-row-stage"}
+  ],
+  "expected_direct_actions": 28,
+  "direct_action_schedule": [
+    {"label": "stage-structural-field-rejections", "count": 12, "route": "first-row-stage"},
+    {"label": "final-structural-field-rejections", "count": 12, "route": "second-row-calibration"},
+    {"label": "null-calibration-state", "count": 1, "route": "first-row-stage"},
+    {"label": "premature-projection", "count": 1, "route": "first-row-stage"},
+    {"label": "final-before-stage", "count": 1, "route": "second-row-calibration"},
+    {"label": "duplicate-stage", "count": 1, "route": "first-row-stage"}
+  ],
+  "controls": [
+    "compact_classical_recurrence",
+    "numerical_decoherence",
+    "fresh_calibration_backing",
+    "fully_materialized_inference",
+    "null_calibration_state",
+    "wrong_structural_contract",
+    "missing_inverse",
+    "wrong_inverse",
+    "reordered_inverse",
+    "premature_projection",
+    "resident_cancellation",
+    "resident_sleep",
+    "resident_shutdown",
+    "carrier_mutation_ablation",
+    "evidence_f_only",
+    "evidence_g_only"
+  ],
+  "restoration_scope": {
+    "cells": "eight complex<double> cells numerically restored within 1e-12",
+    "metadata": "staged and committed atomically; not restored to prior successful transaction",
+    "allocator": "not restored; fixed in-object tombstone storage and dynamic metadata string capacities counted",
+    "model": "not restored",
+    "host_evidence": "first 16-byte seed zeroed; both full logits rows declared closed",
+    "cuda_kv": "split-decode model state closed or poisoned; no restoration claim",
+    "closed_or_discarded": "projection buffer, retained seed, live rows, and failed transaction state"
+  },
+  "resource_gates": {
+    "cell_array_bytes": 128,
+    "current_carrier_object_bytes": 1032,
+    "retired_identity_capacity": 64,
+    "duplicate_first_evidence_bytes": 16,
+    "strongest_compact_baseline_required": true,
+    "carrier_drives_suffix_model_computation": false,
+    "future_scientific_contact_blocked_until_necessity_ablations": true
+  },
+  "acceptance_laws": [
+    "static runner validation makes no scientific contact",
+    "integrated exact oracle uses normalized probability vectors",
+    "state-level decoherence uses the same measurement function",
+    "F-only, G-only, and carrier-mutation gates remain blocking for any future inference-bearing claim",
+    "current fixture remains calibration because suffix inference does not read carrier state"
+  ],
+  "claim_ceiling": "Two logit rows may be captured at an exact split, kept off the external wire, composed through a reversible numerical encoding, and withheld until eight-cell numerical restoration. No inference-bearing carrier, multi-evidence catalytic inference, open relational composition, phase-native resource, fresh-compute reduction, or Small Wall crossing.",
+  "legacy_controller_status": "RETIRED_NOT_IMPORTED"
+}
