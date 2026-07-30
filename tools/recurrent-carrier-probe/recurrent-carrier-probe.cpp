@@ -5045,9 +5045,12 @@ static json run_sparse_g_label_refresh(
         spec.value("output_promoted_value_carrier_action", false);
     const bool output_role_transport_mode =
         spec.value("output_role_transport_action", false);
+    const bool output_role_generator_mode =
+        spec.value("output_role_generator_action", false);
     const bool output_driven_carrier_mode =
         output_promoted_value_carrier_mode ||
-        output_role_transport_mode;
+        output_role_transport_mode ||
+        output_role_generator_mode;
     const bool trained_semantic_carrier_mode =
         spec.value("trained_semantic_carrier_action", false);
     const bool semantic_carrier_layer_delta_mode =
@@ -5095,6 +5098,7 @@ static json run_sparse_g_label_refresh(
             static_cast<int>(model_weight_value_orbit_mode) +
             static_cast<int>(output_promoted_value_carrier_mode) +
             static_cast<int>(output_role_transport_mode) +
+            static_cast<int>(output_role_generator_mode) +
             static_cast<int>(trained_semantic_carrier_mode) > 1) {
         throw std::runtime_error(
             "label orbit action modes are mutually exclusive");
@@ -5708,6 +5712,14 @@ static json run_sparse_g_label_refresh(
 
     llama_kv_cache::role_transport_operator
         role_transport_operator;
+    llama_kv_cache::role_generator_operator
+        role_generator_operator;
+    llama_kv_cache::role_generator_metrics
+        role_generator_finalize_metrics = {};
+    uint64_t role_generator_runtime_parameter_upload_bytes = 0;
+    uint64_t role_generator_runtime_graph_applications = 0;
+    uint64_t role_generator_runtime_generated_rows = 0;
+    uint64_t role_generator_runtime_multiply_accumulates = 0;
     json role_transport_training_records = json::array();
     size_t role_transport_training_source_tokens = 0;
     size_t role_transport_training_query_tokens = 0;
@@ -5717,11 +5729,20 @@ static json run_sparse_g_label_refresh(
     uint64_t role_transport_training_peak_host_work_bytes = 0;
     uint64_t role_transport_builder_peak_bytes = 0;
     uint64_t role_transport_finalize_peak_host_work_bytes = 0;
-    if (output_role_transport_mode) {
+    if (output_role_transport_mode ||
+        output_role_generator_mode) {
+        const char * training_context_key =
+            output_role_generator_mode
+                ? "role_generator_training_contexts"
+                : "role_transport_training_contexts";
+        const char * ridge_key =
+            output_role_generator_mode
+                ? "role_generator_ridge_fraction"
+                : "role_transport_ridge_fraction";
         const auto & training_contexts =
-            spec.at("role_transport_training_contexts");
+            spec.at(training_context_key);
         const double ridge_fraction =
-            spec.at("role_transport_ridge_fraction")
+            spec.at(ridge_key)
                 .get<double>();
         if (!training_contexts.is_array() ||
             training_contexts.size() < 2) {
@@ -5972,28 +5993,60 @@ static json run_sparse_g_label_refresh(
             throw std::runtime_error(
                 "role transport construction is incomplete");
         }
-        llama_kv_cache::role_transport_metrics
-            finalize_metrics = {};
-        if (!attention->finalize_attention_role_transport(
-                &builder,
-                destination_count,
-                samples_per_destination,
-                ridge_fraction,
-                &role_transport_operator,
-                &finalize_metrics)) {
-            throw std::runtime_error(
-                "role transport finalization failed");
-        }
-        role_transport_finalize_peak_host_work_bytes =
-            finalize_metrics.peak_host_work_bytes;
-        if (role_transport_operator.training_samples !=
-                static_cast<uint64_t>(destination_count) *
-                    samples_per_destination ||
-            role_transport_operator.layers.size() !=
-                destination_count *
-                    orbit_attention_layers.size() * 2) {
-            throw std::runtime_error(
-                "role transport operator invariant failed");
+        if (output_role_generator_mode) {
+            if (!attention->finalize_attention_role_generator(
+                    &builder,
+                    destination_count,
+                    samples_per_destination,
+                    spec.at("role_generator_hidden_width")
+                        .get<uint32_t>(),
+                    spec.at("role_generator_seed")
+                        .get<uint64_t>(),
+                    ridge_fraction,
+                    &role_generator_operator,
+                    &role_generator_finalize_metrics)) {
+                throw std::runtime_error(
+                    "role generator finalization failed");
+            }
+            role_transport_finalize_peak_host_work_bytes =
+                role_generator_finalize_metrics
+                    .peak_training_host_work_bytes;
+            if (role_generator_operator.training_pairs !=
+                    static_cast<uint64_t>(destination_count) *
+                        samples_per_destination ||
+                role_generator_operator.training_rows !=
+                    static_cast<uint64_t>(destination_count) *
+                        samples_per_destination *
+                        orbit_attention_layers.size() * 2 ||
+                role_generator_operator.layer_ids.size() !=
+                    orbit_attention_layers.size()) {
+                throw std::runtime_error(
+                    "role generator invariant failed");
+            }
+        } else {
+            llama_kv_cache::role_transport_metrics
+                finalize_metrics = {};
+            if (!attention->finalize_attention_role_transport(
+                    &builder,
+                    destination_count,
+                    samples_per_destination,
+                    ridge_fraction,
+                    &role_transport_operator,
+                    &finalize_metrics)) {
+                throw std::runtime_error(
+                    "role transport finalization failed");
+            }
+            role_transport_finalize_peak_host_work_bytes =
+                finalize_metrics.peak_host_work_bytes;
+            if (role_transport_operator.training_samples !=
+                    static_cast<uint64_t>(destination_count) *
+                        samples_per_destination ||
+                role_transport_operator.layers.size() !=
+                    destination_count *
+                        orbit_attention_layers.size() * 2) {
+                throw std::runtime_error(
+                    "role transport operator invariant failed");
+            }
         }
         llama_memory_clear(memory, true);
         llama_synchronize(ctx);
@@ -6151,17 +6204,21 @@ static json run_sparse_g_label_refresh(
     json output_promotion_records = json::array();
     const std::string candidate_route =
         output_driven_carrier_mode
-            ? output_role_transport_mode
-                ? "output_role_transport_carrier"
-                : "output_promoted_value_carrier"
+            ? output_role_generator_mode
+                ? "shared_nonlinear_role_generator_carrier"
+                : output_role_transport_mode
+                    ? "output_role_transport_carrier"
+                    : "output_promoted_value_carrier"
             : orbit_mode
                 ? "label_orbit_candidate"
                 : "sparse_label_refresh_candidate";
     const std::string return_route =
         output_driven_carrier_mode
-            ? output_role_transport_mode
-                ? "output_role_transport_carrier_return_G0"
-                : "output_promoted_value_carrier_return_G0"
+            ? output_role_generator_mode
+                ? "shared_nonlinear_role_generator_carrier_return_G0"
+                : output_role_transport_mode
+                    ? "output_role_transport_carrier_return_G0"
+                    : "output_promoted_value_carrier_return_G0"
             : "label_orbit_return_G0";
 
     const auto project_from_source =
@@ -7063,7 +7120,58 @@ static json run_sparse_g_label_refresh(
                 });
                 ++query_index;
             }
-            for (size_t i = 0; i < stage_seqs.size(); ++i) {
+            if (output_role_generator_mode) {
+                std::vector<llama_pos> destination_positions;
+                std::vector<uint32_t> destination_indices;
+                destination_positions.reserve(stage_seqs.size());
+                destination_indices.reserve(stage_seqs.size());
+                for (size_t i = 0; i < stage_seqs.size(); ++i) {
+                    const size_t label_index =
+                        output_promotion_label_indices.at(i);
+                    destination_positions.push_back(
+                        static_cast<llama_pos>(
+                            f_boundary_tokens +
+                            label_offsets.at(label_index)));
+                    destination_indices.push_back(
+                        static_cast<uint32_t>(label_index));
+                }
+                llama_kv_cache::role_generator_metrics
+                    metrics = {};
+                if (!attention
+                        ->seq_apply_attention_role_generator(
+                            stage_seqs,
+                            output_positions,
+                            candidate_seq,
+                            destination_positions,
+                            destination_indices,
+                            role_generator_operator,
+                            ctx,
+                            &metrics)) {
+                    throw std::runtime_error(
+                        id +
+                        ": shared nonlinear output-role "
+                        "generator failed");
+                }
+                role_generator_runtime_parameter_upload_bytes +=
+                    metrics.host_parameter_upload_bytes;
+                role_generator_runtime_graph_applications +=
+                    metrics.graph_applications;
+                role_generator_runtime_generated_rows +=
+                    metrics.generated_rows;
+                role_generator_runtime_multiply_accumulates +=
+                    metrics.multiply_accumulates;
+                orbit_host_read_bytes +=
+                    metrics.host_carrier_read_bytes;
+                orbit_host_write_bytes +=
+                    metrics.host_carrier_write_bytes;
+                orbit_tensor_visits += metrics.tensor_visits;
+                orbit_position_visits +=
+                    metrics.position_visits;
+            }
+            for (size_t i = 0;
+                 !output_role_generator_mode &&
+                    i < stage_seqs.size();
+                 ++i) {
                 const size_t label_index =
                     output_promotion_label_indices.at(i);
                 const llama_pos label_position =
@@ -7404,6 +7512,15 @@ static json run_sparse_g_label_refresh(
                  spec.at("role_transport_training_contexts").size() *
                  variants.size() *
                  spec.at("queries_per_variant").get<size_t>())) &&
+        (!output_role_generator_mode ||
+            (role_transport_training_correct ==
+                 spec.at("role_generator_training_contexts").size() *
+                 variants.size() *
+                 spec.at("queries_per_variant").get<size_t>() &&
+             role_generator_operator.training_pairs ==
+                 spec.at("role_generator_training_contexts").size() *
+                 variants.size() *
+                 spec.at("queries_per_variant").get<size_t>())) &&
         f_exact &&
         scaffold_exact;
 
@@ -7513,6 +7630,8 @@ static json run_sparse_g_label_refresh(
                 : "TRAINED_FIXED_CAPACITY_PRELOGIT_SEMANTIC_CARRIER"
             : model_weight_value_orbit_mode
             ? "MODEL_WEIGHT_DERIVED_SEMANTIC_VALUE_CYCLE"
+            : output_role_generator_mode
+            ? "SHARED_NONLINEAR_OUTPUT_ROLE_ATTENTION_GENERATOR"
             : output_role_transport_mode
             ? "TRAINED_OUTPUT_TO_SOURCE_ATTENTION_ROLE_TRANSPORT"
             : output_promoted_value_carrier_mode
@@ -7568,6 +7687,8 @@ static json run_sparse_g_label_refresh(
                 output_promoted_value_carrier_mode},
             {"output_role_transport_action",
                 output_role_transport_mode},
+            {"output_role_generator_action",
+                output_role_generator_mode},
             {"output_promotion_label_indices",
                 output_promotion_label_indices},
             {"role_transport_training_contexts",
@@ -7579,6 +7700,25 @@ static json run_sparse_g_label_refresh(
                 output_role_transport_mode
                     ? spec.at(
                         "role_transport_ridge_fraction")
+                    : json(0.0)},
+            {"role_generator_training_contexts",
+                output_role_generator_mode
+                    ? spec.at(
+                        "role_generator_training_contexts").size()
+                    : 0},
+            {"role_generator_hidden_width",
+                output_role_generator_mode
+                    ? spec.at(
+                        "role_generator_hidden_width")
+                    : json(0)},
+            {"role_generator_seed",
+                output_role_generator_mode
+                    ? spec.at("role_generator_seed")
+                    : json(0)},
+            {"role_generator_ridge_fraction",
+                output_role_generator_mode
+                    ? spec.at(
+                        "role_generator_ridge_fraction")
                     : json(0.0)},
             {"trained_semantic_carrier_action",
                 trained_semantic_carrier_mode},
@@ -7656,6 +7796,15 @@ static json run_sparse_g_label_refresh(
                 role_transport_training_correct},
             {"role_transport_training_max_abs_error",
                 role_transport_operator.training_max_abs_error},
+            {"role_generator_training_pairs",
+                role_generator_operator.training_pairs},
+            {"role_generator_training_rows",
+                role_generator_operator.training_rows},
+            {"role_generator_training_max_abs_error",
+                role_generator_operator.training_max_abs_error},
+            {"role_generator_training_root_mean_squared_error",
+                role_generator_operator
+                    .training_root_mean_squared_error},
             {"accepted", accepted},
         }},
         {"carrier", {
@@ -7786,6 +7935,34 @@ static json run_sparse_g_label_refresh(
                 role_transport_operator.layers.size()},
             {"role_transport_training_max_abs_error",
                 role_transport_operator.training_max_abs_error},
+            {"role_generator_logical_bytes",
+                role_generator_operator.logical_bytes},
+            {"role_generator_vector_backing_bytes",
+                role_generator_operator.vector_backing_bytes},
+            {"role_generator_training_pairs",
+                role_generator_operator.training_pairs},
+            {"role_generator_training_rows",
+                role_generator_operator.training_rows},
+            {"role_generator_training_max_abs_error",
+                role_generator_operator.training_max_abs_error},
+            {"role_generator_training_root_mean_squared_error",
+                role_generator_operator
+                    .training_root_mean_squared_error},
+            {"role_generator_training_peak_host_work_bytes",
+                role_generator_finalize_metrics
+                    .peak_training_host_work_bytes},
+            {"role_generator_runtime_parameter_upload_bytes",
+                role_generator_runtime_parameter_upload_bytes},
+            {"role_generator_runtime_host_carrier_read_bytes",
+                uint64_t(0)},
+            {"role_generator_runtime_host_carrier_write_bytes",
+                uint64_t(0)},
+            {"role_generator_runtime_graph_applications",
+                role_generator_runtime_graph_applications},
+            {"role_generator_runtime_generated_rows",
+                role_generator_runtime_generated_rows},
+            {"role_generator_runtime_multiply_accumulates",
+                role_generator_runtime_multiply_accumulates},
             {"orbit_backend_copy_bytes",
                 orbit_backend_copy_bytes},
             {"orbit_host_read_bytes", orbit_host_read_bytes},

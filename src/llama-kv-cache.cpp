@@ -1997,6 +1997,760 @@ bool llama_kv_cache::seq_apply_attention_role_transport(
             role_operator.destination_count;
 }
 
+bool llama_kv_cache::finalize_attention_role_generator(
+        role_transport_builder * builder,
+        uint32_t destination_count,
+        uint32_t samples_per_destination,
+        uint32_t hidden_width,
+        uint64_t seed,
+        double ridge_fraction,
+        role_generator_operator * role_generator,
+        role_generator_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    if (!builder ||
+        !role_generator ||
+        destination_count == 0 ||
+        samples_per_destination < 2 ||
+        hidden_width == 0 ||
+        hidden_width > 256 ||
+        seed == 0 ||
+        !std::isfinite(ridge_fraction) ||
+        ridge_fraction <= 0.0 ||
+        builder->layers.empty() ||
+        builder->sample_count !=
+            static_cast<uint64_t>(destination_count) *
+                samples_per_destination) {
+        return false;
+    }
+
+    std::vector<uint32_t> layer_ids;
+    for (const auto & item : builder->layers) {
+        layer_ids.push_back(item.layer_id);
+    }
+    std::sort(layer_ids.begin(), layer_ids.end());
+    layer_ids.erase(
+        std::unique(layer_ids.begin(), layer_ids.end()),
+        layer_ids.end());
+    if (layer_ids.empty() ||
+        builder->layers.size() !=
+            static_cast<size_t>(destination_count) *
+                layer_ids.size() * 2) {
+        return false;
+    }
+    const size_t row_width =
+        builder->layers.front().source.front().size();
+    if (row_width == 0) {
+        return false;
+    }
+    for (const auto & item : builder->layers) {
+        if (item.destination_index >= destination_count ||
+            std::find(
+                layer_ids.begin(),
+                layer_ids.end(),
+                item.layer_id) == layer_ids.end() ||
+            item.source.size() != samples_per_destination ||
+            item.target.size() != samples_per_destination ||
+            item.present.size() != samples_per_destination ||
+            !std::all_of(
+                item.present.begin(),
+                item.present.end(),
+                [](bool value) { return value; }) ||
+            !std::all_of(
+                item.source.begin(),
+                item.source.end(),
+                [row_width](const std::vector<float> & row) {
+                    return row.size() == row_width;
+                }) ||
+            !std::all_of(
+                item.target.begin(),
+                item.target.end(),
+                [row_width](const std::vector<float> & row) {
+                    return row.size() == row_width;
+                })) {
+            return false;
+        }
+    }
+
+    struct sample_ref {
+        const std::vector<float> * source = nullptr;
+        const std::vector<float> * target = nullptr;
+        uint32_t layer_index = 0;
+        bool key = false;
+        uint32_t destination_index = 0;
+    };
+    std::vector<sample_ref> samples;
+    samples.reserve(
+        builder->layers.size() * samples_per_destination);
+    for (const auto & item : builder->layers) {
+        const auto layer_it = std::find(
+            layer_ids.begin(), layer_ids.end(), item.layer_id);
+        const uint32_t layer_index =
+            static_cast<uint32_t>(
+                std::distance(layer_ids.begin(), layer_it));
+        for (uint32_t i = 0; i < samples_per_destination; ++i) {
+            samples.push_back({
+                &item.source[i],
+                &item.target[i],
+                layer_index,
+                item.key,
+                item.destination_index,
+            });
+        }
+    }
+    const size_t condition_width =
+        layer_ids.size() + 2 + destination_count;
+    const size_t input_width = row_width + condition_width;
+    const size_t augmented_hidden = hidden_width + 1;
+    const size_t training_rows = samples.size();
+    if (training_rows == 0 ||
+        input_width > std::numeric_limits<uint32_t>::max()) {
+        return false;
+    }
+
+    *role_generator = {};
+    role_generator->layer_ids = layer_ids;
+    role_generator->destination_count = destination_count;
+    role_generator->row_width =
+        static_cast<uint32_t>(row_width);
+    role_generator->condition_width =
+        static_cast<uint32_t>(condition_width);
+    role_generator->hidden_width = hidden_width;
+    role_generator->training_pairs = builder->sample_count;
+    role_generator->training_rows = training_rows;
+    role_generator->seed = seed;
+    role_generator->input_mean.assign(row_width, 0.0f);
+    role_generator->input_inv_std.assign(row_width, 0.0f);
+
+    for (const auto & sample : samples) {
+        for (size_t j = 0; j < row_width; ++j) {
+            role_generator->input_mean[j] +=
+                sample.source->at(j) /
+                static_cast<float>(training_rows);
+        }
+    }
+    for (size_t j = 0; j < row_width; ++j) {
+        double variance = 0.0;
+        for (const auto & sample : samples) {
+            const double delta =
+                sample.source->at(j) -
+                role_generator->input_mean[j];
+            variance += delta * delta /
+                static_cast<double>(training_rows);
+        }
+        role_generator->input_inv_std[j] =
+            static_cast<float>(
+                1.0 / std::sqrt(std::max(variance, 1.0e-8)));
+    }
+
+    uint64_t rng_state = seed;
+    auto next_uniform = [&rng_state]() {
+        rng_state ^= rng_state >> 12;
+        rng_state ^= rng_state << 25;
+        rng_state ^= rng_state >> 27;
+        const uint64_t value =
+            rng_state * 2685821657736338717ULL;
+        const double unit =
+            static_cast<double>(value >> 11) *
+            (1.0 / 9007199254740992.0);
+        return static_cast<float>(2.0 * unit - 1.0);
+    };
+    const float hidden_scale =
+        std::sqrt(3.0f / static_cast<float>(input_width));
+    role_generator->hidden_weight.resize(
+        static_cast<size_t>(hidden_width) * input_width);
+    role_generator->hidden_bias.resize(hidden_width);
+    for (float & value : role_generator->hidden_weight) {
+        value = next_uniform() * hidden_scale;
+    }
+    for (float & value : role_generator->hidden_bias) {
+        value = next_uniform() * 0.25f;
+    }
+
+    std::vector<double> hidden(
+        training_rows * augmented_hidden, 1.0);
+    const auto condition_value =
+            [&](const sample_ref & sample, size_t index) {
+        if (index < layer_ids.size()) {
+            return index == sample.layer_index ? 1.0f : 0.0f;
+        }
+        index -= layer_ids.size();
+        if (index < 2) {
+            return index == (sample.key ? 0u : 1u)
+                ? 1.0f : 0.0f;
+        }
+        index -= 2;
+        return index == sample.destination_index ? 1.0f : 0.0f;
+    };
+    for (size_t i = 0; i < training_rows; ++i) {
+        for (uint32_t h = 0; h < hidden_width; ++h) {
+            double activation = role_generator->hidden_bias[h];
+            const size_t weight_offset =
+                static_cast<size_t>(h) * input_width;
+            for (size_t j = 0; j < row_width; ++j) {
+                activation +=
+                    role_generator->hidden_weight[
+                        weight_offset + j] *
+                    (samples[i].source->at(j) -
+                     role_generator->input_mean[j]) *
+                    role_generator->input_inv_std[j];
+            }
+            for (size_t j = 0; j < condition_width; ++j) {
+                activation +=
+                    role_generator->hidden_weight[
+                        weight_offset + row_width + j] *
+                    condition_value(samples[i], j);
+            }
+            hidden[i * augmented_hidden + h] =
+                std::tanh(activation);
+        }
+    }
+
+    std::vector<double> gram(
+        augmented_hidden * augmented_hidden, 0.0);
+    std::vector<double> rhs(
+        augmented_hidden * row_width, 0.0);
+    for (size_t i = 0; i < training_rows; ++i) {
+        const double * hrow =
+            hidden.data() + i * augmented_hidden;
+        for (size_t a = 0; a < augmented_hidden; ++a) {
+            for (size_t b = 0; b <= a; ++b) {
+                gram[a * augmented_hidden + b] +=
+                    hrow[a] * hrow[b] /
+                    static_cast<double>(training_rows);
+            }
+            for (size_t j = 0; j < row_width; ++j) {
+                rhs[a * row_width + j] +=
+                    hrow[a] * samples[i].target->at(j) /
+                    static_cast<double>(training_rows);
+            }
+        }
+    }
+    for (size_t a = 0; a < augmented_hidden; ++a) {
+        for (size_t b = 0; b < a; ++b) {
+            gram[b * augmented_hidden + a] =
+                gram[a * augmented_hidden + b];
+        }
+    }
+    double mean_diagonal = 0.0;
+    for (size_t a = 0; a < hidden_width; ++a) {
+        mean_diagonal +=
+            gram[a * augmented_hidden + a] /
+            static_cast<double>(hidden_width);
+    }
+    role_generator->ridge_lambda =
+        ridge_fraction * std::max(mean_diagonal, 1.0e-12);
+    for (size_t a = 0; a < augmented_hidden; ++a) {
+        gram[a * augmented_hidden + a] +=
+            role_generator->ridge_lambda;
+    }
+
+    // In-place Cholesky factorization of the small shared hidden Gram matrix.
+    for (size_t i = 0; i < augmented_hidden; ++i) {
+        for (size_t j = 0; j <= i; ++j) {
+            double value = gram[i * augmented_hidden + j];
+            for (size_t k = 0; k < j; ++k) {
+                value -=
+                    gram[i * augmented_hidden + k] *
+                    gram[j * augmented_hidden + k];
+            }
+            if (i == j) {
+                if (!std::isfinite(value) || value <= 1.0e-18) {
+                    return false;
+                }
+                gram[i * augmented_hidden + j] =
+                    std::sqrt(value);
+            } else {
+                gram[i * augmented_hidden + j] =
+                    value /
+                    gram[j * augmented_hidden + j];
+            }
+        }
+        for (size_t j = i + 1; j < augmented_hidden; ++j) {
+            gram[i * augmented_hidden + j] = 0.0;
+        }
+    }
+
+    std::vector<double> coefficients(
+        augmented_hidden * row_width, 0.0);
+    std::vector<double> work(augmented_hidden);
+    for (size_t output = 0; output < row_width; ++output) {
+        for (size_t i = 0; i < augmented_hidden; ++i) {
+            double value = rhs[i * row_width + output];
+            for (size_t k = 0; k < i; ++k) {
+                value -=
+                    gram[i * augmented_hidden + k] *
+                    work[k];
+            }
+            work[i] =
+                value /
+                gram[i * augmented_hidden + i];
+        }
+        for (size_t reverse = 0;
+             reverse < augmented_hidden;
+             ++reverse) {
+            const size_t i = augmented_hidden - reverse - 1;
+            double value = work[i];
+            for (size_t k = i + 1; k < augmented_hidden; ++k) {
+                value -=
+                    gram[k * augmented_hidden + i] *
+                    coefficients[k * row_width + output];
+            }
+            coefficients[i * row_width + output] =
+                value /
+                gram[i * augmented_hidden + i];
+        }
+    }
+
+    role_generator->output_weight.resize(
+        row_width * hidden_width);
+    role_generator->output_bias.resize(row_width);
+    for (size_t output = 0; output < row_width; ++output) {
+        for (uint32_t h = 0; h < hidden_width; ++h) {
+            role_generator->output_weight[
+                output * hidden_width + h] =
+                static_cast<float>(
+                    coefficients[
+                        static_cast<size_t>(h) *
+                            row_width + output]);
+        }
+        role_generator->output_bias[output] =
+            static_cast<float>(
+                coefficients[
+                    hidden_width * row_width + output]);
+    }
+
+    long double squared_error = 0.0;
+    uint64_t error_count = 0;
+    for (size_t i = 0; i < training_rows; ++i) {
+        const double * hrow =
+            hidden.data() + i * augmented_hidden;
+        for (size_t output = 0; output < row_width; ++output) {
+            double predicted =
+                role_generator->output_bias[output];
+            for (uint32_t h = 0; h < hidden_width; ++h) {
+                predicted +=
+                    role_generator->output_weight[
+                        output * hidden_width + h] *
+                    hrow[h];
+            }
+            const double error =
+                predicted - samples[i].target->at(output);
+            role_generator->training_max_abs_error =
+                std::max(
+                    role_generator->training_max_abs_error,
+                    std::abs(error));
+            squared_error += error * error;
+            ++error_count;
+        }
+    }
+    role_generator->training_root_mean_squared_error =
+        std::sqrt(
+            static_cast<double>(
+                squared_error /
+                std::max<uint64_t>(error_count, 1)));
+
+    role_generator->logical_bytes =
+        (role_generator->input_mean.size() +
+         role_generator->input_inv_std.size() +
+         role_generator->hidden_weight.size() +
+         role_generator->hidden_bias.size() +
+         role_generator->output_weight.size() +
+         role_generator->output_bias.size()) *
+            sizeof(float) +
+        role_generator->layer_ids.size() *
+            sizeof(uint32_t);
+    role_generator->vector_backing_bytes =
+        sizeof(*role_generator) +
+        role_generator->layer_ids.capacity() *
+            sizeof(uint32_t) +
+        (role_generator->input_mean.capacity() +
+         role_generator->input_inv_std.capacity() +
+         role_generator->hidden_weight.capacity() +
+         role_generator->hidden_bias.capacity() +
+         role_generator->output_weight.capacity() +
+         role_generator->output_bias.capacity()) *
+            sizeof(float);
+
+    const uint64_t builder_bytes =
+        builder->vector_backing_bytes;
+    const uint64_t peak_training_bytes =
+        builder_bytes +
+        samples.capacity() * sizeof(sample_ref) +
+        hidden.capacity() * sizeof(double) +
+        (gram.capacity() +
+         rhs.capacity() +
+         coefficients.capacity() +
+         work.capacity()) *
+            sizeof(double);
+    *builder = {};
+    if (metrics) {
+        metrics->logical_parameter_bytes =
+            role_generator->logical_bytes;
+        metrics->vector_backing_bytes =
+            role_generator->vector_backing_bytes;
+        metrics->peak_training_host_work_bytes =
+            peak_training_bytes;
+    }
+    return true;
+}
+
+bool llama_kv_cache::seq_apply_attention_role_generator(
+        const std::vector<llama_seq_id> & source_seq_ids,
+        const std::vector<llama_pos> & source_positions,
+        llama_seq_id destination_seq_id,
+        const std::vector<llama_pos> & destination_positions,
+        const std::vector<uint32_t> & destination_indices,
+        const role_generator_operator & role_generator,
+        llama_context * lctx,
+        role_generator_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    const size_t promotion_count = source_seq_ids.size();
+    if (!lctx ||
+        other ||
+        n_stream != 1 ||
+        promotion_count == 0 ||
+        source_positions.size() != promotion_count ||
+        destination_positions.size() != promotion_count ||
+        destination_indices.size() != promotion_count ||
+        destination_seq_id < 0 ||
+        static_cast<size_t>(destination_seq_id) >=
+            seq_to_stream.size() ||
+        role_generator.layer_ids.empty() ||
+        role_generator.destination_count == 0 ||
+        role_generator.row_width == 0 ||
+        role_generator.hidden_width == 0 ||
+        role_generator.condition_width !=
+            role_generator.layer_ids.size() + 2 +
+                role_generator.destination_count) {
+        return false;
+    }
+    const size_t row_width = role_generator.row_width;
+    const size_t condition_width =
+        role_generator.condition_width;
+    const size_t input_width = row_width + condition_width;
+    if (role_generator.input_mean.size() != row_width ||
+        role_generator.input_inv_std.size() != row_width ||
+        role_generator.hidden_weight.size() !=
+            input_width * role_generator.hidden_width ||
+        role_generator.hidden_bias.size() !=
+            role_generator.hidden_width ||
+        role_generator.output_weight.size() !=
+            row_width * role_generator.hidden_width ||
+        role_generator.output_bias.size() != row_width) {
+        return false;
+    }
+
+    const uint32_t stream =
+        seq_to_stream[destination_seq_id];
+    auto & cells = v_cells[stream];
+    const auto find_unique_cell =
+            [&](llama_seq_id seq_id, llama_pos position) {
+        if (seq_id < 0 ||
+            static_cast<size_t>(seq_id) >=
+                seq_to_stream.size() ||
+            seq_to_stream[seq_id] != stream ||
+            position < 0) {
+            return static_cast<uint32_t>(cells.size());
+        }
+        uint32_t found = cells.size();
+        for (uint32_t i = 0; i < cells.size(); ++i) {
+            if (cells.pos_in(i, position, position + 1) &&
+                cells.seq_has(i, seq_id)) {
+                if (found != cells.size()) {
+                    return static_cast<uint32_t>(
+                        cells.size());
+                }
+                found = i;
+            }
+        }
+        return found;
+    };
+
+    std::vector<uint32_t> source_cells(promotion_count);
+    std::vector<uint32_t> destination_cells(promotion_count);
+    for (size_t i = 0; i < promotion_count; ++i) {
+        if (destination_indices[i] >=
+                role_generator.destination_count) {
+            return false;
+        }
+        source_cells[i] =
+            find_unique_cell(
+                source_seq_ids[i], source_positions[i]);
+        destination_cells[i] =
+            find_unique_cell(
+                destination_seq_id,
+                destination_positions[i]);
+        if (source_cells[i] == cells.size() ||
+            destination_cells[i] == cells.size() ||
+            source_cells[i] == destination_cells[i]) {
+            return false;
+        }
+    }
+
+    struct graph_row {
+        ggml_tensor * tensor = nullptr;
+        uint32_t source_cell = 0;
+        uint32_t destination_cell = 0;
+        uint32_t layer_index = 0;
+        bool key = false;
+        uint32_t destination_index = 0;
+    };
+    std::vector<graph_row> rows;
+    rows.reserve(
+        promotion_count *
+        role_generator.layer_ids.size() * 2);
+    for (size_t promotion = 0;
+         promotion < promotion_count;
+         ++promotion) {
+        for (uint32_t layer_index = 0;
+             layer_index < role_generator.layer_ids.size();
+             ++layer_index) {
+            const uint32_t il =
+                role_generator.layer_ids[layer_index];
+            const auto found =
+                map_layer_ids.find(static_cast<int32_t>(il));
+            if (found == map_layer_ids.end()) {
+                return false;
+            }
+            const auto & layer = layers[found->second];
+            for (const bool key : {true, false}) {
+                ggml_tensor * tensor =
+                    key ? layer.k : layer.v;
+                if (!tensor ||
+                    !tensor->buffer ||
+                    ggml_blck_size(tensor->type) != 1 ||
+                    tensor->ne[0] !=
+                        static_cast<int64_t>(row_width) ||
+                    tensor->ne[1] !=
+                        static_cast<int64_t>(get_size()) ||
+                    tensor->ne[2] !=
+                        static_cast<int64_t>(n_stream) ||
+                    tensor->nb[1] !=
+                        ggml_row_size(
+                            tensor->type, tensor->ne[0])) {
+                    return false;
+                }
+                rows.push_back({
+                    tensor,
+                    source_cells[promotion],
+                    destination_cells[promotion],
+                    layer_index,
+                    key,
+                    destination_indices[promotion],
+                });
+            }
+        }
+    }
+    if (rows.empty()) {
+        return false;
+    }
+
+    const size_t metadata_bytes =
+        4 * 1024 * 1024;
+    ggml_init_params params = {
+        /*.mem_size   =*/ metadata_bytes,
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    ggml_context * graph_ctx = ggml_init(params);
+    if (!graph_ctx) {
+        return false;
+    }
+    const auto free_graph_ctx = [&]() {
+        ggml_free(graph_ctx);
+    };
+
+    ggml_tensor * input_mean =
+        ggml_new_tensor_1d(
+            graph_ctx, GGML_TYPE_F32, row_width);
+    ggml_tensor * input_inv_std =
+        ggml_new_tensor_1d(
+            graph_ctx, GGML_TYPE_F32, row_width);
+    ggml_tensor * hidden_weight =
+        ggml_new_tensor_2d(
+            graph_ctx,
+            GGML_TYPE_F32,
+            input_width,
+            role_generator.hidden_width);
+    ggml_tensor * hidden_bias =
+        ggml_new_tensor_1d(
+            graph_ctx,
+            GGML_TYPE_F32,
+            role_generator.hidden_width);
+    ggml_tensor * output_weight =
+        ggml_new_tensor_2d(
+            graph_ctx,
+            GGML_TYPE_F32,
+            role_generator.hidden_width,
+            row_width);
+    ggml_tensor * output_bias =
+        ggml_new_tensor_1d(
+            graph_ctx, GGML_TYPE_F32, row_width);
+    ggml_tensor * conditions =
+        ggml_new_tensor_2d(
+            graph_ctx,
+            GGML_TYPE_F32,
+            condition_width,
+            rows.size());
+    for (auto * tensor :
+         {input_mean,
+          input_inv_std,
+          hidden_weight,
+          hidden_bias,
+          output_weight,
+          output_bias,
+          conditions}) {
+        ggml_set_input(tensor);
+    }
+
+    ggml_tensor * source_matrix = nullptr;
+    for (const auto & row : rows) {
+        ggml_tensor * source =
+            ggml_view_2d(
+                graph_ctx,
+                row.tensor,
+                row_width,
+                1,
+                row.tensor->nb[1],
+                static_cast<size_t>(row.source_cell) *
+                    row.tensor->nb[1]);
+        source = ggml_cast(
+            graph_ctx, source, GGML_TYPE_F32);
+        source_matrix = source_matrix
+            ? ggml_concat(
+                graph_ctx, source_matrix, source, 1)
+            : source;
+    }
+    source_matrix = ggml_mul(
+        graph_ctx,
+        ggml_sub(graph_ctx, source_matrix, input_mean),
+        input_inv_std);
+    ggml_tensor * features =
+        ggml_concat(
+            graph_ctx, source_matrix, conditions, 0);
+    ggml_tensor * hidden =
+        ggml_mul_mat(
+            graph_ctx, hidden_weight, features);
+    hidden = ggml_tanh(
+        graph_ctx,
+        ggml_add(graph_ctx, hidden, hidden_bias));
+    ggml_tensor * generated =
+        ggml_mul_mat(
+            graph_ctx, output_weight, hidden);
+    generated =
+        ggml_add(graph_ctx, generated, output_bias);
+
+    ggml_cgraph * graph =
+        ggml_new_graph_custom(
+            graph_ctx,
+            std::max<size_t>(
+                2048, 32 * rows.size()),
+            false);
+    for (size_t i = 0; i < rows.size(); ++i) {
+        ggml_tensor * column =
+            ggml_view_1d(
+                graph_ctx,
+                generated,
+                row_width,
+                i * generated->nb[1]);
+        if (column->type != rows[i].tensor->type) {
+            column = ggml_cast(
+                graph_ctx,
+                column,
+                rows[i].tensor->type);
+        }
+        ggml_tensor * destination =
+            ggml_view_1d(
+                graph_ctx,
+                rows[i].tensor,
+                row_width,
+                static_cast<size_t>(
+                    rows[i].destination_cell) *
+                    rows[i].tensor->nb[1]);
+        ggml_build_forward_expand(
+            graph,
+            ggml_cpy(
+                graph_ctx, column, destination));
+    }
+
+    lctx->invalidate_neo3000_graph_cache();
+    ggml_backend_sched_t sched = lctx->get_sched();
+    if (!ggml_backend_sched_alloc_graph(sched, graph)) {
+        lctx->invalidate_neo3000_graph_cache();
+        free_graph_ctx();
+        return false;
+    }
+    std::vector<float> condition_data(
+        condition_width * rows.size(), 0.0f);
+    for (size_t i = 0; i < rows.size(); ++i) {
+        condition_data[
+            i * condition_width +
+            rows[i].layer_index] = 1.0f;
+        condition_data[
+            i * condition_width +
+            role_generator.layer_ids.size() +
+            (rows[i].key ? 0 : 1)] = 1.0f;
+        condition_data[
+            i * condition_width +
+            role_generator.layer_ids.size() + 2 +
+            rows[i].destination_index] = 1.0f;
+    }
+    const auto upload =
+            [](ggml_tensor * tensor,
+               const std::vector<float> & values) {
+        ggml_backend_tensor_set(
+            tensor,
+            values.data(),
+            0,
+            values.size() * sizeof(float));
+    };
+    upload(input_mean, role_generator.input_mean);
+    upload(input_inv_std, role_generator.input_inv_std);
+    upload(hidden_weight, role_generator.hidden_weight);
+    upload(hidden_bias, role_generator.hidden_bias);
+    upload(output_weight, role_generator.output_weight);
+    upload(output_bias, role_generator.output_bias);
+    upload(conditions, condition_data);
+
+    const ggml_status status =
+        lctx->graph_compute(graph, true);
+    lctx->synchronize();
+    lctx->invalidate_neo3000_graph_cache();
+    free_graph_ctx();
+    if (status != GGML_STATUS_SUCCESS) {
+        return false;
+    }
+
+    if (metrics) {
+        metrics->host_parameter_upload_bytes =
+            role_generator.logical_bytes +
+            condition_data.size() * sizeof(float);
+        metrics->host_carrier_read_bytes = 0;
+        metrics->host_carrier_write_bytes = 0;
+        metrics->logical_parameter_bytes =
+            role_generator.logical_bytes;
+        metrics->vector_backing_bytes =
+            role_generator.vector_backing_bytes;
+        metrics->tensor_visits = rows.size();
+        metrics->position_visits =
+            promotion_count * 2;
+        metrics->graph_applications = 1;
+        metrics->generated_rows = rows.size();
+        metrics->multiply_accumulates =
+            rows.size() *
+            (static_cast<uint64_t>(input_width) *
+                 role_generator.hidden_width +
+             static_cast<uint64_t>(
+                 role_generator.hidden_width) *
+                 row_width);
+    }
+    return true;
+}
+
 bool llama_kv_cache::seq_apply_complex_phase_quarter_turn(
         llama_seq_id seq_id,
         const std::vector<llama_pos> & positions,

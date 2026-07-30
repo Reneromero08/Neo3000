@@ -62,6 +62,13 @@ struct llama_context {
 
     ggml_backend_sched_t get_sched() const;
 
+    // Experimental Neo3000 graph actions can temporarily use the context
+    // scheduler over already-resident model memory. Invalidate the cached
+    // decode graph before and after such an action so the next decode must
+    // rebuild and allocate its own graph rather than reusing stale scheduler
+    // allocation state.
+    void invalidate_neo3000_graph_cache();
+
     uint32_t n_ctx()     const;
     uint32_t n_ctx_seq() const;
     uint32_t n_batch()   const;

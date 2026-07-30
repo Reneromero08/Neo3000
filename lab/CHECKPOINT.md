@@ -329,6 +329,21 @@ The active recurrence and acceptance boundary are
   Configured CUDA closure remains `139/139` compile entries and `139/139`
   unique objects. Seventeen focused declarative-runner/oracle tests pass; the
   exact oracle passes all ten main gates and all three valid fixtures.
+- `neo-exp-0144` is the frozen nonlinear-generator successor, not an evidence
+  or transport revision. One 64-channel tanh random-feature network shares its
+  hidden and fitted output parameters across all attention layers, K/V kinds,
+  public destinations, and construction examples. Complete training rows are
+  erased. At runtime one backend graph per phase reads actual resident output
+  rows without host carrier payload, generates the declared source-role rows,
+  and writes them into the stable active cache for later ordinary attention.
+  The disjoint IOUV recurrence, seed `144640044`, hidden width `64`, ridge
+  fraction `0.001`, training contexts, and acceptance law are frozen in
+  `lab/shared-nonlinear-output-role-attention-generator-v1.json`.
+- This source-only checkpoint builds the probe and complete Release CUDA
+  server, retains `139/139` configured CUDA compile entries and objects,
+  passes the seventeen focused runner/oracle tests, and makes no model-facing
+  contact. The next action is the single frozen `neo-exp-0144` run, not a
+  width/seed/ridge/fixture/transport/evaluator/evidence variant.
 
 ### REJECTED
 

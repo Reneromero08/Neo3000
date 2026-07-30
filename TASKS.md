@@ -309,7 +309,13 @@ constructively unbounded local Agents-A1 inference.
   or weight-factor computation; share parameters across layer/position
   examples; retain no target-row basis/table; use actual outputs at runtime;
   and test unchanged on disjoint recurrence. It must not become transport-v2
-  or carrier-evaluation-v2.
+  or carrier-evaluation-v2. **Precontact implementation frozen:** `neo-exp-0144`
+  uses one deterministic 64-channel tanh generator shared across all 640
+  construction layer/K/V/destination rows. Each phase applies it once as a
+  backend graph directly over resident output rows; ordinary attention later
+  consumes the generated rows. Construction rows are erased, and runtime has
+  no expected answer or target row/table. The fixed disjoint IOUV recurrence
+  remains unexecuted at this source checkpoint.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

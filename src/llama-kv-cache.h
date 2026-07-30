@@ -286,6 +286,75 @@ public:
             const role_transport_operator & role_operator,
             role_transport_metrics * metrics);
 
+    // One fixed-capacity nonlinear generator shared across every selected
+    // attention layer, K/V kind, public destination, and construction
+    // example. The random hidden projection and fitted output projection are
+    // parameters, not retained target rows or a per-position operator table.
+    struct role_generator_operator {
+        std::vector<uint32_t> layer_ids;
+        uint32_t destination_count = 0;
+        uint32_t row_width = 0;
+        uint32_t condition_width = 0;
+        uint32_t hidden_width = 0;
+        uint64_t training_pairs = 0;
+        uint64_t training_rows = 0;
+        uint64_t logical_bytes = 0;
+        uint64_t vector_backing_bytes = 0;
+        uint64_t seed = 0;
+        double ridge_lambda = 0.0;
+        double training_max_abs_error = 0.0;
+        double training_root_mean_squared_error = 0.0;
+        std::vector<float> input_mean;
+        std::vector<float> input_inv_std;
+        std::vector<float> hidden_weight;
+        std::vector<float> hidden_bias;
+        std::vector<float> output_weight;
+        std::vector<float> output_bias;
+    };
+
+    struct role_generator_metrics {
+        uint64_t host_parameter_upload_bytes = 0;
+        uint64_t host_carrier_read_bytes = 0;
+        uint64_t host_carrier_write_bytes = 0;
+        uint64_t logical_parameter_bytes = 0;
+        uint64_t vector_backing_bytes = 0;
+        uint64_t peak_training_host_work_bytes = 0;
+        uint64_t tensor_visits = 0;
+        uint64_t position_visits = 0;
+        uint64_t graph_applications = 0;
+        uint64_t generated_rows = 0;
+        uint64_t multiply_accumulates = 0;
+    };
+
+    // Fits a deterministic random-feature nonlinear generator on every
+    // collected output-role/source-role row. One output projection is shared
+    // across layer, K/V kind, and destination one-hot conditions. The
+    // complete construction rows are erased before this method returns.
+    bool finalize_attention_role_generator(
+            role_transport_builder * builder,
+            uint32_t destination_count,
+            uint32_t samples_per_destination,
+            uint32_t hidden_width,
+            uint64_t seed,
+            double ridge_fraction,
+            role_generator_operator * role_generator,
+            role_generator_metrics * metrics);
+
+    // Executes one backend graph over resident source rows and writes the
+    // generated rows into declared destination cells. Carrier row payloads
+    // remain on their backend; only the fixed generator parameters and public
+    // condition matrix are uploaded. The generated rows are subsequently
+    // consumed through ordinary model attention.
+    bool seq_apply_attention_role_generator(
+            const std::vector<llama_seq_id> & source_seq_ids,
+            const std::vector<llama_pos> & source_positions,
+            llama_seq_id destination_seq_id,
+            const std::vector<llama_pos> & destination_positions,
+            const std::vector<uint32_t> & destination_indices,
+            const role_generator_operator & role_generator,
+            llama_context * lctx,
+            role_generator_metrics * metrics);
+
     // Applies one exact public Z4 quarter-turn to adjacent real channel pairs
     // in every selected active attention row:
     //

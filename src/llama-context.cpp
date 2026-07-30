@@ -728,6 +728,14 @@ ggml_backend_sched_t llama_context::get_sched() const {
     return sched.get();
 }
 
+void llama_context::invalidate_neo3000_graph_cache() {
+    synchronize();
+    if (gf_res_prev) {
+        gf_res_prev->reset();
+    }
+    ggml_backend_sched_reset(sched.get());
+}
+
 uint32_t llama_context::n_ctx() const {
     return cparams.n_ctx;
 }
