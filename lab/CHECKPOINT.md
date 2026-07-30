@@ -542,6 +542,21 @@ The active recurrence and acceptance boundary are
   delta-net transition after the full-attention boundary while leaving the
   residual stream unchanged. That mechanism must change persisted model
   memory and later useful inference, not merely steer one feed-forward pass.
+- `neo-exp-0150` freezes that changed model-memory mechanism at layer 4, the
+  first recurrent delta-net layer after full-attention layer 3. The retrieved
+  port delta enters only the recurrent transition before RMS normalization;
+  the original residual stream bypasses it unchanged. Frozen recurrent Q/K/V,
+  convolution, beta/alpha gates, persistent-state update, MoE, and later
+  layers must create the useful boundary. Router bias is disabled and every
+  prompt, construction context, IOUV query, fitted map, output gain, target
+  variant, closure law, and compact baseline remains unchanged.
+- The probe and full Release server build from the precontact source.
+  Declarative-runner plus twin-rail tests pass `17/17` with twelve subtests;
+  the integrated exact oracle passes all nineteen gates on three valid
+  fixtures; configured CUDA entries and objects remain `139/139` with no CUDA
+  source change. No server or `0150` model contact has occurred. Its next and
+  only action is one frozen native execution. Evidence will remain one compact
+  packet for this changed physical mechanism, never an evaluator series.
 
 ### REJECTED
 

@@ -5591,6 +5591,11 @@ static json run_sparse_g_label_refresh(
         spec.value(
             "semantic_carrier_moe_router_bias",
             false);
+    const bool semantic_carrier_recurrent_transition_mode =
+        semantic_carrier_layer_delta_mode &&
+        spec.value(
+            "semantic_carrier_recurrent_transition_input",
+            false);
     const int32_t semantic_carrier_read_layer =
         trained_semantic_carrier_mode
             ? spec.value("semantic_carrier_read_layer", -1)
@@ -5644,10 +5649,17 @@ static json run_sparse_g_label_refresh(
             "label orbit action modes are mutually exclusive");
     }
     if (trained_semantic_carrier_mode) {
-        if (semantic_carrier_moe_router_bias_mode &&
+        if ((semantic_carrier_moe_router_bias_mode ||
+             semantic_carrier_recurrent_transition_mode) &&
             !output_written_semantic_port_mode) {
             throw std::runtime_error(
-                "MoE router bias requires the output-written port");
+                "dynamic semantic transition requires the "
+                "output-written port");
+        }
+        if (semantic_carrier_moe_router_bias_mode &&
+            semantic_carrier_recurrent_transition_mode) {
+            throw std::runtime_error(
+                "dynamic semantic transition modes are exclusive");
         }
         if (semantic_carrier_layer_delta_mode) {
             if (semantic_carrier_read_layer < 0 ||
@@ -6423,7 +6435,8 @@ static json run_sparse_g_label_refresh(
                     semantic_adapter_build.writer_bias,
                     std::move(semantic_adapter_build.output_map),
                     semantic_carrier_read_layer,
-                    semantic_carrier_moe_router_bias_mode)
+                    semantic_carrier_moe_router_bias_mode,
+                    semantic_carrier_recurrent_transition_mode)
                 : ctx->install_neo3000_semantic_carrier(
                     std::move(semantic_adapter_build.query_map),
                     semantic_adapter_build.query_bias,
@@ -6445,6 +6458,8 @@ static json run_sparse_g_label_refresh(
                 output_written_semantic_port_mode ||
             carrier->moe_router_bias !=
                 semantic_carrier_moe_router_bias_mode ||
+            carrier->recurrent_transition_input !=
+                semantic_carrier_recurrent_transition_mode ||
             carrier->read_layer != semantic_carrier_read_layer ||
             carrier->action_backing_id == 0) {
             throw std::runtime_error(
@@ -8552,6 +8567,9 @@ static json run_sparse_g_label_refresh(
     uint64_t semantic_carrier_router_bias_token_applications = 0;
     uint64_t semantic_carrier_router_bias_enabled_token_applications = 0;
     uint64_t semantic_carrier_router_bias_multiply_accumulates = 0;
+    uint64_t semantic_carrier_recurrent_transition_token_applications = 0;
+    uint64_t semantic_carrier_recurrent_transition_enabled_token_applications = 0;
+    uint64_t semantic_carrier_map_multiply_accumulates = 0;
     uint64_t semantic_carrier_port_hash = 0;
     uint64_t semantic_carrier_generation = 0;
     bool semantic_carrier_quiescent = true;
@@ -8587,6 +8605,13 @@ static json run_sparse_g_label_refresh(
                 carrier->router_bias_enabled_token_applications;
             semantic_carrier_router_bias_multiply_accumulates =
                 carrier->router_bias_multiply_accumulates;
+            semantic_carrier_recurrent_transition_token_applications =
+                carrier->recurrent_transition_token_applications;
+            semantic_carrier_recurrent_transition_enabled_token_applications =
+                carrier
+                    ->recurrent_transition_enabled_token_applications;
+            semantic_carrier_map_multiply_accumulates =
+                carrier->carrier_map_multiply_accumulates;
             semantic_carrier_port_hash =
                 fnv1a64(
                     carrier->port.data(),
@@ -8747,9 +8772,11 @@ static json run_sparse_g_label_refresh(
         {"schema_version", 1},
         {"mechanism", output_written_semantic_port_mode
             ? semantic_carrier_layer_delta_mode
-                ? semantic_carrier_moe_router_bias_mode
-                    ? "ACTUAL_OUTPUT_WRITTEN_MOE_ROUTER_STATE_TRANSITION"
-                    : "ACTUAL_OUTPUT_WRITTEN_LAYER_LOCAL_NONLINEAR_SEMANTIC_PORT"
+                ? semantic_carrier_recurrent_transition_mode
+                    ? "ACTUAL_OUTPUT_WRITTEN_RECURRENT_STATE_TRANSITION"
+                    : semantic_carrier_moe_router_bias_mode
+                        ? "ACTUAL_OUTPUT_WRITTEN_MOE_ROUTER_STATE_TRANSITION"
+                        : "ACTUAL_OUTPUT_WRITTEN_LAYER_LOCAL_NONLINEAR_SEMANTIC_PORT"
                 : "ACTUAL_OUTPUT_WRITTEN_ROLE_INVARIANT_SEMANTIC_PORT"
             : output_source_fixed_cell_rematerialization_mode
             ? "ACTUAL_OUTPUT_SOURCE_ROLE_FIXED_CELL_KV_ADVANCE"
@@ -8873,6 +8900,8 @@ static json run_sparse_g_label_refresh(
                 semantic_carrier_layer_delta_mode},
             {"semantic_carrier_moe_router_bias",
                 semantic_carrier_moe_router_bias_mode},
+            {"semantic_carrier_recurrent_transition_input",
+                semantic_carrier_recurrent_transition_mode},
             {"semantic_carrier_read_layer",
                 semantic_carrier_read_layer},
             {"carrier_adapter_training_contexts",
@@ -9300,6 +9329,12 @@ static json run_sparse_g_label_refresh(
                 semantic_carrier_router_bias_enabled_token_applications},
             {"semantic_carrier_router_bias_multiply_accumulates",
                 semantic_carrier_router_bias_multiply_accumulates},
+            {"semantic_carrier_recurrent_transition_token_applications",
+                semantic_carrier_recurrent_transition_token_applications},
+            {"semantic_carrier_recurrent_transition_enabled_token_applications",
+                semantic_carrier_recurrent_transition_enabled_token_applications},
+            {"semantic_carrier_map_multiply_accumulates",
+                semantic_carrier_map_multiply_accumulates},
             {"semantic_carrier_port_final_hash",
                 output_written_semantic_port_mode
                     ? hex64(semantic_carrier_port_hash)

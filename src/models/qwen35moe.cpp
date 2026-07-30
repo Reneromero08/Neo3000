@@ -60,6 +60,19 @@ public:
                 carrier->n_expert *
                 ubatch->n_tokens;
         }
+        if (carrier->recurrent_transition_input) {
+            GGML_ASSERT(ubatch);
+            carrier->recurrent_transition_token_applications +=
+                ubatch->n_tokens;
+            if (carrier->enabled) {
+                carrier
+                    ->recurrent_transition_enabled_token_applications +=
+                    ubatch->n_tokens;
+            }
+        }
+        carrier->carrier_map_multiply_accumulates +=
+            (static_cast<uint64_t>(carrier->n_embd) * 8 + 16) *
+            ubatch->n_tokens;
     }
 
     bool can_reuse(const llm_graph_params & params) override {
@@ -328,10 +341,13 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
                 ctx0,
                 carrier->output_map,
                 carrier_code);
-        if (state->moe_router_bias) {
+        if (state->moe_router_bias ||
+            state->recurrent_transition_input) {
             cb(
                 carrier_delta,
-                "neo3000_semantic_carrier_router_delta",
+                state->moe_router_bias
+                    ? "neo3000_semantic_carrier_router_delta"
+                    : "neo3000_semantic_carrier_recurrent_delta",
                 read_layer);
             return std::make_pair(hidden, carrier_delta);
         }
@@ -347,11 +363,32 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
         res->t_layer_inp[il] = inpL;
         auto carrier_read = apply_semantic_carrier(inpL, il);
         inpL = carrier_read.first;
-        ggml_tensor * carrier_router_delta = carrier_read.second;
+        ggml_tensor * carrier_dynamic_delta = carrier_read.second;
 
         ggml_tensor * inpSA = inpL;
+        ggml_tensor * transition_input = inpL;
+        const auto & carrier_state =
+            cparams.neo3000_semantic_carrier;
+        if (carrier_dynamic_delta &&
+            carrier_state &&
+            carrier_state->recurrent_transition_input) {
+            transition_input =
+                ggml_add(
+                    ctx0,
+                    transition_input,
+                    carrier_dynamic_delta);
+            cb(
+                transition_input,
+                "neo3000_semantic_carrier_recurrent_transition_input",
+                il);
+        }
 
-        cur = build_norm(inpL, model.layers[il].attn_norm, nullptr, LLM_NORM_RMS, il);
+        cur = build_norm(
+            transition_input,
+            model.layers[il].attn_norm,
+            nullptr,
+            LLM_NORM_RMS,
+            il);
         cb(cur, "attn_norm", il);
 
         ggml_build_forward_expand(gf, cur);
@@ -384,7 +421,9 @@ llama_model_qwen35moe::graph::graph(const llama_model & model, const llm_graph_p
         // MOE FFN layer
         cur = build_layer_ffn(
             attn_post_norm,
-            carrier_router_delta,
+            carrier_state && carrier_state->moe_router_bias
+                ? carrier_dynamic_delta
+                : nullptr,
             il);
         cb(cur, "ffn_out", il);
 

@@ -1298,14 +1298,20 @@ bool llama_context::install_neo3000_output_written_semantic_port(
         const std::array<float, 4> & writer_bias,
         std::vector<float> output_map,
         int32_t read_layer,
-        bool moe_router_bias) {
+        bool moe_router_bias,
+        bool recurrent_transition_input) {
     const size_t expected =
         static_cast<size_t>(model.hparams.n_embd) * 4;
     if (model.arch != LLM_ARCH_QWEN35MOE ||
         read_layer < -1 ||
         read_layer >= static_cast<int32_t>(model.hparams.n_layer()) ||
+        (moe_router_bias && recurrent_transition_input) ||
         (moe_router_bias &&
          (read_layer < 0 || model.hparams.n_expert == 0)) ||
+        (recurrent_transition_input &&
+         (read_layer < 0 ||
+          !model.hparams.is_recr(
+              static_cast<uint32_t>(read_layer)))) ||
         query_map.size() != expected ||
         writer_map.size() != expected ||
         output_map.size() != expected ||
@@ -1344,6 +1350,8 @@ bool llama_context::install_neo3000_output_written_semantic_port(
     carrier->output_map = std::move(output_map);
     carrier->output_written = true;
     carrier->moe_router_bias = moe_router_bias;
+    carrier->recurrent_transition_input =
+        recurrent_transition_input;
     carrier->enabled = false;
     carrier->phase = 0;
     carrier->port.fill(0.0f);

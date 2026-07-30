@@ -32,6 +32,7 @@ struct llama_neo3000_semantic_carrier {
     bool enabled = false;
     bool output_written = false;
     bool moe_router_bias = false;
+    bool recurrent_transition_input = false;
     uint64_t generation = 0;
     uint64_t action_backing_id = 0;
     uint64_t graph_input_sets = 0;
@@ -41,6 +42,9 @@ struct llama_neo3000_semantic_carrier {
     uint64_t router_bias_token_applications = 0;
     uint64_t router_bias_enabled_token_applications = 0;
     uint64_t router_bias_multiply_accumulates = 0;
+    uint64_t recurrent_transition_token_applications = 0;
+    uint64_t recurrent_transition_enabled_token_applications = 0;
+    uint64_t carrier_map_multiply_accumulates = 0;
 };
 
 struct llama_cparams {

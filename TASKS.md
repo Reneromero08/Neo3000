@@ -420,7 +420,19 @@ constructively unbounded local Agents-A1 inference.
   first recurrent layer by architecture, not search; retain the same disjoint
   panel, zero source-role forwards, no answer/phase/context table, one matched
   disablement, and one execution. This is a model-memory mechanism, not a
-  carrier-evaluation successor.
+  carrier-evaluation successor. `neo-exp-0150` is frozen precontact at layer
+  4, the first recurrent delta-net layer after full-attention layer 3. The
+  graph adds the retrieved port delta only to the pre-normalization recurrent
+  transition input; the ordinary residual stream remains unchanged. Frozen
+  recurrent Q/K/V, convolution, beta/alpha gates, persistent-state update,
+  MoE, and layers 5–39 must produce the useful boundary. All prompts,
+  training contexts, IOUV queries, maps, output gain, target variant, closure
+  law, and compact baseline remain unchanged from `0149`; router bias is
+  disabled. The probe and Release server build, focused tests pass `17/17`
+  plus twelve subtests, the integrated exact oracle passes all nineteen gates
+  on three fixtures, and CUDA closure remains `139/139`. No `0150` model
+  contact has occurred. Execute this frozen mechanism once; do not produce
+  layer, scale, fixture, evaluator, or evidence-harness variants.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.
