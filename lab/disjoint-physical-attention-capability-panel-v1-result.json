@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0116",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "6dc2fdda4ab028a639f60d6e8cf20cba9f66c702",
+  "mechanism": "DISJOINT_PHYSICAL_ATTENTION_CAPABILITY_PANEL",
+  "spec_id": "disjoint-physical-attention-capability-panel-v1",
+  "hypothesis": "Every full-state 4/4 task from neo-exp-0115 will preserve useful joint inference and F/G necessity when its attention root is composed with the exact same recurrent scaffold backing.",
+  "intervention": "Reuse one recurrent F0G0 root for twelve sequential attention-only roots: joint, F-only, and G-only for every prospectively qualified task; retain no full host scaffold and close each delta before the next.",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "context_size": 512,
+    "source_tokens": 130,
+    "task_count": 4,
+    "arms_per_task": 3,
+    "queries_per_arm": 4,
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "metrics_after": {
+    "task_passes": 2,
+    "task_count": 4,
+    "joint_argmax_matches_to_full": 15,
+    "joint_argmax_comparisons": 16,
+    "joint_full_logit_hash_matches": 0,
+    "maximum_joint_candidate_logit_absolute_difference": 1.573502540588379,
+    "tasks": {
+      "panel-forward-EFGH": {
+        "joint": {"correct": 4, "answers": ["A", "B", "C", "D"]},
+        "F_only": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+        "G_only": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+        "passed": true
+      },
+      "panel-cycle-IOUV": {
+        "joint": {"correct": 4, "answers": ["B", "C", "D", "A"]},
+        "F_only": {"correct": 0, "answers": ["D", "D", "B", "D"]},
+        "G_only": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+        "passed": true
+      },
+      "panel-permute-ABCD": {
+        "joint": {"correct": 3, "answers": ["C", "D", "D", "B"]},
+        "F_only": {"correct": 0, "answers": ["A", "D", "C", "D"]},
+        "G_only": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+        "passed": false
+      },
+      "panel-permute-NTUV": {
+        "joint": {"correct": 4, "answers": ["D", "B", "A", "C"]},
+        "F_only": {"correct": 2, "answers": ["D", "D", "B", "C"]},
+        "G_only": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+        "passed": false
+      }
+    },
+    "scaffold": {
+      "logical_tensor_bytes": 65863680,
+      "backend_allocation_bytes": 65863680,
+      "metadata_bytes": 748,
+      "root_backing_id": "5d9760fb97070990",
+      "restore_count": 49,
+      "content_hash_before": "9809e35a35643c2e",
+      "content_hash_after": "9809e35a35643c2e"
+    },
+    "attention_roots": {
+      "created_and_closed": 12,
+      "simultaneously_retained_maximum": 1,
+      "logical_tensor_bytes_each": 2662400,
+      "restore_count": 48
+    },
+    "active_cache_backend_allocation_bytes": 76349440,
+    "maximum_retained_root_backend_allocation_bytes": 68526080,
+    "active_plus_retained_backend_allocation_bytes": 144875520,
+    "complete_host_scaffold_copy_retained": false,
+    "all_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "resource_accounting": {
+    "root_save_device_copy_bytes": 97812480,
+    "scaffold_restore_device_copy_bytes": 3227320320,
+    "attention_restore_device_copy_bytes": 127795200,
+    "scaffold_hash_d2h_bytes": 131727360,
+    "scaffold_hash_peak_host_work_bytes": 1048576,
+    "fresh_source_prompt_tokens": 1690,
+    "fresh_query_tokens": 1584,
+    "fresh_input_tokens_total": 3274,
+    "whole_process_cuda_residency_measured": false,
+    "fresh_compute_reduction": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/disjoint-physical-attention-capability-panel-v1.json",
+      "bytes": 14608,
+      "sha256": "BE2CDB323354DF4D554CDF6557762C4C30B230391262473003D5559C9ABD3A8C"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 112747,
+      "sha256": "DD119F3CD15CBD7306144CD2718A3540D71BD83B0E18B7894337B2F5A7377A05"
+    },
+    "probe_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 656248,
+      "sha256": "72CBB78D8C312C59766702FC2DD81EEF87ED54CC546BCF2ED30C62FB9718F375"
+    },
+    "raw_result": {
+      "committed": false,
+      "bytes": 45543,
+      "sha256": "712DABD7DF2D28202390ECC8EBB4426A635A32B3DC389DFE6BC02488B5E6DC04"
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 100,
+    "input_tokens": 3274,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "quality_gates": {
+    "every_full_pass_tested": true,
+    "all_sources_equal_token": true,
+    "all_tasks_joint_correct": false,
+    "all_tasks_F_alone_insufficient": false,
+    "all_tasks_G_alone_insufficient": true,
+    "same_scaffold_root_reused": true,
+    "two_tasks_pass_complete_necessity_law": true,
+    "scaffold_content_restored_exactly": true,
+    "complete_host_scaffold_duplicate_absent": true,
+    "all_roots_closed": true,
+    "native_inverse_restoration": false,
+    "fresh_compute_reduction": false,
+    "unbounded_recurrence": false
+  },
+  "verdict": "reject",
+  "classification": "TWO_OF_FOUR_DISJOINT_TASKS_PASS_SAME_SCAFFOLD_NECESSITY_LAW",
+  "strongest_supported_claim": "The exact same recurrent scaffold backing supports 4/4 useful joint inference with both evidence marginals insufficient on two prospectively qualified disjoint task instances. Across all four tasks the split preserves 15/16 full-state argmaxes, exactly restores the scaffold after 49 uses, retains one 2,662,400-byte delta at a time, and keeps measured active-plus-retained backend allocation at 144,875,520 bytes.",
+  "strongest_rejected_interpretation": "The frozen all-task gate fails: panel-permute-ABCD loses one joint boundary and panel-permute-NTUV violates the F-only maximum. Full logits are never identical, source replay costs 1,690 fresh tokens, restore traffic exceeds 3.35 GB, and restoration is snapshot reload. This is not task-family breadth, fresh-compute reduction, native restoration, catalytic recurrence, or unbounded inference.",
+  "next_boundary": "ON_THE_TWO_COMPLETE_PASSES_BUILD_THE_EXACT_COMMON_PREFIX_DAG_BASELINE_AND_REUSE_ONE_FIXED_ATTENTION_ROOT_ALLOCATION"
+}

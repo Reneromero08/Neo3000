@@ -87,6 +87,15 @@ The active recurrence and acceptance boundary are
   allocation. The physical split therefore preserves all four full-state
   argmaxes on this fixture, but not the full numerical boundary: full-logit
   hashes match `0/4` and candidate logits differ by at most `0.8624229431`.
+- `neo-exp-0115` qualifies four deterministic equal-token tasks under
+  untouched full-hybrid state: all sixteen frozen query boundaries are
+  correct. `neo-exp-0116` then tests every task physically with no
+  carrier-conditioned filtering.
+- Two tasks close the complete same-scaffold necessity law:
+  EFGH-forward is `4/4,1/4,1/4` and IOUV-cycle is `4/4,0/4,1/4` for
+  joint/F-only/G-only. The exact same `65,863,680`-byte scaffold survives 49
+  restores; twelve `2,662,400`-byte attention roots are retained and closed
+  one at a time; active plus retained backend allocation is `144,875,520`.
 - The Release server rebuild succeeds, all 139 configured CUDA objects remain
   present with zero CUDA source changes, and the focused no-model Python suite
   passes 57 tests.
@@ -151,15 +160,25 @@ The active recurrence and acceptance boundary are
   preserved as inconclusive because its `107,806,720` active-cache allocation
   did not match 0112. `neo-exp-0114` closes that configuration defect at
   context 512 but rejects the base-model task gate at the same `3/4`.
+- `neo-exp-0116` rejects its strict all-four-task gate. ABCD loses query B
+  (`A -> D`) under the physical split; NTUV joint remains `4/4` but F-only
+  reaches `2/4`. Across the panel, physical/full argmax parity is `15/16`,
+  full-logit hash parity is `0/16`, and maximum candidate-logit deviation is
+  `1.5735025406`.
+- The run still decodes 1,690 fresh source tokens and copies
+  `3,355,115,520` bytes during scaffold-plus-attention restoration. Its two
+  passing instances do not establish task-family breadth or catalytic
+  recurrence.
 
 ### ACTIVE BOUNDARY
 
-The failed E/F/G/H fixture remains frozen and retired from utility acceptance.
-Prospectively qualify a deterministic disjoint task panel with full-hybrid
-roots, then apply the physical split to every full-state pass. Do not select
-tasks from physical-route outcomes. After unrelated useful parity is closed,
-remove the full 130-token replay used to construct each delta.
-`neo-exp-0102` remains frozen and unconsumed.
+Use the two complete physical passes to build the exact strongest compact
+construction baseline: one on-device common-prefix root, suffix-only
+F+G+closure decode, and one fixed attention-root allocation overwritten
+between transactions. Count avoided source tokens, root traffic, stable
+backing, and parity against full replay. This is an ordinary prefix-DAG
+baseline, not catalysis; it defines the irreducible work an operator-native KV
+update must beat. `neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

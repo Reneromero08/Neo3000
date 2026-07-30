@@ -203,6 +203,22 @@ full-hybrid roots, then test the physical decomposition on every full-state
 pass. This prevents both a weak fixture from falsely rejecting the carrier
 and carrier-conditioned cherry-picking from falsely accepting it.
 
+That panel is now executed. Untouched full state passes all sixteen queries.
+The physical split carries every task forward and closes the full
+joint/F-only/G-only necessity law on two instances. One other task loses a
+joint boundary and the fourth violates the frozen F-only ceiling. The same
+scaffold is exactly preserved after 49 restores, but the strict all-task gate
+correctly rejects.
+
+This is the first bounded useful same-scaffold reuse beyond the original task
+instance, not a task-family or recurrence result. The dominant next cost is
+construction: every 2.66 MB attention root still comes from a complete
+130-token source replay. The strongest exact baseline is a common-prefix
+device root followed by suffix-only F+G+closure decode into one reused
+attention-root allocation. Only after measuring that baseline should Neo test
+an operator-native structured KV update; otherwise ordinary radix caching
+could masquerade as catalytic leverage.
+
 ## 1. Executive conclusion
 
 The strongest coherent route to catalytic Agents-A1 inference is:

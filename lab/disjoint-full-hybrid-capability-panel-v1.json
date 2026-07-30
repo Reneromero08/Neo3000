@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "id": "disjoint-full-hybrid-capability-panel-v1",
+  "description": "Prospectively qualify four deterministic two-link task instances using untouched full-hybrid state before any physical carrier route sees their outcomes. All item identities and F mappings differ from the P/Q/R/S scaffold and the accepted W/X/Y/Z primary task. Every task and expected answer is frozen whether it passes or fails.",
+  "full_hybrid_capability_panel": true,
+  "expected_context_size": 512,
+  "expected_source_tokens": 130,
+  "tasks": [
+    {
+      "id": "panel-forward-EFGH",
+      "source": {
+        "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+        "module_f": "F: Item E maps to vault J. Item F maps to vault K. Item G maps to vault L. Item H maps to vault M.\n",
+        "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+        "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+      },
+      "queries": [
+        {"id": "EFGH-E", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "EFGH-F", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "EFGH-G", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "EFGH-H", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "correct_minimum": 4
+    },
+    {
+      "id": "panel-cycle-IOUV",
+      "source": {
+        "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+        "module_f": "F: Item I maps to vault K. Item O maps to vault L. Item U maps to vault M. Item V maps to vault J.\n",
+        "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+        "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+      },
+      "queries": [
+        {"id": "IOUV-I", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item I through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "IOUV-O", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item O through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "IOUV-U", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "IOUV-V", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "correct_minimum": 4
+    },
+    {
+      "id": "panel-permute-ABCD",
+      "source": {
+        "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+        "module_f": "F: Item A maps to vault L. Item B maps to vault J. Item C maps to vault M. Item D maps to vault K.\n",
+        "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+        "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+      },
+      "queries": [
+        {"id": "ABCD-A", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item A through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "ABCD-B", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item B through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "ABCD-C", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item C through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "ABCD-D", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item D through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "correct_minimum": 4
+    },
+    {
+      "id": "panel-permute-NTUV",
+      "source": {
+        "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+        "module_f": "F: Item N maps to vault M. Item T maps to vault K. Item U maps to vault J. Item V maps to vault L.\n",
+        "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+        "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+      },
+      "queries": [
+        {"id": "NTUV-N", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item N through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "NTUV-T", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item T through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "NTUV-U", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "NTUV-V", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "correct_minimum": 4
+    }
+  ],
+  "acceptance_law": {
+    "task_passes_minimum": 2
+  },
+  "successor_selection_law": "The physical carrier successor must include every task that reaches 4/4 here. No task may be added, removed, relabeled, or rewritten based on physical-route behavior.",
+  "claim_ceiling": "Untouched full-hybrid capability qualification for four deterministic relation instances. Passing tasks establish only base-model utility and eligibility for a separately executed physical carrier comparison. No carrier reuse, decomposition parity, restoration, fresh-compute reduction, task-family breadth, catalysis, or unbounded recurrence follows."
+}

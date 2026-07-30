@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0115",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "6dc2fdda4ab028a639f60d6e8cf20cba9f66c702",
+  "mechanism": "DETERMINISTIC_DISJOINT_FULL_HYBRID_CAPABILITY_PANEL",
+  "spec_id": "disjoint-full-hybrid-capability-panel-v1",
+  "hypothesis": "A deterministic carrier-blind task panel can prospectively establish which disjoint relation instances Agents-A1 solves with untouched full-hybrid state before the physical route sees any task outcome.",
+  "intervention": "Freeze four equal-token relation instances, validate every source before decode, and execute each through one sequentially created and closed full-hybrid device root at context 512.",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "context_size": 512,
+    "source_tokens": 130,
+    "task_count": 4,
+    "queries_per_task": 4,
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "metrics_after": {
+    "task_passes": 4,
+    "task_count": 4,
+    "tasks": {
+      "panel-forward-EFGH": {"correct": 4, "answers": ["A", "B", "C", "D"]},
+      "panel-cycle-IOUV": {"correct": 4, "answers": ["B", "C", "D", "A"]},
+      "panel-permute-ABCD": {"correct": 4, "answers": ["C", "A", "D", "B"]},
+      "panel-permute-NTUV": {"correct": 4, "answers": ["D", "B", "A", "C"]}
+    },
+    "active_cache_backend_allocation_bytes": 76349440,
+    "maximum_retained_root_backend_allocation_bytes": 68526080,
+    "active_plus_retained_backend_allocation_bytes": 144875520,
+    "full_roots_created_and_closed": 4,
+    "root_restore_count": 16,
+    "all_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "resource_accounting": {
+    "root_save_device_copy_bytes": 274104320,
+    "root_restore_device_copy_bytes": 1096417280,
+    "fresh_source_prompt_tokens": 520,
+    "fresh_query_tokens": 528,
+    "fresh_input_tokens_total": 1048,
+    "whole_process_cuda_residency_measured": false,
+    "fresh_compute_reduction": false
+  },
+  "precontact_incident": {
+    "description": "The initial numeric item representation tokenized one task to 134 rather than 130 tokens. Prospective all-task token validation aborted before any decode; only symbols changed, while the frozen permutation and expected answers remained identical.",
+    "llama_decode_calls": 0,
+    "scientific_contact": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/disjoint-full-hybrid-capability-panel-v1.json",
+      "bytes": 7573,
+      "sha256": "120D4C96C3BC2D8F81D9DE2442C7552335CBDC6F0ED82D6761FAA43098DE0EC8"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 98754,
+      "sha256": "1B32847930B5D255B8297D415BC2203695FDF3003C938C37C8976F8E43ECDA99"
+    },
+    "probe_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 590000,
+      "sha256": "642CE5A51BAC17BCA453FFE1E96A61BEF868F426E4AA25EDD71238DC25D42F4B"
+    },
+    "raw_result": {
+      "committed": false,
+      "bytes": 15558,
+      "sha256": "03E86D8E969D6F3D52BB0371B159E53B831544BF94D48819707CFBC042E07DBA"
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 32,
+    "input_tokens": 1048,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "quality_gates": {
+    "carrier_blind_task_freeze": true,
+    "all_sources_equal_token": true,
+    "all_tasks_full_hybrid_correct": true,
+    "all_roots_closed": true,
+    "physical_carrier_tested": false
+  },
+  "verdict": "accept",
+  "classification": "FOUR_OF_FOUR_FULL_HYBRID_TASKS_QUALIFIED_FOR_PHYSICAL_COMPARISON",
+  "strongest_supported_claim": "Untouched full-hybrid Agents-A1 state solves all 16 frozen queries across four deterministic equal-token relation instances, establishing a non-cherry-picked capability panel for the physical carrier test.",
+  "strongest_rejected_interpretation": "This is conventional full-state inference and proves no carrier reuse, decomposition parity, task-family breadth, restoration, fresh-compute reduction, catalysis, or unbounded recurrence.",
+  "next_boundary": "TEST_EVERY_FULL_STATE_PASS_ON_ONE_REUSED_RECURRENT_SCAFFOLD_WITH_JOINT_F_ONLY_AND_G_ONLY_ATTENTION_ROOTS"
+}

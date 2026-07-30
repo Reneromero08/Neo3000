@@ -90,11 +90,21 @@ constructively unbounded local Agents-A1 inference.
   argmaxes, but zero full-logit hashes and differs by up to `0.8624229431`.
   Therefore the frozen fixture lacks base-model 4/4 utility; it does not
   demonstrate decomposition loss or accepted unrelated reuse.
-- [ ] Prospectively qualify a deterministic panel of disjoint task instances
-  with untouched full-hybrid roots, then test the physical decomposition on
-  every full-state pass without post-hoc prompt or answer tuning. Require
-  useful boundary parity, both evidence marginals to remain insufficient,
-  exact same-scaffold backing reuse, and complete resource/closure accounting.
+- [x] Prospectively qualify and physically test a deterministic disjoint panel.
+  `neo-exp-0115` full state passes all four tasks (`16/16`). `neo-exp-0116`
+  carries every task forward without filtering: EFGH-forward and IOUV-cycle
+  pass joint/F-only/G-only at `4/4,1/4,1/4` and `4/4,0/4,1/4`; ABCD loses one
+  joint boundary; NTUV reaches joint `4/4` but F-only `2/4`. The frozen all-task
+  gate rejects, while two-instance same-scaffold useful reuse is supported.
+  All twelve deltas close sequentially, the exact scaffold survives 49
+  restores, and measured active-plus-retained allocation remains
+  `144,875,520` bytes.
+- [ ] For the two complete passes, implement the strongest exact classical
+  construction baseline: decode the common prefix once into an on-device
+  root, restore it, decode only F+G+closure, overwrite one fixed attention-root
+  allocation, and compare exact utility/resources with full 130-token replay.
+  Then use that measured irreducible boundary to design an operator-native KV
+  update rather than relabeling prefix caching as catalysis.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

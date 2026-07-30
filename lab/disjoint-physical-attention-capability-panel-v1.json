@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "id": "disjoint-physical-attention-capability-panel-v1",
+  "description": "Test every 4/4 full-hybrid pass from the frozen capability panel using one exact F0G0 recurrent scaffold and sequential attention-only joint, F-only, and G-only roots. No task, prompt, answer, or order is selected from physical-route behavior.",
+  "physical_attention_capability_panel": true,
+  "expected_context_size": 512,
+  "expected_source_tokens": 130,
+  "expected_attention_layers": [3, 7, 11, 15, 19, 23, 27, 31, 35, 39],
+  "expected_recurrent_layers": [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26, 28, 29, 30, 32, 33, 34, 36, 37, 38],
+  "frozen_full_panel": {
+    "experiment_id": "neo-exp-0115",
+    "spec_path": "lab/disjoint-full-hybrid-capability-panel-v1.json",
+    "spec_sha256": "120D4C96C3BC2D8F81D9DE2442C7552335CBDC6F0ED82D6761FAA43098DE0EC8",
+    "raw_result_sha256": "03E86D8E969D6F3D52BB0371B159E53B831544BF94D48819707CFBC042E07DBA",
+    "task_passes": ["panel-forward-EFGH", "panel-cycle-IOUV", "panel-permute-ABCD", "panel-permute-NTUV"]
+  },
+  "scaffold_source": {
+    "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+    "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+    "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+    "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+  },
+  "tasks": [
+    {
+      "id": "panel-forward-EFGH",
+      "sources": {
+        "F_only": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item E maps to vault J. Item F maps to vault K. Item G maps to vault L. Item H maps to vault M.\n",
+          "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        },
+        "G_only": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+          "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        },
+        "joint": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item E maps to vault J. Item F maps to vault K. Item G maps to vault L. Item H maps to vault M.\n",
+          "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        }
+      },
+      "queries": [
+        {"id": "EFGH-E", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "EFGH-F", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "EFGH-G", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "EFGH-H", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "joint_correct_minimum": 4,
+      "f_only_correct_maximum": 1,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "panel-cycle-IOUV",
+      "sources": {
+        "F_only": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item I maps to vault K. Item O maps to vault L. Item U maps to vault M. Item V maps to vault J.\n",
+          "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        },
+        "G_only": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+          "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        },
+        "joint": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item I maps to vault K. Item O maps to vault L. Item U maps to vault M. Item V maps to vault J.\n",
+          "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        }
+      },
+      "queries": [
+        {"id": "IOUV-I", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item I through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "IOUV-O", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item O through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "IOUV-U", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "IOUV-V", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "joint_correct_minimum": 4,
+      "f_only_correct_maximum": 1,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "panel-permute-ABCD",
+      "sources": {
+        "F_only": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item A maps to vault L. Item B maps to vault J. Item C maps to vault M. Item D maps to vault K.\n",
+          "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        },
+        "G_only": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+          "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        },
+        "joint": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item A maps to vault L. Item B maps to vault J. Item C maps to vault M. Item D maps to vault K.\n",
+          "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        }
+      },
+      "queries": [
+        {"id": "ABCD-A", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item A through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "ABCD-B", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item B through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "ABCD-C", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item C through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "ABCD-D", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item D through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "joint_correct_minimum": 4,
+      "f_only_correct_maximum": 1,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "panel-permute-NTUV",
+      "sources": {
+        "F_only": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item N maps to vault M. Item T maps to vault K. Item U maps to vault J. Item V maps to vault L.\n",
+          "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        },
+        "G_only": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+          "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        },
+        "joint": {
+          "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+          "module_f": "F: Item N maps to vault M. Item T maps to vault K. Item U maps to vault J. Item V maps to vault L.\n",
+          "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+          "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+        }
+      },
+      "queries": [
+        {"id": "NTUV-N", "expected": "D", "suffix": "<|im_start|>user\nWhich code belongs to Item N through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "NTUV-T", "expected": "B", "suffix": "<|im_start|>user\nWhich code belongs to Item T through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "NTUV-U", "expected": "A", "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"},
+        {"id": "NTUV-V", "expected": "C", "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"}
+      ],
+      "joint_correct_minimum": 4,
+      "f_only_correct_maximum": 1,
+      "g_only_correct_maximum": 1
+    }
+  ],
+  "acceptance_law": {
+    "task_passes_minimum": 4
+  },
+  "claim_ceiling": "Same-backing physical recurrent-scaffold reuse across every frozen full-state 4/4 task with sequential attention-only roots and F/G necessity controls. Passing can support bounded useful reuse across four deterministic task instances in one relation family. It cannot establish task-family breadth, native inverse restoration, fresh-compute reduction, bounded whole-process residency, catalytic recurrence, Small Wall crossing, or unbounded inference."
+}

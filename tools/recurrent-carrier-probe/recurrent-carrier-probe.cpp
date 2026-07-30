@@ -245,6 +245,20 @@ static std::vector<llama_token> prepare_source(
     return all;
 }
 
+static std::vector<llama_token> tokenize_source(
+        const llama_vocab * vocab,
+        const json & source) {
+    std::vector<llama_token> all;
+    bool first = true;
+    for (const char * field : {"prefix", "module_f", "module_g", "closure"}) {
+        const std::string text = source.at(field).get<std::string>();
+        auto tokens = tokenize_piece(vocab, text, first, true);
+        all.insert(all.end(), tokens.begin(), tokens.end());
+        first = false;
+    }
+    return all;
+}
+
 static device_root save_root(
         llama_context * ctx,
         const std::string & variant,
@@ -1523,6 +1537,458 @@ static json run_full_hybrid_capability_control(
     };
 }
 
+static json run_full_hybrid_capability_panel(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const std::vector<llama_token> & candidates,
+        const json & spec,
+        uint64_t active_recurrent_backing_initial,
+        uint64_t active_attention_backing_initial) {
+    const uint32_t actual_context_size = llama_n_ctx(ctx);
+    if (actual_context_size != spec.at("expected_context_size").get<uint32_t>()) {
+        throw std::runtime_error(
+            "full-hybrid capability panel context mismatch: " +
+            std::to_string(actual_context_size));
+    }
+    const size_t expected_source_tokens =
+        spec.at("expected_source_tokens").get<size_t>();
+    const auto & tasks = spec.at("tasks");
+    if (!tasks.is_array() || tasks.empty()) {
+        throw std::runtime_error("full-hybrid capability panel has no tasks");
+    }
+
+    std::set<std::string> task_ids;
+    for (const auto & task : tasks) {
+        const std::string id = task.at("id");
+        if (!task_ids.insert(id).second) {
+            throw std::runtime_error("duplicate capability-panel task id " + id);
+        }
+        const auto tokens = tokenize_source(vocab, task.at("source"));
+        if (tokens.size() != expected_source_tokens) {
+            throw std::runtime_error(
+                "capability-panel source token mismatch for " + id + ": " +
+                std::to_string(tokens.size()));
+        }
+    }
+
+    const size_t active_cache_backend_allocation_bytes =
+        active_hybrid_backend_allocation_bytes(ctx);
+    json records = json::array();
+    json roots = json::array();
+    json task_summary = json::object();
+    llama_seq_id key = 6000;
+    size_t task_passes = 0;
+    size_t root_restore_count = 0;
+    size_t root_save_device_copy_bytes = 0;
+    size_t root_restore_device_copy_bytes = 0;
+    size_t maximum_retained_root_backend_allocation_bytes = 0;
+
+    for (const auto & task : tasks) {
+        const std::string id = task.at("id");
+        const auto source_tokens = prepare_source(ctx, vocab, task.at("source"));
+        auto root = save_root(
+            ctx, id + ":full-hybrid", key++, FULL_DEVICE_FLAGS,
+            source_tokens.size());
+        root_save_device_copy_bytes += root.gpu_bytes;
+        maximum_retained_root_backend_allocation_bytes = std::max(
+            maximum_retained_root_backend_allocation_bytes,
+            root.allocation_bytes);
+
+        std::vector<boundary_result> results;
+        for (const auto & query : task.at("queries")) {
+            restore_root(ctx, root);
+            ++root_restore_count;
+            root_restore_device_copy_bytes += root.gpu_bytes;
+            if (active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
+                active_attention_backing_id(ctx) != active_attention_backing_initial) {
+                throw std::runtime_error(
+                    "capability-panel full root changed active backing");
+            }
+            auto boundary = decode_query(
+                ctx, vocab, candidates, "untouched-full-hybrid-capability-panel",
+                id, query, source_tokens.size(), root.backing_id,
+                root.gpu_bytes);
+            records.push_back(boundary.record);
+            results.push_back(std::move(boundary));
+        }
+
+        const size_t correct =
+            semantic_correct_count(results, task.at("queries"), false);
+        std::vector<std::string> answers;
+        for (const auto & result : results) {
+            answers.push_back(result.argmax);
+        }
+        const bool passed =
+            correct >= task.at("correct_minimum").get<size_t>();
+        task_passes += passed;
+        task_summary[id] = {
+            {"answers", answers},
+            {"correct", correct},
+            {"passed", passed},
+        };
+        roots.push_back({
+            {"task_id", id},
+            {"logical_tensor_bytes", root.resident_bytes},
+            {"backend_allocation_bytes", root.allocation_bytes},
+            {"metadata_bytes", root.metadata.size()},
+            {"root_backing_id", hex64(root.backing_id)},
+        });
+
+        llama_memory_clear(llama_get_memory(ctx), true);
+        const size_t cleared =
+            llama_state_seq_clear_device_data(ctx, root.key);
+        if (cleared != root.resident_bytes ||
+            llama_state_seq_get_device_root_count(ctx) != 0) {
+            throw std::runtime_error(
+                "capability-panel full root did not close for " + id);
+        }
+    }
+
+    llama_synchronize(ctx);
+    const size_t required_passes =
+        spec.at("acceptance_law").at("task_passes_minimum").get<size_t>();
+    const bool accepted = task_passes >= required_passes;
+    if (active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
+        active_attention_backing_id(ctx) != active_attention_backing_initial) {
+        throw std::runtime_error("capability-panel close changed active backing");
+    }
+
+    return {
+        {"schema_version", 1},
+        {"mechanism", "DETERMINISTIC_DISJOINT_FULL_HYBRID_CAPABILITY_PANEL"},
+        {"spec_id", spec.at("id")},
+        {"model_arch", "qwen35moe"},
+        {"configuration", {
+            {"context_size", actual_context_size},
+            {"source_tokens", expected_source_tokens},
+            {"task_count", tasks.size()},
+            {"queries_per_task", tasks.at(0).at("queries").size()},
+            {"restoration_class", "SNAPSHOT_RELOAD"},
+        }},
+        {"task_summary", task_summary},
+        {"summary", {
+            {"task_passes", task_passes},
+            {"task_count", tasks.size()},
+            {"accepted", accepted},
+        }},
+        {"carrier", {
+            {"active_cache_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes},
+            {"maximum_retained_root_backend_allocation_bytes",
+                maximum_retained_root_backend_allocation_bytes},
+            {"active_plus_retained_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes +
+                maximum_retained_root_backend_allocation_bytes},
+            {"root_restore_count", root_restore_count},
+            {"all_retained_roots_closed",
+                llama_state_seq_get_device_root_count(ctx) == 0},
+            {"active_recurrent_backing_stable",
+                active_recurrent_backing_id(ctx) == active_recurrent_backing_initial},
+            {"active_attention_backing_stable",
+                active_attention_backing_id(ctx) == active_attention_backing_initial},
+        }},
+        {"resource_accounting", {
+            {"root_save_device_copy_bytes", root_save_device_copy_bytes},
+            {"root_restore_device_copy_bytes", root_restore_device_copy_bytes},
+        }},
+        {"roots", roots},
+        {"records", records},
+        {"verdict", accepted ? "accept" : "reject"},
+        {"claim_ceiling", spec.at("claim_ceiling")},
+    };
+}
+
+static json run_physical_attention_capability_panel(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const std::vector<llama_token> & candidates,
+        const json & spec,
+        uint64_t active_recurrent_backing_initial,
+        uint64_t active_attention_backing_initial) {
+    auto * hybrid = require_hybrid_memory(ctx);
+    auto * attention = hybrid->get_mem_attn();
+    auto * recurrent = hybrid->get_mem_recr();
+    const uint32_t actual_context_size = llama_n_ctx(ctx);
+    if (actual_context_size != spec.at("expected_context_size").get<uint32_t>()) {
+        throw std::runtime_error(
+            "physical capability panel context mismatch: " +
+            std::to_string(actual_context_size));
+    }
+    const size_t expected_source_tokens =
+        spec.at("expected_source_tokens").get<size_t>();
+    const auto & tasks = spec.at("tasks");
+    if (!tasks.is_array() || tasks.empty()) {
+        throw std::runtime_error("physical capability panel has no tasks");
+    }
+
+    const std::vector<uint32_t> attention_layers = attention->get_layer_ids();
+    std::vector<uint32_t> recurrent_layers;
+    for (uint32_t il = 0; il < recurrent->r_l.size(); ++il) {
+        if (recurrent->r_l[il] || recurrent->s_l[il]) {
+            recurrent_layers.push_back(il);
+        }
+    }
+    if (attention_layers !=
+            spec.at("expected_attention_layers").get<std::vector<uint32_t>>() ||
+        recurrent_layers !=
+            spec.at("expected_recurrent_layers").get<std::vector<uint32_t>>()) {
+        throw std::runtime_error(
+            "model hybrid layer topology differs from physical panel spec");
+    }
+
+    if (tokenize_source(vocab, spec.at("scaffold_source")).size() !=
+        expected_source_tokens) {
+        throw std::runtime_error("physical capability panel scaffold token mismatch");
+    }
+    std::set<std::string> task_ids;
+    for (const auto & task : tasks) {
+        const std::string id = task.at("id");
+        if (!task_ids.insert(id).second) {
+            throw std::runtime_error("duplicate physical-panel task id " + id);
+        }
+        for (const char * arm : {"F_only", "G_only", "joint"}) {
+            const auto tokens = tokenize_source(
+                vocab, task.at("sources").at(arm));
+            if (tokens.size() != expected_source_tokens) {
+                throw std::runtime_error(
+                    "physical-panel source token mismatch for " + id + ":" +
+                    arm + ": " + std::to_string(tokens.size()));
+            }
+        }
+    }
+
+    const auto scaffold_tokens =
+        prepare_source(ctx, vocab, spec.at("scaffold_source"));
+    auto scaffold_root = save_root(
+        ctx, "panel:F0_G0:recurrent-scaffold", 7000,
+        RECURRENT_DEVICE_FLAGS, scaffold_tokens.size());
+    const auto scaffold_hash_before = hash_recurrent_state_streamed(ctx);
+    const size_t active_cache_backend_allocation_bytes =
+        active_hybrid_backend_allocation_bytes(ctx);
+
+    using arm_results = std::map<std::string, std::vector<boundary_result>>;
+    std::map<std::string, arm_results> results;
+    json records = json::array();
+    json roots = json::array();
+    llama_seq_id key = 7001;
+    size_t scaffold_restore_count = 0;
+    size_t attention_restore_count = 0;
+    size_t cleared_attention_root_bytes = 0;
+    size_t attention_metadata_peak_bytes = 0;
+    size_t maximum_retained_root_backend_allocation_bytes =
+        scaffold_root.allocation_bytes;
+    size_t root_save_device_copy_bytes = scaffold_root.gpu_bytes;
+    size_t scaffold_restore_device_copy_bytes = 0;
+    size_t attention_restore_device_copy_bytes = 0;
+
+    for (const auto & task : tasks) {
+        const std::string id = task.at("id");
+        for (const char * arm : {"F_only", "G_only", "joint"}) {
+            const auto source_tokens =
+                prepare_source(ctx, vocab, task.at("sources").at(arm));
+            auto attention_root = save_root(
+                ctx, id + ":" + arm + ":attention", key++,
+                ATTENTION_DEVICE_FLAGS, source_tokens.size());
+            root_save_device_copy_bytes += attention_root.gpu_bytes;
+            attention_metadata_peak_bytes = std::max(
+                attention_metadata_peak_bytes, attention_root.metadata.size());
+            maximum_retained_root_backend_allocation_bytes = std::max(
+                maximum_retained_root_backend_allocation_bytes,
+                scaffold_root.allocation_bytes + attention_root.allocation_bytes);
+
+            for (const auto & query : task.at("queries")) {
+                restore_root(ctx, scaffold_root);
+                ++scaffold_restore_count;
+                scaffold_restore_device_copy_bytes += scaffold_root.gpu_bytes;
+                restore_attention_root(ctx, attention_root);
+                ++attention_restore_count;
+                attention_restore_device_copy_bytes += attention_root.gpu_bytes;
+                if (attention->seq_pos_max(0) !=
+                        static_cast<llama_pos>(source_tokens.size() - 1) ||
+                    recurrent->seq_pos_max(0) !=
+                        static_cast<llama_pos>(scaffold_tokens.size() - 1) ||
+                    active_recurrent_backing_id(ctx) !=
+                        active_recurrent_backing_initial ||
+                    active_attention_backing_id(ctx) !=
+                        active_attention_backing_initial) {
+                    throw std::runtime_error(
+                        "assembled physical panel carrier invariant failed");
+                }
+                auto boundary = decode_query(
+                    ctx, vocab, candidates,
+                    "physical-attention-capability-panel",
+                    id + ":" + arm, query, source_tokens.size(),
+                    attention_root.backing_id, attention_root.gpu_bytes);
+                records.push_back(boundary.record);
+                results[id][arm].push_back(std::move(boundary));
+            }
+
+            roots.push_back({
+                {"task_id", id},
+                {"arm", arm},
+                {"logical_tensor_bytes", attention_root.resident_bytes},
+                {"backend_allocation_bytes", attention_root.allocation_bytes},
+                {"metadata_bytes", attention_root.metadata.size()},
+                {"root_backing_id", hex64(attention_root.backing_id)},
+            });
+            llama_memory_clear(llama_get_memory(ctx), true);
+            cleared_attention_root_bytes +=
+                llama_state_seq_clear_device_data(ctx, attention_root.key);
+            if (llama_state_seq_get_device_root_count(ctx) != 1) {
+                throw std::runtime_error(
+                    "physical panel attention closure damaged scaffold");
+            }
+        }
+    }
+
+    restore_root(ctx, scaffold_root);
+    ++scaffold_restore_count;
+    scaffold_restore_device_copy_bytes += scaffold_root.gpu_bytes;
+    const auto scaffold_hash_after = hash_recurrent_state_streamed(ctx);
+    if (scaffold_hash_after.value != scaffold_hash_before.value ||
+        scaffold_hash_after.transferred_bytes !=
+            scaffold_hash_before.transferred_bytes) {
+        throw std::runtime_error(
+            "physical panel recurrent scaffold changed after reuse");
+    }
+
+    json task_summary = json::object();
+    size_t task_passes = 0;
+    for (const auto & task : tasks) {
+        const std::string id = task.at("id");
+        const auto & task_results = results.at(id);
+        const auto & queries = task.at("queries");
+        const size_t joint_correct = semantic_correct_count(
+            task_results.at("joint"), queries, false);
+        const size_t f_only_correct = semantic_correct_count(
+            task_results.at("F_only"), queries, false);
+        const size_t g_only_correct = semantic_correct_count(
+            task_results.at("G_only"), queries, false);
+        std::vector<std::string> joint_answers;
+        std::vector<std::string> f_only_answers;
+        std::vector<std::string> g_only_answers;
+        for (const auto & result : task_results.at("joint")) {
+            joint_answers.push_back(result.argmax);
+        }
+        for (const auto & result : task_results.at("F_only")) {
+            f_only_answers.push_back(result.argmax);
+        }
+        for (const auto & result : task_results.at("G_only")) {
+            g_only_answers.push_back(result.argmax);
+        }
+        const bool passed =
+            joint_correct >= task.at("joint_correct_minimum").get<size_t>() &&
+            f_only_correct <= task.at("f_only_correct_maximum").get<size_t>() &&
+            g_only_correct <= task.at("g_only_correct_maximum").get<size_t>();
+        task_passes += passed;
+        task_summary[id] = {
+            {"joint", {
+                {"answers", joint_answers},
+                {"correct", joint_correct},
+            }},
+            {"F_only", {
+                {"answers", f_only_answers},
+                {"correct", f_only_correct},
+            }},
+            {"G_only", {
+                {"answers", g_only_answers},
+                {"correct", g_only_correct},
+            }},
+            {"passed", passed},
+        };
+    }
+    const bool accepted =
+        task_passes >=
+        spec.at("acceptance_law").at("task_passes_minimum").get<size_t>();
+
+    llama_memory_clear(llama_get_memory(ctx), true);
+    const size_t cleared_scaffold_bytes =
+        llama_state_seq_clear_device_data(ctx, scaffold_root.key);
+    llama_synchronize(ctx);
+    if (llama_state_seq_get_device_root_count(ctx) != 0 ||
+        active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
+        active_attention_backing_id(ctx) != active_attention_backing_initial) {
+        throw std::runtime_error("physical capability panel close invariant failed");
+    }
+
+    return {
+        {"schema_version", 1},
+        {"mechanism", "DISJOINT_PHYSICAL_ATTENTION_CAPABILITY_PANEL"},
+        {"spec_id", spec.at("id")},
+        {"model_arch", "qwen35moe"},
+        {"configuration", {
+            {"context_size", actual_context_size},
+            {"source_tokens", expected_source_tokens},
+            {"task_count", tasks.size()},
+            {"arms_per_task", 3},
+            {"queries_per_arm", tasks.at(0).at("queries").size()},
+            {"attention_layers", attention_layers},
+            {"recurrent_layers", recurrent_layers},
+            {"restoration_class", "SNAPSHOT_RELOAD"},
+        }},
+        {"task_summary", task_summary},
+        {"summary", {
+            {"task_passes", task_passes},
+            {"task_count", tasks.size()},
+            {"accepted", accepted},
+        }},
+        {"carrier", {
+            {"scaffold", {
+                {"logical_tensor_bytes", scaffold_root.resident_bytes},
+                {"backend_allocation_bytes", scaffold_root.allocation_bytes},
+                {"metadata_bytes", scaffold_root.metadata.size()},
+                {"root_backing_id", hex64(scaffold_root.backing_id)},
+                {"restore_count", scaffold_restore_count},
+                {"content_hash_before", hex64(scaffold_hash_before.value)},
+                {"content_hash_after", hex64(scaffold_hash_after.value)},
+                {"cleared_bytes", cleared_scaffold_bytes},
+            }},
+            {"attention_roots", {
+                {"root_count", roots.size()},
+                {"restore_count", attention_restore_count},
+                {"logical_tensor_bytes_each",
+                    roots.empty() ? 0 :
+                    roots.at(0).at("logical_tensor_bytes").get<size_t>()},
+                {"metadata_peak_bytes", attention_metadata_peak_bytes},
+                {"cleared_tensor_bytes", cleared_attention_root_bytes},
+            }},
+            {"active_cache_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes},
+            {"maximum_retained_root_backend_allocation_bytes",
+                maximum_retained_root_backend_allocation_bytes},
+            {"active_plus_retained_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes +
+                maximum_retained_root_backend_allocation_bytes},
+            {"complete_host_scaffold_copy_retained", false},
+            {"all_retained_roots_closed",
+                llama_state_seq_get_device_root_count(ctx) == 0},
+            {"active_recurrent_backing_stable",
+                active_recurrent_backing_id(ctx) ==
+                active_recurrent_backing_initial},
+            {"active_attention_backing_stable",
+                active_attention_backing_id(ctx) ==
+                active_attention_backing_initial},
+        }},
+        {"resource_accounting", {
+            {"root_save_device_copy_bytes", root_save_device_copy_bytes},
+            {"scaffold_restore_device_copy_bytes",
+                scaffold_restore_device_copy_bytes},
+            {"attention_restore_device_copy_bytes",
+                attention_restore_device_copy_bytes},
+            {"scaffold_hash_d2h_bytes",
+                scaffold_hash_before.transferred_bytes +
+                scaffold_hash_after.transferred_bytes},
+            {"scaffold_hash_peak_host_work_bytes", std::max(
+                scaffold_hash_before.peak_host_work_bytes,
+                scaffold_hash_after.peak_host_work_bytes)},
+        }},
+        {"roots", roots},
+        {"records", records},
+        {"verdict", accepted ? "accept" : "reject"},
+        {"claim_ceiling", spec.at("claim_ceiling")},
+    };
+}
+
 } // namespace
 
 int main(int argc, char ** argv) {
@@ -1574,6 +2040,38 @@ int main(int argc, char ** argv) {
         }
         if (active_attention_backing_initial == 0) {
             throw std::runtime_error("active attention backing identity is zero");
+        }
+
+        if (spec.value("physical_attention_capability_panel", false)) {
+            const json result = run_physical_attention_capability_panel(
+                ctx,
+                vocab,
+                candidates,
+                spec,
+                active_backing_initial,
+                active_attention_backing_initial);
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
+        }
+
+        if (spec.value("full_hybrid_capability_panel", false)) {
+            const json result = run_full_hybrid_capability_panel(
+                ctx,
+                vocab,
+                candidates,
+                spec,
+                active_backing_initial,
+                active_attention_backing_initial);
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
         }
 
         if (spec.value("full_hybrid_capability_control", false)) {
