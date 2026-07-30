@@ -4277,6 +4277,8 @@ static json run_sparse_g_label_refresh(
         spec.value("value_orbit_attention_action", false);
     const bool key_value_orbit_mode =
         spec.value("key_value_orbit_attention_action", false);
+    const bool complex_phase_orbit_mode =
+        spec.value("complex_phase_quarter_turn_action", false);
     const bool fourier_value_orbit_mode =
         spec.value("fourier_value_orbit_action", false);
     const bool subspace_value_orbit_mode =
@@ -4292,11 +4294,13 @@ static json run_sparse_g_label_refresh(
         position_orbit_mode ||
         value_orbit_mode ||
         key_value_orbit_mode ||
+        complex_phase_orbit_mode ||
         fourier_value_orbit_mode ||
         subspace_value_orbit_mode;
     if (static_cast<int>(position_orbit_mode) +
             static_cast<int>(value_orbit_mode) +
             static_cast<int>(key_value_orbit_mode) +
+            static_cast<int>(complex_phase_orbit_mode) +
             static_cast<int>(fourier_value_orbit_mode) +
             static_cast<int>(subspace_value_orbit_mode) > 1) {
         throw std::runtime_error(
@@ -4648,6 +4652,7 @@ static json run_sparse_g_label_refresh(
     const std::set<uint32_t> orbit_attention_layers =
         (value_orbit_mode ||
          key_value_orbit_mode ||
+         complex_phase_orbit_mode ||
          fourier_value_orbit_mode ||
          subspace_value_orbit_mode)
             ? spec.contains("orbit_attention_layers")
@@ -5165,6 +5170,33 @@ static json run_sparse_g_label_refresh(
                 stage + ":Fourier-value-advanced");
             return;
         }
+        if (complex_phase_orbit_mode) {
+            llama_kv_cache::value_orbit_metrics metrics = {};
+            if (!attention->seq_apply_complex_phase_quarter_turn(
+                    candidate_seq,
+                    label_positions,
+                    orbit_attention_layers,
+                    true,
+                    &metrics)) {
+                throw std::runtime_error(
+                    stage + ": complex K/V phase action failed");
+            }
+            llama_synchronize(ctx);
+            orbit_host_read_bytes += metrics.host_read_bytes;
+            orbit_host_write_bytes += metrics.host_write_bytes;
+            orbit_peak_host_work_bytes = std::max(
+                orbit_peak_host_work_bytes,
+                metrics.peak_host_work_bytes);
+            orbit_tensor_visits += metrics.tensor_count;
+            orbit_position_visits += metrics.position_count;
+            ++orbit_action_count;
+            require_component_positions(
+                candidate_seq,
+                source_boundary_pos,
+                source_boundary_pos,
+                stage + ":complex-phase-advanced");
+            return;
+        }
         if (value_orbit_mode || key_value_orbit_mode) {
             llama_kv_cache::value_orbit_metrics metrics = {};
             if (!attention->seq_rotate_attention_positions(
@@ -5639,6 +5671,8 @@ static json run_sparse_g_label_refresh(
                     : "TRANSFERRED_STATE_CONDITIONED_LOW_RANK_VALUE_ACTION"
             : fourier_value_orbit_mode
             ? "IN_PLACE_RANK3_FOURIER_LABEL_VALUE_ACTION"
+            : complex_phase_orbit_mode
+            ? "IN_PLACE_COMPLEX_KV_PHASE_QUARTER_TURN"
             : key_value_orbit_mode
             ? "IN_PLACE_LABEL_KEY_VALUE_ORBIT_ACTION"
             : layer_selective_value_orbit
@@ -5666,6 +5700,8 @@ static json run_sparse_g_label_refresh(
             {"label_orbit_action", orbit_mode},
             {"value_only_orbit_action", value_orbit_mode},
             {"key_value_orbit_action", key_value_orbit_mode},
+            {"complex_phase_quarter_turn_action",
+                complex_phase_orbit_mode},
             {"fourier_value_orbit_action",
                 fourier_value_orbit_mode},
             {"subspace_value_orbit_action",

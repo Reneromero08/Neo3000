@@ -224,12 +224,22 @@ constructively unbounded local Agents-A1 inference.
   Frozen N/T/U/V remains `15/16`, while the four-step G0 functional return
   falls to `3/4`. Fixed-capacity context averaging therefore preserves
   training but is not the model's context-independent relation law.
-- [ ] Derive the next active-state update from layer-local model computation
-  or change the carrier geometry. Do not tune the 0136 evaluator and do not
-  create carrier-evaluation v2/v3/v4. The successor must expose or execute a
-  weight-derived/context-conditioned nonlinear update on live state, retain
-  no per-context action table, and state how it can reduce the remaining four
-  label-token forwards rather than merely fit more frozen instances.
+- [x] Change the carrier geometry once with a fixed public paired-channel
+  action rather than fitting another operator. `neo-exp-0137` applies the
+  same Z4 quarter-turn `(x,y)->(-y,x)` to the selected live K/V rows with no
+  target row, ordinal, context table, or noncanonical target forward. Four
+  turns restore every G0 candidate logit exactly (`4/4` hashes and zero
+  error), but the intermediate useful boundary is only `7/16` versus
+  `16/16` for exact model state. This proves reversible real-channel motion
+  is not the missing semantic generator. Do not tune angles, layer subsets,
+  fixtures, or evidence packets for this branch.
+- [ ] Move the multiplicative relation into layer-local model computation
+  rather than rotating post-cache rows. Implement the smallest native
+  bilinear/complex attention seam or weight-derived nonlinear K/V generator
+  that acts on live unresolved F/G representations, retains no target state
+  or per-context table, and can eliminate the four remaining label-token
+  forwards. Compare it to the identical compact bilinear recurrence. This is
+  a mechanism change, not `carrier-evaluation v2/v3/v4`.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

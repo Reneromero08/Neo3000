@@ -1387,6 +1387,137 @@ bool llama_kv_cache::seq_rotate_attention_positions(
     return true;
 }
 
+bool llama_kv_cache::seq_apply_complex_phase_quarter_turn(
+        llama_seq_id seq_id,
+        const std::vector<llama_pos> & positions,
+        const std::set<uint32_t> & layer_ids,
+        bool include_keys,
+        value_orbit_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    if (other ||
+        n_stream != 1 ||
+        seq_id < 0 ||
+        static_cast<size_t>(seq_id) >= seq_to_stream.size() ||
+        positions.empty() ||
+        layer_ids.empty()) {
+        return false;
+    }
+    const std::set<llama_pos> unique_positions(
+        positions.begin(), positions.end());
+    if (unique_positions.size() != positions.size()) {
+        return false;
+    }
+    for (const uint32_t il : layer_ids) {
+        if (map_layer_ids.find(static_cast<int32_t>(il)) ==
+            map_layer_ids.end()) {
+            return false;
+        }
+    }
+
+    const uint32_t stream = seq_to_stream[seq_id];
+    auto & cells = v_cells[stream];
+    std::vector<uint32_t> cell_indices;
+    cell_indices.reserve(positions.size());
+    for (const llama_pos position : positions) {
+        uint32_t found = cells.size();
+        for (uint32_t i = 0; i < cells.size(); ++i) {
+            if (cells.pos_in(i, position, position + 1) &&
+                cells.seq_has(i, seq_id)) {
+                if (found != cells.size()) {
+                    return false;
+                }
+                found = i;
+            }
+        }
+        if (found == cells.size()) {
+            return false;
+        }
+        cell_indices.push_back(found);
+    }
+
+    uint64_t host_read_bytes = 0;
+    uint64_t host_write_bytes = 0;
+    uint64_t peak_host_work_bytes = 0;
+    uint64_t tensor_count = 0;
+    for (const auto & layer : layers) {
+        if (layer_ids.find(layer.il) == layer_ids.end()) {
+            continue;
+        }
+        std::vector<ggml_tensor *> tensors;
+        if (include_keys) {
+            tensors.push_back(layer.k);
+        }
+        tensors.push_back(layer.v);
+        for (ggml_tensor * tensor : tensors) {
+            if (!tensor ||
+                !tensor->buffer ||
+                ggml_blck_size(tensor->type) != 1 ||
+                tensor->ne[1] != static_cast<int64_t>(get_size()) ||
+                tensor->ne[2] != static_cast<int64_t>(n_stream)) {
+                return false;
+            }
+            const ggml_type_traits * traits =
+                ggml_get_type_traits(tensor->type);
+            if (!traits ||
+                !traits->to_float ||
+                !traits->from_float_ref ||
+                traits->blck_size != 1) {
+                return false;
+            }
+            const size_t elements =
+                static_cast<size_t>(tensor->ne[0]);
+            const size_t row_bytes =
+                ggml_row_size(tensor->type, tensor->ne[0]);
+            if (elements == 0 ||
+                elements % 2 != 0 ||
+                tensor->nb[1] != row_bytes) {
+                return false;
+            }
+
+            std::vector<uint8_t> raw(row_bytes);
+            std::vector<uint8_t> output(row_bytes);
+            std::vector<float> values(elements);
+            peak_host_work_bytes = std::max<uint64_t>(
+                peak_host_work_bytes,
+                raw.size() + output.size() +
+                    values.size() * sizeof(float));
+            for (const uint32_t cell_index : cell_indices) {
+                const size_t offset =
+                    static_cast<size_t>(cell_index) *
+                    tensor->nb[1];
+                ggml_backend_tensor_get(
+                    tensor, raw.data(), offset, row_bytes);
+                traits->to_float(
+                    raw.data(), values.data(), elements);
+                for (size_t j = 0; j < elements; j += 2) {
+                    const float real = values[j];
+                    const float imag = values[j + 1];
+                    values[j] = -imag;
+                    values[j + 1] = real;
+                }
+                traits->from_float_ref(
+                    values.data(), output.data(), elements);
+                ggml_backend_tensor_set(
+                    tensor, output.data(), offset, row_bytes);
+                host_read_bytes += row_bytes;
+                host_write_bytes += row_bytes;
+            }
+            ++tensor_count;
+        }
+    }
+
+    if (metrics) {
+        metrics->host_read_bytes = host_read_bytes;
+        metrics->host_write_bytes = host_write_bytes;
+        metrics->peak_host_work_bytes = peak_host_work_bytes;
+        metrics->tensor_count = tensor_count;
+        metrics->position_count = positions.size();
+    }
+    return true;
+}
+
 bool llama_kv_cache::seq_accumulate_value_fourier_sample(
         llama_seq_id seq_id,
         llama_pos position,

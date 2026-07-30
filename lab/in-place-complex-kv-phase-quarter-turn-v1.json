@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "id": "in-place-complex-kv-phase-quarter-turn-v1",
+  "experiment_id": "neo-exp-0137",
+  "description": "Initialize one canonical G0 label-attention fiber with four fixed token forwards, then apply the same public Z4 quarter-turn (real,imag)->(-imag,real) to adjacent channels of the selected active K/V rows before each later G branch. No target row, target delta, ordinal, fitted operator, context table, or target-branch model forward is allowed. Four applications must restore the numerical rows.",
+  "open_f_prefix_nonlinear_composition": false,
+  "expected_context_size": 4096,
+  "expected_context_per_sequence": 512,
+  "expected_source_tokens": 130,
+  "expected_prefix_tokens": 48,
+  "expected_f_tokens": 31,
+  "expected_g_tokens": 27,
+  "expected_closure_tokens": 24,
+  "queries_per_variant": 4,
+  "predecessor_evidence": {
+    "path": "lab/prospective-fixed-capacity-multi-context-attention-action-v1-result.json",
+    "sha256": "E32424D46A6A528E246E9F5028DDC2AD7A861B4C6853EF4008D4184150BB757D"
+  },
+  "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+  "module_f": "F: Item E maps to vault J. Item F maps to vault K. Item G maps to vault L. Item H maps to vault M.\n",
+  "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n",
+  "g_variants": [
+    {
+      "id": "G-rotation-0",
+      "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+      "queries": [
+        {
+          "id": "G0-E",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "G0-F",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "G0-G",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "G0-H",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-1",
+      "module_g": "G: Vault J has code B. Vault K has code C. Vault L has code D. Vault M has code A.\n",
+      "queries": [
+        {
+          "id": "G1-E",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "G1-F",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "G1-G",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "G1-H",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-2",
+      "module_g": "G: Vault J has code C. Vault K has code D. Vault L has code A. Vault M has code B.\n",
+      "queries": [
+        {
+          "id": "G2-E",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "G2-F",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "G2-G",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "G2-H",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-3",
+      "module_g": "G: Vault J has code D. Vault K has code A. Vault L has code B. Vault M has code C.\n",
+      "queries": [
+        {
+          "id": "G3-E",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "G3-F",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "G3-G",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "G3-H",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    }
+  ],
+  "acceptance_law": {
+    "primary_correct": 16,
+    "primary_boundary_matches": 16,
+    "return_boundary_matches": 4
+  },
+  "claim_ceiling": "Passing establishes only that, on the frozen four-rotation panel, one canonical four-label attention fiber can remain active and change useful later-model boundaries under a fixed public adjacent-channel quarter-turn applied to selected K/V rows, with zero target-branch source-token forward, stable active backing, no target state or per-context action table, four-step numerical return, a functional return sentinel, and complete closure. Fixed preparation is four label-token forwards; branch-variable source work is zero. Count the 610,795,520-byte active allocation, four fixed recurrent stage rows, every D2H/H2D K/V-row byte, every query forward, exact-reference controls, and numerical boundary drift. This host-mediated finite Z4 operation acts on real Qwen K/V channels and has an identical compact classical recurrence; it does not by itself establish native complex attention, a distinct phase resource, task breadth, complete attention-object restoration, overall zero fresh compute, Small Wall crossing, catalytic recurrence, or unbounded inference.",
+  "active_f_sequence_branching": false,
+  "expected_n_seq_max": 8,
+  "g_forward_state_partition": false,
+  "closure_scaffold_advance": false,
+  "require_unified_kv": true,
+  "expected_attention_stream_count": 1,
+  "predecessor_result": {
+    "experiment_id": "neo-exp-0136",
+    "classification": "FIXED_CAPACITY_CONTEXT_GENERAL_AFFINE_ATTENTION_ACTION_TRANSFER_REJECTED",
+    "training_replay_boundary_matches": 32,
+    "heldout_boundary_matches": 15,
+    "functional_return_matches": 3,
+    "result_sha256": "E32424D46A6A528E246E9F5028DDC2AD7A861B4C6853EF4008D4184150BB757D"
+  },
+  "structural_module_g": "G: Vault J has code P. Vault K has code Q. Vault L has code R. Vault M has code S.\n",
+  "label_token_offsets": [
+    6,
+    12,
+    18,
+    24
+  ],
+  "sparse_g_label_refresh": true,
+  "label_orbit_attention_action": false,
+  "value_orbit_attention_action": false,
+  "key_value_orbit_attention_action": false,
+  "fourier_value_orbit_action": false,
+  "subspace_value_orbit_action": false,
+  "complex_phase_quarter_turn_action": true,
+  "orbit_attention_layers": [
+    3,
+    7,
+    11,
+    15,
+    19,
+    23,
+    27,
+    31,
+    35,
+    39
+  ]
+}

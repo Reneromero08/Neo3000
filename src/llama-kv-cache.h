@@ -189,6 +189,22 @@ public:
             bool include_keys,
             value_orbit_metrics * metrics);
 
+    // Applies one exact public Z4 quarter-turn to adjacent real channel pairs
+    // in every selected active attention row:
+    //
+    //     (real, imag) -> (-imag, real)
+    //
+    // The same fixed action is applied to every declared position. No target
+    // row, fitted operator, ordinal, or per-context action table is supplied.
+    // With include_keys false only values turn; with true, keys and values
+    // turn together. Four applications restore the selected numerical rows.
+    bool seq_apply_complex_phase_quarter_turn(
+            llama_seq_id seq_id,
+            const std::vector<llama_pos> & positions,
+            const std::set<uint32_t> & layer_ids,
+            bool include_keys,
+            value_orbit_metrics * metrics);
+
     struct value_fourier_layer {
         uint32_t layer_id = 0;
         std::vector<float> cosine;

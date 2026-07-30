@@ -1199,3 +1199,21 @@ whose public action is native. A valid successor attacks the remaining four
 label-token forwards and retains no per-context action table. There will be no
 `carrier evaluation v2/v3/v4`: evidence is still one packet protecting one
 changed generator.
+
+`neo-exp-0137` closes the simplest paired-channel geometry without starting
+an evaluation series. One fixed public quarter-turn acts on adjacent real
+channels of the live K/V rows in all ten attention layers. It has no learned
+operator, target state, ordinal, or target-branch forward, and four turns
+return the complete G0 candidate boundary bit-exactly. Yet its intermediate
+semantic boundary is only `7/16`, while exact model state is `16/16`.
+Reversibility and stable backing therefore do not supply the relation law.
+
+The next intervention moves the multiplicative interaction upstream into the
+layer-local computation that forms or consumes the carrier. The smallest
+lawful screen is a native bilinear/paired-complex score-times-value seam—or a
+weight-derived nonlinear K/V generator with the same causal role—fed by live
+unresolved F/G representations. It must retain no target rows or context
+table, be charged against the identical compact bilinear recurrence, and
+state how it removes the four remaining label-token forwards. Post-cache
+phase-angle tuning, layer partitions, fixture multiplication, and evidence
+packet versions are closed by this result.

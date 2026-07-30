@@ -209,6 +209,14 @@ The active recurrence and acceptance boundary are
   replays both training contexts at `32/32`. The frozen unseen N/T/U/V route
   remains `15/16`, and the four-step functional return degrades to `3/4`.
   Every sequence/root closes and active backing stays stable.
+- `neo-exp-0137` executes one table-free carrier-geometry discriminator. The
+  same public adjacent-channel Z4 quarter-turn acts on K/V rows in all ten
+  attention layers, uses zero noncanonical target forwards, retains no
+  target state or fitted operator, and returns G0 bit-exactly after four
+  actions (`4/4` full-logit hashes, zero candidate error). The useful
+  intermediate boundary is only `7/16`; exact full state remains `16/16`.
+  This is a real reversible active-state action, not a semantic relation
+  generator or a distinct phase resource.
 - The complete Release server rebuild passes after the KV action change.
   Configured CUDA closure remains `139/139` compile entries and `139/139`
   unique objects. Seventeen focused declarative-runner/oracle tests and all 19
@@ -233,6 +241,12 @@ The active recurrence and acceptance boundary are
   carrier-evaluation versions do not address this mechanism. The next
   intervention must use layer-local model computation, actual weights, or a
   different carrier geometry.
+- A fixed paired-channel quarter-turn on post-cache real K/V rows is rejected
+  as that geometry. It is exactly reversible but drives most noncanonical
+  queries to D and preserves only `7/16` useful boundaries. No angle, layer,
+  fixture, or evidence-harness variants are warranted. The next intervention
+  moves the multiplicative relation into the layer-local attention/update
+  computation.
 
 - The balanced held-out adapter produced joint/F-only/G-only accuracy
   `1/4`, `1/4`, and `2/4`; eligibility mutation failed. It is a conventional
