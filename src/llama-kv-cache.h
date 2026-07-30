@@ -374,6 +374,75 @@ public:
             llama_context * lctx,
             role_generator_metrics * metrics);
 
+    // Forward-only sample-space kernel writer. Each layer/K/V/destination
+    // boundary retains a reduced-rank affine transport rather than an
+    // elementwise channel law or one shared random-feature generator.
+    // Construction rows are centered, folded into source and output bases,
+    // and erased. Runtime source rows stay on device.
+    struct attention_kernel_writer_layer {
+        uint32_t layer_id = 0;
+        bool key = false;
+        uint32_t destination_index = 0;
+        uint32_t row_width = 0;
+        uint32_t rank = 0;
+        double ridge_lambda = 0.0;
+        double training_max_abs_error = 0.0;
+        std::vector<float> source_mean;
+        std::vector<float> target_mean;
+        std::vector<float> source_basis; // [rank, row_width]
+        std::vector<float> output_basis; // [rank, row_width]
+    };
+
+    struct attention_kernel_writer_operator {
+        std::vector<attention_kernel_writer_layer> layers;
+        uint64_t training_samples = 0;
+        uint64_t samples_per_destination = 0;
+        uint64_t destination_count = 0;
+        uint64_t logical_bytes = 0;
+        uint64_t vector_backing_bytes = 0;
+        uint64_t total_rank = 0;
+        uint64_t maximum_rank = 0;
+        double training_max_abs_error = 0.0;
+    };
+
+    struct attention_kernel_writer_metrics {
+        uint64_t host_parameter_upload_bytes = 0;
+        uint64_t host_carrier_read_bytes = 0;
+        uint64_t host_carrier_write_bytes = 0;
+        uint64_t logical_parameter_bytes = 0;
+        uint64_t vector_backing_bytes = 0;
+        uint64_t peak_training_host_work_bytes = 0;
+        uint64_t tensor_visits = 0;
+        uint64_t position_visits = 0;
+        uint64_t graph_applications = 0;
+        uint64_t generated_rows = 0;
+        uint64_t multiply_accumulates = 0;
+    };
+
+    // Fits one cross-channel kernel-ridge writer per physical attention
+    // boundary. The retained rank is exactly the prospectively bounded
+    // construction sample count; there is no rank sweep or target-row table.
+    bool finalize_attention_kernel_writer(
+            role_transport_builder * builder,
+            uint32_t destination_count,
+            uint32_t samples_per_destination,
+            double ridge_fraction,
+            attention_kernel_writer_operator * writer,
+            attention_kernel_writer_metrics * metrics);
+
+    // Applies all declared output-row -> destination-row writes in one
+    // backend graph. Only immutable writer parameters cross from host;
+    // actual output rows and generated K/V rows remain backend-resident.
+    bool seq_apply_attention_kernel_writer(
+            const std::vector<llama_seq_id> & source_seq_ids,
+            const std::vector<llama_pos> & source_positions,
+            llama_seq_id destination_seq_id,
+            const std::vector<llama_pos> & destination_positions,
+            const std::vector<uint32_t> & destination_indices,
+            const attention_kernel_writer_operator & writer,
+            llama_context * lctx,
+            attention_kernel_writer_metrics * metrics);
+
     // Applies one exact public Z4 quarter-turn to adjacent real channel pairs
     // in every selected active attention row:
     //

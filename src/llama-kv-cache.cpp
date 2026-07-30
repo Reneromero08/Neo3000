@@ -2825,6 +2825,663 @@ bool llama_kv_cache::seq_apply_attention_role_generator(
     return true;
 }
 
+bool llama_kv_cache::finalize_attention_kernel_writer(
+        role_transport_builder * builder,
+        uint32_t destination_count,
+        uint32_t samples_per_destination,
+        double ridge_fraction,
+        attention_kernel_writer_operator * writer,
+        attention_kernel_writer_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    if (!builder ||
+        !writer ||
+        destination_count == 0 ||
+        samples_per_destination < 2 ||
+        samples_per_destination > 64 ||
+        !std::isfinite(ridge_fraction) ||
+        ridge_fraction <= 0.0 ||
+        builder->layers.empty() ||
+        builder->sample_count !=
+            static_cast<uint64_t>(destination_count) *
+                samples_per_destination) {
+        return false;
+    }
+
+    *writer = {};
+    uint64_t peak_host_work_bytes =
+        builder->vector_backing_bytes;
+    for (const auto & input : builder->layers) {
+        if (input.destination_index >= destination_count ||
+            input.source.size() != samples_per_destination ||
+            input.target.size() != samples_per_destination ||
+            input.present.size() != samples_per_destination ||
+            !std::all_of(
+                input.present.begin(),
+                input.present.end(),
+                [](bool value) { return value; })) {
+            return false;
+        }
+        const size_t rank = samples_per_destination;
+        const size_t width = input.source.front().size();
+        if (width == 0 ||
+            !std::all_of(
+                input.source.begin(),
+                input.source.end(),
+                [width](const std::vector<float> & row) {
+                    return row.size() == width;
+                }) ||
+            !std::all_of(
+                input.target.begin(),
+                input.target.end(),
+                [width](const std::vector<float> & row) {
+                    return row.size() == width;
+                })) {
+            return false;
+        }
+
+        attention_kernel_writer_layer output;
+        output.layer_id = input.layer_id;
+        output.key = input.key;
+        output.destination_index =
+            input.destination_index;
+        output.row_width =
+            static_cast<uint32_t>(width);
+        output.rank =
+            static_cast<uint32_t>(rank);
+        output.source_mean.assign(width, 0.0f);
+        output.target_mean.assign(width, 0.0f);
+        for (size_t i = 0; i < rank; ++i) {
+            for (size_t j = 0; j < width; ++j) {
+                output.source_mean[j] +=
+                    input.source[i][j] /
+                    static_cast<float>(rank);
+                output.target_mean[j] +=
+                    input.target[i][j] /
+                    static_cast<float>(rank);
+            }
+        }
+
+        std::vector<double> source_centered(
+            rank * width, 0.0);
+        std::vector<double> target_centered(
+            rank * width, 0.0);
+        for (size_t i = 0; i < rank; ++i) {
+            for (size_t j = 0; j < width; ++j) {
+                source_centered[i * width + j] =
+                    input.source[i][j] -
+                    output.source_mean[j];
+                target_centered[i * width + j] =
+                    input.target[i][j] -
+                    output.target_mean[j];
+            }
+        }
+
+        std::vector<double> kernel(rank * rank, 0.0);
+        for (size_t i = 0; i < rank; ++i) {
+            for (size_t j = 0; j <= i; ++j) {
+                long double dot = 0.0;
+                for (size_t k = 0; k < width; ++k) {
+                    dot +=
+                        source_centered[i * width + k] *
+                        source_centered[j * width + k];
+                }
+                const double value =
+                    static_cast<double>(
+                        dot / static_cast<long double>(width));
+                kernel[i * rank + j] = value;
+                kernel[j * rank + i] = value;
+            }
+        }
+        double mean_diagonal = 0.0;
+        for (size_t i = 0; i < rank; ++i) {
+            mean_diagonal +=
+                kernel[i * rank + i] /
+                static_cast<double>(rank);
+        }
+        output.ridge_lambda =
+            ridge_fraction *
+            std::max(mean_diagonal, 1.0e-12);
+        std::vector<double> factor = kernel;
+        for (size_t i = 0; i < rank; ++i) {
+            factor[i * rank + i] +=
+                output.ridge_lambda;
+        }
+
+        // Cholesky factorization of the bounded sample-space kernel.
+        for (size_t i = 0; i < rank; ++i) {
+            for (size_t j = 0; j <= i; ++j) {
+                double value = factor[i * rank + j];
+                for (size_t k = 0; k < j; ++k) {
+                    value -=
+                        factor[i * rank + k] *
+                        factor[j * rank + k];
+                }
+                if (i == j) {
+                    if (!std::isfinite(value) ||
+                        value <= 1.0e-18) {
+                        return false;
+                    }
+                    factor[i * rank + j] =
+                        std::sqrt(value);
+                } else {
+                    factor[i * rank + j] =
+                        value /
+                        factor[j * rank + j];
+                }
+            }
+            for (size_t j = i + 1; j < rank; ++j) {
+                factor[i * rank + j] = 0.0;
+            }
+        }
+
+        std::vector<double> coefficients(
+            rank * width, 0.0);
+        std::vector<double> work(rank, 0.0);
+        for (size_t column = 0; column < width; ++column) {
+            for (size_t i = 0; i < rank; ++i) {
+                double value =
+                    target_centered[i * width + column];
+                for (size_t k = 0; k < i; ++k) {
+                    value -=
+                        factor[i * rank + k] *
+                        work[k];
+                }
+                work[i] =
+                    value /
+                    factor[i * rank + i];
+            }
+            for (size_t reverse = 0;
+                 reverse < rank;
+                 ++reverse) {
+                const size_t i = rank - reverse - 1;
+                double value = work[i];
+                for (size_t k = i + 1; k < rank; ++k) {
+                    value -=
+                        factor[k * rank + i] *
+                        coefficients[
+                            k * width + column];
+                }
+                coefficients[i * width + column] =
+                    value /
+                    factor[i * rank + i];
+            }
+        }
+
+        output.source_basis.resize(rank * width);
+        output.output_basis.resize(rank * width);
+        for (size_t i = 0; i < rank; ++i) {
+            for (size_t j = 0; j < width; ++j) {
+                output.source_basis[i * width + j] =
+                    static_cast<float>(
+                        source_centered[i * width + j] /
+                        static_cast<double>(width));
+                output.output_basis[i * width + j] =
+                    static_cast<float>(
+                        coefficients[i * width + j]);
+            }
+        }
+
+        for (size_t sample = 0;
+             sample < rank;
+             ++sample) {
+            for (size_t column = 0;
+                 column < width;
+                 ++column) {
+                double predicted =
+                    output.target_mean[column];
+                for (size_t basis = 0;
+                     basis < rank;
+                     ++basis) {
+                    predicted +=
+                        kernel[sample * rank + basis] *
+                        coefficients[
+                            basis * width + column];
+                }
+                output.training_max_abs_error =
+                    std::max(
+                        output.training_max_abs_error,
+                        std::abs(
+                            predicted -
+                            static_cast<double>(
+                                input.target[sample][column])));
+            }
+        }
+        writer->training_max_abs_error =
+            std::max(
+                writer->training_max_abs_error,
+                output.training_max_abs_error);
+        writer->total_rank += rank;
+        writer->maximum_rank =
+            std::max<uint64_t>(
+                writer->maximum_rank, rank);
+        writer->logical_bytes +=
+            (output.source_mean.size() +
+             output.target_mean.size() +
+             output.source_basis.size() +
+             output.output_basis.size()) *
+                sizeof(float);
+        writer->layers.push_back(std::move(output));
+        peak_host_work_bytes =
+            std::max<uint64_t>(
+                peak_host_work_bytes,
+                builder->vector_backing_bytes +
+                    (2 * rank * width +
+                     2 * rank * rank +
+                     rank) *
+                        sizeof(double));
+    }
+
+    writer->training_samples =
+        builder->sample_count;
+    writer->samples_per_destination =
+        samples_per_destination;
+    writer->destination_count =
+        destination_count;
+    writer->vector_backing_bytes =
+        sizeof(*writer) +
+        writer->layers.capacity() *
+            sizeof(attention_kernel_writer_layer);
+    for (const auto & item : writer->layers) {
+        writer->vector_backing_bytes +=
+            (item.source_mean.capacity() +
+             item.target_mean.capacity() +
+             item.source_basis.capacity() +
+             item.output_basis.capacity()) *
+                sizeof(float);
+    }
+    *builder = {};
+    if (metrics) {
+        metrics->logical_parameter_bytes =
+            writer->logical_bytes;
+        metrics->vector_backing_bytes =
+            writer->vector_backing_bytes;
+        metrics->peak_training_host_work_bytes =
+            peak_host_work_bytes;
+        metrics->tensor_visits =
+            writer->layers.size();
+    }
+    return writer->layers.size() ==
+        static_cast<size_t>(destination_count) *
+            2 * layers.size();
+}
+
+bool llama_kv_cache::seq_apply_attention_kernel_writer(
+        const std::vector<llama_seq_id> & source_seq_ids,
+        const std::vector<llama_pos> & source_positions,
+        llama_seq_id destination_seq_id,
+        const std::vector<llama_pos> & destination_positions,
+        const std::vector<uint32_t> & destination_indices,
+        const attention_kernel_writer_operator & writer,
+        llama_context * lctx,
+        attention_kernel_writer_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    const size_t promotion_count = source_seq_ids.size();
+    if (!lctx ||
+        other ||
+        n_stream != 1 ||
+        promotion_count == 0 ||
+        source_positions.size() != promotion_count ||
+        destination_positions.size() != promotion_count ||
+        destination_indices.size() != promotion_count ||
+        destination_seq_id < 0 ||
+        static_cast<size_t>(destination_seq_id) >=
+            seq_to_stream.size() ||
+        writer.layers.empty() ||
+        writer.destination_count == 0 ||
+        writer.samples_per_destination < 2 ||
+        writer.samples_per_destination > 64) {
+        return false;
+    }
+
+    const uint32_t stream =
+        seq_to_stream[destination_seq_id];
+    auto & cells = v_cells[stream];
+    const auto find_unique_cell =
+            [&](llama_seq_id seq_id, llama_pos position) {
+        if (seq_id < 0 ||
+            static_cast<size_t>(seq_id) >=
+                seq_to_stream.size() ||
+            seq_to_stream[seq_id] != stream ||
+            position < 0) {
+            return static_cast<uint32_t>(cells.size());
+        }
+        uint32_t found = cells.size();
+        for (uint32_t i = 0; i < cells.size(); ++i) {
+            if (cells.pos_in(i, position, position + 1) &&
+                cells.seq_has(i, seq_id)) {
+                if (found != cells.size()) {
+                    return static_cast<uint32_t>(
+                        cells.size());
+                }
+                found = i;
+            }
+        }
+        return found;
+    };
+
+    std::vector<uint32_t> source_cells(promotion_count);
+    std::vector<uint32_t> destination_cells(promotion_count);
+    for (size_t i = 0; i < promotion_count; ++i) {
+        if (destination_indices[i] >=
+                writer.destination_count) {
+            return false;
+        }
+        source_cells[i] =
+            find_unique_cell(
+                source_seq_ids[i], source_positions[i]);
+        destination_cells[i] =
+            find_unique_cell(
+                destination_seq_id,
+                destination_positions[i]);
+        if (source_cells[i] == cells.size() ||
+            destination_cells[i] == cells.size() ||
+            source_cells[i] == destination_cells[i]) {
+            return false;
+        }
+    }
+
+    struct graph_row {
+        ggml_tensor * tensor = nullptr;
+        uint32_t source_cell = 0;
+        uint32_t destination_cell = 0;
+        const attention_kernel_writer_layer * writer = nullptr;
+    };
+    std::vector<graph_row> rows;
+    rows.reserve(promotion_count * writer.layers.size());
+    for (size_t promotion = 0;
+         promotion < promotion_count;
+         ++promotion) {
+        for (const auto & item : writer.layers) {
+            if (item.destination_index !=
+                    destination_indices[promotion]) {
+                continue;
+            }
+            const auto found =
+                map_layer_ids.find(
+                    static_cast<int32_t>(item.layer_id));
+            if (found == map_layer_ids.end()) {
+                return false;
+            }
+            const auto & layer = layers[found->second];
+            ggml_tensor * tensor =
+                item.key ? layer.k : layer.v;
+            if (!tensor ||
+                !tensor->buffer ||
+                ggml_blck_size(tensor->type) != 1 ||
+                tensor->ne[0] != item.row_width ||
+                tensor->ne[1] !=
+                    static_cast<int64_t>(get_size()) ||
+                tensor->ne[2] !=
+                    static_cast<int64_t>(n_stream) ||
+                tensor->nb[1] !=
+                    ggml_row_size(
+                        tensor->type, tensor->ne[0]) ||
+                item.rank !=
+                    writer.samples_per_destination ||
+                item.source_mean.size() !=
+                    item.row_width ||
+                item.target_mean.size() !=
+                    item.row_width ||
+                item.source_basis.size() !=
+                    static_cast<size_t>(item.rank) *
+                        item.row_width ||
+                item.output_basis.size() !=
+                    static_cast<size_t>(item.rank) *
+                        item.row_width) {
+                return false;
+            }
+            rows.push_back({
+                tensor,
+                source_cells[promotion],
+                destination_cells[promotion],
+                &item,
+            });
+        }
+    }
+    if (rows.empty() ||
+        rows.size() !=
+            promotion_count *
+                writer.layers.size() /
+                writer.destination_count) {
+        return false;
+    }
+    const size_t row_width =
+        rows.front().writer->row_width;
+    const size_t rank =
+        rows.front().writer->rank;
+    if (row_width == 0 || rank == 0 ||
+        !std::all_of(
+            rows.begin(),
+            rows.end(),
+            [row_width, rank](const graph_row & row) {
+                return row.writer->row_width == row_width &&
+                    row.writer->rank == rank;
+            })) {
+        return false;
+    }
+
+    ggml_init_params params = {
+        /*.mem_size   =*/ 8 * 1024 * 1024,
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    ggml_context * graph_ctx = ggml_init(params);
+    if (!graph_ctx) {
+        return false;
+    }
+    const auto free_graph_ctx = [&]() {
+        ggml_free(graph_ctx);
+    };
+
+    ggml_tensor * source_means =
+        ggml_new_tensor_2d(
+            graph_ctx,
+            GGML_TYPE_F32,
+            row_width,
+            rows.size());
+    ggml_tensor * target_means =
+        ggml_new_tensor_2d(
+            graph_ctx,
+            GGML_TYPE_F32,
+            row_width,
+            rows.size());
+    ggml_tensor * source_bases =
+        ggml_new_tensor_3d(
+            graph_ctx,
+            GGML_TYPE_F32,
+            row_width,
+            rank,
+            rows.size());
+    ggml_tensor * output_bases =
+        ggml_new_tensor_3d(
+            graph_ctx,
+            GGML_TYPE_F32,
+            rank,
+            row_width,
+            rows.size());
+    for (auto * tensor :
+         {source_means,
+          target_means,
+          source_bases,
+          output_bases}) {
+        ggml_set_input(tensor);
+    }
+
+    ggml_cgraph * graph =
+        ggml_new_graph_custom(
+            graph_ctx,
+            std::max<size_t>(
+                4096, 48 * rows.size()),
+            false);
+    for (size_t i = 0; i < rows.size(); ++i) {
+        ggml_tensor * source =
+            ggml_view_1d(
+                graph_ctx,
+                rows[i].tensor,
+                row_width,
+                static_cast<size_t>(
+                    rows[i].source_cell) *
+                    rows[i].tensor->nb[1]);
+        source =
+            ggml_cast(
+                graph_ctx, source, GGML_TYPE_F32);
+        ggml_tensor * source_mean =
+            ggml_view_1d(
+                graph_ctx,
+                source_means,
+                row_width,
+                i * source_means->nb[1]);
+        ggml_tensor * target_mean =
+            ggml_view_1d(
+                graph_ctx,
+                target_means,
+                row_width,
+                i * target_means->nb[1]);
+        ggml_tensor * source_basis =
+            ggml_view_2d(
+                graph_ctx,
+                source_bases,
+                row_width,
+                rank,
+                source_bases->nb[1],
+                i * source_bases->nb[2]);
+        ggml_tensor * output_basis =
+            ggml_view_2d(
+                graph_ctx,
+                output_bases,
+                rank,
+                row_width,
+                output_bases->nb[1],
+                i * output_bases->nb[2]);
+        ggml_tensor * coefficients =
+            ggml_mul_mat(
+                graph_ctx,
+                source_basis,
+                ggml_sub(
+                    graph_ctx, source, source_mean));
+        ggml_tensor * generated =
+            ggml_add(
+                graph_ctx,
+                ggml_mul_mat(
+                    graph_ctx,
+                    output_basis,
+                    coefficients),
+                target_mean);
+        if (generated->type != rows[i].tensor->type) {
+            generated =
+                ggml_cast(
+                    graph_ctx,
+                    generated,
+                    rows[i].tensor->type);
+        }
+        ggml_tensor * destination =
+            ggml_view_1d(
+                graph_ctx,
+                rows[i].tensor,
+                row_width,
+                static_cast<size_t>(
+                    rows[i].destination_cell) *
+                    rows[i].tensor->nb[1]);
+        ggml_build_forward_expand(
+            graph,
+            ggml_cpy(
+                graph_ctx,
+                generated,
+                destination));
+    }
+
+    lctx->invalidate_neo3000_graph_cache();
+    ggml_backend_sched_t sched = lctx->get_sched();
+    if (!ggml_backend_sched_alloc_graph(sched, graph)) {
+        lctx->invalidate_neo3000_graph_cache();
+        free_graph_ctx();
+        return false;
+    }
+
+    std::vector<float> source_mean_data(
+        rows.size() * row_width);
+    std::vector<float> target_mean_data(
+        rows.size() * row_width);
+    std::vector<float> source_basis_data(
+        rows.size() * rank * row_width);
+    std::vector<float> output_basis_data(
+        rows.size() * rank * row_width);
+    for (size_t i = 0; i < rows.size(); ++i) {
+        const auto & item = *rows[i].writer;
+        std::copy(
+            item.source_mean.begin(),
+            item.source_mean.end(),
+            source_mean_data.begin() +
+                i * row_width);
+        std::copy(
+            item.target_mean.begin(),
+            item.target_mean.end(),
+            target_mean_data.begin() +
+                i * row_width);
+        std::copy(
+            item.source_basis.begin(),
+            item.source_basis.end(),
+            source_basis_data.begin() +
+                i * rank * row_width);
+        std::copy(
+            item.output_basis.begin(),
+            item.output_basis.end(),
+            output_basis_data.begin() +
+                i * rank * row_width);
+    }
+    const auto upload =
+            [](ggml_tensor * tensor,
+               const std::vector<float> & values) {
+        ggml_backend_tensor_set(
+            tensor,
+            values.data(),
+            0,
+            values.size() * sizeof(float));
+    };
+    upload(source_means, source_mean_data);
+    upload(target_means, target_mean_data);
+    upload(source_bases, source_basis_data);
+    upload(output_bases, output_basis_data);
+
+    const ggml_status status =
+        lctx->graph_compute(graph, true);
+    lctx->synchronize();
+    lctx->invalidate_neo3000_graph_cache();
+    free_graph_ctx();
+    if (status != GGML_STATUS_SUCCESS) {
+        return false;
+    }
+
+    if (metrics) {
+        metrics->host_parameter_upload_bytes =
+            (source_mean_data.size() +
+             target_mean_data.size() +
+             source_basis_data.size() +
+             output_basis_data.size()) *
+                sizeof(float);
+        metrics->host_carrier_read_bytes = 0;
+        metrics->host_carrier_write_bytes = 0;
+        metrics->logical_parameter_bytes =
+            writer.logical_bytes;
+        metrics->vector_backing_bytes =
+            writer.vector_backing_bytes;
+        metrics->tensor_visits = rows.size();
+        metrics->position_visits =
+            promotion_count * 2;
+        metrics->graph_applications = 1;
+        metrics->generated_rows = rows.size();
+        metrics->multiply_accumulates =
+            2 * rows.size() *
+                static_cast<uint64_t>(row_width) *
+                rank;
+    }
+    return true;
+}
+
 bool llama_kv_cache::seq_apply_complex_phase_quarter_turn(
         llama_seq_id seq_id,
         const std::vector<llama_pos> & positions,

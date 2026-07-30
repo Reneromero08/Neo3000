@@ -557,6 +557,22 @@ constructively unbounded local Agents-A1 inference.
   attention-state writer or dynamic weight adapter; do not create slot,
   layer, scale, context, prompt, fixture, optimizer, evaluator,
   carrier-evaluation, or evidence-harness variants.
+  `neo-exp-0154` is frozen precontact as one changed physical mechanism, not
+  carrier-evaluation or evidence-harness versioning. Two public construction
+  contexts and all four phases fit a prospectively fixed rank-8 cross-channel
+  kernel writer separately for each attention layer, K/V kind, and public
+  destination. Construction rows are folded into centered sample-space bases
+  and erased; their full material contribution remains represented and
+  charged in the writer parameters, so no training-state compression is
+  claimed. At runtime, actual output rows remain on CUDA, one backend graph
+  generates complete K/V rows directly into the fixed source-label cells, and
+  ordinary later attention consumes them. No expected answer, untransformed
+  target row, source-role forward, rank sweep, or post-contact tuning is
+  available. The probe and full Release server build, the focused suite passes
+  `32/32`, and CUDA closure is `139/139`. The only next action is one native
+  contact. Failure closes the forward-only learned attention-writer family and
+  moves to a dynamic model-weight adapter; it does not mint writer, evaluator,
+  carrier-evaluation, fixture, or evidence-harness variants.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

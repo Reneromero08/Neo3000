@@ -5555,6 +5555,10 @@ static json run_sparse_g_label_refresh(
         spec.value("output_role_transport_action", false);
     const bool output_role_generator_mode =
         spec.value("output_role_generator_action", false);
+    const bool output_attention_kernel_writer_mode =
+        spec.value(
+            "output_attention_kernel_writer_action",
+            false);
     const bool output_source_relink_rematerialization_mode =
         spec.value(
             "output_source_position_rematerialization_action",
@@ -5589,6 +5593,7 @@ static json run_sparse_g_label_refresh(
         output_promoted_value_carrier_mode ||
         output_role_transport_mode ||
         output_role_generator_mode ||
+        output_attention_kernel_writer_mode ||
         output_source_rematerialization_mode ||
         output_written_carrier_mode ||
         output_recurrent_delta_advance_mode;
@@ -5653,6 +5658,8 @@ static json run_sparse_g_label_refresh(
             static_cast<int>(output_promoted_value_carrier_mode) +
             static_cast<int>(output_role_transport_mode) +
             static_cast<int>(output_role_generator_mode) +
+            static_cast<int>(
+                output_attention_kernel_writer_mode) +
             static_cast<int>(
                 output_source_relink_rematerialization_mode) +
             static_cast<int>(
@@ -6906,10 +6913,18 @@ static json run_sparse_g_label_refresh(
         role_generator_operator;
     llama_kv_cache::role_generator_metrics
         role_generator_finalize_metrics = {};
+    llama_kv_cache::attention_kernel_writer_operator
+        attention_kernel_writer_operator;
+    llama_kv_cache::attention_kernel_writer_metrics
+        attention_kernel_writer_finalize_metrics = {};
     uint64_t role_generator_runtime_parameter_upload_bytes = 0;
     uint64_t role_generator_runtime_graph_applications = 0;
     uint64_t role_generator_runtime_generated_rows = 0;
     uint64_t role_generator_runtime_multiply_accumulates = 0;
+    uint64_t attention_kernel_writer_runtime_parameter_upload_bytes = 0;
+    uint64_t attention_kernel_writer_runtime_graph_applications = 0;
+    uint64_t attention_kernel_writer_runtime_generated_rows = 0;
+    uint64_t attention_kernel_writer_runtime_multiply_accumulates = 0;
     json role_transport_training_records = json::array();
     size_t role_transport_training_source_tokens = 0;
     size_t role_transport_training_query_tokens = 0;
@@ -6920,13 +6935,18 @@ static json run_sparse_g_label_refresh(
     uint64_t role_transport_builder_peak_bytes = 0;
     uint64_t role_transport_finalize_peak_host_work_bytes = 0;
     if (output_role_transport_mode ||
-        output_role_generator_mode) {
+        output_role_generator_mode ||
+        output_attention_kernel_writer_mode) {
         const char * training_context_key =
-            output_role_generator_mode
+            output_attention_kernel_writer_mode
+                ? "attention_kernel_writer_training_contexts"
+            : output_role_generator_mode
                 ? "role_generator_training_contexts"
                 : "role_transport_training_contexts";
         const char * ridge_key =
-            output_role_generator_mode
+            output_attention_kernel_writer_mode
+                ? "attention_kernel_writer_ridge_fraction"
+            : output_role_generator_mode
                 ? "role_generator_ridge_fraction"
                 : "role_transport_ridge_fraction";
         const auto & training_contexts =
@@ -7183,7 +7203,32 @@ static json run_sparse_g_label_refresh(
             throw std::runtime_error(
                 "role transport construction is incomplete");
         }
-        if (output_role_generator_mode) {
+        if (output_attention_kernel_writer_mode) {
+            if (!attention->finalize_attention_kernel_writer(
+                    &builder,
+                    destination_count,
+                    samples_per_destination,
+                    ridge_fraction,
+                    &attention_kernel_writer_operator,
+                    &attention_kernel_writer_finalize_metrics)) {
+                throw std::runtime_error(
+                    "attention kernel writer finalization failed");
+            }
+            role_transport_finalize_peak_host_work_bytes =
+                attention_kernel_writer_finalize_metrics
+                    .peak_training_host_work_bytes;
+            if (attention_kernel_writer_operator.training_samples !=
+                    static_cast<uint64_t>(destination_count) *
+                        samples_per_destination ||
+                attention_kernel_writer_operator.layers.size() !=
+                    destination_count *
+                        orbit_attention_layers.size() * 2 ||
+                attention_kernel_writer_operator.maximum_rank !=
+                    samples_per_destination) {
+                throw std::runtime_error(
+                    "attention kernel writer invariant failed");
+            }
+        } else if (output_role_generator_mode) {
             if (!attention->finalize_attention_role_generator(
                     &builder,
                     destination_count,
@@ -7427,6 +7472,8 @@ static json run_sparse_g_label_refresh(
                 ? "output_source_position_fixed_cell_carrier"
                 : output_source_relink_rematerialization_mode
                     ? "output_source_position_rematerialization_carrier"
+                : output_attention_kernel_writer_mode
+                ? "output_attention_kernel_writer_carrier"
                 : output_role_generator_mode
                 ? "shared_nonlinear_role_generator_carrier"
                 : output_role_transport_mode
@@ -7447,6 +7494,8 @@ static json run_sparse_g_label_refresh(
                 ? "output_source_position_fixed_cell_carrier_return_G0"
                 : output_source_relink_rematerialization_mode
                     ? "output_source_position_rematerialization_carrier_return_G0"
+                : output_attention_kernel_writer_mode
+                ? "output_attention_kernel_writer_carrier_return_G0"
                 : output_role_generator_mode
                 ? "shared_nonlinear_role_generator_carrier_return_G0"
                 : output_role_transport_mode
@@ -8846,7 +8895,8 @@ static json run_sparse_g_label_refresh(
                     ++sequence_close_count;
                 }
             }
-            if (output_role_generator_mode) {
+            if (output_role_generator_mode ||
+                output_attention_kernel_writer_mode) {
                 std::vector<llama_pos> destination_positions;
                 std::vector<uint32_t> destination_indices;
                 destination_positions.reserve(stage_seqs.size());
@@ -8861,41 +8911,78 @@ static json run_sparse_g_label_refresh(
                     destination_indices.push_back(
                         static_cast<uint32_t>(label_index));
                 }
-                llama_kv_cache::role_generator_metrics
-                    metrics = {};
-                if (!attention
-                        ->seq_apply_attention_role_generator(
-                            stage_seqs,
-                            output_positions,
-                            candidate_seq,
-                            destination_positions,
-                            destination_indices,
-                            role_generator_operator,
-                            ctx,
-                            &metrics)) {
-                    throw std::runtime_error(
-                        id +
-                        ": shared nonlinear output-role "
-                        "generator failed");
+                if (output_attention_kernel_writer_mode) {
+                    llama_kv_cache::attention_kernel_writer_metrics
+                        metrics = {};
+                    if (!attention
+                            ->seq_apply_attention_kernel_writer(
+                                stage_seqs,
+                                output_positions,
+                                candidate_seq,
+                                destination_positions,
+                                destination_indices,
+                                attention_kernel_writer_operator,
+                                ctx,
+                                &metrics)) {
+                        throw std::runtime_error(
+                            id +
+                            ": output-conditioned attention "
+                            "kernel writer failed");
+                    }
+                    attention_kernel_writer_runtime_parameter_upload_bytes +=
+                        metrics.host_parameter_upload_bytes;
+                    attention_kernel_writer_runtime_graph_applications +=
+                        metrics.graph_applications;
+                    attention_kernel_writer_runtime_generated_rows +=
+                        metrics.generated_rows;
+                    attention_kernel_writer_runtime_multiply_accumulates +=
+                        metrics.multiply_accumulates;
+                    orbit_host_read_bytes +=
+                        metrics.host_carrier_read_bytes;
+                    orbit_host_write_bytes +=
+                        metrics.host_carrier_write_bytes;
+                    orbit_tensor_visits +=
+                        metrics.tensor_visits;
+                    orbit_position_visits +=
+                        metrics.position_visits;
+                } else {
+                    llama_kv_cache::role_generator_metrics
+                        metrics = {};
+                    if (!attention
+                            ->seq_apply_attention_role_generator(
+                                stage_seqs,
+                                output_positions,
+                                candidate_seq,
+                                destination_positions,
+                                destination_indices,
+                                role_generator_operator,
+                                ctx,
+                                &metrics)) {
+                        throw std::runtime_error(
+                            id +
+                            ": shared nonlinear output-role "
+                            "generator failed");
+                    }
+                    role_generator_runtime_parameter_upload_bytes +=
+                        metrics.host_parameter_upload_bytes;
+                    role_generator_runtime_graph_applications +=
+                        metrics.graph_applications;
+                    role_generator_runtime_generated_rows +=
+                        metrics.generated_rows;
+                    role_generator_runtime_multiply_accumulates +=
+                        metrics.multiply_accumulates;
+                    orbit_host_read_bytes +=
+                        metrics.host_carrier_read_bytes;
+                    orbit_host_write_bytes +=
+                        metrics.host_carrier_write_bytes;
+                    orbit_tensor_visits += metrics.tensor_visits;
+                    orbit_position_visits +=
+                        metrics.position_visits;
                 }
-                role_generator_runtime_parameter_upload_bytes +=
-                    metrics.host_parameter_upload_bytes;
-                role_generator_runtime_graph_applications +=
-                    metrics.graph_applications;
-                role_generator_runtime_generated_rows +=
-                    metrics.generated_rows;
-                role_generator_runtime_multiply_accumulates +=
-                    metrics.multiply_accumulates;
-                orbit_host_read_bytes +=
-                    metrics.host_carrier_read_bytes;
-                orbit_host_write_bytes +=
-                    metrics.host_carrier_write_bytes;
-                orbit_tensor_visits += metrics.tensor_visits;
-                orbit_position_visits +=
-                    metrics.position_visits;
             }
             for (size_t i = 0;
                  !output_role_generator_mode &&
+                    !output_attention_kernel_writer_mode &&
                     !output_source_rematerialization_mode &&
                     !output_written_carrier_mode &&
                     !output_recurrent_delta_advance_mode &&
@@ -9384,6 +9471,17 @@ static json run_sparse_g_label_refresh(
                  spec.at("role_generator_training_contexts").size() *
                  variants.size() *
                  spec.at("queries_per_variant").get<size_t>())) &&
+        (!output_attention_kernel_writer_mode ||
+            (role_transport_training_correct ==
+                 spec.at(
+                     "attention_kernel_writer_training_contexts").size() *
+                 variants.size() *
+                 spec.at("queries_per_variant").get<size_t>() &&
+             attention_kernel_writer_operator.training_samples ==
+                 spec.at(
+                     "attention_kernel_writer_training_contexts").size() *
+                 variants.size() *
+                 spec.at("queries_per_variant").get<size_t>())) &&
         (!output_source_fixed_cell_rematerialization_mode ||
             (all_destination_cell_identities_stable &&
              initial_destination_cell_ids ==
@@ -9521,6 +9619,8 @@ static json run_sparse_g_label_refresh(
                 : "TRAINED_FIXED_CAPACITY_PRELOGIT_SEMANTIC_CARRIER"
             : model_weight_value_orbit_mode
             ? "MODEL_WEIGHT_DERIVED_SEMANTIC_VALUE_CYCLE"
+            : output_attention_kernel_writer_mode
+            ? "OUTPUT_CONDITIONED_REDUCED_RANK_ATTENTION_STATE_WRITER"
             : output_role_generator_mode
             ? "SHARED_NONLINEAR_OUTPUT_ROLE_ATTENTION_GENERATOR"
             : output_role_transport_mode
@@ -9580,6 +9680,8 @@ static json run_sparse_g_label_refresh(
                 output_role_transport_mode},
             {"output_role_generator_action",
                 output_role_generator_mode},
+            {"output_attention_kernel_writer_action",
+                output_attention_kernel_writer_mode},
             {"output_source_position_rematerialization_action",
                 output_source_relink_rematerialization_mode},
             {"output_source_position_fixed_cell_rematerialization_action",
@@ -9641,6 +9743,16 @@ static json run_sparse_g_label_refresh(
                 output_role_generator_mode
                     ? spec.at(
                         "role_generator_ridge_fraction")
+                    : json(0.0)},
+            {"attention_kernel_writer_training_contexts",
+                output_attention_kernel_writer_mode
+                    ? spec.at(
+                        "attention_kernel_writer_training_contexts").size()
+                    : 0},
+            {"attention_kernel_writer_ridge_fraction",
+                output_attention_kernel_writer_mode
+                    ? spec.at(
+                        "attention_kernel_writer_ridge_fraction")
                     : json(0.0)},
             {"trained_semantic_carrier_action",
                 legacy_trained_semantic_carrier_mode},
@@ -9783,6 +9895,16 @@ static json run_sparse_g_label_refresh(
             {"role_generator_training_root_mean_squared_error",
                 role_generator_operator
                     .training_root_mean_squared_error},
+            {"attention_kernel_writer_training_samples",
+                attention_kernel_writer_operator.training_samples},
+            {"attention_kernel_writer_samples_per_destination",
+                attention_kernel_writer_operator
+                    .samples_per_destination},
+            {"attention_kernel_writer_maximum_rank",
+                attention_kernel_writer_operator.maximum_rank},
+            {"attention_kernel_writer_training_max_abs_error",
+                attention_kernel_writer_operator
+                    .training_max_abs_error},
             {"accepted", accepted},
         }},
         {"carrier", {
@@ -10010,6 +10132,35 @@ static json run_sparse_g_label_refresh(
                 role_generator_runtime_generated_rows},
             {"role_generator_runtime_multiply_accumulates",
                 role_generator_runtime_multiply_accumulates},
+            {"attention_kernel_writer_logical_bytes",
+                attention_kernel_writer_operator.logical_bytes},
+            {"attention_kernel_writer_vector_backing_bytes",
+                attention_kernel_writer_operator
+                    .vector_backing_bytes},
+            {"attention_kernel_writer_layer_operators",
+                attention_kernel_writer_operator.layers.size()},
+            {"attention_kernel_writer_total_rank",
+                attention_kernel_writer_operator.total_rank},
+            {"attention_kernel_writer_maximum_rank",
+                attention_kernel_writer_operator.maximum_rank},
+            {"attention_kernel_writer_training_max_abs_error",
+                attention_kernel_writer_operator
+                    .training_max_abs_error},
+            {"attention_kernel_writer_training_peak_host_work_bytes",
+                attention_kernel_writer_finalize_metrics
+                    .peak_training_host_work_bytes},
+            {"attention_kernel_writer_runtime_parameter_upload_bytes",
+                attention_kernel_writer_runtime_parameter_upload_bytes},
+            {"attention_kernel_writer_runtime_host_carrier_read_bytes",
+                uint64_t(0)},
+            {"attention_kernel_writer_runtime_host_carrier_write_bytes",
+                uint64_t(0)},
+            {"attention_kernel_writer_runtime_graph_applications",
+                attention_kernel_writer_runtime_graph_applications},
+            {"attention_kernel_writer_runtime_generated_rows",
+                attention_kernel_writer_runtime_generated_rows},
+            {"attention_kernel_writer_runtime_multiply_accumulates",
+                attention_kernel_writer_runtime_multiply_accumulates},
             {"orbit_backend_copy_bytes",
                 orbit_backend_copy_bytes},
             {"orbit_host_read_bytes", orbit_host_read_bytes},

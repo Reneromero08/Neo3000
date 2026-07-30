@@ -27,11 +27,22 @@ The active recurrence and acceptance boundary are
   graph input sets; the required graph-local transposes add the same
   `3,801,088` bytes of bounded transient device work. No complete host slot
   mirror was retained.
-- This closes complete layer-39 output-state slots as the update law. The
-  active physical successor is a learned attention-state writer or dynamic
-  weight adapter. It must change the model-native update substrate, not the
-  fixture, slot/layer/scale, optimizer, evaluator, carrier-evaluation, or
-  evidence-harness packaging.
+- This closes complete layer-39 output-state slots as the update law.
+  `neo-exp-0154` is now frozen precontact as one changed physical
+  attention-state writer, not an evaluator or evidence-harness revision. It
+  fits a fixed rank-8 cross-channel kernel writer per attention layer, K/V
+  kind, and public destination from two construction contexts and all four
+  phases. Complete rows are folded into centered sample-space bases and
+  erased, but their full material contribution remains charged in the writer
+  parameters; no training-state compression is claimed.
+- At runtime, actual output rows remain CUDA-resident while one backend graph
+  writes generated K/V rows into fixed source-label cells for ordinary later
+  attention. No expected answer, untransformed target row, source-role
+  forward, rank sweep, or post-contact tuning is present. The probe and
+  Release server build, focused tests pass `32/32`, and CUDA closure remains
+  `139/139`. One native contact is the only next action. Failure closes this
+  writer family and moves to a dynamic model-weight adapter, not another
+  writer/evaluator/evidence version.
 - The exact four-link/Z4 recurrence remains the stronger compact baseline.
   No inference-bearing recurrence, fresh-compute advantage, phase-native
   resource, Small Wall crossing, catalytic recurrence, or unbounded claim is
