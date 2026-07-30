@@ -166,6 +166,16 @@ The active recurrence and acceptance boundary are
   283 source tokens. Full-logit hashes match `0/16` and candidate deviation
   reaches `2.4941301346`; this is bounded semantic amortization, not exact
   recursive inference.
+- `neo-exp-0126` removes 23 of the remaining 27 target-G forward tokens. One
+  structural P/Q/R/S G-plus-closure carrier and four fixed recurrent stage
+  rows remain resident. Each target rotation forwards only four public label
+  tokens and replaces the corresponding `81,920` attention bytes by
+  same-stream metadata ownership. All `16/16` useful boundaries survive.
+- Candidate source work is `130 + 4N`: 146 tokens at N=4, versus 317 for 0125
+  and 283 for 0122. The asymptotic variable source ratio falls from `27/130`
+  to `4/130`. Active cache allocation is `610,795,520` bytes and includes all
+  eight recurrent rows and unified attention backing. F and scaffold recurrent
+  content plus physical rows remain exact; all sequences and roots close.
 
 ### REJECTED
 
@@ -218,6 +228,13 @@ The active recurrence and acceptance boundary are
   module. Its asymptotic fresh-source ratio is nonzero, numerical parity fails,
   and no inverse, direct group action, unrelated recurrence, or unbounded
   bridge is established.
+- The accepted 0126 law still performs four target-token model forwards and
+  materializes four fixed recurrent stage rows. Full-logit hashes match
+  `0/16`, maximum candidate-logit deviation is `2.5400037766`, and every
+  useful projection still requires query decode. A compact classical
+  four-link relation table remains the stronger baseline. Sparse semantic
+  advance is not a public group action, numerical recurrence, inverse
+  restoration, catalytic inference, or unbounded compute.
 - The 0108 screen is not a physically reduced carrier. Every root still
   serializes `68,526,080` device-tensor bytes; the matched reference occupies
   `76,349,440` host bytes, and omitted layers require `399,769,600`
@@ -282,11 +299,12 @@ The active recurrence and acceptance boundary are
 
 ### ACTIVE BOUNDARY
 
-Replace the remaining 27-token G forward with a public state-space group
-action or direct attention advance derived before the target branch. A lawful
-candidate cannot retain the target root or complete target delta. Preserve
-recursive useful fidelity, count operator work against the compact baseline,
-and do not turn carrier-evaluation versioning into the research loop.
+Replace the remaining four target-label model forwards with a fixed public
+state-space action derived before target selection. A lawful candidate cannot
+retain target roots, complete target deltas, or an answer-conditioned table.
+Preserve useful later-model dependence and recursive fidelity, count all four
+fixed stage rows and operator work against the compact relation baseline, and
+do not turn carrier-evaluation versioning into the research loop.
 `neo-exp-0102` remains frozen and unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]

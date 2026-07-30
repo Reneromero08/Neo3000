@@ -176,11 +176,22 @@ constructively unbounded local Agents-A1 inference.
   tokens per branch; the one-time 130-token scaffold crosses the active-F
   predecessor at branch six. The result is semantic, not numerical:
   full-logit hashes remain `0/16` and candidate drift reaches `2.4941301346`.
-- [ ] Replace the remaining 27-token G forward with a public group action or
-  direct attention advance. Test an operator derived before the target branch
-  against held-out G state; do not retain target roots or complete target
-  deltas. Require recursive useful fidelity and a decreasing fully charged
-  work recurrence. Evidence remains one compact record attached to the
+- [x] Replace the 27-token G replay with a sparse direct attention advance.
+  `neo-exp-0126` keeps one structural P/Q/R/S G-plus-closure carrier and four
+  fixed recurrent stage rows resident. Each public target G rotation forwards
+  only its four A/B/C/D label tokens and replaces only those four attention
+  positions by unified-KV metadata ownership. The candidate preserves
+  `16/16` useful boundaries while source work falls from 317 to 146 tokens at
+  N=4 and variable work falls from 27 to 4 tokens per branch. Full-logit hashes
+  remain `0/16`, drift reaches `2.5400037766`, and active cache allocation is
+  `610,795,520` bytes. All sequences and roots close; F and scaffold recurrent
+  content and physical rows remain exact.
+- [ ] Eliminate the remaining four target-token model forwards with a fixed
+  public label action derived before target selection. Do not retain target
+  roots, complete target deltas, or answer-conditioned tables. Require useful
+  later model inference to read the advanced state, count the four fixed stage
+  rows and operator work against the compact classical relation baseline, and
+  test recursive fidelity. Attach one compact evidence record to the
   mechanism; do not create carrier-evaluation v2/v3/v4 loops.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded

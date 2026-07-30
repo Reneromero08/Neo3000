@@ -1124,3 +1124,20 @@ This is still not the recurrence: hashes match `0/16`, drift reaches
 must express G as a public group action or direct attention-state advance
 without retaining target roots or target deltas. Evidence is attached once to
 that mechanism; harness versions are not the research path.
+
+`neo-exp-0126` now replaces the 27-token replay with four one-token
+model-native refreshes. A fixed structural P/Q/R/S carrier and four fixed
+recurrent stage rows supply the public causal topology; each target rotation
+forwards only its A/B/C/D labels and transfers only those four attention
+positions. All 16 useful decisions survive. Candidate source work is
+`130 + 4N`, or 146 tokens at N=4, and the variable source ratio falls to
+`4/130`.
+
+This is a substantive state-advance result, not a new evidence harness, but it
+still stops short of the north star. The active allocation doubles to
+`610,795,520` bytes, four model forwards and all query forwards remain,
+full-logit hashes match `0/16`, and a compact four-link classical table is
+strictly stronger on this finite fixture. The next mechanism must derive a
+fixed public action over the label-attention fiber so target branches require
+zero model forward, then test whether the resulting state can feed recursive
+model computation without accumulating numerical or material history.

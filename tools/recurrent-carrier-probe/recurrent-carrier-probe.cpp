@@ -4018,6 +4018,710 @@ static json run_g_forward_state_partition(
     };
 }
 
+static json run_sparse_g_label_refresh(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const std::vector<llama_token> & candidates,
+        const json & spec,
+        uint64_t active_recurrent_backing_initial,
+        uint64_t active_attention_backing_initial) {
+    const uint32_t actual_context_size = llama_n_ctx(ctx);
+    const uint32_t actual_n_seq_max = llama_n_seq_max(ctx);
+    const uint32_t actual_context_per_sequence =
+        actual_context_size / actual_n_seq_max;
+    if (actual_context_size !=
+            spec.at("expected_context_size").get<uint32_t>() ||
+        actual_n_seq_max !=
+            spec.at("expected_n_seq_max").get<uint32_t>() ||
+        actual_context_per_sequence !=
+            spec.at("expected_context_per_sequence").get<uint32_t>()) {
+        throw std::runtime_error(
+            "sparse G refresh context geometry mismatch");
+    }
+
+    const auto prefix_tokens = tokenize_piece(
+        vocab, spec.at("prefix").get<std::string>(), true, true);
+    const auto f_tokens = tokenize_piece(
+        vocab, spec.at("module_f").get<std::string>(), false, true);
+    const auto structural_g_tokens = tokenize_piece(
+        vocab,
+        spec.at("structural_module_g").get<std::string>(),
+        false,
+        true);
+    const auto closure_tokens = tokenize_piece(
+        vocab, spec.at("closure").get<std::string>(), false, true);
+    const size_t expected_source_tokens =
+        spec.at("expected_source_tokens").get<size_t>();
+    const size_t f_boundary_tokens =
+        prefix_tokens.size() + f_tokens.size();
+    const auto label_offsets =
+        spec.at("label_token_offsets").get<std::vector<size_t>>();
+    if (prefix_tokens.size() !=
+            spec.at("expected_prefix_tokens").get<size_t>() ||
+        f_tokens.size() != spec.at("expected_f_tokens").get<size_t>() ||
+        structural_g_tokens.size() !=
+            spec.at("expected_g_tokens").get<size_t>() ||
+        closure_tokens.size() !=
+            spec.at("expected_closure_tokens").get<size_t>() ||
+        f_boundary_tokens + structural_g_tokens.size() +
+            closure_tokens.size() != expected_source_tokens ||
+        label_offsets.size() != 4 ||
+        !std::is_sorted(label_offsets.begin(), label_offsets.end()) ||
+        label_offsets.back() >= structural_g_tokens.size()) {
+        throw std::runtime_error(
+            "sparse G refresh token geometry mismatch");
+    }
+
+    const auto & variants = spec.at("g_variants");
+    if (!variants.is_array() || variants.empty()) {
+        throw std::runtime_error(
+            "sparse G refresh has no G variants");
+    }
+    std::vector<std::vector<llama_token>> variant_g_tokens;
+    for (const auto & variant : variants) {
+        auto tokens = tokenize_piece(
+            vocab, variant.at("module_g").get<std::string>(), false, true);
+        if (tokens.size() != structural_g_tokens.size() ||
+            variant.at("queries").size() !=
+                spec.at("queries_per_variant").get<size_t>()) {
+            throw std::runtime_error(
+                "sparse G refresh variant geometry mismatch");
+        }
+        for (size_t i = 0; i < tokens.size(); ++i) {
+            const bool is_label =
+                std::find(
+                    label_offsets.begin(), label_offsets.end(), i) !=
+                label_offsets.end();
+            if (!is_label && tokens[i] != structural_g_tokens[i]) {
+                throw std::runtime_error(
+                    "sparse G refresh found non-label token difference");
+            }
+            if (is_label && tokens[i] == structural_g_tokens[i]) {
+                throw std::runtime_error(
+                    "sparse G refresh label equals structural placeholder");
+            }
+        }
+        variant_g_tokens.push_back(std::move(tokens));
+    }
+
+    auto * hybrid = require_hybrid_memory(ctx);
+    auto * attention = hybrid->get_mem_attn();
+    auto * recurrent = hybrid->get_mem_recr();
+    const uint32_t attention_stream_count =
+        attention->get_n_stream();
+    if (attention_stream_count !=
+        spec.at("expected_attention_stream_count").get<uint32_t>()) {
+        throw std::runtime_error(
+            "sparse G refresh attention stream mismatch");
+    }
+    llama_memory_t memory = llama_get_memory(ctx);
+    const llama_seq_id f_seq = 0;
+    const std::vector<llama_seq_id> stage_seqs = {1, 2, 3, 4};
+    const llama_seq_id scaffold_seq = 5;
+    const llama_seq_id work_seq = 6;
+    const llama_seq_id candidate_seq = 7;
+    const llama_pos f_boundary_pos =
+        static_cast<llama_pos>(f_boundary_tokens - 1);
+    const llama_pos source_boundary_pos =
+        static_cast<llama_pos>(expected_source_tokens - 1);
+
+    const auto require_component_positions =
+            [&](llama_seq_id seq_id,
+                llama_pos expected_attention,
+                llama_pos expected_recurrent,
+                const std::string & stage) {
+        const llama_pos attention_pos =
+            attention->seq_pos_max(seq_id);
+        const llama_pos recurrent_pos =
+            recurrent->seq_pos_max(seq_id);
+        if (attention_pos != expected_attention ||
+            recurrent_pos != expected_recurrent) {
+            throw std::runtime_error(
+                stage + " sequence " + std::to_string(seq_id) +
+                " positions attention=" +
+                std::to_string(attention_pos) + " recurrent=" +
+                std::to_string(recurrent_pos));
+        }
+    };
+    const auto close_sequence =
+            [&](llama_seq_id seq_id, const std::string & stage) {
+        if (!llama_memory_seq_rm(memory, seq_id, -1, -1)) {
+            throw std::runtime_error(stage + " sequence close failed");
+        }
+        llama_synchronize(ctx);
+        require_component_positions(
+            seq_id, -1, -1, stage + ":closed");
+    };
+    const auto copy_full_sequence =
+            [&](llama_seq_id src,
+                llama_seq_id dst,
+                llama_pos expected,
+                const std::string & stage) {
+        require_component_positions(dst, -1, -1, stage + ":empty");
+        llama_memory_seq_cp(memory, src, dst, -1, -1);
+        llama_synchronize(ctx);
+        require_component_positions(
+            dst, expected, expected, stage + ":copied");
+    };
+    const auto token_slice =
+            [](const std::vector<llama_token> & tokens,
+               size_t begin,
+               size_t end) {
+        return std::vector<llama_token>(
+            tokens.begin() + static_cast<std::ptrdiff_t>(begin),
+            tokens.begin() + static_cast<std::ptrdiff_t>(end));
+    };
+    const auto timed_decode =
+            [&](const std::vector<llama_token> & tokens,
+                llama_pos start_pos,
+                llama_seq_id seq_id) {
+        const auto started = std::chrono::steady_clock::now();
+        decode_tokens(ctx, tokens, start_pos, false, seq_id);
+        llama_synchronize(ctx);
+        return std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - started).count();
+    };
+
+    llama_memory_clear(memory, true);
+    const double f_prefix_wall_ms =
+        timed_decode(prefix_tokens, 0, f_seq);
+    const double f_module_wall_ms = timed_decode(
+        f_tokens,
+        static_cast<llama_pos>(prefix_tokens.size()),
+        f_seq);
+    require_component_positions(
+        f_seq, f_boundary_pos, f_boundary_pos, "sparse:F-created");
+
+    size_t sequence_copy_count = 0;
+    size_t sequence_close_count = 0;
+    size_t label_refresh_count = 0;
+    size_t attention_label_remove_count = 0;
+    size_t attention_label_alias_count = 0;
+    size_t query_decode_tokens = 0;
+    double scaffold_G_wall_ms = 0.0;
+    double scaffold_closure_wall_ms = 0.0;
+    double label_refresh_wall_ms_total = 0.0;
+    double reference_G_wall_ms_total = 0.0;
+    double reference_closure_wall_ms_total = 0.0;
+
+    copy_full_sequence(
+        f_seq,
+        stage_seqs[0],
+        f_boundary_pos,
+        "sparse:stage0-F-copy");
+    ++sequence_copy_count;
+    const auto before_first_label = token_slice(
+        structural_g_tokens, 0, label_offsets[0]);
+    scaffold_G_wall_ms += timed_decode(
+        before_first_label,
+        static_cast<llama_pos>(f_boundary_tokens),
+        stage_seqs[0]);
+    require_component_positions(
+        stage_seqs[0],
+        static_cast<llama_pos>(
+            f_boundary_tokens + label_offsets[0] - 1),
+        static_cast<llama_pos>(
+            f_boundary_tokens + label_offsets[0] - 1),
+        "sparse:stage0-ready");
+
+    for (size_t i = 0; i + 1 < label_offsets.size(); ++i) {
+        copy_full_sequence(
+            stage_seqs[i],
+            stage_seqs[i + 1],
+            static_cast<llama_pos>(
+                f_boundary_tokens + label_offsets[i] - 1),
+            "sparse:stage-copy-" + std::to_string(i));
+        ++sequence_copy_count;
+        const auto segment = token_slice(
+            structural_g_tokens,
+            label_offsets[i],
+            label_offsets[i + 1]);
+        scaffold_G_wall_ms += timed_decode(
+            segment,
+            static_cast<llama_pos>(
+                f_boundary_tokens + label_offsets[i]),
+            stage_seqs[i + 1]);
+        require_component_positions(
+            stage_seqs[i + 1],
+            static_cast<llama_pos>(
+                f_boundary_tokens + label_offsets[i + 1] - 1),
+            static_cast<llama_pos>(
+                f_boundary_tokens + label_offsets[i + 1] - 1),
+            "sparse:stage-ready-" + std::to_string(i + 1));
+    }
+
+    copy_full_sequence(
+        stage_seqs.back(),
+        scaffold_seq,
+        static_cast<llama_pos>(
+            f_boundary_tokens + label_offsets.back() - 1),
+        "sparse:scaffold-copy");
+    ++sequence_copy_count;
+    const auto final_G_segment = token_slice(
+        structural_g_tokens,
+        label_offsets.back(),
+        structural_g_tokens.size());
+    scaffold_G_wall_ms += timed_decode(
+        final_G_segment,
+        static_cast<llama_pos>(
+            f_boundary_tokens + label_offsets.back()),
+        scaffold_seq);
+    scaffold_closure_wall_ms = timed_decode(
+        closure_tokens,
+        static_cast<llama_pos>(
+            f_boundary_tokens + structural_g_tokens.size()),
+        scaffold_seq);
+    require_component_positions(
+        scaffold_seq,
+        source_boundary_pos,
+        source_boundary_pos,
+        "sparse:scaffold-complete");
+    require_component_positions(
+        work_seq, -1, -1, "sparse:work-empty");
+    require_component_positions(
+        candidate_seq, -1, -1, "sparse:candidate-empty");
+    if (llama_state_seq_get_device_root_count(ctx) != 0) {
+        throw std::runtime_error(
+            "sparse G refresh unexpectedly has retained roots");
+    }
+
+    const auto f_hash_before =
+        hash_recurrent_sequence_streamed(ctx, f_seq);
+    const auto scaffold_hash_before =
+        hash_recurrent_sequence_streamed(ctx, scaffold_seq);
+    const size_t active_cache_backend_allocation_bytes =
+        active_hybrid_backend_allocation_bytes(ctx);
+    const std::vector<uint32_t> attention_layer_ids =
+        attention->get_layer_ids();
+    const std::set<uint32_t> all_attention_layers(
+        attention_layer_ids.begin(),
+        attention_layer_ids.end());
+    const size_t refreshed_attention_logical_bytes =
+        attention_source_bytes(
+            attention, all_attention_layers, label_offsets.size());
+    const size_t scaffold_attention_logical_bytes =
+        attention_source_bytes(
+            attention,
+            all_attention_layers,
+            expected_source_tokens);
+
+    std::map<
+        std::string,
+        std::map<std::string, std::vector<boundary_result>>> outputs;
+    json records = json::array();
+    json variant_timings = json::array();
+
+    const auto project_from_source =
+            [&](llama_seq_id source_seq,
+                llama_seq_id scratch_seq,
+                const std::string & route,
+                const std::string & variant_id,
+                const json & query) {
+        copy_full_sequence(
+            source_seq,
+            scratch_seq,
+            source_boundary_pos,
+            route + ":query-copy");
+        ++sequence_copy_count;
+        auto boundary = decode_query(
+            ctx,
+            vocab,
+            candidates,
+            "sparse-G-label-refresh:" + route,
+            variant_id,
+            query,
+            expected_source_tokens,
+            active_recurrent_backing_initial,
+            active_cache_backend_allocation_bytes,
+            scratch_seq);
+        query_decode_tokens +=
+            boundary.record.at("query_tokens").get<size_t>();
+        records.push_back(boundary.record);
+        outputs[route][variant_id].push_back(std::move(boundary));
+        close_sequence(scratch_seq, route + ":query-close");
+        ++sequence_close_count;
+    };
+
+    for (size_t variant_index = 0;
+         variant_index < variants.size();
+         ++variant_index) {
+        const auto & variant = variants.at(variant_index);
+        const std::string id = variant.at("id");
+        const auto & target_g_tokens = variant_g_tokens.at(variant_index);
+        copy_full_sequence(
+            scaffold_seq,
+            candidate_seq,
+            source_boundary_pos,
+            id + ":candidate-scaffold-copy");
+        ++sequence_copy_count;
+
+        double variant_label_wall_ms = 0.0;
+        for (size_t label_index = 0;
+             label_index < label_offsets.size();
+             ++label_index) {
+            const size_t label_offset = label_offsets[label_index];
+            const llama_pos label_pos = static_cast<llama_pos>(
+                f_boundary_tokens + label_offset);
+            copy_full_sequence(
+                stage_seqs[label_index],
+                work_seq,
+                label_pos - 1,
+                id + ":label-stage-" +
+                    std::to_string(label_index));
+            ++sequence_copy_count;
+            const std::vector<llama_token> label_token = {
+                target_g_tokens.at(label_offset),
+            };
+            const double label_wall_ms = timed_decode(
+                label_token, label_pos, work_seq);
+            variant_label_wall_ms += label_wall_ms;
+            label_refresh_wall_ms_total += label_wall_ms;
+            ++label_refresh_count;
+            require_component_positions(
+                work_seq,
+                label_pos,
+                label_pos,
+                id + ":label-decoded-" +
+                    std::to_string(label_index));
+            if (!attention->seq_rm(
+                    candidate_seq, label_pos, label_pos + 1)) {
+                throw std::runtime_error(
+                    id + " structural label removal failed");
+            }
+            ++attention_label_remove_count;
+            attention->seq_cp(
+                work_seq,
+                candidate_seq,
+                label_pos,
+                label_pos + 1);
+            llama_synchronize(ctx);
+            ++attention_label_alias_count;
+            require_component_positions(
+                candidate_seq,
+                source_boundary_pos,
+                source_boundary_pos,
+                id + ":label-patched-" +
+                    std::to_string(label_index));
+            close_sequence(
+                work_seq,
+                id + ":label-work-close-" +
+                    std::to_string(label_index));
+            ++sequence_close_count;
+        }
+
+        for (const auto & query : variant.at("queries")) {
+            project_from_source(
+                candidate_seq,
+                work_seq,
+                "sparse_label_refresh_candidate",
+                id,
+                query);
+        }
+        close_sequence(candidate_seq, id + ":candidate-close");
+        ++sequence_close_count;
+
+        copy_full_sequence(
+            f_seq,
+            work_seq,
+            f_boundary_pos,
+            id + ":reference-F-copy");
+        ++sequence_copy_count;
+        const double reference_G_wall_ms = timed_decode(
+            target_g_tokens,
+            static_cast<llama_pos>(f_boundary_tokens),
+            work_seq);
+        const double reference_closure_wall_ms = timed_decode(
+            closure_tokens,
+            static_cast<llama_pos>(
+                f_boundary_tokens + target_g_tokens.size()),
+            work_seq);
+        reference_G_wall_ms_total += reference_G_wall_ms;
+        reference_closure_wall_ms_total +=
+            reference_closure_wall_ms;
+        require_component_positions(
+            work_seq,
+            source_boundary_pos,
+            source_boundary_pos,
+            id + ":reference-complete");
+        for (const auto & query : variant.at("queries")) {
+            project_from_source(
+                work_seq,
+                candidate_seq,
+                "exact_full_state",
+                id,
+                query);
+        }
+        close_sequence(work_seq, id + ":reference-close");
+        ++sequence_close_count;
+        variant_timings.push_back({
+            {"variant", id},
+            {"label_refresh_count", label_offsets.size()},
+            {"label_refresh_wall_ms", variant_label_wall_ms},
+            {"reference_G_tokens", target_g_tokens.size()},
+            {"reference_G_wall_ms", reference_G_wall_ms},
+            {"reference_closure_tokens", closure_tokens.size()},
+            {"reference_closure_wall_ms",
+                reference_closure_wall_ms},
+        });
+
+        require_component_positions(
+            f_seq,
+            f_boundary_pos,
+            f_boundary_pos,
+            id + ":F-survives");
+        require_component_positions(
+            scaffold_seq,
+            source_boundary_pos,
+            source_boundary_pos,
+            id + ":scaffold-survives");
+    }
+
+    const auto f_hash_after =
+        hash_recurrent_sequence_streamed(ctx, f_seq);
+    const auto scaffold_hash_after =
+        hash_recurrent_sequence_streamed(ctx, scaffold_seq);
+    const bool f_exact =
+        f_hash_before.tensor.value == f_hash_after.tensor.value &&
+        f_hash_before.physical_row == f_hash_after.physical_row &&
+        f_hash_before.position == f_hash_after.position;
+    const bool scaffold_exact =
+        scaffold_hash_before.tensor.value ==
+            scaffold_hash_after.tensor.value &&
+        scaffold_hash_before.physical_row ==
+            scaffold_hash_after.physical_row &&
+        scaffold_hash_before.position ==
+            scaffold_hash_after.position;
+
+    const std::vector<std::string> routes = {
+        "exact_full_state",
+        "sparse_label_refresh_candidate",
+    };
+    json route_summary = json::object();
+    const size_t comparisons =
+        variants.size() *
+        spec.at("queries_per_variant").get<size_t>();
+    for (const auto & route : routes) {
+        size_t correct = 0;
+        size_t full_logit_hash_matches = 0;
+        size_t boundary_matches = 0;
+        double maximum_candidate_logit_absolute_difference = 0.0;
+        for (const auto & variant : variants) {
+            const std::string id = variant.at("id");
+            const auto & route_outputs = outputs.at(route).at(id);
+            const auto & reference =
+                outputs.at("exact_full_state").at(id);
+            correct += semantic_correct_count(
+                route_outputs, variant.at("queries"), false);
+            for (size_t i = 0; i < route_outputs.size(); ++i) {
+                full_logit_hash_matches +=
+                    route_outputs.at(i).full_logits_fnv1a64 ==
+                    reference.at(i).full_logits_fnv1a64;
+                boundary_matches +=
+                    route_outputs.at(i).argmax ==
+                    reference.at(i).argmax;
+                for (size_t c = 0;
+                     c < route_outputs.at(i).candidate_logits.size();
+                     ++c) {
+                    maximum_candidate_logit_absolute_difference = std::max(
+                        maximum_candidate_logit_absolute_difference,
+                        std::abs(
+                            static_cast<double>(
+                                route_outputs.at(i).candidate_logits.at(c)) -
+                            static_cast<double>(
+                                reference.at(i).candidate_logits.at(c))));
+                }
+            }
+        }
+        route_summary[route] = {
+            {"correct", correct},
+            {"comparisons", comparisons},
+            {"full_logit_hash_matches", full_logit_hash_matches},
+            {"boundary_matches", boundary_matches},
+            {"maximum_candidate_logit_absolute_difference",
+                maximum_candidate_logit_absolute_difference},
+        };
+    }
+
+    const auto & acceptance = spec.at("acceptance_law");
+    const auto & primary =
+        route_summary.at("sparse_label_refresh_candidate");
+    const bool accepted =
+        primary.at("correct").get<size_t>() ==
+            acceptance.at("primary_correct").get<size_t>() &&
+        primary.at("boundary_matches").get<size_t>() ==
+            acceptance.at("primary_boundary_matches").get<size_t>() &&
+        f_exact &&
+        scaffold_exact;
+
+    close_sequence(f_seq, "sparse:F-close");
+    ++sequence_close_count;
+    for (size_t i = 0; i < stage_seqs.size(); ++i) {
+        close_sequence(
+            stage_seqs[i],
+            "sparse:stage-close-" + std::to_string(i));
+        ++sequence_close_count;
+    }
+    close_sequence(scaffold_seq, "sparse:scaffold-close");
+    ++sequence_close_count;
+    llama_memory_clear(memory, true);
+    llama_synchronize(ctx);
+    bool all_sequences_closed = true;
+    for (llama_seq_id seq_id = 0;
+         seq_id < static_cast<llama_seq_id>(actual_n_seq_max);
+         ++seq_id) {
+        all_sequences_closed =
+            all_sequences_closed &&
+            attention->seq_pos_max(seq_id) == -1 &&
+            recurrent->seq_pos_max(seq_id) == -1;
+    }
+    const bool all_roots_closed =
+        llama_state_seq_get_device_root_count(ctx) == 0;
+    const bool active_backings_stable =
+        active_recurrent_backing_id(ctx) ==
+            active_recurrent_backing_initial &&
+        active_attention_backing_id(ctx) ==
+            active_attention_backing_initial;
+    if (!all_sequences_closed ||
+        !all_roots_closed ||
+        !active_backings_stable) {
+        throw std::runtime_error(
+            "sparse G refresh close invariant failed");
+    }
+
+    const size_t fixed_carrier_preparation_tokens =
+        f_boundary_tokens +
+        structural_g_tokens.size() +
+        closure_tokens.size();
+    const size_t candidate_variable_source_tokens =
+        variants.size() * label_offsets.size();
+    const size_t candidate_source_tokens =
+        fixed_carrier_preparation_tokens +
+        candidate_variable_source_tokens;
+    const size_t reference_source_tokens =
+        variants.size() *
+        (structural_g_tokens.size() + closure_tokens.size());
+    const size_t source_decode_tokens =
+        candidate_source_tokens + reference_source_tokens;
+    return {
+        {"schema_version", 1},
+        {"mechanism", "SPARSE_G_LABEL_REFRESH_ADVANCE"},
+        {"spec_id", spec.at("id")},
+        {"model_arch", "qwen35moe"},
+        {"configuration", {
+            {"context_size", actual_context_size},
+            {"context_per_sequence", actual_context_per_sequence},
+            {"n_seq_max", actual_n_seq_max},
+            {"source_tokens", expected_source_tokens},
+            {"F_boundary_tokens", f_boundary_tokens},
+            {"G_tokens", structural_g_tokens.size()},
+            {"closure_tokens", closure_tokens.size()},
+            {"label_token_offsets", label_offsets},
+            {"label_refresh_tokens_per_variant",
+                label_offsets.size()},
+            {"stage_sequence_count", stage_seqs.size()},
+            {"retained_device_roots_used", false},
+            {"attention_stream_count", attention_stream_count},
+            {"partial_attention_sequence_copy_metadata_only",
+                attention_stream_count == 1},
+            {"restoration_class", "DECLARED_CLOSURE"},
+        }},
+        {"summary", {
+            {"route_summary", route_summary},
+            {"F_recurrent_content_and_row_exact", f_exact},
+            {"scaffold_recurrent_content_and_row_exact",
+                scaffold_exact},
+            {"accepted", accepted},
+        }},
+        {"carrier", {
+            {"active_cache_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes},
+            {"maximum_retained_root_backend_allocation_bytes", 0},
+            {"active_plus_retained_backend_allocation_bytes",
+                active_cache_backend_allocation_bytes},
+            {"F_recurrent_hash_before",
+                hex64(f_hash_before.tensor.value)},
+            {"F_recurrent_hash_after",
+                hex64(f_hash_after.tensor.value)},
+            {"F_recurrent_physical_row",
+                f_hash_before.physical_row},
+            {"scaffold_recurrent_hash_before",
+                hex64(scaffold_hash_before.tensor.value)},
+            {"scaffold_recurrent_hash_after",
+                hex64(scaffold_hash_after.tensor.value)},
+            {"scaffold_recurrent_physical_row",
+                scaffold_hash_before.physical_row},
+            {"scaffold_attention_logical_bytes",
+                scaffold_attention_logical_bytes},
+            {"refreshed_attention_logical_bytes",
+                refreshed_attention_logical_bytes},
+            {"complete_host_state_copy_retained", false},
+            {"all_sequences_closed", all_sequences_closed},
+            {"all_retained_roots_closed", all_roots_closed},
+            {"active_backings_stable", active_backings_stable},
+        }},
+        {"variant_timings", variant_timings},
+        {"resource_accounting", {
+            {"F_prefix_wall_ms", f_prefix_wall_ms},
+            {"F_module_wall_ms", f_module_wall_ms},
+            {"scaffold_G_wall_ms", scaffold_G_wall_ms},
+            {"scaffold_closure_wall_ms",
+                scaffold_closure_wall_ms},
+            {"label_refresh_wall_ms_total",
+                label_refresh_wall_ms_total},
+            {"reference_G_wall_ms_total",
+                reference_G_wall_ms_total},
+            {"reference_closure_wall_ms_total",
+                reference_closure_wall_ms_total},
+            {"fixed_carrier_preparation_tokens",
+                fixed_carrier_preparation_tokens},
+            {"candidate_variable_source_tokens",
+                candidate_variable_source_tokens},
+            {"candidate_source_tokens",
+                candidate_source_tokens},
+            {"predecessor_closure_scaffold_candidate_source_tokens",
+                f_boundary_tokens + expected_source_tokens +
+                variants.size() * structural_g_tokens.size()},
+            {"predecessor_active_F_candidate_source_tokens",
+                f_boundary_tokens +
+                variants.size() *
+                    (structural_g_tokens.size() +
+                     closure_tokens.size())},
+            {"reference_source_tokens",
+                reference_source_tokens},
+            {"source_decode_tokens", source_decode_tokens},
+            {"query_decode_tokens", query_decode_tokens},
+            {"all_route_input_tokens",
+                source_decode_tokens + query_decode_tokens},
+            {"sequence_copy_count", sequence_copy_count},
+            {"sequence_close_count", sequence_close_count},
+            {"label_refresh_count", label_refresh_count},
+            {"attention_label_remove_count",
+                attention_label_remove_count},
+            {"attention_label_alias_count",
+                attention_label_alias_count},
+            {"snapshot_root_save_device_copy_bytes", 0},
+            {"snapshot_root_restore_device_copy_bytes", 0},
+            {"carrier_hash_d2h_bytes",
+                f_hash_before.tensor.transferred_bytes +
+                f_hash_after.tensor.transferred_bytes +
+                scaffold_hash_before.tensor.transferred_bytes +
+                scaffold_hash_after.tensor.transferred_bytes},
+            {"carrier_hash_peak_host_work_bytes", std::max({
+                f_hash_before.tensor.peak_host_work_bytes,
+                f_hash_after.tensor.peak_host_work_bytes,
+                scaffold_hash_before.tensor.peak_host_work_bytes,
+                scaffold_hash_after.tensor.peak_host_work_bytes,
+            })},
+            {"asymptotic_candidate_source_ratio",
+                static_cast<double>(label_offsets.size()) /
+                    static_cast<double>(expected_source_tokens)},
+        }},
+        {"records", records},
+        {"verdict", accepted ? "accept" : "reject"},
+        {"claim_ceiling", spec.at("claim_ceiling")},
+    };
+}
+
 static json run_open_f_prefix_nonlinear_composition(
         llama_context * ctx,
         const llama_vocab * vocab,
@@ -5014,6 +5718,22 @@ int main(int argc, char ** argv) {
 
         if (spec.value("active_f_sequence_branching", false)) {
             const json result = run_active_f_sequence_branching(
+                ctx,
+                vocab,
+                candidates,
+                spec,
+                active_backing_initial,
+                active_attention_backing_initial);
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
+        }
+
+        if (spec.value("sparse_g_label_refresh", false)) {
+            const json result = run_sparse_g_label_refresh(
                 ctx,
                 vocab,
                 candidates,

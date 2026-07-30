@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0126",
+  "record_type": "scientific_result",
+  "date": "2026-07-30",
+  "baseline_commit": "bd07b51504f3fe452355712f77f426c8c82b67eb",
+  "mechanism": "SPARSE_G_LABEL_REFRESH_ADVANCE",
+  "spec_id": "sparse-g-label-refresh-advance-v1",
+  "hypothesis": "The variable four-way G relation is carried predominantly by four label-token attention positions, so four target-token forwards into fixed public recurrent stages can replace every 27-token G replay while preserving the useful boundary over one bounded resident carrier.",
+  "intervention": "Keep exact F, one structural P/Q/R/S G-plus-closure carrier, and four recurrent stage rows resident in unified KV. For each public G rotation, decode only its four A/B/C/D label tokens at the frozen positions, replace only those attention positions by metadata ownership, project four delayed queries, close the branch, and compare against exact G-plus-closure forward.",
+  "model_hash": "31AEFA25B7E1EDBDE436E643E2B5E3F6E57820A4811D97B131130E48FF0772C2",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "context_size_total": 4096,
+    "context_size_per_sequence": 512,
+    "n_seq_max": 8,
+    "attention_stream_count": 1,
+    "source_tokens": 130,
+    "F_boundary_tokens": 79,
+    "G_tokens": 27,
+    "closure_tokens": 24,
+    "label_token_offsets": [
+      6,
+      12,
+      18,
+      24
+    ],
+    "fixed_recurrent_stage_rows": 4,
+    "retained_device_roots_used": false,
+    "partial_attention_copy": "same-stream metadata ownership",
+    "restoration_class": "DECLARED_CLOSURE"
+  },
+  "metrics_after": {
+    "exact_full_state": {
+      "correct": 16,
+      "comparisons": 16,
+      "full_logit_hash_matches": 16,
+      "boundary_matches": 16,
+      "maximum_candidate_logit_absolute_difference": 0.0
+    },
+    "sparse_label_refresh_candidate": {
+      "correct": 16,
+      "comparisons": 16,
+      "full_logit_hash_matches": 0,
+      "boundary_matches": 16,
+      "maximum_candidate_logit_absolute_difference": 2.540003776550293
+    },
+    "F_recurrent_content_and_row_exact": true,
+    "scaffold_recurrent_content_and_row_exact": true,
+    "F_recurrent_hash": "1b6991d27d45783d",
+    "scaffold_recurrent_hash": "250d2c5f38923ca3",
+    "scaffold_attention_logical_bytes": 2662400,
+    "refreshed_attention_logical_bytes_per_variant": 81920,
+    "active_cache_backend_allocation_bytes": 610795520,
+    "all_sequences_closed": true,
+    "all_roots_closed": true,
+    "active_backings_stable": true
+  },
+  "resource_accounting": {
+    "fixed_carrier_preparation_tokens": 130,
+    "candidate_variable_source_tokens": 16,
+    "candidate_source_tokens_at_N4": 146,
+    "predecessor_closure_scaffold_source_tokens_at_N4": 317,
+    "predecessor_active_F_source_tokens_at_N4": 283,
+    "reference_control_source_tokens": 204,
+    "asymptotic_variable_source_tokens_per_branch_before": 27,
+    "asymptotic_variable_source_tokens_per_branch_after": 4,
+    "asymptotic_candidate_source_ratio_before": 0.2076923076923077,
+    "asymptotic_candidate_source_ratio_after": 0.03076923076923077,
+    "query_decode_tokens": 1056,
+    "all_route_input_tokens": 1406,
+    "sequence_copy_count": 61,
+    "sequence_close_count": 62,
+    "snapshot_root_save_device_copy_bytes": 0,
+    "snapshot_root_restore_device_copy_bytes": 0,
+    "carrier_hash_d2h_bytes": 263454720,
+    "fixed_carrier_preparation_wall_ms": 10337.249544,
+    "target_label_forward_wall_ms_total": 555.072971,
+    "exact_reference_G_plus_closure_wall_ms_total": 1882.29053
+  },
+  "quality_gates": {
+    "all_useful_boundaries_preserved": true,
+    "all_reference_boundaries_correct": true,
+    "full_logit_parity": false,
+    "complete_target_G_replay_absent_from_candidate": true,
+    "candidate_variable_source_work_reduced": true,
+    "target_model_forwards_per_branch_reduced_from_27_to_4": true,
+    "metadata_only_partial_attention_ownership": true,
+    "fixed_stage_rows_fully_counted": true,
+    "no_retained_roots": true,
+    "stable_active_backings": true,
+    "all_state_closed": true,
+    "direct_public_group_action": false,
+    "target_model_forward_eliminated": false,
+    "native_inverse_restoration": false,
+    "strongest_compact_classical_baseline_beaten": false,
+    "vanishing_total_fresh_work_ratio": false,
+    "catalytic_recurrence": false,
+    "unbounded_recurrence": false
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/sparse-g-label-refresh-advance-v1.json",
+      "bytes": 6894,
+      "sha256": "0F2C06DB0F2715C3A5199A337EA8F8DA784E09CC035A0999D8961666542DD42A"
+    },
+    "canonical_recomputable_evidence": {
+      "path": "lab/sparse-g-label-refresh-advance-v1-evidence.json",
+      "bytes": 31594,
+      "sha256": "54B978278A0D2F5C348918C7AEFD7800427FE4A7C5F07E96A3F1C2C41A96B6ED",
+      "per_query_records": 32,
+      "committed": true
+    },
+    "consumed_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 274073,
+      "sha256": "648C814E2C0D70ACA462B20288EE6838D1EC1B9858932E4E2900BA61B85E746C"
+    },
+    "consumed_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 1104608,
+      "sha256": "B4818BF4CBADEB321205806A983AE1CEFB105EEF747B2BA0F36855BC41F1C9C6",
+      "committed": false
+    },
+    "predecessor_evidence_binding": {
+      "declared_sha256_in_consumed_spec": "87CC156792B852D7AB41D7BC0CCB8897216BF86D71597DBA8261DCF6B03242E3",
+      "actual_sha256": "87CCF071C5FABB8BFF1D7930324F1DD7D7D49644B235CE7A0D6DC952879C8967",
+      "valid": false,
+      "scientific_effect": "none; predecessor navigation field only, preserved without rerunning the consumed mechanism"
+    }
+  },
+  "contact": {
+    "outcome_bearing_model_loads": 1,
+    "llama_decode_calls": 64,
+    "input_tokens": 1406,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "precontact_launch_failures": 3,
+    "precontact_successful_model_loads_without_decode": 1,
+    "neo_exp_0102_consumed": false
+  },
+  "verdict": "accept",
+  "classification": "FOUR_TOKEN_SPARSE_SEMANTIC_ADVANCE_WITH_FIXED_STRUCTURAL_CARRIER",
+  "strongest_supported_claim": "On the frozen four-rotation panel, one bounded 610,795,520-byte active hybrid allocation containing exact F, a structural G-plus-closure scaffold, and four fixed recurrent stage rows needed only four public target-label token forwards per branch to preserve all 16 useful boundaries. Candidate source work fell from 317 to 146 tokens at N=4 and the asymptotic variable source ratio fell from 27/130 to 4/130; actual active backing remained stable and all state closed.",
+  "strongest_rejected_interpretation": "Full-logit hashes match 0/16 with maximum candidate-logit error 2.5400037766; four model forwards, 61 metadata copies, fixed stage-state materialization, and every query decode remain. A compact classical four-link table is still stronger. This is not numerical recurrence, direct group action, inverse restoration, catalytic inference, Small Wall crossing, or unbounded compute.",
+  "next_boundary": "DERIVE_A_FIXED_PUBLIC_LABEL_ACTION_THAT_REPLACES_THE_FOUR_TARGET_TOKEN_FORWARDS_WITHOUT_TARGET_ROOTS_OR_ANSWER_CONDITIONED_SELECTION"
+}
