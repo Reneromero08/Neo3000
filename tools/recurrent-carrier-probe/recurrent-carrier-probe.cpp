@@ -683,6 +683,299 @@ static json run_layer_localization(
     };
 }
 
+static size_t semantic_correct_count(
+        const std::vector<boundary_result> & results,
+        const json & queries,
+        bool mutated) {
+    size_t correct = 0;
+    for (size_t i = 0; i < results.size(); ++i) {
+        const std::string expected = mutated
+            ? queries.at(i).at("expected_mutated").get<std::string>()
+            : queries.at(i).at("expected").get<std::string>();
+        correct += results.at(i).argmax == expected;
+    }
+    return correct;
+}
+
+static json semantic_route_summary(
+        const std::map<std::string, std::vector<boundary_result>> & route,
+        const json & queries) {
+    json summary = json::object();
+    for (const auto & [variant, results] : route) {
+        std::vector<std::string> answers;
+        for (const auto & result : results) {
+            answers.push_back(result.argmax);
+        }
+        summary[variant] = {
+            {"answers", answers},
+            {"correct", semantic_correct_count(
+                results, queries, variant == "F1_G_MUT")},
+        };
+    }
+    return summary;
+}
+
+static size_t boundary_changes(
+        const std::vector<boundary_result> & lhs,
+        const std::vector<boundary_result> & rhs) {
+    if (lhs.size() != rhs.size()) {
+        throw std::runtime_error("boundary comparison cardinality mismatch");
+    }
+    size_t changes = 0;
+    for (size_t i = 0; i < lhs.size(); ++i) {
+        changes += lhs.at(i).argmax != rhs.at(i).argmax;
+    }
+    return changes;
+}
+
+static size_t boundary_matches(
+        const std::vector<boundary_result> & lhs,
+        const std::vector<boundary_result> & rhs) {
+    return lhs.size() - boundary_changes(lhs, rhs);
+}
+
+static json run_matched_semantic_validation(
+        llama_context * ctx,
+        const llama_vocab * vocab,
+        const std::vector<llama_token> & candidates,
+        const json & spec,
+        uint64_t active_recurrent_backing_initial,
+        uint64_t active_attention_backing_initial) {
+    auto * hybrid = require_hybrid_memory(ctx);
+    auto * attention = hybrid->get_mem_attn();
+    auto * recurrent = hybrid->get_mem_recr();
+
+    const std::vector<uint32_t> attention_layers = attention->get_layer_ids();
+    std::vector<uint32_t> recurrent_layers;
+    for (uint32_t il = 0; il < recurrent->r_l.size(); ++il) {
+        if (recurrent->r_l[il] || recurrent->s_l[il]) {
+            recurrent_layers.push_back(il);
+        }
+    }
+    if (attention_layers != spec.at("expected_attention_layers").get<std::vector<uint32_t>>() ||
+        recurrent_layers != spec.at("expected_recurrent_layers").get<std::vector<uint32_t>>()) {
+        throw std::runtime_error("model hybrid layer topology differs from semantic spec");
+    }
+
+    const auto & sources = spec.at("sources");
+    const std::vector<std::string> variants = {
+        "F0_G0", "F1_G0", "F0_G1", "F1_G1", "F1_G_MUT", "F1_G_PRESENTATION"
+    };
+    for (const auto & variant : variants) {
+        if (!sources.contains(variant)) {
+            throw std::runtime_error("semantic spec missing source variant " + variant);
+        }
+    }
+
+    const auto reference_tokens = prepare_source(ctx, vocab, sources.at("F0_G0"));
+    if (attention->seq_pos_max(0) !=
+            static_cast<llama_pos>(reference_tokens.size() - 1) ||
+        recurrent->seq_pos_max(0) !=
+            static_cast<llama_pos>(reference_tokens.size() - 1)) {
+        throw std::runtime_error("semantic reference position mismatch");
+    }
+    const hybrid_tensor_reference reference = capture_hybrid_reference(ctx);
+    llama_memory_clear(llama_get_memory(ctx), true);
+    llama_synchronize(ctx);
+
+    const std::set<uint32_t> all_attention(
+        attention_layers.begin(), attention_layers.end());
+    const std::set<uint32_t> all_recurrent(
+        recurrent_layers.begin(), recurrent_layers.end());
+    const std::set<uint32_t> no_layers;
+    const auto & queries = spec.at("queries");
+    std::map<std::string, std::vector<boundary_result>> full_results;
+    std::map<std::string, std::vector<boundary_result>> attention_delta_results;
+    std::map<std::string, std::vector<boundary_result>> recurrent_delta_results;
+    json records = json::array();
+    json roots = json::array();
+    llama_seq_id key = 3000;
+    size_t common_source_tokens = 0;
+    size_t maximum_simultaneous_root_device_tensor_bytes = 0;
+    size_t cleared_root_bytes = 0;
+    size_t recurrent_substitution_h2d_bytes = 0;
+    size_t attention_substitution_h2d_bytes = 0;
+
+    for (const auto & variant : variants) {
+        const auto source_tokens = prepare_source(ctx, vocab, sources.at(variant));
+        if (attention->seq_pos_max(0) !=
+                static_cast<llama_pos>(source_tokens.size() - 1) ||
+            recurrent->seq_pos_max(0) !=
+                static_cast<llama_pos>(source_tokens.size() - 1)) {
+            throw std::runtime_error("semantic source position mismatch");
+        }
+        if (common_source_tokens == 0) {
+            common_source_tokens = source_tokens.size();
+            if (common_source_tokens != reference_tokens.size()) {
+                throw std::runtime_error("semantic source/reference token count mismatch");
+            }
+        } else if (common_source_tokens != source_tokens.size()) {
+            throw std::runtime_error("semantic source token count changed");
+        }
+
+        auto full_root = save_root(
+            ctx, variant + ":full", key++, FULL_DEVICE_FLAGS, source_tokens.size());
+        restore_root(ctx, full_root);
+        recurrent_substitution_h2d_bytes += apply_matched_layer_substitution(
+            ctx, reference, all_attention, no_layers);
+        auto attention_delta_root = save_root(
+            ctx, variant + ":attention-delta", key++, FULL_DEVICE_FLAGS,
+            source_tokens.size());
+        restore_root(ctx, full_root);
+        attention_substitution_h2d_bytes += apply_matched_layer_substitution(
+            ctx, reference, no_layers, all_recurrent);
+        auto recurrent_delta_root = save_root(
+            ctx, variant + ":recurrent-delta", key++, FULL_DEVICE_FLAGS,
+            source_tokens.size());
+
+        maximum_simultaneous_root_device_tensor_bytes = std::max(
+            maximum_simultaneous_root_device_tensor_bytes,
+            full_root.gpu_bytes +
+                attention_delta_root.gpu_bytes +
+                recurrent_delta_root.gpu_bytes);
+
+        const std::vector<std::pair<std::string, device_root *>> route_roots = {
+            {"full-hybrid", &full_root},
+            {"attention-delta-fixed-recurrent", &attention_delta_root},
+            {"recurrent-delta-fixed-attention", &recurrent_delta_root},
+        };
+        for (const auto & [route, root] : route_roots) {
+            auto * destination = route == "full-hybrid"
+                ? &full_results
+                : route == "attention-delta-fixed-recurrent"
+                    ? &attention_delta_results
+                    : &recurrent_delta_results;
+            for (const auto & query : queries) {
+                restore_root(ctx, *root);
+                auto boundary = decode_query(
+                    ctx, vocab, candidates, route, variant, query,
+                    root->source_tokens, root->backing_id, root->gpu_bytes);
+                records.push_back(boundary.record);
+                (*destination)[variant].push_back(std::move(boundary));
+            }
+        }
+
+        llama_memory_clear(llama_get_memory(ctx), true);
+        for (const auto & [route, root] : route_roots) {
+            roots.push_back({
+                {"route", route},
+                {"source_variant", variant},
+                {"serialized_root_device_tensor_bytes", root->gpu_bytes},
+                {"serialized_root_metadata_bytes", root->metadata.size()},
+                {"root_backing_id", hex64(root->backing_id)},
+            });
+            cleared_root_bytes += llama_state_seq_clear_device_data(ctx, root->key);
+            if (llama_state_seq_get_device_data_size(ctx, root->key) != 0) {
+                throw std::runtime_error("semantic validation root did not close");
+            }
+        }
+    }
+
+    llama_memory_clear(llama_get_memory(ctx), true);
+    llama_synchronize(ctx);
+    if (llama_state_seq_get_device_root_count(ctx) != 0 ||
+        active_recurrent_backing_id(ctx) != active_recurrent_backing_initial ||
+        active_attention_backing_id(ctx) != active_attention_backing_initial) {
+        throw std::runtime_error("semantic validation close invariant failed");
+    }
+
+    const auto & acceptance = spec.at("acceptance_law");
+    const size_t attention_joint_correct = semantic_correct_count(
+        attention_delta_results.at("F1_G1"), queries, false);
+    const size_t attention_f_only_correct = semantic_correct_count(
+        attention_delta_results.at("F1_G0"), queries, false);
+    const size_t attention_g_only_correct = semantic_correct_count(
+        attention_delta_results.at("F0_G1"), queries, false);
+    const size_t attention_null_correct = semantic_correct_count(
+        attention_delta_results.at("F0_G0"), queries, false);
+    const size_t attention_mutated_correct = semantic_correct_count(
+        attention_delta_results.at("F1_G_MUT"), queries, true);
+    const size_t attention_presentation_correct = semantic_correct_count(
+        attention_delta_results.at("F1_G_PRESENTATION"), queries, false);
+    const size_t attention_mutation_changes = boundary_changes(
+        attention_delta_results.at("F1_G1"),
+        attention_delta_results.at("F1_G_MUT"));
+    const size_t attention_presentation_matches = boundary_matches(
+        attention_delta_results.at("F1_G1"),
+        attention_delta_results.at("F1_G_PRESENTATION"));
+    const size_t recurrent_joint_correct = semantic_correct_count(
+        recurrent_delta_results.at("F1_G1"), queries, false);
+    const size_t full_joint_correct = semantic_correct_count(
+        full_results.at("F1_G1"), queries, false);
+
+    const bool accepted =
+        attention_joint_correct >= acceptance.at("attention_joint_correct_minimum").get<size_t>() &&
+        attention_f_only_correct <= acceptance.at("attention_f_only_correct_maximum").get<size_t>() &&
+        attention_g_only_correct <= acceptance.at("attention_g_only_correct_maximum").get<size_t>() &&
+        attention_null_correct <= acceptance.at("attention_null_correct_maximum").get<size_t>() &&
+        attention_mutated_correct >= acceptance.at("attention_mutated_correct_minimum").get<size_t>() &&
+        attention_presentation_correct >= acceptance.at("attention_presentation_correct_minimum").get<size_t>() &&
+        attention_mutation_changes >= acceptance.at("attention_mutation_changes_minimum").get<size_t>() &&
+        attention_presentation_matches >= acceptance.at("attention_presentation_matches_minimum").get<size_t>() &&
+        recurrent_joint_correct <= acceptance.at("recurrent_joint_correct_maximum").get<size_t>() &&
+        full_joint_correct >= acceptance.at("full_joint_correct_minimum").get<size_t>();
+
+    return {
+        {"schema_version", 1},
+        {"mechanism", "MATCHED_BACKGROUND_ATTENTION_DELTA_SEMANTIC_VALIDATION"},
+        {"spec_id", spec.at("id")},
+        {"model_arch", "qwen35moe"},
+        {"configuration", {
+            {"source_tokens", common_source_tokens},
+            {"reference_source_tokens", reference_tokens.size()},
+            {"query_count", queries.size()},
+            {"source_variant_count", variants.size()},
+            {"routes_per_variant", 3},
+            {"attention_layers", attention_layers},
+            {"recurrent_layers", recurrent_layers},
+        }},
+        {"carrier", {
+            {"logical_attention_delta_source_bytes",
+                attention_source_bytes(attention, all_attention, common_source_tokens)},
+            {"fixed_recurrent_scaffold_tensor_bytes",
+                recurrent_source_bytes(recurrent, all_recurrent)},
+            {"maximum_simultaneous_serialized_root_device_tensor_bytes",
+                maximum_simultaneous_root_device_tensor_bytes},
+            {"cleared_root_bytes", cleared_root_bytes},
+            {"matched_reference_host_bytes", reference.host_bytes},
+            {"recurrent_substitution_h2d_bytes", recurrent_substitution_h2d_bytes},
+            {"attention_substitution_h2d_bytes", attention_substitution_h2d_bytes},
+            {"all_retained_roots_closed", llama_state_seq_get_device_root_count(ctx) == 0},
+            {"active_recurrent_backing_stable",
+                active_recurrent_backing_id(ctx) == active_recurrent_backing_initial},
+            {"active_attention_backing_stable",
+                active_attention_backing_id(ctx) == active_attention_backing_initial},
+            {"restoration_class", "SNAPSHOT_RELOAD"},
+            {"physical_reduction_implemented", false},
+            {"backend_allocation_bytes_measured", false},
+        }},
+        {"route_summaries", {
+            {"full_hybrid", semantic_route_summary(full_results, queries)},
+            {"attention_delta_fixed_recurrent",
+                semantic_route_summary(attention_delta_results, queries)},
+            {"recurrent_delta_fixed_attention",
+                semantic_route_summary(recurrent_delta_results, queries)},
+        }},
+        {"summary", {
+            {"attention_joint_correct", attention_joint_correct},
+            {"attention_f_only_correct", attention_f_only_correct},
+            {"attention_g_only_correct", attention_g_only_correct},
+            {"attention_null_correct", attention_null_correct},
+            {"attention_mutated_correct", attention_mutated_correct},
+            {"attention_presentation_correct", attention_presentation_correct},
+            {"attention_mutation_changes", attention_mutation_changes},
+            {"attention_presentation_matches", attention_presentation_matches},
+            {"recurrent_joint_correct", recurrent_joint_correct},
+            {"full_joint_correct", full_joint_correct},
+            {"semantic_validation_passed", accepted},
+        }},
+        {"roots", roots},
+        {"records", records},
+        {"verdict", accepted ? "accept" : "reject"},
+        {"claim_ceiling", spec.at("claim_ceiling")},
+    };
+}
+
 } // namespace
 
 int main(int argc, char ** argv) {
@@ -734,6 +1027,22 @@ int main(int argc, char ** argv) {
         }
         if (active_attention_backing_initial == 0) {
             throw std::runtime_error("active attention backing identity is zero");
+        }
+
+        if (spec.value("matched_semantic_validation", false)) {
+            const json result = run_matched_semantic_validation(
+                ctx,
+                vocab,
+                candidates,
+                spec,
+                active_backing_initial,
+                active_attention_backing_initial);
+            std::ofstream result_stream(params.out_file);
+            result_stream << result.dump(2) << '\n';
+            result_stream.close();
+            LOG_INF("wrote %s\n", params.out_file.c_str());
+            llama_backend_free();
+            return 0;
         }
 
         if (spec.contains("localization_arms")) {

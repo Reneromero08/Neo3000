@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "id": "neo-exp-0110",
+  "record_type": "scientific_result",
+  "date": "2026-07-29",
+  "baseline_commit": "a22b5950adfa6236905ede24b8947384495fb53e",
+  "mechanism": "MATCHED_BACKGROUND_ATTENTION_DELTA_SEMANTIC_VALIDATION",
+  "spec_id": "attention-delta-semantic-validation-v1",
+  "hypothesis": "All source-conditioned information needed by the accepted 0106 semantic panel resides in attention KV when inference runs on one fixed equal-token F0G0 recurrent scaffold.",
+  "intervention": "For each F0G0, F1G0, F0G1, F1G1, relation-mutation, and presentation source, compare full hybrid state, source-conditioned attention with fixed F0G0 recurrent state, and source-conditioned recurrent state with fixed F0G0 attention.",
+  "configuration": {
+    "architecture": "qwen35moe",
+    "source_tokens": 130,
+    "reference_source_tokens": 130,
+    "query_count_per_route": 4,
+    "source_variant_count": 6,
+    "routes_per_variant": 3,
+    "attention_layers": [3, 7, 11, 15, 19, 23, 27, 31, 35, 39],
+    "recurrent_layers": [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26, 28, 29, 30, 32, 33, 34, 36, 37, 38],
+    "restoration_class": "SNAPSHOT_RELOAD"
+  },
+  "metrics_after": {
+    "full_hybrid": {
+      "F0_G0": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "F1_G0": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "F0_G1": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "F1_G1": {"correct": 4, "answers": ["A", "B", "C", "D"]},
+      "F1_G_MUT": {"correct": 4, "answers": ["B", "C", "D", "A"]},
+      "F1_G_PRESENTATION": {"correct": 4, "answers": ["A", "B", "C", "D"]}
+    },
+    "attention_delta_fixed_recurrent": {
+      "F0_G0": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "F1_G0": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "F0_G1": {"correct": 1, "answers": ["D", "D", "D", "D"]},
+      "F1_G1": {"correct": 4, "answers": ["A", "B", "C", "D"]},
+      "F1_G_MUT": {"correct": 4, "answers": ["B", "C", "D", "A"]},
+      "F1_G_PRESENTATION": {"correct": 4, "answers": ["A", "B", "C", "D"]},
+      "mutation_changes": 4,
+      "presentation_matches": 4
+    },
+    "recurrent_delta_fixed_attention": {
+      "all_variant_answers": ["D", "D", "D", "D"],
+      "joint_correct": 1
+    }
+  },
+  "resource_accounting": {
+    "logical_attention_delta_source_bytes": 2662400,
+    "fixed_recurrent_scaffold_tensor_bytes": 65863680,
+    "maximum_simultaneous_serialized_root_device_tensor_bytes": 205578240,
+    "serialized_roots_cleared_bytes": 1233469440,
+    "matched_reference_host_bytes": 76349440,
+    "recurrent_substitution_h2d_bytes": 395182080,
+    "attention_substitution_h2d_bytes": 62914560,
+    "backend_allocation_bytes_measured": false,
+    "physical_reduction_implemented": false
+  },
+  "closure": {
+    "all_retained_roots_closed": true,
+    "active_attention_backing_stable": true,
+    "active_recurrent_backing_stable": true,
+    "background_processes_left_running": 0
+  },
+  "artifacts": {
+    "spec": {
+      "path": "lab/attention-delta-semantic-validation-v1.json",
+      "bytes": 6532,
+      "sha256": "C91C7DE06AD10FD15981A19181ADD4F5B4C9D588943B1396CDE54C70E1F4E31F"
+    },
+    "probe_source": {
+      "path": "tools/recurrent-carrier-probe/recurrent-carrier-probe.cpp",
+      "bytes": 63867,
+      "sha256": "2CE83FB296BE8BE43C3AE989D7F2CF897D76D91C761F41AE26C66A3E7E07AF42"
+    },
+    "probe_binary": {
+      "path": "build/linux-cuda-0091-custody/bin/llama-recurrent-carrier-probe",
+      "bytes": 477560,
+      "sha256": "8C3C9E3F715F700E6D5CF9B58CD642349250EAAFDFC752D7A23EECE13D4F6236"
+    },
+    "raw_result": {
+      "committed": false,
+      "bytes": 64898,
+      "sha256": "2FB97486936630B83EDC253E1CE8E551727AF20B8DE08C79A87684F0428834AC"
+    }
+  },
+  "contact": {
+    "model_loads": 1,
+    "llama_decode_calls": 100,
+    "input_tokens": 3286,
+    "completion_tokens": 0,
+    "server_launches": 0,
+    "background_processes_left_running": 0,
+    "neo_exp_0102_consumed": false
+  },
+  "quality_gates": {
+    "attention_joint_correct": true,
+    "F_alone_insufficient": true,
+    "G_alone_insufficient": true,
+    "null_insufficient": true,
+    "relation_mutation_changes_all_boundaries": true,
+    "presentation_invariance": true,
+    "recurrent_delta_complement_insufficient": true,
+    "full_control_correct": true,
+    "physical_carrier_reduction": false,
+    "complete_host_duplicate_absent": false,
+    "native_inverse_restoration": false,
+    "fresh_compute_reduction": false,
+    "unbounded_recurrence": false
+  },
+  "verdict": "accept",
+  "classification": "SOURCE_CONDITIONED_ATTENTION_DELTA_SEMANTICALLY_SUFFICIENT_ON_FIXED_RECURRENT_SCAFFOLD",
+  "strongest_supported_claim": "For the frozen delayed relation panel, all variable F/G, relation-mutation, and presentation behavior is preserved by 2,662,400 bytes of source-conditioned attention KV on a fixed F0G0 recurrent scaffold; the complementary source-conditioned recurrent delta is insufficient.",
+  "strongest_rejected_interpretation": "The implementation still uses three full 68,526,080-byte snapshots per variant and a 76,349,440-byte host reference. It has not created a physically compact carrier, removed the duplicate scaffold, reduced fresh model compute, restored natively, or established catalytic recurrence.",
+  "next_boundary": "IMPLEMENT_ATTENTION_ONLY_DEVICE_ROOTS_WHILE_PRESERVING_ONE_ACTUAL_RECURRENT_SCAFFOLD_BACKING_THEN_REPEAT_THE_SEMANTIC_PANEL_AND_UNRELATED_REUSE"
+}

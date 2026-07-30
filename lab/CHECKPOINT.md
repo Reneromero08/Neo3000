@@ -56,6 +56,12 @@ The active recurrence and acceptance boundary are
   complete equal-token F0G0 recurrent trajectory remains as a fixed scaffold.
   The logical variable support is all ten attention layers: `2,662,400`
   source-conditioned bytes, 3.89% of the full source state.
+- `neo-exp-0110` revalidates the complete semantic law on that decomposition.
+  Attention-delta joint/F-only/G-only/F0G0 accuracy is
+  `4/4`, `1/4`, `1/4`, `1/4`; mutation returns `B,C,D,A` and changes all four
+  joint boundaries; presentation returns `A,B,C,D` and matches all four. The
+  source-conditioned recurrent-delta complement returns `D,D,D,D` for every
+  variant. The full controls reproduce the accepted 0106 panel.
 - The Release server rebuild succeeds, all 139 configured CUDA objects remain
   present with zero CUDA source changes, and the focused no-model Python suite
   passes 57 tests.
@@ -102,16 +108,19 @@ The active recurrence and acceptance boundary are
   and earlier complete recurrent erasure made attention-only inference fail.
   All 18 saved roots still serialize the full `68,526,080` bytes. The result
   localizes source-conditioned difference, not total physical state.
+- The accepted 0110 semantics still use three full `68,526,080`-byte roots per
+  source variant, with `205,578,240` simultaneous serialized device bytes and
+  a `76,349,440`-byte host reference. Semantic delta sufficiency is not
+  physical compactness, duplicate-free custody, restoration, or catalysis.
 
 ### ACTIVE BOUNDARY
 
-Validate all ten source-conditioned attention layers on the fixed F0G0
-recurrent background against the complete 0106 joint, F-only, G-only,
-relation-mutation, and presentation law. Include the matched
-recurrent-difference complement and full-state controls. Physical compression
-follows only if the attention-delta route passes; it must make the recurrent
-scaffold reusable without a host duplicate and measure actual allocation,
-transfer, and work. `neo-exp-0102` remains frozen and unconsumed.
+Add an attention-only device-root serialization law that leaves one actual
+F0G0 recurrent scaffold in the active backing. Eliminate the host scaffold
+duplicate, measure root allocation and transfer directly, repeat the accepted
+semantic panel, close each delta, and run an unrelated useful inference
+transaction on the same scaffold backing. `neo-exp-0102` remains frozen and
+unconsumed.
 
 ## July 29 scientific realignment [FOUNDATION AUTHORITY]
 

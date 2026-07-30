@@ -145,6 +145,20 @@ Before implementing that physical form, the attention delta must reproduce
 the full F-only, G-only, joint, relation-mutation, and presentation law while
 the matched recurrent-delta complement fails appropriately.
 
+That semantic validation now passes. On the fixed F0G0 recurrent scaffold,
+the attention delta reproduces the full joint, relation-mutation, and
+presentation boundaries while both single-evidence marginals and F0G0 remain
+insufficient. The complementary source-conditioned recurrent delta remains
+`D,D,D,D`. Variable semantic state is therefore localized to the
+`2,662,400` attention bytes for this task.
+
+The present harness still materializes three full roots per source and keeps a
+complete host reference. The next intervention must be physical: teach the
+runtime to serialize only attention KV while leaving one actual recurrent
+scaffold borrowed in its original backing. The proof boundary is same-scaffold
+semantic parity, delta closure, no host scaffold copy, and unrelated useful
+reuse before any recurrence scaling claim.
+
 ## 1. Executive conclusion
 
 The strongest coherent route to catalytic Agents-A1 inference is:

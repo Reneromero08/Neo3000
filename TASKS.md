@@ -61,11 +61,18 @@ constructively unbounded local Agents-A1 inference.
   logical variable support is the ten attention layers (`2,662,400` bytes).
   This does not contradict 0105, which erased recurrent state rather than
   supplying a fixed recurrent scaffold.
-- [ ] Validate attention KV as the source-conditioned delta on the fixed F0G0
-  recurrent background across joint, F-only, G-only, relation-mutation, and
-  presentation routes. Include the matched recurrent-delta complement and
-  full-state controls. Only after those gates pass may physical allocation
-  shrink below a full hybrid root.
+- [x] Validate the attention delta on the fixed recurrent scaffold.
+  `neo-exp-0110` passes the full semantic law: attention-delta
+  joint/F-only/G-only/null are `4/4`, `1/4`, `1/4`, `1/4`; the relation
+  mutation returns `B,C,D,A` with four changes; presentation returns
+  `A,B,C,D` with four matches. The matched recurrent-delta complement remains
+  `D,D,D,D`. This localizes variable semantic evidence to `2,662,400`
+  attention bytes on the tested fixed scaffold.
+- [ ] Implement attention-only on-device roots that borrow one actual
+  recurrent scaffold backing rather than serializing a full hybrid root or
+  copying the scaffold from a `76,349,440`-byte host reference. Re-run the
+  semantic panel, close every delta, then use the same scaffold for an
+  unrelated useful inference transaction.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

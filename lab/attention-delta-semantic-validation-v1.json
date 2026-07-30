@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "id": "attention-delta-semantic-validation-v1",
+  "description": "Prospectively validate the neo-exp-0109 baseline-plus-delta decomposition. For each frozen semantic source, compare complete hybrid state, all source-conditioned attention KV on a fixed equal-token F0G0 recurrent scaffold, and all source-conditioned recurrent state on fixed F0G0 attention. No route is selected from output.",
+  "matched_semantic_validation": true,
+  "expected_attention_layers": [3, 7, 11, 15, 19, 23, 27, 31, 35, 39],
+  "expected_recurrent_layers": [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26, 28, 29, 30, 32, 33, 34, 36, 37, 38],
+  "sources": {
+    "F0_G0": {
+      "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+      "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+      "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+      "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+    },
+    "F1_G0": {
+      "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+      "module_f": "F: Item W maps to vault J. Item X maps to vault K. Item Y maps to vault L. Item Z maps to vault M.\n",
+      "module_g": "G: Vault T has code A. Vault U has code B. Vault V has code C. Vault N has code D.\n",
+      "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+    },
+    "F0_G1": {
+      "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+      "module_f": "F: Item P maps to vault J. Item Q maps to vault K. Item R maps to vault L. Item S maps to vault M.\n",
+      "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+      "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+    },
+    "F1_G1": {
+      "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+      "module_f": "F: Item W maps to vault J. Item X maps to vault K. Item Y maps to vault L. Item Z maps to vault M.\n",
+      "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+      "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+    },
+    "F1_G_MUT": {
+      "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+      "module_f": "F: Item W maps to vault J. Item X maps to vault K. Item Y maps to vault L. Item Z maps to vault M.\n",
+      "module_g": "G: Vault J has code B. Vault K has code C. Vault L has code D. Vault M has code A.\n",
+      "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+    },
+    "F1_G_PRESENTATION": {
+      "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+      "module_f": "F: Item Z maps to vault M. Item Y maps to vault L. Item X maps to vault K. Item W maps to vault J.\n",
+      "module_g": "G: Vault M has code D. Vault L has code C. Vault K has code B. Vault J has code A.\n",
+      "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n"
+    }
+  },
+  "queries": [
+    {
+      "id": "query-W",
+      "expected": "A",
+      "expected_mutated": "B",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item W through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "query-X",
+      "expected": "B",
+      "expected_mutated": "C",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item X through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "query-Y",
+      "expected": "C",
+      "expected_mutated": "D",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item Y through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "query-Z",
+      "expected": "D",
+      "expected_mutated": "A",
+      "suffix": "<|im_start|>user\nWhich code belongs to Item Z through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    }
+  ],
+  "acceptance_law": {
+    "attention_joint_correct_minimum": 4,
+    "attention_f_only_correct_maximum": 1,
+    "attention_g_only_correct_maximum": 1,
+    "attention_null_correct_maximum": 1,
+    "attention_mutated_correct_minimum": 4,
+    "attention_presentation_correct_minimum": 4,
+    "attention_mutation_changes_minimum": 4,
+    "attention_presentation_matches_minimum": 4,
+    "recurrent_joint_correct_maximum": 1,
+    "full_joint_correct_minimum": 4
+  },
+  "claim_ceiling": "Matched-background semantic sufficiency of source-conditioned attention KV only. Every route remains a complete conventional snapshot and the fixed F0G0 scaffold is a host-side classical duplicate. No physical compression, duplicate-free custody, native restoration, fresh-compute reduction, catalytic recurrence, or unbounded claim follows."
+}
