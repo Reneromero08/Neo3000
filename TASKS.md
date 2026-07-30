@@ -451,6 +451,23 @@ constructively unbounded local Agents-A1 inference.
   recurrent cells and bytes touched, pre/post/closure digests, update work,
   and whether the next useful transaction consumes the same physical state.
   This is a changed carrier substrate, not another port evaluator.
+  `neo-exp-0151` is frozen precontact as complete recurrent-row delta
+  composition. For each current-phase query, the actual projected output token
+  produces a private post-output recurrent state; a device graph replaces that
+  row by `post-output - pre-output`, and a second device graph adds all four
+  unresolved rows directly into the same active candidate recurrent row before
+  the next phase is queried. Candidate attention state, sequence metadata, and
+  physical recurrent-row identity remain fixed. No trained port, expected
+  answer, target state, phase-indexed operator, host-side recurrent update
+  payload, or source-role forward exists. The frozen pass requires `16/16`
+  useful and exact-control boundary parity, changed matched G1 disablement,
+  exact four-step recurrent tensor and row return, and complete closure. The
+  probe and full Release server build; `22/22` focused tests pass, the exact
+  integrated oracle retains all nineteen gates on three fixtures, and CUDA
+  closure remains `139/139`. No `0151` model contact has occurred. Its sole
+  next action is one native execution and a physical-mechanism decision. The
+  evidence instrument remains one compact recomputable packet and is not a
+  research axis.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

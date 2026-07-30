@@ -4,6 +4,7 @@
 #include "llama-impl.h"
 #include "llama-io.h"
 #include "llama-batch.h"
+#include "llama-context.h"
 #include "llama-model.h"
 
 #include <algorithm>
@@ -11,6 +12,7 @@
 #include <cstring>
 #include <limits>
 #include <map>
+#include <set>
 #include <stdexcept>
 
 //
@@ -394,6 +396,357 @@ void llama_memory_recurrent::set_rs_idx(llama_seq_id seq_id, uint32_t idx) {
         return;
     }
     rs_idx[seq_id] = (idx > n_rs_seq) ? n_rs_seq : idx;
+}
+
+bool llama_memory_recurrent::neo3000_seq_make_output_delta(
+        llama_context * lctx,
+        llama_seq_id after_seq_id,
+        llama_seq_id before_seq_id,
+        neo3000_output_delta_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    if (!lctx ||
+        n_rs_seq != 0 ||
+        after_seq_id == before_seq_id) {
+        return false;
+    }
+
+    const auto resolve_row =
+            [&](llama_seq_id seq_id) -> int32_t {
+        if (seq_id < 0 ||
+            static_cast<size_t>(seq_id) >= cells.size()) {
+            return -1;
+        }
+        const int32_t tail = cells[seq_id].tail;
+        if (tail < 0 ||
+            static_cast<size_t>(tail) >= cells.size() ||
+            !cells[tail].has_seq_id(seq_id)) {
+            return -1;
+        }
+        const int32_t row =
+            cells[tail].src >= 0 ? cells[tail].src : tail;
+        return row >= 0 &&
+                static_cast<uint32_t>(row) < size
+            ? row
+            : -1;
+    };
+    const int32_t after_row = resolve_row(after_seq_id);
+    const int32_t before_row = resolve_row(before_seq_id);
+    if (after_row < 0 ||
+        before_row < 0 ||
+        after_row == before_row) {
+        return false;
+    }
+
+    const auto scheduler_bytes =
+            [&](ggml_backend_sched_t sched) {
+        uint64_t bytes = 0;
+        const int count =
+            ggml_backend_sched_get_n_backends(sched);
+        for (int i = 0; i < count; ++i) {
+            ggml_backend_t backend =
+                ggml_backend_sched_get_backend(sched, i);
+            bytes +=
+                ggml_backend_sched_get_buffer_size(
+                    sched, backend);
+        }
+        return bytes;
+    };
+    const size_t metadata_bytes = 4 * 1024 * 1024;
+    ggml_init_params params = {
+        /*.mem_size   =*/ metadata_bytes,
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    ggml_context * graph_ctx = ggml_init(params);
+    if (!graph_ctx) {
+        return false;
+    }
+    ggml_cgraph * graph =
+        ggml_new_graph_custom(graph_ctx, 4096, false);
+    uint64_t logical_row_bytes = 0;
+    uint64_t element_operations = 0;
+    uint64_t tensor_visits = 0;
+    const auto append_delta =
+            [&](ggml_tensor * tensor) {
+        if (!tensor) {
+            return true;
+        }
+        if (!tensor->buffer ||
+            ggml_blck_size(tensor->type) != 1 ||
+            tensor->ne[1] != static_cast<int64_t>(size) ||
+            tensor->nb[1] !=
+                ggml_row_size(tensor->type, tensor->ne[0])) {
+            return false;
+        }
+        ggml_tensor * after =
+            ggml_view_1d(
+                graph_ctx,
+                tensor,
+                tensor->ne[0],
+                static_cast<size_t>(after_row) *
+                    tensor->nb[1]);
+        ggml_tensor * before =
+            ggml_view_1d(
+                graph_ctx,
+                tensor,
+                tensor->ne[0],
+                static_cast<size_t>(before_row) *
+                    tensor->nb[1]);
+        ggml_tensor * delta =
+            ggml_add(
+                graph_ctx,
+                after,
+                ggml_scale(graph_ctx, before, -1.0f));
+        if (delta->type != tensor->type) {
+            delta = ggml_cast(
+                graph_ctx, delta, tensor->type);
+        }
+        ggml_build_forward_expand(
+            graph,
+            ggml_cpy(graph_ctx, delta, after));
+        logical_row_bytes += tensor->nb[1];
+        element_operations +=
+            static_cast<uint64_t>(tensor->ne[0]) * 2;
+        ++tensor_visits;
+        return true;
+    };
+    bool valid = true;
+    for (size_t il = 0; il < r_l.size() && valid; ++il) {
+        valid =
+            append_delta(r_l[il]) &&
+            append_delta(s_l[il]);
+    }
+    if (!valid || tensor_visits == 0) {
+        ggml_free(graph_ctx);
+        return false;
+    }
+
+    ggml_backend_sched_t sched = lctx->get_sched();
+    const uint64_t compute_bytes_before =
+        scheduler_bytes(sched);
+    lctx->invalidate_neo3000_graph_cache();
+    if (!ggml_backend_sched_alloc_graph(sched, graph)) {
+        lctx->invalidate_neo3000_graph_cache();
+        ggml_free(graph_ctx);
+        return false;
+    }
+    const uint64_t compute_bytes_after =
+        scheduler_bytes(sched);
+    const ggml_status status =
+        lctx->graph_compute(graph, true);
+    lctx->synchronize();
+    lctx->invalidate_neo3000_graph_cache();
+    ggml_free(graph_ctx);
+    if (status != GGML_STATUS_SUCCESS) {
+        return false;
+    }
+
+    if (metrics) {
+        metrics->logical_row_bytes = logical_row_bytes;
+        metrics->backend_read_bytes =
+            logical_row_bytes * 2;
+        metrics->backend_write_bytes =
+            logical_row_bytes;
+        metrics->arithmetic_element_operations =
+            element_operations;
+        metrics->tensor_visits = tensor_visits;
+        metrics->graph_applications = 1;
+        metrics->scheduler_compute_bytes_before =
+            compute_bytes_before;
+        metrics->scheduler_compute_bytes_after =
+            compute_bytes_after;
+        metrics->destination_physical_row = after_row;
+        metrics->source_physical_rows = {before_row};
+    }
+    return true;
+}
+
+bool llama_memory_recurrent::neo3000_seq_accumulate_output_deltas(
+        llama_context * lctx,
+        llama_seq_id destination_seq_id,
+        const std::vector<llama_seq_id> & delta_seq_ids,
+        neo3000_output_delta_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    if (!lctx ||
+        n_rs_seq != 0 ||
+        delta_seq_ids.empty()) {
+        return false;
+    }
+
+    const auto resolve_row =
+            [&](llama_seq_id seq_id) -> int32_t {
+        if (seq_id < 0 ||
+            static_cast<size_t>(seq_id) >= cells.size()) {
+            return -1;
+        }
+        const int32_t tail = cells[seq_id].tail;
+        if (tail < 0 ||
+            static_cast<size_t>(tail) >= cells.size() ||
+            !cells[tail].has_seq_id(seq_id)) {
+            return -1;
+        }
+        const int32_t row =
+            cells[tail].src >= 0 ? cells[tail].src : tail;
+        return row >= 0 &&
+                static_cast<uint32_t>(row) < size
+            ? row
+            : -1;
+    };
+    const int32_t destination_row =
+        resolve_row(destination_seq_id);
+    if (destination_row < 0) {
+        return false;
+    }
+    std::vector<int32_t> delta_rows;
+    delta_rows.reserve(delta_seq_ids.size());
+    std::set<int32_t> unique_rows;
+    unique_rows.insert(destination_row);
+    for (llama_seq_id seq_id : delta_seq_ids) {
+        const int32_t row = resolve_row(seq_id);
+        if (row < 0 || !unique_rows.insert(row).second) {
+            return false;
+        }
+        delta_rows.push_back(row);
+    }
+
+    const auto scheduler_bytes =
+            [&](ggml_backend_sched_t sched) {
+        uint64_t bytes = 0;
+        const int count =
+            ggml_backend_sched_get_n_backends(sched);
+        for (int i = 0; i < count; ++i) {
+            ggml_backend_t backend =
+                ggml_backend_sched_get_backend(sched, i);
+            bytes +=
+                ggml_backend_sched_get_buffer_size(
+                    sched, backend);
+        }
+        return bytes;
+    };
+    const size_t metadata_bytes = 4 * 1024 * 1024;
+    ggml_init_params params = {
+        /*.mem_size   =*/ metadata_bytes,
+        /*.mem_buffer =*/ nullptr,
+        /*.no_alloc   =*/ true,
+    };
+    ggml_context * graph_ctx = ggml_init(params);
+    if (!graph_ctx) {
+        return false;
+    }
+    ggml_cgraph * graph =
+        ggml_new_graph_custom(
+            graph_ctx,
+            std::max<size_t>(
+                4096, 256 * delta_rows.size()),
+            false);
+    uint64_t logical_row_bytes = 0;
+    uint64_t element_operations = 0;
+    uint64_t tensor_visits = 0;
+    const auto append_accumulation =
+            [&](ggml_tensor * tensor) {
+        if (!tensor) {
+            return true;
+        }
+        if (!tensor->buffer ||
+            ggml_blck_size(tensor->type) != 1 ||
+            tensor->ne[1] != static_cast<int64_t>(size) ||
+            tensor->nb[1] !=
+                ggml_row_size(tensor->type, tensor->ne[0])) {
+            return false;
+        }
+        ggml_tensor * destination =
+            ggml_view_1d(
+                graph_ctx,
+                tensor,
+                tensor->ne[0],
+                static_cast<size_t>(destination_row) *
+                    tensor->nb[1]);
+        ggml_tensor * accumulated = destination;
+        for (const int32_t row : delta_rows) {
+            ggml_tensor * delta =
+                ggml_view_1d(
+                    graph_ctx,
+                    tensor,
+                    tensor->ne[0],
+                    static_cast<size_t>(row) *
+                        tensor->nb[1]);
+            accumulated =
+                ggml_add(
+                    graph_ctx, accumulated, delta);
+        }
+        if (accumulated->type != tensor->type) {
+            accumulated = ggml_cast(
+                graph_ctx,
+                accumulated,
+                tensor->type);
+        }
+        ggml_build_forward_expand(
+            graph,
+            ggml_cpy(
+                graph_ctx, accumulated, destination));
+        logical_row_bytes += tensor->nb[1];
+        element_operations +=
+            static_cast<uint64_t>(tensor->ne[0]) *
+            delta_rows.size();
+        ++tensor_visits;
+        return true;
+    };
+    bool valid = true;
+    for (size_t il = 0; il < r_l.size() && valid; ++il) {
+        valid =
+            append_accumulation(r_l[il]) &&
+            append_accumulation(s_l[il]);
+    }
+    if (!valid || tensor_visits == 0) {
+        ggml_free(graph_ctx);
+        return false;
+    }
+
+    ggml_backend_sched_t sched = lctx->get_sched();
+    const uint64_t compute_bytes_before =
+        scheduler_bytes(sched);
+    lctx->invalidate_neo3000_graph_cache();
+    if (!ggml_backend_sched_alloc_graph(sched, graph)) {
+        lctx->invalidate_neo3000_graph_cache();
+        ggml_free(graph_ctx);
+        return false;
+    }
+    const uint64_t compute_bytes_after =
+        scheduler_bytes(sched);
+    const ggml_status status =
+        lctx->graph_compute(graph, true);
+    lctx->synchronize();
+    lctx->invalidate_neo3000_graph_cache();
+    ggml_free(graph_ctx);
+    if (status != GGML_STATUS_SUCCESS) {
+        return false;
+    }
+
+    if (metrics) {
+        metrics->logical_row_bytes = logical_row_bytes;
+        metrics->backend_read_bytes =
+            logical_row_bytes *
+            (1 + delta_rows.size());
+        metrics->backend_write_bytes =
+            logical_row_bytes;
+        metrics->arithmetic_element_operations =
+            element_operations;
+        metrics->tensor_visits = tensor_visits;
+        metrics->graph_applications = 1;
+        metrics->scheduler_compute_bytes_before =
+            compute_bytes_before;
+        metrics->scheduler_compute_bytes_after =
+            compute_bytes_after;
+        metrics->destination_physical_row =
+            destination_row;
+        metrics->source_physical_rows =
+            std::move(delta_rows);
+    }
+    return true;
 }
 
 std::map<ggml_backend_buffer_type_t, size_t> llama_memory_recurrent::memory_breakdown() const {

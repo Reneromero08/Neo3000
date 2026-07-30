@@ -5570,12 +5570,17 @@ static json run_sparse_g_label_refresh(
         spec.value(
             "output_written_semantic_port_action",
             false);
+    const bool output_recurrent_delta_advance_mode =
+        spec.value(
+            "output_recurrent_delta_advance_action",
+            false);
     const bool output_driven_carrier_mode =
         output_promoted_value_carrier_mode ||
         output_role_transport_mode ||
         output_role_generator_mode ||
         output_source_rematerialization_mode ||
-        output_written_semantic_port_mode;
+        output_written_semantic_port_mode ||
+        output_recurrent_delta_advance_mode;
     const bool legacy_trained_semantic_carrier_mode =
         spec.value("trained_semantic_carrier_action", false);
     const bool trained_semantic_carrier_mode =
@@ -5644,7 +5649,9 @@ static json run_sparse_g_label_refresh(
             static_cast<int>(
                 legacy_trained_semantic_carrier_mode) +
             static_cast<int>(
-                output_written_semantic_port_mode) > 1) {
+                output_written_semantic_port_mode) +
+            static_cast<int>(
+                output_recurrent_delta_advance_mode) > 1) {
         throw std::runtime_error(
             "label orbit action modes are mutually exclusive");
     }
@@ -5799,7 +5806,8 @@ static json run_sparse_g_label_refresh(
         }
     }
     std::vector<size_t> output_promotion_label_indices;
-    if (output_driven_carrier_mode) {
+    if (output_driven_carrier_mode &&
+        !output_recurrent_delta_advance_mode) {
         output_promotion_label_indices =
             spec.at("output_promotion_label_indices")
                 .get<std::vector<size_t>>();
@@ -6833,6 +6841,8 @@ static json run_sparse_g_label_refresh(
     size_t orbit_action_count = 0;
     size_t orbit_position_shift_count = 0;
     size_t output_promotion_row_count = 0;
+    size_t recurrent_output_delta_extraction_count = 0;
+    size_t recurrent_output_delta_accumulation_count = 0;
     size_t useful_output_decode_tokens = 0;
     size_t source_role_rematerialization_tokens = 0;
     double useful_output_decode_wall_ms_total = 0.0;
@@ -6845,6 +6855,19 @@ static json run_sparse_g_label_refresh(
     uint64_t orbit_peak_host_work_bytes = 0;
     uint64_t orbit_tensor_visits = 0;
     uint64_t orbit_position_visits = 0;
+    uint64_t recurrent_output_delta_logical_row_bytes = 0;
+    uint64_t recurrent_output_delta_backend_read_bytes = 0;
+    uint64_t recurrent_output_delta_backend_write_bytes = 0;
+    uint64_t recurrent_output_delta_arithmetic_element_operations = 0;
+    uint64_t recurrent_output_delta_tensor_visits = 0;
+    uint64_t recurrent_output_delta_graph_applications = 0;
+    uint64_t recurrent_output_delta_scheduler_compute_bytes_initial = 0;
+    uint64_t recurrent_output_delta_scheduler_compute_bytes_peak = 0;
+    int32_t recurrent_output_delta_candidate_physical_row_initial = -1;
+    int32_t recurrent_output_delta_candidate_physical_row_final = -1;
+    bool recurrent_output_delta_candidate_physical_row_stable = true;
+    double recurrent_output_delta_extraction_wall_ms_total = 0.0;
+    double recurrent_output_delta_accumulation_wall_ms_total = 0.0;
     uint64_t fourier_operator_logical_bytes = 0;
     uint64_t fourier_operator_vector_backing_bytes = 0;
     uint64_t subspace_builder_peak_bytes = 0;
@@ -6967,6 +6990,7 @@ static json run_sparse_g_label_refresh(
     json records = json::array();
     json variant_timings = json::array();
     json output_promotion_records = json::array();
+    json recurrent_output_delta_records = json::array();
     json source_role_rematerialization_records = json::array();
     json fixed_cell_identity_records = json::array();
     std::vector<uint32_t> initial_destination_cell_ids;
@@ -6974,7 +6998,9 @@ static json run_sparse_g_label_refresh(
     bool all_destination_cell_identities_stable = true;
     const std::string candidate_route =
         output_driven_carrier_mode
-            ? output_written_semantic_port_mode
+            ? output_recurrent_delta_advance_mode
+                ? "actual_output_recurrent_delta_carrier"
+            : output_written_semantic_port_mode
                 ? "output_written_semantic_port_carrier"
                 : output_source_fixed_cell_rematerialization_mode
                 ? "output_source_position_fixed_cell_carrier"
@@ -6990,7 +7016,9 @@ static json run_sparse_g_label_refresh(
                 : "sparse_label_refresh_candidate";
     const std::string return_route =
         output_driven_carrier_mode
-            ? output_written_semantic_port_mode
+            ? output_recurrent_delta_advance_mode
+                ? "actual_output_recurrent_delta_carrier_return_G0"
+            : output_written_semantic_port_mode
                 ? "output_written_semantic_port_carrier_return_G0"
                 : output_source_fixed_cell_rematerialization_mode
                 ? "output_source_position_fixed_cell_carrier_return_G0"
@@ -7838,6 +7866,13 @@ static json run_sparse_g_label_refresh(
         }
     }
 
+    if (output_recurrent_delta_advance_mode) {
+        recurrent_output_delta_candidate_physical_row_initial =
+            carrier_recurrent_hash_before.physical_row;
+        recurrent_output_delta_candidate_physical_row_final =
+            carrier_recurrent_hash_before.physical_row;
+    }
+
     if (legacy_trained_semantic_carrier_mode) {
         for (const auto & query :
              variants.at(0).at("queries")) {
@@ -7846,6 +7881,17 @@ static json run_sparse_g_label_refresh(
                 stage_seqs[0],
                 "carrier_disabled",
                 variants.at(0).at("id"),
+                query);
+        }
+    }
+    if (output_recurrent_delta_advance_mode) {
+        for (const auto & query :
+             variants.at(1).at("queries")) {
+            project_from_source(
+                candidate_seq,
+                stage_seqs[0],
+                "carrier_disabled",
+                variants.at(1).at("id"),
                 query);
         }
     }
@@ -7923,6 +7969,15 @@ static json run_sparse_g_label_refresh(
                     output_position - 1,
                     id + ":output-promotion-query-ready-" +
                         std::to_string(query_index));
+                if (output_recurrent_delta_advance_mode) {
+                    copy_full_sequence(
+                        stage_seq,
+                        work_seq,
+                        output_position - 1,
+                        id + ":pre-output-state-copy-" +
+                            std::to_string(query_index));
+                    ++sequence_copy_count;
+                }
                 const double output_wall_ms =
                     output_written_semantic_port_mode
                         ? timed_decode_terminal(
@@ -7944,10 +7999,100 @@ static json run_sparse_g_label_refresh(
                     output_position,
                     id + ":output-token-resident-" +
                         std::to_string(query_index));
+                if (output_recurrent_delta_advance_mode) {
+                    llama_memory_recurrent::neo3000_output_delta_metrics
+                        metrics = {};
+                    const auto delta_started =
+                        std::chrono::steady_clock::now();
+                    if (!recurrent->neo3000_seq_make_output_delta(
+                            ctx,
+                            stage_seq,
+                            work_seq,
+                            &metrics)) {
+                        throw std::runtime_error(
+                            id +
+                            ": actual-output recurrent delta "
+                            "extraction failed for query " +
+                            std::to_string(query_index));
+                    }
+                    const double delta_wall_ms =
+                        std::chrono::duration<double, std::milli>(
+                            std::chrono::steady_clock::now() -
+                            delta_started).count();
+                    if (recurrent_output_delta_logical_row_bytes != 0 &&
+                        recurrent_output_delta_logical_row_bytes !=
+                            metrics.logical_row_bytes) {
+                        throw std::runtime_error(
+                            id +
+                            ": recurrent delta row size changed");
+                    }
+                    recurrent_output_delta_logical_row_bytes =
+                        metrics.logical_row_bytes;
+                    recurrent_output_delta_backend_read_bytes +=
+                        metrics.backend_read_bytes;
+                    recurrent_output_delta_backend_write_bytes +=
+                        metrics.backend_write_bytes;
+                    recurrent_output_delta_arithmetic_element_operations +=
+                        metrics.arithmetic_element_operations;
+                    recurrent_output_delta_tensor_visits +=
+                        metrics.tensor_visits;
+                    recurrent_output_delta_graph_applications +=
+                        metrics.graph_applications;
+                    if (recurrent_output_delta_graph_applications == 1) {
+                        recurrent_output_delta_scheduler_compute_bytes_initial =
+                            metrics.scheduler_compute_bytes_before;
+                    }
+                    recurrent_output_delta_scheduler_compute_bytes_peak =
+                        std::max(
+                            recurrent_output_delta_scheduler_compute_bytes_peak,
+                            metrics.scheduler_compute_bytes_after);
+                    recurrent_output_delta_extraction_wall_ms_total +=
+                        delta_wall_ms;
+                    ++recurrent_output_delta_extraction_count;
+                    recurrent_output_delta_records.push_back({
+                        {"operation", "post_output_minus_pre_output"},
+                        {"variant", id},
+                        {"query_id", query.at("id")},
+                        {"query_index", query_index},
+                        {"actual_projected_output", boundary.argmax},
+                        {"delta_sequence", stage_seq},
+                        {"pre_output_sequence", work_seq},
+                        {"delta_physical_row",
+                            metrics.destination_physical_row},
+                        {"pre_output_physical_rows",
+                            metrics.source_physical_rows},
+                        {"logical_row_bytes",
+                            metrics.logical_row_bytes},
+                        {"backend_read_bytes",
+                            metrics.backend_read_bytes},
+                        {"backend_write_bytes",
+                            metrics.backend_write_bytes},
+                        {"arithmetic_element_operations",
+                            metrics.arithmetic_element_operations},
+                        {"tensor_visits", metrics.tensor_visits},
+                        {"graph_applications",
+                            metrics.graph_applications},
+                        {"scheduler_compute_bytes_before",
+                            metrics.scheduler_compute_bytes_before},
+                        {"scheduler_compute_bytes_after",
+                            metrics.scheduler_compute_bytes_after},
+                        {"wall_ms", delta_wall_ms},
+                        {"host_recurrent_payload_bytes", 0},
+                        {"expected_answer_consulted", false},
+                        {"public_phase_table_consulted", false},
+                    });
+                    close_sequence(
+                        work_seq,
+                        id + ":pre-output-state-close-" +
+                            std::to_string(query_index));
+                    ++sequence_close_count;
+                }
                 output_positions.push_back(output_position);
                 const size_t destination_label_index =
-                    output_promotion_label_indices.at(
-                        query_index);
+                    output_recurrent_delta_advance_mode
+                        ? query_index
+                        : output_promotion_label_indices.at(
+                            query_index);
                 if (output_written_semantic_port_mode) {
                     const float * output_state =
                         semantic_carrier_layer_delta_mode
@@ -7973,28 +8118,45 @@ static json run_sparse_g_label_refresh(
                         destination_label_index) =
                         candidates.at(candidate_index);
                 }
-                output_promotion_records.push_back({
-                    {"variant", id},
-                    {"query_id", query.at("id")},
-                    {"query_index", query_index},
-                    {"source_sequence", stage_seq},
-                    {"source_output_position", output_position},
-                    {"actual_projected_output", boundary.argmax},
-                    {"actual_projected_token",
-                        candidates.at(candidate_index)},
-                    {"destination_label_index",
-                        destination_label_index},
-                    {"destination_label_position",
-                        static_cast<llama_pos>(
-                            f_boundary_tokens +
-                            label_offsets.at(
-                                output_promotion_label_indices.at(
-                                    query_index)))},
-                    {"output_decode_wall_ms", output_wall_ms},
-                    {"output_written_semantic_port",
-                        output_written_semantic_port_mode},
-                    {"source_role_model_forward_tokens", 0},
-                });
+                if (output_recurrent_delta_advance_mode) {
+                    output_promotion_records.push_back({
+                        {"variant", id},
+                        {"query_id", query.at("id")},
+                        {"query_index", query_index},
+                        {"source_sequence", stage_seq},
+                        {"source_output_position", output_position},
+                        {"actual_projected_output", boundary.argmax},
+                        {"actual_projected_token",
+                            candidates.at(candidate_index)},
+                        {"output_decode_wall_ms", output_wall_ms},
+                        {"state_action",
+                            "complete_recurrent_row_delta"},
+                        {"source_role_model_forward_tokens", 0},
+                    });
+                } else {
+                    output_promotion_records.push_back({
+                        {"variant", id},
+                        {"query_id", query.at("id")},
+                        {"query_index", query_index},
+                        {"source_sequence", stage_seq},
+                        {"source_output_position", output_position},
+                        {"actual_projected_output", boundary.argmax},
+                        {"actual_projected_token",
+                            candidates.at(candidate_index)},
+                        {"destination_label_index",
+                            destination_label_index},
+                        {"destination_label_position",
+                            static_cast<llama_pos>(
+                                f_boundary_tokens +
+                                label_offsets.at(
+                                    output_promotion_label_indices.at(
+                                        query_index)))},
+                        {"output_decode_wall_ms", output_wall_ms},
+                        {"output_written_semantic_port",
+                            output_written_semantic_port_mode},
+                        {"source_role_model_forward_tokens", 0},
+                    });
+                }
                 if (output_source_rematerialization_mode) {
                     close_sequence(
                         stage_seq,
@@ -8003,6 +8165,88 @@ static json run_sparse_g_label_refresh(
                     ++sequence_close_count;
                 }
                 ++query_index;
+            }
+            if (output_recurrent_delta_advance_mode) {
+                llama_memory_recurrent::neo3000_output_delta_metrics
+                    metrics = {};
+                const auto accumulation_started =
+                    std::chrono::steady_clock::now();
+                if (!recurrent->neo3000_seq_accumulate_output_deltas(
+                        ctx,
+                        candidate_seq,
+                        stage_seqs,
+                        &metrics)) {
+                    throw std::runtime_error(
+                        id +
+                        ": actual-output recurrent delta "
+                        "accumulation failed");
+                }
+                const double accumulation_wall_ms =
+                    std::chrono::duration<double, std::milli>(
+                        std::chrono::steady_clock::now() -
+                        accumulation_started).count();
+                if (recurrent_output_delta_logical_row_bytes != 0 &&
+                    recurrent_output_delta_logical_row_bytes !=
+                        metrics.logical_row_bytes) {
+                    throw std::runtime_error(
+                        id +
+                        ": recurrent accumulation row size changed");
+                }
+                recurrent_output_delta_logical_row_bytes =
+                    metrics.logical_row_bytes;
+                recurrent_output_delta_backend_read_bytes +=
+                    metrics.backend_read_bytes;
+                recurrent_output_delta_backend_write_bytes +=
+                    metrics.backend_write_bytes;
+                recurrent_output_delta_arithmetic_element_operations +=
+                    metrics.arithmetic_element_operations;
+                recurrent_output_delta_tensor_visits +=
+                    metrics.tensor_visits;
+                recurrent_output_delta_graph_applications +=
+                    metrics.graph_applications;
+                recurrent_output_delta_scheduler_compute_bytes_peak =
+                    std::max(
+                        recurrent_output_delta_scheduler_compute_bytes_peak,
+                        metrics.scheduler_compute_bytes_after);
+                recurrent_output_delta_accumulation_wall_ms_total +=
+                    accumulation_wall_ms;
+                ++recurrent_output_delta_accumulation_count;
+                recurrent_output_delta_candidate_physical_row_final =
+                    metrics.destination_physical_row;
+                recurrent_output_delta_candidate_physical_row_stable =
+                    recurrent_output_delta_candidate_physical_row_stable &&
+                    metrics.destination_physical_row ==
+                        recurrent_output_delta_candidate_physical_row_initial;
+                recurrent_output_delta_records.push_back({
+                    {"operation", "accumulate_into_active_candidate"},
+                    {"variant", id},
+                    {"destination_sequence", candidate_seq},
+                    {"destination_physical_row",
+                        metrics.destination_physical_row},
+                    {"delta_sequences", stage_seqs},
+                    {"delta_physical_rows",
+                        metrics.source_physical_rows},
+                    {"logical_row_bytes",
+                        metrics.logical_row_bytes},
+                    {"backend_read_bytes",
+                        metrics.backend_read_bytes},
+                    {"backend_write_bytes",
+                        metrics.backend_write_bytes},
+                    {"arithmetic_element_operations",
+                        metrics.arithmetic_element_operations},
+                    {"tensor_visits", metrics.tensor_visits},
+                    {"graph_applications",
+                        metrics.graph_applications},
+                    {"scheduler_compute_bytes_before",
+                        metrics.scheduler_compute_bytes_before},
+                    {"scheduler_compute_bytes_after",
+                        metrics.scheduler_compute_bytes_after},
+                    {"wall_ms", accumulation_wall_ms},
+                    {"host_recurrent_payload_bytes", 0},
+                    {"destination_sequence_metadata_relinked", false},
+                    {"expected_answer_consulted", false},
+                    {"public_phase_table_consulted", false},
+                });
             }
             if (output_source_rematerialization_mode) {
                 for (size_t label_index = 0;
@@ -8229,6 +8473,7 @@ static json run_sparse_g_label_refresh(
                  !output_role_generator_mode &&
                     !output_source_rematerialization_mode &&
                     !output_written_semantic_port_mode &&
+                    !output_recurrent_delta_advance_mode &&
                     i < stage_seqs.size();
                  ++i) {
                 const size_t label_index =
@@ -8540,9 +8785,13 @@ static json run_sparse_g_label_refresh(
 
     size_t carrier_disabled_correct = 0;
     size_t carrier_disabled_boundary_matches = 0;
-    if (trained_semantic_carrier_mode) {
+    if (trained_semantic_carrier_mode ||
+        output_recurrent_delta_advance_mode) {
         const size_t disabled_variant_index =
-            output_written_semantic_port_mode ? 1 : 0;
+            output_written_semantic_port_mode ||
+                output_recurrent_delta_advance_mode
+                ? 1
+                : 0;
         const std::string canonical_id =
             variants.at(disabled_variant_index)
                 .at("id").get<std::string>();
@@ -8650,6 +8899,18 @@ static json run_sparse_g_label_refresh(
              (output_written_semantic_port_mode
                 ? semantic_carrier_quiescent
                 : semantic_carrier_restored))) &&
+        (!output_recurrent_delta_advance_mode ||
+            (recurrent_output_delta_extraction_count == comparisons &&
+             recurrent_output_delta_accumulation_count ==
+                 variants.size() &&
+             recurrent_output_delta_graph_applications ==
+                 comparisons + variants.size() &&
+             recurrent_output_delta_logical_row_bytes > 0 &&
+             recurrent_output_delta_candidate_physical_row_stable &&
+             carrier_disabled_boundary_matches <=
+                 acceptance.at(
+                     "carrier_disabled_boundary_matches_maximum")
+                     .get<size_t>())) &&
         (!output_role_transport_mode ||
             (role_transport_training_correct ==
                  spec.at("role_transport_training_contexts").size() *
@@ -8770,7 +9031,9 @@ static json run_sparse_g_label_refresh(
         role_transport_training_source_tokens;
     return {
         {"schema_version", 1},
-        {"mechanism", output_written_semantic_port_mode
+        {"mechanism", output_recurrent_delta_advance_mode
+            ? "ACTUAL_OUTPUT_RECURRENT_DELTA_COMPOSITION"
+            : output_written_semantic_port_mode
             ? semantic_carrier_layer_delta_mode
                 ? semantic_carrier_recurrent_transition_mode
                     ? "ACTUAL_OUTPUT_WRITTEN_RECURRENT_STATE_TRANSITION"
@@ -8863,6 +9126,8 @@ static json run_sparse_g_label_refresh(
                 output_source_fixed_cell_rematerialization_mode},
             {"output_written_semantic_port_action",
                 output_written_semantic_port_mode},
+            {"output_recurrent_delta_advance_action",
+                output_recurrent_delta_advance_mode},
             {"output_promotion_label_indices",
                 output_promotion_label_indices},
             {"role_transport_training_contexts",
@@ -8997,6 +9262,12 @@ static json run_sparse_g_label_refresh(
                 carrier_disabled_correct},
             {"carrier_disabled_boundary_matches",
                 carrier_disabled_boundary_matches},
+            {"recurrent_output_delta_extractions",
+                recurrent_output_delta_extraction_count},
+            {"recurrent_output_delta_accumulations",
+                recurrent_output_delta_accumulation_count},
+            {"recurrent_output_delta_candidate_physical_row_stable",
+                recurrent_output_delta_candidate_physical_row_stable},
             {"semantic_carrier_restored",
                 semantic_carrier_restored},
             {"semantic_carrier_quiescent_on_same_backing",
@@ -9060,6 +9331,12 @@ static json run_sparse_g_label_refresh(
                 semantic_carrier_port_writes},
             {"semantic_carrier_closed",
                 semantic_carrier_closed},
+            {"recurrent_output_delta_candidate_physical_row_initial",
+                recurrent_output_delta_candidate_physical_row_initial},
+            {"recurrent_output_delta_candidate_physical_row_final",
+                recurrent_output_delta_candidate_physical_row_final},
+            {"recurrent_output_delta_candidate_physical_row_stable",
+                recurrent_output_delta_candidate_physical_row_stable},
             {"initial_destination_cell_ids",
                 initial_destination_cell_ids},
             {"final_destination_cell_ids",
@@ -9137,6 +9414,31 @@ static json run_sparse_g_label_refresh(
                 orbit_position_shift_count},
             {"output_promotion_row_count",
                 output_promotion_row_count},
+            {"recurrent_output_delta_extractions",
+                recurrent_output_delta_extraction_count},
+            {"recurrent_output_delta_accumulations",
+                recurrent_output_delta_accumulation_count},
+            {"recurrent_output_delta_logical_row_bytes",
+                recurrent_output_delta_logical_row_bytes},
+            {"recurrent_output_delta_backend_read_bytes",
+                recurrent_output_delta_backend_read_bytes},
+            {"recurrent_output_delta_backend_write_bytes",
+                recurrent_output_delta_backend_write_bytes},
+            {"recurrent_output_delta_arithmetic_element_operations",
+                recurrent_output_delta_arithmetic_element_operations},
+            {"recurrent_output_delta_tensor_visits",
+                recurrent_output_delta_tensor_visits},
+            {"recurrent_output_delta_graph_applications",
+                recurrent_output_delta_graph_applications},
+            {"recurrent_output_delta_scheduler_compute_bytes_initial",
+                recurrent_output_delta_scheduler_compute_bytes_initial},
+            {"recurrent_output_delta_scheduler_compute_bytes_peak",
+                recurrent_output_delta_scheduler_compute_bytes_peak},
+            {"recurrent_output_delta_extraction_wall_ms_total",
+                recurrent_output_delta_extraction_wall_ms_total},
+            {"recurrent_output_delta_accumulation_wall_ms_total",
+                recurrent_output_delta_accumulation_wall_ms_total},
+            {"recurrent_output_delta_host_payload_bytes", 0},
             {"useful_output_decode_tokens",
                 useful_output_decode_tokens},
             {"useful_output_decode_wall_ms_total",
@@ -9364,6 +9666,8 @@ static json run_sparse_g_label_refresh(
             role_transport_training_records},
         {"output_promotion_records",
             output_promotion_records},
+        {"recurrent_output_delta_records",
+            recurrent_output_delta_records},
         {"source_role_rematerialization_records",
             source_role_rematerialization_records},
         {"fixed_cell_identity_records",

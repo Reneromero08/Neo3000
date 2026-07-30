@@ -16,6 +16,19 @@
 //       see the implementation of llama_kv_cache_context_i for an example how to do it
 class llama_memory_recurrent : public llama_memory_i {
 public:
+    struct neo3000_output_delta_metrics {
+        uint64_t logical_row_bytes = 0;
+        uint64_t backend_read_bytes = 0;
+        uint64_t backend_write_bytes = 0;
+        uint64_t arithmetic_element_operations = 0;
+        uint64_t tensor_visits = 0;
+        uint64_t graph_applications = 0;
+        uint64_t scheduler_compute_bytes_before = 0;
+        uint64_t scheduler_compute_bytes_after = 0;
+        int32_t destination_physical_row = -1;
+        std::vector<int32_t> source_physical_rows;
+    };
+
     llama_memory_recurrent(
             const llama_model & model,
                     ggml_type   type_r,
@@ -77,6 +90,24 @@ public:
     std::vector<uint32_t> rs_idx;
 
     void set_rs_idx(llama_seq_id seq_id, uint32_t idx);
+
+    // Turn one post-output recurrent row into its device-resident
+    // post-output minus pre-output delta. The sequence metadata remains
+    // unchanged; only the physical recurrent tensor payload is transformed.
+    bool neo3000_seq_make_output_delta(
+        llama_context * lctx,
+        llama_seq_id after_seq_id,
+        llama_seq_id before_seq_id,
+        neo3000_output_delta_metrics * metrics);
+
+    // Add complete device-resident recurrent delta rows into one existing
+    // destination row without relinking its sequence metadata or
+    // materializing recurrent tensor payload on the host.
+    bool neo3000_seq_accumulate_output_deltas(
+        llama_context * lctx,
+        llama_seq_id destination_seq_id,
+        const std::vector<llama_seq_id> & delta_seq_ids,
+        neo3000_output_delta_metrics * metrics);
 
     // computed before each graph build
     uint32_t n = 0;

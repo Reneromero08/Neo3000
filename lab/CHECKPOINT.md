@@ -578,6 +578,21 @@ The active recurrence and acceptance boundary are
   actual backing. It must bind the touched cells and bytes, transition work,
   disablement, closure, and same-state consumption. No layer, scale, fixture,
   evaluator, carrier-evaluation, or evidence-harness successor follows.
+- `neo-exp-0151` is the frozen changed substrate. Each of four actual output
+  tokens creates a private complete recurrent-state transition; device graphs
+  reduce those rows to `post-output - pre-output` and compose all four into
+  the same active candidate row before any next-phase query. No trained port,
+  expected answer, target row, public phase table, host recurrent update
+  payload, or source-role forward participates. Attention state and sequence
+  metadata do not advance. The same recurrent physical row must support all
+  four phases and return bitwise after the fourth update.
+- The probe and full Release server build. Focused runner/oracle tests pass
+  `22/22`; the integrated normalized-probability oracle still passes all
+  nineteen gates on three fixtures; configured CUDA entries and objects are
+  `139/139`. This is precontact source qualification only: no `0151` model
+  load or scientific kernel has occurred. One compact recomputable result
+  packet will adjudicate the sole frozen execution. Evidence custody is not
+  an experimental axis and will not mint evaluator or harness successors.
 
 ### REJECTED
 
