@@ -20,7 +20,9 @@
 
 #include <algorithm>
 #include <climits>
+#include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -121,7 +123,7 @@ struct callback_data {
             // check if given row containing all zero elements
             int n_cols = t->ne[0]; // hint: should be equal to n_embd
             for (int col = 0; col < n_cols; ++col) {
-                if (ggml_get_f32_nd(t, col, row, 0, 0) > eps) {
+                if (std::abs(ggml_get_f32_nd(t, col, row, 0, 0)) > eps) {
                     return false;
                 }
             }
@@ -330,12 +332,16 @@ static bool cb_eval(struct ggml_tensor * t, bool ask, void * user_data) {
     auto * cb_data = (callback_data *) user_data;
     static const char * l_out_name = "l_out";
     const bool is_l_out = strncmp(t->name, l_out_name, strlen(l_out_name)) == 0;
+    const char * layer_suffix = is_l_out ? t->name + strlen(l_out_name) : nullptr;
+    const bool has_layer_suffix = layer_suffix && layer_suffix[0] == '-' && layer_suffix[1] != '\0';
+    const int layer = has_layer_suffix ? std::atoi(layer_suffix + 1) : -1;
+    const bool is_control_layer = is_l_out && layer > 0 && layer < cb_data->n_layers;
 
     if (ask) {
-        return is_l_out;
+        return is_control_layer;
     }
 
-    if (!is_l_out || t->ne[1] != cb_data->n_tokens) {
+    if (!is_control_layer || t->ne[1] != cb_data->n_tokens) {
         return true;
     }
 

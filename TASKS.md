@@ -1,6 +1,33 @@
 # Neo3000 Task Board
 
-## Scientific realignment dashboard [CURRENT]
+## Renewed carrier-causal frontier [CURRENT]
+
+**Mode:** autonomous science and engineering toward genuinely catalytic,
+constructively unbounded local Agents-A1 inference.
+
+- [x] Bind the north-star recurrence and its claim gate in
+  `lab/CATALYTIC_INFERENCE_NORTH_STAR.md`.
+- [x] Move the first carrier-causality probe before terminal logits. Executed
+  `neo-exp-0103` shows one 319,488-byte F32 residual vector was uploaded once,
+  retained the same CUDA backend backing across 24 matched arms, causally
+  changed later Agents-A1 logits, and reproduced every tested carrier-disabled
+  full-logit row exactly.
+- [x] Reject the tested mean-activation direction as useful inference state:
+  balanced held-out joint accuracy was `1/4`, versus `1/4` for F-only and
+  `2/4` for G-only; eligibility mutation also failed. This is a conventional
+  static token-bias adapter, not relational composition or catalysis.
+- [ ] Replace the static direction with dynamic shared model-native state whose
+  evidence is written before query selection and read by later inference.
+  Require balanced F-only/G-only/joint/relation-mutation controls, the
+  inclusion-exclusion interaction observable, no complete duplicate
+  intermediate, and the strongest compact recurrent/cache baseline.
+- [ ] Close same-backing restoration/advance and unrelated useful reuse for the
+  dynamic state, then test a bounded recurrence before any unbounded claim.
+
+`neo-exp-0102` remains unconsumed and frozen as a precontact two-row reversible
+score-composition calibration. It is not the active successor.
+
+## Scientific realignment dashboard [FOUNDATION COMPLETE / SUPERSEDED AS CURRENT]
 
 **Mode:** foundation repair complete; paused with zero model-facing scientific
 contact.

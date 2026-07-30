@@ -706,6 +706,17 @@ extern "C" {
                          int32_t   il_start,
                          int32_t   il_end);
 
+    // Enable or disable a previously uploaded control vector without
+    // reallocating or uploading its backend storage.
+    LLAMA_API int32_t llama_set_adapter_cvec_enabled(
+            struct llama_context * ctx,
+                           bool   enabled);
+
+    LLAMA_API bool     llama_adapter_cvec_enabled       (const struct llama_context * ctx);
+    LLAMA_API size_t   llama_adapter_cvec_resident_bytes(const struct llama_context * ctx);
+    LLAMA_API uint64_t llama_adapter_cvec_backing_id    (const struct llama_context * ctx);
+    LLAMA_API uint64_t llama_adapter_cvec_upload_count  (const struct llama_context * ctx);
+
     //
     // Memory
     //

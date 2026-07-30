@@ -1,21 +1,23 @@
 # Active Goal
 
-## Scientific realignment override [COMPLETE / PAUSED]
+## Scientific realignment foundation [COMPLETE]
 
-This repository is not currently executing the long-term catalytic-inference
-goal. The bounded realignment mission removed the active scientific drift,
+The bounded realignment mission removed the active scientific drift,
 preserved historical evidence, repaired lifecycle and controller foundations,
 validated the native Linux/CUDA build without model-facing contact, and reached
-the renewed-goal readiness boundary.
+the renewed-goal readiness boundary. A new user-authorized long-term
+catalytic-inference goal is now active below.
 
-`neo-exp-0102` remains unconsumed and frozen. Do not select or execute a
-scientific successor from this document until a new user-authorized goal begins.
+`neo-exp-0102` remains unconsumed and frozen; it is not the active successor.
 Its split-decode server path is built and statically bound, but has not been
 server-integration tested or model-facing executed after realignment.
 The verification authority is
 `lab/realignment-2026-07-29-verification.json`.
 
-## Catalytic frontier north star [PAUSED]
+## Catalytic frontier north star [ACTIVE]
+
+The current science-and-engineering synthesis is
+`lab/CATALYTIC_INFERENCE_NORTH_STAR.md`.
 
 The actual frontier objective is infinite, unbounded catalytic compute for local Agents-A1 inference: a holographic runtime in which quality-accepted useful inference can grow without a fixed cumulative ceiling because restorable relational carriers are retained, projected, and recursively reused under bounded active local residency.
 

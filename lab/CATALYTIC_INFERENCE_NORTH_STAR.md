@@ -1,0 +1,857 @@
+# Catalytic Inference North Star
+
+## Carrier-causal holographic recurrent inference
+
+**Status:** research synthesis and mechanism proposal
+
+**Date:** 2026-07-29
+
+**Neo3000 starting source head:** `69d5be842fcaf5c7590345674df222278574b8d7`
+
+**AGS audio/CATVM inspected head:** `f32f63df234cc1488495720ebe07e1fed6bd6b5e`
+
+This report synthesizes source code and executed evidence into a scientific
+and engineering direction.
+
+### Executed bridge update — model-native residual carrier
+
+The first Linux contact after this synthesis moved the carrier before logits.
+Agents-A1's existing per-layer residual-adapter allocation was made
+disableable and reusable without reallocation or re-upload. One derived
+direction occupied exactly `39 * 2048 * sizeof(float) = 319,488` CUDA bytes.
+Across matched held-out arms it was uploaded once, retained the same
+process-local backend-buffer identity, changed later model logits, and
+reproduced the complete carrier-disabled logit row exactly after every
+enable/disable cycle.
+
+This closes only the **carrier-causality bridge**. The tested mean activation
+direction did not carry the intended ordering operation: even after balancing
+both training extrema and held-out labels across A/B/C/D, it collapsed the
+candidate boundary toward one label. Joint accuracy was `1/4`, versus `1/4`
+for F alone and `2/4` for G alone. Eligibility mutation also failed to produce
+the required semantic change. The direction is therefore rejected as a useful
+inference carrier. It is a conventional fixed F32 adapter with a causal
+model-internal read, not an unresolved relational process-object, a
+fresh-compute reduction, or catalysis.
+
+The durable implication is sharper than “try another control vector”:
+subsequent work must operate on a dynamic shared model state (residual,
+recurrent, KV, attention, MoE, or weight-factor state), use balanced held-out
+necessity gates, and prevent a static token-bias direction from masquerading
+as relational composition.
+
+The refreshed AGS frontier adds three useful constraints without closing the
+Neo recurrence. First, source closure before query selection tightens the
+no-smuggle test, although a finite query family remains cache-equivalent.
+Second, the Family-10h inclusion-exclusion observable
+`J_q = Y(F,G) - Y(F,0) - Y(0,G) + Y(0,0)` is the right matched diagnostic for
+joint interaction after subtracting branch-local marginals. Third, staged F17
+coordinate descent reduces retained payload but leaves scaling search,
+materialization, and inverse costs. None is yet a bounded-residency,
+vanishing-fresh-compute recurrence.
+
+## 1. Executive conclusion
+
+The strongest coherent route to catalytic Agents-A1 inference is:
+
+```text
+prepared live model carrier K
+    +
+bounded model-native relational state Q_t
+    |
+    | borrow the exact backing
+    v
+public, answer-independent descriptor d_t
+    |
+    | rematerialize typed noncommuting modules
+    v
+act on bounded Q coupled to a residual / recurrent / KV / hypothesis read
+    |
+    | later transformer computation must read the mutation
+    v
+project one useful token, tool, verdict, or successor boundary z_t
+    |
+    | return K unchanged; uncompute reversible ancilla/workspace
+    v
+same physical backing K + Q_(t+1)
+    |
+    | unrelated useful inference actually reuses it
+    v
+continue under a depth-independent active-residency invariant
+```
+
+Call this target **carrier-causal holographic recurrent inference**.
+
+The word *holographic* is useful only in a precise engineering sense:
+operators and state remain in a compact shared basis, and later modules act on
+that basis without reconstructing full classical intermediates or full weight
+matrices. It is not evidence of a quantum resource. Phase is an optional
+coordinate system. Carrier causality, native restoration, actual backing
+reuse, and a closed recurrence are mandatory.
+
+Neo already has valuable parts of this machine:
+
+- exact Linux/CUDA live KV/recurrent and terminal-logit boundaries;
+- strict-prefix and output-bearing root reuse;
+- fixed-size rebasing and a finite CUDA root ring;
+- terminal-logit continuation and dependent output-to-child handoff;
+- a bounded CUDA example in which `G` consumes resident `F(X)` without a host
+  materialization of the shared boundary;
+- fail-closed live-boundary lifecycle and final-response withholding.
+
+AGS/CAT_CAS supplies stronger resident-state isolation, shared-latent
+noncommutation, public-topology inverse rematerialization, exact restoration
+oracles, and the decisive physical-resource warnings. The audio `.holo`
+programs supply a compact process descriptor. The separate HOLO subsystem
+supplies a useful factorized operator seam. EIGEN_BUDDY supplies candidate
+complex attention geometry.
+
+None of those sources currently establishes unbounded catalytic inference.
+The missing bridge is not another post-logit phase wrapper. It is a
+model-internal state whose presence and relational mutation are **necessary
+for downstream useful inference**, followed by a constructive recurrence
+whose active physical cost remains bounded and whose leverage beats the
+strongest compact classical implementations in the tested comparison set.
+
+## 2. What “unbounded” must mean
+
+The target is not infinite instantaneous computation, infinite memory, or a
+large finite fanout. It is:
+
+> For every finite horizon `T`, the same recurrence can produce further
+> quality-accepted useful inference without a fixed cumulative ceiling, while
+> the maximum simultaneously active physical residency remains bounded
+> independently of `T`.
+
+External inputs and emitted outputs may form an inactive archive. They are not
+free: traffic and archive cost must be reported. They cannot be retained
+secretly as an inverse tape or answer cache and excluded from resource
+accounting.
+
+Let:
+
+- `K` be the prepared live model catalyst that is restored after a
+  transaction;
+- `Q_t` be a bounded output-sufficient recurrent state at step `t`;
+- `W_0` be canonical reusable workspace;
+- `d_t` be a public, answer-independent causal descriptor;
+- `U(d_t)` be a rematerializable reversible module or declared quotient
+  transition;
+- `P` be the only useful projection.
+
+The intended recurrence is:
+
+```text
+(K, Q_t, 0_A, 0_Z)
+    --forward(d_t)-->
+(K', Q_(t+1), G_t, z_t)
+    --latch only z_t-->
+(K', Q_(t+1), G_t, Z_t)
+    --proved cleanup(d_t)-->
+(K, Q_(t+1), 0_A, Z_t)
+```
+
+with an invariant:
+
+```text
+bytes(K) + bytes(Q_t) + peak_live_bytes(A_t, G_t) <= M
+```
+
+for one predeclared physical bound `M` independent of `t`.
+
+The cleanup map is a required implementation, not notation for “discard the
+garbage.” It must retain `Q_(t+1)` and the latched output while returning the
+prepared model and ancilla/workspace to their declared roots. If
+`Q_t -> Q_(t+1)` is not bijective for fixed public `d_t`, the mechanism must
+name and count the entropy sink, numerical/canonical quotient, or declared
+closure. It may not hide old `Q_t` or a growing inverse history. Arbitrary
+growing semantic history cannot be represented losslessly in a fixed finite
+state. The viable target is therefore a prospectively defined useful task
+family with a bounded sufficient statistic, or an explicitly quality-bounded
+lossy quotient—not universal lossless memory.
+
+Bounded memory and an infinite server loop are not sufficient. For a stated
+growing useful family, define:
+
+```text
+U(T) = cumulative quality-accepted baseline-equivalent inference
+F(T) = complete fresh charged work of the catalytic route
+M(T) = peak simultaneously active physical residency
+```
+
+The north-star asymptotic condition is:
+
+```text
+U(T) -> infinity
+M(T) <= M
+F(T) / U(T) -> 0
+```
+
+or, equivalently, amplification `U(T)/F(T) -> infinity`. `F` must include
+fresh model operations, state preparation, update and inverse operations,
+allocation, precision correction, memory traffic, synchronization, output
+projection, and restoration/closure. FLOPs, bytes, wall time, memory bandwidth,
+and energy/power should be reported separately rather than combined into one
+dimensionless score. The ratio must use a declared baseline-equivalent work
+unit, and growth may not be hidden in an unreported resource.
+
+## 3. Two independent technical problems
+
+The research must solve two problems that prior work sometimes blended.
+
+### 3.1 Catalysis
+
+A prepared carrier is borrowed, affects useful downstream model computation,
+is restored or explicitly advanced, and the same actual backing is reused.
+
+Residency beside inference, output withholding, reversible score encoding,
+restoration of a numerical workspace, or copying an identity onto a new object
+does not demonstrate catalysis.
+
+### 3.2 Unbounded leverage
+
+The catalytic recurrence extends constructively to arbitrary finite depth
+while active physical residency stays bounded, utility stays accepted, and
+cumulative leverage grows against a prospectively defined set of the strongest
+available compact cached, recurrent, and factorized baselines.
+
+For a simple reused root, the direct and catalytic costs are:
+
+```text
+direct(T)    = T * (C_root + C_delta)
+catalytic(T) = C_root + T * (C_delta + C_restore)
+
+catalytic/direct
+    = C_root / (T * (C_root + C_delta))
+      + (C_delta + C_restore) / (C_root + C_delta)
+```
+
+At fixed problem size, a nonzero per-step floor approaches a constant. Fanout
+alone therefore does not create unbounded amplification. A ratio tending to
+zero requires both increasing reuse and
+`C_delta + C_restore = o(C_root)` along a growing useful family, or a recurrence
+in which bounded work replaces a baseline cost that grows with accumulated
+context or composition depth.
+
+Software phase does not change this cost model. A deterministic CUDA phase recurrence
+with an identical compact classical recurrence has demonstrated calibration,
+not a separate resource. Finite measurements can show advantage over the
+implemented baseline set; they cannot establish that no equally compact
+classical algorithm exists without an independent lower-bound result.
+
+## 4. What the Neo trajectory actually gives us
+
+### 4.1 Preserve these executable seams
+
+| Neo mechanism | What it establishes | What it does not establish |
+|---|---|---|
+| Process-local RAM/CUDA roots and strict-prefix reuse | Exact prepared-state reuse and bounded fanout/temporal amortization in accepted finite cases | Unbounded recurrence or arbitrary task transfer |
+| Output-bearing roots and fixed-size rebasing | Useful output can become executable child state; active capsule size can be held fixed in bounded tests | Zero per-edge compute, lossless arbitrary history, or a proof for all depth |
+| Finite four-root CUDA ring | Exact bounded recursion through `R=16` with measured reuse | An infinite state family; it is finite memoization with explicit A/B/C/D projection |
+| Open relational CUDA `R2` calibration | `G` can consume `F(X)` while the shared `Y` remains in registers; inverse and order controls can be executed | Model-facing inference; the fixture is four synthetic lanes |
+| Terminal-logit continuation | A live prepared boundary can produce a first continuation with zero fresh prompt tokens | Model-internal relational inference; terminal logits already contain the answer geometry |
+| Terminal-output handoff | A projected output can seed an exact dependent child state with strong bounded marginal reuse | Elimination of successor compute or unbounded recursion |
+| Native live boundary | CUDA KV/recurrent state plus terminal logits can survive capture, admission, use, cleanup, and final-only release | A carrier that changes later transformer computation before the final logits exist |
+| Twin-rail backend | Reversible eight-complex-cell numerical calibration, inverse/cleanup/lifecycle testing | An inference-bearing carrier, relational lanes, or complete object restoration |
+
+The current live lifecycle is a real foundation:
+
+```text
+CAPTURING
+→ CAPTURED_RESIDENT
+→ ADMITTED_FOR_USE
+→ CLOSED or POISONED
+```
+
+It correctly separates capture-task ownership from consumer-task ownership and
+supports fail-closed cancellation, sleep, shutdown, malformed-consumer, and
+disconnect paths. Future model-internal work should reuse this lifecycle.
+
+### 4.2 The twin-rail path is not the north star
+
+The legacy path reduces four terminal logits to four classical softmax
+probabilities and independently encodes each scalar into a two-cell complex
+pair. Its measurement returns the same probabilities. The lanes do not
+interact. The useful answer exists before the carrier.
+
+The restored scope is the 128-byte eight-complex-cell numerical array, not the
+model, CUDA/KV state, host evidence, allocator, or complete carrier object.
+`neo-exp-0102` additionally retains the first evidence row as four ordinary
+F32 values and classically reconstructs the elementwise probability product.
+The suffix model computation does not read the carrier.
+
+This backend remains useful as
+`REVERSIBLE_TWIN_RAIL_CALIBRATION_BACKEND`. It is not a route toward catalytic
+inference unless the carrier is moved before the answer boundary and made
+causal to later model computation.
+
+## 5. What transfers from AGS and CAT_CAS
+
+### 5.1 Shared latent, not independent score rails
+
+The four-rotor necklace implementation constructs one coupled
+570-complex-cell state: 285 hypothesis nodes, each with a two-component
+internal fiber. Local feature-derived `SU(2)` rotations act within those
+fibers, while the necklace generator couples hypothesis nodes. The resulting
+operators are genuinely noncommuting. Order, semantic mutation,
+missing/reordered/wrong inverse, final-only projection, restoration, and
+component-allocation reuse controls are substantive.
+
+The transferable shape is:
+
+```text
+multiple evidence modules
+→ one shared unresolved state
+→ order has semantic meaning
+→ only a final aggregate boundary is projected
+```
+
+The exact same 570-complex-cell classical recurrence reproduces the result, so
+this is relational calibration and hidden-state lifecycle evidence, not a
+phase advantage.
+The four-rotor, grid-17, 285-necklace, and seven-bin fixtures must not be
+transplanted into Agents-A1 unless model analysis independently discovers the
+same symmetry.
+
+### 5.2 Resident-state lifecycle and topology rematerialization
+
+The repaired CATVM depth service demonstrates useful patterns:
+
+- protected service-local resident state;
+- `SOCK_SEQPACKET`, same-UID peer checks, `PR_SET_DUMPABLE=0`, and final-only
+  atomic replies;
+- lease, generation, nonce, port type, module identity, and ordinal checks;
+- resident-stage denial of intermediate projection;
+- disconnect restoration or poisoning;
+- inverse descriptors regenerated from public `(variant, ordinal, topology)`
+  instead of retained private module tape;
+- actual same-backing component-vector reuse sentinels.
+
+The original open-intermediate service had a pre-restoration projection defect;
+the final-only statement applies to the repaired depth service. Component
+reuse here does not imply reuse of model, process, KV, or CUDA backing.
+
+Topology rematerialization removes retained inverse history. It does not make
+forward, inverse, or workspace cost independent of depth.
+
+### 5.3 The physical precision obstruction
+
+The exact cyclotomic backend keeps 570 logical cells through depth 64, yet its
+exact payload grows from 2,854 to 57,166 bits. Denominator powers and numerator
+width grow. A fixed four-residue quotient remains bounded only by losing
+analytic information.
+
+This is a permanent physical accounting constraint:
+
+```text
+fixed logical cell count != bounded material state
+```
+
+Every future result must include coefficient width, numerical correction
+state, temporary contractions, allocator backing, CUDA workspace, inverse
+work, synchronization, host/device traffic, whole-process RSS, and GPU
+allocation.
+
+### 5.4 The closest recurrence and why it is not enough
+
+The F17 period-17 construction uses a degree-16 recurrence, 18 message slots,
+16 coefficient registers, exact reverse subtraction, and same-backing reuse
+through periods 1, 4, 16, and 64. It retains the 16-message resident basis,
+compiled operator/characteristic, and seed/basis state needed for the inverse.
+It recomputes the coefficient schedule from public period/characteristic,
+keeps no separate inverse log, and later uncomputes the retained basis. This is
+not tape-free topology rematerialization in the same sense as the depth
+compiler.
+
+It is the closest local example of the right *form*. It still loses the
+resource comparison: coefficient widths and payload grow, and the matched
+compact two-message classical recurrence is smaller. Later lattice-centering
+reduces selected resident components but not the simultaneous named maxima or
+uncaptured allocator/workspace costs.
+
+Transfer the constructive recurrence discipline. Do not transfer F17 as an
+inference mechanism.
+
+### 5.5 Generic evidence composition does not stay compact
+
+In the tested grid-17/four-rotor necklace family, the multi-port tensor-train
+tests saturate canonical ranks as 2–6 binary ports are added, and TT storage
+exceeds the dense representation. This is not a theorem about generic
+Agents-A1 evidence composition. It is a strong warning that compact closure
+must be measured rather than inferred from tensor notation.
+
+Therefore “add more evidence channels” is not a scaling mechanism. Before a
+multi-evidence result, Neo must define a model-relevant operator family prospectively and show
+that it is closed under compact composition. If ranks, precision, or workspaces
+grow with evidence breadth, that growth is the material carrier.
+
+### 5.6 Finite-query equivalence
+
+For a finite public delayed-query family, a source-authored answer vector or
+compact generator can be observationally identical to a hidden relation.
+Hidden-state isolation and delayed projection alone cannot identify a
+relational resource.
+
+The latest CATVM Small Wall Bridge V0 illustrates this failure: it retains
+ordinary Python coefficient dictionaries and string stack markers, computes
+the boundary through a direct classical evaluator, classifies backends by
+name, and calls a newly constructed object with copied IDs “reuse.” It is an
+interface sketch, not Small Wall contact or actual restored-substrate reuse.
+
+Held-out or procedurally unbounded queries are necessary but not sufficient:
+an infinite family can still have a tiny classical generator. A separating
+test needs a source-capacity or description-complexity bound plus at least one
+of:
+
+- a held-out relation/query cross-product outside source preparation;
+- a joint-state intervention whose pair interaction survives after every
+  branch-local control is nulled;
+- a measured preparation-capacity lower bound for the best compact generator;
+- an identified physical operation that the source-side generator does not
+  implement.
+
+A fixed four-choice answer table cannot establish the target.
+
+## 6. What transfers from EIGEN_BUDDY, audio `.holo`, and HOLO
+
+### 6.1 EIGEN_BUDDY: candidate geometry, not current catalysis
+
+The useful code-level contribution is complex Hermitian attention:
+
+- complex `Q`, `K`, and `V`;
+- real score magnitude plus phase-derived value rotation;
+- shared multi-head phase geometry;
+- trainable model-internal operations before the output boundary.
+
+This suggests locations where noncommuting relational modules could act inside
+an inference path rather than after logits.
+
+The current code does not implement catalytic inference:
+
+- `catalytic_inference.py` hashes a prompt into a phase vector and performs
+  nearest-neighbor database retrieval;
+- the “Feistel” core computes ordinary `Q/K/V`, softmax, transient summary
+  values, and swaps halves without an executed inverse, restored carrier, or
+  persistent same-backing reuse;
+- the root tape is a set of stored teacher-projection means;
+- some reported “zero erased bits” and cross-talk results are printed rather
+  than derived from a complete restoration test;
+- the unseen-modulus workaround performs the modulus in host Python after the
+  model, which moves the answer operation outside the proposed carrier.
+
+The honest EIGEN_BUDDY issue records are more valuable than its broad
+descriptions:
+untrained phase cores collapse, global phase does not preserve arbitrary
+structure, bilinear multiplication remains unresolved, and a tautological
+coherence metric is not utility.
+
+Use its complex attention only as a trainable candidate observation/action
+space. It must pass the same carrier ablations and compact-baseline tests as a
+real-valued implementation.
+
+### 6.2 Audio `.holo`: a process descriptor, not a compute advantage
+
+The audio frontier's `.holo` files are immutable JSON programs describing
+public torus/shear geometry, forward operators, collapse boundaries, and
+inverse actions. They are useful as a compact ABI that can generate forward
+and reverse machine actions without retaining a private module tape.
+
+The current phase-path engine executes ordinary `O(n*k*M)` dynamic programming
+and is matched by a compact classical implementation. The descriptor cleanly
+states a process; it does not itself compress the physical work or establish
+unbounded compute.
+
+### 6.3 HOLO: keep operators in their shared basis
+
+The separate `THOUGHT/LAB/HOLO` subsystem implements basis-mediated linear
+execution:
+
+```text
+W ≈ U @ SVh
+y = x @ SVh.T @ U.T
+```
+
+Selected layers can apply this factorization without materializing full `W`.
+Relations such as `U_i.T @ U_(i+1)` can describe how adjacent bases compose.
+
+This is useful for catalytic inference if Neo can keep a live activation or
+recurrent state in a shared latent basis across several downstream operations,
+instead of repeatedly materializing:
+
+- full weights;
+- full residuals;
+- host logit rows;
+- independent evidence vectors;
+- basis-conversion intermediates.
+
+The current `.holo` inference engine still materializes fallback weights,
+pre-materializes one broken factorization path, and streams full FFN tensors.
+Its complex-phase compression experiments report near-zero cosine similarity
+when signs are lost. Per-layer approximation error compounds to unusable text
+unless correction state is retained. A correction tape is material history and
+must be counted.
+
+Thus HOLO contributes a potential native basis and non-materialized operator
+seam, not evidence of catalytic or unbounded compute.
+
+### 6.4 The `.holo` descriptor Neo actually needs
+
+A future Neo `.holo` program can combine the audio program ABI with explicit
+references to a HOLO/model-native basis. It should remain an immutable public
+causal descriptor, not a result cache. At minimum it should bind:
+
+```text
+model and exact live boundary identity
+carrier region and physical backing identity
+state space, basis, dtype, and precision model
+typed input, internal, and output ports
+public observation-map identity
+module type, variant, ordinal, and dependencies
+forward operator generator
+inverse or declared-closure generator
+allowed projection and CollapseBoundary
+restoration class and exact restoration scope
+downstream model read sites
+no-duplicate-classical-state invariant
+active-residency invariant
+strongest compact baseline
+required causal ablations
+```
+
+Compilation may inspect public topology, layer geometry, task schema, and
+declared parameters. It may not inspect the hidden answer, expected benchmark
+label, future token, or post-hoc success classification.
+
+## 7. Proposed model-internal architecture
+
+### 7.1 Select a pre-answer boundary
+
+The first real carrier must live before terminal logits contain the useful
+answer. Candidate attachment points are:
+
+- a bounded residual subspace at a prospectively defined layer/token boundary;
+- the recurrent component of Agents-A1 hybrid memory;
+- a bounded selected KV subspace with an explicit compaction invariant;
+- a small model-native tool/hypothesis state consumed by later layers;
+- a trained low-rank adapter fiber shared by several evidence modules.
+
+Terminal logits may provide a public observation used to construct a module
+descriptor only when that observation does not already contain the answer
+under test and when no complete host row is retained as a duplicate
+intermediate.
+
+Ordinary transformer suffix execution is not reversible: normalization,
+softmax, quantization, sampling, and floating-point rounding discard
+information. The most realizable first architecture therefore keeps prepared
+model weights and root/KV state `K` read-only, injects a bounded reversible
+adapter/residual state `Q` into a later suffix read, declares ordinary suffix
+scratch closed after the final projection, and restores only the explicitly
+reversible `Q` ancilla/workspace. The same immutable `K` and same `Q`
+allocation are then reused. Mutating and restoring arbitrary KV/model state
+requires an actually implemented reversible suffix; it must not be assumed.
+
+### 7.2 Discover the state and operator family from the model
+
+The closed algebra should be measured from Agents-A1 rather than selected by
+analogy:
+
+1. Instrument candidate residual, recurrent, attention, and adapter boundaries
+   over prospectively defined evidence interventions.
+2. Estimate local Jacobians or transfer operators from intervention to later
+   useful boundaries.
+3. Use rank-revealing factorization, canonical-correlation/subspace methods,
+   and perturbation tests to find a stable low-dimensional state that retains
+   downstream utility.
+4. Fit constrained orthogonal, unitary, symplectic, or reversible-coupling
+   modules to that subspace.
+5. Measure composition closure, rank drift, coefficient growth, numerical
+   conditioning, and workspace growth on held-out interventions.
+6. Keep the family only if a later native model operation causally reads it
+   and the useful boundary survives the required utility tests.
+
+This discovery path makes phase, basis, rank, and noncommutation properties of
+the model rather than imported fixtures.
+
+### 7.3 Couple modules to one shared state
+
+For public descriptors `d_F` and `d_G`, generate typed modules:
+
+```text
+F(d_F): X -> Y
+G(d_G): Y -> Z
+```
+
+Both must act on the same resident model-native state. `G` consumes resident
+`Y`; the host never receives a token array, score vector, logits row, JSON
+object, or answer label representing `Y`.
+
+Noncommutation must have task meaning:
+
+```text
+G ∘ F != F ∘ G
+```
+
+because evidence dependencies differ, not because arbitrary matrices were
+chosen after the result was known.
+
+### 7.4 Make the model read the carrier
+
+The decisive bridge is a later native transformer operation whose input
+actually includes the mutated carrier state. Examples include a residual
+injection, recurrent-state transition, attention bias/value subspace, or
+adapter activation read by suffix decode.
+
+The central scientific result must disappear or change when:
+
+- the carrier is disabled;
+- the carrier is mutated prospectively;
+- `F` is omitted;
+- `G` is omitted;
+- order is reversed;
+- the true relation is changed.
+
+If suffix computation and the useful boundary are unchanged, the carrier is
+not inference-bearing regardless of its residency or restorability.
+
+### 7.5 Uncompute the catalyst; advance only the declared quotient
+
+After final projection:
+
+- regenerate inverse descriptors from public topology;
+- remove transient residual/KV/workspace changes;
+- restore the declared `K` and `W_0` scopes;
+- either advance bounded `Q_t` through a bijection or declare the exact
+  numerical/canonical quotient or closure;
+- verify an unrelated useful inference against the same allocation;
+- compare drift and resources with a fresh carrier.
+
+The restoration report must name cells, metadata, allocator, host evidence,
+model state, KV/recurrent state, and CUDA state separately. “Carrier restored”
+is not a sufficient result field.
+
+## 8. The recurrence that could cross the Small Wall
+
+The plausible bridge is not generic phase. It is a model-relevant closed
+operator algebra over a bounded output-sufficient state:
+
+```text
+Q_(t+1) = Phi(d_t) ⋅ Q_t
+z_t     = P(Q_(t+1), query_t)
+```
+
+where:
+
+1. `Phi(d)` is defined before outputs are known;
+2. the family is closed under compact composition;
+3. its physical representation, coefficient widths, correction state, and
+   peak workspace remain bounded;
+4. the state is sufficient for an unbounded procedurally generated useful task
+   language, with an explicit source-capacity/description-complexity
+   separation rather than merely a finite answer table;
+5. downstream Agents-A1 computation reads `Q_t`;
+6. it outperforms the declared strongest implemented compact cached,
+   recurrent, factorized, and generator baselines;
+7. exact or quality-bounded restoration and same-backing reuse hold;
+8. `U(T)` grows without bound while `F(T)/U(T)` decreases toward zero without
+   moving the growth into precision, workspace, traffic, or another uncounted
+   resource.
+
+Potential places to search for such closure are model-derived, not imported
+fixtures:
+
+- repeated tool-schema constraints whose composition forms a small monoid;
+- recurrent state transitions already learned by Agents-A1;
+- low-rank residual subspaces stable across a prospectively defined family of evidence
+  modules;
+- symmetries in tool selection, verification, or bounded planning that admit a
+  sufficient quotient;
+- layer-to-layer basis relations in which several full projections collapse to
+  one compact native coordinate update.
+
+Each is a hypothesis source, not evidence. A finite-state tool automaton, an
+RNN/SSM, a low-rank adapter, or a compact classical monoid is itself the
+strongest baseline when it implements the same recurrence. If that baseline
+matches, the result may still be a useful runtime optimization or lifecycle
+advance, but it is not a distinct catalytic resource.
+
+If every useful Agents-A1 family either requires growing state or has an
+identical known compact classical recurrence, the CUDA/software path can
+establish carrier reuse and model-compute amortization but not a distinct
+phase-native advantage. Every deterministic CUDA implementation has a
+classical description. A conclusion that *no* equally compact classical
+method exists requires a lower-bound theorem; a finite benchmark only
+establishes advantage over its named implementations. A distinct
+nonclassical result would require a physical substrate whose measured
+operation differs from its classical simulation.
+
+## 9. Decisive experiments and falsifiers
+
+These matched controls are the minimum scientific tests of a candidate.
+
+| Question | Required evidence |
+|---|---|
+| Does the carrier affect inference? | Carrier-off and prospectively defined carrier-mutation controls change the useful downstream model boundary |
+| Are both evidence modules necessary? | `F` alone and `G` alone fail or yield different boundaries; `F -> G` yields the declared boundary |
+| Is the relation meaningful? | Relation mutation changes the result; label/presentation mutation does not |
+| Is `Y` unresolved? | No complete host/CUDA-external classical copy, logit row, token array, result cache, or controller parse exists |
+| Is order typed? | Wrong type/order/ordinal/generation rejects before affected execution |
+| Is restoration native? | Correct inverse/closure succeeds; missing, wrong, or reordered inverse fails; scope is named |
+| Is reuse actual? | An unrelated useful inference reuses the exact same allocation/backing and matches a fresh carrier under the same numerical tolerances |
+| Is the recurrence bounded? | Bytes, precision, allocator, workspaces, operation count, inverse work, descriptor-rematerialization traffic, synchronization, memory bandwidth, wall time, energy/power, and whole-process/GPU peaks obey the declared scaling model |
+| Is the family nontrivial? | Source capacity is bounded before measurement; held-out relation/query cross-products or joint-state interventions separate the carrier from branch-local caches and compact generators |
+| Is there leverage? | `U(T)` and `F(T)` are measured; `F(T)/U(T)` falls with scale against the named strongest compact cached/recurrent/factorized implementations |
+| Is the software comparison complete? | Conclusions are scoped to implemented baselines unless a separate lower-bound proof excludes an equally compact algorithm |
+| Is phase causal? | A real coherence-destroying state transformation changes the boundary under the same measurement; forced equal scores do not count |
+
+Immediate rejection conditions are:
+
+- the useful answer exists in host logits before the carrier acts;
+- a complete evidence vector is retained outside the carrier;
+- model computation never reads the carrier;
+- “reuse” constructs a new object and copies identity fields;
+- a finite answer table or compact generator is observationally equivalent;
+- fixed cells hide growing coefficient widths, correction state, or workspace;
+- generic tensor ranks saturate;
+- exact parity and cost parity hold with the compact classical recurrence;
+- utility depends on expected-answer-conditioned operator or root selection;
+- a source-shape test is the only lifecycle or causal evidence.
+
+## 10. Technical proof ladder
+
+Each level requires an additional physical or causal fact.
+
+1. **CALIBRATION** — reversible encoding, exact inverse, and measurement parity.
+2. **HIDDEN-STATE LIFECYCLE** — fail-closed resident state and final-only
+   release.
+3. **CARRIER-CAUSAL INFERENCE** — mutating the carrier changes a useful
+   downstream Agents-A1 boundary.
+4. **COMPOSITION** — multiple necessary modules act directly on one unresolved
+   state with meaningful order and no duplicate classical copy.
+5. **RESTORED SAME-BACKING REUSE** — scoped native restoration followed by an
+   unrelated useful inference on the exact backing.
+6. **BOUNDED RECURRENCE** — `T` and `R` grow while all active physical
+   resources, including precision and workspace, obey one predeclared bound.
+7. **CONSTRUCTIVE UNBOUNDED BRIDGE** — an inductive recurrence covers every
+   finite horizon over a useful family, `F(T)/U(T) -> 0`, and the complete
+   resource comparison beats the named strongest implemented compact
+   baselines; broader exclusion requires a lower-bound proof.
+8. **PHASE-NATIVE RESOURCE** — only if coherence ablation and physical
+   measurements distinguish it from compact classical recurrence.
+
+Neo currently has strong bounded runtime ingredients across levels 1 and 2,
+plus finite reuse and synthetic-composition evidence. It has not established
+level 3 for twin-rail or phase-relational inference and has not established
+levels 6–8.
+
+## 11. Experimental sequence
+
+The evidence-driven order is:
+
+1. Instrument one exact pre-logit model boundary and identify a small
+   model-native state that later suffix computation reads.
+2. Express one prospectively defined, task-meaningful pair of evidence modules in a `.holo`
+   descriptor and act in place on that state.
+3. Establish carrier causality and two-evidence necessity before optimizing
+   restoration or phase.
+4. Close lifecycle, inverse/closure, same-allocation unrelated reuse, and
+   complete physical accounting.
+5. Remove all complete classical duplicates and retained inverse tape.
+6. Search the executed model traces for a closed sufficient operator family;
+   reject generic breadth when rank or precision grows.
+7. Scale `T` and `R` against the best compact recurrence, measuring utility and
+   all-in resources.
+8. State an inductive recurrence only after the finite measurements support its
+   premises.
+9. Introduce phase-native hardware or a VM-as-carrier only when it changes an
+   access, state-isolation, or physical operation that the simpler Linux process
+   cannot test.
+
+Do not spend the next frontier cycle extending the current twin-rail product,
+adding more four-choice prompts, wrapping the Small Wall Python sketch in a
+service, porting audio fixtures, or building a generic CATVM/`.holo` framework.
+The smallest decisive contact is one carrier mutation that a later real
+Agents-A1 operation must read.
+
+## 12. North-star acceptance statement
+
+The long-term goal is achieved only when Neo can support a statement of this
+form:
+
+> A prepared Agents-A1 model carrier and bounded model-native relational state
+> were borrowed on Linux/CUDA. Public answer-independent modules composed
+> directly on the resident state, and carrier ablation changed a useful
+> downstream model boundary. Only the final boundary was latched. A proved
+> cleanup map retained the bounded successor while returning every reversible
+> ancilla to its root; all noninvertible suffix state and entropy sinks were
+> explicitly closed and charged. Unrelated useful inference reused the exact
+> same model and state backing. For every tested finite horizon, complete active
+> physical residency obeyed one depth-independent bound. A constructive
+> recurrence extends that invariant to arbitrary finite horizon with
+> `U(T) -> infinity` and `F(T)/U(T) -> 0`, and the all-in comparison beats the
+> named strongest implemented compact cached, recurrent, factorized, and
+> generator baselines. Any stronger algorithmic exclusion is supplied by a
+> separate lower-bound proof.
+
+Until every clause is measured, the mechanism remains a bounded partial result.
+
+## 13. Source map
+
+### Neo3000
+
+- `AGENTS.md`
+- `TASKS.md`
+- `ROADMAP.md`
+- `lab/GOAL.md`
+- `lab/CHECKPOINT.md`
+- `lab/results.jsonl`
+- `lab/frontier_attempts.jsonl`
+- `scripts/catalytic_frontier_fixed_size_rebase.py`
+- `scripts/catalytic_frontier_open_relational_carrier_r2.py`
+- `scripts/cuda_open_relational_carrier_r2.cu`
+- `tools/server/neo3000-live-terminal-lifecycle.h`
+- `tools/server/server-context.cpp`
+- `tools/server/neo3000-twin-rail-fiber.h`
+- `tools/server/neo3000-twin-rail-fiber.cpp`
+
+### AGS audio/CATVM and CAT_CAS
+
+All paths below are relative to the sibling
+`../agent-governance-system-catvm/THOUGHT/LAB/CAT_CAS/`.
+
+- `THE_ALGORITHM_IS_DEAD.md`
+- `7_decoder/50_phase_bm_cpu/50_6_fixed_point_substrate/14_noncollapse_frontier/holo_runtime/HOLO_SCHEMA.md`
+- `7_decoder/50_phase_bm_cpu/50_6_fixed_point_substrate/14_noncollapse_frontier/phase6b6/live_small_wall/audio_frequency_wave_substrate/cat_cas_phase_frontier/four_rotor_necklace_shared_latent_phase.cpp`
+- `7_decoder/50_phase_bm_cpu/50_6_fixed_point_substrate/14_noncollapse_frontier/phase6b6/live_small_wall/audio_frequency_wave_substrate/cat_cas_phase_frontier/CATVM_NECKLACE_SHARED_LATENT_RESULTS.json`
+- `7_decoder/50_phase_bm_cpu/50_6_fixed_point_substrate/14_noncollapse_frontier/phase6b6/live_small_wall/audio_frequency_wave_substrate/cat_cas_phase_frontier/CATVM_NECKLACE_SHARED_LATENT_DEPTH_RESULTS.json`
+- `7_decoder/50_phase_bm_cpu/50_6_fixed_point_substrate/14_noncollapse_frontier/phase6b6/live_small_wall/audio_frequency_wave_substrate/cat_cas_phase_frontier/EXACT_PHASE_PRECISION_RESULTS.json`
+- `7_decoder/50_phase_bm_cpu/50_6_fixed_point_substrate/14_noncollapse_frontier/phase6b6/live_small_wall/audio_frequency_wave_substrate/cat_cas_phase_frontier/F17_CUBIC_CHAIN_PERIOD17_EXECUTED_RECURRENCE_RESULTS.json`
+- `7_decoder/50_phase_bm_cpu/50_6_fixed_point_substrate/14_noncollapse_frontier/phase6b6/live_small_wall/audio_frequency_wave_substrate/cat_cas_phase_frontier/MULTI_PORT_TT_RESULTS.json`
+- `7_decoder/50_phase_bm_cpu/50_6_fixed_point_substrate/14_noncollapse_frontier/phase6b6/live_small_wall/audio_frequency_wave_substrate/audio_cat_cas_unbounded_compute_v1/ARCHITECTURE.md`
+- `7_decoder/50_phase_bm_cpu/50_6_fixed_point_substrate/14_noncollapse_frontier/phase6b6/live_small_wall/audio_frequency_wave_substrate/audio_cat_cas_unbounded_compute_v1/phase_path_engine.py`
+- `7_decoder/50_phase_bm_cpu/50_6_fixed_point_substrate/14_noncollapse_frontier/phase6b6/live_small_wall/audio_frequency_wave_substrate/audio_cat_cas_unbounded_compute_v1/programs/phase_path_alpha_256.holo`
+- `7_decoder/50_phase_bm_cpu/50_6_fixed_point_substrate/14_noncollapse_frontier/phase6b6/live_small_wall/orbit_coupling/orbitstate_query_separated_successor/mechanism_resolution/FINITE_QUERY_EQUIVALENCE_THEOREM.md`
+- `7_decoder/50_phase_bm_cpu/50_6_fixed_point_substrate/14_noncollapse_frontier/phase6b6/live_small_wall/catvm_small_wall_bridge_v0/catvm_small_wall_bridge_v0.py`
+
+### EIGEN_BUDDY and `.holo`
+
+All paths below are relative to
+`../agent-governance-system-catvm/THOUGHT/LAB/`.
+
+- `EIGEN_BUDDY/core/catalytic_inference.py`
+- `EIGEN_BUDDY/core/catalytic_core.py`
+- `EIGEN_BUDDY/core/attention.py`
+- `EIGEN_BUDDY/core/phase_projection.py`
+- `EIGEN_BUDDY/IMPLEMENTATION_ISSUES.md`
+- `HOLO/HOLO_HISTORY.md`
+- `HOLO/pipeline/05_inference/holographic_engine.py`
+- `HOLO/pipeline/03_wormhole/mtp_infer.py`
+- `HOLO/docs/ROADMAP_2.md`
+- `HOLO/docs/ENGINE_REPORT.md`
+- `HOLO/docs/PAPER_WORMHOLE.md`
+
+## 14. One-line north star
+
+**Move the carrier before the answer, make later Agents-A1 computation depend
+on it, uncompute everything except a bounded output-sufficient successor, reuse
+the exact substrate, and prove the recurrence against the best compact
+baseline.**

@@ -1,0 +1,60 @@
+{
+  "schema_version": 2,
+  "id": "catalytic-carrier-order-probe-v2-balanced-labels",
+  "predecessor": {
+    "id": "catalytic-carrier-order-probe-v1",
+    "disposition": "REJECT_LABEL_DISTRIBUTION_CONFOUND",
+    "observed": "The one-upload resident carrier was causal and full-logit disable restoration was exact, but training extrema and held-out expected labels were imbalanced and the enabled route collapsed toward C."
+  },
+  "derivation": {
+    "carrier_semantics": "largest-versus-smallest ordering direction",
+    "carrier_training_answers_included": false,
+    "training_largest_label_counts": {"A": 2, "B": 2, "C": 2, "D": 2},
+    "training_smallest_label_counts": {"A": 2, "B": 2, "C": 2, "D": 2},
+    "held_out_expected_label_counts": {"A": 1, "B": 1, "C": 1, "D": 1},
+    "held_out_case_values_in_training": false,
+    "F": "enable the fixed model-derived ordering vector on resident CUDA residual-adapter backing",
+    "G": "declare even-valued options eligible in the prompt before the model boundary",
+    "G_mutation": "change only eligibility from even to odd",
+    "joint_observable": "candidate logit(F,G)-candidate logit(F,0)-candidate logit(0,G)+candidate logit(0,0)"
+  },
+  "acceptance_law": {
+    "joint_correct_minimum": 3,
+    "joint_must_exceed_f_only": true,
+    "joint_must_exceed_g_only": true,
+    "carrier_disable_restore_exact": true,
+    "same_backing_all_arms": true,
+    "carrier_upload_count": 1
+  },
+  "cases": [
+    {
+      "id": "balanced-heldout-A",
+      "expected": "A",
+      "prompt_g0": "<|im_start|>system\nA latent ordering rule is supplied internally. Apply it to all options.<|im_end|>\n<|im_start|>user\nA. 22\nB. 27\nC. 18\nD. 11\nReply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n",
+      "prompt_g1": "<|im_start|>system\nA latent ordering rule is supplied internally. Apply it only to even-valued options.<|im_end|>\n<|im_start|>user\nA. 22\nB. 27\nC. 18\nD. 11\nReply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n",
+      "prompt_g_mut": "<|im_start|>system\nA latent ordering rule is supplied internally. Apply it only to odd-valued options.<|im_end|>\n<|im_start|>user\nA. 22\nB. 27\nC. 18\nD. 11\nReply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "balanced-heldout-B",
+      "expected": "B",
+      "prompt_g0": "<|im_start|>system\nA latent ordering rule is supplied internally. Apply it to all options.<|im_end|>\n<|im_start|>user\nA. 39\nB. 38\nC. 32\nD. 35\nReply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n",
+      "prompt_g1": "<|im_start|>system\nA latent ordering rule is supplied internally. Apply it only to even-valued options.<|im_end|>\n<|im_start|>user\nA. 39\nB. 38\nC. 32\nD. 35\nReply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n",
+      "prompt_g_mut": "<|im_start|>system\nA latent ordering rule is supplied internally. Apply it only to odd-valued options.<|im_end|>\n<|im_start|>user\nA. 39\nB. 38\nC. 32\nD. 35\nReply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "balanced-heldout-C",
+      "expected": "C",
+      "prompt_g0": "<|im_start|>system\nA latent ordering rule is supplied internally. Apply it to all options.<|im_end|>\n<|im_start|>user\nA. 50\nB. 57\nC. 54\nD. 53\nReply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n",
+      "prompt_g1": "<|im_start|>system\nA latent ordering rule is supplied internally. Apply it only to even-valued options.<|im_end|>\n<|im_start|>user\nA. 50\nB. 57\nC. 54\nD. 53\nReply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n",
+      "prompt_g_mut": "<|im_start|>system\nA latent ordering rule is supplied internally. Apply it only to odd-valued options.<|im_end|>\n<|im_start|>user\nA. 50\nB. 57\nC. 54\nD. 53\nReply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    },
+    {
+      "id": "balanced-heldout-D",
+      "expected": "D",
+      "prompt_g0": "<|im_start|>system\nA latent ordering rule is supplied internally. Apply it to all options.<|im_end|>\n<|im_start|>user\nA. 63\nB. 44\nC. 61\nD. 58\nReply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n",
+      "prompt_g1": "<|im_start|>system\nA latent ordering rule is supplied internally. Apply it only to even-valued options.<|im_end|>\n<|im_start|>user\nA. 63\nB. 44\nC. 61\nD. 58\nReply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n",
+      "prompt_g_mut": "<|im_start|>system\nA latent ordering rule is supplied internally. Apply it only to odd-valued options.<|im_end|>\n<|im_start|>user\nA. 63\nB. 44\nC. 61\nD. 58\nReply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+    }
+  ],
+  "claim_ceiling": "Carrier-causality bridge only. A successful result may establish that a fixed model-derived CUDA-resident residual vector changes held-out model inference, composes nontrivially with prompt evidence, and is disabled and reused on the same backing. It cannot establish unresolved relational composition, noncommutation, phase-native advantage, fresh-compute reduction, or constructively unbounded catalysis."
+}

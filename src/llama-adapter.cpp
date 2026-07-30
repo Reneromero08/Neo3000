@@ -6,13 +6,14 @@
 
 #include <map>
 #include <cassert>
+#include <cstdint>
 #include <sstream>
 #include <stdexcept>
 
 // vec
 
 ggml_tensor * llama_adapter_cvec::tensor_for(int il) const {
-    if (il < 0 || il < layer_start || il > layer_end || (size_t) il >= tensors.size()) {
+    if (!enabled || il < 0 || il < layer_start || il > layer_end || (size_t) il >= tensors.size()) {
         return nullptr;
     }
 
@@ -26,6 +27,51 @@ ggml_tensor * llama_adapter_cvec::apply_to(ggml_context * ctx, ggml_tensor * cur
     }
 
     return cur;
+}
+
+bool llama_adapter_cvec::set_enabled(bool value) {
+    if (value && (tensors.empty() || layer_start < 0 || layer_end < layer_start)) {
+        return false;
+    }
+
+    enabled = value;
+    return true;
+}
+
+bool llama_adapter_cvec::is_enabled() const {
+    return enabled;
+}
+
+size_t llama_adapter_cvec::resident_bytes() const {
+    size_t result = 0;
+    for (const auto & buf : bufs) {
+        result += ggml_backend_buffer_get_size(buf.get());
+    }
+    return result;
+}
+
+uint64_t llama_adapter_cvec::backing_id() const {
+    // Process-local evidence identity only. This deliberately exposes neither a
+    // pointer nor an authority token; it lets a caller verify that enable /
+    // disable cycles retain the exact same allocated backend buffers.
+    uint64_t result = UINT64_C(1469598103934665603);
+    for (const auto & buf : bufs) {
+        const auto opaque = reinterpret_cast<uintptr_t>(buf.get());
+        for (size_t i = 0; i < sizeof(opaque); ++i) {
+            result ^= (opaque >> (i * 8)) & UINT64_C(0xff);
+            result *= UINT64_C(1099511628211);
+        }
+        const size_t size = ggml_backend_buffer_get_size(buf.get());
+        for (size_t i = 0; i < sizeof(size); ++i) {
+            result ^= (size >> (i * 8)) & UINT64_C(0xff);
+            result *= UINT64_C(1099511628211);
+        }
+    }
+    return result;
+}
+
+uint64_t llama_adapter_cvec::upload_count() const {
+    return uploads;
 }
 
 bool llama_adapter_cvec::init(const llama_model & model) {
@@ -101,10 +147,9 @@ bool llama_adapter_cvec::apply(
     const auto & hparams = model.hparams;
 
     if (data == nullptr) {
-        // disable the current control vector (but leave allocated for later)
-        layer_start = -1;
-        layer_end   = -1;
-        return true;
+        // Disable the current control vector while retaining its exact
+        // allocated backing and configured layer range for later reuse.
+        return set_enabled(false);
     }
 
     if (n_embd != (int) hparams.n_embd) {
@@ -120,6 +165,7 @@ bool llama_adapter_cvec::apply(
 
     layer_start = il_start;
     layer_end   = il_end;
+    enabled     = true;
 
     for (size_t il = 1; il < hparams.n_layer(); il++) {
         assert(tensors[il] != nullptr);
@@ -130,6 +176,7 @@ bool llama_adapter_cvec::apply(
         }
     }
 
+    uploads++;
     return true;
 }
 

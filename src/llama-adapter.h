@@ -19,6 +19,16 @@ struct llama_adapter_cvec {
 
     ggml_tensor * apply_to(ggml_context * ctx, ggml_tensor * cur, int  il) const;
 
+    bool set_enabled(bool value);
+
+    bool is_enabled() const;
+
+    size_t resident_bytes() const;
+
+    uint64_t backing_id() const;
+
+    uint64_t upload_count() const;
+
     bool apply(
             const llama_model & model,
             const float * data,
@@ -32,6 +42,8 @@ private:
 
     int32_t layer_start = -1;
     int32_t layer_end   = -1;
+    bool enabled        = false;
+    uint64_t uploads    = 0;
 
     std::vector<ggml_context_ptr> ctxs;
     std::vector<ggml_backend_buffer_ptr> bufs;

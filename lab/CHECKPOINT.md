@@ -1,6 +1,40 @@
 # Checkpoint Ledger
 
-## July 29 scientific realignment [CURRENT CLAIM AUTHORITY]
+## Renewed model-native carrier checkpoint [CURRENT CLAIM AUTHORITY]
+
+The active recurrence and acceptance boundary are
+`lab/CATALYTIC_INFERENCE_NORTH_STAR.md`.
+
+### SUPPORTED
+
+- `neo-exp-0103` moves the tested carrier before terminal logits. A fixed
+  319,488-byte F32 residual vector was uploaded once, retained the same
+  process-local CUDA backend backing across 24 matched arms, changed later
+  Agents-A1 logits, and reproduced all four tested carrier-disabled full-logit
+  rows exactly after enable/disable reuse.
+- The full Release server and the new carrier probe build with the configured
+  139/139 CUDA object closure. The focused Python suite passes 51 tests and 12
+  subtests.
+
+### REJECTED
+
+- The balanced held-out adapter produced joint/F-only/G-only accuracy
+  `1/4`, `1/4`, and `2/4`; eligibility mutation failed. It is a conventional
+  static token-bias direction, not a useful relational carrier.
+- No multi-evidence necessity, unresolved composition, phase-native resource,
+  fresh-compute reduction, catalytic inference, or constructive unbounded
+  recurrence is supported.
+
+### ACTIVE BOUNDARY
+
+Replace the static direction with dynamic shared residual, recurrent, KV,
+attention, MoE, or weight-factor state written before query selection and read
+by later inference. Use balanced necessity and relation-mutation controls,
+Family-10h inclusion-exclusion against branch-local marginals, no duplicate
+classical intermediate, and the strongest compact recurrent/cache baseline.
+`neo-exp-0102` remains frozen and unconsumed.
+
+## July 29 scientific realignment [FOUNDATION AUTHORITY]
 
 ### SUPPORTED RUNTIME MECHANISMS
 

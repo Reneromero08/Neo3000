@@ -1,0 +1,8 @@
+<|im_start|>system\nSelect the largest value from the labeled options. Reply with only its label.<|im_end|>\n<|im_start|>user\nA. 90\nB. 11\nC. 50\nD. 60<|im_end|>\n<|im_start|>assistant\n
+<|im_start|>system\nSelect the largest value from the labeled options. Reply with only its label.<|im_end|>\n<|im_start|>user\nA. 88\nB. 44\nC. 13\nD. 72<|im_end|>\n<|im_start|>assistant\n
+<|im_start|>system\nSelect the largest value from the labeled options. Reply with only its label.<|im_end|>\n<|im_start|>user\nA. 12\nB. 95\nC. 47\nD. 63<|im_end|>\n<|im_start|>assistant\n
+<|im_start|>system\nSelect the largest value from the labeled options. Reply with only its label.<|im_end|>\n<|im_start|>user\nA. 55\nB. 99\nC. 71\nD. 14<|im_end|>\n<|im_start|>assistant\n
+<|im_start|>system\nSelect the largest value from the labeled options. Reply with only its label.<|im_end|>\n<|im_start|>user\nA. 10\nB. 64\nC. 92\nD. 37<|im_end|>\n<|im_start|>assistant\n
+<|im_start|>system\nSelect the largest value from the labeled options. Reply with only its label.<|im_end|>\n<|im_start|>user\nA. 58\nB. 69\nC. 86\nD. 15<|im_end|>\n<|im_start|>assistant\n
+<|im_start|>system\nSelect the largest value from the labeled options. Reply with only its label.<|im_end|>\n<|im_start|>user\nA. 48\nB. 9\nC. 67\nD. 91<|im_end|>\n<|im_start|>assistant\n
+<|im_start|>system\nSelect the largest value from the labeled options. Reply with only its label.<|im_end|>\n<|im_start|>user\nA. 52\nB. 74\nC. 8\nD. 96<|im_end|>\n<|im_start|>assistant\n

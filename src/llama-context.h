@@ -130,6 +130,16 @@ struct llama_context {
                 int32_t   il_start,
                 int32_t   il_end);
 
+    bool set_adapter_cvec_enabled(bool enabled);
+
+    bool adapter_cvec_enabled() const;
+
+    size_t adapter_cvec_resident_bytes() const;
+
+    uint64_t adapter_cvec_backing_id() const;
+
+    uint64_t adapter_cvec_upload_count() const;
+
     // process a single ubatch with a specific graph type
     // if memory_context is provided, it will be applied first to the context's memory
     // ret contains the status of the graph computation

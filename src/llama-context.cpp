@@ -1301,6 +1301,31 @@ bool llama_context::set_adapter_cvec(
     return res;
 }
 
+bool llama_context::set_adapter_cvec_enabled(bool enabled) {
+    const bool changed = cvec->is_enabled() != enabled;
+    const bool res = cvec->set_enabled(enabled);
+    if (res && changed) {
+        sched_need_reserve = true;
+    }
+    return res;
+}
+
+bool llama_context::adapter_cvec_enabled() const {
+    return cvec->is_enabled();
+}
+
+size_t llama_context::adapter_cvec_resident_bytes() const {
+    return cvec->resident_bytes();
+}
+
+uint64_t llama_context::adapter_cvec_backing_id() const {
+    return cvec->backing_id();
+}
+
+uint64_t llama_context::adapter_cvec_upload_count() const {
+    return cvec->upload_count();
+}
+
 llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, llm_graph_type gtype, llama_memory_context_i * mctx, ggml_status & ret) {
     if (mctx && !mctx->apply()) {
         LLAMA_LOG_ERROR("%s: failed to apply memory context\n", __func__);
@@ -3876,6 +3901,26 @@ int32_t llama_set_adapter_cvec(
     bool res = ctx->set_adapter_cvec(data, len, n_embd, il_start, il_end);
 
     return res ? 0 : -1;
+}
+
+int32_t llama_set_adapter_cvec_enabled(llama_context * ctx, bool enabled) {
+    return ctx->set_adapter_cvec_enabled(enabled) ? 0 : -1;
+}
+
+bool llama_adapter_cvec_enabled(const llama_context * ctx) {
+    return ctx->adapter_cvec_enabled();
+}
+
+size_t llama_adapter_cvec_resident_bytes(const llama_context * ctx) {
+    return ctx->adapter_cvec_resident_bytes();
+}
+
+uint64_t llama_adapter_cvec_backing_id(const llama_context * ctx) {
+    return ctx->adapter_cvec_backing_id();
+}
+
+uint64_t llama_adapter_cvec_upload_count(const llama_context * ctx) {
+    return ctx->adapter_cvec_upload_count();
 }
 
 //
