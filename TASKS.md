@@ -322,7 +322,13 @@ constructively unbounded local Agents-A1 inference.
   public phase table—as the token input; charge all four one-token role
   forwards per phase; preserve stable active backing; test the unchanged
   four-phase disjoint recurrence once. This changes the state generator, not
-  the fixture or evidence harness.
+  the fixture or evidence harness. **Precontact implementation frozen:**
+  `neo-exp-0145` retains four public structural prefixes, projects each actual
+  useful token through one frozen-model forward at its public label position,
+  aliases only that model-native attention row into the live carrier, and
+  reuses one closed scratch sequence. Expected answers and phase tables never
+  choose runtime tokens. The fixed four-phase recurrence remains unexecuted at
+  this source checkpoint.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

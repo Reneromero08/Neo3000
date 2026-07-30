@@ -364,6 +364,21 @@ The active recurrence and acceptance boundary are
   token once at its public source-label position through frozen Agents-A1
   computation, then test whether the resulting model-native row supports the
   same recurrence. Width/seed/ridge/fixture/evidence variants remain closed.
+- `neo-exp-0145` is the frozen model-native rematerialization successor. Four
+  public structural prefixes stay resident. Each actual useful A/B/C/D output
+  is forwarded once at its public source-label position through the unchanged
+  frozen model; only the resulting attention row is aliased into the live
+  candidate, and later ordinary inference reads that state. One scratch
+  sequence is closed between queries, role forwards, references, and return
+  probes. Runtime token selection consults neither expected answers nor a
+  phase table.
+- This precontact source checkpoint builds the probe and complete Release CUDA
+  server, retains `139/139` configured CUDA compile entries and objects, passes
+  the seventeen focused runner/oracle tests and the exact oracle's ten main
+  gates plus three valid fixtures, and makes no model-facing contact. The next
+  action is one execution of the frozen
+  `lab/actual-output-source-position-rematerialization-v1.json`, not a prompt,
+  position, layer, transport, evaluator, or evidence-packet variant.
 
 ### REJECTED
 

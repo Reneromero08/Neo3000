@@ -5047,10 +5047,15 @@ static json run_sparse_g_label_refresh(
         spec.value("output_role_transport_action", false);
     const bool output_role_generator_mode =
         spec.value("output_role_generator_action", false);
+    const bool output_source_rematerialization_mode =
+        spec.value(
+            "output_source_position_rematerialization_action",
+            false);
     const bool output_driven_carrier_mode =
         output_promoted_value_carrier_mode ||
         output_role_transport_mode ||
-        output_role_generator_mode;
+        output_role_generator_mode ||
+        output_source_rematerialization_mode;
     const bool trained_semantic_carrier_mode =
         spec.value("trained_semantic_carrier_action", false);
     const bool semantic_carrier_layer_delta_mode =
@@ -5099,6 +5104,8 @@ static json run_sparse_g_label_refresh(
             static_cast<int>(output_promoted_value_carrier_mode) +
             static_cast<int>(output_role_transport_mode) +
             static_cast<int>(output_role_generator_mode) +
+            static_cast<int>(
+                output_source_rematerialization_mode) +
             static_cast<int>(trained_semantic_carrier_mode) > 1) {
         throw std::runtime_error(
             "label orbit action modes are mutually exclusive");
@@ -6071,7 +6078,9 @@ static json run_sparse_g_label_refresh(
     size_t orbit_position_shift_count = 0;
     size_t output_promotion_row_count = 0;
     size_t useful_output_decode_tokens = 0;
+    size_t source_role_rematerialization_tokens = 0;
     double useful_output_decode_wall_ms_total = 0.0;
+    double source_role_rematerialization_wall_ms_total = 0.0;
     size_t fourier_calibration_sample_count = 0;
     size_t subspace_calibration_sample_count = 0;
     uint64_t orbit_backend_copy_bytes = 0;
@@ -6202,9 +6211,12 @@ static json run_sparse_g_label_refresh(
     json records = json::array();
     json variant_timings = json::array();
     json output_promotion_records = json::array();
+    json source_role_rematerialization_records = json::array();
     const std::string candidate_route =
         output_driven_carrier_mode
-            ? output_role_generator_mode
+            ? output_source_rematerialization_mode
+                ? "output_source_position_rematerialization_carrier"
+                : output_role_generator_mode
                 ? "shared_nonlinear_role_generator_carrier"
                 : output_role_transport_mode
                     ? "output_role_transport_carrier"
@@ -6214,7 +6226,9 @@ static json run_sparse_g_label_refresh(
                 : "sparse_label_refresh_candidate";
     const std::string return_route =
         output_driven_carrier_mode
-            ? output_role_generator_mode
+            ? output_source_rematerialization_mode
+                ? "output_source_position_rematerialization_carrier_return_G0"
+                : output_role_generator_mode
                 ? "shared_nonlinear_role_generator_carrier_return_G0"
                 : output_role_transport_mode
                     ? "output_role_transport_carrier_return_G0"
@@ -6919,6 +6933,7 @@ static json run_sparse_g_label_refresh(
     };
 
     bool fixed_preparation_sequences_closed = false;
+    bool scaffold_preparation_sequence_closed = false;
     if (orbit_mode) {
         const auto & canonical_variant = variants.at(0);
         const std::string canonical_id =
@@ -7003,15 +7018,27 @@ static json run_sparse_g_label_refresh(
             {"subspace_operator_closure_max_abs_error",
                 subspace_operator_closure_max_abs_error},
         });
-        for (size_t i = 0; i < stage_seqs.size(); ++i) {
+        if (output_source_rematerialization_mode) {
+            // Keep the four public structural prefixes resident. The
+            // completed scaffold slot becomes the one sequential query and
+            // role-rematerialization scratch sequence.
             close_sequence(
-                stage_seqs[i],
-                "orbit:stage-close-" + std::to_string(i));
+                scaffold_seq,
+                "orbit:rematerialization-scaffold-close");
             ++sequence_close_count;
+            scaffold_preparation_sequence_closed = true;
+        } else {
+            for (size_t i = 0; i < stage_seqs.size(); ++i) {
+                close_sequence(
+                    stage_seqs[i],
+                    "orbit:stage-close-" + std::to_string(i));
+                ++sequence_close_count;
+            }
+            close_sequence(scaffold_seq, "orbit:scaffold-close");
+            ++sequence_close_count;
+            fixed_preparation_sequences_closed = true;
+            scaffold_preparation_sequence_closed = true;
         }
-        close_sequence(scaffold_seq, "orbit:scaffold-close");
-        ++sequence_close_count;
-        fixed_preparation_sequences_closed = true;
     }
 
     if (trained_semantic_carrier_mode) {
@@ -7052,10 +7079,14 @@ static json run_sparse_g_label_refresh(
         if (output_driven_carrier_mode) {
             std::vector<llama_pos> output_positions;
             output_positions.reserve(stage_seqs.size());
+            std::vector<llama_token> rematerialization_tokens(
+                label_offsets.size(), LLAMA_TOKEN_NULL);
             size_t query_index = 0;
             for (const auto & query : variant.at("queries")) {
                 const llama_seq_id stage_seq =
-                    stage_seqs.at(query_index);
+                    output_source_rematerialization_mode
+                        ? scaffold_seq
+                        : stage_seqs.at(query_index);
                 const boundary_result boundary =
                     project_from_source(
                         candidate_seq,
@@ -7098,6 +7129,14 @@ static json run_sparse_g_label_refresh(
                     id + ":output-token-resident-" +
                         std::to_string(query_index));
                 output_positions.push_back(output_position);
+                const size_t destination_label_index =
+                    output_promotion_label_indices.at(
+                        query_index);
+                if (output_source_rematerialization_mode) {
+                    rematerialization_tokens.at(
+                        destination_label_index) =
+                        candidates.at(candidate_index);
+                }
                 output_promotion_records.push_back({
                     {"variant", id},
                     {"query_id", query.at("id")},
@@ -7108,8 +7147,7 @@ static json run_sparse_g_label_refresh(
                     {"actual_projected_token",
                         candidates.at(candidate_index)},
                     {"destination_label_index",
-                        output_promotion_label_indices.at(
-                            query_index)},
+                        destination_label_index},
                     {"destination_label_position",
                         static_cast<llama_pos>(
                             f_boundary_tokens +
@@ -7118,7 +7156,92 @@ static json run_sparse_g_label_refresh(
                                     query_index)))},
                     {"output_decode_wall_ms", output_wall_ms},
                 });
+                if (output_source_rematerialization_mode) {
+                    close_sequence(
+                        stage_seq,
+                        id + ":projected-output-close-" +
+                            std::to_string(query_index));
+                    ++sequence_close_count;
+                }
                 ++query_index;
+            }
+            if (output_source_rematerialization_mode) {
+                for (size_t label_index = 0;
+                     label_index < label_offsets.size();
+                     ++label_index) {
+                    const llama_token actual_output =
+                        rematerialization_tokens.at(label_index);
+                    if (actual_output == LLAMA_TOKEN_NULL) {
+                        throw std::runtime_error(
+                            id +
+                            ": rematerialization output is absent");
+                    }
+                    const llama_pos label_position =
+                        static_cast<llama_pos>(
+                            f_boundary_tokens +
+                            label_offsets.at(label_index));
+                    copy_full_sequence(
+                        stage_seqs.at(label_index),
+                        scaffold_seq,
+                        label_position - 1,
+                        id + ":source-role-prefix-" +
+                            std::to_string(label_index));
+                    ++sequence_copy_count;
+                    const double role_wall_ms = timed_decode(
+                        std::vector<llama_token>{actual_output},
+                        label_position,
+                        scaffold_seq);
+                    variant_label_wall_ms += role_wall_ms;
+                    label_refresh_wall_ms_total += role_wall_ms;
+                    source_role_rematerialization_wall_ms_total +=
+                        role_wall_ms;
+                    ++label_refresh_count;
+                    ++source_role_rematerialization_tokens;
+                    require_component_positions(
+                        scaffold_seq,
+                        label_position,
+                        label_position,
+                        id + ":source-role-token-" +
+                            std::to_string(label_index));
+                    if (!attention->seq_rm(
+                            candidate_seq,
+                            label_position,
+                            label_position + 1)) {
+                        throw std::runtime_error(
+                            id +
+                            ": prior source-role label removal failed");
+                    }
+                    ++attention_label_remove_count;
+                    attention->seq_cp(
+                        scaffold_seq,
+                        candidate_seq,
+                        label_position,
+                        label_position + 1);
+                    llama_synchronize(ctx);
+                    ++attention_label_alias_count;
+                    ++output_promotion_row_count;
+                    source_role_rematerialization_records.push_back({
+                        {"variant", id},
+                        {"destination_label_index", label_index},
+                        {"destination_label_position", label_position},
+                        {"actual_projected_token", actual_output},
+                        {"model_forward_tokens", 1},
+                        {"wall_ms", role_wall_ms},
+                        {"expected_answer_consulted", false},
+                        {"public_phase_table_consulted", false},
+                    });
+                    require_component_positions(
+                        candidate_seq,
+                        source_boundary_pos,
+                        source_boundary_pos,
+                        id + ":source-role-patched-" +
+                            std::to_string(label_index));
+                    close_sequence(
+                        scaffold_seq,
+                        id + ":source-role-scratch-close-" +
+                            std::to_string(label_index));
+                    ++sequence_close_count;
+                }
             }
             if (output_role_generator_mode) {
                 std::vector<llama_pos> destination_positions;
@@ -7170,6 +7293,7 @@ static json run_sparse_g_label_refresh(
             }
             for (size_t i = 0;
                  !output_role_generator_mode &&
+                    !output_source_rematerialization_mode &&
                     i < stage_seqs.size();
                  ++i) {
                 const size_t label_index =
@@ -7245,12 +7369,14 @@ static json run_sparse_g_label_refresh(
                 source_boundary_pos,
                 source_boundary_pos,
                 id + ":output-promoted-carrier-advanced");
-            for (size_t i = 0; i < stage_seqs.size(); ++i) {
-                close_sequence(
-                    stage_seqs.at(i),
-                    id + ":output-stage-close-" +
-                        std::to_string(i));
-                ++sequence_close_count;
+            if (!output_source_rematerialization_mode) {
+                for (size_t i = 0; i < stage_seqs.size(); ++i) {
+                    close_sequence(
+                        stage_seqs.at(i),
+                        id + ":output-stage-close-" +
+                            std::to_string(i));
+                    ++sequence_close_count;
+                }
             }
         } else {
             for (const auto & query : variant.at("queries")) {
@@ -7293,7 +7419,11 @@ static json run_sparse_g_label_refresh(
         for (const auto & query : variant.at("queries")) {
             project_from_source(
                 work_seq,
-                orbit_mode ? stage_seqs[0] : candidate_seq,
+                orbit_mode
+                    ? output_source_rematerialization_mode
+                        ? scaffold_seq
+                        : stage_seqs[0]
+                    : candidate_seq,
                 "exact_full_state",
                 id,
                 query);
@@ -7321,9 +7451,9 @@ static json run_sparse_g_label_refresh(
             id + ":F-survives");
         require_component_positions(
             scaffold_seq,
-            fixed_preparation_sequences_closed ? -1 :
+            scaffold_preparation_sequence_closed ? -1 :
                 source_boundary_pos,
-            fixed_preparation_sequences_closed ? -1 :
+            scaffold_preparation_sequence_closed ? -1 :
                 source_boundary_pos,
             id + ":scaffold-lifecycle");
     }
@@ -7338,7 +7468,9 @@ static json run_sparse_g_label_refresh(
         for (const auto & query : variants.at(0).at("queries")) {
             project_from_source(
                 candidate_seq,
-                stage_seqs[0],
+                output_source_rematerialization_mode
+                    ? scaffold_seq
+                    : stage_seqs[0],
                 return_route,
                 variants.at(0).at("id"),
                 query);
@@ -7537,8 +7669,10 @@ static json run_sparse_g_label_refresh(
                 "sparse:stage-close-" + std::to_string(i));
             ++sequence_close_count;
         }
-        close_sequence(scaffold_seq, "sparse:scaffold-close");
-        ++sequence_close_count;
+        if (!scaffold_preparation_sequence_closed) {
+            close_sequence(scaffold_seq, "sparse:scaffold-close");
+            ++sequence_close_count;
+        }
     }
     llama_memory_clear(memory, true);
     llama_synchronize(ctx);
@@ -7596,8 +7730,11 @@ static json run_sparse_g_label_refresh(
             ? label_offsets.size() * 4
             : 0;
     const size_t candidate_variable_source_tokens =
-        orbit_mode ? 0 :
-            variants.size() * label_offsets.size();
+        orbit_mode
+            ? output_source_rematerialization_mode
+                ? source_role_rematerialization_tokens
+                : 0
+            : variants.size() * label_offsets.size();
     const size_t candidate_source_tokens =
         fixed_carrier_preparation_tokens +
         candidate_initialization_source_tokens +
@@ -7614,7 +7751,9 @@ static json run_sparse_g_label_refresh(
         role_transport_training_source_tokens;
     return {
         {"schema_version", 1},
-        {"mechanism", subspace_value_orbit_mode
+        {"mechanism", output_source_rematerialization_mode
+            ? "ACTUAL_OUTPUT_TOKEN_SOURCE_POSITION_REMATERIALIZATION"
+            : subspace_value_orbit_mode
             ? subspace_include_keys
                 ? build_subspace_operator
                     ? "IN_PLACE_STATE_CONDITIONED_LOW_RANK_KEY_VALUE_ACTION"
@@ -7689,6 +7828,8 @@ static json run_sparse_g_label_refresh(
                 output_role_transport_mode},
             {"output_role_generator_action",
                 output_role_generator_mode},
+            {"output_source_position_rematerialization_action",
+                output_source_rematerialization_mode},
             {"output_promotion_label_indices",
                 output_promotion_label_indices},
             {"role_transport_training_contexts",
@@ -7911,6 +8052,17 @@ static json run_sparse_g_label_refresh(
                 useful_output_decode_tokens},
             {"useful_output_decode_wall_ms_total",
                 useful_output_decode_wall_ms_total},
+            {"source_role_rematerialization_tokens",
+                source_role_rematerialization_tokens},
+            {"source_role_rematerialization_wall_ms_total",
+                source_role_rematerialization_wall_ms_total},
+            {"source_role_rematerialization_projected_token_bytes",
+                source_role_rematerialization_tokens *
+                    sizeof(llama_token)},
+            {"source_role_rematerialization_expected_answer_consulted",
+                false},
+            {"source_role_rematerialization_phase_table_consulted",
+                false},
             {"role_transport_training_source_tokens",
                 role_transport_training_source_tokens},
             {"role_transport_training_query_tokens",
@@ -8083,6 +8235,8 @@ static json run_sparse_g_label_refresh(
             role_transport_training_records},
         {"output_promotion_records",
             output_promotion_records},
+        {"source_role_rematerialization_records",
+            source_role_rematerialization_records},
         {"records", records},
         {"verdict", accepted ? "accept" : "reject"},
         {"claim_ceiling", spec.at("claim_ceiling")},
