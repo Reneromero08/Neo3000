@@ -84,14 +84,14 @@
 ### BUILD AND TEST BINDING
 
 - Implementation head
-  `9a1aaaf79d0ef3d23ae971ca2247afaee67edf54` configures and links as server
-  version `331 (9a1aaaf)` with CUDA architecture `86-real`.
+  `48d749c75493953d6e2613f0f460fadbfd7d3033` configures and links as server
+  version `333 (48d749c)` with CUDA architecture `86-real`.
 - All 139 configured CUDA compile entries and 139 unique CUDA objects are
   present. Zero configured units are missing. The 45 optional repository
   translation units remain excluded by unchanged
   `GGML_CUDA_FA_ALL_QUANTS=OFF`.
 - Three native tests pass with assertions forced on under ASan/UBSan; the
-  focused Python suite passes 118 with five provenance-only skips; the
+  focused Python suite passes 119 with five provenance-only skips; the
   declarative runner passes 7/7; the integrated exact oracle passes all 19
   gates on three valid fixtures.
 - Exact hashes, commands, link inputs, outputs, evidence levels, and zero-contact

@@ -3,13 +3,40 @@
   "record_type": "engineering_scientific_governance_verification",
   "date": "2026-07-29",
   "branch": "codex/catalytic-frontier",
-  "starting_head": "ffcb9719d97cf6ec7280026097bfae32fbed7857",
-  "verified_implementation_head": "9a1aaaf79d0ef3d23ae971ca2247afaee67edf54",
+  "starting_head": "706d480d8c973c7394daf63fa70a76b4e429cb2b",
+  "prior_realign_starting_head": "ffcb9719d97cf6ec7280026097bfae32fbed7857",
+  "verified_implementation_head": "48d749c75493953d6e2613f0f460fadbfd7d3033",
   "commits": [
     "4d30d7ee1edd1b1e4806d3e324d0eca529b33db9",
     "c9d8c39b0daf62f64534a46d29d58894d56d582d",
-    "9a1aaaf79d0ef3d23ae971ca2247afaee67edf54"
+    "9a1aaaf79d0ef3d23ae971ca2247afaee67edf54",
+    "706d480d8c973c7394daf63fa70a76b4e429cb2b",
+    "48d749c75493953d6e2613f0f460fadbfd7d3033"
   ],
+  "final_correction": {
+    "classification": "BOUNDED_NO_MODEL_CONTACT_REALIGNMENT_CORRECTION",
+    "defect_repaired": "A delayed cancellation for the original capture task could still match after the live boundary entered ADMITTED_FOR_USE, allowing the idle-only prompt_clear(false) fallback to target a processing consumer slot.",
+    "ownership_law": "Capture cancellation authority exists only in CAPTURING and CAPTURED_RESIDENT. ADMITTED_FOR_USE records the consumer task as the current custodian; the capture task no longer matches, and consumer cancellation follows the consumer task release/poison path.",
+    "idle_fallback_law": "The server cancellation fallback requires !slot.is_processing() before prompt_clear(false).",
+    "behavioral_test_added": "begin C -> complete C -> admit U -> reject late cancellation C -> retain U ownership -> cancel U through release/poison -> POISONED with no resident state",
+    "preserved_behavioral_cases": [
+      "cancellation during CAPTURING matches C",
+      "cancellation during CAPTURED_RESIDENT matches C",
+      "normal capture completion preserves the boundary",
+      "malformed consumer poisons the boundary",
+      "sleep poisons resident state",
+      "shutdown poisons resident state"
+    ],
+    "documentation_corrected": [
+      "AGENTS.md",
+      "TASKS.md",
+      "ROADMAP.md",
+      "lab/GOAL.md",
+      "lab/CHECKPOINT.md",
+      "lab/incidents/2026-07-29-audio-catvm-inference-drift.md"
+    ],
+    "neo_exp_0102_consumed": false
+  },
   "evidence_levels": {
     "source_verified": true,
     "unit_tested": true,
@@ -113,22 +140,22 @@
         "name": "live-terminal-lifecycle-selftest-asan-ubsan",
         "compile_command": "c++ <common flags> scripts/catalytic_frontier_live_terminal_lifecycle_selftest.cpp -o build/realignment/native-bound/live-terminal-lifecycle-selftest-asan-ubsan",
         "sources": {
-          "scripts/catalytic_frontier_live_terminal_lifecycle_selftest.cpp": "47ECE07119D9C4C6FACF241ABC2A9C05765309F108A4EE21EEDE8B4A9A1A04D9",
-          "tools/server/neo3000-live-terminal-lifecycle.h": "1749A76211AD0C7BA37415AADCEDEF452741821C9AC08F939819083944372E58"
+          "scripts/catalytic_frontier_live_terminal_lifecycle_selftest.cpp": "550B555EFB7117B2F1C5365A890EB99E2815B8E998D230102BFA3407A8E922CB",
+          "tools/server/neo3000-live-terminal-lifecycle.h": "5CBC772C612B76D3CD5959288A6518F279C446E61E03EC57C1EF2FAFEF5472BB"
         },
-        "binary_size_bytes": 75256,
-        "binary_sha256": "BEC82AC1E10265C572825B4AA21D933091F198AFEDF6527D65B6E89151031752",
+        "binary_size_bytes": 83256,
+        "binary_sha256": "6C8DC4E69033BC1C23C2D76B74404DEE33A6218F3C4792DDCCF195FA075FB22F",
         "returncode": 0,
-        "execution_output": "cancel-before-receipt; cancel-after-receipt; admitted-release; malformed-immediate-consumer; decode-exception; close-and-recapture; sleep-resident; shutdown-resident"
+        "execution_output": "cancel-before-receipt; cancel-after-receipt; admitted-release; malformed-immediate-consumer; decode-exception; close-and-recapture; sleep-resident; shutdown-resident; late-capture-cancel-does-not-steal-admitted-consumer"
       }
     ],
-    "generated_binding_sha256": "998B4F01F9D9D38F9087BB0AEF18DF6CB844BFBE9D14056435428238462A4B2C",
+    "generated_binding_sha256": "7E2782D827D40EE8DAE826B9CCC96CF3C7461D4B673C3049A3881F0CF7E24A53",
     "all_passed": true
   },
   "python_and_oracle_tests": {
     "focused_source_unit_suite": {
-      "tests_run": 123,
-      "passed": 118,
+      "tests_run": 124,
+      "passed": 119,
       "skipped_legacy_provenance_checks": 5,
       "failed": 0
     },
@@ -168,21 +195,21 @@
   },
   "cuda_server_build": {
     "configure_command": "cmake -S . -B build/linux-cuda-0091-custody",
-    "build_command": "cmake --build build/linux-cuda-0091-custody --target llama-server -j4",
+    "build_command": "cmake --build build/linux-cuda-0091-custody --target llama-server -j2",
     "build_type": "Release",
     "ggml_cuda": true,
     "cuda_architectures": "86-real",
-    "server_version": "331 (9a1aaaf)",
+    "server_version": "333 (48d749c)",
     "server_binary_size_bytes": 17904,
-    "server_binary_sha256": "6F2778111377B46E4B97C242B6065D286E4C2A292584FA436BE9433B551D2D9B",
+    "server_binary_sha256": "B31D6DA9FE369CA458475F542B44D6BB4A7F50C5DA6AF69A1BAAA9893B2CEB9B",
     "server_impl_size_bytes": 4457296,
-    "server_impl_sha256": "F98D950CEDFE384B6B6880A157531797C93849EA05386CBF868DE75E01187140",
+    "server_impl_sha256": "AA8DA766F78D3AB07F681E52B69A6B288BD8B350F23851C32B599E2D1B09E459",
     "ggml_cuda_size_bytes": 154274432,
     "ggml_cuda_sha256": "1D99B4CF90CDB7DE50183A09122DAE59B2221B4A322E10772F64FBDAE8E237A4",
-    "cmake_cache_sha256": "AE85C4B1462ADD6C227263DFECE1591171647D54AD780AD1E391CA9100CB9465",
-    "compile_commands_sha256": "54241FCFA75E30E69462B0AAF02EE8C37DE3583A2E10BDF97EBF7D222C36F850",
-    "server_link_receipt_sha256": "93358119B7A9D3CC5FC1184C51BA57A8397346752BF0A3F1EB80E0DBDC05212F",
-    "server_impl_link_receipt_sha256": "EA3E33428E4C4A8DD536179158AD7275BC6BD7BF7B18D67E889E8F9A591ABE92",
+    "cmake_cache_sha256": "6E63D21E0F463D119A0933A2855D78EC82354BAD4575A0102FA5DAD3B88E3DB7",
+    "compile_commands_sha256": "5427760DC8AB894DAD7FAB5F13B303157F9E48687B56AE5791D60E1DE0058FD8",
+    "server_link_receipt_sha256": "A82B07A4E28CEB1D5A0169B0C5DAC6D89690A0E54DD335E781BE3EA5A4DDF1E4",
+    "server_impl_link_receipt_sha256": "CDA88AC44C55B325A1BD2049F1768CCFD638946BFCF8E3A8E7DB23B98719585F",
     "cuda_link_receipt_sha256": "6F27C3654CDE56B0F0C899304A7819E41A3D1374A2E93D35E4DEAAAC2AAA04C3",
     "configured_cuda_compile_entries": 139,
     "configured_cuda_objects": 139,
@@ -220,7 +247,7 @@
     "cuda_kernel_launches": 0,
     "neo_exp_0102_scientific_contact": false
   },
-  "corrected_strongest_claim": "The Linux runtime has a built live-boundary and split-decode seam, executed component lifecycle laws, and a reversible twin-rail calibration backend that numerically restores only eight complex<double> cells. Consumed 0094-0101 evidence remains bounded numerical calibration and same-workspace reuse; precontact 0102 remains a two-row reversible score-composition calibration.",
+  "corrected_strongest_claim": "Neo3000 has executed component lifecycle, anti-replay, metadata-rollback, numerical-decoherence, and reversible calibration laws; a full Linux/CUDA server containing the statically bound split-decode seam builds successfully. The two-row neo-exp-0102 model-facing path remains unexecuted and unconsumed.",
   "unsupported": [
     "inference-bearing twin-rail carrier",
     "authenticated owner-bound authority",
@@ -231,5 +258,5 @@
     "Small Wall crossing",
     "general, recursive, arbitrary-breadth, or unbounded catalytic inference"
   ],
-  "verdict": "REALIGNMENT_IMPLEMENTATION_AND_BUILD_VERIFIED_WITHOUT_MODEL_CONTACT"
+  "verdict": "READY_FOR_RENEWED_CATALYTIC_INFERENCE_GOAL"
 }

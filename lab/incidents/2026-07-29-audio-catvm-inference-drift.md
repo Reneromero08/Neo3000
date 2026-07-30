@@ -119,8 +119,9 @@ interpretation, not history.
 
 ## 8. Resolution
 
-The realignment implementation is verified at
-`9a1aaaf79d0ef3d23ae971ca2247afaee67edf54`. The native/CUDA build,
+The original realignment implementation was verified at
+`9a1aaaf79d0ef3d23ae971ca2247afaee67edf54`; the final lifecycle correction is
+verified at `48d749c75493953d6e2613f0f460fadbfd7d3033`. The native/CUDA build,
 behavioral tests, exact oracle, declarative specs, and zero model-contact counts
 are bound in `lab/realignment-2026-07-29-verification.json`.
 

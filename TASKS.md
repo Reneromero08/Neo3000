@@ -109,11 +109,11 @@ contact.
 **READY FOR LONG-TERM GOAL**
 
 - The repaired implementation is bound at
-  `9a1aaaf79d0ef3d23ae971ca2247afaee67edf54`.
-- Release CUDA server version `331 (9a1aaaf)` linked with 139/139 configured
+  `48d749c75493953d6e2613f0f460fadbfd7d3033`.
+- Release CUDA server version `333 (48d749c)` linked with 139/139 configured
   CUDA objects; zero configured units are missing.
 - Native ASan/UBSan behavioral tests pass, the focused Python suite passes
-  118 with five explicitly classified legacy provenance skips, the declarative
+  119 with five explicitly classified legacy provenance skips, the declarative
   runner passes 7/7, and the corrected exact oracle passes 19/19 gates across
   three valid integrated fixtures.
 - Durable verification is
