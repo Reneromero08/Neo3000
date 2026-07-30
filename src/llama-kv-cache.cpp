@@ -1498,6 +1498,505 @@ bool llama_kv_cache::seq_copy_attention_value_row(
     return tensor_count == layer_ids.size();
 }
 
+bool llama_kv_cache::seq_collect_attention_role_pair(
+        llama_seq_id source_seq_id,
+        llama_pos source_position,
+        llama_seq_id target_seq_id,
+        llama_pos target_position,
+        const std::set<uint32_t> & layer_ids,
+        bool include_keys,
+        uint32_t destination_index,
+        uint32_t sample_index,
+        uint32_t sample_count,
+        role_transport_builder * builder,
+        role_transport_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    if (!builder ||
+        other ||
+        n_stream != 1 ||
+        source_seq_id < 0 ||
+        target_seq_id < 0 ||
+        static_cast<size_t>(source_seq_id) >= seq_to_stream.size() ||
+        static_cast<size_t>(target_seq_id) >= seq_to_stream.size() ||
+        seq_to_stream[source_seq_id] != seq_to_stream[target_seq_id] ||
+        source_position < 0 ||
+        target_position < 0 ||
+        layer_ids.empty() ||
+        sample_count == 0 ||
+        sample_index >= sample_count) {
+        return false;
+    }
+    for (const uint32_t il : layer_ids) {
+        if (map_layer_ids.find(static_cast<int32_t>(il)) ==
+            map_layer_ids.end()) {
+            return false;
+        }
+    }
+
+    auto & cells = v_cells[seq_to_stream[source_seq_id]];
+    const auto find_unique_cell =
+            [&](llama_seq_id seq_id, llama_pos position) {
+        uint32_t found = cells.size();
+        for (uint32_t i = 0; i < cells.size(); ++i) {
+            if (cells.pos_in(i, position, position + 1) &&
+                cells.seq_has(i, seq_id)) {
+                if (found != cells.size()) {
+                    return cells.size();
+                }
+                found = i;
+            }
+        }
+        return found;
+    };
+    const uint32_t source_cell =
+        find_unique_cell(source_seq_id, source_position);
+    const uint32_t target_cell =
+        find_unique_cell(target_seq_id, target_position);
+    if (source_cell == cells.size() ||
+        target_cell == cells.size()) {
+        return false;
+    }
+
+    uint64_t host_read_bytes = 0;
+    uint64_t peak_host_work_bytes = 0;
+    uint64_t tensor_visits = 0;
+    for (const uint32_t il : layer_ids) {
+        const auto & layer =
+            layers[map_layer_ids.at(static_cast<int32_t>(il))];
+        std::vector<std::pair<bool, ggml_tensor *>> tensors;
+        if (include_keys) {
+            tensors.push_back({true, layer.k});
+        }
+        tensors.push_back({false, layer.v});
+        for (const auto & [key, tensor] : tensors) {
+            if (!tensor ||
+                !tensor->buffer ||
+                ggml_blck_size(tensor->type) != 1 ||
+                tensor->ne[1] != static_cast<int64_t>(get_size()) ||
+                tensor->ne[2] != static_cast<int64_t>(n_stream)) {
+                return false;
+            }
+            const ggml_type_traits * traits =
+                ggml_get_type_traits(tensor->type);
+            if (!traits ||
+                !traits->to_float ||
+                traits->blck_size != 1) {
+                return false;
+            }
+            const size_t elements =
+                static_cast<size_t>(tensor->ne[0]);
+            const size_t row_bytes =
+                ggml_row_size(tensor->type, tensor->ne[0]);
+            if (tensor->nb[1] != row_bytes) {
+                return false;
+            }
+            std::vector<uint8_t> source_raw(row_bytes);
+            std::vector<uint8_t> target_raw(row_bytes);
+            std::vector<float> source_values(elements);
+            std::vector<float> target_values(elements);
+            ggml_backend_tensor_get(
+                tensor,
+                source_raw.data(),
+                static_cast<size_t>(source_cell) * tensor->nb[1],
+                row_bytes);
+            ggml_backend_tensor_get(
+                tensor,
+                target_raw.data(),
+                static_cast<size_t>(target_cell) * tensor->nb[1],
+                row_bytes);
+            traits->to_float(
+                source_raw.data(), source_values.data(), elements);
+            traits->to_float(
+                target_raw.data(), target_values.data(), elements);
+            host_read_bytes += 2 * row_bytes;
+            peak_host_work_bytes = std::max<uint64_t>(
+                peak_host_work_bytes,
+                source_raw.size() +
+                    target_raw.size() +
+                    (source_values.size() +
+                     target_values.size()) *
+                        sizeof(float));
+
+            auto found = std::find_if(
+                builder->layers.begin(),
+                builder->layers.end(),
+                [il, key, destination_index](
+                        const role_transport_builder_layer & item) {
+                    return item.layer_id == il &&
+                        item.key == key &&
+                        item.destination_index ==
+                            destination_index;
+                });
+            if (found == builder->layers.end()) {
+                role_transport_builder_layer item;
+                item.layer_id = il;
+                item.key = key;
+                item.destination_index = destination_index;
+                item.source.resize(sample_count);
+                item.target.resize(sample_count);
+                item.present.assign(sample_count, false);
+                builder->layers.push_back(std::move(item));
+                found = std::prev(builder->layers.end());
+            }
+            if (found->source.size() != sample_count ||
+                found->target.size() != sample_count ||
+                found->present.size() != sample_count ||
+                found->present[sample_index]) {
+                return false;
+            }
+            found->source[sample_index] =
+                std::move(source_values);
+            found->target[sample_index] =
+                std::move(target_values);
+            found->present[sample_index] = true;
+            ++tensor_visits;
+        }
+    }
+
+    ++builder->sample_count;
+    builder->vector_backing_bytes =
+        sizeof(*builder) +
+        builder->layers.capacity() *
+            sizeof(role_transport_builder_layer);
+    for (const auto & item : builder->layers) {
+        builder->vector_backing_bytes +=
+            (item.source.capacity() +
+             item.target.capacity()) *
+                sizeof(std::vector<float>) +
+            item.present.capacity() / 8 + 1;
+        for (const auto & sample : item.source) {
+            builder->vector_backing_bytes +=
+                sample.capacity() * sizeof(float);
+        }
+        for (const auto & sample : item.target) {
+            builder->vector_backing_bytes +=
+                sample.capacity() * sizeof(float);
+        }
+    }
+    if (metrics) {
+        metrics->host_read_bytes = host_read_bytes;
+        metrics->peak_host_work_bytes =
+            peak_host_work_bytes;
+        metrics->builder_bytes =
+            builder->vector_backing_bytes;
+        metrics->tensor_visits = tensor_visits;
+        metrics->position_visits = 2;
+    }
+    return true;
+}
+
+bool llama_kv_cache::finalize_attention_role_transport(
+        role_transport_builder * builder,
+        uint32_t destination_count,
+        uint32_t samples_per_destination,
+        double ridge_fraction,
+        role_transport_operator * role_operator,
+        role_transport_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    if (!builder ||
+        !role_operator ||
+        destination_count == 0 ||
+        samples_per_destination < 2 ||
+        !std::isfinite(ridge_fraction) ||
+        ridge_fraction <= 0.0 ||
+        builder->layers.empty() ||
+        builder->sample_count !=
+            static_cast<uint64_t>(destination_count) *
+                samples_per_destination) {
+        return false;
+    }
+    *role_operator = {};
+    uint64_t peak_host_work_bytes =
+        builder->vector_backing_bytes;
+    for (const auto & input : builder->layers) {
+        if (input.destination_index >= destination_count ||
+            input.source.size() != samples_per_destination ||
+            input.target.size() != samples_per_destination ||
+            input.present.size() != samples_per_destination ||
+            !std::all_of(
+                input.present.begin(),
+                input.present.end(),
+                [](bool value) { return value; })) {
+            return false;
+        }
+        const size_t elements = input.source.front().size();
+        if (elements == 0 ||
+            !std::all_of(
+                input.source.begin(),
+                input.source.end(),
+                [elements](const std::vector<float> & sample) {
+                    return sample.size() == elements;
+                }) ||
+            !std::all_of(
+                input.target.begin(),
+                input.target.end(),
+                [elements](const std::vector<float> & sample) {
+                    return sample.size() == elements;
+                })) {
+            return false;
+        }
+
+        role_transport_layer output;
+        output.layer_id = input.layer_id;
+        output.key = input.key;
+        output.destination_index =
+            input.destination_index;
+        output.scale.resize(elements);
+        output.bias.resize(elements);
+        std::vector<double> source_mean(elements, 0.0);
+        std::vector<double> target_mean(elements, 0.0);
+        std::vector<double> variance(elements, 0.0);
+        std::vector<double> covariance(elements, 0.0);
+        for (size_t i = 0;
+             i < samples_per_destination;
+             ++i) {
+            for (size_t j = 0; j < elements; ++j) {
+                source_mean[j] +=
+                    input.source[i][j] /
+                    static_cast<double>(
+                        samples_per_destination);
+                target_mean[j] +=
+                    input.target[i][j] /
+                    static_cast<double>(
+                        samples_per_destination);
+            }
+        }
+        double mean_variance = 0.0;
+        for (size_t i = 0;
+             i < samples_per_destination;
+             ++i) {
+            for (size_t j = 0; j < elements; ++j) {
+                const double dx =
+                    input.source[i][j] - source_mean[j];
+                const double dy =
+                    input.target[i][j] - target_mean[j];
+                variance[j] += dx * dx;
+                covariance[j] += dx * dy;
+            }
+        }
+        for (const double value : variance) {
+            mean_variance +=
+                value / static_cast<double>(elements);
+        }
+        output.ridge_lambda =
+            ridge_fraction *
+            std::max(mean_variance, 1e-12);
+        for (size_t j = 0; j < elements; ++j) {
+            const double scale =
+                covariance[j] /
+                (variance[j] + output.ridge_lambda);
+            const double bias =
+                target_mean[j] - scale * source_mean[j];
+            if (!std::isfinite(scale) ||
+                !std::isfinite(bias)) {
+                return false;
+            }
+            output.scale[j] = static_cast<float>(scale);
+            output.bias[j] = static_cast<float>(bias);
+        }
+        for (size_t i = 0;
+             i < samples_per_destination;
+             ++i) {
+            for (size_t j = 0; j < elements; ++j) {
+                const double predicted =
+                    static_cast<double>(output.scale[j]) *
+                        input.source[i][j] +
+                    output.bias[j];
+                output.training_max_abs_error = std::max(
+                    output.training_max_abs_error,
+                    std::abs(
+                        predicted -
+                        static_cast<double>(
+                            input.target[i][j])));
+            }
+        }
+        role_operator->training_max_abs_error =
+            std::max(
+                role_operator->training_max_abs_error,
+                output.training_max_abs_error);
+        role_operator->logical_bytes +=
+            (output.scale.size() + output.bias.size()) *
+                sizeof(float);
+        role_operator->layers.push_back(std::move(output));
+        peak_host_work_bytes = std::max<uint64_t>(
+            peak_host_work_bytes,
+            builder->vector_backing_bytes +
+                4 * elements * sizeof(double));
+    }
+    role_operator->training_samples =
+        builder->sample_count;
+    role_operator->samples_per_destination =
+        samples_per_destination;
+    role_operator->destination_count =
+        destination_count;
+    role_operator->vector_backing_bytes =
+        sizeof(*role_operator) +
+        role_operator->layers.capacity() *
+            sizeof(role_transport_layer);
+    for (const auto & item : role_operator->layers) {
+        role_operator->vector_backing_bytes +=
+            (item.scale.capacity() +
+             item.bias.capacity()) *
+                sizeof(float);
+    }
+    const uint64_t builder_bytes =
+        builder->vector_backing_bytes;
+    *builder = {};
+    if (metrics) {
+        metrics->peak_host_work_bytes =
+            peak_host_work_bytes;
+        metrics->builder_bytes = builder_bytes;
+        metrics->operator_bytes =
+            role_operator->vector_backing_bytes;
+        metrics->tensor_visits =
+            role_operator->layers.size();
+    }
+    return role_operator->layers.size() ==
+        static_cast<size_t>(destination_count) *
+            2 * layers.size();
+}
+
+bool llama_kv_cache::seq_apply_attention_role_transport(
+        llama_seq_id source_seq_id,
+        llama_pos source_position,
+        llama_seq_id destination_seq_id,
+        llama_pos destination_position,
+        uint32_t destination_index,
+        const role_transport_operator & role_operator,
+        role_transport_metrics * metrics) {
+    if (metrics) {
+        *metrics = {};
+    }
+    if (other ||
+        n_stream != 1 ||
+        source_seq_id < 0 ||
+        destination_seq_id < 0 ||
+        static_cast<size_t>(source_seq_id) >= seq_to_stream.size() ||
+        static_cast<size_t>(destination_seq_id) >= seq_to_stream.size() ||
+        seq_to_stream[source_seq_id] !=
+            seq_to_stream[destination_seq_id] ||
+        source_position < 0 ||
+        destination_position < 0 ||
+        destination_index >= role_operator.destination_count ||
+        role_operator.layers.empty()) {
+        return false;
+    }
+    auto & cells = v_cells[seq_to_stream[source_seq_id]];
+    const auto find_unique_cell =
+            [&](llama_seq_id seq_id, llama_pos position) {
+        uint32_t found = cells.size();
+        for (uint32_t i = 0; i < cells.size(); ++i) {
+            if (cells.pos_in(i, position, position + 1) &&
+                cells.seq_has(i, seq_id)) {
+                if (found != cells.size()) {
+                    return cells.size();
+                }
+                found = i;
+            }
+        }
+        return found;
+    };
+    const uint32_t source_cell =
+        find_unique_cell(source_seq_id, source_position);
+    const uint32_t destination_cell =
+        find_unique_cell(
+            destination_seq_id, destination_position);
+    if (source_cell == cells.size() ||
+        destination_cell == cells.size() ||
+        source_cell == destination_cell) {
+        return false;
+    }
+
+    uint64_t host_read_bytes = 0;
+    uint64_t host_write_bytes = 0;
+    uint64_t peak_host_work_bytes = 0;
+    uint64_t tensor_visits = 0;
+    for (const auto & item : role_operator.layers) {
+        if (item.destination_index != destination_index) {
+            continue;
+        }
+        const auto found =
+            map_layer_ids.find(
+                static_cast<int32_t>(item.layer_id));
+        if (found == map_layer_ids.end()) {
+            return false;
+        }
+        const auto & layer = layers[found->second];
+        ggml_tensor * tensor = item.key ? layer.k : layer.v;
+        if (!tensor ||
+            !tensor->buffer ||
+            ggml_blck_size(tensor->type) != 1 ||
+            tensor->ne[1] != static_cast<int64_t>(get_size()) ||
+            tensor->ne[2] != static_cast<int64_t>(n_stream)) {
+            return false;
+        }
+        const ggml_type_traits * traits =
+            ggml_get_type_traits(tensor->type);
+        if (!traits ||
+            !traits->to_float ||
+            !traits->from_float_ref ||
+            traits->blck_size != 1) {
+            return false;
+        }
+        const size_t elements =
+            static_cast<size_t>(tensor->ne[0]);
+        const size_t row_bytes =
+            ggml_row_size(tensor->type, tensor->ne[0]);
+        if (tensor->nb[1] != row_bytes ||
+            item.scale.size() != elements ||
+            item.bias.size() != elements) {
+            return false;
+        }
+        std::vector<uint8_t> raw(row_bytes);
+        std::vector<uint8_t> output(row_bytes);
+        std::vector<float> values(elements);
+        ggml_backend_tensor_get(
+            tensor,
+            raw.data(),
+            static_cast<size_t>(source_cell) * tensor->nb[1],
+            row_bytes);
+        traits->to_float(
+            raw.data(), values.data(), elements);
+        for (size_t j = 0; j < elements; ++j) {
+            values[j] =
+                item.scale[j] * values[j] + item.bias[j];
+        }
+        traits->from_float_ref(
+            values.data(), output.data(), elements);
+        ggml_backend_tensor_set(
+            tensor,
+            output.data(),
+            static_cast<size_t>(destination_cell) *
+                tensor->nb[1],
+            row_bytes);
+        host_read_bytes += row_bytes;
+        host_write_bytes += row_bytes;
+        peak_host_work_bytes = std::max<uint64_t>(
+            peak_host_work_bytes,
+            raw.size() +
+                output.size() +
+                values.size() * sizeof(float));
+        ++tensor_visits;
+    }
+    if (metrics) {
+        metrics->host_read_bytes = host_read_bytes;
+        metrics->host_write_bytes = host_write_bytes;
+        metrics->peak_host_work_bytes =
+            peak_host_work_bytes;
+        metrics->operator_bytes =
+            role_operator.vector_backing_bytes;
+        metrics->tensor_visits = tensor_visits;
+        metrics->position_visits = 2;
+    }
+    return tensor_visits ==
+        role_operator.layers.size() /
+            role_operator.destination_count;
+}
+
 bool llama_kv_cache::seq_apply_complex_phase_quarter_turn(
         llama_seq_id seq_id,
         const std::vector<llama_pos> & positions,

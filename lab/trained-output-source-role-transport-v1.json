@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "id": "trained-output-source-role-transport-v1",
+  "experiment_id": "neo-exp-0143",
+  "description": "One frozen output-role to source-role transport. Two public construction contexts across all four G phases supply eight correct actual-output/source-target row pairs per public destination. A shared diagonal affine K/V transport is fit independently per attention layer and destination with fixed ridge 0.01; complete training rows are erased. The unchanged operator is then tested on disjoint IOUV. Runtime receives only the actual generated output row and public causal destination, never the expected answer or a target row. No rank, ridge, layer, key/value, prompt, context, fixture, or evidence-harness sweep is allowed.",
+  "open_f_prefix_nonlinear_composition": false,
+  "expected_context_size": 4096,
+  "expected_context_per_sequence": 512,
+  "expected_source_tokens": 130,
+  "expected_prefix_tokens": 48,
+  "expected_f_tokens": 31,
+  "expected_g_tokens": 27,
+  "expected_closure_tokens": 24,
+  "queries_per_variant": 4,
+  "predecessor_evidence": {
+    "path": "lab/output-promoted-attention-value-carrier-v1-result.json",
+    "classification": "OUTPUT_TOKEN_VALUE_ROWS_DO_NOT_PRESERVE_SOURCE_LABEL_ROLE"
+  },
+  "prefix": "<|im_start|>system\nMaintain an internal relation ledger. Read the evidence now. A query will be chosen only after the evidence source is closed. Use only explicit links; do not infer missing links.<|im_end|>\n<|im_start|>user\nEvidence begins.\n",
+  "module_f": "F: Item I maps to vault K. Item O maps to vault L. Item U maps to vault M. Item V maps to vault J.\n",
+  "closure": "The evidence source is now closed. Do not answer a query yet.<|im_end|>\n<|im_start|>assistant\nAcknowledged.<|im_end|>\n",
+  "role_transport_ridge_fraction": 0.01,
+  "role_transport_training_contexts": [
+    {
+      "id": "train-EFGH",
+      "module_f": "F: Item E maps to vault J. Item F maps to vault K. Item G maps to vault L. Item H maps to vault M.\n",
+      "output_promotion_label_indices": [
+        3,
+        0,
+        1,
+        2
+      ],
+      "queries": [
+        {
+          "id": "train-EFGH-E",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item E through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "train-EFGH-F",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item F through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "train-EFGH-G",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item G through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "train-EFGH-H",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item H through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ]
+    },
+    {
+      "id": "train-WXYZ",
+      "module_f": "F: Item W maps to vault J. Item X maps to vault K. Item Y maps to vault L. Item Z maps to vault M.\n",
+      "output_promotion_label_indices": [
+        3,
+        0,
+        1,
+        2
+      ],
+      "queries": [
+        {
+          "id": "train-WXYZ-W",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item W through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "train-WXYZ-X",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item X through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "train-WXYZ-Y",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item Y through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "train-WXYZ-Z",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item Z through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ]
+    }
+  ],
+  "g_variants": [
+    {
+      "id": "G-rotation-0",
+      "module_g": "G: Vault J has code A. Vault K has code B. Vault L has code C. Vault M has code D.\n",
+      "queries": [
+        {
+          "id": "IOUV-G0-I",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item I through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G0-O",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item O through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G0-U",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G0-V",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-1",
+      "module_g": "G: Vault J has code B. Vault K has code C. Vault L has code D. Vault M has code A.\n",
+      "queries": [
+        {
+          "id": "IOUV-G1-I",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item I through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G1-O",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item O through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G1-U",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G1-V",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-2",
+      "module_g": "G: Vault J has code C. Vault K has code D. Vault L has code A. Vault M has code B.\n",
+      "queries": [
+        {
+          "id": "IOUV-G2-I",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item I through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G2-O",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item O through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G2-U",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G2-V",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    },
+    {
+      "id": "G-rotation-3",
+      "module_g": "G: Vault J has code D. Vault K has code A. Vault L has code B. Vault M has code C.\n",
+      "queries": [
+        {
+          "id": "IOUV-G3-I",
+          "expected": "A",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item I through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G3-O",
+          "expected": "B",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item O through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G3-U",
+          "expected": "C",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item U through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        },
+        {
+          "id": "IOUV-G3-V",
+          "expected": "D",
+          "suffix": "<|im_start|>user\nWhich code belongs to Item V through the explicit two-link ledger? Reply with only A, B, C, or D.<|im_end|>\n<|im_start|>assistant\n"
+        }
+      ],
+      "joint_correct_minimum": 4,
+      "g_only_correct_maximum": 1
+    }
+  ],
+  "acceptance_law": {
+    "primary_correct": 16,
+    "primary_boundary_matches": 16,
+    "return_boundary_matches": 4
+  },
+  "claim_ceiling": "Passing establishes only one bounded trained role transport: two public construction contexts across all four phases fit fixed-capacity diagonal affine K/V maps after thirty-two correct actual-output pairs; complete training rows are erased; the unchanged maps transform actual disjoint output state into source-role state before later ordinary inference; no runtime expected answer, target row, target table, or noncanonical target-label forward is used; and four output-fed rounds return the useful G0 boundary on stable backing with complete resource accounting and closure. Training, host transport traffic, coefficients, every query/output forward, and references are charged. The compact four-link/Z4 recurrence remains smaller and exact. Passing does not establish cross-family breadth, numerical full-logit recurrence, fresh-work advantage including training, a phase-native resource, Small Wall crossing, or unbounded inference. Failure rejects diagonal affine output-role transport and moves to a generator learned inside model attention/recurrent/MoE computation; it does not authorize rank, ridge, layer, key/value, prompt, context, fixture, or evidence-harness variants.",
+  "active_f_sequence_branching": false,
+  "expected_n_seq_max": 8,
+  "g_forward_state_partition": false,
+  "closure_scaffold_advance": false,
+  "require_unified_kv": true,
+  "expected_attention_stream_count": 1,
+  "structural_module_g": "G: Vault J has code P. Vault K has code Q. Vault L has code R. Vault M has code S.\n",
+  "label_token_offsets": [
+    6,
+    12,
+    18,
+    24
+  ],
+  "output_promotion_label_indices": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "sparse_g_label_refresh": true,
+  "label_orbit_attention_action": false,
+  "value_orbit_attention_action": false,
+  "key_value_orbit_attention_action": false,
+  "fourier_value_orbit_action": false,
+  "subspace_value_orbit_action": false,
+  "complex_phase_quarter_turn_action": false,
+  "model_weight_value_orbit_action": false,
+  "trained_semantic_carrier_action": false,
+  "output_promoted_value_carrier_action": false,
+  "output_role_transport_action": true,
+  "orbit_attention_layers": [
+    3,
+    7,
+    11,
+    15,
+    19,
+    23,
+    27,
+    31,
+    35,
+    39
+  ]
+}

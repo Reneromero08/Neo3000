@@ -293,13 +293,23 @@ constructively unbounded local Agents-A1 inference.
   Output-token V rows are therefore not source-label state. This closes raw
   output-row promotion; do not try key, layer, gain, prompt, fixture, or
   evidence-harness variants.
-- [ ] Replace raw row promotion with one trained model-native role transport
-  that converts actual output-produced state into bounded pre-query carrier
-  state. The intervention must learn a shared attention, recurrent, MoE, or
-  weight-factor update law across public construction contexts, test it
-  unchanged on a disjoint context, retain no complete target-row table, use no
-  expected answer at runtime, and eliminate separate noncanonical target-token
-  forwards. This is a generator change, not carrier-evaluation v2.
+- [x] Replace raw row promotion with one trained role transport. `neo-exp-0143`
+  learns fixed diagonal affine K/V maps from 32 correct actual-output/source-
+  target pairs across two construction contexts and all four phases, erases
+  complete training rows, then applies the unchanged `327,680`-byte operator
+  to disjoint IOUV. Runtime uses only actual outputs and public destinations,
+  with zero noncanonical target forwards. Exact state is `16/16`; transport is
+  `6/16`, versus `8/16` for raw V promotion, and training row error is already
+  `2.1846`. The coordinate-wise map underfits the role conversion and makes
+  recurrence worse. Do not tune ridge, rank, keys, layers, contexts, prompts,
+  fixtures, or evidence.
+- [ ] Move role conversion into one shared nonlinear model computation rather
+  than another post-cache coordinate map. The next intervention must train or
+  distill a fixed-capacity generator consumed inside attention, recurrent, MoE,
+  or weight-factor computation; share parameters across layer/position
+  examples; retain no target-row basis/table; use actual outputs at runtime;
+  and test unchanged on disjoint recurrence. It must not become transport-v2
+  or carrier-evaluation-v2.
 - [ ] Close same-backing restoration/advance and unrelated useful reuse for the
   first dynamic state that passes carrier necessity, then test a bounded
   recurrence before any unbounded claim.

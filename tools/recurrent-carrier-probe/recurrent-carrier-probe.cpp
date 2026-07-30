@@ -5043,6 +5043,11 @@ static json run_sparse_g_label_refresh(
         spec.value("model_weight_value_orbit_action", false);
     const bool output_promoted_value_carrier_mode =
         spec.value("output_promoted_value_carrier_action", false);
+    const bool output_role_transport_mode =
+        spec.value("output_role_transport_action", false);
+    const bool output_driven_carrier_mode =
+        output_promoted_value_carrier_mode ||
+        output_role_transport_mode;
     const bool trained_semantic_carrier_mode =
         spec.value("trained_semantic_carrier_action", false);
     const bool semantic_carrier_layer_delta_mode =
@@ -5079,7 +5084,7 @@ static json run_sparse_g_label_refresh(
         fourier_value_orbit_mode ||
         subspace_value_orbit_mode ||
         model_weight_value_orbit_mode ||
-        output_promoted_value_carrier_mode ||
+        output_driven_carrier_mode ||
         trained_semantic_carrier_mode;
     if (static_cast<int>(position_orbit_mode) +
             static_cast<int>(value_orbit_mode) +
@@ -5089,6 +5094,7 @@ static json run_sparse_g_label_refresh(
             static_cast<int>(subspace_value_orbit_mode) +
             static_cast<int>(model_weight_value_orbit_mode) +
             static_cast<int>(output_promoted_value_carrier_mode) +
+            static_cast<int>(output_role_transport_mode) +
             static_cast<int>(trained_semantic_carrier_mode) > 1) {
         throw std::runtime_error(
             "label orbit action modes are mutually exclusive");
@@ -5198,7 +5204,7 @@ static json run_sparse_g_label_refresh(
         variant_g_tokens.push_back(std::move(tokens));
     }
     if (model_weight_value_orbit_mode ||
-        output_promoted_value_carrier_mode ||
+        output_driven_carrier_mode ||
         trained_semantic_carrier_mode) {
         std::vector<llama_token> canonical_labels;
         canonical_labels.reserve(label_offsets.size());
@@ -5232,7 +5238,7 @@ static json run_sparse_g_label_refresh(
         }
     }
     std::vector<size_t> output_promotion_label_indices;
-    if (output_promoted_value_carrier_mode) {
+    if (output_driven_carrier_mode) {
         output_promotion_label_indices =
             spec.at("output_promotion_label_indices")
                 .get<std::vector<size_t>>();
@@ -5321,7 +5327,7 @@ static json run_sparse_g_label_refresh(
          fourier_value_orbit_mode ||
          subspace_value_orbit_mode ||
          model_weight_value_orbit_mode ||
-         output_promoted_value_carrier_mode)
+         output_driven_carrier_mode)
             ? spec.contains("orbit_attention_layers")
                 ? parse_layer_selection(
                     spec, "orbit_attention_layers", attention_layer_ids)
@@ -5700,6 +5706,299 @@ static json run_sparse_g_label_refresh(
         llama_synchronize(ctx);
     }
 
+    llama_kv_cache::role_transport_operator
+        role_transport_operator;
+    json role_transport_training_records = json::array();
+    size_t role_transport_training_source_tokens = 0;
+    size_t role_transport_training_query_tokens = 0;
+    size_t role_transport_training_output_tokens = 0;
+    size_t role_transport_training_correct = 0;
+    uint64_t role_transport_training_host_read_bytes = 0;
+    uint64_t role_transport_training_peak_host_work_bytes = 0;
+    uint64_t role_transport_builder_peak_bytes = 0;
+    uint64_t role_transport_finalize_peak_host_work_bytes = 0;
+    if (output_role_transport_mode) {
+        const auto & training_contexts =
+            spec.at("role_transport_training_contexts");
+        const double ridge_fraction =
+            spec.at("role_transport_ridge_fraction")
+                .get<double>();
+        if (!training_contexts.is_array() ||
+            training_contexts.size() < 2) {
+            throw std::runtime_error(
+                "role transport requires multiple construction contexts");
+        }
+        const uint32_t destination_count =
+            static_cast<uint32_t>(label_offsets.size());
+        const uint32_t samples_per_destination =
+            static_cast<uint32_t>(
+                training_contexts.size() *
+                variants.size());
+        std::vector<uint32_t> samples_by_destination(
+            destination_count, 0);
+        llama_kv_cache::role_transport_builder builder;
+        for (const auto & training_context : training_contexts) {
+            const std::string training_id =
+                training_context.at("id").get<std::string>();
+            const auto training_f_tokens = tokenize_piece(
+                vocab,
+                training_context.at("module_f")
+                    .get<std::string>(),
+                false,
+                true);
+            const auto training_mapping =
+                training_context.at(
+                    "output_promotion_label_indices")
+                    .get<std::vector<size_t>>();
+            const auto & training_queries =
+                training_context.at("queries");
+            if (training_f_tokens.size() != f_tokens.size() ||
+                training_queries.size() != label_offsets.size() ||
+                training_mapping.size() != label_offsets.size() ||
+                std::set<size_t>(
+                    training_mapping.begin(),
+                    training_mapping.end()).size() !=
+                    label_offsets.size() ||
+                *std::max_element(
+                    training_mapping.begin(),
+                    training_mapping.end()) >=
+                    label_offsets.size()) {
+                throw std::runtime_error(
+                    training_id +
+                    ": role transport construction geometry mismatch");
+            }
+            for (size_t phase = 0;
+                 phase < variants.size();
+                 ++phase) {
+                llama_memory_clear(memory, true);
+                llama_synchronize(ctx);
+                const size_t next_phase =
+                    (phase + 1) % variants.size();
+                std::vector<llama_token> current_source;
+                std::vector<llama_token> target_source;
+                for (auto * source :
+                     {&current_source, &target_source}) {
+                    source->reserve(expected_source_tokens);
+                    source->insert(
+                        source->end(),
+                        prefix_tokens.begin(),
+                        prefix_tokens.end());
+                    source->insert(
+                        source->end(),
+                        training_f_tokens.begin(),
+                        training_f_tokens.end());
+                }
+                current_source.insert(
+                    current_source.end(),
+                    variant_g_tokens.at(phase).begin(),
+                    variant_g_tokens.at(phase).end());
+                target_source.insert(
+                    target_source.end(),
+                    variant_g_tokens.at(next_phase).begin(),
+                    variant_g_tokens.at(next_phase).end());
+                current_source.insert(
+                    current_source.end(),
+                    closure_tokens.begin(),
+                    closure_tokens.end());
+                target_source.insert(
+                    target_source.end(),
+                    closure_tokens.begin(),
+                    closure_tokens.end());
+                if (current_source.size() != expected_source_tokens ||
+                    target_source.size() != expected_source_tokens) {
+                    throw std::runtime_error(
+                        training_id +
+                        ": role transport source size mismatch");
+                }
+                timed_decode(current_source, 0, f_seq);
+                timed_decode(
+                    target_source, 0, stage_seqs.at(0));
+                role_transport_training_source_tokens +=
+                    current_source.size() +
+                    target_source.size();
+                require_component_positions(
+                    f_seq,
+                    source_boundary_pos,
+                    source_boundary_pos,
+                    training_id +
+                        ":role-current-" +
+                        std::to_string(phase));
+                require_component_positions(
+                    stage_seqs.at(0),
+                    source_boundary_pos,
+                    source_boundary_pos,
+                    training_id +
+                        ":role-target-" +
+                        std::to_string(next_phase));
+
+                size_t query_index = 0;
+                for (const auto & query : training_queries) {
+                    copy_full_sequence(
+                        f_seq,
+                        work_seq,
+                        source_boundary_pos,
+                        training_id +
+                            ":role-query-copy-" +
+                            std::to_string(phase) + "-" +
+                            std::to_string(query_index));
+                    const boundary_result boundary = decode_query(
+                        ctx,
+                        vocab,
+                        candidates,
+                        "role-transport-training",
+                        training_id + "-phase-" +
+                            std::to_string(phase),
+                        query,
+                        expected_source_tokens,
+                        active_recurrent_backing_initial,
+                        active_hybrid_backend_allocation_bytes(ctx),
+                        work_seq);
+                    const size_t query_tokens =
+                        boundary.record.at("query_tokens")
+                            .get<size_t>();
+                    role_transport_training_query_tokens +=
+                        query_tokens;
+                    const size_t candidate_index =
+                        static_cast<size_t>(
+                            boundary.argmax.at(0) - 'A');
+                    if (candidate_index >= candidates.size()) {
+                        throw std::runtime_error(
+                            training_id +
+                            ": role training output is not a candidate");
+                    }
+                    const size_t destination_index =
+                        training_mapping.at(query_index);
+                    const size_t current_vault_index =
+                        (destination_index + 1) %
+                            label_offsets.size();
+                    const size_t expected_candidate_index =
+                        (current_vault_index + phase) %
+                            candidates.size();
+                    const bool model_correct =
+                        candidate_index ==
+                        expected_candidate_index;
+                    role_transport_training_correct +=
+                        model_correct;
+                    if (!model_correct) {
+                        throw std::runtime_error(
+                            training_id +
+                            ": full-state construction output is wrong");
+                    }
+                    const llama_pos output_position =
+                        static_cast<llama_pos>(
+                            expected_source_tokens +
+                            query_tokens);
+                    timed_decode(
+                        std::vector<llama_token>{
+                            candidates.at(candidate_index)},
+                        output_position,
+                        work_seq);
+                    ++role_transport_training_output_tokens;
+                    const llama_pos target_position =
+                        static_cast<llama_pos>(
+                            f_boundary_tokens +
+                            label_offsets.at(
+                                destination_index));
+                    llama_kv_cache::role_transport_metrics
+                        collect_metrics = {};
+                    const uint32_t sample_index =
+                        samples_by_destination.at(
+                            destination_index);
+                    if (!attention->seq_collect_attention_role_pair(
+                            work_seq,
+                            output_position,
+                            stage_seqs.at(0),
+                            target_position,
+                            orbit_attention_layers,
+                            true,
+                            static_cast<uint32_t>(
+                                destination_index),
+                            sample_index,
+                            samples_per_destination,
+                            &builder,
+                            &collect_metrics)) {
+                        throw std::runtime_error(
+                            training_id +
+                            ": role pair collection failed");
+                    }
+                    ++samples_by_destination.at(
+                        destination_index);
+                    role_transport_training_host_read_bytes +=
+                        collect_metrics.host_read_bytes;
+                    role_transport_training_peak_host_work_bytes =
+                        std::max(
+                            role_transport_training_peak_host_work_bytes,
+                            collect_metrics.peak_host_work_bytes);
+                    role_transport_builder_peak_bytes =
+                        std::max(
+                            role_transport_builder_peak_bytes,
+                            collect_metrics.builder_bytes);
+                    role_transport_training_records.push_back({
+                        {"training_context", training_id},
+                        {"phase", phase},
+                        {"query_id", query.at("id")},
+                        {"actual_output", boundary.argmax},
+                        {"destination_index",
+                            destination_index},
+                        {"sample_index", sample_index},
+                        {"model_correct", model_correct},
+                    });
+                    close_sequence(
+                        work_seq,
+                        training_id +
+                            ":role-query-close-" +
+                            std::to_string(phase) + "-" +
+                            std::to_string(query_index));
+                    ++query_index;
+                }
+                close_sequence(
+                    f_seq,
+                    training_id +
+                        ":role-current-close-" +
+                        std::to_string(phase));
+                close_sequence(
+                    stage_seqs.at(0),
+                    training_id +
+                        ":role-target-close-" +
+                        std::to_string(next_phase));
+            }
+        }
+        if (!std::all_of(
+                samples_by_destination.begin(),
+                samples_by_destination.end(),
+                [samples_per_destination](uint32_t value) {
+                    return value == samples_per_destination;
+                })) {
+            throw std::runtime_error(
+                "role transport construction is incomplete");
+        }
+        llama_kv_cache::role_transport_metrics
+            finalize_metrics = {};
+        if (!attention->finalize_attention_role_transport(
+                &builder,
+                destination_count,
+                samples_per_destination,
+                ridge_fraction,
+                &role_transport_operator,
+                &finalize_metrics)) {
+            throw std::runtime_error(
+                "role transport finalization failed");
+        }
+        role_transport_finalize_peak_host_work_bytes =
+            finalize_metrics.peak_host_work_bytes;
+        if (role_transport_operator.training_samples !=
+                static_cast<uint64_t>(destination_count) *
+                    samples_per_destination ||
+            role_transport_operator.layers.size() !=
+                destination_count *
+                    orbit_attention_layers.size() * 2) {
+            throw std::runtime_error(
+                "role transport operator invariant failed");
+        }
+        llama_memory_clear(memory, true);
+        llama_synchronize(ctx);
+    }
+
     llama_memory_clear(memory, true);
     const double f_prefix_wall_ms =
         timed_decode(prefix_tokens, 0, f_seq);
@@ -5851,14 +6150,18 @@ static json run_sparse_g_label_refresh(
     json variant_timings = json::array();
     json output_promotion_records = json::array();
     const std::string candidate_route =
-        output_promoted_value_carrier_mode
-            ? "output_promoted_value_carrier"
+        output_driven_carrier_mode
+            ? output_role_transport_mode
+                ? "output_role_transport_carrier"
+                : "output_promoted_value_carrier"
             : orbit_mode
                 ? "label_orbit_candidate"
                 : "sparse_label_refresh_candidate";
     const std::string return_route =
-        output_promoted_value_carrier_mode
-            ? "output_promoted_value_carrier_return_G0"
+        output_driven_carrier_mode
+            ? output_role_transport_mode
+                ? "output_role_transport_carrier_return_G0"
+                : "output_promoted_value_carrier_return_G0"
             : "label_orbit_return_G0";
 
     const auto project_from_source =
@@ -6675,7 +6978,7 @@ static json run_sparse_g_label_refresh(
         double variant_label_wall_ms = 0.0;
         if (orbit_mode) {
             if (variant_index > 0 &&
-                !output_promoted_value_carrier_mode) {
+                !output_driven_carrier_mode) {
                 advance_label_orbit(id);
             }
         } else {
@@ -6689,7 +6992,7 @@ static json run_sparse_g_label_refresh(
                 refresh_candidate_labels(target_g_tokens, id);
         }
 
-        if (output_promoted_value_carrier_mode) {
+        if (output_driven_carrier_mode) {
             std::vector<llama_pos> output_positions;
             output_positions.reserve(stage_seqs.size());
             size_t query_index = 0;
@@ -6767,28 +7070,65 @@ static json run_sparse_g_label_refresh(
                     static_cast<llama_pos>(
                         f_boundary_tokens +
                         label_offsets.at(label_index));
-                llama_kv_cache::value_orbit_metrics metrics = {};
-                if (!attention->seq_copy_attention_value_row(
-                        stage_seqs.at(i),
-                        output_positions.at(i),
-                        candidate_seq,
-                        label_position,
-                        orbit_attention_layers,
-                        &metrics)) {
-                    throw std::runtime_error(
-                        id + ": output value promotion failed for query " +
-                        std::to_string(i));
+                if (output_role_transport_mode) {
+                    llama_kv_cache::role_transport_metrics
+                        metrics = {};
+                    if (!attention
+                            ->seq_apply_attention_role_transport(
+                                stage_seqs.at(i),
+                                output_positions.at(i),
+                                candidate_seq,
+                                label_position,
+                                static_cast<uint32_t>(
+                                    label_index),
+                                role_transport_operator,
+                                &metrics)) {
+                        throw std::runtime_error(
+                            id +
+                            ": output role transport failed for query " +
+                            std::to_string(i));
+                    }
+                    llama_synchronize(ctx);
+                    orbit_host_read_bytes +=
+                        metrics.host_read_bytes;
+                    orbit_host_write_bytes +=
+                        metrics.host_write_bytes;
+                    orbit_peak_host_work_bytes = std::max(
+                        orbit_peak_host_work_bytes,
+                        metrics.peak_host_work_bytes);
+                    orbit_tensor_visits +=
+                        metrics.tensor_visits;
+                    orbit_position_visits +=
+                        metrics.position_visits;
+                } else {
+                    llama_kv_cache::value_orbit_metrics
+                        metrics = {};
+                    if (!attention->seq_copy_attention_value_row(
+                            stage_seqs.at(i),
+                            output_positions.at(i),
+                            candidate_seq,
+                            label_position,
+                            orbit_attention_layers,
+                            &metrics)) {
+                        throw std::runtime_error(
+                            id +
+                            ": output value promotion failed for query " +
+                            std::to_string(i));
+                    }
+                    llama_synchronize(ctx);
+                    orbit_backend_copy_bytes +=
+                        metrics.backend_copy_bytes;
+                    orbit_host_read_bytes +=
+                        metrics.host_read_bytes;
+                    orbit_host_write_bytes +=
+                        metrics.host_write_bytes;
+                    orbit_peak_host_work_bytes = std::max(
+                        orbit_peak_host_work_bytes,
+                        metrics.peak_host_work_bytes);
+                    orbit_tensor_visits += metrics.tensor_count;
+                    orbit_position_visits +=
+                        metrics.position_count;
                 }
-                llama_synchronize(ctx);
-                orbit_backend_copy_bytes +=
-                    metrics.backend_copy_bytes;
-                orbit_host_read_bytes += metrics.host_read_bytes;
-                orbit_host_write_bytes += metrics.host_write_bytes;
-                orbit_peak_host_work_bytes = std::max(
-                    orbit_peak_host_work_bytes,
-                    metrics.peak_host_work_bytes);
-                orbit_tensor_visits += metrics.tensor_count;
-                orbit_position_visits += metrics.position_count;
                 ++output_promotion_row_count;
             }
             ++orbit_action_count;
@@ -6884,7 +7224,7 @@ static json run_sparse_g_label_refresh(
     size_t return_full_logit_hash_matches = 0;
     double return_maximum_candidate_logit_absolute_difference = 0.0;
     if (orbit_mode) {
-        if (!output_promoted_value_carrier_mode) {
+        if (!output_driven_carrier_mode) {
             advance_label_orbit("orbit-return-G0");
         }
         for (const auto & query : variants.at(0).at("queries")) {
@@ -7055,6 +7395,15 @@ static json run_sparse_g_label_refresh(
                      "carrier_disabled_boundary_matches_maximum")
                      .get<size_t>() &&
              semantic_carrier_restored)) &&
+        (!output_role_transport_mode ||
+            (role_transport_training_correct ==
+                 spec.at("role_transport_training_contexts").size() *
+                 variants.size() *
+                 spec.at("queries_per_variant").get<size_t>() &&
+             role_transport_operator.training_samples ==
+                 spec.at("role_transport_training_contexts").size() *
+                 variants.size() *
+                 spec.at("queries_per_variant").get<size_t>())) &&
         f_exact &&
         scaffold_exact;
 
@@ -7144,7 +7493,8 @@ static json run_sparse_g_label_refresh(
     const size_t source_decode_tokens =
         candidate_source_tokens +
         reference_source_tokens +
-        semantic_training_source_tokens;
+        semantic_training_source_tokens +
+        role_transport_training_source_tokens;
     return {
         {"schema_version", 1},
         {"mechanism", subspace_value_orbit_mode
@@ -7163,6 +7513,8 @@ static json run_sparse_g_label_refresh(
                 : "TRAINED_FIXED_CAPACITY_PRELOGIT_SEMANTIC_CARRIER"
             : model_weight_value_orbit_mode
             ? "MODEL_WEIGHT_DERIVED_SEMANTIC_VALUE_CYCLE"
+            : output_role_transport_mode
+            ? "TRAINED_OUTPUT_TO_SOURCE_ATTENTION_ROLE_TRANSPORT"
             : output_promoted_value_carrier_mode
             ? "OUTPUT_PROMOTED_IN_PLACE_ATTENTION_VALUE_CARRIER"
             : complex_phase_orbit_mode
@@ -7214,8 +7566,20 @@ static json run_sparse_g_label_refresh(
                 model_weight_value_orbit_mode},
             {"output_promoted_value_carrier_action",
                 output_promoted_value_carrier_mode},
+            {"output_role_transport_action",
+                output_role_transport_mode},
             {"output_promotion_label_indices",
                 output_promotion_label_indices},
+            {"role_transport_training_contexts",
+                output_role_transport_mode
+                    ? spec.at(
+                        "role_transport_training_contexts").size()
+                    : 0},
+            {"role_transport_ridge_fraction",
+                output_role_transport_mode
+                    ? spec.at(
+                        "role_transport_ridge_fraction")
+                    : json(0.0)},
             {"trained_semantic_carrier_action",
                 trained_semantic_carrier_mode},
             {"semantic_carrier_layer_delta_training",
@@ -7286,6 +7650,12 @@ static json run_sparse_g_label_refresh(
                 semantic_carrier_restored},
             {"semantic_carrier_closed",
                 semantic_carrier_closed},
+            {"role_transport_training_samples",
+                role_transport_operator.training_samples},
+            {"role_transport_training_correct",
+                role_transport_training_correct},
+            {"role_transport_training_max_abs_error",
+                role_transport_operator.training_max_abs_error},
             {"accepted", accepted},
         }},
         {"carrier", {
@@ -7373,7 +7743,9 @@ static json run_sparse_g_label_refresh(
                 source_decode_tokens +
                 query_decode_tokens +
                 semantic_training_query_tokens +
-                useful_output_decode_tokens},
+                useful_output_decode_tokens +
+                role_transport_training_query_tokens +
+                role_transport_training_output_tokens},
             {"sequence_copy_count", sequence_copy_count},
             {"sequence_close_count", sequence_close_count},
             {"label_refresh_count", label_refresh_count},
@@ -7390,6 +7762,30 @@ static json run_sparse_g_label_refresh(
                 useful_output_decode_tokens},
             {"useful_output_decode_wall_ms_total",
                 useful_output_decode_wall_ms_total},
+            {"role_transport_training_source_tokens",
+                role_transport_training_source_tokens},
+            {"role_transport_training_query_tokens",
+                role_transport_training_query_tokens},
+            {"role_transport_training_output_tokens",
+                role_transport_training_output_tokens},
+            {"role_transport_training_correct",
+                role_transport_training_correct},
+            {"role_transport_training_host_read_bytes",
+                role_transport_training_host_read_bytes},
+            {"role_transport_training_peak_host_work_bytes",
+                role_transport_training_peak_host_work_bytes},
+            {"role_transport_builder_peak_bytes",
+                role_transport_builder_peak_bytes},
+            {"role_transport_finalize_peak_host_work_bytes",
+                role_transport_finalize_peak_host_work_bytes},
+            {"role_transport_logical_bytes",
+                role_transport_operator.logical_bytes},
+            {"role_transport_vector_backing_bytes",
+                role_transport_operator.vector_backing_bytes},
+            {"role_transport_layer_operators",
+                role_transport_operator.layers.size()},
+            {"role_transport_training_max_abs_error",
+                role_transport_operator.training_max_abs_error},
             {"orbit_backend_copy_bytes",
                 orbit_backend_copy_bytes},
             {"orbit_host_read_bytes", orbit_host_read_bytes},
@@ -7506,6 +7902,8 @@ static json run_sparse_g_label_refresh(
                         static_cast<double>(expected_source_tokens)},
         }},
         {"training_records", semantic_training_records},
+        {"role_transport_training_records",
+            role_transport_training_records},
         {"output_promotion_records",
             output_promotion_records},
         {"records", records},

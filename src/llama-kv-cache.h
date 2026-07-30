@@ -202,6 +202,90 @@ public:
             const std::set<uint32_t> & layer_ids,
             value_orbit_metrics * metrics);
 
+    struct role_transport_builder_layer {
+        uint32_t layer_id = 0;
+        bool key = false;
+        uint32_t destination_index = 0;
+        std::vector<std::vector<float>> source;
+        std::vector<std::vector<float>> target;
+        std::vector<bool> present;
+    };
+
+    struct role_transport_builder {
+        std::vector<role_transport_builder_layer> layers;
+        uint64_t sample_count = 0;
+        uint64_t vector_backing_bytes = 0;
+    };
+
+    struct role_transport_layer {
+        uint32_t layer_id = 0;
+        bool key = false;
+        uint32_t destination_index = 0;
+        std::vector<float> scale;
+        std::vector<float> bias;
+        double ridge_lambda = 0.0;
+        double training_max_abs_error = 0.0;
+    };
+
+    struct role_transport_operator {
+        std::vector<role_transport_layer> layers;
+        uint64_t training_samples = 0;
+        uint64_t samples_per_destination = 0;
+        uint64_t destination_count = 0;
+        uint64_t logical_bytes = 0;
+        uint64_t vector_backing_bytes = 0;
+        double training_max_abs_error = 0.0;
+    };
+
+    struct role_transport_metrics {
+        uint64_t host_read_bytes = 0;
+        uint64_t host_write_bytes = 0;
+        uint64_t peak_host_work_bytes = 0;
+        uint64_t builder_bytes = 0;
+        uint64_t operator_bytes = 0;
+        uint64_t tensor_visits = 0;
+        uint64_t position_visits = 0;
+    };
+
+    // Collects one actual output-role row and its public construction-time
+    // source-role target. The resulting builder is bounded training scratch;
+    // it is erased after a fixed-capacity transport is finalized.
+    bool seq_collect_attention_role_pair(
+            llama_seq_id source_seq_id,
+            llama_pos source_position,
+            llama_seq_id target_seq_id,
+            llama_pos target_position,
+            const std::set<uint32_t> & layer_ids,
+            bool include_keys,
+            uint32_t destination_index,
+            uint32_t sample_index,
+            uint32_t sample_count,
+            role_transport_builder * builder,
+            role_transport_metrics * metrics);
+
+    // Fits one elementwise affine output-role -> source-role transport for
+    // each selected layer, K/V kind, and public destination. Complete sampled
+    // rows are not retained in the operator.
+    bool finalize_attention_role_transport(
+            role_transport_builder * builder,
+            uint32_t destination_count,
+            uint32_t samples_per_destination,
+            double ridge_fraction,
+            role_transport_operator * role_operator,
+            role_transport_metrics * metrics);
+
+    // Applies the frozen transport to one actual output row and writes the
+    // resulting source-role row into the declared destination. Expected
+    // answers and target rows are not runtime inputs.
+    bool seq_apply_attention_role_transport(
+            llama_seq_id source_seq_id,
+            llama_pos source_position,
+            llama_seq_id destination_seq_id,
+            llama_pos destination_position,
+            uint32_t destination_index,
+            const role_transport_operator & role_operator,
+            role_transport_metrics * metrics);
+
     // Applies one exact public Z4 quarter-turn to adjacent real channel pairs
     // in every selected active attention row:
     //

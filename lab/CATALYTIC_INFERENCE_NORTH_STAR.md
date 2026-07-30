@@ -82,6 +82,21 @@ unchanged on a disjoint context. It must retain no complete target-row table,
 must use the actual output rather than the expected answer, and must not become
 a key/layer/gain/fixture/evidence-harness series.
 
+That role transport has now been tested and rejected once. `neo-exp-0143`
+learns a fixed diagonal affine K/V converter from 32 correct actual-output
+pairs spanning two construction contexts and all four phases, erases the
+sampled rows, and freezes the operator before disjoint IOUV. It is a genuine
+generator change, but its coordinate-wise geometry underfits even the
+construction rows and transfers only `6/16`, worse than raw value promotion's
+`8/16`.
+
+This closes post-cache affine role repair, including ridge, rank, key/value,
+layer, context, prompt, fixture, and evaluator variations. The next mechanism
+must learn one shared nonlinear role conversion inside attention, recurrent,
+MoE, or weight-factor computation. Parameters must be shared across layer and
+position examples, target rows must not survive as a basis or table, and the
+runtime selector remains the actual model output plus public causal topology.
+
 ### Executed bridge update — model-native residual carrier
 
 The first Linux contact after this synthesis moved the carrier before logits.

@@ -303,6 +303,28 @@ The active recurrence and acceptance boundary are
   probes. All sequences and roots close, recurrent digests match, and active
   backings remain stable. These are bounded in-place recurrence mechanics, not
   useful catalytic recurrence or a fresh-work advantage.
+- `neo-exp-0143` tests one learned role converter rather than a raw-copy
+  variant. Two public construction contexts and four phases produce 32 correct
+  actual-output/source-target pairs. For every attention layer, K/V kind, and
+  public destination, one fixed-ridge diagonal affine law is learned; complete
+  sampled rows are erased. The resulting operator has 80 shared layer/kind/
+  destination components, `327,680` logical bytes, and `337,992` bytes of
+  vector backing. Runtime sees only the actual output row and destination.
+- The learned transport rejects more strongly than raw promotion. Its
+  construction-row maximum absolute error is `2.1846`, and the disjoint
+  recurrence is only `6/16` with zero full-logit matches and maximum candidate
+  error `6.1824`; four rounds return `2/4` G0 boundaries and zero hashes. The
+  transport reads and writes `327,680` host-mediated bytes each at runtime,
+  after `1,310,720` construction read bytes and `2,666,232` peak builder bytes.
+  Training costs 2,080 source, 1,056 query, and 32 output tokens; the complete
+  matched run costs 4,710 input tokens.
+- Two precontact launches are preserved as incidents under the same 0143
+  identity: one stopped after a tokenization-identity qualifier compared
+  public labels incorrectly; one stopped because untouched full state failed
+  an ABCD construction query. Neither finalized or applied a transport. The
+  exact qualifier was repaired and the invalid construction context was
+  replaced before the single outcome-bearing operator run. No successor or
+  evidence version was minted for either repair.
 - The complete Release server rebuild passes after the KV action change.
   Configured CUDA closure remains `139/139` compile entries and `139/139`
   unique objects. Seventeen focused declarative-runner/oracle tests pass; the
@@ -370,6 +392,12 @@ The active recurrence and acceptance boundary are
   The successor changes the generator: train one shared model-native role
   transport from output-produced state to pre-query carrier state without
   retaining a complete target-row table.
+- Coordinate-wise trained role transport is now closed too. It cannot
+  reconstruct construction rows tightly and degrades the already-insufficient
+  raw output recurrence. Ridge, rank, K/V, layer, context, prompt, fixture, and
+  evaluator changes are not authorized. The next generator must be shared,
+  nonlinear, and consumed inside model computation rather than remain a
+  post-cache coordinate repair.
 
 - The balanced held-out adapter produced joint/F-only/G-only accuracy
   `1/4`, `1/4`, and `2/4`; eligibility mutation failed. It is a conventional
